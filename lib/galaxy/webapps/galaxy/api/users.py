@@ -598,31 +598,47 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         return {'inputs': [{'name': 'current', 'type': 'password', 'label': 'Current password'},
                            {'name': 'password', 'type': 'password', 'label': 'New password'},
-                           {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
-                           {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None}]}
+                           {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'}]}
 
     @expose_api
     def set_password(self, trans, id, payload={}, **kwd):
+        """
+        Allows to the logged-in user to change own password.
+        """
+        current = payload.get('current')
+        user = self._get_user(trans, id)
+        (ok, message) = trans.app.auth_manager.check_change_password(user, current)
+        if not ok:
+            raise MessageException(message)
+        return self.__set_password(trans, user, payload, **kwd)
+
+    @expose_api_anonymous_and_sessionless
+    def set_password_token(self, trans, payload={}, **kwd):
+        """
+        Allows to change a user password with a token.
+        """
+        token = payload.get('token')
+        if not token:
+            raise MessageException('Please provide a token.')
+        token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
+        if not token_result or not token_result.expiration_time > datetime.utcnow():
+            raise MessageException('Invalid or expired password reset token, please request a new one.')
+        user = token_result.user
+        response = self.__set_password(trans, user, payload, **kwd)
+        trans.handle_user_login(token_result.user)
+        token_result.expiration_time = datetime.utcnow()
+        trans.sa_session.add(token_result)
+        return response
+
+    def __set_password(self, trans, user, payload={}, **kwd):
         """
         Allows to change a user password.
         """
         password = payload.get('password')
         confirm = payload.get('confirm')
         current = payload.get('current')
-        token = payload.get('token')
-        token_result = None
-        if token:
-            # If a token was supplied, validate and set user
-            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-            if not token_result or not token_result.expiration_time > datetime.utcnow():
-                raise MessageException('Invalid or expired password reset token, please request a new one.')
-            user = token_result.user
-        else:
-            # The user is changing their own password, validate their current password
-            user = self._get_user(trans, id)
-            (ok, message) = trans.app.auth_manager.check_change_password(user, current)
-            if not ok:
-                raise MessageException(message)
+        if not password:
+            raise MessageException('Please provide a new password.')
         if user:
             # Validate the new password
             message = validate_password(trans, password, confirm)
@@ -631,11 +647,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             else:
                 # Save new password
                 user.set_password_cleartext(password)
-                # if we used a token, invalidate it and log the user in.
-                if token_result:
-                    trans.handle_user_login(token_result.user)
-                    token_result.expiration_time = datetime.utcnow()
-                    trans.sa_session.add(token_result)
                 # Invalidate all other sessions
                 for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
                                                  .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
@@ -650,13 +661,12 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         raise MessageException('Failed to determine user, access denied.')
 
     @expose_api_anonymous_and_sessionless
-    def reset_password(self, trans, payload, **kwd):
+    def reset_password(self, trans, payload={}, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         if trans.app.config.smtp_server is None:
             return MessageException("Mail is not configured for this Galaxy instance "
                                     "and password reset information cannot be sent. "
                                     "Please contact your local Galaxy administrator.")
-        payload = payload or {}
         email = payload.get("email")
         if not email:
             raise MessageException("Please provide your email.")
@@ -679,9 +689,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 host = trans.request.host.split(':')[0]
                 if host in ['localhost', '127.0.0.1', '0.0.0.0']:
                     host = socket.getfqdn()
-                reset_url = url_for(controller='user',
-                                    action="change_password",
-                                    token=prt.token, qualified=True)
+                reset_url = url_for(controller='root', action='login', token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                                                   reset_url)
                 frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
@@ -692,6 +700,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     trans.sa_session.flush()
                     trans.log_event('User reset password: %s' % email)
                 except Exception as e:
+                    log.debug(body)
                     raise MessageException("Failed to submit email. Please contact the administrator: %s" % str(e))
         return {"message": "Reset link has been sent to your email."}
 

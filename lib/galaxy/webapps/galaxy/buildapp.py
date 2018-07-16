@@ -609,6 +609,12 @@ def populate_api_routes(webapp, app):
                           action='set_password',
                           conditions=dict(method=["PUT"]))
 
+    webapp.mapper.connect('set_password_token',
+                          '/api/users/set_password',
+                          controller='users',
+                          action='set_password_token',
+                          conditions=dict(method=["POST"]))
+
     webapp.mapper.connect('reset_password',
                           '/api/users/reset_password',
                           controller='users',

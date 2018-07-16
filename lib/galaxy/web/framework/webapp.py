@@ -509,8 +509,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # TODO: re-engineer to eliminate the use of allowed_paths
             # as maintenance overhead is far too high.
             allowed_paths = [
+                url_for('/api/users/reset_password'),
+                url_for('/api/users/set_password'),
                 # client app route
-                url_for('api/users/reset_password'),
                 # TODO: might be better as '/:username/login', '/:username/logout'
                 url_for(controller='root', action='login'),
                 # mako app routes
