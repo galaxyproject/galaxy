@@ -57,14 +57,14 @@ class HDAManager(datasets.DatasetAssociationManager,
         #   I can not access that dataset even if it's in my history
         # if self.is_owner( hda, user, **kwargs ):
         #     return True
-        return super(HDAManager, self).is_accessible(hda, user)
+        return super(HDAManager, self).is_accessible(hda, user, **kwargs)
 
     def is_owner(self, hda, user, current_history=None, **kwargs):
         """
         Use history to see if current user owns HDA.
         """
         history = hda.history
-        if self.user_manager.is_admin(user):
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
         # allow anonymous user to access current history
         # TODO: some dup here with historyManager.is_owner but prevents circ import
@@ -241,6 +241,23 @@ class HDAManager(datasets.DatasetAssociationManager,
         # override to scope to history owner
         return self._user_annotation(hda, hda.history.user)
 
+    def _set_permissions(self, trans, hda, role_ids_dict):
+        # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+        # need to ensure that they did not associate roles that would cause accessibility problems.
+        permissions, in_roles, error, message = \
+            trans.app.security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
+        if error:
+            # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
+            access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
+            permissions[access_action] = hda.dataset.get_access_roles(trans)
+            trans.sa_session.refresh(hda.dataset)
+            raise exceptions.RequestParameterInvalidException(message)
+        else:
+            error = trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+            trans.sa_session.refresh(hda.dataset)
+            if error:
+                raise exceptions.RequestParameterInvalidException(error)
+
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
         datasets.DatasetAssociationSerializer,
@@ -354,7 +371,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                                                              history_content_id=self.app.security.encode_id(i.id)),
             'parent_id'     : self.serialize_id,
             # TODO: to DatasetAssociationSerializer
-            'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user),
+            'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user, **c),
             'api_type'      : lambda *a, **c: 'file',
             'type'          : lambda *a, **c: 'file'
         })
