@@ -76,7 +76,7 @@ class User(BaseUser):
                     header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", "")
                 else:
                     header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", "")
-        return trans.fill_template('/user/login.mako',
+        return trans.fill_template('/webapps/tool_shed/user/login.mako',
                                    login=login,
                                    header=header,
                                    use_panels=use_panels,
