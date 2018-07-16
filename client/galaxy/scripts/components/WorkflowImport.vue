@@ -1,76 +1,70 @@
 <template>
-    <div class="ui-portlet-limited">
-        <div class="portlet-header">
-            <div class="portlet-title">
-                <i class="portlet-title-icon fa fa-upload"></i>
-                <span class="portlet-title-text"><b>Import Workflow</b></span>
-            </div>
-        </div>
-        <div class="portlet-content">
-            <div v-if="errormessage" class="ui-message alert alert-danger">
-                {{ errormessage }}
-            </div>
-            <div class="portlet-body">
-                <form ref="form">
-                    <div class="ui-form-element">
-                        <div class="ui-form-title">Archived Workflow URL</div>
-                        <input class="ui-input" type="text" name="archive_source"/>
-                        <div class="ui-form-info">If the workflow is accessible via a URL, enter the URL above and click Import.</div>
-                    </div>
-                    <div class="ui-form-element">
-                        <div class="ui-form-title">Archived Workflow file</div>
-                        <input type="file" name="archive_file"/>
-                        <div class="ui-form-info">If the workflow is in a file on your computer, choose it and then click Import.</div>
-                    </div>
-                </form>
-            </div>
-            <div class="portlet-buttons">
-                <input class="btn btn-primary" type="button" value="Import Workflow" @click="submit"/>
-            </div>
-        <hr/>
-        <div class="ui-form-element">
-            <div class="ui-form-title">Import a Workflow from myExperiment</div>
-            <a :href=myexperiment_target_url>Visit myExperiment</a>
-            <div class="ui-form-info">Click the link above to visit myExperiment and search for Galaxy workflows.</div>
-        </div>
-        </div>
-    </div>
+    <b-form @submit="submit">
+        <b-card title="Import Workflow">
+            <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+            <p>Please provide a Galaxy workflow export URL or a workflow file.</p>
+            <b-form-group label="Archived Workflow URL">
+                <b-form-input id="workflow-import-url-input" type="url" v-model="sourceURL"/>
+                If the workflow is accessible via a URL, enter the URL above and click Import.
+            </b-form-group>
+            <b-form-group label="Archived Workflow File">
+                <b-form-file v-model="sourceFile"/>
+                If the workflow is in a file on your computer, choose it and then click Import.
+            </b-form-group>
+            <b-button id="workflow-import-button" type="submit">Import workflow</b-button>
+            <p class="mt-4">
+                <h4>Import a Workflow from myExperiment</h4>
+                <a :href=myexperiment_target_url>Visit myExperiment</a>
+                <div class="form-text">Click the link above to visit myExperiment and search for Galaxy workflows.</div>
+            </p>
+        </b-card>
+    </b-form>
 </template>
 <script>
+import axios from "axios";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     data() {
         return {
-            errormessage: null,
+            sourceFile: null,
+            sourceURL: null,
+            errorMessage: null,
             myexperiment_target_url: `http://${Galaxy.config.myexperiment_target_url}/galaxy?galaxy_url=${
                 window.location.protocol
             }//${window.location.host}`
         };
     },
+    computed: {
+        hasErrorMessage() {
+            return this.errorMessage != null;
+        }
+    },
     methods: {
-        submit: function() {
-            $.ajax({
-                url: `${Galaxy.root}api/workflows`,
-                data: new FormData(this.$refs.form),
-                cache: false,
-                contentType: false,
-                processData: false,
-                method: "POST"
-            })
-                .done(response => {
-                    window.location = `${Galaxy.root}workflows/list?message=${response.message}&status=${
-                        response.status
-                    }`;
-                })
-                .fail(response => {
-                    let message = response.responseJSON && response.responseJSON.err_msg;
-                    this.errormessage = message || "Import failed for unkown reason.";
-                });
+        submit: function(ev) {
+            ev.preventDefault();
+            if (!this.sourceFile && !this.sourceURL) {
+                this.errorMessage = "You must provide a workflow archive URL or file.";
+            } else {
+                let formData = new FormData();
+                formData.append("archive_file", this.sourceFile);
+                formData.append("archive_source", this.sourceURL);
+                axios
+                    .post(`${Galaxy.root}api/workflows`, formData)
+                    .then(response => {
+                        window.location = `${Galaxy.root}workflows/list?message=${
+                            response.data.message
+                        }&status=success`;
+                    })
+                    .catch(error => {
+                        let message = error.response.data && error.response.data.err_msg;
+                        this.errorMessage = message || "Import failed for unkown reason.";
+                    });
+            }
         }
     }
 };
 </script>
-<style>
-.ui-message {
-    display: block;
-}
-</style>
