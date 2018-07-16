@@ -3,7 +3,7 @@ Contains the user interface in the Universe class
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from markupsafe import escape
 from sqlalchemy import (
@@ -11,6 +11,7 @@ from sqlalchemy import (
     or_,
     true
 )
+
 
 from galaxy import (
     util,
@@ -27,6 +28,7 @@ REQUIRE_LOGIN_TEMPLATE = """
     This %s has been configured such that only users who are logged in may use it.%s
 </p>
 """
+
 
 class User(BaseUser):
 
