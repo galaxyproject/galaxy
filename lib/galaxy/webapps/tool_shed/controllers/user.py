@@ -1,8 +1,14 @@
+"""
+Contains the user interface in the Universe class
+"""
+
+import logging
 from datetime import datetime
 
 from markupsafe import escape
 from sqlalchemy import (
     and_,
+    or_,
     true
 )
 
@@ -14,6 +20,13 @@ from galaxy.security.validate_user_input import validate_email, validate_passwor
 from galaxy.web import url_for
 from galaxy.webapps.tool_shed.controllers.base_user import User as BaseUser
 
+log = logging.getLogger(__name__)
+
+REQUIRE_LOGIN_TEMPLATE = """
+<p>
+    This %s has been configured such that only users who are logged in may use it.%s
+</p>
+"""
 
 class User(BaseUser):
 
