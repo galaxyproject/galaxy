@@ -96,7 +96,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
     @web._future_expose_api
     def set_permissions(self, trans, dataset_id, payload, **kwargs):
         """
-        POST /api/datasets/{encoded_dataset_id}/permissions
+        POST /api/datasets/{encoded_dataset_id}/set_permissions
         Updates permissions of a dataset.
 
         :rtype:     dict
