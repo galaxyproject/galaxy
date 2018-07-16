@@ -43,12 +43,6 @@ from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger(__name__)
 
-REQUIRE_LOGIN_TEMPLATE = """
-<p>
-    This %s has been configured such that only users who are logged in may use it.%s
-</p>
-"""
-
 PASSWORD_RESET_TEMPLATE = """
 To reset your Galaxy password for the instance at %s use the following link,
 which will expire %s.
