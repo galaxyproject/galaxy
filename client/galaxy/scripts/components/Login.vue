@@ -2,7 +2,7 @@
     <div>
         <b-form @submit="submit">
             <b-card header="Welcome to Galaxy, please log in">
-                <b-alert :show="showErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+                <b-alert :show="showErrorMessage" variant="danger" v-html="errorMessage"/>
                 <b-form-group label="Username or Email Address">
                     <b-form-input type="text" v-model="username"/>
                 </b-form-group>
