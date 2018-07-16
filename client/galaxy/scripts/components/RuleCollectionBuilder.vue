@@ -1705,7 +1705,13 @@ export default {
                 const urlColumn = mappingAsDict.url.columns[0];
                 let url = data[dataIndex][urlColumn];
                 if (url.indexOf("://") == -1) {
-                    url = "http://" + url;
+                    // special case columns containing SRA links. EBI serves these a lot
+                    // faster over FTP.
+                    if(url.indexOf("ftp.sra.") !== -1) {
+                        url = "ftp://" + url;
+                    } else {
+                        url = "http://" + url;
+                    }
                 }
                 res["url"] = url;
                 res["src"] = "url";
