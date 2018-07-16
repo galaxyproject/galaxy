@@ -43,19 +43,6 @@ from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger(__name__)
 
-PASSWORD_RESET_TEMPLATE = """
-To reset your Galaxy password for the instance at %s use the following link,
-which will expire %s.
-
-%s
-
-If you did not make this request, no action is necessary on your part, though
-you may want to notify an administrator.
-
-If you're having trouble using the link when clicking it from email client, you
-can also copy and paste it into your browser.
-"""
-
 
 class UserOpenIDGrid(grids.Grid):
     title = "OpenIDs linked to your account"
@@ -795,51 +782,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 #  Tokens don't match. Activation is denied.
                 return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
         return
-
-    @web.expose
-    def reset_password(self, trans, email=None, **kwd):
-        """Reset the user's password. Send an email with token that allows a password change."""
-        if trans.app.config.smtp_server is None:
-            return trans.show_error_message("Mail is not configured for this Galaxy instance "
-                                            "and password reset information cannot be sent. "
-                                            "Please contact your local Galaxy administrator.")
-        message = None
-        status = 'done'
-        if kwd.get('reset_password_button', False):
-            message = validate_email(trans, email, check_dup=False)
-            if not message:
-                # Default to a non-userinfo-leaking response message
-                message = ("Your reset request for %s has been received.  "
-                           "Please check your email account for more instructions.  "
-                           "If you do not receive an email shortly, please contact an administrator." % (escape(email)))
-                reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-                if not reset_user:
-                    # Perform a case-insensitive check only if the user wasn't found
-                    reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
-                if reset_user:
-                    prt = trans.app.model.PasswordResetToken(reset_user)
-                    trans.sa_session.add(prt)
-                    trans.sa_session.flush()
-                    host = trans.request.host.split(':')[0]
-                    if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-                        host = socket.getfqdn()
-                    reset_url = url_for(controller='user',
-                                        action="change_password",
-                                        token=prt.token, qualified=True)
-                    body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                                                      reset_url)
-                    frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-                    subject = 'Galaxy Password Reset'
-                    try:
-                        util.send_mail(frm, email, subject, body, trans.app.config)
-                        trans.sa_session.add(reset_user)
-                        trans.sa_session.flush()
-                        trans.log_event("User reset password: %s" % email)
-                    except Exception:
-                        log.exception('Unable to reset password.')
-        return trans.fill_template('/user/reset_password.mako',
-                                   message=message,
-                                   status=status)
 
     def __validate(self, trans, params, email, password, confirm, username):
         # If coming from the tool shed webapp, we'll require a public user name
