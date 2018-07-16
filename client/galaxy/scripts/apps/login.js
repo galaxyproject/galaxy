@@ -2,7 +2,7 @@ import jQuery from "jquery";
 var $ = jQuery;
 import GalaxyApp from "galaxy";
 import Page from "layout/page";
-import Login from "components/Login.vue";
+import Login from "components/login/Login.vue";
 import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
