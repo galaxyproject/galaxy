@@ -8,11 +8,8 @@ import tempfile
 from json import dump, dumps
 
 from six import StringIO
+from six.moves.urllib.parse import urlparse
 from sqlalchemy.orm import eagerload_all
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
 from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
