@@ -103,10 +103,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         :returns:   dictionary containing new permissions
         """
         hda_ldda = kwargs.get('hda_ldda', 'hda')
-        try:
-            hda = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
-        except Exception as e:
-            return str(e)
+        hda = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
 
         access = payload.get('access', [])
         manage = payload.get('manage', [])
