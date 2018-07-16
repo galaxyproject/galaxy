@@ -441,7 +441,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
-            return self.message_exception(trans, "This account has been marked deleted, contact your local Galaxy administrator to restore the account.")
+            return self.message_exception(trans, "This account could not be found. Contact your local Galaxy administrator if the problem persists.")
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
