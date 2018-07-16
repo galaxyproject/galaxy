@@ -436,9 +436,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     @expose_api_anonymous_and_sessionless
     def login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
-        #csrf_check = trans.check_csrf_token()
-        #if csrf_check:
-        #    return csrf_check
         payload = payload or {}
         username = payload.get("username")
         password = payload.get("password")
