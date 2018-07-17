@@ -41,10 +41,10 @@ from galaxy.util import (
     listify
 )
 from galaxy.util.odict import odict
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import (
     _future_expose_api as expose_api,
     _future_expose_api_anonymous as expose_api_anonymous,
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
     url_for
 )
 from galaxy.web.base.controller import (
@@ -636,7 +636,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         password = payload.get('password')
         confirm = payload.get('confirm')
-        current = payload.get('current')
         if not password:
             raise MessageException('Please provide a new password.')
         if user:
