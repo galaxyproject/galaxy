@@ -504,7 +504,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'message': 'User information has been saved.'}
 
     @expose_api
-    def set_favorite(self, trans, id, object_type, payload={}):
+    def set_favorite(self, trans, id, object_type, payload={}, **kwd):
         """Add the object to user's favorites
         PUT /api/users/{id}/favorites/{object_type}
 
@@ -547,11 +547,10 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         user = self._get_user(trans, id)
         favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
         if object_type == 'tools':
-            tool_id = payload.get('object_id')
             if 'tools' in favorites:
                 favorite_tools = favorites['tools']
-                if tool_id in favorite_tools:
-                    del favorite_tools[favorite_tools.index(tool_id)]
+                if object_id in favorite_tools:
+                    del favorite_tools[favorite_tools.index(object_id)]
                     favorites['tools'] = favorite_tools
                     user.preferences['favorites'] = json.dumps(favorites)
                     trans.sa_session.flush()

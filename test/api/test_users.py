@@ -2,7 +2,8 @@ import json
 
 from requests import (
     get,
-    put
+    put,
+    delete
 )
 
 from base import api  # noqa: I100,I202
@@ -90,6 +91,26 @@ class UsersApiTestCase(api.ApiTestCase):
         response = get(url).json()
         self.assertEqual(len(response["addresses"]), 1)
         self.assertEqual(response["addresses"][0]["desc"], "_desc")
+
+    def test_favorites(self):
+        user = self._setup_user(TEST_USER_EMAIL)
+        url = self._api_url("users/%s/favorites/tools" % user["id"], params=dict(key=self.master_api_key))
+        put_response = put(url, data=json.dumps({"object_id" : "sample/tool/id/version/2.5"}))
+        self._assert_status_code_is_ok(put_response)
+        self.assertEqual(put_response.json()["tools"][0], "sample/tool/id/version/2.5")
+        url = self._api_url("users/%s/favorites/workflows" % user["id"], params=dict(key=self.master_api_key))
+        put_response = put(url, data=json.dumps({"object_id" : "14ds68f4sda68gf46dsag4"}))
+        self._assert_status_code_is(put_response, 400)
+        url = self._api_url("users/%s/favorites/tools/sample/tool/id/version/2.5" % user["id"], params=dict(key=self.master_api_key))
+        delete_response = delete(url)
+        self._assert_status_code_is_ok(delete_response)
+        self.assertEqual(delete_response.json()["tools"], [])
+        url = self._api_url("users/%s/favorites/tools/madeuptoolthatdoes/not/exist/in/favs" % user["id"], params=dict(key=self.master_api_key))
+        delete_response = delete(url)
+        self._assert_status_code_is_ok(delete_response)
+        url = self._api_url("users/%s/favorites/workflows/1as5das5das56d465" % user["id"], params=dict(key=self.master_api_key))
+        delete_response = delete(url)
+        self._assert_status_code_is(delete_response, 400)
 
     def test_communication(self):
         user = self._setup_user(TEST_USER_EMAIL)
