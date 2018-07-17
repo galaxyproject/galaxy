@@ -146,7 +146,7 @@ export default FormBase.extend({
             visible: !Galaxy.user.isAnonymous() && in_favorites,
             onclick: () => {
                 axios
-                    .post(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'object_id': options.id})
+                    .delete(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`)
                     .then(response => {
                         remove_favorite_button.hide();
                         favorite_button.show();
