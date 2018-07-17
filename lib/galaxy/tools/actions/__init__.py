@@ -54,6 +54,12 @@ class DefaultToolAction(object):
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
+        all_permissions = {}
+
+        def record_permission(action, role_id):
+            if action not in all_permissions:
+                all_permissions[action] = set()
+            all_permissions[action].add(role_id)
 
         def visitor(input, value, prefix, parent=None, **kwargs):
 
@@ -74,6 +80,11 @@ class DefaultToolAction(object):
 
                 if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
                     raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                permissions = trans.app.security_agent.get_permissions(data.dataset)
+                for action, roles in permissions.values():
+                    for role in roles:
+                        record_permission(action.action, role.id)
+
                 return data
             if isinstance(input, DataToolParameter):
                 if isinstance(value, list):
@@ -124,25 +135,28 @@ class DefaultToolAction(object):
                 if not value:
                     return
 
-                dataset_instances = []
+                collection = None
                 if hasattr(value, 'child_collection'):
                     # if we are mapping a collection over a tool, we only require the child_collection
-                    dataset_instances = value.child_collection.dataset_instances
+                    collection = value.child_collection
                 else:
                     # else the tool takes a collection as input so we need everything
-                    dataset_instances = value.collection.dataset_instances
+                    collection = value.collection
 
-                for i, v in enumerate(dataset_instances):
-                    data = v
-                    if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                action_tuples = collection.dataset_action_tuples
+                if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
+                    raise Exception("User does not have permission to use a dataset provided for input.")
+                for action, role_id in action_tuples:
+                    record_permission(action, role_id)
+
+                for i, v in enumerate(collection.dataset_instances):
                     # Skipping implicit conversion stuff for now, revisit at
                     # some point and figure out if implicitly converting a
                     # dataset collection makes senese.
-                    input_datasets[prefix + input.name + str(i + 1)] = data
+                    input_datasets[prefix + input.name + str(i + 1)] = v
 
         tool.visit_inputs(param_values, visitor)
-        return input_datasets
+        return input_datasets, all_permissions
 
     def collect_input_dataset_collections(self, tool, param_values):
         def append_to_key(the_dict, key, value):
@@ -198,7 +212,7 @@ class DefaultToolAction(object):
         # input datasets can process these normally.
         inp_dataset_collections = self.collect_input_dataset_collections(tool, incoming)
         # Collect any input datasets from the incoming parameters
-        inp_data = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles)
+        inp_data, all_permissions = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles)
 
         # grap tags from incoming HDAs
         preserved_tags = {}
@@ -218,7 +232,7 @@ class DefaultToolAction(object):
                     for tag in collection.auto_propagated_tags:
                         preserved_tags[tag.value] = tag
 
-        return history, inp_data, inp_dataset_collections, preserved_tags
+        return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
     def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
         """
@@ -232,7 +246,7 @@ class DefaultToolAction(object):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
 
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
@@ -272,7 +286,7 @@ class DefaultToolAction(object):
             # Determine output dataset permission/roles list
             existing_datasets = [inp for inp in inp_data.values() if inp]
             if existing_datasets:
-                output_permissions = app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+                output_permissions = app.security_agent.guess_derived_permissions(all_permissions)
             else:
                 # No valid inputs, we will use history defaults
                 output_permissions = app.security_agent.history_get_default_permissions(history)
@@ -480,7 +494,7 @@ class DefaultToolAction(object):
         job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
-        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles)
+        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
@@ -640,7 +654,7 @@ class DefaultToolAction(object):
             job.tool_version = "1.0.0"
         return job, galaxy_session
 
-    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles):
+    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
@@ -680,7 +694,7 @@ class DefaultToolAction(object):
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
             job.add_parameter(name, value)
-        self._check_input_data_access(trans, job, inp_data, current_user_roles)
+        self._record_input_datasets(trans, job, inp_data)
 
     def _record_outputs(self, job, out_data, output_collections):
         out_collections = output_collections.out_collections
@@ -693,20 +707,15 @@ class DefaultToolAction(object):
             job.add_output_dataset_collection(name, dataset_collection_instance)
             dataset_collection_instance.job = job
 
-    def _check_input_data_access(self, trans, job, inp_data, current_user_roles):
-        access_timer = ExecutionTimer()
+    def _record_input_datasets(self, trans, job, inp_data):
         for name, dataset in inp_data.items():
             if dataset:
-                if not trans.app.security_agent.can_access_dataset(current_user_roles, dataset.dataset):
-                    raise Exception("User does not have permission to use a dataset (%s) provided for input." % dataset.id)
                 if dataset in trans.sa_session:
                     job.add_input_dataset(name, dataset=dataset)
                 else:
                     job.add_input_dataset(name, dataset_id=dataset.id)
             else:
                 job.add_input_dataset(name, None)
-        job_str = job.log_str()
-        log.info("Verified access to datasets for %s %s" % (job_str, access_timer))
 
     def get_output_name(self, output, dataset, tool, on_text, trans, incoming, history, params, job_params):
         if output.label:
