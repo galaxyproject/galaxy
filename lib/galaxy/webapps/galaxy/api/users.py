@@ -506,7 +506,10 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
     @expose_api
     def set_favorite(self, trans, id, object_type, payload={}):
         """Add the object to user's favorites
+        PUT /api/users/{id}/favorites/{object_type}
 
+        :param id: the encoded id of the user
+        :type  id: str
         :param object_type: the object type that users wants to favorite
         :type  object_type: str
         :param object_id: the id of an object that users wants to favorite
@@ -529,9 +532,12 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return favorites
 
     @expose_api
-    def remove_favorite(self, trans, id, object_type, payload={}, **kwd):
+    def remove_favorite(self, trans, id, object_type, object_id, payload={}, **kwd):
         """Remove the object from user's favorites
+        DELETE /api/users/{id}/favorites/{object_type}/{object_id:.*?}
 
+        :param id: the encoded id of the user
+        :type  id: str
         :param object_type: the object type that users wants to favorite
         :type  object_type: str
         :param object_id: the id of an object that users wants to remove from favorites

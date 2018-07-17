@@ -701,10 +701,10 @@ def populate_api_routes(webapp, app):
                           conditions=dict(method=["PUT"]))
 
     webapp.mapper.connect('remove_favorite_tool',
-                          '/api/users/{id}/favorites/{object_type}',
+                          '/api/users/{id}/favorites/{object_type}/{object_id:.*?}',
                           controller='users',
                           action='remove_favorite',
-                          conditions=dict(method=["POST"]))
+                          conditions=dict(method=["DELETE"]))
 
     # ========================
     # ===== WEBHOOKS API =====
