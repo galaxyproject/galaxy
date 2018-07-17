@@ -442,6 +442,10 @@ class DefaultToolAction(object):
                         })
 
                     history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=True)
+                    # There may be memory problems when creating big collections or large numbers of jobs,
+                    # explicitly clear out memory to allow Python to garbage collect more data, more quickly.
+                    del created_element_datasets
+
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
@@ -452,6 +456,8 @@ class DefaultToolAction(object):
                         name=name,
                         **element_kwds
                     )
+
+                    del element_identifiers
                     log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
                 else:
                     handle_output(name, output)
@@ -469,6 +475,7 @@ class DefaultToolAction(object):
         # TOOL OPTIMIZATION NOTE - from above loop to the job create below 99%+
         # of execution time happens within in history.add_datasets.
         history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
+        del datasets_to_persist
 
         # Add all the children to their parents
         for parent_name, child_name in parent_to_child_pairs:
