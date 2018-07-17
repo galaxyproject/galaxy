@@ -115,9 +115,11 @@ export default FormBase.extend({
         var self = this;
         var options = this.model.attributes;
 
+        // Buttons for adding and removing favorite.
+        let favorites = JSON.parse(Galaxy.user.get('preferences').favorites);
         let in_favorites;
-        if (Galaxy.user.get('preferences').tool_favorites){
-            in_favorites = Galaxy.user.get('preferences').tool_favorites.indexOf(options.id) >= 0;
+        if (favorites.tools){
+            in_favorites = favorites.tools.indexOf(options.id) >= 0;
         } else{
             in_favorites = false;
         }
@@ -128,11 +130,11 @@ export default FormBase.extend({
             visible: !Galaxy.user.isAnonymous() && !in_favorites,
             onclick: () => {
                 axios
-                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'tool_id': options.id})
+                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'object_id': options.id})
                     .then(response => {
                         favorite_button.hide();
                         remove_favorite_button.show();
-                        Galaxy.user.get('preferences').tool_favorites = response.data;
+                        Galaxy.user.get('preferences').favorites = response.data;
                     });
             }
         });
@@ -144,11 +146,11 @@ export default FormBase.extend({
             visible: !Galaxy.user.isAnonymous() && in_favorites,
             onclick: () => {
                 axios
-                    .post(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'tool_id': options.id})
+                    .post(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'object_id': options.id})
                     .then(response => {
                         remove_favorite_button.hide();
                         favorite_button.show();
-                        Galaxy.user.get('preferences').tool_favorites = response.data;
+                        Galaxy.user.get('preferences').favorites = response.data;
                     });
             }
         });
