@@ -121,7 +121,8 @@ def _precreate_fetched_hdas(trans, history, target, outputs):
         uploaded_dataset = Bunch(
             type='file', name=name, file_type=file_type, dbkey=dbkey
         )
-        data = upload_common.new_upload(trans, '', uploaded_dataset, library_bunch=None, history=history)
+        tag_list = item.get("tags", [])
+        data = upload_common.new_upload(trans, '', uploaded_dataset, library_bunch=None, history=history, tag_list=tag_list)
         outputs.append(data)
         item["object_id"] = data.id
 
@@ -136,11 +137,12 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     if not name:
         return
 
+    tags = target.get("tags", [])
     collections_service = trans.app.dataset_collections_service
     collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
     structure = UninitializedTree(collection_type_description)
     hdca = collections_service.precreate_dataset_collection_instance(
-        trans, history, name, structure=structure
+        trans, history, name, structure=structure, tags=tags
     )
     outputs.append(hdca)
     # Following flushed needed for an ID.
