@@ -504,35 +504,51 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         return {'message': 'User information has been saved.'}
 
     @expose_api
-    def set_favorite_tool(self, trans, id, payload={}):
-        """Add the tool to user's favorites
+    def set_favorite(self, trans, id, object_type, payload={}):
+        """Add the object to user's favorites
 
-        :param tool_id: the tool that users wants to favorite
-        :type  tool_id: str
+        :param object_type: the object type that users wants to favorite
+        :type  object_type: str
+        :param object_id: the id of an object that users wants to favorite
+        :type  object_id: str
         """
+        self._validate_object_type(object_type)
         user = self._get_user(trans, id)
-        tool_id = payload.get('tool_id')
-        favorites = json.loads(user.preferences['tool_favorites']) if 'tool_favorites' in user.preferences else []
-        if tool_id not in favorites:
-            favorites.append(tool_id)
-            user.preferences['tool_favorites'] = json.dumps(favorites)
-            trans.sa_session.flush()
+        favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
+        if object_type == 'tools':
+            tool_id = payload.get('object_id')
+            if 'tools' in favorites:
+                favorite_tools = favorites['tools']
+            else:
+                favorite_tools = []
+            if tool_id not in favorite_tools:
+                favorite_tools.append(tool_id)
+                favorites['tools'] = favorite_tools
+                user.preferences['favorites'] = json.dumps(favorites)
+                trans.sa_session.flush()
         return favorites
 
     @expose_api
-    def remove_favorite_tool(self, trans, id, payload={}, **kwd):
-        """Remove the tool from user's favorites
+    def remove_favorite(self, trans, id, object_type, payload={}, **kwd):
+        """Remove the object from user's favorites
 
-        :param tool_id: the tool that users wants to remove from favorites
-        :type  tool_id: str
+        :param object_type: the object type that users wants to favorite
+        :type  object_type: str
+        :param object_id: the id of an object that users wants to remove from favorites
+        :type  object_id: str
         """
+        self._validate_object_type(object_type)
         user = self._get_user(trans, id)
-        tool_id = payload.get('tool_id')
-        favorites = json.loads(user.preferences['tool_favorites']) if 'tool_favorites' in user.preferences else []
-        if tool_id in favorites:
-            del favorites[favorites.index(tool_id)]
-            user.preferences['tool_favorites'] = json.dumps(favorites)
-            trans.sa_session.flush()
+        favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
+        if object_type == 'tools':
+            tool_id = payload.get('object_id')
+            if 'tools' in favorites:
+                favorite_tools = favorites['tools']
+                if tool_id in favorite_tools:
+                    del favorite_tools[favorite_tools.index(tool_id)]
+                    favorites['tools'] = favorite_tools
+                    user.preferences['favorites'] = json.dumps(favorites)
+                    trans.sa_session.flush()
         return favorites
 
     def _validate_email(self, email):
