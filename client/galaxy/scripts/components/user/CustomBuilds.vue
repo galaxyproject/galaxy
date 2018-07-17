@@ -23,6 +23,31 @@
           </b-table>
         </b-col>
     </b-row>
+    <template v-if="installedBuilds.length > 0">
+      <b-row>
+        <b-col>
+          <h4>System Installed Builds</h4>
+        </b-col>
+      </b-row>
+      <b-row>
+        <b-col id="installed-builds">
+          <multiselect multiple taggable disabled
+            label="label"
+            track-by="value"
+            :searchable="false"
+            :show-labels="false"
+            :value="installedBuilds"
+            :options="installedBuilds">
+            <span slot="caret"></span>
+            <template slot="tag" slot-scope="props">
+              <span class="multiselect__tag">
+                <span>{{ props.option.label }}</span>
+              </span>
+            </template>
+          </multiselect>
+        </b-col>
+      </b-row>
+    </template>
     <b-row>
       <b-col>
         <h4>Add a Custom Build</h4>
@@ -45,13 +70,13 @@
               description="Specify a build name, e.g. Hamster."
               label-for="name">
               <b-form-input class="ui-input" id="name" tour_id="name" v-model="form.name" required />
-            </b-form-group><!-- ./name -->
+            </b-form-group>
             <b-form-group
               label="Key"
               description="Specify a build key, e.g. hamster_v1."
               label-for="id">
               <b-form-input class="ui-input" id="id" tour_id="id" v-model="form.id" required />
-            </b-form-group><!-- ./key -->
+            </b-form-group>
             <b-form-group
               label="Definition"
               description="Provide the data source."
@@ -62,7 +87,7 @@
                 :label="'text'"
                 v-model="selectedDataSource"
                 :options="dataSources" />
-            </b-form-group><!-- ./type -->
+            </b-form-group>
             <div class="ui-form-section">
               <b-form-group
                 v-if="selectedDataSource && selectedDataSource.value === 'fasta'"
@@ -92,7 +117,7 @@
                 label="Edit/Paste">
                 <b-form-textarea class="ui-textarea" v-model="form.text" />
               </b-form-group>
-            </div><!-- ./ui-form-section -->
+            </div>
             <b-button
               type="submit"
               variant="primary"
@@ -136,12 +161,20 @@ chr5    152537259</pre>
 </template>
 
 <script>
+import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Multiselect from 'vue-multiselect';
 import axios from "axios";
-
 import Select from "../ui/Select.vue";
 
+Vue.use(BootstrapVue);
+
 export default {
+  components: {
+    "ui-select": Select,
+    Multiselect
+  },
+
   data() {
     return {
       customBuildsUrl: `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`,
@@ -163,8 +196,8 @@ export default {
       dismissCountDown: 0,
 
       form: {
-        name: "",
         id: "",
+        name: "",
         file: "",
         text: ""
       },
@@ -200,10 +233,6 @@ export default {
 
       return value;
     }
-  },
-
-  components: {
-    "ui-select": Select
   },
 
   created() {
@@ -352,5 +381,24 @@ export default {
   .progress,
   .file-content {
     margin-top: 5px;
+  }
+
+  #installed-builds {
+    margin-bottom: 15px;
+  }
+
+  #installed-builds .multiselect--disabled {
+    opacity: 1;
+  }
+
+  #installed-builds .multiselect__tags {
+    font-size: 12px;
+    padding-right: 0;
+  }
+
+  #installed-builds .multiselect__tag {
+    background: #9e9e9e;
+    margin: 5px 5px 0;
+    padding: 4px 10px;
   }
 </style>
