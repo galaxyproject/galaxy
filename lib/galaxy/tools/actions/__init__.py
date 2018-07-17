@@ -402,6 +402,7 @@ class DefaultToolAction(object):
                     collections_manager = app.dataset_collections_service
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
+                    created_element_datasets = []
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
                     for output_part_def in known_outputs:
@@ -428,21 +429,19 @@ class DefaultToolAction(object):
 
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
+                        created_element_datasets.append(element)
                         # TODO: this shouldn't exist in the top-level of the history at all
                         # but for now we are still working around that by hiding the contents
                         # there.
                         # Following hack causes dataset to no be added to history...
                         child_dataset_names.add(effective_output_name)
-
-                        history.add_dataset(element, set_hid=set_output_hid, quota=False)
                         trans.sa_session.add(element)
-                        trans.sa_session.flush()
-
                         current_element_identifiers.append({
                             "__object__": element,
                             "name": output_part_def.element_identifier,
                         })
 
+                    history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=True)
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
