@@ -10,8 +10,7 @@ import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
 import UserPreferences from "mvc/user/user-preferences";
-import CustomBuilds from "mvc/user/user-custom-builds";
-import CustomBuildsView from "components/user/CustomBuilds.vue";
+import CustomBuilds from "components/user/CustomBuilds.vue";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
@@ -80,7 +79,6 @@ window.app = function app(options, bootstrapped) {
             "(/)histories(/)(:action_id)": "show_histories",
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
-            "(/)custom_builds_vue": "show_custom_builds_vue",
             "(/)datasets/edit": "show_dataset_edit_attributes",
             "(/)datasets/error": "show_dataset_error"
         },
@@ -313,18 +311,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_custom_builds: function() {
-            var historyPanel = this.page.historyPanel.historyView;
-            if (!historyPanel || !historyPanel.model || !historyPanel.model.id) {
-                window.setTimeout(() => {
-                    this.show_custom_builds();
-                }, 500);
-                return;
-            }
-            this.page.display(new CustomBuilds.View());
-        },
-
-        show_custom_builds_vue: function() {
-            var customBuildsInstance = Vue.extend(CustomBuildsView);
+            var customBuildsInstance = Vue.extend(CustomBuilds);
             var vm = document.createElement("div");
             this.page.display(vm);
             new customBuildsInstance().$mount(vm);
