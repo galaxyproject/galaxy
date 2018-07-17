@@ -8,7 +8,6 @@ import re
 import tarfile
 import tempfile
 import threading
-from cgi import FieldStorage
 from collections import OrderedDict
 from datetime import datetime
 from xml.etree import ElementTree
@@ -18,6 +17,7 @@ from mako.template import Template
 from paste import httpexceptions
 from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
+from webob.compat import cgi_FieldStorage
 
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
@@ -1437,7 +1437,7 @@ class Tool(Dictifiable):
             return False, message
 
     def find_fieldstorage(self, x):
-        if isinstance(x, FieldStorage):
+        if isinstance(x, cgi_FieldStorage):
             raise InterruptedUpload(None)
         elif isinstance(x, dict):
             [self.find_fieldstorage(y) for y in x.values()]

@@ -5,15 +5,12 @@ import shlex
 import socket
 import subprocess
 import tempfile
-from cgi import FieldStorage
 from json import dump, dumps
 
 from six import StringIO
+from six.moves.urllib.parse import urlparse
 from sqlalchemy.orm import eagerload_all
-try:
-    from urlparse import urlparse
-except ImportError:
-    from urllib.parse import urlparse
+from webob.compat import cgi_FieldStorage
 
 from galaxy import datatypes, util
 from galaxy.exceptions import ConfigDoesNotAllowException, ObjectInvalid
@@ -114,7 +111,7 @@ def persist_uploads(params, trans):
         new_files = []
         for upload_dataset in params['files']:
             f = upload_dataset['file_data']
-            if isinstance(f, FieldStorage):
+            if isinstance(f, cgi_FieldStorage):
                 assert not isinstance(f.file, StringIO)
                 assert f.file.name != '<fdopen>'
                 local_filename = util.mkstemp_ln(f.file.name, 'upload_file_data_')
@@ -372,7 +369,7 @@ def create_paramfile(trans, uploaded_datasets):
             if link_data_only == 'copy_files' and trans.app.config.external_chown_script:
                 _chown(uploaded_dataset.path)
         tool_params.append(params)
-    with tempfile.NamedTemporaryFile(prefix='upload_params_', delete=False) as fh:
+    with tempfile.NamedTemporaryFile(mode="w", prefix='upload_params_', delete=False) as fh:
         json_file_path = fh.name
         dump(tool_params, fh)
     return json_file_path

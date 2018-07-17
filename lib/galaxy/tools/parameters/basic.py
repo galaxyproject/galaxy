@@ -3,7 +3,6 @@ Basic tool parameters.
 """
 from __future__ import print_function
 
-import cgi
 import json
 import logging
 import os
@@ -12,6 +11,7 @@ import re
 from xml.etree.ElementTree import XML
 
 from six import string_types
+from webob.compat import cgi_FieldStorage
 
 import galaxy.model
 import galaxy.tools.parser
@@ -561,7 +561,7 @@ class FileToolParameter(ToolParameter):
                 return value['local_filename']
             except KeyError:
                 return None
-        elif isinstance(value, cgi.FieldStorage):
+        elif isinstance(value, cgi_FieldStorage):
             return value.filename
         raise Exception("FileToolParameter cannot be persisted")
 

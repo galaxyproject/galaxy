@@ -1,7 +1,6 @@
 """
 A simple WSGI application/framework.
 """
-import cgi  # For FieldStorage
 import io
 import logging
 import os.path
@@ -12,7 +11,8 @@ import time
 import types
 
 import routes
-import webob
+import webob.compat
+import webob.exc
 # We will use some very basic HTTP/wsgi utilities from the paste library
 from paste import httpexceptions
 from paste.request import get_cookies
@@ -328,25 +328,27 @@ class DefaultWebTransaction(object):
             return None
 
 
-class FieldStorage(cgi.FieldStorage):
-    def make_file(self, binary=None):
-        # For request.params, override cgi.FieldStorage.make_file to create persistent
-        # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
-        # but for performance reasons it's way better to use Paste's tempfile than to
-        # create a new one and copy.
-        return tempfile.NamedTemporaryFile()
-
-    def read_lines(self):
-        # Always make a new file
-        self.file = self.make_file()
-        self.__file = None
-        if self.outerboundary:
-            self.read_lines_to_outerboundary()
-        else:
-            self.read_lines_to_eof()
+def _make_file(self, binary=None):
+    # For request.params, override cgi.FieldStorage.make_file to create persistent
+    # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
+    # but for performance reasons it's way better to use Paste's tempfile than to
+    # create a new one and copy.
+    return tempfile.NamedTemporaryFile()
 
 
-cgi.FieldStorage = FieldStorage
+def _read_lines(self):
+    # Always make a new file
+    self.file = self.make_file()
+    # Adapt `self.__file = None` to Python name mangling of class-private attributes
+    setattr(self, '_' + self.__class__.__name__ + '__file', None)
+    if self.outerboundary:
+        self.read_lines_to_outerboundary()
+    else:
+        self.read_lines_to_eof()
+
+
+webob.compat.cgi_FieldStorage.make_file = _make_file
+webob.compat.cgi_FieldStorage.read_lines = _read_lines
 
 
 class Request(webob.Request):
@@ -459,7 +461,7 @@ class Response(object):
         Return status line in format appropriate for WSGI `start_response`
         """
         if isinstance(self.status, int):
-            exception = httpexceptions.get_exception(self.status)
+            exception = webob.exc.status_map.get(self.status)
             return "%d %s" % (exception.code, exception.title)
         else:
             return self.status
