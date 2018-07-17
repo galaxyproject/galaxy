@@ -290,6 +290,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
     >>> datatypes_registry = example_datatype_registry_for_sample()
     >>> sniff_order = datatypes_registry.sniff_order
+    >>> fname = get_test_fname('empty.txt')
+    >>> guess_ext(fname, sniff_order)
+    'txt'
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
     'blastxml'
