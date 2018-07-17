@@ -25,7 +25,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, must specify element identifiers."
-ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
+ERROR_NO_COLLECTION_TYPE = "Create called without specifying a collection type."
 
 
 class DatasetCollectionManager(object):
@@ -148,7 +148,7 @@ class DatasetCollectionManager(object):
             log.exception(message)
             raise MessageException(message)
 
-        # Tags may be coming in as a dictionary or tag model objects if copying them from other
+        # Tags may be coming in as a dictionary of tag model objects if copying them from other
         # existing Galaxy objects or as a list of strings if the tags are coming from user supplied
         # values.
         if isinstance(tags, list):
@@ -388,7 +388,7 @@ class DatasetCollectionManager(object):
                     the_object = context.query(type(the_object)).get(the_object.id)
             return the_object
 
-        # dateset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
+        # dataset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
         try:
             src_type = element_identifier.get('src', 'hda')
         except AttributeError:
