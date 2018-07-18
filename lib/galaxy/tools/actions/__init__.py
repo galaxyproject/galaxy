@@ -29,6 +29,19 @@ class ToolExecutionCache(object):
     def __init__(self, trans):
         self.trans = trans
         self.current_user_roles = trans.get_current_user_roles()
+        self.chrom_info = {}
+
+    def get_chrom_info(self, tool_id, input_dbkey):
+        genome_builds = self.trans.app.genome_builds
+        custom_build_hack_get_len_from_fasta_conversion = tool_id != 'CONVERTER_fasta_to_len'
+        if custom_build_hack_get_len_from_fasta_conversion and input_dbkey in self.chrom_info:
+            return self.chrom_info[input_dbkey]
+
+        chrom_info_pair = genome_builds.get_chrom_info(input_dbkey, trans=self.trans, custom_build_hack_get_len_from_fasta_conversion=custom_build_hack_get_len_from_fasta_conversion)
+        if custom_build_hack_get_len_from_fasta_conversion:
+            self.chrom_info[input_dbkey] = chrom_info_pair
+
+        return chrom_info_pair
 
 
 class ToolAction(object):
@@ -263,7 +276,8 @@ class DefaultToolAction(object):
                 incoming["%s|__identifier__" % name] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
-        (chrom_info, db_dataset) = app.genome_builds.get_chrom_info(input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len')
+        (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
+
         if db_dataset:
             inp_data.update({"chromInfo": db_dataset})
         incoming["chromInfo"] = chrom_info
