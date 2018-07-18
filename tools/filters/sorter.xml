@@ -1,113 +1,92 @@
-<tool id="sort1" name="Sort" version="1.1.0">
+<tool id="sort1" name="Sort" version="2.0">
     <description>data in ascending or descending order</description>
-    <requirements>
-        <requirement type="package" version="2.7.13">python</requirement>
-        <requirement type="package" version="2.14">grep</requirement>
-        <requirement type="package" version="4.4">sed</requirement>
-    </requirements>
-    <command detect_errors="aggressive">
-        python '$__tool_directory__/sorter.py'
-
-        --input='$input'
-        --output='$out_file1'
-
-        #if (str($style) == 'num'):
-            #set $style = 'n'
-        #elif (str($style) == 'gennum'):
-            #set $style = 'g'
-        #else:
-            #set $style = ''
-        #end if
-
-        #set $order = '' if (str($order) == 'ASC') else 'r'
-
-        --key=${column},${column}${style}${order}
-
-
+    <command detect_errors="aggressive"><![CDATA[
+	export LC_ALL=C && 
+	sort 
         #for $col in $column_set:
-            #set $other_column = str($col.other_column)
-
-            #if (str($col.other_style) == 'num'):
-                #set $other_style = 'n'
-            #elif (str($col.other_style) == 'gennum'):
-                #set $other_style = 'g'
-            #else:
-                #set $other_style = ''
-            #end if
-
-            #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
-            --key=${other_column},${other_column}${other_style}${other_order}
+            -k $col.column,$col.column$col.style$col.order
         #end for
-        --header $header_lines
-    </command>
+        ## --header $header_lines
+	## --parallel
+        '$input'	
+	> '$out_file'
+    ]]></command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Sort Dataset" />
-        <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true"/>
-        <param name="style" type="select" label="with flavor">
-            <option value="num">Numerical sort</option>
-            <option value="gennum">General numeric sort</option>
-            <option value="alpha">Alphabetical sort</option>
-        </param>
-        <param name="order" type="select" label="everything in">
-            <option value="DESC">Descending order</option>
-            <option value="ASC">Ascending order</option>
-        </param>
-        <repeat name="column_set" title="Column selection">
-            <param name="other_column" label="on column" type="data_column" data_ref="input" accept_default="true" />
-            <param name="other_style" type="select" label="with flavor">
-                <option value="num">Numerical sort</option>
-                <option value="gennum">General numeric sort</option>
-                <option value="alpha">Alphabetical sort</option>
+        <repeat name="column_set" min="1" default="1" title="Column selection">
+            <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true" />
+            <param name="style" type="select" label="with flavor">
+                <option value="">Alphabetical sort</option>
+                <option value="n">Numerical sort</option>
+                <option value="g">General numeric sort</option>
+                <option value="h">Human numeric sort</option>
+                <option value="V">Version sort</option>
+                <option value="d">Dictionary sort</option>
+                <option value="M">Month sort</option>
+		<option value="R">Random sort</option>
             </param>
-            <param name="other_order" type="select" label="everything in">
-                <option value="DESC">Descending order</option>
-                <option value="ASC">Ascending order</option>
+            <param name="order" type="select" label="everything in">
+                <option value="r">Descending order</option>
+                <option value="">Ascending order</option>
             </param>
+        <!-- b ignore leading blanks-->
+        <!-- f ignore case-->
+        <!-- i ignore non printing -->
         </repeat>
+        <!-- -s stable -->
+        <!-- -t field sep (default: non blank to blank transition) -->
         <param name="header_lines" type="integer" value="0" label="Number of header lines to skip" help="# characters are already considered as comments and kept"/>
     </inputs>
     <outputs>
-        <data format_source="input" name="out_file1" metadata_source="input"/>
+        <data format_source="input" name="out_file" metadata_source="input"/>
     </outputs>
     <tests>
         <test>
             <param name="input" value="1.bed"/>
-            <param name="column" value="1"/>
-            <param name="style" value="alpha"/>
-            <param name="order" value="ASC"/>
             <repeat name="column_set">
-                <param name="other_column" value="3"/>
-                <param name="other_style" value="num"/>
-                <param name="other_order" value="DESC"/>
+                <param name="column" value="1"/>
+		<param name="style" value=""/>
+                <param name="order" value=""/>
             </repeat>
-            <output name="out_file1" file="sort_out1.bed"/>
+            <repeat name="column_set">
+                <param name="column" value="3"/>
+                <param name="style" value="n"/>
+                <param name="order" value="r"/>
+            </repeat>
+            <output name="out_file" file="sort_out1.bed"/>
         </test>
         <test>
             <param name="input" value="1.bed"/>
-            <param name="column" value="3"/>
-            <param name="style" value="num"/>
-            <param name="order" value="DESC"/>
             <repeat name="column_set">
-                <param name="other_column" value="1"/>
-                <param name="other_style" value="alpha"/>
-                <param name="other_order" value="ASC"/>
+                <param name="column" value="3"/>
+                <param name="style" value="n"/>
+                <param name="order" value="r"/>
             </repeat>
-            <output name="out_file1" file="sort_out2.bed"/>
+            <repeat name="column_set">
+                <param name="column" value="1"/>
+                <param name="style" value=""/>
+                <param name="order" value=""/>
+            </repeat>
+            <output name="out_file" file="sort_out2.bed"/>
         </test>
         <test>
             <param name="input" value="a.tab"/>
-            <param name="column" value="9"/>
-            <param name="style" value="gennum"/>
-            <param name="order" value="ASC"/>
-            <output name="out_file1" file="sort_out3.tab"/>
+            <repeat name="column_set">
+                <param name="column" value="9"/>
+                <param name="style" value="g"/>
+                <param name="order" value=""/>
+            </repeat>
+            <output name="out_file" file="sort_out3.tab"/>
         </test>
         <test>
             <param name="input" value="sam_with_header.sam"/>
-            <param name="column" value="1"/>
-            <param name="style" value="alpha"/>
-            <param name="order" value="DESC"/>
+            <repeat name="column_set">
+                <param name="column" value="1"/>
+                <param name="style" value=""/>
+                <param name="order" value="r"/>
+            </repeat>
             <param name="header_lines" value="2"/>
-            <output name="out_file1" file="sort_out4.sam"/>
+            <output name="out_file" file="sort_out4.sam"/>
         </test>
     </tests>
     <help>
