@@ -32,40 +32,30 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
 
-    def create(self, webapp_name=None, **kwargs):
+    def create(self, email=None, username=None, password=None, **kwargs):
         """
         Create a new user.
         """
-        # TODO: deserialize and validate here
-        email = kwargs['email']
-        username = kwargs['username']
-        password = kwargs['password']
         self._error_on_duplicate_email(email)
-
         user = model.User(email=email)
         user.set_password_cleartext(password)
         user.username = username
-
         if self.app.config.user_activation_on:
             user.active = False
         else:
             # Activation is off, every new user is active by default.
             user.active = True
-
         self.session().add(user)
         try:
             self.session().flush()
             # TODO:?? flush needed for permissions below? If not, make optional
         except sqlalchemy.exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
-
         # can throw an sqlalx.IntegrityError if username not unique
-
         self.app.security_agent.create_private_user_role(user)
-        if webapp_name == 'galaxy':
-            # We set default user permissions, before we log in and set the default history permissions
-            permissions = self.app.config.new_user_dataset_access_role_default_private
-            self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
+        # We set default user permissions, before we log in and set the default history permissions
+        permissions = self.app.config.new_user_dataset_access_role_default_private
+        self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
         return user
 
     def delete(self, user):
