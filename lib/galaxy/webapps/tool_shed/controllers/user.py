@@ -12,7 +12,7 @@ from galaxy import (
 )
 from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.web import url_for
-from galaxy.webapps.galaxy.controllers.user import User as BaseUser
+from galaxy.webapps.tool_shed.controllers.base_user import User as BaseUser
 
 
 class User(BaseUser):
