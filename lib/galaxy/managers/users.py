@@ -42,7 +42,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         password = kwargs['password']
         self._error_on_duplicate_email(email)
 
-        user = model.User(email=email, password=password)
+        user = model.User(email=email)
+        user.set_password_cleartext(password)
         user.username = username
 
         if self.app.config.user_activation_on:
