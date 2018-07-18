@@ -92,8 +92,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert pair_1_element_1["element_index"] == 0
 
     def test_list_download(self):
-        dataset_collection = self.dataset_collection_populator.create_list_in_history(self.history_id).json()
-        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
+        fetch_response = self.dataset_collection_populator.create_list_in_history(self.history_id, direct_upload=True).json()
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 3, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
@@ -106,8 +106,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
             assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_pair_download(self):
-        dataset_collection = self.dataset_collection_populator.create_pair_in_history(self.history_id).json()
-        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
+        fetch_response = self.dataset_collection_populator.create_pair_in_history(self.history_id, direct_upload=True).json()
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 2, dataset_collection
         hdca_id = dataset_collection['id']
@@ -121,8 +121,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
             assert "%s/%s.%s" % (collection_name, element['element_identifier'], element['object']['file_ext']) == zip_path
 
     def test_list_pair_download(self):
-        dataset_collection = self.dataset_collection_populator.create_list_of_pairs_in_history(self.history_id).json()
-        self.dataset_collection_populator.wait_for_dataset_collection(dataset_collection, assert_ok=True)
+        fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(self.history_id).json()
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         returned_dce = dataset_collection["elements"]
         assert len(returned_dce) == 1, dataset_collection
         list_collection_name = dataset_collection['name']

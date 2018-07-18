@@ -166,7 +166,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
             raise unittest.SkipTest("Test only valid for postgres")
 
     def _scripts_check_argparse_help(self, script):
-        # Test imports and argparse repsonse to --help with 0 exit code.
+        # Test imports and argparse response to --help with 0 exit code.
         output = self._scripts_check_output(script, ["--help"])
         # Test -h, --help in printed output message.
         assert "-h, --help" in output
