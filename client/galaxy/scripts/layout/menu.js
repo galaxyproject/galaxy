@@ -409,7 +409,7 @@ var Tab = Backbone.View.extend({
                 if (options.onclick) {
                     options.onclick();
                 } else {
-                    if (options.target == "__use_router__" && typeof Galaxy.page != 'undefined') {
+                    if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
                         Galaxy.page.router.push(options.url);
                     } else {
                         Galaxy.frame.add(options);
@@ -443,7 +443,7 @@ var Tab = Backbone.View.extend({
                 if (model.get("onclick")) {
                     model.get("onclick")();
                 } else {
-                    if (model.attributes.target == "__use_router__" && typeof Galaxy.page != 'undefined') {
+                    if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
                         Galaxy.page.router.push(model.attributes.url);
                     } else {
                         Galaxy.frame.add(model.attributes);
