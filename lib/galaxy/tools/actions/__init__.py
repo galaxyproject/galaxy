@@ -246,8 +246,10 @@ class DefaultToolAction(object):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
+        inputs_timer = ExecutionTimer()
         history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
-
+        log.info("Collected inputs for tool execute %s" % inputs_timer)
+        setup_timer = ExecutionTimer()
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -404,6 +406,8 @@ class DefaultToolAction(object):
             # Flush all datasets at once.
             return data
 
+        log.info("setup execute %s" % setup_timer)
+
         for name, output in tool.outputs.items():
             if not filter_output(output, incoming):
                 handle_output_timer = ExecutionTimer()
@@ -451,6 +455,7 @@ class DefaultToolAction(object):
                         })
 
                     history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=True)
+                    create_collection_timer = ExecutionTimer()
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
@@ -461,6 +466,7 @@ class DefaultToolAction(object):
                         name=name,
                         **element_kwds
                     )
+                    log.info("Created actual collection for output named %s for tool %s %s" % (name, tool.id, create_collection_timer))
                     log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
                 else:
                     handle_output(name, output)
