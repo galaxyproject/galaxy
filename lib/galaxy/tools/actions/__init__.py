@@ -493,12 +493,14 @@ class DefaultToolAction(object):
 
         log.info("Added output datasets to history %s" % add_datasets_timer)
 
-        create_files_timer = ExecutionTimer()
+        flush_timer = ExecutionTimer()
         # This flush is needed to assign IDs to all the output datasets so the object store
         # can be used to create empty files needed before the job is created and dispatched.
         trans.sa_session.flush()
+        log.info("Flushed output datasets %s" % flush_timer)
+        create_files_timer = ExecutionTimer()
         object_store_populator.create_datasets()
-        log.info("Flushed and created output datasets in object store %s" % create_files_timer)
+        log.info("Created output datasets in object store %s" % create_files_timer)
 
         job_setup_timer = ExecutionTimer()
         # Create the job object
