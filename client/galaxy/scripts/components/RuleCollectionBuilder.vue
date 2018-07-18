@@ -1013,10 +1013,7 @@ export default {
             );
         },
         showAddNameTag() {
-            return (
-                this.importType == "collections" &&
-                this.elementsType != "collection_contents"
-            );
+            return this.importType == "collections" && this.elementsType != "collection_contents";
         },
         titleFinish() {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {

@@ -728,9 +728,7 @@ const MAPPING_TARGETS = {
     },
     name_tag: {
         label: _l("Name Tag"),
-        help: _l(
-            "Add a name tag or hash tag based on the specified column value for imported datasets."
-        ),
+        help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
         importType: "datasets",
         modes: ["raw", "ftp"]
     },
@@ -740,7 +738,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
         ),
-        modes: ["raw", "ftp", "library_datasets"],
+        modes: ["raw", "ftp", "library_datasets"]
     },
     group_tags: {
         multiple: true,
@@ -748,7 +746,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
         ),
-        modes: ["raw", "ftp", "library_datasets"],
+        modes: ["raw", "ftp", "library_datasets"]
     },
     name: {
         label: _l("Name"),
