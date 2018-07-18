@@ -2535,12 +2535,17 @@ def db_next_hid(self, n=1):
     :rtype:     int
     :returns:   the next history id
     """
-    conn = object_session(self).connection()
+    session = object_session(self)
+    conn = session.connection()
     table = self.table
     trans = conn.begin()
     try:
-        next_hid = select([table.c.hid_counter], table.c.id == self.id, for_update=True).scalar()
-        table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
+        if "postgres" not in session.bind.dialect.name:
+            next_hid = select([table.c.hid_counter], table.c.id == self.id, for_update=True).scalar()
+            table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
+        else:
+            stmt = table.update().where(table.c.id == self.id).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
+            next_hid = conn.execute(stmt).scalar() - n
         trans.commit()
         return next_hid
     except Exception:
