@@ -225,7 +225,7 @@ class BaseDatasetPopulator(object):
 
     @contextlib.contextmanager
     def test_history(self, **kwds):
-        # TODO: In the future allow targetting a specfic history here
+        # TODO: In the future allow targeting a specific history here
         # and/or deleting everything in the resulting history when done.
         # These would be cool options for remote Galaxy test execution.
         try:
@@ -765,7 +765,7 @@ class BaseDatasetCollectionPopulator(object):
 
         if isinstance(contents, list):
             for i, contents_level in enumerate(contents):
-                # If given a full colleciton definition pass as is.
+                # If given a full collection definition pass as is.
                 if isinstance(contents_level, dict):
                     elements.append(contents_level)
                     continue
@@ -825,9 +825,9 @@ class BaseDatasetCollectionPopulator(object):
         )
         return payload
 
-    def wait_for_fetched_collection(self, fetch_repsonse):
-        self.dataset_populator.wait_for_job(fetch_repsonse["jobs"][0]["id"], assert_ok=True)
-        initial_dataset_collection = fetch_repsonse["outputs"][0]
+    def wait_for_fetched_collection(self, fetch_response):
+        self.dataset_populator.wait_for_job(fetch_response["jobs"][0]["id"], assert_ok=True)
+        initial_dataset_collection = fetch_response["outputs"][0]
         dataset_collection = self.dataset_populator.get_history_collection_details(initial_dataset_collection["history_id"], hid=initial_dataset_collection["hid"])
         return dataset_collection
 
@@ -947,12 +947,12 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             if "name" in value:
                 new_collection_kwds["name"] = value["name"]
             if collection_type == "list:paired":
-                fetch_repsonse = dataset_collection_populator.create_list_of_pairs_in_history(history_id, contents=elements, **new_collection_kwds).json()
+                fetch_response = dataset_collection_populator.create_list_of_pairs_in_history(history_id, contents=elements, **new_collection_kwds).json()
             elif collection_type == "list":
-                fetch_repsonse = dataset_collection_populator.create_list_in_history(history_id, contents=elements, direct_upload=True, **new_collection_kwds).json()
+                fetch_response = dataset_collection_populator.create_list_in_history(history_id, contents=elements, direct_upload=True, **new_collection_kwds).json()
             else:
-                fetch_repsonse = dataset_collection_populator.create_pair_in_history(history_id, contents=elements or None, direct_upload=True, **new_collection_kwds).json()
-            hdca = dataset_populator.ds_entry(fetch_repsonse["outputs"][0])
+                fetch_response = dataset_collection_populator.create_pair_in_history(history_id, contents=elements or None, direct_upload=True, **new_collection_kwds).json()
+            hdca = dataset_populator.ds_entry(fetch_response["outputs"][0])
             label_map[key] = hdca
             inputs[key] = hdca
             has_uploads = True
