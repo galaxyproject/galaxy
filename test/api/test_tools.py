@@ -875,7 +875,7 @@ class ToolsTestCase(api.ApiTestCase):
         self.assertEquals(len(outputs), 2)
         self.assertEquals(len(implicit_collections), 1)
         for output in outputs:
-            assert output["file_ext"] == "txt"
+            assert output["file_ext"] == "txt", output
 
     @skip_without_tool("output_filter_with_input")
     def test_map_over_with_output_filter_no_filtering(self):
@@ -1266,8 +1266,8 @@ class ToolsTestCase(api.ApiTestCase):
         assert implicit_collection["collection_type"] == "list:paired"
         assert len(implicit_collection["elements"]) == 2
         first_element, second_element = implicit_collection["elements"]
-        assert first_element["element_identifier"] == "test0"
-        assert second_element["element_identifier"] == "test1"
+        assert first_element["element_identifier"] == "test0", first_element
+        assert second_element["element_identifier"] == "test1", second_element
 
         first_object = first_element["object"]
         assert first_object["collection_type"] == "paired"
@@ -1596,7 +1596,7 @@ class ToolsTestCase(api.ApiTestCase):
         output1, output2 = outputs
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        assert output1_content.strip() == "123\n456"
+        assert output1_content.strip() == "123\n456", output1_content
         assert len(output2_content.strip().split("\n")) == 3, output2_content
 
     @skip_without_tool("collection_paired_test")
@@ -1708,17 +1708,29 @@ class ToolsTestCase(api.ApiTestCase):
         return tool_ids
 
     def __build_nested_list(self, history_id):
-        hdca1_id = self.__build_pair(history_id, ["123", "456"])
-        hdca2_id = self.__build_pair(history_id, ["789", "0ab"])
-
-        response = self.dataset_collection_populator.create_list_from_pairs(history_id, [hdca1_id, hdca2_id])
+        response = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "123", "name": "forward", "ext": "txt"},
+                    {"src": "pasted", "paste_content": "456", "name": "reverse", "ext": "txt"},
+                ]
+            },
+            {
+                "name": "test1",
+                "elements": [
+                    {"src": "pasted", "paste_content": "789", "name": "forward", "ext": "txt"},
+                    {"src": "pasted", "paste_content": "0ab", "name": "reverse", "ext": "txt"},
+                ]
+            }
+        ])
         self._assert_status_code_is(response, 200)
-        hdca_list_id = response.json()["id"]
+        hdca_list_id = response.json()["outputs"][0]["id"]
         return hdca_list_id
 
     def __build_pair(self, history_id, contents):
-        create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents)
-        hdca_id = create_response.json()["id"]
+        create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents, direct_upload=True)
+        hdca_id = create_response.json()["outputs"][0]["id"]
         return hdca_id
 
 

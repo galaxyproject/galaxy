@@ -34,7 +34,7 @@ from sqlalchemy import (
     type_coerce,
     types)
 from sqlalchemy.ext import hybrid
-from sqlalchemy.orm import aliased, joinedload, object_session
+from sqlalchemy.orm import aliased, joinedload, object_session, undefer
 from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
@@ -158,6 +158,28 @@ class UsesCreateAndUpdateTime(object):
     def seconds_since_created(self):
         create_time = self.create_time or galaxy.model.orm.now.now()  # In case not yet flushed
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
+
+
+def cached_id(galaxy_model_object):
+    """Get model object id attribute without a firing a database query.
+
+    Useful to fetching the id of a typical Galaxy model object after a flush,
+    where SA is going to mark the id attribute as unloaded but we know the
+    id is immutable and so we can use the database identity to fetch.
+
+    With Galaxy's default SA initialization - any flush marks all attributes
+    as unloaded - even objects completely unrelated to the flushed changes
+    and even attributes we know to be immutable like id. See test_galaxy_mapping.py
+    for verification of this behavior. This method is a workaround that
+    uses the fact we know all Galaxy objects use the id attribute as identity
+    and SA internals to infer the previously loaded ID value. I tried
+    digging into the SA internals extensively and couldn't find a way to get
+    the previously loaded values after a flush to allow a generalization of this
+    for other attributes but I couldn't find anything.
+    """
+    identity = galaxy_model_object._sa_instance_state.identity
+    assert len(identity) == 1
+    return identity[0]
 
 
 class JobLike(object):
@@ -1434,7 +1456,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             if set_genome:
                 self.genome_build = genome_build
         for dataset in datasets:
-            dataset.history_id = self.id
+            dataset.history_id = cached_id(self)
         return datasets
 
     def add_dataset_collection(self, history_dataset_collection, set_hid=True):
@@ -3335,6 +3357,42 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
         return top_level_populated
 
     @property
+    def dataset_action_tuples(self):
+        if not hasattr(self, '_dataset_action_tuples'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+            dataset_permission = alias(DatasetPermissions.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            depth_collection_type = self.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_from = select_from.outerjoin(dataset_permission, dataset.c.id == dataset_permission.c.dataset_id)
+
+            select_stmt = select([dataset_permission.c.action, dataset_permission.c.role_id]).select_from(select_from).where(dc.c.id == self.id).distinct()
+
+            _dataset_action_tuples = []
+            for _dataset_action_tuple in db_session.execute(select_stmt).fetchall():
+                _dataset_action_tuples.append(_dataset_action_tuple)
+
+            self._dataset_action_tuples = _dataset_action_tuples
+
+        return self._dataset_action_tuples
+
+    @property
     def waiting_for_elements(self):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:
@@ -3366,6 +3424,26 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
             else:
                 instance = element.dataset_instance
                 instances.append(instance)
+        return instances
+
+    @property
+    def dataset_instances_with_tags(self):
+        instances = []
+        if ":" not in self.collection_type:
+            db_session = object_session(self)
+            elements = db_session.query(
+                DatasetCollectionElement
+            ).filter_by(
+                dataset_collection_id=self.id
+            ).options(
+                joinedload("hda"),
+                joinedload("hda.tags"),
+                undefer("hda._metadata"),
+            ).all()
+            for element in elements:
+                instances.append(element.hda)
+        else:
+            instances.extend(element.child_collection.dataset_instances_with_tags)
         return instances
 
     @property

@@ -3,6 +3,7 @@ import errno
 import json
 import os
 import shutil
+import StringIO
 import sys
 import tempfile
 
@@ -210,6 +211,10 @@ def _has_src_to_path(item):
         path = sniff.stream_url_to_file(url)
         if name is None:
             name = url.split("/")[-1]
+    elif src == "pasted":
+        path = sniff.stream_to_file(StringIO.StringIO(item["paste_content"]))
+        if name is None:
+            name = "Pasted Entry"
     else:
         assert src == "path"
         path = item["path"]

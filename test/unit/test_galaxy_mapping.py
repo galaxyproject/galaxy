@@ -4,6 +4,7 @@ import unittest
 import uuid
 
 from six import text_type
+from sqlalchemy import inspect
 
 import galaxy.datatypes.registry
 import galaxy.model
@@ -376,6 +377,70 @@ class MappingTests(unittest.TestCase):
         assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
 
         assert contents_iter_names(ids=[d1.id, d3.id]) == ["1", "3"]
+
+    def _non_empty_flush(self):
+        model = self.model
+        lf = model.LibraryFolder(name="RootFolder")
+        session = self.session()
+        session.add(lf)
+        session.flush()
+
+    def test_flush_refreshes(self):
+        model = self.model
+        user = model.User(
+            email="testworkflows@bx.psu.edu",
+            password="password"
+        )
+        galaxy_session = model.GalaxySession()
+        galaxy_session_other = model.GalaxySession()
+        galaxy_session.user = user
+        galaxy_session_other.user = user
+        self.persist(user, galaxy_session_other, galaxy_session)
+        galaxy_session_id = galaxy_session.id
+
+        self.expunge()
+        session = self.session()
+        galaxy_model_object = self.query(model.GalaxySession).get(galaxy_session_id)
+        expected_id = galaxy_model_object.id
+
+        # id loaded as part of the object query, could be any non-deferred attribute.
+        assert 'id' not in inspect(galaxy_model_object).unloaded
+
+        # Perform an empty flush, verify empty flush doesn't reload all attributes.
+        session.flush()
+        assert 'id' not in inspect(galaxy_model_object).unloaded
+
+        # However, flushing anything non-empty - even unrelated object will invalidate
+        # the session ID.
+        self._non_empty_flush()
+        assert 'id' in inspect(galaxy_model_object).unloaded
+
+        # Fetch the ID loads the value from the database
+        assert expected_id == galaxy_model_object.id
+        assert 'id' not in inspect(galaxy_model_object).unloaded
+
+        # Using cached_id instead does not exhibit this behavior.
+        self._non_empty_flush()
+        assert expected_id == galaxy.model.cached_id(galaxy_model_object)
+        assert 'id' in inspect(galaxy_model_object).unloaded
+
+        # Keeping the following failed experiments here for future reference,
+        # I probed the internals of the attribute tracking and couldn't find an
+        # alternative, generalized way to get the previously loaded value for unloaded
+        # attributes.
+        # print(galaxy_model_object._sa_instance_state.attrs.id)
+        # print(dir(galaxy_model_object._sa_instance_state.attrs.id))
+        # print(galaxy_model_object._sa_instance_state.attrs.id.loaded_value)
+        # print(galaxy_model_object._sa_instance_state.attrs.id.state)
+        # print(galaxy_model_object._sa_instance_state.attrs.id.load_history())
+        # print(dir(galaxy_model_object._sa_instance_state.attrs.id.load_history()))
+        # print(galaxy_model_object._sa_instance_state.identity)
+        # print(dir(galaxy_model_object._sa_instance_state))
+        # print(galaxy_model_object._sa_instance_state.expired_attributes)
+        # print(galaxy_model_object._sa_instance_state.expired)
+        # print(galaxy_model_object._sa_instance_state._instance_dict().keys())
+        # print(dir(galaxy_model_object._sa_instance_state._instance_dict))
+        # assert False
 
     def test_workflows(self):
         model = self.model

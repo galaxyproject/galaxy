@@ -54,6 +54,12 @@ class DefaultToolAction(object):
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
+        all_permissions = {}
+
+        def record_permission(action, role_id):
+            if action not in all_permissions:
+                all_permissions[action] = set()
+            all_permissions[action].add(role_id)
 
         def visitor(input, value, prefix, parent=None, **kwargs):
 
@@ -74,6 +80,11 @@ class DefaultToolAction(object):
 
                 if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
                     raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                permissions = trans.app.security_agent.get_permissions(data.dataset)
+                for action, roles in permissions.items():
+                    for role in roles:
+                        record_permission(action.action, model.cached_id(role))
+
                 return data
             if isinstance(input, DataToolParameter):
                 if isinstance(value, list):
@@ -124,25 +135,28 @@ class DefaultToolAction(object):
                 if not value:
                     return
 
-                dataset_instances = []
+                collection = None
                 if hasattr(value, 'child_collection'):
                     # if we are mapping a collection over a tool, we only require the child_collection
-                    dataset_instances = value.child_collection.dataset_instances
+                    collection = value.child_collection
                 else:
                     # else the tool takes a collection as input so we need everything
-                    dataset_instances = value.collection.dataset_instances
+                    collection = value.collection
 
-                for i, v in enumerate(dataset_instances):
-                    data = v
-                    if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                action_tuples = collection.dataset_action_tuples
+                if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
+                    raise Exception("User does not have permission to use a dataset provided for input.")
+                for action, role_id in action_tuples:
+                    record_permission(action, role_id)
+
+                for i, v in enumerate(collection.dataset_instances_with_tags):
                     # Skipping implicit conversion stuff for now, revisit at
                     # some point and figure out if implicitly converting a
                     # dataset collection makes senese.
-                    input_datasets[prefix + input.name + str(i + 1)] = data
+                    input_datasets[prefix + input.name + str(i + 1)] = v
 
         tool.visit_inputs(param_values, visitor)
-        return input_datasets
+        return input_datasets, all_permissions
 
     def collect_input_dataset_collections(self, tool, param_values):
         def append_to_key(the_dict, key, value):
@@ -198,7 +212,7 @@ class DefaultToolAction(object):
         # input datasets can process these normally.
         inp_dataset_collections = self.collect_input_dataset_collections(tool, incoming)
         # Collect any input datasets from the incoming parameters
-        inp_data = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles)
+        inp_data, all_permissions = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles)
 
         # grap tags from incoming HDAs
         preserved_tags = {}
@@ -218,7 +232,7 @@ class DefaultToolAction(object):
                     for tag in collection.auto_propagated_tags:
                         preserved_tags[tag.value] = tag
 
-        return history, inp_data, inp_dataset_collections, preserved_tags
+        return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
     def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
         """
@@ -232,8 +246,10 @@ class DefaultToolAction(object):
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
-
+        inputs_timer = ExecutionTimer()
+        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+        log.info("Collected inputs for tool execute %s" % inputs_timer)
+        setup_timer = ExecutionTimer()
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -272,7 +288,7 @@ class DefaultToolAction(object):
             # Determine output dataset permission/roles list
             existing_datasets = [inp for inp in inp_data.values() if inp]
             if existing_datasets:
-                output_permissions = app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+                output_permissions = app.security_agent.guess_derived_permissions(all_permissions)
             else:
                 # No valid inputs, we will use history defaults
                 output_permissions = app.security_agent.history_get_default_permissions(history)
@@ -347,15 +363,10 @@ class DefaultToolAction(object):
                     dataset_collection_elements[name].hda = data
                 trans.sa_session.add(data)
                 if not completed_job:
-                    trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
+                    trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True, flush=False)
             data.copy_tags_to(preserved_tags)
-
-            # Must flush before setting object store id currently.
-            # TODO: optimize this.
-
-            trans.sa_session.flush()
             if not completed_job:
-                object_store_populator.set_object_store_id(data)
+                object_store_populator.register(data)
 
             # This may not be neccesary with the new parent/child associations
             data.designation = name
@@ -394,6 +405,8 @@ class DefaultToolAction(object):
             self.set_metadata_defaults(output, data, tool, on_text, trans, incoming, history, wrapped_params.params, job_params)
             # Flush all datasets at once.
             return data
+
+        log.info("setup execute %s" % setup_timer)
 
         for name, output in tool.outputs.items():
             if not filter_output(output, incoming):
@@ -442,6 +455,7 @@ class DefaultToolAction(object):
                         })
 
                     history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=True)
+                    create_collection_timer = ExecutionTimer()
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
@@ -452,6 +466,7 @@ class DefaultToolAction(object):
                         name=name,
                         **element_kwds
                     )
+                    log.info("Created actual collection for output named %s for tool %s %s" % (name, tool.id, create_collection_timer))
                     log.info("Handled collection output named %s for tool %s %s" % (name, tool.id, handle_output_timer))
                 else:
                     handle_output(name, output)
@@ -477,17 +492,40 @@ class DefaultToolAction(object):
             parent_dataset.children.append(child_dataset)
 
         log.info("Added output datasets to history %s" % add_datasets_timer)
+
+        create_files_timer = ExecutionTimer()
+        # This flush is needed to assign IDs to all the output datasets so the object store
+        # can be used to create empty files needed before the job is created and dispatched.
+        trans.sa_session.flush()
+        object_store_populator.create_datasets()
+        log.info("Flushed and created output datasets in object store %s" % create_files_timer)
+
         job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
-        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles)
-        self._record_outputs(job, out_data, output_collections)
+        job_associations = []
+        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections, job_associations)
+        self._record_outputs(job, out_data, output_collections, job_associations)
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = dumps(job_params)
         job.set_handler(tool.get_job_handler(job_params))
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
+        # We don't need IDs for these input associations in this thread anyway, so use SQLachemy's
+        # bulk insert functionality to place these input datasets in the database more rapidly if there
+        # are many of them. This uses optimized INSERTs and prevents Galaxy from needing to read the
+        # results back and update the association objects.
+        bulk_job_input_assocs = None
+        handler = None
+        if len(job.input_datasets) > 10:
+            bulk_job_input_assocs = job.input_datasets
+            job.input_datasets = []
+
+            handler = job.handler
+            job.handler = "*noneyet*"
+
+        sa_session = trans.sa_session
         trans.sa_session.add(job)
         # Now that we have a job id, we can remap any outputs if this is a rerun and the user chose to continue dependent jobs
         # This functionality requires tracking jobs in the database.
@@ -498,9 +536,29 @@ class DefaultToolAction(object):
                                      current_job=job,
                                      out_data=out_data)
         log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
-
         job_flush_timer = ExecutionTimer()
         trans.sa_session.flush()
+        job_id = job.id
+        for job_association in job_associations:
+            job_association.job_id = job_id
+            trans.sa_session.add(job_association)
+        trans.sa_session.flush()
+        if bulk_job_input_assocs is not None:
+            for input_assoc in bulk_job_input_assocs:
+                input_assoc.job_id = job_id
+                assert job_id
+
+            t = sa_session.begin()
+            try:
+                sa_session.bulk_save_objects(bulk_job_input_assocs)
+                t.commit()
+            except Exception:
+                t.rollback()
+                raise
+
+            job.handler = handler
+            trans.sa_session.flush()
+
         log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
@@ -628,10 +686,10 @@ class DefaultToolAction(object):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
             if type(galaxy_session) == trans.model.GalaxySession:
-                job.session_id = galaxy_session.id
+                job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
-            job.user_id = trans.user.id
-        job.history_id = history.id
+            job.user_id = model.cached_id(trans.user)
+        job.history_id = model.cached_id(history)
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.
@@ -640,7 +698,7 @@ class DefaultToolAction(object):
             job.tool_version = "1.0.0"
         return job, galaxy_session
 
-    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles):
+    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections, job_associations):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
@@ -657,7 +715,7 @@ class DefaultToolAction(object):
                     # FIXME: when recording inputs for special tools (e.g. ModelOperationToolAction),
                     # dataset_collection is actually a DatasetCollectionElement, which can't be added
                     # to a jobs' input_dataset_collection relation, which expects HDCA instances
-                    job.add_input_dataset_collection(name, dataset_collection)
+                    job_associations.append(model.JobToInputDatasetCollectionAssociation(name, dataset_collection))
 
         # If this an input collection is a reduction, we expanded it for dataset security, type
         # checking, and such, but the persisted input must be the original collection
@@ -679,34 +737,24 @@ class DefaultToolAction(object):
             tool.visit_inputs(incoming, restore_reduction_visitor)
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
-            job.add_parameter(name, value)
-        self._check_input_data_access(trans, job, inp_data, current_user_roles)
+            job_associations.append(model.JobParameter(name, value))
 
-    def _record_outputs(self, job, out_data, output_collections):
+        for name, dataset in inp_data.items():
+            if dataset:
+                job_associations.append(model.JobToInputDatasetAssociation(name, dataset))
+            else:
+                job_associations.append(model.JobToInputDatasetAssociation(name, None))
+
+    def _record_outputs(self, job, out_data, output_collections, job_associations):
         out_collections = output_collections.out_collections
         out_collection_instances = output_collections.out_collection_instances
         for name, dataset in out_data.items():
-            job.add_output_dataset(name, dataset)
+            job_associations.append(model.JobToOutputDatasetAssociation(name, dataset))
         for name, dataset_collection in out_collections.items():
-            job.add_implicit_output_dataset_collection(name, dataset_collection)
+            job_associations.append(model.JobToImplicitOutputDatasetCollectionAssociation(name, dataset_collection))
         for name, dataset_collection_instance in out_collection_instances.items():
-            job.add_output_dataset_collection(name, dataset_collection_instance)
+            job_associations.append(model.JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance))
             dataset_collection_instance.job = job
-
-    def _check_input_data_access(self, trans, job, inp_data, current_user_roles):
-        access_timer = ExecutionTimer()
-        for name, dataset in inp_data.items():
-            if dataset:
-                if not trans.app.security_agent.can_access_dataset(current_user_roles, dataset.dataset):
-                    raise Exception("User does not have permission to use a dataset (%s) provided for input." % dataset.id)
-                if dataset in trans.sa_session:
-                    job.add_input_dataset(name, dataset=dataset)
-                else:
-                    job.add_input_dataset(name, dataset_id=dataset.id)
-            else:
-                job.add_input_dataset(name, None)
-        job_str = job.log_str()
-        log.info("Verified access to datasets for %s %s" % (job_str, access_timer))
 
     def get_output_name(self, output, dataset, tool, on_text, trans, incoming, history, params, job_params):
         if output.label:
@@ -747,17 +795,24 @@ class ObjectStorePopulator(object):
     def __init__(self, app):
         self.object_store = app.object_store
         self.object_store_id = None
+        self.objects = []
 
-    def set_object_store_id(self, data):
+    def register(self, data):
         # Create an empty file immediately.  The first dataset will be
         # created in the "default" store, all others will be created in
         # the same store as the first.
-        data.dataset.object_store_id = self.object_store_id
+        dataset = data.dataset
+        dataset.object_store_id = self.object_store_id
+        self.objects.append(dataset)
         try:
-            self.object_store.create(data.dataset)
+            self.object_store.set_object_store_id(dataset)
         except ObjectInvalid:
-            raise Exception('Unable to create output dataset: object store is full')
-        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
+            raise Exception('Unable to set object store id for output dataset: object store is full')
+        self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output
+
+    def create_datasets(self):
+        for obj in self.objects:
+            self.object_store.create(obj)
 
 
 class OutputCollections(object):

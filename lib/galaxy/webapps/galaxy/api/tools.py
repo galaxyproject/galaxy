@@ -6,6 +6,7 @@ from six.moves.urllib.parse import unquote_plus
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.util import ExecutionTimer
 from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
 from galaxy.visualization.genomes import GenomeRegion
@@ -396,6 +397,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             'inputs': {
                 'request_version': request_version,
                 'request_json': request,
+                'file_count': str(len(files_payload))
             },
         }
         create_payload.update(files_payload)
@@ -470,8 +472,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         # I think it should be a top-level parameter, but because the selector is implemented
         # as a regular tool parameter we accept both.
         use_cached_job = payload.get('use_cached_job', False) or util.string_as_bool(inputs.get('use_cached_job', 'false'))
+        handle_input_timer = ExecutionTimer()
         vars = tool.handle_input(trans, incoming, history=target_history, use_cached_job=use_cached_job)
-
+        log.info("tool.handle_input called for API request %s" % handle_input_timer)
         # TODO: check for errors and ensure that output dataset(s) are available.
         output_datasets = vars.get('out_data', [])
         rval = {'outputs': [], 'output_collections': [], 'jobs': [], 'implicit_collections': []}
@@ -491,8 +494,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             outputs.append(trans.security.encode_dict_ids(output_dict, skip_startswith="metadata_"))
 
-        for job in vars.get('jobs', []):
-            rval['jobs'].append(self.encode_all_ids(trans, job.to_dict(view='collection'), recursive=True))
+        for job_dict in vars.get('job_dicts', []):
+            rval['jobs'].append(self.encode_all_ids(trans, job_dict, recursive=True))
 
         for output_name, collection_instance in vars.get('output_collections', []):
             history = target_history or trans.history
