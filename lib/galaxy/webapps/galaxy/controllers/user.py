@@ -22,6 +22,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.managers import users
 from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (
     transform_publicname,
@@ -34,7 +35,6 @@ from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
     CreatesApiKeysMixin,
-    CreatesUsersMixin,
     UsesFormDefinitionsMixin
 )
 from galaxy.web.form_builder import CheckboxField
@@ -82,9 +82,13 @@ class UserOpenIDGrid(grids.Grid):
         return trans.sa_session.query(self.model_class).filter(self.model_class.user_id == trans.user.id)
 
 
-class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, CreatesApiKeysMixin):
+class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
+
+    def __init__(self, app):
+        super(User, self).__init__(app)
+        self.user_manager = users.UserManager(app)
 
     @web.expose
     def openid_auth(self, trans, **kwd):
@@ -814,7 +818,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user = self.create_user(trans=trans, email=email, username=username, password=password)
+        user = self.user_manager.create(trans=trans, email=email, username=username, password=password)
         error = ''
         success = True
         if trans.webapp.name == 'galaxy':
