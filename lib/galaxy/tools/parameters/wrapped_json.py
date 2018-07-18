@@ -78,7 +78,10 @@ def _json_wrap_input(input, value, handle_files="skip"):
         json_value = _cast_if_not_none(value, bool)
     elif input_type == "data_column":
         # value is a SelectToolParameterWrapper()
-        json_value = [int(_) for _ in _cast_if_not_none(value.value, list)]
+        if input.multiple:
+            json_value = [int(_) for _ in _cast_if_not_none(value.value, list)]
+        else:
+            json_value = [_cast_if_not_none(value.value, int)]
     else:
         raise NotImplementedError("input_type [%s] not implemented" % input_type)
 
