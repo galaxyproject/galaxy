@@ -49,7 +49,6 @@ from galaxy.web.base.controller import (
     BaseAPIController,
     BaseUIController,
     CreatesApiKeysMixin,
-    CreatesUsersMixin,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
@@ -59,7 +58,7 @@ from galaxy.web.form_builder import AddressField
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
+class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
         super(UserAPIController, self).__init__(app)

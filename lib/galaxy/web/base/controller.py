@@ -339,32 +339,6 @@ class Datatype(object):
 #
 
 
-class CreatesUsersMixin(object):
-    """
-    Mixin centralizing logic for user creation between web and API controller.
-
-    Web controller handles additional features such e-mail subscription, activation,
-    user forms, etc.... API created users are much more vanilla for the time being.
-    """
-
-    def create_user(self, trans, email, username, password):
-        user = trans.app.model.User(email=email)
-        user.set_password_cleartext(password)
-        user.username = username
-        if trans.app.config.user_activation_on:
-            user.active = False
-        else:
-            user.active = True  # Activation is off, every new user is active by default.
-        trans.sa_session.add(user)
-        trans.sa_session.flush()
-        trans.app.security_agent.create_private_user_role(user)
-        if trans.webapp.name == 'galaxy':
-            # We set default user permissions, before we log in and set the default history permissions
-            trans.app.security_agent.user_set_default_permissions(user,
-                                                                  default_access_private=trans.app.config.new_user_dataset_access_role_default_private)
-        return user
-
-
 class CreatesApiKeysMixin(object):
     """
     Mixing centralizing logic for creating API keys for user objects.
