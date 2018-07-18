@@ -202,7 +202,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             else:
-                user = self.user_manager.create(trans=trans, email=email, username=username, password=password)
+                user = self.user_manager.create(email=email, username=username, password=password)
         else:
             raise exceptions.NotImplemented()
         item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id,

@@ -818,7 +818,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user = self.user_manager.create(trans=trans, email=email, username=username, password=password)
+        user = self.user_manager.create(email=email, username=username, password=password)
         error = ''
         success = True
         if trans.webapp.name == 'galaxy':
