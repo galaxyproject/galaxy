@@ -34,7 +34,6 @@ from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
     CreatesApiKeysMixin,
-    CreatesUsersMixin,
     UsesFormDefinitionsMixin
 )
 from galaxy.web.form_builder import CheckboxField
@@ -82,9 +81,26 @@ class UserOpenIDGrid(grids.Grid):
         return trans.sa_session.query(self.model_class).filter(self.model_class.user_id == trans.user.id)
 
 
-class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, CreatesApiKeysMixin):
+class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     user_openid_grid = UserOpenIDGrid()
     installed_len_files = None
+
+    def create_user(self, trans, email, username, password):
+        user = trans.app.model.User(email=email)
+        user.set_password_cleartext(password)
+        user.username = username
+        if trans.app.config.user_activation_on:
+            user.active = False
+        else:
+            user.active = True  # Activation is off, every new user is active by default.
+        trans.sa_session.add(user)
+        trans.sa_session.flush()
+        trans.app.security_agent.create_private_user_role(user)
+        if trans.webapp.name == 'galaxy':
+            # We set default user permissions, before we log in and set the default history permissions
+            trans.app.security_agent.user_set_default_permissions(user,
+                                                                  default_access_private=trans.app.config.new_user_dataset_access_role_default_private)
+        return user
 
     @web.expose
     def openid_auth(self, trans, **kwd):
