@@ -14,6 +14,19 @@
             </b-card>
         </b-form>
         <br>
+        <b-form @submit="submit">
+            <b-card header="OpenID login">
+                <b-alert :show="openidMessageShow" :variant="openidMessageVariant" v-html="openidMessageText"/>
+                <b-form-group label="Username or Email Address">
+                    <b-form-input type="text" v-model="openidUsername"/>
+                </b-form-group>
+                <b-form-group label="Password">
+                    <b-form-input type="password" v-model="openidPassword"/>
+                </b-form-group>
+                <b-button type="submit">Login with OpenID</b-button>
+            </b-card>
+        </b-form>
+        <br>
         <b-embed v-if="show_welcome_with_login"
             type="iframe"
             aspect="16by9"

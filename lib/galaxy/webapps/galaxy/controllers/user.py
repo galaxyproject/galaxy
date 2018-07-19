@@ -412,53 +412,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     @expose_api_anonymous_and_sessionless
     def login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
-        payload = payload or {}
-        username = payload.get("username")
-        password = payload.get("password")
-        if not username or not password:
-            return self.message_exception(trans, "Please specify a username and password.")
-        user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == username,
-            trans.app.model.User.table.c.username == username
-        )).first()
-        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
-        if user is None:
-            return self.message_exception(trans, "This account could not be found. Contact your local Galaxy administrator if the problem persists.")
-        elif user.deleted:
-            message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
-            if trans.app.config.error_email_to is not None:
-                message += " Contact: %s" % trans.app.config.error_email_to
-            return self.message_exception(trans, message)
-        elif user.external:
-            message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-            if trans.app.config.error_email_to is not None:
-                message += " Contact: %s" % trans.app.config.error_email_to
-            return self.message_exception(trans, message)
-        elif not trans.app.auth_manager.check_password(user, password):
-            return self.message_exception(trans, "Invalid password.")
-        elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
-            if (trans.app.config.activation_grace_period != 0):  # grace period is ON
-                if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message, status = self.resend_verification_email(trans, user.email, user.username, unescaped=True)
-                    return self.message_exception(trans, message, sanitize=False)
-                else:  # User is within the grace period, let him log in.
-                    trans.handle_user_login(user)
-                    trans.log_event("User logged in")
-            else:  # Grace period is off. Login is disabled and user will have the activation email resent.
-                message, status = self.resend_verification_email(trans, user.email, user.username)
-                return self.message_exception(trans, message, sanitize=False)
-        else:  # activation is OFF
-            pw_expires = trans.app.config.password_expiration_period
-            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
-                # Password is expired, we don't log them in.
-                return self.message_exception(trans, "Your password has expired. Please change it to access Galaxy.")
-            trans.handle_user_login(user)
-            trans.log_event("User logged in")
-            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
-                # If password is about to expire, modify message to state that.
-                expiredate = datetime.today() - user.last_password_change + pw_expires
-                return {"message": "Your password will expire in %s days." % expiredate.days, "status": "warning"}
-        return {"message": "User logged in."}
+        return self.__validate_login(trans, payload, **kwd)
 
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
                                               auto_create_groups=False, auto_assign_roles_to_groups_only=False):
@@ -495,6 +449,56 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.log_event("Assigning role to newly created user")
                 trans.app.security_agent.associate_user_role(user, role)
 
+    def __validate_login(self, trans, payload=None, **kwd):
+        '''Handle Galaxy Log in'''
+        payload = payload or {}
+        username = payload.get("username")
+        password = payload.get("password")
+        if not username or not password:
+            return self.message_exception(trans, "Please specify a username and password.")
+        user = trans.sa_session.query(trans.app.model.User).filter(or_(
+            trans.app.model.User.table.c.email == username,
+            trans.app.model.User.table.c.username == username
+        )).first()
+        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
+        if user is None:
+            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
+        elif user.deleted:
+            message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
+            if trans.app.config.error_email_to is not None:
+                message += " Contact: %s" % trans.app.config.error_email_to
+            return self.message_exception(trans, message)
+        elif user.external:
+            message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
+            if trans.app.config.error_email_to is not None:
+                message += " Contact: %s" % trans.app.config.error_email_to
+            return self.message_exception(trans, message)
+        elif not trans.app.auth_manager.check_password(user, password):
+            return self.message_exception(trans, "Invalid password.")
+        elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
+            if (trans.app.config.activation_grace_period != 0):  # grace period is ON
+                if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
+                    message, status = self.resend_verification_email(trans, user.email, user.username, unescaped=True)
+                    return self.message_exception(trans, message, sanitize=False)
+                else:  # User is within the grace period, let him log in.
+                    trans.handle_user_login(user)
+                    trans.log_event("User logged in")
+            else:  # Grace period is off. Login is disabled and user will have the activation email resent.
+                message, status = self.resend_verification_email(trans, user.email, user.username)
+                return self.message_exception(trans, message, sanitize=False)
+        else:  # activation is OFF
+            pw_expires = trans.app.config.password_expiration_period
+            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
+                # Password is expired, we don't log them in.
+                return self.message_exception(trans, "Your password has expired. Please change it to access Galaxy.")
+            trans.handle_user_login(user)
+            trans.log_event("User logged in")
+            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
+                # If password is about to expire, modify message to state that.
+                expiredate = datetime.today() - user.last_password_change + pw_expires
+                return {"message": "Your password will expire in %s days." % expiredate.days, "status": "warning"}
+        return {"message": "User logged in."}
+
     def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
         """
         Does the autoregistration if enabled. Returns a message
@@ -530,73 +534,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         else:
             message = "No such user or invalid password"
         return message, status, user, success
-
-    def __validate_login(self, trans, **kwd):
-        """Validates numerous cases that might happen during the login time."""
-        status = kwd.get('status', 'error')
-        login = kwd.get('login', '')
-        password = kwd.get('password', '')
-        referer = trans.request.referer or ''
-        redirect = kwd.get('redirect', referer).strip()
-        success = False
-        user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == login,
-            trans.app.model.User.table.c.username == login
-        )).first()
-        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
-        if not user:
-            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
-        elif user.deleted:
-            message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
-            if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' % trans.app.config.error_email_to
-        elif user.external:
-            message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-            if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' % trans.app.config.error_email_to
-        elif not trans.app.auth_manager.check_password(user, password):
-            message = "Invalid password"
-        elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
-            if (trans.app.config.activation_grace_period != 0):  # grace period is ON
-                if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message, status = self.resend_verification_email(trans, user.email, user.username)
-                else:  # User is within the grace period, let him log in.
-                    message, success, status = self.proceed_login(trans, user, redirect)
-            else:  # Grace period is off. Login is disabled and user will have the activation email resent.
-                message, status = self.resend_verification_email(trans, user.email, user.username)
-        else:  # activation is OFF
-            pw_expires = trans.app.config.password_expiration_period
-            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
-                # Password is expired, we don't log them in.
-                trans.response.send_redirect(web.url_for(controller='user',
-                                                         action='change_password',
-                                                         message='Your password has expired. Please change it to access Galaxy.',
-                                                         redirect_home=True,
-                                                         status='error'))
-            message, success, status = self.proceed_login(trans, user, redirect)
-            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
-                # If password is about to expire, modify message to state that.
-                expiredate = datetime.today() - user.last_password_change + pw_expires
-                message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                          (expiredate.days, user.email, redirect, url_for('/'))
-                status = 'warning'
-        return (message, status, user, success)
-
-    def proceed_login(self, trans, user, redirect):
-        """
-        Function processes user login. It is called in case all the login requirements are valid.
-        """
-        message = ''
-        trans.handle_user_login(user)
-        if trans.webapp.name == 'galaxy':
-            trans.log_event("User logged in")
-            message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                (user.email, redirect, url_for('/'))
-            if trans.app.config.require_login:
-                message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for(controller="root", action="welcome")
-        success = True
-        status = 'done'
-        return message, success, status
 
     @web.expose
     def resend_verification(self, trans):
@@ -789,42 +726,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                              validate_password(trans, password, confirm),
                              validate_publicname(trans, username)]).rstrip()
         return message
-
-    @web.expose
-    @web.require_login("to get most recently used tool")
-    @web.json_pretty
-    def get_most_recently_used_tool_async(self, trans):
-        """ Returns information about the most recently used tool. """
-
-        # Get most recently used tool.
-        query = trans.sa_session.query(self.app.model.Job.tool_id).join(self.app.model.History) \
-                                .filter(self.app.model.History.user == trans.user) \
-                                .order_by(self.app.model.Job.create_time.desc()).limit(1)
-        tool_id = query[0][0]  # Get first element in first row of query.
-        tool = self.get_toolbox().get_tool(tool_id)
-
-        # Return tool info.
-        tool_info = {"id": tool.id,
-                     "link": url_for(controller='tool_runner', tool_id=tool.id),
-                     "target": tool.target,
-                     "name": tool.name,  # TODO: translate this using _()
-                     "minsizehint": tool.uihints.get('minwidth', -1),
-                     "description": tool.description}
-        return tool_info
-
-    @web.expose
-    def set_user_pref_async(self, trans, pref_name, pref_value):
-        """ Set a user preference asynchronously. If user is not logged in, do nothing. """
-        if trans.user:
-            trans.log_action(trans.get_user(), "set_user_pref", "", {pref_name: pref_value})
-            trans.user.preferences[pref_name] = pref_value
-            trans.sa_session.flush()
-
-    @web.expose
-    def log_user_action_async(self, trans, action, context, params):
-        """ Log a user action asynchronously. If user is not logged in, do nothing. """
-        if trans.user:
-            trans.log_action(trans.get_user(), action, context, params)
 
     def __get_redirect_url(self, redirect):
         root_url = url_for('/', qualified=True)
