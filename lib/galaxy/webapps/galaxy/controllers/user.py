@@ -331,10 +331,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 error = self.__validate(trans, params, email, password, confirm, username)
                 if not error:
                     # all the values are valid
-                    message, status, user, success = self.__register(trans,
-                                                                     cntrller,
-                                                                     subscribe_checked,
-                                                                     **kwd)
+                    message, status, user, success = trans.app.auth_manager.register(trans, subscribe_checked=subscribe_checked, **kwd)
                     if success:
                         openid_objs = []
                         for openid in openids:
@@ -539,7 +536,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             message = " ".join([validate_email(trans, kwd['email'], allow_empty=True),
                                 validate_publicname(trans, kwd['username'])]).rstrip()
             if not message:
-                message, status, user, success = self.__register(trans, cntrller, False, no_redirect=skip_login_handling, **kwd)
+                message, status, user, success = trans.app.auth_manager.register(trans, **kwd)
                 if success:
                     # The handle_user_login() method has a call to the history_set_default_permissions() method
                     # (needed when logging in with a history), user needs to have default permissions set before logging in
@@ -647,7 +644,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
-        is_activation_sent = self.send_verification_email(trans, email, username)
+        is_activation_sent = trans.app.auth_manager.send_verification_email(trans, email, username)
         if is_activation_sent:
             message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % (escape(email), url_for('/'))
             status = 'error'
@@ -727,76 +724,39 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         subscribe_checked = CheckboxField.is_checked(subscribe)
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        show_user_prepopulate_form = is_admin and trans.app.config.show_user_prepopulate_form
+        is_admin = trans.user_is_admin()
+        success=False
+        show_user_prepopulate_form = False
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
             status = 'error'
-        elif show_user_prepopulate_form and params.get('prepopulate_user_button', False):
-            # pre-populate the user through a provider like ldap
-            csrf_check = trans.check_csrf_token()
-            if csrf_check:
-                return csrf_check
-            login = username if username else email
-            message, status, user, success = self.__autoregistration(trans, login, '', status, kwd,
-                                                                     no_password_check=True, cntrller=cntrller)
-            if success:
-                message = 'Prepopulated new user account (%s)' % escape(user.email)
-                trans.response.send_redirect(web.url_for(controller='admin',
-                                                         action='users',
-                                                         cntrller=cntrller,
-                                                         message=message,
-                                                         status=status))
         else:
             # check user is allowed to register
             message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
-            if message == '':
-                if not refresh_frames:
-                    if trans.webapp.name == 'galaxy':
-                        if trans.app.config.require_login:
-                            refresh_frames = ['masthead', 'history', 'tools']
-                        else:
-                            refresh_frames = ['masthead', 'history']
-                    else:
-                        refresh_frames = ['masthead']
+            if not message:
                 # Create the user, save all the user info and login to Galaxy
                 if params.get('create_user_button', False):
-                    csrf_check = trans.check_csrf_token()
-                    if csrf_check:
-                        return csrf_check
-
                     # Check email and password validity
                     message = self.__validate(trans, params, email, password, confirm, username)
                     if not message:
                         # All the values are valid
-                        message, status, user, success = self.__register(trans,
-                                                                         cntrller,
-                                                                         subscribe_checked,
-                                                                         **kwd)
-                        if trans.webapp.name == 'tool_shed':
-                            redirect_url = url_for('/')
+                        message, status, user, success = trans.app.auth_manager.register(trans, subscribe_checked=subscribe_checked, **kwd)
                         if success and not is_admin:
                             # The handle_user_login() method has a call to the history_set_default_permissions() method
                             # (needed when logging in with a history), user needs to have default permissions set before logging in
                             trans.handle_user_login(user)
                             trans.log_event("User created a new account")
                             trans.log_event("User logged in")
-                        if success and is_admin:
-                            message = 'Created new user account (%s)' % escape(user.email)
-                            trans.response.send_redirect(web.url_for(controller='admin',
-                                                                     action='users',
-                                                                     cntrller=cntrller,
-                                                                     message=message,
-                                                                     status=status))
                     else:
                         status = 'error'
-        if trans.webapp.name == 'galaxy':
-            #  Warning message that is shown on the registration page.
-            registration_warning_message = trans.app.config.registration_warning_message
-        else:
-            registration_warning_message = None
+        registration_warning_message = trans.app.config.registration_warning_message
+        if success:
+            if is_admin:
+                redirect_url = web.url_for('/admin/users?status=success&message=Created new user account.')
+            else:
+                redirect_url = web.url_for('/')
         return trans.fill_template('/user/register.mako',
                                    cntrller=cntrller,
                                    email=email,
@@ -810,117 +770,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                                    registration_warning_message=registration_warning_message,
                                    message=message,
                                    status=status)
-
-    def __register(self, trans, cntrller, subscribe_checked, no_redirect=False, **kwd):
-        email = util.restore_text(kwd.get('email', ''))
-        password = kwd.get('password', '')
-        username = util.restore_text(kwd.get('username', ''))
-        message = escape(kwd.get('message', ''))
-        status = kwd.get('status', 'done')
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        user = self.user_manager.create(email=email, username=username, password=password)
-        error = ''
-        success = True
-        if trans.webapp.name == 'galaxy':
-            if subscribe_checked:
-                # subscribe user to email list
-                if trans.app.config.smtp_server is None:
-                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
-                else:
-                    body = 'Join Mailing list.\n'
-                    to = trans.app.config.mailing_join_addr
-                    frm = email
-                    subject = 'Join Mailing List'
-                    try:
-                        util.send_mail(frm, to, subject, body, trans.app.config)
-                    except Exception:
-                        log.exception('Subscribing to the mailing list has failed.')
-                        error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
-
-            if not error and not is_admin:
-                # The handle_user_login() method has a call to the history_set_default_permissions() method
-                # (needed when logging in with a history), user needs to have default permissions set before logging in
-                trans.handle_user_login(user)
-                trans.log_event("User created a new account")
-                trans.log_event("User logged in")
-            elif not error and not no_redirect:
-                trans.response.send_redirect(web.url_for(controller='admin',
-                                                         action='users',
-                                                         message='Created new user account (%s)' % user.email,
-                                                         status=status))
-        if error:
-            message = error
-            status = 'error'
-            success = False
-        else:
-            if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                is_activation_sent = self.send_verification_email(trans, email, username)
-                if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
-                    success = True
-                else:
-                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                    if trans.app.config.error_email_to is not None:
-                        message += ' Contact: %s' % trans.app.config.error_email_to
-                    success = False
-            else:  # User activation is OFF, proceed without sending the activation email.
-                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
-                success = True
-        return (message, status, user, success)
-
-    def send_verification_email(self, trans, email, username):
-        """
-        Send the verification email containing the activation link to the user's email.
-        """
-        if username is None:
-            username = trans.user.username
-        activation_link = self.prepare_activation_link(trans, escape(email))
-
-        host = trans.request.host.split(':')[0]
-        if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-            host = socket.getfqdn()
-        body = ("Hello %s,\n\n"
-                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
-                "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
-                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (escape(username), escape(email),
-                                      datetime.utcnow().strftime("%D"),
-                                      trans.request.host, activation_link,
-                                      trans.app.config.terms_url,
-                                      trans.app.config.error_email_to,
-                                      trans.app.config.instance_resource_url))
-        to = email
-        frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-        subject = 'Galaxy Account Activation'
-        try:
-            util.send_mail(frm, to, subject, body, trans.app.config)
-            return True
-        except Exception:
-            log.exception('Unable to send the activation email.')
-            return False
-
-    def prepare_activation_link(self, trans, email):
-        """
-        Prepare the account activation link for the user.
-        """
-        activation_token = self.get_activation_token(trans, email)
-        activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=email, qualified=True)
-        return activation_link
-
-    def get_activation_token(self, trans, email):
-        """
-        Check for the activation token. Create new activation token and store it in the database if no token found.
-        """
-        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-        activation_token = user.activation_token
-        if activation_token is None:
-            activation_token = hash_util.new_secure_hash(str(random.getrandbits(256)))
-            user.activation_token = activation_token
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-        return activation_token
 
     @web.expose
     def activate(self, trans, **kwd):
