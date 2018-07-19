@@ -125,6 +125,63 @@ class AuthManager(object):
             log.exception("Active Authenticators Failure")
             raise
 
+    def __register(self, trans, cntrller, subscribe_checked, no_redirect=False, **kwd):
+        email = util.restore_text(kwd.get('email', ''))
+        password = kwd.get('password', '')
+        username = util.restore_text(kwd.get('username', ''))
+        message = escape(kwd.get('message', ''))
+        status = kwd.get('status', 'done')
+        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        user = self.user_manager.create(email=email, username=username, password=password)
+        error = ''
+        success = True
+        if trans.webapp.name == 'galaxy':
+            if subscribe_checked:
+                # subscribe user to email list
+                if trans.app.config.smtp_server is None:
+                    error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
+                else:
+                    body = 'Join Mailing list.\n'
+                    to = trans.app.config.mailing_join_addr
+                    frm = email
+                    subject = 'Join Mailing List'
+                    try:
+                        util.send_mail(frm, to, subject, body, trans.app.config)
+                    except Exception:
+                        log.exception('Subscribing to the mailing list has failed.')
+                        error = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+
+            if not error and not is_admin:
+                # The handle_user_login() method has a call to the history_set_default_permissions() method
+                # (needed when logging in with a history), user needs to have default permissions set before logging in
+                trans.handle_user_login(user)
+                trans.log_event("User created a new account")
+                trans.log_event("User logged in")
+            elif not error and not no_redirect:
+                trans.response.send_redirect(web.url_for(controller='admin',
+                                                         action='users',
+                                                         message='Created new user account (%s)' % user.email,
+                                                         status=status))
+        if error:
+            message = error
+            status = 'error'
+            success = False
+        else:
+            if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
+                is_activation_sent = self.send_verification_email(trans, email, username)
+                if is_activation_sent:
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+                    success = True
+                else:
+                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                    if trans.app.config.error_email_to is not None:
+                        message += ' Contact: %s' % trans.app.config.error_email_to
+                    success = False
+            else:  # User activation is OFF, proceed without sending the activation email.
+                message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+                success = True
+        return (message, status, user, success)
+
 
 def _get_allow_register(d):
     s = d.get('allow-register', True)
