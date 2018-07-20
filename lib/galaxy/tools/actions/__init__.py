@@ -802,7 +802,7 @@ class ObjectStorePopulator(object):
 
     def create_datasets(self):
         for obj in self.objects:
-            self.object_store.create(obj)
+            self.object_store.create(obj, object_store_id=self.object_store_id, object_id_getter=model.cached_id)
 
 
 class OutputCollections(object):

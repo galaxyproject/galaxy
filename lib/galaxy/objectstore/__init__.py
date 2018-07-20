@@ -327,11 +327,13 @@ class DiskObjectStore(ObjectStore):
                 path = base
         else:
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(obj.id))
+            object_id_getter = kwargs.get("object_id_getter", lambda o: o.id)
+            obj_id = object_id_getter(obj)
+            rel_path = os.path.join(*directory_hash_id(obj_id))
             # Create a subdirectory for the object ID
             if obj_dir:
-                rel_path = os.path.join(rel_path, str(obj.id))
-            # Optionally append extra_dir
+                rel_path = os.path.join(rel_path, str(obj_id))
+            # Optionally append extra_dirs
             if extra_dir is not None:
                 if extra_dir_at_root:
                     rel_path = os.path.join(extra_dir, rel_path)
@@ -339,7 +341,7 @@ class DiskObjectStore(ObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
-            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
+            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj_id)
         return os.path.abspath(path)
 
     def exists(self, obj, **kwargs):
@@ -648,17 +650,20 @@ class DistributedObjectStore(NestedObjectStore):
 
     def create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
-        object_store_id = obj.object_store_id
+        object_store_id = kwargs.get("object_store_id", None)
+        if object_store_id is None:
+            # Delay attribute fetch unless needed.
+            object_store_id = obj.object_store_id
         if object_store_id is None or not self.exists(obj, **kwargs):
             if object_store_id is None or object_store_id not in self.weighted_backend_ids:
                 self.set_object_store_id(obj, **kwargs)
                 _create_object_in_session(obj)
                 log.debug("Selected backend '%s' for creation of %s %s"
-                          % (obj.object_store_id, obj.__class__.__name__, obj.id))
+                          % (object_store_id, obj.__class__.__name__, obj.id))
             else:
                 log.debug("Using preferred backend '%s' for creation of %s %s"
                           % (object_store_id, obj.__class__.__name__, obj.id))
-            self.backends[obj.object_store_id].create(obj, **kwargs)
+            self.backends[object_store_id].create(obj, **kwargs)
 
     def set_object_store_id(self, obj, **kwargs):
         if obj.object_store_id is None:
