@@ -94,12 +94,12 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
-        datasets = self.cloud_manager.download(trans=trans,
-                                               history_id=history_id,
-                                               provider=provider,
-                                               bucket=bucket,
-                                               obj=obj,
-                                               credentials=credentials)
+        datasets = self.cloud_manager.copy_from(trans=trans,
+                                                history_id=history_id,
+                                                provider=provider,
+                                                bucket=bucket,
+                                                obj=obj,
+                                                credentials=credentials)
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))
