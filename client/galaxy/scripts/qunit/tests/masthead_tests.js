@@ -48,9 +48,6 @@ QUnit.test("tabs", function(assert) {
     assert.ok(tab && $tab.length == 1, "Found analysis tab");
     tab.set("title", "Analyze");
     assert.ok($toggle.html() == "Analyze", "Correct title");
-    assert.ok(tab.get("target") == "_parent", "Correct initial target");
-    tab.set("target", "_target");
-    assert.ok($toggle.attr("target") == "_target", "Correct test target");
     assert.ok($toggle.css("visibility") == "visible", "Tab visible");
     tab.set("visible", false);
     assert.ok($toggle.css("visibility") == "hidden", "Tab hidden");
