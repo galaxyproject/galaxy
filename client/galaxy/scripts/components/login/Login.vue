@@ -1,8 +1,8 @@
 <template>
     <div>
+        <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
         <b-form @submit="submit">
             <b-card header="Welcome to Galaxy, please log in">
-                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
                 <b-form-group label="Username or Email Address">
                     <b-form-input type="text" v-model="username"/>
                 </b-form-group>
@@ -16,12 +16,11 @@
         <br>
         <b-form @submit="submit">
             <b-card header="OpenID login">
-                <b-alert :show="openidMessageShow" :variant="openidMessageVariant" v-html="openidMessageText"/>
-                <b-form-group label="Username or Email Address">
-                    <b-form-input type="text" v-model="openidUsername"/>
+                <b-form-group label="Enter a URL">
+                    <b-form-input type="text" v-model="url"/>
                 </b-form-group>
-                <b-form-group label="Password">
-                    <b-form-input type="password" v-model="openidPassword"/>
+                <b-form-group label="Or select a provider:">
+                     <b-form-select v-model="provider" :options="openid_providers"/>
                 </b-form-group>
                 <b-button type="submit">Login with OpenID</b-button>
             </b-card>
@@ -50,12 +49,18 @@ export default {
         welcome_url: {
             type: String,
             required: false
+        },
+        openid_providers: {
+            type: Array,
+            required: false
         }
     },
     data() {
         return {
             username: null,
             password: null,
+            url: null,
+            provider: null,
             messageText: null,
             messageVariant: null
         };
@@ -68,8 +73,10 @@ export default {
     methods: {
         submit: function(ev) {
             ev.preventDefault();
+            //let data = {username: this.username, password: this.password};
+            let data = {provider: this.provider, url: this.url};
             axios
-                .post(`${Galaxy.root}user/login`, {username: this.username, password: this.password})
+                .post(`${Galaxy.root}user/login`, data)
                 .then(response => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);

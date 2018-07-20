@@ -68,53 +68,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         self.user_manager = users.UserManager(app)
 
     @web.expose
-    def openid_auth(self, trans, **kwd):
-        '''Handles user request to access an OpenID provider'''
-        if not trans.app.config.enable_openid:
-            return trans.show_error_message('OpenID authentication is not enabled in this instance of Galaxy')
-        message = 'Unspecified failure authenticating via OpenID'
-        auto_associate = util.string_as_bool(kwd.get('auto_associate', False))
-        use_panels = util.string_as_bool(kwd.get('use_panels', False))
-        consumer = trans.app.openid_manager.get_consumer(trans)
-        openid_url = kwd.get('openid_url', '')
-        openid_provider = kwd.get('openid_provider', '')
-        if openid_url:
-            openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier(openid_url)
-        elif openid_provider:
-            openid_provider_obj = trans.app.openid_providers.get(openid_provider)
-        else:
-            message = 'An OpenID provider was not specified'
-        redirect = kwd.get('redirect', '').strip()
-        if not redirect:
-            redirect = ' '
-        if openid_provider_obj:
-            process_url = trans.request.base.rstrip('/') + url_for(controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate)  # None of these values can be empty, or else a verification error will occur
-            request = None
-            try:
-                request = consumer.begin(openid_provider_obj.op_endpoint_url)
-                if request is None:
-                    message = 'No OpenID services are available at %s' % openid_provider_obj.op_endpoint_url
-            except Exception as e:
-                message = 'Failed to begin OpenID authentication: %s' % str(e)
-            if request is not None:
-                trans.app.openid_manager.add_sreg(trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional)
-                if request.shouldSendRedirect():
-                    redirect_url = request.redirectURL(
-                        trans.request.base, process_url)
-                    trans.app.openid_manager.persist_session(trans, consumer)
-                    return trans.response.send_redirect(redirect_url)
-                else:
-                    form = request.htmlMarkup(trans.request.base, process_url, form_tag_attrs={'id': 'openid_message', 'target': '_top'})
-                    trans.app.openid_manager.persist_session(trans, consumer)
-                    return form
-        return trans.response.send_redirect(url_for(controller='user',
-                                                    action='login',
-                                                    redirect=redirect,
-                                                    use_panels=use_panels,
-                                                    message=message,
-                                                    status='error'))
-
-    @web.expose
     def openid_process(self, trans, **kwd):
         '''Handle's response from OpenID Providers'''
         if not trans.app.config.enable_openid:
@@ -412,7 +365,49 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     @expose_api_anonymous_and_sessionless
     def login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
+        #if payload.get("openid") is None:
+        return self.__openid_auth(trans, payload, **kwd)
         return self.__validate_login(trans, payload, **kwd)
+
+    def __openid_auth(self, trans, payload=None, **kwd):
+        '''Handles user request to access an OpenID provider'''
+        if not trans.app.config.enable_openid:
+            return self.message_exception(trans, 'OpenID authentication is not enabled in this instance of Galaxy.')
+        message = 'Unspecified failure authenticating via OpenID.'
+        auto_associate = util.string_as_bool(kwd.get('auto_associate', False))
+        use_panels = util.string_as_bool(kwd.get('use_panels', False))
+        consumer = trans.app.openid_manager.get_consumer(trans)
+        openid_url = kwd.get('openid_url', '')
+        openid_provider = kwd.get('openid_provider', '')
+        if openid_url:
+            openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier(openid_url)
+        elif openid_provider:
+            openid_provider_obj = trans.app.openid_providers.get(openid_provider)
+        else:
+            return self.message_exception(trans, 'An OpenID provider was not specified.')
+        if openid_provider_obj:
+            process_url = trans.request.base.rstrip('/') + url_for(controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate)  # None of these values can be empty, or else a verification error will occur
+            request = None
+            try:
+                request = consumer.begin(openid_provider_obj.op_endpoint_url)
+                if request is None:
+                    message = 'No OpenID services are available at %s.' % openid_provider_obj.op_endpoint_url
+                    return self.message_exception(trans, message)
+            except Exception as e:
+                return self.message_exception(trans, 'Failed to begin OpenID authentication: %s.' % str(e))
+            if request is not None:
+                trans.app.openid_manager.add_sreg(trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional)
+                if request.shouldSendRedirect():
+                    redirect_url = request.redirectURL(
+                        trans.request.base, process_url)
+                    trans.app.openid_manager.persist_session(trans, consumer)
+                    return {"redirect_url": redirect_url}
+                else:
+                    form = request.htmlMarkup(trans.request.base, process_url, form_tag_attrs={'id': 'openid_message', 'target': '_top'})
+                    trans.app.openid_manager.persist_session(trans, consumer)
+                    print (form);
+                    return form
+        return {"status": "error", "message": message}
 
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
                                               auto_create_groups=False, auto_assign_roles_to_groups_only=False):
