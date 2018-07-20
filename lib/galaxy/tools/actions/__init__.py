@@ -519,7 +519,9 @@ class DefaultToolAction(object):
         flush_timer = ExecutionTimer()
         # This flush is needed to assign IDs to all the output datasets so the object store
         # can be used to create empty files needed before the job is created and dispatched.
-        trans.sa_session.flush()
+        # Flushing just the datasets prevents other objects being created from being expired
+        # and eliminates a couple queries overall per output dataset.
+        trans.sa_session.flush(object_store_populator.objects)
         log.info("Flushed output datasets %s" % flush_timer)
         create_files_timer = ExecutionTimer()
         object_store_populator.create_datasets()
