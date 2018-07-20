@@ -1418,10 +1418,9 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                 dataset.hid = self._next_hid()
         if quota and self.user:
             self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
-        dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
-        dataset.history_id = self.id
+        dataset.history_id = cached_id(self)
         return dataset
 
     def add_datasets(self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False):
@@ -1456,7 +1455,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         set_genome = genome_build not in [None, '?']
         for i, dataset in enumerate(datasets):
             dataset.hid = base_hid + i
-            dataset.history = self
+            dataset.history_id = cached_id(self)
             if set_genome:
                 self.genome_build = genome_build
         for dataset in datasets:
