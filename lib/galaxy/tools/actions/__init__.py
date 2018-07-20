@@ -504,8 +504,6 @@ class DefaultToolAction(object):
                 datasets_to_persist.append(data)
         # Set HID and add to history.
         # This is brand new and certainly empty so don't worry about quota.
-        # TOOL OPTIMIZATION NOTE - from above loop to the job create below 99%+
-        # of execution time happens within in history.add_datasets.
         history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
 
         # Add all the children to their parents
