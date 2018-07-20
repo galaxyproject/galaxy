@@ -4,10 +4,6 @@ Manager and serializer for cloud-based storages.
 
 import datetime
 import logging
-import os
-import random
-import string
-from cgi import FieldStorage
 
 from galaxy.exceptions import (
     AuthenticationFailed,
@@ -37,6 +33,7 @@ SUPPORTED_PROVIDERS = "{aws, azure, openstack}"
 
 # TODO: this configuration should be set in a config file.
 SINGED_URL_TTL = 3600
+
 
 class CloudManager(sharable.SharableModelManager):
 
