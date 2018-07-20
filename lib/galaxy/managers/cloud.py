@@ -35,6 +35,8 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 
 SUPPORTED_PROVIDERS = "{aws, azure, openstack}"
 
+# TODO: this configuration should be set in a config file.
+SINGED_URL_TTL = 3600
 
 class CloudManager(sharable.SharableModelManager):
 
@@ -184,7 +186,7 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|space_to_tab': None,
             'files_0|to_posix_lines': 'Yes',
             'files_0|NAME': obj,
-            'files_0|url_paste': key.generate_url(expires_in=3600),
+            'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
         params = Params(inputs, sanitize=False)
