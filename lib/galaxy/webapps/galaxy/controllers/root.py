@@ -118,7 +118,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         return self.template(trans, 'login',
                              redirect=redirect,
                              # TODO: move into config
-                             openid_providers=[p.name for p in trans.app.openid_providers],
+                             openid_providers=[{"value": p.id, "text": p.name} for p in trans.app.openid_providers],
                              # an installation may have it's own welcome_url - show it here if they've set that
                              welcome_url=web.url_for(controller='root', action='welcome'),
                              show_welcome_with_login=trans.app.config.show_welcome_with_login)

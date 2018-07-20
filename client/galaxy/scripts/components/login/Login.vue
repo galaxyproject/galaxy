@@ -1,7 +1,7 @@
 <template>
     <div>
         <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
-        <b-form @submit="submit">
+        <b-form @submit.prevent="submit()">
             <b-card header="Welcome to Galaxy, please log in">
                 <b-form-group label="Username or Email Address">
                     <b-form-input type="text" v-model="username"/>
@@ -14,7 +14,7 @@
             </b-card>
         </b-form>
         <br>
-        <b-form @submit="submit">
+        <b-form @submit.prevent="submit('openid')">
             <b-card header="OpenID login">
                 <b-form-group label="Enter a URL">
                     <b-form-input type="text" v-model="url"/>
@@ -71,17 +71,24 @@ export default {
         }
     },
     methods: {
-        submit: function(ev) {
-            ev.preventDefault();
-            //let data = {username: this.username, password: this.password};
-            let data = {provider: this.provider, url: this.url};
+        submit: function(method) {
+            let data = null;
+            if (method == "openid") {
+                data = {openid_provider: this.provider, openid_url: this.url};
+            } else {
+                data = {username: this.username, password: this.password};
+            }
             axios
                 .post(`${Galaxy.root}user/login`, data)
                 .then(response => {
-                    if (response.data.message && response.data.status) {
-                        alert(response.data.message);
+                    if (method == "openid") {
+                        window.location = response.data.openid_redirect;
+                    } else {
+                        if (response.data.message && response.data.status) {
+                            alert(response.data.message);
+                        }
+                        window.location = `${Galaxy.root}`;
                     }
-                    window.location = `${Galaxy.root}`;
                 })
                 .catch(error => {
                     this.messageVariant = "danger";
