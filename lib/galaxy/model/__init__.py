@@ -1455,7 +1455,9 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         set_genome = genome_build not in [None, '?']
         for i, dataset in enumerate(datasets):
             dataset.hid = base_hid + i
-            dataset.history = self
+            # Don't let SA manage this.
+            delattr(dataset, "history")
+            dataset.history_id = cached_id(self)
             if set_genome:
                 self.genome_build = genome_build
         for dataset in datasets:
