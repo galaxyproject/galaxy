@@ -100,6 +100,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
                 break
             else:
                 execute_single_job(execution_slice, completed_jobs[i])
+        full_flush_timer = ExecutionTimer()
+        trans.sa_session.flush()
+        log.info("Flushing all job(s) for execution slice %s" % full_flush_timer)
     else:
         # TODO: re-record success...
         q = Queue()

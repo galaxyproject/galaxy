@@ -547,9 +547,6 @@ class DefaultToolAction(object):
                                      out_data=out_data)
         log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
 
-        job_flush_timer = ExecutionTimer()
-        trans.sa_session.flush()
-        log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
