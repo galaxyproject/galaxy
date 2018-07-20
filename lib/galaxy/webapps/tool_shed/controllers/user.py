@@ -1,19 +1,10 @@
-"""
-Contains the user interface in the Universe class
-"""
-
-import logging
-import socket
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from markupsafe import escape
 from sqlalchemy import (
     and_,
-    func,
-    or_,
     true
 )
-
 
 from galaxy import (
     util,
@@ -23,139 +14,12 @@ from galaxy.security.validate_user_input import validate_email, validate_passwor
 from galaxy.web import url_for
 from galaxy.webapps.tool_shed.controllers.base_user import User as BaseUser
 
-log = logging.getLogger(__name__)
-
-REQUIRE_LOGIN_TEMPLATE = """
-<p>
-    This %s has been configured such that only users who are logged in may use it.%s
-</p>
-"""
-
-PASSWORD_RESET_TEMPLATE = """
-To reset your Galaxy password for the instance at %s use the following link,
-which will expire %s.
-
-%s
-
-If you did not make this request, no action is necessary on your part, though
-you may want to notify an administrator.
-
-If you're having trouble using the link when clicking it from email client, you
-can also copy and paste it into your browser.
-"""
-
 
 class User(BaseUser):
 
     @web.expose
     def index(self, trans, cntrller='user', **kwd):
         return trans.fill_template('/webapps/tool_shed/user/index.mako', cntrller=cntrller)
-
-    @web.expose
-    def login(self, trans, refresh_frames=[], **kwd):
-        '''Handle Galaxy Log in'''
-        referer = trans.request.referer or ''
-        redirect = self.__get_redirect_url(kwd.get('redirect', referer).strip())
-        redirect_url = ''  # always start with redirect_url being empty
-        use_panels = util.string_as_bool(kwd.get('use_panels', False))
-        message = kwd.get('message', '')
-        status = kwd.get('status', 'done')
-        header = ''
-        user = trans.user
-        login = kwd.get('login', '')
-        if user:
-            # Already logged in.
-            redirect_url = redirect
-            message = 'You are already logged in.'
-            status = 'info'
-        elif kwd.get('login_button', False):
-            if trans.webapp.name == 'galaxy' and not refresh_frames:
-                if trans.app.config.require_login:
-                    refresh_frames = ['masthead', 'history', 'tools']
-                else:
-                    refresh_frames = ['masthead', 'history']
-            csrf_check = trans.check_csrf_token()
-            if csrf_check:
-                return csrf_check
-            message, status, user, success = self.__validate_login(trans, **kwd)
-            if success:
-                redirect_url = redirect
-        if not user and trans.app.config.require_login:
-            if trans.app.config.allow_user_creation:
-                create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
-                    web.url_for(controller='user', action='create', cntrller='user')
-                if trans.webapp.name == 'galaxy':
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", create_account_str)
-                else:
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", create_account_str)
-            else:
-                if trans.webapp.name == 'galaxy':
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", "")
-                else:
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", "")
-        return trans.fill_template('/webapps/tool_shed/user/login.mako',
-                                   login=login,
-                                   header=header,
-                                   use_panels=use_panels,
-                                   redirect_url=redirect_url,
-                                   redirect=redirect,
-                                   refresh_frames=refresh_frames,
-                                   message=message,
-                                   status=status,
-                                   openid_providers=trans.app.openid_providers,
-                                   form_input_auto_focus=True,
-                                   active_view="user")
-
-    def __validate_login(self, trans, **kwd):
-        """Validates numerous cases that might happen during the login time."""
-        status = kwd.get('status', 'error')
-        login = kwd.get('login', '')
-        password = kwd.get('password', '')
-        referer = trans.request.referer or ''
-        redirect = kwd.get('redirect', referer).strip()
-        success = False
-        user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == login,
-            trans.app.model.User.table.c.username == login
-        )).first()
-        log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
-        if not user:
-            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
-        elif user.deleted:
-            message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
-            if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' % trans.app.config.error_email_to
-        elif user.external:
-            message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
-            if trans.app.config.error_email_to is not None:
-                message += ' Contact: %s' % trans.app.config.error_email_to
-        elif not trans.app.auth_manager.check_password(user, password):
-            message = "Invalid password"
-        elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
-            if (trans.app.config.activation_grace_period != 0):  # grace period is ON
-                if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message, status = self.resend_verification_email(trans, user.email, user.username)
-                else:  # User is within the grace period, let him log in.
-                    message, success, status = self.proceed_login(trans, user, redirect)
-            else:  # Grace period is off. Login is disabled and user will have the activation email resent.
-                message, status = self.resend_verification_email(trans, user.email, user.username)
-        else:  # activation is OFF
-            pw_expires = trans.app.config.password_expiration_period
-            if pw_expires and user.last_password_change < datetime.today() - pw_expires:
-                # Password is expired, we don't log them in.
-                trans.response.send_redirect(web.url_for(controller='user',
-                                                         action='change_password',
-                                                         message='Your password has expired. Please change it to access Galaxy.',
-                                                         redirect_home=True,
-                                                         status='error'))
-            message, success, status = self.proceed_login(trans, user, redirect)
-            if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
-                # If password is about to expire, modify message to state that.
-                expiredate = datetime.today() - user.last_password_change + pw_expires
-                message = 'You are now logged in as %s. Your password will expire in %s days.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                          (expiredate.days, user.email, redirect, url_for('/'))
-                status = 'warning'
-        return (message, status, user, success)
 
     @web.expose
     def manage_user_info(self, trans, cntrller, **kwd):
@@ -385,48 +249,3 @@ class User(BaseUser):
                                    status=status,
                                    message=message,
                                    display_top=kwd.get('redirect_home', False))
-
-    @web.expose
-    def reset_password(self, trans, email=None, **kwd):
-        """Reset the user's password. Send an email with token that allows a password change."""
-        if trans.app.config.smtp_server is None:
-            return trans.show_error_message("Mail is not configured for this Galaxy instance "
-                                            "and password reset information cannot be sent. "
-                                            "Please contact your local Galaxy administrator.")
-        message = None
-        status = 'done'
-        if kwd.get('reset_password_button', False):
-            message = validate_email(trans, email, check_dup=False)
-            if not message:
-                # Default to a non-userinfo-leaking response message
-                message = ("Your reset request for %s has been received.  "
-                           "Please check your email account for more instructions.  "
-                           "If you do not receive an email shortly, please contact an administrator." % (escape(email)))
-                reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-                if not reset_user:
-                    # Perform a case-insensitive check only if the user wasn't found
-                    reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
-                if reset_user:
-                    prt = trans.app.model.PasswordResetToken(reset_user)
-                    trans.sa_session.add(prt)
-                    trans.sa_session.flush()
-                    host = trans.request.host.split(':')[0]
-                    if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-                        host = socket.getfqdn()
-                    reset_url = url_for(controller='user',
-                                        action="change_password",
-                                        token=prt.token, qualified=True)
-                    body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                                                      reset_url)
-                    frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-                    subject = 'Galaxy Password Reset'
-                    try:
-                        util.send_mail(frm, email, subject, body, trans.app.config)
-                        trans.sa_session.add(reset_user)
-                        trans.sa_session.flush()
-                        trans.log_event("User reset password: %s" % email)
-                    except Exception:
-                        log.exception('Unable to reset password.')
-        return trans.fill_template('/webapps/tool_shed/reset_password.mako',
-                                   message=message,
-                                   status=status)
