@@ -175,45 +175,31 @@ class CloudManager(sharable.SharableModelManager):
         key = bucket_obj.get(obj)
         if key is None:
             raise ObjectNotFound("Could not get the object `{}`.".format(obj))
-        staging_file_name = os.path.abspath(os.path.join(
-            trans.app.config.new_file_path,
-            "cd_" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11))))
 
-        with open(staging_file_name, "w+b") as staging_file:
-            key.save_content(staging_file)
-            staging_file.seek(0)
-            datasets = []
-            content = staging_file.read()
-            headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format('files_0|file_data', obj), }
+        datasets = []
+        inputs = {
+            'dbkey': '?',
+            'file_type': 'auto',
+            'files_0|type': 'upload_dataset',
+            'files_0|space_to_tab': None,
+            'files_0|to_posix_lines': 'Yes',
+            'files_0|NAME': obj,
+            'files_0|url_paste': key.generate_url(expires_in=3600),
+        }
 
-            input_file = FieldStorage(headers=headers)
-            input_file.file = input_file.make_file()
-            input_file.file.write(content)
+        params = Params(inputs, sanitize=False)
+        incoming = params.__dict__
+        upload_tool = trans.app.toolbox.get_tool('upload1')
+        history = trans.sa_session.query(trans.app.model.History).get(history_id)
+        output = upload_tool.handle_input(trans, incoming, history=history)
 
-            inputs = {
-                'dbkey': '?',
-                'file_type': 'auto',
-                'files_0|type': 'upload_dataset',
-                'files_0|space_to_tab': None,
-                'files_0|to_posix_lines': 'Yes',
-                'files_0|file_data': input_file,
-            }
+        job_errors = output.get('job_errors', [])
+        if job_errors:
+            raise ValueError('Cannot upload a dataset.')
+        else:
+            for d in output['out_data']:
+                datasets.append(d[1].dataset)
 
-            params = Params(inputs, sanitize=False)
-            incoming = params.__dict__
-            upload_tool = trans.app.toolbox.get_tool('upload1')
-            history = trans.sa_session.query(trans.app.model.History).get(history_id)
-            output = upload_tool.handle_input(trans, incoming, history=history)
-
-            hids = {}
-            job_errors = output.get('job_errors', [])
-            if job_errors:
-                raise ValueError('Cannot upload a dataset.')
-            else:
-                hids.update({staging_file: output['out_data'][0][1].hid})
-                for d in output['out_data']:
-                    datasets.append(d[1].dataset)
-        os.remove(staging_file_name)
         return datasets
 
     def copy_to(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
