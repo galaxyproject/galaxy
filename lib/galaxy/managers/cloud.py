@@ -195,7 +195,7 @@ class CloudManager(sharable.SharableModelManager):
 
         job_errors = output.get('job_errors', [])
         if job_errors:
-            raise ValueError('Cannot upload a dataset.')
+            raise ValueError('Cannot copy given object(s) from {}.'.format(provider))
         else:
             for d in output['out_data']:
                 datasets.append(d[1].dataset)
