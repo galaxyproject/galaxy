@@ -45,7 +45,7 @@ class UserOpenIDGrid(grids.Grid):
     default_filter = {"openid": "All"}
     default_sort_key = "-create_time"
     columns = [
-        grids.TextColumn("OpenID URL", key="openid", link=(lambda x: dict(action='openid_auth', login_button="Login", openid_url=x.openid if not x.provider else '', openid_provider=x.provider, auto_associate=True))),
+        grids.TextColumn("OpenID URL", key="openid"),
         grids.GridColumn("Created", key="create_time", format=time_ago),
     ]
     global_actions = [
@@ -240,6 +240,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         openid_url = payload.get('openid_url')
         openid_provider = payload.get('openid_provider')
         redirect=payload.get('redirect')
+        method=payload.get('method')
         if openid_url:
             openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier(openid_url)
         elif openid_provider:
@@ -260,6 +261,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.app.openid_manager.add_sreg(trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional)
                 openid_redirect = request.redirectURL(trans.request.base, process_url)
                 trans.app.openid_manager.persist_session(trans, consumer)
+                if method == "redirect":
+                    trans.response.send_redirect(openid_redirect)
                 return {"openid_redirect": openid_redirect}
         return {"status": "error", "message": message}
 
