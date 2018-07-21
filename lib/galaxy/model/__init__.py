@@ -186,6 +186,17 @@ def cached_id(galaxy_model_object):
     return galaxy_model_object.id
 
 
+class JobsBuilder(object):
+    """Abstraction to build one or many Jobs in batch."""
+
+    def __init__(self):
+        self.jobs = []
+        self.job_relationships = {}
+
+    def build(self, sa_session):
+        pass
+
+
 class JobLike(object):
 
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
@@ -768,25 +779,43 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
         self.params = params
 
     def add_parameter(self, name, value):
-        self.parameters.append(JobParameter(name, value))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_parameter(name, value)
+        else:
+            self.parameters.append(JobParameter(name, value))
 
     def add_input_dataset(self, name, dataset=None, dataset_id=None):
-        assoc = JobToInputDatasetAssociation(name, dataset)
-        if dataset is None and dataset_id is not None:
-            assoc.dataset_id = dataset_id
-        self.input_datasets.append(assoc)
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_input_dataset(name, dataset_id)
+        else:
+            assoc = JobToInputDatasetAssociation(name, dataset)
+            if dataset is None and dataset_id is not None:
+                assoc.dataset_id = dataset_id
+            self.input_datasets.append(assoc)
 
     def add_output_dataset(self, name, dataset):
-        self.output_datasets.append(JobToOutputDatasetAssociation(name, dataset))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_output_dataset(name, dataset)
+        else:
+            self.output_datasets.append(JobToOutputDatasetAssociation(name, dataset))
 
     def add_input_dataset_collection(self, name, dataset_collection):
-        self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_input_dataset_collection(name, cached_id(dataset_collection))
+        else:
+            self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
 
     def add_output_dataset_collection(self, name, dataset_collection_instance):
-        self.output_dataset_collection_instances.append(JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_output_dataset_collection(name, dataset_collection_instance)
+        else:
+            self.output_dataset_collection_instances.append(JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance))
 
     def add_implicit_output_dataset_collection(self, name, dataset_collection):
-        self.output_dataset_collections.append(JobToImplicitOutputDatasetCollectionAssociation(name, dataset_collection))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_implicit_output_dataset_collection(name, dataset_collection)
+        else:
+            self.output_dataset_collections.append(JobToImplicitOutputDatasetCollectionAssociation(name, dataset_collection))
 
     def add_input_library_dataset(self, name, dataset):
         self.input_library_datasets.append(JobToInputLibraryDatasetAssociation(name, dataset))

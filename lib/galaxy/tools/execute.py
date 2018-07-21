@@ -94,6 +94,8 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     has_remaining_jobs = False
 
     if (job_count < burst_at or burst_threads < 2):
+        jobs_builder = model.JobsBuilder()
+        execution_cache.jobs_builder = jobs_builder
         for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
             if max_num_jobs and jobs_executed >= max_num_jobs:
                 has_remaining_jobs = True

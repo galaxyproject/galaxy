@@ -30,6 +30,7 @@ class ToolExecutionCache(object):
         self.trans = trans
         self.current_user_roles = trans.get_current_user_roles()
         self.chrom_info = {}
+        self.jobs_builder = None
 
     def get_chrom_info(self, tool_id, input_dbkey):
         genome_builds = self.trans.app.genome_builds
@@ -528,6 +529,9 @@ class DefaultToolAction(object):
         job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
+        if execution_cache.jobs_builder:
+            job.jobs_builder = model.JobsBuilder()
+            job.state = "initializing"
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         job.object_store_id = object_store_populator.object_store_id
