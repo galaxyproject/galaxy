@@ -148,32 +148,24 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 openid_provider_obj.post_authentication(trans, trans.app.openid_manager, info)
                 redirect = self.__get_redirect_url(redirect)
                 return trans.response.send_redirect(redirect)
-            trans.sa_session.add(user_openid)
-            trans.sa_session.flush()
-            message = "OpenID authentication was successful, but you need to associate your OpenID with a Galaxy account."
-            sreg_resp = trans.app.openid_manager.get_sreg(info)
-            try:
-                sreg_username_name = openid_provider_obj.use_for.get('username')
-                username = sreg_resp.get(sreg_username_name, '')
-            except AttributeError:
-                username = ''
-            try:
-                sreg_email_name = openid_provider_obj.use_for.get('email')
-                email = sreg_resp.get(sreg_email_name, '')
-            except AttributeError:
-                email = ''
-            # OpenID success, but user not logged in, and not previously associated
-            return trans.response.send_redirect(url_for(controller='user',
-                                                 action='openid_associate',
-                                                 use_panels=True,
-                                                 redirect=redirect,
-                                                 username=username,
-                                                 email=email,
-                                                 message=message,
-                                                 status='warning'))
+            else:
+                trans.sa_session.add(user_openid)
+                trans.sa_session.flush()
+                message = "OpenID authentication was successful, but you need to associate your OpenID with a Galaxy account. Register a Galaxy account and add your OpenID account in the User Preferences section."
+                sreg_resp = trans.app.openid_manager.get_sreg(info)
+                try:
+                    sreg_username_name = openid_provider_obj.use_for.get('username')
+                    username = sreg_resp.get(sreg_username_name, '')
+                except AttributeError:
+                    username = ''
+                try:
+                    sreg_email_name = openid_provider_obj.use_for.get('email')
+                    email = sreg_resp.get(sreg_email_name, '')
+                except AttributeError:
+                    email = ''
+                return trans.show_error_message(message)
         elif info.status == trans.app.openid_manager.CANCEL:
             message = "Login via OpenID was cancelled by an action at the OpenID provider's site."
-            status = "warning"
         elif info.status == trans.app.openid_manager.SETUP_NEEDED:
             if info.setup_url:
                 return trans.response.send_redirect(info.setup_url)
