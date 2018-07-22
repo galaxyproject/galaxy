@@ -3,8 +3,6 @@ Contains the user interface in the Universe class
 """
 
 import logging
-import random
-import socket
 from datetime import datetime, timedelta
 
 from markupsafe import escape
@@ -25,7 +23,7 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.util import biostar, hash_util
+from galaxy.util import biostar
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
@@ -152,17 +150,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.sa_session.add(user_openid)
                 trans.sa_session.flush()
                 message = "OpenID authentication was successful, but you need to associate your OpenID with a Galaxy account. Register a Galaxy account and add your OpenID account in the User Preferences section."
-                sreg_resp = trans.app.openid_manager.get_sreg(info)
-                try:
-                    sreg_username_name = openid_provider_obj.use_for.get('username')
-                    username = sreg_resp.get(sreg_username_name, '')
-                except AttributeError:
-                    username = ''
-                try:
-                    sreg_email_name = openid_provider_obj.use_for.get('email')
-                    email = sreg_resp.get(sreg_email_name, '')
-                except AttributeError:
-                    email = ''
                 return trans.show_error_message(message)
         elif info.status == trans.app.openid_manager.CANCEL:
             message = "Login via OpenID was cancelled by an action at the OpenID provider's site."
@@ -224,7 +211,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return self.user_openid_grid(trans, **kwd)
 
     @expose_api_anonymous_and_sessionless
-    def login(self, trans, payload=None, **kwd):
+    def login(self, trans, payload={}, **kwd):
         '''Handle Galaxy Log in'''
         if "openid_provider" in payload or "openid_url" in payload:
             return self.__openid_auth(trans, payload, **kwd)
@@ -239,8 +226,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         consumer = trans.app.openid_manager.get_consumer(trans)
         openid_url = payload.get('openid_url')
         openid_provider = payload.get('openid_provider')
-        redirect=payload.get('redirect')
-        method=payload.get('method')
+        redirect = payload.get('redirect')
+        method = payload.get('method')
         if openid_url:
             openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier(openid_url)
         elif openid_provider:
@@ -306,6 +293,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         payload = payload or {}
         username = payload.get("username")
         password = payload.get("password")
+        status = None
         if not username or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
@@ -314,7 +302,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
-            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
+            message, status, user, success = self.__autoregistration(trans, username, password, status, kwd)
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -487,7 +475,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
         is_admin = trans.user_is_admin()
-        success=False
+        success = False
         show_user_prepopulate_form = False
         if not trans.app.config.allow_user_creation and not trans.user_is_admin():
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
@@ -568,12 +556,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return
 
     def __validate(self, trans, params, email, password, confirm, username):
-        # If coming from the tool shed webapp, we'll require a public user name
-        if trans.webapp.name == 'tool_shed':
-            if not username:
-                return "A public user name is required in the tool shed."
-            if username in ['repos']:
-                return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % escape(username)
         message = "\n".join([validate_email(trans, email),
                              validate_password(trans, password, confirm),
                              validate_publicname(trans, username)]).rstrip()

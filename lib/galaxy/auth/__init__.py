@@ -1,13 +1,18 @@
 """
 Contains implementations of the authentication logic.
 """
-
 import logging
+import random
+import socket
+from datetime import datetime
+
+from markupsafe import escape
 
 from galaxy.auth.util import get_authenticators, parse_auth_results
 from galaxy.exceptions import Conflict
 from galaxy.managers import users
-from galaxy.util import hash_util, restore_text, string_as_bool
+from galaxy.util import hash_util, restore_text, send_mail, string_as_bool
+from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -146,7 +151,7 @@ class AuthManager(object):
                 frm = email
                 subject = 'Join Mailing List'
                 try:
-                    util.send_mail(frm, to, subject, body, trans.app.config)
+                    send_mail(frm, to, subject, body, trans.app.config)
                 except Exception:
                     log.exception('Subscribing to the mailing list has failed.')
                     status = "warning"
@@ -199,7 +204,7 @@ class AuthManager(object):
         frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
         subject = 'Galaxy Account Activation'
         try:
-            util.send_mail(frm, to, subject, body, trans.app.config)
+            send_mail(frm, to, subject, body, trans.app.config)
             return True
         except Exception:
             log.exception('Unable to send the activation email.')

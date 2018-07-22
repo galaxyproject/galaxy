@@ -119,7 +119,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                     header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", "")
                 else:
                     header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", "")
-        return trans.fill_template('/user/login.mako',
+        return trans.fill_template('/webapps/tool_shed/user/login.mako',
                                    login=login,
                                    header=header,
                                    use_panels=use_panels,
@@ -624,7 +624,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                         trans.log_event("User reset password: %s" % email)
                     except Exception:
                         log.exception('Unable to reset password.')
-        return trans.fill_template('/user/reset_password.mako',
+        return trans.fill_template('/webapps/tool_shed/user/reset_password.mako',
                                    message=message,
                                    status=status)
 
