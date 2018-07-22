@@ -15,27 +15,110 @@ log = logging.getLogger(__name__)
 class DataManager(BaseUIController):
 
     @web.expose
-    def index(self, trans, **kwd):
+    @web.json
+    def data_managers_list(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
-        message = escape(kwd.get('message', ''))
-        status = escape(kwd.get('status', 'info'))
-        return trans.fill_template("data_manager/index.mako", data_managers=trans.app.data_managers, tool_data_tables=trans.app.tool_data_tables, view_only=not_is_admin, message=message, status=status)
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
+        data_managers = []
+        for data_manager_id, data_manager in sorted(trans.app.data_managers.data_managers.iteritems(),
+                                                    key=lambda data_manager: data_manager[1].name):
+            data_managers.append({'toolUrl': web.url_for(controller='root',
+                                                     tool_id=data_manager.tool.id),
+                                  'id': data_manager_id,
+                                  'name': data_manager.name,
+                                  'description': data_manager.description})
+        data_tables = []
+        managed_table_names = trans.app.data_managers.managed_data_tables.keys()
+        for table_name in sorted(trans.app.tool_data_tables.get_tables().keys()):
+            data_tables.append({'url': web.url_for(controller='data_manager',
+                                                   action='manage_data_table',
+                                                   table_name=table_name),
+                                'name': table_name,
+                                'managed': True if table_name in managed_table_names else False})
+
+        return {'dataManagers': data_managers,
+                'dataTables': data_tables,
+                'viewOnly': not_is_admin,
+                'message': message,
+                'status': status}
 
     @web.expose
-    def manage_data_manager(self, trans, **kwd):
+    @web.json
+    def jobs_list(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
-        message = escape(kwd.get('message', ''))
-        status = escape(kwd.get('status', 'info'))
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
         data_manager_id = kwd.get('id', None)
         data_manager = trans.app.data_managers.get_manager(data_manager_id)
         if data_manager is None:
             return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid Data Manager (%s) was requested" % data_manager_id, status="error"))
-        jobs = list(reversed([assoc.job for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id)]))
-        return trans.fill_template("data_manager/manage_data_manager.mako", data_manager=data_manager, jobs=jobs, view_only=not_is_admin, message=message, status=status)
+
+        jobs = []
+        for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id):
+            j = assoc.job
+            jobs.append({
+                'id': j.id,
+                'runUrl': web.url_for(controller="tool_runner", action="rerun", job_id=trans.security.encode_id(j.id)),
+                'infoUrl': web.url_for(controller="data_manager", action="view_job", id=trans.security.encode_id(j.id)),
+                'user': j.history.user.email if j.history and j.history.user else "anonymous",
+                'updateTime': j.update_time.isoformat(),
+                'state': j.state,
+                'commandLine': j.command_line,
+                'jobRunnerName': j.job_runner_name,
+                'jobRunnerExternalId': j.job_runner_external_id
+            })
+        jobs.reverse()
+        return {'dataManager': {'name': data_manager.name, 'description': data_manager.description},
+                'jobs': jobs,
+                'viewOnly': not_is_admin,
+                'message': message,
+                'status': status}
+
+    @web.expose
+    @web.json
+    def job_info(self, trans, **kwd):
+        not_is_admin = not trans.user_is_admin()
+        if not_is_admin and not trans.app.config.enable_data_manager_user_view:
+            raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
+        job_id = kwd.get('id', None)
+        try:
+            job_id = trans.security.decode_id(job_id)
+            job = trans.sa_session.query(trans.app.model.Job).get(job_id)
+        except Exception as e:
+            job = None
+            log.error("Bad job id (%s) passed to view_job: %s" % (job_id, e))
+        if not job:
+            return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid job (%s) was requested" % job_id, status="error"))
+        data_manager_id = job.data_manager_association.data_manager_id
+        data_manager = trans.app.data_managers.get_manager(data_manager_id)
+        hdas = [assoc.dataset for assoc in job.get_output_datasets()]
+        data_manager_output = []
+        error_messages = []
+        for hda in hdas:
+            try:
+                data_manager_json = loads(open(hda.get_file_name()).read())
+            except Exception as e:
+                data_manager_json = {}
+                error_messages.append("Unable to obtain data_table info for hda (%s): %s" % (hda.id, e))
+            values = []
+            for key, value in data_manager_json.get('data_tables', {}).items():
+                values.append((key, value))
+            data_manager_output.append(values)
+        return {'job': job,
+                'data_manager': data_manager,
+                'hdas': hdas,
+                'data_manager_output': data_manager_output,
+                'error_messages': error_messages,
+                'view_only': not_is_admin,
+                'message': message,
+                'status': status}
 
     @web.expose
     def view_job(self, trans, **kwd):

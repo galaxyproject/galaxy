@@ -40,7 +40,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Local data"),
-                        url: "data_manager",
+                        url: "admin/data_manager",
+                        target: "__use_router__",
                         id: "admin-link-local-data"
                     }
                 ]
