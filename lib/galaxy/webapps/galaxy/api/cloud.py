@@ -127,7 +127,7 @@ class CloudController(BaseAPIController):
                                              bucket=bucket,
                                              objects=objects,
                                              credentials=credentials,
-                                             input_args=payload.get("input_args", {}))
+                                             input_args=payload.get("input_args", None))
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))

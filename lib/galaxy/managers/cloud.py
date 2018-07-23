@@ -161,7 +161,7 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
-    def upload(self, trans, history_id, provider, bucket, objects, credentials, input_args={}):
+    def upload(self, trans, history_id, provider, bucket, objects, credentials, input_args=None):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
@@ -194,6 +194,9 @@ class CloudManager(sharable.SharableModelManager):
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
+
+        if input_args is None:
+            input_args = {}
 
         connection = self._configure_provider(provider, credentials)
         try:
