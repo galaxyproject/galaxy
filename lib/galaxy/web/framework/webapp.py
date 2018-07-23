@@ -30,6 +30,7 @@ from galaxy.util import (
     asbool,
     safe_makedirs,
     safe_str_cmp,
+    smart_str,
     unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
@@ -405,8 +406,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         if not master_api_key:
             return False
         # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(master_api_key).hexdigest()
-        provided_hash = hashlib.sha256(api_key).hexdigest()
+        master_hash = hashlib.sha256(smart_str(master_api_key)).hexdigest()
+        provided_hash = hashlib.sha256(smart_str(api_key)).hexdigest()
         return safe_str_cmp(master_hash, provided_hash)
 
     def _ensure_valid_session(self, session_cookie, create=True):
