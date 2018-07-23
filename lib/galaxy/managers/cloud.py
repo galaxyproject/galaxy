@@ -166,31 +166,33 @@ class CloudManager(sharable.SharableModelManager):
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
-        :param trans: Galaxy web transaction
+        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:       Galaxy web transaction
 
-        :type  history_id: string
-        :param history_id: the (encoded) id of history to which the object should be uploaded to.
+        :type  history_id:  string
+        :param history_id:  the (encoded) id of history to which the object should be uploaded to.
 
-        :type  provider: string
-        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
-        `SUPPORTED_PROVIDERS` variable.
+        :type  provider:    string
+        :param provider:    the name of cloud-based resource provided. A list of supported providers is given in
+                            `SUPPORTED_PROVIDERS` variable.
 
-        :type  bucket: string
-        :param bucket: the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
+        :type  bucket:      string
+        :param bucket:      the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
 
-        :type  objects: list of string
-        :param objects: the name of objects to be uploaded.
+        :type  objects:     list of string
+        :param objects:     the name of objects to be uploaded.
 
         :type  credentials: dict
         :param credentials: a dictionary containing all the credentials required to authenticated to the
-        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+                            specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
+                            "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
-        :type  input_args: dict
-        :param input_args: a [Optional] a dictionary of input parameters: dbkey, file_type, space_to_tab, to_posix_lines
+        :type  input_args:  dict
+        :param input_args:  a [Optional] a dictionary of input parameters:
+                            dbkey, file_type, space_to_tab, to_posix_lines (see galaxy/webapps/galaxy/api/cloud.py)
 
-        :rtype:  list of galaxy.model.Dataset
-        :return: a list of datasets created for the uploaded files.
+        :rtype:             list of galaxy.model.Dataset
+        :return:            a list of datasets created for the uploaded files.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -232,39 +234,39 @@ class CloudManager(sharable.SharableModelManager):
         Implements the logic of downloading dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
-        :param trans: Galaxy web transaction
+        :type  trans:               galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:               Galaxy web transaction
 
-        :type  history_id: string
-        :param history_id: the (encoded) id of history from which the object should be downloaded.
+        :type  history_id:          string
+        :param history_id:          the (encoded) id of history from which the object should be downloaded.
 
-        :type  provider: string
-        :param provider: the name of cloud-based resource provided. A list of supported providers
-                         is given in `SUPPORTED_PROVIDERS` variable.
+        :type  provider:            string
+        :param provider:            the name of cloud-based resource provided. A list of supported providers
+                                    is given in `SUPPORTED_PROVIDERS` variable.
 
-        :type  bucket: string
-        :param bucket: the name of a bucket to which data should be downloaded (e.g., a bucket
-                       name on AWS S3).
+        :type  bucket:              string
+        :param bucket:              the name of a bucket to which data should be downloaded (e.g., a bucket
+                                    name on AWS S3).
 
-        :type  credentials: dict
-        :param credentials: a dictionary containing all the credentials required to authenticated
-                            to the specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
-                            "access_key": YOUR_AWS_ACCESS_TOKEN}).
+        :type  credentials:         dict
+        :param credentials:         a dictionary containing all the credentials required to authenticated
+                                    to the specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
+                                    "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
-        :type  dataset_ids: set
-        :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given
-                            history which should be downloaded to the given provider. If not provided,
-                            Galaxy downloads all the datasets belonging to the given history.
+        :type  dataset_ids:         set
+        :param dataset_ids:         [Optional] The list of (decoded) dataset ID(s) belonging to the given
+                                    history which should be downloaded to the given provider. If not provided,
+                                    Galaxy downloads all the datasets belonging to the given history.
 
-        :type  overwrite_existing: boolean
-        :param overwrite_existing: [Optional] If set to "True", and an object with same name of the
-                                   dataset to be downloaded already exist in the bucket, Galaxy replaces
-                                   the existing object with the dataset to be downloaded. If set to
-                                   "False", Galaxy appends datetime to the dataset name to prevent
-                                   overwriting the existing object.
+        :type  overwrite_existing:  boolean
+        :param overwrite_existing:  [Optional] If set to "True", and an object with same name of the
+                                    dataset to be downloaded already exist in the bucket, Galaxy replaces
+                                    the existing object with the dataset to be downloaded. If set to
+                                    "False", Galaxy appends datetime to the dataset name to prevent
+                                    overwriting the existing object.
 
-        :rtype:  list
-        :return: A list of labels for the objects that were uploaded.
+        :rtype:                     list
+        :return:                    A list of labels for the objects that were uploaded.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
