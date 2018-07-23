@@ -189,9 +189,8 @@ class CloudManager(sharable.SharableModelManager):
 
             params = Params(inputs, sanitize=False)
             incoming = params.__dict__
-            upload_tool = trans.app.toolbox.get_tool('upload1')
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
-            output = upload_tool.handle_input(trans, incoming, history=history)
+            output = trans.app.toolbox.get_tool('upload1').handle_input(trans, incoming, history=history)
 
             job_errors = output.get('job_errors', [])
             if job_errors:
