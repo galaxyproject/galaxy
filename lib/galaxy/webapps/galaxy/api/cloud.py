@@ -98,7 +98,6 @@ class CloudController(BaseAPIController):
             raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
                 type(objects)))
 
-
         datasets = self.cloud_manager.upload(trans=trans,
                                              history_id=history_id,
                                              provider=provider,
