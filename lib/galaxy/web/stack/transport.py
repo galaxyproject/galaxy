@@ -3,7 +3,6 @@
 from __future__ import absolute_import
 
 import logging
-import sys
 import threading
 
 try:
@@ -75,7 +74,6 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         need = len(farms)
         if num < need:
             raise RuntimeError('Need %i uWSGI locks but only %i exist(s): Set `locks = %i` in uWSGI configuration' % (need, num, need - 1))
-            sys.exit(1)
         self._locks.extend(['RECV_MSG_FARM_' + x for x in farms])
         # this would be nice, but in my 2.0.15 uWSGI, the uwsgi module has no set_option function, and I don't know if it'd work even if the function existed as documented
         # if len(self.lock_map) > 1:
