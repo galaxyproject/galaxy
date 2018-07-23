@@ -55,6 +55,29 @@ class CloudController(BaseAPIController):
             *   objects:       a list of the names of objects to be uploaded.
             *   credentials:   a dictionary containing all the credentials required to authenticated to the
             specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+            *   input_args     [Optional; default value is an empty dict] a dictionary containing the following keys:
+
+                                **   `dbkey`:           [Optional; default value: is `?`]
+                                                        Sets the genome (e.g., `hg19`) of the objects being
+                                                        uploaded to Galaxy.
+
+                                **   `file_type`:       [Optional; default value is `auto`]
+                                                        Sets the Galaxy datatype (e.g., `bam`) for the
+                                                        objects being uploaded to Galaxy. See the following
+                                                        link for a complete list of Galaxy data types:
+                                                        https://galaxyproject.org/learn/datatypes/
+
+                                **   `space_to_tab`:    [Optional; default value is `False`]
+                                                        A boolean value ("true" or "false") that sets if spaces
+                                                        should be converted to tab in the objects being
+                                                        uploaded to Galaxy. Applicable only if `to_posix_lines`
+                                                        is True
+
+                                **   `to_posix_lines`:  [Optional; default value is `Yes`]
+                                                        A boolean value ("true" or "false"); if "Yes", converts
+                                                        universal line endings to POSIX line endings. Set to
+                                                        "False" if you upload a gzip, bz2 or zip archive
+                                                        containing a binary file.
 
         :param kwargs:
 
@@ -103,7 +126,8 @@ class CloudController(BaseAPIController):
                                              provider=provider,
                                              bucket=bucket,
                                              objects=objects,
-                                             credentials=credentials)
+                                             credentials=credentials,
+                                             input_args=payload.get("input_args", {}))
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))

@@ -132,7 +132,35 @@ class CloudManager(sharable.SharableModelManager):
         except ProviderConnectionException as e:
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
-    def upload(self, trans, history_id, provider, bucket, objects, credentials):
+    @staticmethod
+    def _get_inputs(obj, key, input_args):
+        space_to_tab = None
+        if input_args.get('space_to_tab', "").lower() == "true":
+            space_to_tab = "Yes"
+        elif input_args.get('space_to_tab', "").lower() != "false":
+            raise RequestParameterInvalidException(
+                "The valid values for `space_to_tab` argument are `true` and `false`; received {}".format(
+                    input_args.get('space_to_tab')))
+
+        to_posix_lines = None
+        if input_args.get('to_posix_lines', "").lower() == "true":
+            to_posix_lines = "Yes"
+        elif input_args.get('to_posix_lines', "").lower() != "false":
+            raise RequestParameterInvalidException(
+                "The valid values for `to_posix_lines` argument are `true` and `false`; received {}".format(
+                    input_args.get('to_posix_lines')))
+
+        return {
+            'dbkey': input_args.get("dbkey", "?"),
+            'file_type': input_args.get("file_type", "auto"),
+            'files_0|type': 'upload_dataset',
+            'files_0|space_to_tab': space_to_tab,
+            'files_0|to_posix_lines': to_posix_lines,
+            'files_0|NAME': obj,
+            'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
+        }
+
+    def upload(self, trans, history_id, provider, bucket, objects, credentials, input_args={}):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
@@ -157,6 +185,9 @@ class CloudManager(sharable.SharableModelManager):
         :param credentials: a dictionary containing all the credentials required to authenticated to the
         specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
+        :type  input_args: dict
+        :param input_args: a [Optional] a dictionary of input parameters: dbkey, file_type, space_to_tab, to_posix_lines
+
         :rtype:  list of galaxy.model.Dataset
         :return: a list of datasets created for the uploaded files.
         """
@@ -177,17 +208,7 @@ class CloudManager(sharable.SharableModelManager):
             if key is None:
                 raise ObjectNotFound("Could not get the object `{}`.".format(obj))
 
-            inputs = {
-                'dbkey': '?',
-                'file_type': 'auto',
-                'files_0|type': 'upload_dataset',
-                'files_0|space_to_tab': None,
-                'files_0|to_posix_lines': 'Yes',
-                'files_0|NAME': obj,
-                'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
-            }
-
-            params = Params(inputs, sanitize=False)
+            params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
             incoming = params.__dict__
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
             output = trans.app.toolbox.get_tool('upload1').handle_input(trans, incoming, history=history)
