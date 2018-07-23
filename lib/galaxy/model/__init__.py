@@ -1458,7 +1458,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         new_history = History(name=name, user=target_user)
         db_session = object_session(self)
         db_session.add(new_history)
-        db_session.flush()
+        db_session.flush([new_history])
 
         # copy history tags and annotations (if copying user is not anonymous)
         if target_user:
@@ -1474,10 +1474,8 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             hdas = self.active_datasets
         for hda in hdas:
             # Copy HDA.
-            new_hda = hda.copy()
+            new_hda = hda.copy(force_flush=False)
             new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
-            db_session.add(new_hda)
-            db_session.flush()
 
             if target_user:
                 new_hda.copy_item_annotation(db_session, self.user, hda, target_user, new_hda)
@@ -1499,7 +1497,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                 new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
-        db_session.add(new_history)
         db_session.flush()
 
         return new_history
@@ -2580,23 +2577,22 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                         visible=self.visible,
                                         deleted=self.deleted,
                                         parent_id=parent_id,
-                                        copied_from_history_dataset_association=self)
+                                        copied_from_history_dataset_association=self,
+                                        flush=False)
         # update init non-keywords as well
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
-        # This next line seems unneeded. -John
-        hda.set_size()
         object_session(self).add(hda)
         flushed = False
         # May need to set after flushed, as MetadataFiles require dataset.id
         if hda.set_metadata_requires_flush:
-            object_session(self).flush()
+            object_session(self).flush([self])
             flushed = True
         hda.metadata = self.metadata
         # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
             if not flushed:
-                object_session(self).flush()
+                object_session(self).flush([self])
 
             hda.set_peek()
         if force_flush:
