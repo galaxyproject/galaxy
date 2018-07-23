@@ -201,23 +201,23 @@ class CloudManager(sharable.SharableModelManager):
 
         return datasets
 
-    def copy_to(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
+    def download(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
         """
-        Implements the logic of copying dataset(s) belonging to a given history to a given cloud-based storage
+        Implements the logic of downloading dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  history_id: string
-        :param history_id: the (encoded) id of history from which the object should be copied.
+        :param history_id: the (encoded) id of history from which the object should be downloaded.
 
         :type  provider: string
         :param provider: the name of cloud-based resource provided. A list of supported providers
                          is given in `SUPPORTED_PROVIDERS` variable.
 
         :type  bucket: string
-        :param bucket: the name of a bucket to which data should be copied (e.g., a bucket
+        :param bucket: the name of a bucket to which data should be downloaded (e.g., a bucket
                        name on AWS S3).
 
         :type  credentials: dict
@@ -227,13 +227,13 @@ class CloudManager(sharable.SharableModelManager):
 
         :type  dataset_ids: set
         :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given
-                            history which should be copied to the given provider. If not provided,
-                            Galaxy copies all the datasets belonging to the given history.
+                            history which should be downloaded to the given provider. If not provided,
+                            Galaxy downloads all the datasets belonging to the given history.
 
         :type  overwrite_existing: boolean
         :param overwrite_existing: [Optional] If set to "True", and an object with same name of the
-                                   dataset to be copied already exist in the bucket, Galaxy replaces
-                                   the existing object with the dataset to be copied. If set to
+                                   dataset to be downloaded already exist in the bucket, Galaxy replaces
+                                   the existing object with the dataset to be downloaded. If set to
                                    "False", Galaxy appends datetime to the dataset name to prevent
                                    overwriting the existing object.
 
@@ -249,7 +249,7 @@ class CloudManager(sharable.SharableModelManager):
             raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
-        uploaded = []
+        downloaded = []
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
@@ -257,5 +257,5 @@ class CloudManager(sharable.SharableModelManager):
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
                 created_obj = bucket_obj.create_object(object_label)
                 created_obj.upload_from_file(hda.dataset.get_file_name())
-                uploaded.append(object_label)
-        return uploaded
+                downloaded.append(object_label)
+        return downloaded

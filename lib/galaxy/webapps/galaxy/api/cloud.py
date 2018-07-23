@@ -106,10 +106,10 @@ class CloudController(BaseAPIController):
         return rtv
 
     @expose_api
-    def copy_to(self, trans, payload, **kwargs):
+    def download(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/copy-to
-            Copies a given dataset in a given history to a given cloud-based bucket. Each dataset is named
+        * POST /api/cloud/storage/download
+            Downloads a given dataset in a given history to a given cloud-based bucket. Each dataset is named
             using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
             If no dataset ID is given, this API copies all the datasets belonging to a given history to a given
             cloud-based bucket.
@@ -118,26 +118,26 @@ class CloudController(BaseAPIController):
 
         :type  payload: dictionary
         :param payload: A dictionary structure containing the following keys:
-            *   history_id              the (encoded) id of history from which the object should be copied.
+            *   history_id              the (encoded) id of history from which the object should be downloaed.
             *   provider:               the name of a cloud-based resource provider (e.g., `aws`, `azure`, or `openstack`).
-            *   bucket:                 the name of a bucket to which data should be copied (e.g., a bucket name on AWS S3).
+            *   bucket:                 the name of a bucket to which data should be downloaded (e.g., a bucket name on AWS S3).
             *   credentials:            a dictionary containing all the credentials required to authenticated to the
                                         specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
                                         "access_key": YOUR_AWS_ACCESS_TOKEN}).
             *   dataset_ids:            [Optional; default: None]
                                         A list of encoded dataset IDs belonging to the specified history
-                                        that should be copied to the given bucket. If not provided, Galaxy copies
+                                        that should be downloaded to the given bucket. If not provided, Galaxy downloads
                                         all the datasets belonging the specified history.
             *   overwrite_existing:     [Optional; default: False]
                                         A boolean value. If set to "True", and an object with same name of the dataset
-                                        to be copied already exist in the bucket, Galaxy replaces the existing object
-                                        with the dataset to be copied. If set to "False", Galaxy appends datetime
+                                        to be downloaded already exist in the bucket, Galaxy replaces the existing object
+                                        with the dataset to be downloaded. If set to "False", Galaxy appends datetime
                                         to the dataset name to prevent overwriting an existing object.
 
         :param kwargs:
 
         :rtype:  dictionary
-        :return: Information about the copied datasets, including uploaded_dataset_labels
+        :return: Information about the downloaded datasets, including downloaded_dataset_labels
                  and destination bucket name.
         """
         missing_arguments = []
@@ -180,12 +180,12 @@ class CloudController(BaseAPIController):
                 raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
                                        "{}".format(invalid_dataset_ids))
 
-        uploaded = self.cloud_manager.copy_to(trans=trans,
-                                              history_id=history_id,
-                                              provider=provider,
-                                              bucket=bucket,
-                                              credentials=credentials,
-                                              dataset_ids=dataset_ids,
-                                              overwrite_existing=payload.get("overwrite_existing", False))
-        return {'uploaded_dataset_labels': uploaded,
+        uploaded = self.cloud_manager.download(trans=trans,
+                                               history_id=history_id,
+                                               provider=provider,
+                                               bucket=bucket,
+                                               credentials=credentials,
+                                               dataset_ids=dataset_ids,
+                                               overwrite_existing=payload.get("overwrite_existing", False))
+        return {'downloaded_dataset_labels': uploaded,
                 'bucket_name': bucket}
