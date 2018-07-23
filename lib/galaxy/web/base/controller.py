@@ -394,7 +394,8 @@ class ExportsHistoryMixin(object):
             trans.response.set_content_type('application/x-tar')
         disposition = 'attachment; filename="%s"' % jeha.export_name
         trans.response.headers["Content-Disposition"] = disposition
-        return open(trans.app.object_store.get_filename(jeha.dataset))
+        archive = trans.app.object_store.get_filename(jeha.dataset)
+        return open(archive, mode='rb')
 
     def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False):
         # Convert options to booleans.
