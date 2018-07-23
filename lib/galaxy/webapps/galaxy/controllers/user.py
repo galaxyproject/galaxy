@@ -291,8 +291,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     def __validate_login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
         payload = payload or {}
-        username = payload.get("username")
-        password = payload.get("password")
+        username = kwd.get("username", payload.get("username"))
+        password = kwd.get("password", payload.get("password"))
         status = None
         if not username or not password:
             return self.message_exception(trans, "Please specify a username and password.")
@@ -302,7 +302,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
-            message, status, user, success = self.__autoregistration(trans, username, password, status, kwd)
+            return self.message_exception(trans, "User not found.")
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
