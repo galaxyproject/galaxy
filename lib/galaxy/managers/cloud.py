@@ -132,7 +132,7 @@ class CloudManager(sharable.SharableModelManager):
         except ProviderConnectionException as e:
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
-    def upload(self, trans, history_id, provider, bucket, obj, credentials):
+    def upload(self, trans, history_id, provider, bucket, objects, credentials):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
@@ -150,8 +150,8 @@ class CloudManager(sharable.SharableModelManager):
         :type  bucket: string
         :param bucket: the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
 
-        :type  obj: string
-        :param obj: the name of an object to be uploaded.
+        :type  objects: list of string
+        :param objects: the name of objects to be uploaded.
 
         :type  credentials: dict
         :param credentials: a dictionary containing all the credentials required to authenticated to the
@@ -171,34 +171,35 @@ class CloudManager(sharable.SharableModelManager):
         except Exception as e:
             raise ItemAccessibilityException("Could not get the bucket `{}`: {}".format(bucket, str(e)))
 
-        key = bucket_obj.get(obj)
-        if key is None:
-            raise ObjectNotFound("Could not get the object `{}`.".format(obj))
-
         datasets = []
-        inputs = {
-            'dbkey': '?',
-            'file_type': 'auto',
-            'files_0|type': 'upload_dataset',
-            'files_0|space_to_tab': None,
-            'files_0|to_posix_lines': 'Yes',
-            'files_0|NAME': obj,
-            'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
-        }
+        for obj in objects:
+            key = bucket_obj.get(obj)
+            if key is None:
+                raise ObjectNotFound("Could not get the object `{}`.".format(obj))
 
-        params = Params(inputs, sanitize=False)
-        incoming = params.__dict__
-        upload_tool = trans.app.toolbox.get_tool('upload1')
-        history = trans.sa_session.query(trans.app.model.History).get(history_id)
-        output = upload_tool.handle_input(trans, incoming, history=history)
+            inputs = {
+                'dbkey': '?',
+                'file_type': 'auto',
+                'files_0|type': 'upload_dataset',
+                'files_0|space_to_tab': None,
+                'files_0|to_posix_lines': 'Yes',
+                'files_0|NAME': obj,
+                'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
+            }
 
-        job_errors = output.get('job_errors', [])
-        if job_errors:
-            raise ValueError('Following error occurred while uploading the given object(s) from {}: {}'.format(
-                provider, job_errors))
-        else:
-            for d in output['out_data']:
-                datasets.append(d[1].dataset)
+            params = Params(inputs, sanitize=False)
+            incoming = params.__dict__
+            upload_tool = trans.app.toolbox.get_tool('upload1')
+            history = trans.sa_session.query(trans.app.model.History).get(history_id)
+            output = upload_tool.handle_input(trans, incoming, history=history)
+
+            job_errors = output.get('job_errors', [])
+            if job_errors:
+                raise ValueError('Following error occurred while uploading the given object(s) from {}: {}'.format(
+                    provider, job_errors))
+            else:
+                for d in output['out_data']:
+                    datasets.append(d[1].dataset)
 
         return datasets
 

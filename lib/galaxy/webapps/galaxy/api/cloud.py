@@ -43,7 +43,7 @@ class CloudController(BaseAPIController):
     def upload(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/storage/upload
-            Uploads a given object from a given cloud-based bucket to a Galaxy history.
+            Uploads given objects from a given cloud-based bucket to a Galaxy history.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
@@ -52,7 +52,7 @@ class CloudController(BaseAPIController):
             *   history_id:    the (encoded) id of history to which the object should be uploaded to.
             *   provider:      the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
             *   bucket:        the name of a bucket from which data should be uploaded from (e.g., a bucket name on AWS S3).
-            *   object:        the name of an object to be uploaded.
+            *   objects:       a list of the names of objects to be uploaded.
             *   credentials:   a dictionary containing all the credentials required to authenticated to the
             specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
@@ -78,9 +78,9 @@ class CloudController(BaseAPIController):
         if bucket is None:
             missing_arguments.append("bucket")
 
-        obj = payload.get("object", None)
-        if obj is None:
-            missing_arguments.append("object")
+        objects = payload.get("objects", None)
+        if objects is None:
+            missing_arguments.append("objects")
 
         credentials = payload.get("credentials", None)
         if credentials is None:
@@ -94,11 +94,16 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
+        if not isinstance(objects, list):
+            raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
+                type(objects)))
+
+
         datasets = self.cloud_manager.upload(trans=trans,
                                              history_id=history_id,
                                              provider=provider,
                                              bucket=bucket,
-                                             obj=obj,
+                                             objects=objects,
                                              credentials=credentials)
         rtv = []
         for dataset in datasets:
