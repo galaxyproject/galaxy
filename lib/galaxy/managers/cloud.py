@@ -40,7 +40,8 @@ class CloudManager(sharable.SharableModelManager):
     def __init__(self, app, *args, **kwargs):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
-    def _configure_provider(self, provider, credentials):
+    @staticmethod
+    def _configure_provider(provider, credentials):
         """
         Given a provider name and required credentials, it configures and returns a cloudbridge
         connection to the provider.
