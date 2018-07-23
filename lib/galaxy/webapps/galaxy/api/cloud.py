@@ -40,19 +40,19 @@ class CloudController(BaseAPIController):
         return 'Not Implemented'
 
     @expose_api
-    def copy_from(self, trans, payload, **kwargs):
+    def upload(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/copy-from
-            Copies a given object from a given cloud-based bucket to a Galaxy history.
+        * POST /api/cloud/storage/upload
+            Uploads a given object from a given cloud-based bucket to a Galaxy history.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
-            *   history_id:    the (encoded) id of history to which the object should be copied to.
+            *   history_id:    the (encoded) id of history to which the object should be uploaded to.
             *   provider:      the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
-            *   bucket:        the name of a bucket from which data should be copied from (e.g., a bucket name on AWS S3).
-            *   object:        the name of an object to be copied.
+            *   bucket:        the name of a bucket from which data should be uploaded from (e.g., a bucket name on AWS S3).
+            *   object:        the name of an object to be uploaded.
             *   credentials:   a dictionary containing all the credentials required to authenticated to the
             specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
@@ -94,12 +94,12 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
-        datasets = self.cloud_manager.copy_from(trans=trans,
-                                                history_id=history_id,
-                                                provider=provider,
-                                                bucket=bucket,
-                                                obj=obj,
-                                                credentials=credentials)
+        datasets = self.cloud_manager.upload(trans=trans,
+                                             history_id=history_id,
+                                             provider=provider,
+                                             bucket=bucket,
+                                             obj=obj,
+                                             credentials=credentials)
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))

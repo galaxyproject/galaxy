@@ -132,33 +132,33 @@ class CloudManager(sharable.SharableModelManager):
         except ProviderConnectionException as e:
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
-    def copy_from(self, trans, history_id, provider, bucket, obj, credentials):
+    def upload(self, trans, history_id, provider, bucket, obj, credentials):
         """
-        Implements the logic of copying a file from a cloud-based storage (e.g., Amazon S3)
+        Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  history_id: string
-        :param history_id: the (encoded) id of history to which the object should be downloaded to.
+        :param history_id: the (encoded) id of history to which the object should be uploaded to.
 
         :type  provider: string
         :param provider: the name of cloud-based resource provided. A list of supported providers is given in
         `SUPPORTED_PROVIDERS` variable.
 
         :type  bucket: string
-        :param bucket: the name of a bucket from which data should be downloaded (e.g., a bucket name on AWS S3).
+        :param bucket: the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
 
         :type  obj: string
-        :param obj: the name of an object to be downloaded.
+        :param obj: the name of an object to be uploaded.
 
         :type  credentials: dict
         :param credentials: a dictionary containing all the credentials required to authenticated to the
         specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
         :rtype:  list of galaxy.model.Dataset
-        :return: a list of datasets created for the downloaded files.
+        :return: a list of datasets created for the uploaded files.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
