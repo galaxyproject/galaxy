@@ -131,6 +131,8 @@
   <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_cat_group_tag.xml" />
+  <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="cheetah_problem_unbound_var.xml" />

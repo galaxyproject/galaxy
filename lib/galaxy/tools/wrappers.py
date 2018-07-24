@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 
-from six import string_types
+from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
@@ -170,6 +170,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
 
     def __getattr__(self, key):
         return getattr(self.input, key)
+
+    def __iter__(self):
+        if not self.input.multiple:
+            raise Exception("Tried to iterate over a non-multiple parameter.")
+        return self.value.__iter__()
 
 
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
@@ -407,9 +412,13 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.__element_instance_list = element_instance_list
 
     def get_datasets_for_group(self, group):
-        group = group.lower()
+        group = text_type(group).lower()
         if not self._dataset_elements_cache.get(group):
-            self._dataset_elements_cache[group] = [self._dataset_wrapper(e.element_object, self.dataset_paths, identifier=e.element_identifier, **self.kwargs) for e in self.collection.dataset_elements if any((t for t in e.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group))]
+            wrappers = []
+            for element in self.collection.dataset_elements:
+                if any([t for t in element.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                    wrappers.append(self._dataset_wrapper(element.element_object, self.dataset_paths, identifier=element.element_identifier, **self.kwargs))
+            self._dataset_elements_cache[group] = wrappers
         return self._dataset_elements_cache[group]
 
     def keys(self):
