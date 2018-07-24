@@ -138,7 +138,7 @@ class CloudManager(sharable.SharableModelManager):
         space_to_tab = None
         if input_args.get('space_to_tab', "").lower() == "true":
             space_to_tab = "Yes"
-        elif input_args.get('space_to_tab', "").lower() != "false":
+        elif input_args.get('space_to_tab', "").lower() not in ["false", ""]:
             raise RequestParameterInvalidException(
                 "The valid values for `space_to_tab` argument are `true` and `false`; received {}".format(
                     input_args.get('space_to_tab')))
@@ -146,7 +146,7 @@ class CloudManager(sharable.SharableModelManager):
         to_posix_lines = None
         if input_args.get('to_posix_lines', "").lower() == "true":
             to_posix_lines = "Yes"
-        elif input_args.get('to_posix_lines', "").lower() != "false":
+        elif input_args.get('to_posix_lines', "").lower() not in ["false", ""]:
             raise RequestParameterInvalidException(
                 "The valid values for `to_posix_lines` argument are `true` and `false`; received {}".format(
                     input_args.get('to_posix_lines')))
