@@ -8,6 +8,7 @@ import logging
 from galaxy.exceptions import (
     AuthenticationFailed,
     ItemAccessibilityException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException
@@ -210,7 +211,10 @@ class CloudManager(sharable.SharableModelManager):
 
         datasets = []
         for obj in objects:
-            key = bucket_obj.get(obj)
+            try:
+                key = bucket_obj.get(obj)
+            except Exception as e:
+                raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
             if key is None:
                 raise ObjectNotFound("Could not get the object `{}`.".format(obj))
 
