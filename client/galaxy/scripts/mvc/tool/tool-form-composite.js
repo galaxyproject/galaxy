@@ -229,11 +229,7 @@ var View = Backbone.View.extend({
         this.$header
             .addClass("ui-form-header")
             .empty()
-            .append(
-                new Ui.Label({
-                    title: `Workflow: ${this.model.get("name")}`
-                }).$el
-            )
+            .append(`<b>Workflow: ${this.model.get("name")}<b>`)
             .append(this.execute_btn.$el);
     },
 

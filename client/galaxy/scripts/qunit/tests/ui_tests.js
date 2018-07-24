@@ -686,16 +686,6 @@ QUnit.test("select-default", function(assert) {
     });
 });
 
-QUnit.test("label", function(assert) {
-    var label = new Ui.Label({
-        title: "_title"
-    });
-    $("body").prepend(label.$el);
-    assert.ok(label.$el.html() === "_title", "Correct title");
-    label.model.set("title", "_new_title");
-    assert.ok(label.$el.html() === "_new_title", "Correct new title");
-});
-
 QUnit.test("slider", function(assert) {
     var input = new Slider.View({ min: 1, max: 100, value: 10 });
     $("body").prepend(input.$el);

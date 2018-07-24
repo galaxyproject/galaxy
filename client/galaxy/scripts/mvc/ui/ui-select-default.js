@@ -204,7 +204,7 @@ var View = Backbone.View.extend({
                     }
                     return `
                     ${_.escape(result.text)}
-                    <div class="ui-tags">
+                    <div>
                         ${_.reduce(
                             filteredTags.slice(0, 5),
                             (memo, tag) => {

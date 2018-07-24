@@ -8,32 +8,6 @@ import Drilldown from "mvc/ui/ui-drilldown";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
 
-/** Label wrapper */
-export var Label = Backbone.View.extend({
-    tagName: "label",
-    initialize: function(options) {
-        this.model = (options && options.model) || new Backbone.Model(options);
-        this.tagName = options.tagName || this.tagName;
-        this.setElement($(`<${this.tagName}/>`));
-        this.listenTo(this.model, "change", this.render, this);
-        this.render();
-    },
-    title: function(new_title) {
-        this.model.set("title", new_title);
-    },
-    value: function() {
-        return this.model.get("title");
-    },
-    render: function() {
-        this.$el
-            .removeClass()
-            .addClass("ui-label")
-            .addClass(this.model.get("cls"))
-            .html(this.model.get("title"));
-        return this;
-    }
-});
-
 /** Displays messages used e.g. in the tool form */
 export var Message = Backbone.View.extend({
     initialize: function(options) {
@@ -242,7 +216,7 @@ export var Upload = Backbone.View.extend({
                 .append(
                     (this.$file = $("<input/>")
                         .attr("type", "file")
-                        .addClass("ui-margin-bottom"))
+                        .addClass("mb-1"))
                 )
                 .append(
                     (this.$text = $("<textarea/>")
@@ -304,7 +278,6 @@ export default {
     ButtonMenu: Buttons.ButtonMenu,
     ButtonLink: Buttons.ButtonLink,
     Input: Input,
-    Label: Label,
     Message: Message,
     UnescapedMessage: UnescapedMessage,
     Upload: Upload,

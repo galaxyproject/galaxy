@@ -179,10 +179,13 @@
         }
     }
     .upload-icon {
-        @extend .ui-icon;
+        font-size: 1.2em;
+        width: 1.2em;
     }
     .upload-icon-button {
-        @extend .ui-icon-button;
+        font-size: 1.2em;
+        width: 1.2em;
+        cursor: pointer;
         position: relative;
         top: 1px;
     }

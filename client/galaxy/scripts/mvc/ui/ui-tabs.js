@@ -143,7 +143,7 @@ export var View = Backbone.View.extend({
     /** Main template */
     _template: function() {
         return $("<div/>")
-            .addClass("ui-tabs tabbable tabs-left")
+            .addClass("tabbable tabs-left")
             .append(
                 $("<ul/>")
                     .attr("style", "display: flex")
@@ -155,7 +155,7 @@ export var View = Backbone.View.extend({
     /** Tab template */
     _template_tab: function(options) {
         var $tmpl = $("<li/>")
-            .addClass("tab-element nav-item")
+            .addClass("nav-item")
             .attr("id", `tab-${options.id}`)
             .append(
                 $("<a/>")
@@ -166,7 +166,7 @@ export var View = Backbone.View.extend({
         options.icon &&
             $href.append(
                 $("<i/>")
-                    .addClass("tab-icon fa")
+                    .addClass("fa mr-1")
                     .addClass(options.icon)
             );
         $href.append(
