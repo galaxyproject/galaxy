@@ -28,7 +28,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     #   most of which it may be unneccessary to have here
 
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
-    # TODO: incorp CreatesUsersMixin
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
 
