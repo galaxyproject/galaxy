@@ -13,7 +13,6 @@ from sqlalchemy import (
     func,
     or_
 )
-from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
     util,
@@ -34,6 +33,7 @@ from galaxy.web.base.controller import (
     UsesFormDefinitionsMixin
 )
 from galaxy.web.form_builder import CheckboxField
+from galaxy.webapps.galaxy.controllers.user import User as BaseUser
 
 log = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ can also copy and paste it into your browser.
 """
 
 
-class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
+class User(BaseUser, BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     installed_len_files = None
 
     def create_user(self, trans, email, username, password):
@@ -125,6 +125,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
         success = False
+        message = ""
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
             trans.app.model.User.table.c.email == login,
             trans.app.model.User.table.c.username == login
@@ -169,17 +170,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                           (expiredate.days, user.email, redirect, url_for('/'))
                 status = 'warning'
         return (message, status, user, success)
-
-    @web.expose
-    def resend_verification(self, trans):
-        """
-        Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
-        """
-        message, status = self.resend_verification_email(trans, None, None)
-        if status == 'done':
-            return trans.show_ok_message(message)
-        else:
-            return trans.show_error_message(message)
 
     def resend_verification_email(self, trans, email, username):
         """
