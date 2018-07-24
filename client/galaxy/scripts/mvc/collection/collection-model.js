@@ -1,5 +1,6 @@
 import DATASET_MODEL from "mvc/dataset/dataset-model";
 import BASE_MVC from "mvc/base-mvc";
+import Utils from "utils/utils";
 import _l from "utils/localization";
 
 //==============================================================================
@@ -59,10 +60,17 @@ var DatasetCollectionElementMixin = {
 
     /** merge the attributes of the sub-object 'object' into this model */
     _mergeObject: function(attributes) {
-        // if we don't preserve and correct ids here, the element id becomes the object id
-        // and collision in backbone's _byId will occur and only
+        // Don't let the dataset ID replace the DCE's ID so record it as the
+        // element_id and when fetching dataset details below use the element_id
+        // instead of this.id.
+        const object = attributes.object;
+        let elementId = this.elementId;
+        if (object) {
+            elementId = attributes.object.id;
+            delete attributes.object.id;
+        }
         _.extend(attributes, attributes.object, {
-            element_id: attributes.id
+            element_id: elementId
         });
         delete attributes.object;
         return attributes;
@@ -122,7 +130,16 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
                     // (a little silly since this api endpoint *also* points at hdas)
                     return `${Galaxy.root}api/datasets`;
                 }
-                return `${Galaxy.root}api/histories/${this.get("history_id")}/contents/${this.get("id")}`;
+                const datasetId = this._getDatasetId();
+                const url = `${Galaxy.root}api/histories/${this.get("history_id")}/contents/${datasetId}`;
+                return url;
+            },
+
+            _getDatasetId: function() {
+                // I'm a DCE acting as dataset, this URL needs to be the dataset URL so
+                // use element_id instead of id. See note above in _mergeObject and
+                // discussion on #3782 for more context.
+                return this.get("element_id");
             },
 
             defaults: _.extend(
@@ -226,10 +243,10 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 //TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
                 var elements = this.get("elements") || [];
                 this.unset("elements", { silent: true });
-                var self = this;
+                var parentHdcaId = this.get("parent_hdca_id") || this.get("id");
                 _.each(elements, (element, index) => {
                     _.extend(element, {
-                        parent_hdca_id: self.get("id")
+                        parent_hdca_id: parentHdcaId
                     });
                 });
                 this.elements = new collectionClass(elements);
@@ -280,16 +297,19 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 return parsed;
             },
 
-            /** save this dataset, _Mark_ing it as deleted (just a flag) */
-            delete: function(options) {
+            /** save this collection, _Mark_ing it as deleted (just a flag) */
+            delete: function(recursive, purge, options) {
+                recursive = recursive || false;
+                purge = purge || false;
                 if (this.get("deleted")) {
                     return jQuery.when();
                 }
-                return this.save({ deleted: true }, options);
+                options = Utils.merge(options, { method: "delete" });
+                return this.save({ deleted: true, recursive: recursive, purge: purge }, options);
             },
-            /** save this dataset, _Mark_ing it as undeleted */
+            /** save this collection, _Mark_ing it as undeleted */
             undelete: function(options) {
-                if (!this.get("deleted") || this.get("purged")) {
+                if (!this.get("deleted")) {
                     return jQuery.when();
                 }
                 return this.save({ deleted: false }, options);

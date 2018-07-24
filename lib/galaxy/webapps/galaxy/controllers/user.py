@@ -532,7 +532,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         if autoreg["auto_reg"]:
             kwd['email'] = autoreg["email"]
             kwd['username'] = autoreg["username"]
-            message = " ".join([validate_email(trans, kwd['email']),
+            message = " ".join([validate_email(trans, kwd['email'], allow_empty=True),
                                 validate_publicname(trans, kwd['username'])]).rstrip()
             if not message:
                 message, status, user, success = self.__register(trans, cntrller, False, no_redirect=skip_login_handling, **kwd)
@@ -572,7 +572,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if not user:
             message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
-
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -925,7 +924,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         Check whether token fits the user and then activate the user's account.
         """
         params = util.Params(kwd, sanitize=False)
-        email = unquote(params.get('email', None))
+        email = params.get('email', None)
+        if email is not None:
+            email = unquote(email)
         activation_token = params.get('activation_token', None)
 
         if email is None or activation_token is None:
@@ -934,6 +935,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         else:
             # Find the user
             user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+            if not user:
+                # Probably wrong email address
+                return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller="root", action="index")
             # If the user is active already don't try to activate
             if user.active is True:
                 return trans.show_ok_message("Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
@@ -1116,108 +1120,3 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
                                    status=status,
                                    message=message,
                                    display_top=kwd.get('redirect_home', False))
-
-    @web.expose
-    @web.require_admin
-    def edit_info(self, trans, cntrller, **kwd):
-        """
-        TEMPORARY ENDPOINT - added back to support admin-level user info
-        editing prior to adminjs.  This is code that was prematurely removed
-        from the user controller when the user-side editing functionality was
-        replaced.
-
-        The method manage_user_info, which follows this, should also be removed
-        at that time.
-
-        Edit user information = username, email or password.
-        """
-        params = util.Params(kwd)
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
-        message = util.restore_text(params.get('message', ''))
-        status = params.get('status', 'done')
-        user_id = params.get('user_id', None)
-        if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
-        elif user_id and (not trans.user or trans.user.id != trans.security.decode_id(user_id)):
-            message = 'Invalid user id'
-            status = 'error'
-            user = None
-        else:
-            user = trans.user
-        if user and params.get('login_info_button', False):
-            # Editing email and username
-            email = util.restore_text(params.get('email', ''))
-            username = util.restore_text(params.get('username', '')).lower()
-
-            # Validate the new values for email and username
-            message = validate_email(trans, email, user)
-            if not message and username:
-                message = validate_publicname(trans, username, user)
-            if message:
-                status = 'error'
-            else:
-                if (user.email != email):
-                    # The user's private role name must match the user's login ( email )
-                    private_role = trans.app.security_agent.get_private_user_role(user)
-                    private_role.name = email
-                    private_role.description = 'Private role for ' + email
-                    # Change the email itself
-                    user.email = email
-                    trans.sa_session.add_all((user, private_role))
-                    trans.sa_session.flush()
-                    if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                        user.active = False
-                        trans.sa_session.add(user)
-                        trans.sa_session.flush()
-                        is_activation_sent = self.send_verification_email(trans, user.email, user.username)
-                        if is_activation_sent:
-                            message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
-                        else:
-                            message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                            if trans.app.config.error_email_to is not None:
-                                message += ' Contact: %s' % trans.app.config.error_email_to
-                if (user.username != username):
-                    user.username = username
-                    trans.sa_session.add(user)
-                    trans.sa_session.flush()
-                message = 'The login information has been updated with the changes.'
-        elif user and params.get('edit_user_info_button', False):
-            # Edit user information - webapp MUST BE 'galaxy'
-            user_type_fd_id = params.get('user_type_fd_id', 'none')
-            if user_type_fd_id not in ['none']:
-                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(trans.security.decode_id(user_type_fd_id))
-            elif user.values:
-                user_type_form_definition = user.values.form_definition
-            else:
-                # User was created before any of the user_info forms were created
-                user_type_form_definition = None
-            if user_type_form_definition:
-                values = self.get_form_values(trans, user, user_type_form_definition, **kwd)
-            else:
-                values = {}
-            flush_needed = False
-            if user.values:
-                # Editing the user info of an existing user with existing user info
-                user.values.content = values
-                trans.sa_session.add(user.values)
-                flush_needed = True
-            elif values:
-                form_values = trans.model.FormValues(user_type_form_definition, values)
-                trans.sa_session.add(form_values)
-                user.values = form_values
-                flush_needed = True
-            if flush_needed:
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
-            message = "The user information has been updated with the changes."
-        if user and trans.webapp.name == 'galaxy' and is_admin:
-            kwd['user_id'] = trans.security.encode_id(user.id)
-        kwd['id'] = user_id
-        if message:
-            kwd['message'] = util.sanitize_text(message)
-        if status:
-            kwd['status'] = status
-        return trans.response.send_redirect(web.url_for(controller='user',
-                                                        action='manage_user_info',
-                                                        cntrller=cntrller,
-                                                        **kwd))

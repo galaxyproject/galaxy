@@ -53,10 +53,8 @@ class ToolDataPathFiles(object):
         path = os.path.abspath(path)
         if path in self.tool_data_path_files:
             return True
-        elif self.tool_data_path not in path:
-            return os.path.exists(path)
         else:
-            return False
+            return os.path.exists(path)
 
 
 class ToolDataTableManager(object):
@@ -712,7 +710,7 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
         return rval
 
 
-class TabularToolDataField(Dictifiable, object):
+class TabularToolDataField(Dictifiable):
 
     dict_collection_visible_keys = []
 

@@ -1,6 +1,10 @@
 import * as _ from "libs/underscore";
+import * as Backbone from "libs/backbone";
 import util_mod from "viz/trackster/util";
-import config_mod from "utils/config";
+
+/* global $ */
+/* global Galaxy */
+
 /**
  * A configuration setting. Currently key is used as id.
  */
@@ -282,14 +286,12 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                         var tip = $(this)
                             .siblings(".tooltip")
                             .addClass("in");
-                        tip
-                            .css({
-                                // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                                // top: $(this).position().top + $(this.height)
-                                left: $(this).position().left + $(this).width() + 5,
-                                top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
-                            })
-                            .show();
+                        tip.css({
+                            // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                            // top: $(this).position().top + $(this.height)
+                            left: $(this).position().left + $(this).width() + 5,
+                            top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
+                        }).show();
 
                         // Click management:
 
@@ -307,23 +309,22 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                         // No propagation to avoid triggering document click (and tip hiding) above.
                         e.stopPropagation();
                     });
-
-                var // Icon for setting a new random color; behavior set below.
-                new_color_icon = $("<a href='javascript:void(0)'/>")
+                // Icon for setting a new random color; behavior set below.
+                var new_color_icon = $("<a href='javascript:void(0)'/>")
                     .addClass("icon-button arrow-circle")
                     .appendTo(container_div)
                     .attr("title", "Set new random color")
                     .tooltip();
 
-                var // Color picker in tool tip style.
-                tip = $("<div class='tooltip right' style='position: absolute;' />")
+                // Color picker in tool tip style.
+                var tip = $("<div class='tooltip right' style='position: absolute;' />")
                     .appendTo(container_div)
                     .hide();
 
-                var // Inner div for padding purposes
-                tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip);
+                // Inner div for padding purposes
+                var tip_inner = $("<div class='tooltip-inner' style='text-align: inherit'></div>").appendTo(tip);
 
-                var tip_arrow = $("<div class='tooltip-arrow'></div>").appendTo(tip);
+                $("<div class='tooltip-arrow'></div>").appendTo(tip);
 
                 var farb_obj = $.farbtastic(tip_inner, {
                     width: 100,

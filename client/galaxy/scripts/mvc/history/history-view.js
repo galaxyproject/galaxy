@@ -1,15 +1,21 @@
+import * as _ from "underscore";
+import _l from "utils/localization";
 import LIST_VIEW from "mvc/list/list-view";
 import HISTORY_MODEL from "mvc/history/history-model";
 import HISTORY_CONTENTS from "mvc/history/history-contents";
-import HISTORY_PREFS from "mvc/history/history-preferences";
+import History from "mvc/history/history-model";
 import HDA_LI from "mvc/history/hda-li";
 import HDCA_LI from "mvc/history/hdca-li";
-import USER from "mvc/user/user-model";
 import ERROR_MODAL from "mvc/ui/error-modal";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
-import _l from "utils/localization";
+import HistoryViewEdit from "mvc/history/history-view-edit";
+import HistoryCopyDialog from "mvc/history/copy-dialog";
 import "ui/search-input";
+import "ui/mode-button";
+
+/* global $ */
+/* global Galaxy */
 
 /* =============================================================================
 TODO:
@@ -179,7 +185,8 @@ var HistoryView = _super.extend(
             return faIconButton({
                 title: _l("Operations on multiple datasets"),
                 classes: "show-selectors-btn",
-                faIcon: "fa-check-square-o"
+                faIcon: "fa-check-square-o",
+                tooltipConfig: { placement: "top" }
             }).prependTo($where.find(".controls .actions"));
         },
 
@@ -413,7 +420,7 @@ var HistoryView = _super.extend(
             this.$(inputSelector).searchInput("toggle-loading");
             // set this now so that only results will show during progress
             this.searchFor = searchFor;
-            var xhr = this.model.contents
+            this.model.contents
                 .progressivelyFetchDetails({ silent: true })
                 .progress((response, limit, offset) => {
                     this.renderItems();
@@ -568,11 +575,11 @@ HistoryView.prototype.templates = (() => {
 
             '<div class="list-actions">',
             '<div class="btn-group">',
-            '<button class="select-all btn btn-default"',
+            '<button class="select-all btn btn-secondary"',
             'data-mode="select">',
             _l("All"),
             "</button>",
-            '<button class="deselect-all btn btn-default"',
+            '<button class="deselect-all btn btn-secondary"',
             'data-mode="select">',
             _l("None"),
             "</button>",
@@ -611,7 +618,91 @@ HistoryView.prototype.templates = (() => {
     });
 })();
 
+export function historyEntry(options) {
+    $("#toggle-deleted").modeButton({
+        initialMode: options.initialModeDeleted,
+        modes: [
+            { mode: "showing_deleted", html: _l("Exclude deleted") },
+            { mode: "not_showing_deleted", html: _l("Include deleted") }
+        ]
+    });
+    $("#toggle-hidden").modeButton({
+        initialMode: options.initialModeHidden,
+        modes: [
+            { mode: "showing_hidden", html: _l("Exclude hidden") },
+            { mode: "not_showing_hidden", html: _l("Include hidden") }
+        ]
+    });
+    $("#switch").click(function() {
+        //##HACK:ity hack hack
+        //##TODO: remove when out of iframe
+        var hview =
+            Galaxy.currHistoryPanel || (window.top.Galaxy && window.top.Galaxy.currHistoryPanel)
+                ? window.top.Galaxy.currHistoryPanel
+                : null;
+        if (hview) {
+            hview.switchToHistory("${ history[ 'id' ] }");
+        } else {
+            window.location = "${ switch_to_url }";
+        }
+    });
+    // use_panels effects where the the center_panel() is rendered:
+    //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
+    if (options.hasMasthead) {
+        $("#center").addClass("flex-vertical-container");
+    }
+
+    let viewClass = options.userIsOwner ? HistoryViewEdit.HistoryViewEdit : HistoryView.HistoryView;
+    let historyModel = new History.History(options.historyJSON);
+
+    // attach the copy dialog to the import button now that we have a history
+    $("#import").click(function() {
+        HistoryCopyDialog(historyModel, {
+            useImport: true,
+            // use default datasets option to match the toggle-deleted button
+            allDatasets: $("#toggle-deleted").modeButton("getMode").mode === "showing_deleted"
+        }).done(function() {
+            if (window === window.parent) {
+                window.location = Galaxy.root;
+            } else if (Galaxy.currHistoryPanel) {
+                Galaxy.currHistoryPanel.loadCurrentHistory();
+            }
+        });
+    });
+
+    let historyView = new viewClass({
+        el: $("#history-" + options.historyJSON.id),
+        className: viewClass.prototype.className + " wide",
+        $scrollContainer: options.hasMasthead
+            ? function() {
+                  return this.$el.parent();
+              }
+            : undefined,
+        model: historyModel,
+        show_deleted: options.showDeletedJson,
+        show_hidden: options.showHiddenJson,
+        purgeAllowed: options.allow_user_dataset_purge
+    });
+    historyView.trigger("loading");
+    historyModel
+        .fetchContents({ silent: true })
+        .fail(function() {
+            alert("Galaxy history failed to load");
+        })
+        .done(function() {
+            historyView.trigger("loading-done");
+            historyView.render();
+        });
+    $("#toggle-deleted").on("click", function() {
+        historyView.toggleShowDeleted();
+    });
+    $("#toggle-hidden").on("click", function() {
+        historyView.toggleShowHidden();
+    });
+}
+
 //==============================================================================
 export default {
-    HistoryView: HistoryView
+    HistoryView: HistoryView,
+    historyEntry: historyEntry
 };

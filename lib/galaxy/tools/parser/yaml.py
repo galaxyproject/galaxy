@@ -188,7 +188,7 @@ def _parse_test(i, test_dict):
     if _is_dict(inputs):
         new_inputs = []
         for key, value in inputs.items():
-            new_inputs.append((key, value, {}))
+            new_inputs.append({"name": key, "value": value, "attributes": {}})
         test_dict["inputs"] = new_inputs
 
     outputs = test_dict["outputs"]
@@ -202,7 +202,11 @@ def _parse_test(i, test_dict):
             else:
                 file = value
                 attributes = {}
-            new_outputs.append((key, file, attributes))
+            new_outputs.append({
+                "name": key,
+                "value": file,
+                "attributes": attributes
+            })
     else:
         for output in outputs:
             name = output["name"]
@@ -211,7 +215,7 @@ def _parse_test(i, test_dict):
             new_outputs.append((name, value, attributes))
 
     for output in new_outputs:
-        attributes = output[2]
+        attributes = output["attributes"]
         defaults = {
             'compare': 'diff',
             'lines_diff': 0,

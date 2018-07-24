@@ -62,7 +62,7 @@ var Model = Backbone.Model.extend({
                 description: _l("Associate OpenIDs with your account."),
                 icon: "fa-openid",
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}openids/list`;
+                    Galaxy.page.router.push(`${Galaxy.root}openids/list`);
                 }
             },
             custom_builds: {
@@ -70,7 +70,7 @@ var Model = Backbone.Model.extend({
                 description: _l("Add or remove custom builds using history datasets."),
                 icon: "fa-cubes",
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}custom_builds`;
+                    Galaxy.page.router.push(`${Galaxy.root}custom_builds`);
                 }
             },
             logout: {
@@ -101,6 +101,7 @@ var Model = Backbone.Model.extend({
 /** View of the main user preference panel with links to individual user forms */
 var View = Backbone.View.extend({
     title: _l("User Preferences"),
+    active_tab: "user",
     initialize: function() {
         this.model = new Model();
         this.setElement("<div/>");

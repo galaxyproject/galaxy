@@ -15,7 +15,7 @@ from .api_util import (
     OTHER_USER,
     TEST_USER,
 )
-from .interactor import GalaxyInteractorApi as BaseInteractor
+from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 from .testcase import FunctionalTestCase
 
 

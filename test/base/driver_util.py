@@ -1,7 +1,6 @@
 """Scripts for drivers of Galaxy functional tests."""
 
 import fcntl
-import json
 import logging
 import os
 import random
@@ -29,6 +28,7 @@ from six.moves.urllib.parse import urlparse
 
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
+from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool
 from galaxy.util import asbool, download_to_file
 from galaxy.util.properties import load_app_properties
 from galaxy.web import buildapp
@@ -37,7 +37,6 @@ from .api_util import get_master_api_key, get_user_api_key
 from .instrument import StructuredTestDataPlugin
 from .nose_util import run
 from .test_logging import logging_config_file
-from .tool_shed_util import parse_tool_panel_config
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 DEFAULT_WEB_HOST = "localhost"
@@ -192,6 +191,7 @@ def setup_galaxy_config(
         api_allow_run_as='test@bx.psu.edu',
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
+        chunk_upload_size=100,
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
         cleanup_job='onsuccess',
@@ -199,6 +199,7 @@ def setup_galaxy_config(
         enable_beta_tool_formats=True,
         expose_dataset_path=True,
         file_path=file_path,
+        ftp_upload_purge=False,
         galaxy_data_manager_data_path=galaxy_data_manager_data_path,
         id_secret='changethisinproductiontoo',
         job_config_file=job_config_file,
@@ -475,20 +476,6 @@ def cleanup_directory(tempdir):
 
 def setup_shed_tools_for_test(app, tmpdir, testing_migrated_tools, testing_installed_tools):
     """Modify Galaxy app's toolbox for migrated or installed tool tests."""
-    # Store a jsonified dictionary of tool_id : GALAXY_TEST_FILE_DIR pairs.
-    galaxy_tool_shed_test_file = os.path.join(tmpdir, 'shed_tools_dict')
-    shed_tools_dict = {}
-    if testing_migrated_tools:
-        has_test_data, shed_tools_dict = parse_tool_panel_config(MIGRATED_TOOL_PANEL_CONFIG, shed_tools_dict)
-    elif testing_installed_tools:
-        for shed_tool_config in INSTALLED_TOOL_PANEL_CONFIGS:
-            has_test_data, shed_tools_dict = parse_tool_panel_config(shed_tool_config, shed_tools_dict)
-    # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
-    with open(galaxy_tool_shed_test_file, 'w') as shed_tools_file:
-        shed_tools_file.write(json.dumps(shed_tools_dict))
-    if not os.path.isabs(galaxy_tool_shed_test_file):
-        galaxy_tool_shed_test_file = os.path.join(galaxy_root, galaxy_tool_shed_test_file)
-    os.environ['GALAXY_TOOL_SHED_TEST_FILE'] = galaxy_tool_shed_test_file
     if testing_installed_tools:
         # TODO: Do this without modifying app - that is a pretty violation
         # of Galaxy's abstraction - we shouldn't require app at all let alone
@@ -923,23 +910,44 @@ class GalaxyTestDriver(TestDriver):
         return functional.test_toolbox
 
     def run_tool_test(self, tool_id, index=0, resource_parameters={}):
-        import functional.test_toolbox
-        functional.test_toolbox.toolbox = self.app.toolbox
-        tool = self.app.toolbox.get_tool(tool_id)
-        testdef = tool.tests[index]
-        test_case_cls = functional.test_toolbox.ToolTestCase
-        test_case = test_case_cls(methodName="setUp")  # NO-OP
-        test_case.shed_tool_id = None
-        test_case.master_api_key = get_master_api_key()
-        test_case.user_api_key = get_user_api_key()
-        test_case.setUp()
-        test_case.do_it(testdef, resource_parameters=resource_parameters)
+        host, port, url = target_url_parts()
+        galaxy_interactor_kwds = {
+            "galaxy_url": url,
+            "master_api_key": get_master_api_key(),
+            "api_key": get_user_api_key(),
+            "keep_outputs_dir": None,
+        }
+        galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
+        verify_tool(
+            tool_id=tool_id,
+            test_index=index,
+            galaxy_interactor=galaxy_interactor,
+            resource_parameters=resource_parameters
+        )
 
 
 def drive_test(test_driver_class):
     """Instantiate driver class, run, and exit appropriately."""
     test_driver = test_driver_class()
     sys.exit(test_driver.run())
+
+
+def setup_keep_outdir():
+    keep_outdir = os.environ.get('GALAXY_TEST_SAVE', '')
+    if keep_outdir > '':
+        try:
+            os.makedirs(keep_outdir)
+        except Exception:
+            pass
+    return keep_outdir
+
+
+def target_url_parts():
+    host = os.environ.get('GALAXY_TEST_HOST')
+    port = os.environ.get('GALAXY_TEST_PORT')
+    default_url = "http://%s:%s" % (host, port)
+    url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
+    return host, port, url
 
 
 __all__ = (
@@ -952,7 +960,9 @@ __all__ = (
     "database_conf",
     "get_webapp_global_conf",
     "nose_config_and_run",
+    "setup_keep_outdir",
     "setup_galaxy_config",
+    "target_url_parts",
     "TestDriver",
     "wait_for_http_server",
 )

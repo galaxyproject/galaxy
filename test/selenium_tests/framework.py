@@ -110,33 +110,33 @@ def dump_test_information(self, name_prefix):
                 buf.write(content.encode("utf-8") if not raw else content)
 
         os.makedirs(target_directory)
-        self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
-        write_file("page_source.txt", self.driver.page_source)
-        write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
         write_file("stacktrace.txt", traceback.format_exc())
-
         for snapshot in getattr(self, "snapshots", []):
             snapshot.write_to_error_directory(write_file)
 
+        # Try to use the Selenium driver to recover more debug information, but don't
+        # throw an exception if the connection is broken in some way.
+        try:
+            self.driver.save_screenshot(os.path.join(target_directory, "last.png"))
+            write_file("page_source.txt", self.driver.page_source)
+            write_file("DOM.txt", self.driver.execute_script("return document.documentElement.outerHTML"))
+        except Exception:
+            print("Failed to use test driver to recover debug information from Selenium.")
+            write_file("selenium_exception.txt", traceback.format_exc())
+
         for log_type in ["browser", "driver"]:
-            full_log = self.driver.get_log(log_type)
-            trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
             try:
+                full_log = self.driver.get_log(log_type)
+                trimmed_log = [l for l in full_log if l["level"] not in ["DEBUG", "INFO"]]
                 write_file("%s.log.json" % log_type, json.dumps(trimmed_log, indent=True))
                 write_file("%s.log.verbose.json" % log_type, json.dumps(full_log, indent=True))
             except Exception:
                 continue
-        iframes = self.driver.find_elements_by_css_selector("iframe")
-        for iframe in iframes:
-            pass
-            # TODO: Dump content out for debugging in the future.
-            # iframe_id = iframe.get_attribute("id")
-            # if iframe_id:
-            #     write_file("iframe_%s" % iframe_id, "My content")
 
 
 @nottest
 def selenium_test(f):
+    test_name = f.__name__
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
@@ -146,10 +146,15 @@ def selenium_test(f):
                 self.reset_driver_and_session()
             try:
                 return f(self, *args, **kwds)
+            except unittest.SkipTest:
+                dump_test_information(self, test_name)
+                # Don't retry if we have purposely decided to skip the test.
+                raise
             except Exception:
-                dump_test_information(self, f.__name__)
+                dump_test_information(self, test_name)
                 if retry_attempts < GALAXY_TEST_SELENIUM_RETRIES:
                     retry_attempts += 1
+                    print("Test function [%s] threw an exception, retrying. Failed attempts - %s." % (test_name, retry_attempts))
                 else:
                     raise
 
@@ -200,6 +205,9 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
             self._setup_interactor()
             self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
+        self._try_setup_with_driver()
+
+    def _try_setup_with_driver(self):
         try:
             self.setup_with_driver()
         except Exception:
@@ -209,8 +217,8 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     def setup_with_driver(self):
         """Override point that allows setting up data using self.driver and Selenium connection.
 
-        Using this instead of overriding will ensure debug data such as screenshots and stack traces
-        are dumped if there are problems with the setup.
+        Overriding this instead of setUp will ensure debug data such as screenshots and stack traces
+        are dumped if there are problems with the setup and it will be re-ran on test retries.
         """
 
     def tearDown(self):
@@ -244,28 +252,46 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         if more for creating a set of images to augment automated testing with manual human inspection
         after a test or test suite has executed.
         """
+        target = self._screenshot_path(label)
+        if target is None:
+            return
+
+        self.driver.save_screenshot(target)
+
+    def write_screenshot_directory_file(self, label, content):
+        target = self._screenshot_path(label, ".txt")
+        if target is None:
+            return
+
+        with open(target, "w") as f:
+            f.write(content)
+
+    def _screenshot_path(self, label, extension=".png"):
         if GALAXY_TEST_SCREENSHOTS_DIRECTORY is None:
             return
         if not os.path.exists(GALAXY_TEST_SCREENSHOTS_DIRECTORY):
             os.makedirs(GALAXY_TEST_SCREENSHOTS_DIRECTORY)
-        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + ".png")
+        target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, label + extension)
         copy = 1
         while os.path.exists(target):
             # Maybe previously a test re-run - keep the original.
-            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d.png" % (label, copy))
+            target = os.path.join(GALAXY_TEST_SCREENSHOTS_DIRECTORY, "%s-%d%s" % (label, copy, extension))
             copy += 1
-        self.driver.save_screenshot(target)
+
+        return target
 
     def reset_driver_and_session(self):
         self.tear_down_driver()
         self.setup_driver_and_session()
+        self._try_setup_with_driver()
 
     def setup_driver_and_session(self):
         self.display = driver_factory.virtual_display_if_enabled(headless_selenium())
         self.driver = get_driver()
         # New workflow index page does not degrade well to smaller sizes, needed
         # to increase this.
-        self.driver.set_window_size(1280, 900)
+        # Needed to up the height for paired list creator being taller in BS4 branch.
+        self.driver.set_window_size(1280, 1000)
 
         self._setup_galaxy_logging()
 
@@ -293,7 +319,10 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
         try:
             self.driver.close()
         except Exception as e:
-            exception = e
+            if "cannot kill Chrome" in str(e):
+                print("Ignoring likely harmless error in Selenium shutdown %s" % e)
+            else:
+                exception = e
 
         try:
             self.display.stop()
@@ -353,6 +382,12 @@ class SeleniumTestCase(FunctionalTestCase, NavigatesGalaxy, UsesApiTestCaseMixin
     @property
     def workflow_populator(self):
         return SeleniumSessionWorkflowPopulator(self)
+
+    def workflow_upload_yaml_with_random_name(self, content, **kwds):
+        workflow_populator = self.workflow_populator
+        name = self._get_random_name()
+        workflow_populator.upload_yaml_workflow(content, name=name, **kwds)
+        return name
 
     def ensure_visualization_available(self, hid, visualization_name):
         """Skip or fail a test if visualization for file doesn't appear.
@@ -475,9 +510,9 @@ def get_remote_driver():
 class SeleniumSessionGetPostMixin:
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
-    def _get(self, route):
+    def _get(self, route, data={}):
         full_url = self.selenium_test_case.build_url("api/" + route, for_selenium=False)
-        response = requests.get(full_url, cookies=self.selenium_test_case.selenium_to_requests_cookies())
+        response = requests.get(full_url, data=data, cookies=self.selenium_test_case.selenium_to_requests_cookies())
         return response
 
     def _post(self, route, data={}):

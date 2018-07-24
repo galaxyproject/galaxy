@@ -30,7 +30,7 @@ class ToolLineageVersion(object):
         )
 
 
-class ToolLineage:
+class ToolLineage(object):
     """ Simple tool's loaded directly from file system with lineage
     determined solely by PEP 440 versioning scheme.
     """

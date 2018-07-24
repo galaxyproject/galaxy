@@ -7,12 +7,15 @@ import logging
 import os
 from xml.etree import ElementTree as ET
 
+from . import (
+    DependencyResolver,
+    NullDependency
+)
 from .resolver_mixins import (
     UsesHomebrewMixin,
     UsesInstalledRepositoriesMixin,
     UsesToolDependencyDirMixin,
 )
-from ..resolvers import DependencyResolver, NullDependency
 
 log = logging.getLogger(__name__)
 

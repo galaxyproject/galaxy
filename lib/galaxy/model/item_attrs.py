@@ -12,7 +12,7 @@ class RuntimeException(Exception):
     pass
 
 
-class UsesItemRatings:
+class UsesItemRatings(object):
     """
         Mixin for getting and setting item ratings.
 
@@ -95,7 +95,7 @@ class UsesItemRatings:
         return "%s=%i" % (item_fk.parent.name, item.id)
 
 
-class UsesAnnotations:
+class UsesAnnotations(object):
     """ Mixin for getting and setting item annotations. """
 
     def get_item_annotation_str(self, db_session, user, item):

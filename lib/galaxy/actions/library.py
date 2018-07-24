@@ -103,15 +103,13 @@ class LibraryActions(object):
             message = "Unable to parse upload parameters, please report this error."
         # Proceed with (mostly) regular upload processing if we're still errorless
         if response_code == 200:
-            precreated_datasets = upload_common.get_precreated_datasets(trans, tool_params, trans.app.model.LibraryDatasetDatasetAssociation, controller=cntrller)
             if upload_option == 'upload_file':
                 tool_params = upload_common.persist_uploads(tool_params, trans)
-                uploaded_datasets = upload_common.get_uploaded_datasets(trans, cntrller, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch)
+                uploaded_datasets = upload_common.get_uploaded_datasets(trans, cntrller, tool_params, dataset_upload_inputs, library_bunch=library_bunch)
             elif upload_option == 'upload_directory':
                 uploaded_datasets, response_code, message = self._get_server_dir_uploaded_datasets(trans, kwd, full_dir, import_dir_desc, library_bunch, response_code, message)
             elif upload_option == 'upload_paths':
                 uploaded_datasets, response_code, message = self._get_path_paste_uploaded_datasets(trans, kwd, library_bunch, response_code, message)
-            upload_common.cleanup_unused_precreated_datasets(precreated_datasets)
             if upload_option == 'upload_file' and not uploaded_datasets:
                 response_code = 400
                 message = 'Select a file, enter a URL or enter text'
@@ -251,16 +249,14 @@ class LibraryActions(object):
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
         uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', True)
+        uploaded_dataset.purge_source = getattr(trans.app.config, 'ftp_upload_purge', True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload(trans, 'api', uploaded_dataset, library_bunch)
         uploaded_dataset.link_data_only = link_data_only
         uploaded_dataset.uuid = uuid_str
         if link_data_only == 'link_to_files':
-            uploaded_dataset.data.file_name = os.path.abspath(path)
-            # Since we are not copying the file into Galaxy's managed
-            # default file location, the dataset should never be purgable.
-            uploaded_dataset.data.dataset.purgable = False
+            uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
             trans.sa_session.flush()
         return uploaded_dataset

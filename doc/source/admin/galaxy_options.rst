@@ -71,7 +71,7 @@
     gone away", you will want to set this to some positive value (7200
     should work).
 :Default: ``-1``
-:Type: str
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -124,6 +124,20 @@
     longer than 5 milliseconds.
 :Default: ``0``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_per_request_sql_debugging``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable's a per request sql debugging option. If this is set to
+    true, append ?sql_debug=1 to web request URLs to enable detailed
+    logging on the backend of SQL queries generated during that
+    request. This is useful for debugging slow endpoints during
+    development.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -429,7 +443,19 @@
     scheme that may work in wider range of scenarios than the watchdog
     default.
 :Default: ``false``
-:Type: bool
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``watch_job_rules``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to True to enable monitoring of dynamic job rules. If changes
+    are found, rules are automatically reloaded. Takes the same values
+    as the 'watch_tools' option.
+:Default: ``false``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -594,7 +620,7 @@
     which will use a less efficient monitoring scheme that may work in
     wider range of scenarios than the watchdog default.
 :Default: ``false``
-:Type: bool
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~
@@ -820,8 +846,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``file``
 :Type: str
@@ -833,8 +859,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/data``
 :Type: str
@@ -846,8 +872,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/lock``
 :Type: str
@@ -1177,6 +1203,21 @@
     (complete format string as specified by ISO 8601 international
     standard).
 :Default: ``$locale (UTC)``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~
+``default_locale``
+~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default localization for Galaxy UI. Allowed values are listed at
+    the end of client/galaxy/scripts/nls/locale.js. With the default
+    value (auto), the locale will be automatically adjusted to the
+    user's navigator language. Users can override this settings in
+    their user preferences if the localization settings are enabled in
+    user_preferences_extra_conf.yml
+:Default: ``auto``
 :Type: str
 
 
@@ -1517,20 +1558,8 @@
     Redirect.  This should be set to the path defined in the nginx
     config as an internal redirect with access to Galaxy's data files
     (see documentation linked above).
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``nginx_x_archive_files_base``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    nginx can make use of mod_zip to create zip files containing
-    multiple library files.  If using X-Accel-Redirect, this can be
-    the same value as that option.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~
@@ -1572,8 +1601,8 @@
     explained in detail in the documentation linked above.  The upload
     store is a temporary directory in which files uploaded by the
     upload module will be placed.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1584,8 +1613,8 @@
     This value overrides the action set on the file upload form, e.g.
     the web path where the nginx_upload_module has been configured to
     intercept upload requests.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1597,8 +1626,8 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1610,8 +1639,20 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``false``
-:Type: bool
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``chunk_upload_size``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Galaxy can upload user files in chunks without using nginx. Enable
+    the chunk uploader by specifying a chunk size larger than 0. The
+    chunk size is specified in bytes (default: 100MB).
+:Default: ``104857600``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2069,6 +2110,20 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sentry_sloreq_threshold``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sentry slow request logging.  Requests slower than the threshold
+    indicated below will be sent as events to the configured Sentry
+    server (above, sentry_dsn).  A value of '0' is disabled.  For
+    example, you would set this to .005 to log all queries taking
+    longer than 5 milliseconds.
+:Default: ``0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~
 ``statsd_host``
 ~~~~~~~~~~~~~~~
@@ -2114,52 +2169,17 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~
-``graphite_host``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~
-``graphite_port``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``2003``
-:Type: int
-
-
 ~~~~~~~~~~~~~~~~~~~
-``graphite_prefix``
+``statsd_influxdb``
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Log to graphite Graphite is an external statistics aggregator
-    (https://github.com/graphite-project/carbon) Enabling the
-    following options will cause galaxy to log request timing and
-    other statistics to the configured graphite instance. The
-    graphite_prefix is useful if you are running multiple Galaxy
-    instances and want to segment statistics between them within the
-    same aggregator.
-:Default: ``galaxy``
-:Type: str
+    If you are using telegraf to collect these metrics and then
+    sending them to InfluxDB, Galaxy can provide more nicely tagged
+    metrics. Instead of sending prefix + dot-separated-path, Galaxy
+    will send prefix with a tag path set to the page url
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -2396,6 +2416,22 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_test_data_directories``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set tool test data directory. The test framework sets this value
+    to 'test-data,https://github.com/galaxyproject/galaxy-test-
+    data.git' which will cause Galaxy to clone down extra test data on
+    the fly for certain tools distributed with Galaxy but this is
+    likely not appropriate for production systems. Instead one can
+    simply clone that repository directly and specify a path here
+    instead of a Git HTTP repository.
+:Default: ``test-data``
+:Type: str
+
+
 ~~~~~~~~~~~~~
 ``id_secret``
 ~~~~~~~~~~~~~
@@ -2404,10 +2440,11 @@
     Galaxy encodes various internal values when these values will be
     output in some format (for example, in a URL or cookie).  You
     should set a key to be used by the algorithm that encodes and
-    decodes these values.  It can be any string up to 448 bits long.
-    One simple way to generate a value for this is with the shell
-    command:   python -c 'from __future__ import print_function;
-    import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+    decodes these values. It can be any string with a length between 5
+    and 56 bytes. One simple way to generate a value for this is with
+    the shell command:   python -c 'from __future__ import
+    print_function; import time; print(time.time())' | md5sum | cut -f
+    1 -d ' '
 :Default: ``USING THE DEFAULT IS NOT SECURE!``
 :Type: str
 
@@ -2621,7 +2658,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If enable_beta_gdpr is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2637,7 +2675,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If enable_beta_gdpr is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2657,6 +2696,26 @@
     10.10.10.10,10.0.1.0/24,fd00::/8
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``enable_beta_gdpr``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables GDPR Compliance mode. This makes several changes to the
+    way Galaxy logs and exposes data externally such as removing
+    emails and usernames from logs and bug reports. It also causes the
+    delete user admin action to permanently redact their username and
+    password, but not to delete data associated with the account as
+    this is not currently easily implementable.  You are responsible
+    for removing personal data from backups.  This forces
+    expose_user_email and expose_user_name to be false, and forces
+    user_deletion to be true to support the right to erasure.  Please
+    read the GDPR section under the special topics area of the admin
+    documentation.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2845,6 +2904,36 @@
 :Description:
     If OpenID is enabled, consumer cache directory to use.
 :Default: ``database/openid_consumer_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~
+``enable_oidc``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Enables and disables OpenID Connect (OIDC) support.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~
+``oidc_config_file``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC configuration file.
+:Default: ``config/oidc_config.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``oidc_backends_config_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Sets the path to OIDC backends configuration file.
+:Default: ``config/oidc_backends_config.xml``
 :Type: str
 
 
@@ -3348,6 +3437,38 @@
     forms and allow them to overwrite default job resources such as
     number of processors, memory and walltime.
 :Default: ``config/job_resource_params_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_file``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Similar to the above parameter, workflows can describe parameters
+    used to influence scheduling of jobs within the workflow. This
+    requires both a description of the fields available (which
+    defaults to the definitions in job_resource_params_file if not
+    set).
+:Default: ``config/workflow_resource_params_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_resource_params_mapper``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This parameter describes how to map users and workflows to a set
+    of workflow resource parameter to present (typically input IDs
+    from workflow_resource_params_file). If this this is a function
+    reference it will be passed various inputs (workflow model object
+    and user) and it should produce a list of input IDs. If it is a
+    path it is expected to an XML or YAML file describing how to map
+    group names to parameter descriptions (additional types of
+    mappings via these files could be implemented but haven't yet -
+    for instance using workflow tags to do the mapping).
+:Default: ``config/workflow_resource_mapper_conf.yml``
 :Type: str
 
 

@@ -298,7 +298,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     __nonzero__ = __bool__
 
 
-class HasDatasets:
+class HasDatasets(object):
 
     def _dataset_wrapper(self, dataset, dataset_paths, **kwargs):
         wrapper_kwds = kwargs.copy()
@@ -342,14 +342,21 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
         for dataset_instance_source in dataset_instance_sources:
             if dataset_instance_source is None:
                 dataset_instances.append(dataset_instance_source)
-            elif dataset_instance_source.history_content_type == "dataset":
+            elif getattr(dataset_instance_source, "history_content_type", None) == "dataset":
                 dataset_instances.append(dataset_instance_source)
+            elif hasattr(dataset_instance_source, "child_collection"):
+                dataset_instances.extend(dataset_instance_source.child_collection.dataset_elements)
             else:
                 dataset_instances.extend(dataset_instance_source.collection.dataset_elements)
         return dataset_instances
 
     def __str__(self):
         return ','.join(map(str, self))
+
+    def __bool__(self):
+        # Fail `#if $param` checks in cheetah if optional input is not provided
+        return any(self)
+    __nonzero__ = __bool__
 
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):

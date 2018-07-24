@@ -257,13 +257,14 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.05.3'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
 xunit_report_file=""
 structured_data_report_file=""
 with_framework_test_tools_arg=""
+skip_client_build="--skip-client-build"
 
 if [ "$1" = "--dockerize" ];
 then
@@ -288,7 +289,9 @@ then
        shift
     fi
     MY_UID=$(id -u)
-    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} ${DOCKER_RUN_EXTRA_ARGS}"
+    # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
+    # locally before testing - you will need to do this also if using this script for Selenium testing.
+    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
     exit $?
@@ -300,6 +303,7 @@ then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
 
+run_default_functional_tests="1"
 # Loop through and consume the main arguments.
 # Some loops will consume more than one argument (there are extra "shift"s in some cases).
 while :
@@ -336,7 +340,7 @@ do
           test_script="./scripts/functional_tests.py"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
-        	  api_script=$2
+              api_script=$2
               shift 2
           else
               api_script="./test/api"
@@ -347,6 +351,7 @@ do
           with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_selenium_tests.html"
+          skip_client_build=""
           selenium_test=1;
           if [ $# -gt 1 ]; then
               selenium_script=$2
@@ -401,19 +406,6 @@ do
       -d|-data_managers|--data_managers)
           data_managers_test=1;
           shift 1
-          ;;
-      -j|-casperjs|--casperjs)
-          # TODO: Support running casper tests against existing
-          # Galaxy instances.
-          with_framework_test_tools_arg="-with_framework_test_tools"
-          if [ $# -gt 1 ]; then
-              casperjs_test_name=$2
-              shift 2
-          else
-              shift 1
-          fi
-          report_file="run_casperjs_tests.html"
-          casperjs_test=1;
           ;;
       -m|-migrated|--migrated)
           migrated_test=1;
@@ -529,6 +521,9 @@ do
           shift
           ;;
       --)
+          # Do not default to running the functional tests in this case, caller
+          # is opting to run specific tests so don't interfere with that by default.
+          unset run_default_functional_tests;
           shift
           break
           ;;
@@ -538,7 +533,13 @@ do
           exit 1
           ;;
       *)
-          break;
+          if [ -n "$1" ]; then
+            test_target="$1"
+            shift
+          fi
+          # Maybe we shouldn't break here but for now to pass more than one argument to the
+          # underlying test driver (scripts/nosetests.py) use -- instead.
+          break
           ;;
     esac
 done
@@ -548,15 +549,12 @@ if [ -z "$skip_common_startup" ]; then
             GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
             export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
     fi
-    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip --dev-wheels || exit 1
+    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip $skip_client_build --dev-wheels || exit 1
 fi
 
-GALAXY_VIRTUAL_ENV="${GALAXY_VIRTUAL_ENV:-.venv}"
-if [ -z "$skip_venv" -a -d "$GALAXY_VIRTUAL_ENV" ];
-then
-    printf "Activating virtualenv at $GALAXY_VIRTUAL_ENV\n"
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
-fi
+. ./scripts/common_startup_functions.sh
+
+setup_python
 
 if [ -n "$migrated_test" ] ; then
     [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
@@ -576,15 +574,6 @@ elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
-elif [ -n "$casperjs_test" ]; then
-    # TODO: Ensure specific versions of casperjs and phantomjs are
-    # available. Some option for leveraging npm to automatically
-    # install these dependencies would be nice as well.
-    if [ -n "$casperjs_test_name" ]; then
-        extra_args="test/casperjs/casperjs_runner.py:$casperjs_test_name"
-    else
-        extra_args="test/casperjs/casperjs_runner.py"
-    fi
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id`
 elif [ -n "$test_id" ]; then
@@ -594,10 +583,12 @@ elif [ -n "$unit_extra" ]; then
     extra_args="--with-doctest $unit_extra"
 elif [ -n "$integration_extra" ]; then
     extra_args="$integration_extra"
-elif [ -n "$1" ] ; then
-    extra_args="$1"
-else
+elif [ -n "$test_target" ] ; then
+    extra_args="$test_target"
+elif [ -n "$run_default_functional_tests" ] ; then
     extra_args='--exclude="^get" functional'
+else
+    extra_args=""
 fi
 
 if [ -n "$xunit_report_file" ]; then
@@ -614,7 +605,7 @@ if [ -n "$with_framework_test_tools_arg" ]; then
     GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
     export GALAXY_TEST_TOOL_CONF
 fi
-python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
+python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
 exit ${exit_status}

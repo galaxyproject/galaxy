@@ -1,4 +1,3 @@
-/* global define */
 import testApp from "qunit/test-app";
 import sinon from "sinon";
 import Ui from "mvc/ui/ui-misc";
@@ -7,6 +6,9 @@ import Drilldown from "mvc/ui/ui-drilldown";
 import Slider from "mvc/ui/ui-slider";
 import Thumbnails from "mvc/ui/ui-thumbnails";
 import Tabs from "mvc/ui/ui-tabs";
+
+/* global QUnit */
+/* global $ */
 
 QUnit.module("Ui test", {
     beforeEach: function() {
@@ -27,15 +29,11 @@ QUnit.test("tabs", function(assert) {
     var _test = function() {
         self.clock.tick(window.WAIT_FADE);
         collection.each(function(model, index) {
-            var $tab_element = tabs.$("#tab-" + model.id);
+            var $tab_element = tabs.$("#tab-" + model.id + " .nav-link");
             var $tab_content = tabs.$("#" + model.id);
             var is_current = model.id == tabs.model.get("current");
             assert.ok($tab_content.hasClass("active") == is_current, "Active state of content.");
             assert.ok($tab_element.hasClass("active") == is_current, "Active state of element.");
-            assert.ok(
-                $tab_element.css("display") == (model.get("hidden") ? "none" : "list-item"),
-                "Element visibility."
-            );
         });
     };
     $("body").prepend(tabs.$el);
@@ -68,15 +66,12 @@ QUnit.test("thumbnails", function(assert) {
         assert.ok(thumb.$(".tab-pane").length == options.ntabs, "Two tabs found.");
         assert.ok(thumb.$(".ui-thumbnails-item").length == options.nitems, "Thumbnail item.");
         assert.ok(
-            $(thumb.$(".ui-thumbnails-image")[options.index || 0]).attr("src") == options.image_src,
+            $(thumb.$(".ui-thumbnails-image")[options.index]).attr("src") == options.image_src,
             "Correct image source"
         );
+        assert.ok($(thumb.$(".ui-thumbnails-title")[options.index]).html() == options.title, "Correct title with icon");
         assert.ok(
-            $(thumb.$(".ui-thumbnails-title")[options.index || 0]).html() == options.title,
-            "Correct title with icon"
-        );
-        assert.ok(
-            $(thumb.$(".ui-thumbnails-description-text")[options.index || 0]).html() == options.description,
+            $(thumb.$(".ui-thumbnails-description-text")[options.index]).html() == options.description,
             "Correct description"
         );
     };
@@ -86,7 +81,7 @@ QUnit.test("thumbnails", function(assert) {
         collection: [
             {
                 id: "id",
-                keywords: "default",
+                regular: true,
                 title: "title",
                 title_icon: "title_icon",
                 image_src: "image_src",
@@ -94,9 +89,9 @@ QUnit.test("thumbnails", function(assert) {
             }
         ]
     });
-    var model = thumb.model;
     $("body").prepend(thumb.$el);
     _test({
+        index: 0,
         ntabs: 2,
         nitems: 2,
         image_src: "image_src",
@@ -105,7 +100,7 @@ QUnit.test("thumbnails", function(assert) {
     });
     thumb.collection.add({
         id: "id_a",
-        keywords: "default_a",
+        regular: true,
         title: "title_a",
         title_icon: "title_icon_a",
         image_src: "image_src_a",
@@ -246,7 +241,7 @@ QUnit.test("options", function(assert) {
                 "All button in correct state: " + options.all_icon
             );
         assert.ok(
-            obj.$menu.find(".ui-button-check").length === (Boolean(options.all_icon) ? 1 : 0),
+            obj.$menu.find(".ui-button-check").length === (options.all_icon ? 1 : 0),
             "All button available: " + Boolean(options.all_active)
         );
     }
@@ -944,7 +939,7 @@ QUnit.test("select-content", function(assert) {
     $("body").prepend(select.$el);
     var _testEmptySelect = function(tag, txt_extension, txt_label) {
         var field = select.fields[tag == "first" ? 0 : select.fields.length - 1];
-        var $select = select.$(".ui-select:" + tag);
+        select.$(".ui-select:" + tag);
         assert.ok(field.data[0].value == "__null__", tag + " option has correct empty value.");
         assert.ok(
             field.data[0].label == "No " + txt_extension + txt_label + " available.",

@@ -69,5 +69,12 @@ class ModelOperationToolAction(DefaultToolAction):
 
     def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags):
         tool.produce_outputs(trans, out_data, output_collections, incoming, history=history, tags=tags)
+        mapped_over_elements = output_collections.dataset_collection_elements
+        if mapped_over_elements:
+            for name, value in out_data.items():
+                if name in mapped_over_elements:
+                    value.visible = False
+                    mapped_over_elements[name].hda = value
+
         trans.sa_session.add_all(out_data.values())
         trans.sa_session.flush()

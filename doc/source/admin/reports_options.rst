@@ -6,7 +6,7 @@
     If running behind a proxy server and Galaxy is served from a
     subdirectory, enable the proxy-prefix filter and set the prefix in
     the [filter:proxy-prefix] section above.
-:Default: proxy-prefix
+:Default: ``proxy-prefix``
 :Type: str
 
 
@@ -20,7 +20,7 @@
     same path as the prefix in the filter above.  This value becomes
     the "path" attribute set in the cookie so the cookies from each
     instance will not clobber each other.
-:Default: None
+:Default: ``None``
 :Type: str
 
 
@@ -32,7 +32,7 @@
     Verbosity of console log messages.  Acceptable values can be found
     here: https://docs.python.org/2/library/logging.html#logging-
     levels
-:Default: DEBUG
+:Default: ``DEBUG``
 :Type: str
 
 
@@ -45,7 +45,7 @@
     Galaxy instances, so sqlite (and the default value below) is not
     supported. An SQLAlchemy connection string should be used specify
     an external database.
-:Default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
+:Default: ``sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE``
 :Type: str
 
 
@@ -56,7 +56,7 @@
 :Description:
     Where dataset files are saved Temporary storage for additional
     datasets, this should be shared through the cluster
-:Default: database/files
+:Default: ``database/files``
 :Type: str
 
 
@@ -67,7 +67,7 @@
 :Description:
     Where dataset files are saved Temporary storage for additional
     datasets, this should be shared through the cluster
-:Default: database/tmp
+:Default: ``database/tmp``
 :Type: str
 
 
@@ -78,7 +78,7 @@
 :Description:
     Mako templates are compiled as needed and cached for reuse, this
     directory is used for the cache
-:Default: database/compiled_templates/reports
+:Default: ``database/compiled_templates/reports``
 :Type: str
 
 
@@ -88,7 +88,7 @@
 
 :Description:
     Configuration for debugging middleware
-:Default: False
+:Default: ``false``
 :Type: bool
 
 
@@ -98,7 +98,7 @@
 
 :Description:
     Check for WSGI compliance.
-:Default: False
+:Default: ``false``
 :Type: bool
 
 
@@ -108,7 +108,7 @@
 
 :Description:
     NEVER enable this on a public site (even test or QA)
-:Default: True
+:Default: ``true``
 :Type: bool
 
 
@@ -119,7 +119,7 @@
 :Description:
     Write thread status periodically to 'heartbeat.log' (careful, uses
     disk space rapidly!)
-:Default: True
+:Default: ``true``
 :Type: bool
 
 
@@ -129,7 +129,7 @@
 
 :Description:
     Profiling middleware (cProfile based)
-:Default: True
+:Default: ``true``
 :Type: bool
 
 
@@ -139,7 +139,7 @@
 
 :Description:
     Mail
-:Default: yourserver@yourfacility.edu
+:Default: ``yourserver@yourfacility.edu``
 :Type: str
 
 
@@ -149,8 +149,22 @@
 
 :Description:
     Mail
-:Default: your_bugs@bx.psu.edu
+:Default: ``your_bugs@bx.psu.edu``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``enable_beta_gdpr``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables GDPR Compliance mode. This makes several changes to the
+    way Galaxy logs and exposes data externally such as removing
+    emails/usernames from logs and bug reports.  You are responsible
+    for removing personal data from backups.  Please read the GDPR
+    section under the special topics area of the admin documentation.
+:Default: ``false``
+:Type: bool
 
 
 

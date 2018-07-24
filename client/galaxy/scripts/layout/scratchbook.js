@@ -1,9 +1,15 @@
 /** Frame manager uses the ui-frames to create the scratch book masthead icon and functionality **/
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import Frames from "mvc/ui/ui-frames";
 import DATA from "mvc/dataset/data";
 import visualization from "viz/visualization";
 import trackster from "viz/trackster";
 import _l from "utils/localization";
+
+/* global Galaxy */
+/* global $ */
+
 export default Backbone.View.extend({
     initialize: function(options) {
         var self = this;
@@ -21,7 +27,9 @@ export default Backbone.View.extend({
                     show_note: self.active,
                     note_cls: self.active && "fa fa-check"
                 });
-                !self.active && self.frames.hide();
+                if (!self.active) {
+                    self.frames.hide();
+                }
             },
             onbeforeunload: function() {
                 if (self.frames.length() > 0) {
@@ -36,12 +44,18 @@ export default Backbone.View.extend({
             show_note: true,
             visible: false,
             onclick: function(e) {
-                self.frames.visible ? self.frames.hide() : self.frames.show();
+                if (self.frames.visible) {
+                    self.frames.hide();
+                } else {
+                    self.frames.show();
+                }
             }
         });
         this.frames
             .on("add remove", function() {
-                this.visible && this.length() == 0 && this.hide();
+                if (this.visible && this.length() === 0) {
+                    this.hide();
+                }
                 self.buttonLoad.set({
                     note: this.length(),
                     visible: this.length() > 0
@@ -67,9 +81,9 @@ export default Backbone.View.extend({
                 dataset_ids: []
             };
             Galaxy.currHistoryPanel.collection.each(model => {
-                !model.get("deleted") &&
-                    model.get("visible") &&
+                if (!model.get("deleted") && model.get("visible")) {
                     self.history_cache[history_id].dataset_ids.push(model.get("id"));
+                }
             });
         }
         var _findDataset = (dataset, offset) => {
@@ -195,7 +209,7 @@ export default Backbone.View.extend({
                             id: d.dataset_id
                         };
                     });
-                    view = ui.create_visualization(
+                    ui.create_visualization(
                         view_config,
                         latest_revision.config.viewport,
                         latest_revision.config.view.drawables,
@@ -218,13 +232,23 @@ export default Backbone.View.extend({
             var $galaxy_main = $(window.parent.document).find("#galaxy_main");
             if (options.target == "galaxy_main" || options.target == "center") {
                 if ($galaxy_main.length === 0) {
-                    window.location = `${options.url + (options.url.indexOf("?") == -1 ? "?" : "&")}use_panels=True`;
+                    window.location = this._build_url(options.url, { use_panels: true });
                 } else {
                     $galaxy_main.attr("src", options.url);
                 }
             } else window.location = options.url;
         } else {
+            options.url = this._build_url(options.url, { hide_panels: true, hide_masthead: true });
             this.frames.add(options);
+        }
+    },
+
+    /** Url helper */
+    _build_url: function(url, options) {
+        if (url) {
+            url += url.indexOf("?") == -1 ? "?" : "&";
+            url += $.param(options, true);
+            return url;
         }
     }
 });

@@ -86,7 +86,7 @@ class RenameDatasetAction(DefaultJobAction):
     verbose_name = "Rename Dataset"
 
     @classmethod
-    def execute_on_mapped_over(cls, app, sa_session, action, step_inputs, step_outputs, replacement_dict):
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
         # Prevent renaming a dataset to the empty string.
         input_names = {}
         #  Lookp through inputs find one with "to_be_replaced" input
@@ -147,8 +147,6 @@ class RenameDatasetAction(DefaultJobAction):
                 # Treat . as special symbol (breaks parameter names anyway)
                 # to allow access to repeat elements, for instance first
                 # repeat in cat1 would be something like queries_0.input2.
-                # TODO: update the help text (input_terminals) on the action to
-                # show correct valid inputs.
                 input_file_var = input_file_var.replace(".", "|")
 
                 replacement = input_names.get(input_file_var, "")
@@ -187,7 +185,8 @@ class RenameDatasetAction(DefaultJobAction):
         #  Lookp through inputs find one with "to_be_replaced" input
         #  variable name, and get the replacement name
         for input_assoc in job.input_datasets:
-            input_names[input_assoc.name] = input_assoc.dataset.name
+            if input_assoc.dataset:
+                input_names[input_assoc.name] = input_assoc.dataset.name
 
         # Ditto for collections...
         for input_assoc in job.input_dataset_collections:
@@ -226,6 +225,16 @@ class HideDatasetAction(DefaultJobAction):
             if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and (action.output_name == '' or dataset_assoc.name == action.output_name):
                 dataset_assoc.dataset.visible = False
 
+        for dataset_collection_assoc in job.output_dataset_collection_instances:
+            if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                dataset_collection_assoc.dataset_collection_instance.visible = False
+
+    @classmethod
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
+        for name, step_output in step_outputs.items():
+            if action.output_name == '' or name == action.output_name:
+                step_output.visible = False
+
     @classmethod
     def get_short_str(cls, pja):
         return "Hide output '%s'." % escape(pja.output_name)
@@ -241,6 +250,16 @@ class DeleteDatasetAction(DefaultJobAction):
         for dataset_assoc in job.output_datasets:
             if action.output_name == '' or dataset_assoc.name == action.output_name:
                 dataset_assoc.dataset.deleted = True
+
+        for dataset_collection_assoc in job.output_dataset_collection_instances:
+            if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                dataset_collection_assoc.dataset_collection_instance.deleted = True
+
+    @classmethod
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
+        for name, step_output in step_outputs.items():
+            if action.output_name == '' or name == action.output_name:
+                step_output.deleted = True
 
     @classmethod
     def get_short_str(cls, pja):
@@ -358,6 +377,15 @@ class TagDatasetAction(DefaultJobAction):
     direction = "to"
 
     @classmethod
+    def execute_on_mapped_over(cls, trans, sa_session, action, step_inputs, step_outputs, replacement_dict):
+        if action.action_arguments:
+            tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
+            if tags:
+                for name, step_output in step_outputs.items():
+                    if action.output_name == '' or name == action.output_name:
+                        cls._execute(trans.app, trans.user, step_output, tags)
+
+    @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         if action.action_arguments:
             tags = [t.replace('#', 'name:') if t.startswith('#') else t for t in [t.strip() for t in action.action_arguments.get('tags', '').split(',') if t.strip()]]
@@ -365,11 +393,16 @@ class TagDatasetAction(DefaultJobAction):
                 for dataset_assoc in job.output_datasets:
                     if action.output_name == '' or dataset_assoc.name == action.output_name:
                         cls._execute(app, job.user, dataset_assoc.dataset, tags)
+
+                for dataset_collection_assoc in job.output_dataset_collection_instances:
+                    if action.output_name == '' or dataset_collection_assoc.name == action.output_name:
+                        cls._execute(app, job.user, dataset_collection_assoc.dataset_collection_instance, tags)
+
             sa_session.flush()
 
     @classmethod
-    def _execute(cls, app, user, dataset, tags):
-        app.tag_handler.add_tags_from_list(user, dataset, tags)
+    def _execute(cls, app, user, output, tags):
+        app.tag_handler.add_tags_from_list(user, output, tags)
 
     @classmethod
     def get_short_str(cls, pja):
@@ -389,8 +422,8 @@ class RemoveTagDatasetAction(TagDatasetAction):
     direction = "from"
 
     @classmethod
-    def _execute(cls, app, user, dataset, tags):
-        app.tag_handler.remove_tags_from_list(user, dataset, tags)
+    def _execute(cls, app, user, output, tags):
+        app.tag_handler.remove_tags_from_list(user, output, tags)
 
 
 class ActionBox(object):
@@ -413,7 +446,8 @@ class ActionBox(object):
                          'TagDatasetAction', 'RemoveTagDatasetAction']
     # Actions that will be applied to implicit mapped over collection outputs and not
     # just individual outputs when steps include mapped over tools and implicit collection outputs.
-    mapped_over_output_actions = ['RenameDatasetAction']
+    mapped_over_output_actions = ['RenameDatasetAction', 'HideDatasetAction',
+                                  'TagDatasetAction', 'RemoveTagDatasetAction']
 
     @classmethod
     def get_short_str(cls, action):
@@ -445,9 +479,9 @@ class ActionBox(object):
         return npd
 
     @classmethod
-    def execute_on_mapped_over(cls, app, sa_session, pja, step_inputs, step_outputs, replacement_dict=None):
+    def execute_on_mapped_over(cls, trans, sa_session, pja, step_inputs, step_outputs, replacement_dict=None):
         if pja.action_type in ActionBox.actions:
-            ActionBox.actions[pja.action_type].execute_on_mapped_over(app, sa_session, pja, step_inputs, step_outputs, replacement_dict)
+            ActionBox.actions[pja.action_type].execute_on_mapped_over(trans, sa_session, pja, step_inputs, step_outputs, replacement_dict)
 
     @classmethod
     def execute(cls, app, sa_session, pja, job, replacement_dict=None):

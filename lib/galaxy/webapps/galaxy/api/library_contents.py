@@ -185,7 +185,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             * upload_option: (optional) one of 'upload_file' (default), 'upload_directory' or 'upload_paths'
             * server_dir: (optional, only if upload_option is
                 'upload_directory') relative path of the subdirectory of Galaxy
-                ``library_import_dir`` to upload. All and only the files (i.e.
+                ``library_import_dir`` (if admin) or ``user_library_import_dir``
+                (if non-admin) to upload. All and only the files (i.e.
                 no subdirectories) contained in the specified directory will be
                 uploaded.
             * filesystem_paths: (optional, only if upload_option is

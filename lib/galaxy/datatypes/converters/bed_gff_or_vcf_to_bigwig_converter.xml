@@ -1,13 +1,20 @@
-<tool id="CONVERTER_bed_gff_or_vcf_to_bigwig_0" name="Convert BED, GFF, or VCF to BigWig" version="1.0.0" hidden="true">
+<tool id="CONVERTER_bed_gff_or_vcf_to_bigwig_0" name="Convert BED, GFF, or VCF to BigWig" version="1.0.1" hidden="true">
     <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package">ucsc_tools</requirement>
-        <requirement type="package">bedtools</requirement>
+        <requirement type="package" version="357">ucsc-bedgraphtobigwig</requirement>
+        <requirement type="package" version="2.27.1">bedtools</requirement>
     </requirements>
     <command>
 <![CDATA[
-        ## Remove comments and sort by chromosome.
-        grep -v '^#' '$input' | sort -k1,1 |
+        ## Remove comments and sort by chromosome. Remove anything after ##FASTA in gff files.
+
+        #if $input.is_of_type("gff"):
+            sed -e '/^\#\#FASTA$/,\$d' '$input' | grep -v '^#' |
+        #else:
+            grep -v '^#' '$input' |
+        #end if
+
+        sort -k1,1 |
 
         ## Generate coverage bedgraph.
         bedtools genomecov -bg -i stdin -g '$chromInfo'

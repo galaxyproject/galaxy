@@ -9,6 +9,7 @@ var View = Backbone.View.extend({
         this.model = new Backbone.Model({
             dataset_id: Galaxy.params.dataset_id
         });
+        this.active_tab = "user";
         this.render();
     },
 

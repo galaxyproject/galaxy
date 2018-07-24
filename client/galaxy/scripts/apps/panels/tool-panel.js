@@ -2,6 +2,7 @@ import Tools from "mvc/tool/tools";
 import Upload from "mvc/upload/upload-view";
 import _l from "utils/localization";
 import ToolForm from "mvc/tool/tool-form-composite";
+import _ from "libs/underscore";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -28,7 +29,8 @@ var ToolPanel = Backbone.View.extend({
 
         // add upload modal
         this.upload_button = new Upload({
-            nginx_upload_path: config.nginx_upload_path,
+            upload_path: config.nginx_upload_path || `${Galaxy.root}api/tools`,
+            chunk_upload_size: config.chunk_upload_size,
             ftp_upload_site: config.ftp_upload_site,
             default_genome: config.default_genome,
             default_extension: config.default_extension
@@ -51,7 +53,7 @@ var ToolPanel = Backbone.View.extend({
         // if there are tools, render panel and display everything
         var self = this;
         if (this.tool_panel.get("layout").size() > 0) {
-            this.$el.prepend(this.tool_panel_view.$el);
+            this.$el.find(".toolMenu").replaceWith(this.tool_panel_view.$el);
             this.tool_panel_view.render();
         }
         // build the dom for the workflow portion of the tool menu
@@ -74,70 +76,54 @@ var ToolPanel = Backbone.View.extend({
 
     /** build a link to one tool */
     _templateTool: function(tool) {
-        return [
-            '<div class="toolTitle">',
-            '<a href="',
-            this.root,
-            tool.href,
-            '" target="galaxy_main">',
-            tool.title,
-            "</a>",
-            "</div>"
-        ].join("");
+        return `<div class="toolTitle">
+                    <a href="${Galaxy.root}${tool.href}" target="galaxy_main">
+                        ${tool.title}
+                    </a>
+                </div>`;
     },
 
     /** build a link to 'All Workflows' */
     _templateAllWorkflow: function(tool) {
-        return [
-            '<div class="toolTitle">',
-            // global
-            '<a href="',
-            Galaxy.root,
-            tool.href,
-            '">',
-            tool.title,
-            "</a>",
-            "</div>"
-        ].join("");
+        return `<div class="toolTitle">
+                    <a href="${Galaxy.root}${tool.href}">
+                        ${tool.title}
+                    </a>
+                </div>`;
     },
 
     /** build links to workflows in toolpanel */
     _templateWorkflowLink: function(wf) {
-        return [
-            '<div class="toolTitle">',
-            `<a class="${wf.cls} " href="`,
-            Galaxy.root,
-            wf.href,
-            '">',
-            wf.title,
-            "</a>",
-            "</div>"
-        ].join("");
+        return `<div class="toolTitle">
+                    <a class="${wf.cls}" href="${Galaxy.root}${wf.href}">
+                        ${_.escape(wf.title)}
+                    </a>
+                </div>`;
     },
 
     /** override to include inital menu dom and workflow section */
     _template: function() {
-        return [
-            '<div class="toolMenuContainer">',
-            '<div class="toolMenu" style="display: none">',
-            '<div id="search-no-results" style="display: none; padding-top: 5px">',
-            "<em><strong>",
-            _l("Search did not match any tools."),
-            "</strong></em>",
-            "</div>",
-            "</div>",
-            '<div class="toolSectionPad"/>',
-            '<div class="toolSectionPad"/>',
-            '<div class="toolSectionTitle" id="title_XXinternalXXworkflow">',
-            "<span>",
-            _l("Workflows"),
-            "</span>",
-            "</div>",
-            '<div id="internal-workflows" class="toolSectionBody">',
-            '<div class="toolSectionBg"/>',
-            "</div>",
-            "</div>"
-        ].join("");
+        return `<div class="toolMenuContainer">
+                    <div class="toolMenu" style="display: none">
+                        <div id="search-no-results" style="display: none; padding-top: 5px">
+                            <em>
+                                <strong>
+                                    ${_l("Search did not match any tools.")}
+                                </strong>
+                            </em>
+                        </div>
+                    </div>
+                    <div class="toolSectionPad"/>
+                    <div class="toolSectionPad"/>
+                    <div class="toolSectionTitle" id="title_XXinternalXXworkflow">
+                        <span>
+                            ${_l("Workflows")}
+                        </span>
+                    </div>
+                        <div id="internal-workflows" class="toolSectionBody">
+                            <div class="toolSectionBg"/>
+                        </div>
+                </div>`;
     },
 
     toString: function() {

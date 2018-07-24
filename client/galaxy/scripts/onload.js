@@ -179,18 +179,20 @@ $(document).ready(() => {
 
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {
-            // Load all webhooks with the type 'onload'
-            Webhooks.load({
-                type: "onload",
-                callback: function(webhooks) {
-                    webhooks.each(model => {
-                        var webhook = model.toJSON();
-                        if (webhook.activate && webhook.script) {
-                            Utils.appendScriptStyle(webhook);
-                        }
-                    });
-                }
-            });
+            if (Galaxy.config.enable_webhooks) {
+                // Load all webhooks with the type 'onload'
+                Webhooks.load({
+                    type: "onload",
+                    callback: function(webhooks) {
+                        webhooks.each(model => {
+                            var webhook = model.toJSON();
+                            if (webhook.activate && webhook.script) {
+                                Utils.appendScriptStyle(webhook);
+                            }
+                        });
+                    }
+                });
+            }
         } else {
             setTimeout(onloadWebhooks, 100);
         }

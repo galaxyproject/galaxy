@@ -6,6 +6,9 @@ var View = Backbone.View.extend({
         this.model = new Backbone.Model(options);
         this.url = this.model.get("url");
         this.redirect = this.model.get("redirect");
+        if (options && options.active_tab) {
+            this.active_tab = options.active_tab;
+        }
         this.setElement("<div/>");
         this.render();
     },
@@ -20,6 +23,7 @@ var View = Backbone.View.extend({
                 var options = $.extend({}, self.model.attributes, response);
                 var form = new Form({
                     title: options.title,
+                    title_id: options.title_id,
                     message: options.message,
                     status: options.status || "warning",
                     icon: options.icon,
@@ -76,7 +80,7 @@ var View = Backbone.View.extend({
                     form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);
                     });
-                    self._showMessage(form, success_message);
+                    self._showMessage(form, response.message);
                 }
             })
             .fail(response => {

@@ -9,6 +9,17 @@ import re
 
 import galaxy.tools.deps.installable
 import galaxy.tools.deps.requirements
+from . import (
+    Dependency,
+    DependencyException,
+    DependencyResolver,
+    InstallableDependencyResolver,
+    ListableDependencyResolver,
+    MappableDependencyResolver,
+    MultipleDependencyResolver,
+    NullDependency,
+    SpecificationPatternDependencyResolver,
+)
 from ..conda_util import (
     build_isolated_environment,
     cleanup_failed_install,
@@ -22,17 +33,6 @@ from ..conda_util import (
     installed_conda_targets,
     is_conda_target_installed,
     USE_PATH_EXEC_DEFAULT,
-)
-from ..resolvers import (
-    Dependency,
-    DependencyException,
-    DependencyResolver,
-    InstallableDependencyResolver,
-    ListableDependencyResolver,
-    MappableDependencyResolver,
-    MultipleDependencyResolver,
-    NullDependency,
-    SpecificationPatternDependencyResolver,
 )
 
 

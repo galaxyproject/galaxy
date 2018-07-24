@@ -69,14 +69,19 @@ var TerminalView = Backbone.View.extend({
 var BaseInputTerminalView = TerminalView.extend({
     className: "terminal input-terminal",
     initialize: function(options) {
-        var node = options.node;
-        var input = options.input;
-        var name = input.name;
-        var terminal = this.terminalForInput(input);
+        const node = options.node;
+        const input = options.input;
+        const name = input.name;
+        const id = `node-${node.cid}-input-${name}`;
+        const terminal = this.terminalForInput(input);
         if (!terminal.multiple) {
             this.setupMappingView(terminal);
         }
         this.el.terminal = terminal;
+        this.$el.attr("input-name", name);
+        this.$el.attr("id", id);
+        this.id = id;
+
         terminal.node = node;
         terminal.name = name;
         node.input_terminals[name] = terminal;
@@ -135,13 +140,11 @@ var BaseInputTerminalView = TerminalView.extend({
                     $(this).remove();
                 });
             // Position it and show
-            t
-                .css({
-                    top: $(element).offset().top - 2,
-                    left: $(element).offset().left - t.width(),
-                    "padding-right": $(element).width()
-                })
-                .show();
+            t.css({
+                top: $(element).offset().top - 2,
+                left: $(element).offset().left - t.width(),
+                "padding-right": $(element).width()
+            }).show();
         }
     }
 });
@@ -171,12 +174,15 @@ var InputCollectionTerminalView = BaseInputTerminalView.extend({
 var BaseOutputTerminalView = TerminalView.extend({
     className: "terminal output-terminal",
     initialize: function(options) {
-        var node = options.node;
-        var output = options.output;
-        var name = output.name;
-        var terminal = this.terminalForOutput(output);
+        const node = options.node;
+        const output = options.output;
+        const name = output.name;
+        const id = `node-${node.cid}-output-${name}`;
+        const terminal = this.terminalForOutput(output);
         this.setupMappingView(terminal);
         this.el.terminal = terminal;
+        this.$el.attr("output-name", name);
+        this.$el.attr("id", id);
         terminal.node = node;
         terminal.name = name;
         node.output_terminals[name] = terminal;
@@ -188,13 +194,15 @@ var BaseOutputTerminalView = TerminalView.extend({
     },
     onDrag: function(e, d) {
         var onmove = () => {
+            // FIXME: global
+            var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
             var po = $(d.proxy)
                 .offsetParent()
                 .offset();
 
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
-            $(d.proxy).css({ left: x, top: y });
+            $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
             // FIXME: global
             window.workflow_globals.canvas_manager.update_viewport_overlay();
@@ -216,7 +224,10 @@ var BaseOutputTerminalView = TerminalView.extend({
         h.terminal = new Terminals.OutputTerminal({ element: h });
         var c = new Connector();
         c.dragging = true;
-        c.connect(this.el.terminal, h.terminal);
+        c.connect(
+            this.el.terminal,
+            h.terminal
+        );
         return h;
     },
     onDragEnd: function(e, d) {

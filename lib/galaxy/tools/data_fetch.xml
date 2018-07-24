@@ -1,0 +1,34 @@
+<tool id="__DATA_FETCH__"
+      name="Data Fetch"
+      version="0.1.0"
+      workflow_compatible="false"
+      profile="18.01">
+  <action module="galaxy.tools.actions.upload" class="FetchUploadToolAction"/>
+  <command><![CDATA[
+    python '$__tool_directory__/data_fetch.py'
+                --galaxy-root '$GALAXY_ROOT_DIR'
+                --datatypes-registry '$GALAXY_DATATYPES_CONF_FILE'
+                --request-version '$request_version'
+                --request '$request_path'
+  ]]></command>
+  <inputs nginx_upload="true">
+    <param type="text" name="request_version" value="1">
+    </param>
+    <param type="text" name="request_json">
+      <sanitizer sanitize="False">
+      </sanitizer>
+    </param>
+    <param name="file_count" type="hidden" value="auto" />
+    <upload_dataset name="files">
+      <param name="file_data" type="file" label="File" ajax-upload="true" file_type_name="">
+      </param>
+    </upload_dataset>
+  </inputs>
+  <configfiles>
+    <configfile name="request_path">$request_json</configfile>
+  </configfiles>
+  <outputs>
+  </outputs>
+  <help><![CDATA[
+  ]]></help>
+</tool>

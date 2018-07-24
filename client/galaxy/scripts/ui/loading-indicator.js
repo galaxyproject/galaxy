@@ -99,5 +99,13 @@ function LoadingIndicator($where, options) {
     return self;
 }
 
+const markViewAsLoading = function(view) {
+    view.setElement($('<div><div class="loading"></div></div>'));
+    new LoadingIndicator(view.$(".loading")).show();
+};
+
 //============================================================================
-export default LoadingIndicator;
+export default {
+    LoadingIndicator: LoadingIndicator,
+    markViewAsLoading: markViewAsLoading
+};

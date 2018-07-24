@@ -56,7 +56,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.session().flush()
             # TODO:?? flush needed for permissions below? If not, make optional
         except sqlalchemy.exc.IntegrityError as db_err:
-            raise exceptions.Conflict(db_err.message)
+            raise exceptions.Conflict(str(db_err))
 
         # can throw an sqlalx.IntegrityError if username not unique
 

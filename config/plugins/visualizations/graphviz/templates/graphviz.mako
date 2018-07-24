@@ -12,19 +12,17 @@
 
     <script type="text/javascript" src="/static/scripts/libs/jquery/jquery.js"></script>
 
-    ${h.stylesheet_link( root + 'plugins/visualizations/graphviz/static/css/style.css' )}
-
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/jquery.qtip.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/cytoscape.min.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/collapse.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/toolPanelFunctions.js' )}
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/graphVis.js' )}
+    ${h.stylesheet_link( root + 'static/plugins/visualizations/graphviz/static/css/style.css' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/cytoscape.min.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/collapse.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/toolPanelFunctions.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/graphVis.js' )}
 
 </head>
 
 ## ----------------------------------------------------------------------------
 <body>
-    ${h.javascript_link( root + 'plugins/visualizations/graphviz/static/js/wz_tooltip.js' )}
+    ${h.javascript_link( root + 'static/plugins/visualizations/graphviz/static/js/wz_tooltip.js' )}
 
     <script>
         function parseNodeEdge( data ){

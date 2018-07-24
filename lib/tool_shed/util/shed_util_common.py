@@ -301,7 +301,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return '<br/>gzip compressed file<br/>'
     elif checkers.is_bz2(file_path):
         return '<br/>bz2 compressed file<br/>'
-    elif checkers.check_zip(file_path):
+    elif checkers.is_zip(file_path):
         return '<br/>zip compressed file<br/>'
     elif checkers.check_binary(file_path):
         return '<br/>Binary file<br/>'
@@ -456,7 +456,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        that was included in the change set.
     """
     sa_session = app.model.context.current
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
     smtp_server = app.config.smtp_server
     if smtp_server and (new_repo_alert or repository.email_alerts):

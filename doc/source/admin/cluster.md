@@ -66,7 +66,7 @@ Additionally some of the runners including DRMAA may use the ``cluster_files_dir
 cluster_files_directory: database/pbs
 ```
 
-You may also find that attribute caching in your filesystem causes problems with job completion since it interferes with Galaxy detecting the presence and correct sizes of output files. In NFS caching can be disabled with the `-noac` mount option on Linux (on the Galaxy server), but this may have a significant impact on performance since all attributes will have to be read from the file server upon every file access. You should try the `retry_output_collection` option in `galaxy.yml` first to see if this solves the problem.
+You may also find that attribute caching in your filesystem causes problems with job completion since it interferes with Galaxy detecting the presence and correct sizes of output files. In NFS caching can be disabled with the `-noac` mount option on Linux (on the Galaxy server), but this may have a significant impact on performance since all attributes will have to be read from the file server upon every file access. You should try the `retry_job_output_collection` option in `galaxy.yml` first to see if this solves the problem.
 
 ## Runner Configuration
 
@@ -146,30 +146,14 @@ Runs jobs via the [TORQUE Resource Manager](http://www.adaptivecomputing.com/pro
 
 #### Dependencies
 
-Galaxy uses the [pbs_python](https://oss.trac.surfsara.nl/pbs_python/) module to interface with TORQUE.  pbs_python must be compiled against your TORQUE installation, so it cannot be provided with Galaxy.  However, we provide all the necessary automation to compile it - ([more about Galaxy's Framework dependencies](framework_dependencies.html)):
+Galaxy uses the [pbs_python](https://github.com/ehiggs/pbs-python) module to interface with TORQUE.  pbs_python must be compiled against your TORQUE installation, so it cannot be provided with Galaxy. You can install the package as follows:
 
 ```console
-galaxy_user@galaxy_server% cd /clusterfs/galaxy/galaxy-app
-galaxy_user@galaxy_server% LIBTORQUE_DIR=/path/to/libtorque python scripts/scramble.py -e pbs_python
+galaxy_user@galaxy_server% git clone https://github.com/ehiggs/pbs-python
+galaxy_user@galaxy_server% cd pbs-python
+galaxy_user@galaxy_server% source /clusterfs/galaxy/galaxy-app/.venv/bin/activate
+galaxy_user@galaxy_server% python setup.py install
 ```
-
-
-#### Newer versions of TORQUE (>4.2)
-
-Galaxy is compatible with newer versions of TORQUE now that pbs_python has been updated to add support for TORQUE >= v4.2.  Scrambling the new version of pbs_python is accomplished simply by modifying eggs.ini to use the new version of pbs_python:
-
-```ini
-;pbs_python = 4.3.5
-pbs_python = 4.4.0
-```
-
-
-Then scramble as normal:
-```console
-galaxy_user@galaxy_server% cd /clusterfs/galaxy/galaxy-app
-galaxy_user@galaxy_server% LIBTORQUE_DIR=/path/to/libtorque python scripts/scramble.py -e pbs_python
-```
-
 
 As of May 2014 there are still some outstanding bugs in pbs_python. Notably, error code translation is out of alignment.  For example if you get error #15025 "Bad UID for Job Execution" pbs_python will report this error incorrectly as "Queue already exists".  You may consult the [TORQUE source code](https://github.com/adaptivecomputing/torque/blob/4.2.7/src/include/pbs_error_db.h) for the proper error message that corresponds with a given error number.
    
@@ -195,7 +179,7 @@ Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Except
 ```
 
 
-The value of *ppn=* is used by PBS to define the environment variable $PBS_NCPUS which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
+The value of *ppn=* is used by PBS to define the environment variable `$PBS_NCPUS` which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
 
 ### Condor
 
@@ -348,12 +332,41 @@ galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/external_chown_script
 
 If your sudo config contains `Defaults    requiretty`, this option must be disabled.
 
-For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is thereby configurable by the Galaxy admin. This can be of interest because sudo removes `PATH`, `LD_LIBRARY_PATH`, etc. variables per default in some installations. In such cases the sudo calls in the three variables in galaxy.yml can be adapted, e.g., `sudo -E PATH=... LD_LIBRARY_PATH=... /PATH/TO/GALAXY/scripts/drmaa_external_runner.py`. In order to allow setting the variables this way adaptions to the sudo configuration might be necessary. 
+For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is thereby configurable by the Galaxy admin. This can be of interest because sudo removes `PATH`, `LD_LIBRARY_PATH`, etc. variables per default in some installations. In such cases the sudo calls in the three variables in galaxy.yml can be adapted, e.g., `sudo -E PATH=... LD_LIBRARY_PATH=... /PATH/TO/GALAXY/scripts/drmaa_external_runner.py`. In order to allow setting the variables this way adaptions to the sudo configuration might be necessary. For example, the path to the python inside the galaxy's python virtualenv may have to be inserted before the script call to make sure the virtualenv is used for drmaa submissions of real user jobs.
+
+```
+drmaa_external_runjob_script: sudo -E .venv/bin/python scripts/drmaa_external_runner.py --assign_all_groups
+```
+
 Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directorries `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
 
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.
 
 Some maintenance and support of this code will be provided via the usual [Support](https://galaxyproject.org/support/) channels, but improvements and fixes would be greatly welcomed, as this is a complex feature which is not used by the Galaxy Development Team.
+
+## Special environment variables for job resources
+
+Galaxy *tries* to define special environment variables for each job that contain
+the information on the number of available slots and the amount of available
+memory: 
+
+* `GALAXY_SLOTS`: number of available slots 
+* `GALAXY_MEMORY_MB`: total amount of available memory in MB
+* `GALAXY_MEMORY_MB_PER_SLOT`: amount of memory that is available for each slot in MB
+
+More precisely Galaxy inserts bash code in the job submit script that 
+tries to determine these values. This bash code is defined here: 
+
+* lib/galaxy/jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh
+* lib/galaxy/jobs/runners/util/job_script/MEMORY_STATEMENT.sh
+
+If this code is unable to determine the variables, then they will not be set. 
+Therefore in the tool XML files the variables should be used with a default, 
+e.g. `\${GALAXY_SLOTS:-1}` (see also https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage). 
+
+In particular `GALAXY_MEMORY_MB` and `GALAXY_MEMORY_MB_PER_SLOT` are currently
+defined only for a few cluster types. Contributions are very welcome, e.g. let
+the Galaxy developers know how to modify that file to support your cluster.
 
 ## Contributors
 

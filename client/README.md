@@ -14,7 +14,7 @@ nodejs.org and yarnpkg.com.
 The Galaxy client build has necessarily grown more complex in the past several
 years, but we're still trying to keep things as simple as possible for
 developers (everyone, really).  If you're having any trouble with building the
-client after following the instructions below please create an issue on Github
+client after following the instructions below please create an issue on GitHub
 or reach out for help directly on Gitter at
 https://gitter.im/galaxyproject/Lobby.
 
@@ -26,24 +26,26 @@ There are many moving parts to the client build system, but the entrypoint for
 most people is the 'client' rule in the Makefile at the root of the Galaxy
 repository.  Execute the following to perform a complete build suitable for
 local development, including dependency staging, style building, script
-processing and bundling.
+processing and bundling.  This is a development-specific build which includes
+extra debugging features, and excludes several production optimizations made
+during the build process.
 
     make client
 
-Note: Don't commit the files that 'make client' creates.  This is a
-development-specific build which includes extra debugging features, and
-excludes several production optimizations made during the build process.
-
-For a production build, suitable for committing to the repository, or deploying
-to a live server, use the following:
+For a production build, suitable for deploying to a live server, use the following:
 
     make client-production
 
 And, lastly, if you want a production build that includes sourcemaps to allow
-for perusal of the page-level javascript to facilitate live-server debugging,
-use:
+for inspection of live javascript to facilitate debugging, use:
 
     make client-production-maps
+
+Important Note: The development branch of Galaxy does not include client script
+artifacts, and these should not be committed.  When issuing a PR to a stable
+branch, please run "make client-production-maps", and include those artifacts.
+Or, if you'd rather, include only the /client source changes and build
+artifacts can be added by maintainers on merge.
 
 
 Automatic Rebuilding (Watch Mode)

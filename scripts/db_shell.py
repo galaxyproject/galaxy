@@ -32,7 +32,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 from galaxy.datatypes.registry import Registry
 from galaxy.model import *  # noqa
-from galaxy.model import set_datatypes_registry  # More expclicit than `*` import
+from galaxy.model import set_datatypes_registry  # More explicit than `*` import
 from galaxy.model.mapping import init
 from galaxy.model.orm.scripts import get_config
 

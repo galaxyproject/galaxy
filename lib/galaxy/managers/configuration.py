@@ -40,7 +40,7 @@ class ConfigSerializer(base.ModelSerializer):
             'logo_url'                          : lambda i, k, **c: self.url_for(i.get(k, '/')),
             'logo_src'                          : lambda i, k, **c: self.url_for('/static/images/galaxyIcon_noText.png'),
             'terms_url'                         : _defaults_to(''),
-
+            'myexperiment_target_url'           : _defaults_to("www.myexperiment.org"),
             'wiki_url'                          : _defaults_to(self.app.config.wiki_url),
             'search_url'                        : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/search/"),
             'mailing_lists'                     : _defaults_to(self.app.config.wiki_url.rstrip("/") + "/mailing-lists/"),
@@ -51,6 +51,7 @@ class ConfigSerializer(base.ModelSerializer):
             'lims_doc_url'                      : _defaults_to("https://usegalaxy.org/u/rkchak/p/sts"),
             'biostar_url'                       : _defaults_to(''),
             'biostar_url_redirect'              : lambda *a, **c: self.url_for(controller='biostar', action='biostar_redirect', qualified=True),
+            'default_locale'                    : _defaults_to(self.app.config.default_locale),
 
             'enable_beta_ts_api_install'        : _defaults_to(False),
             'enable_communication_server'       : _defaults_to(False),
@@ -61,6 +62,7 @@ class ConfigSerializer(base.ModelSerializer):
             'allow_user_creation'               : _defaults_to(False),
             'use_remote_user'                   : _defaults_to(None),
             'enable_openid'                     : _defaults_to(False),
+            'enable_oidc'                       : _defaults_to(False),
             'enable_quotas'                     : _defaults_to(False),
             'remote_user_logout_href'           : _defaults_to(''),
             'datatypes_disable_auto'            : _defaults_to(False),
@@ -72,7 +74,8 @@ class ConfigSerializer(base.ModelSerializer):
             # TODO: is there no 'correct' way to get an api url? controller='api', action='tools' is a hack
             # at any rate: the following works with path_prefix but is still brittle
             # TODO: change this to (more generic) upload_path and incorporate config.nginx_upload_path into building it
-            'nginx_upload_path'                 : lambda i, k, **c: getattr(i, k, False) or self.url_for('/api/tools'),
+            'nginx_upload_path'                 : lambda i, k, **c: getattr(i, k, False),
+            'chunk_upload_size'                 : _defaults_to(104857600),
             'ftp_upload_dir'                    : _defaults_to(None),
             'ftp_upload_site'                   : _defaults_to(None),
             'version_major'                     : _defaults_to(None),

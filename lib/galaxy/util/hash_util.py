@@ -10,9 +10,28 @@ import logging
 
 log = logging.getLogger(__name__)
 
+BLOCK_SIZE = 1024 * 1024
+
 sha1 = hashlib.sha1
+sha256 = hashlib.sha256
 sha = sha1
 md5 = hashlib.md5
+
+
+def memory_bound_hexdigest(hash_func, path=None, file=None):
+    hasher = hash_func()
+    if file is None:
+        assert path is not None
+        file = open(path, "rb")
+    else:
+        assert path is None, "Cannot specify path and path keyword arguments."
+
+    try:
+        for block in iter(lambda: file.read(BLOCK_SIZE), b''):
+                hasher.update(block)
+        return hasher.hexdigest()
+    finally:
+        file.close()
 
 
 def md5_hash_file(path):

@@ -3,7 +3,6 @@ Contains the main interface in the Universe class
 """
 from __future__ import absolute_import
 
-import cgi
 import logging
 import os
 
@@ -12,6 +11,7 @@ from paste.httpexceptions import (
     HTTPBadGateway,
     HTTPNotFound
 )
+from webob.compat import cgi_FieldStorage
 
 from galaxy import (
     managers,
@@ -108,7 +108,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         js_options = self._get_js_options(trans)
         config = js_options['config']
         config.update(self._get_extended_config(trans))
-
         return self.template(trans, 'analysis', options=js_options)
 
     @web.expose
@@ -437,7 +436,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             rval += "%s: %s <br/>" % (k, trans.request.headers[k])
         for k in kwd:
             rval += "%s: %s <br/>" % (k, kwd[k])
-            if isinstance(kwd[k], cgi.FieldStorage):
+            if isinstance(kwd[k], cgi_FieldStorage):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
 

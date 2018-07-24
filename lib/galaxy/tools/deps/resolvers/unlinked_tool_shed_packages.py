@@ -20,10 +20,17 @@ See bottom for instructions on how to add this resolver.
 """
 import logging
 from os import listdir
-from os.path import exists, getmtime, join
+from os.path import (
+    exists,
+    getmtime,
+    join
+)
 
+from . import (
+    Dependency,
+    NullDependency
+)
 from .galaxy_packages import BaseGalaxyPackageDependencyResolver
-from ..resolvers import Dependency, NullDependency
 
 log = logging.getLogger(__name__)
 

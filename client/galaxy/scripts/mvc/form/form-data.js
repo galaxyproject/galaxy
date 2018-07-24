@@ -200,7 +200,7 @@ export var matchCase = (input, value) => {
  * @param{dict}   callback  - Called with the mapped dictionary object and corresponding model node
  */
 export var visitInputs = (inputs, callback, prefix, context) => {
-    context = $.extend(true, {}, context);
+    context = $.extend({}, context);
     _.each(inputs, input => {
         if (input && input.type && input.name) {
             context[input.name] = input;

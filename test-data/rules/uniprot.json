@@ -1,0 +1,52 @@
+{
+  "rules": [
+    {
+      "type": "add_filter_count",
+      "count": "1",
+      "which": "first",
+      "invert": false
+    },
+    {
+      "type": "remove_columns",
+      "target_columns": [
+        1,
+        2,
+        4,
+        5,
+        6
+      ]
+    },
+    {
+      "type": "sort",
+      "target_column": 0,
+      "numeric": false
+    },
+    {
+      "type": "add_column_regex",
+      "target_column": 0,
+      "expression": ".*",
+      "replacement": "http://www.uniprot.org/uniprot/\\0.fasta"
+    }
+  ],
+  "mapping": [
+    {
+      "type": "info",
+      "columns": [
+        1
+      ]
+    },
+    {
+      "type": "list_identifiers",
+      "columns": [
+        0
+      ]
+    },
+    {
+      "type": "url",
+      "columns": [
+        2
+      ]
+    }
+  ],
+  "extension": "csfasta"
+}

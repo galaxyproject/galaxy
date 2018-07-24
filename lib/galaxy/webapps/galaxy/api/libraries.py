@@ -46,10 +46,10 @@ class LibrariesController(BaseAPIController):
 
         """
         deleted = util.string_as_bool_or_none(kwd.get('deleted', None))
-        query, restricted_library_ids = self.library_manager.list(trans, deleted)
+        query, prefetched_ids = self.library_manager.list(trans, deleted)
         libraries = []
         for library in query:
-            libraries.append(self.library_manager.get_library_dict(trans, library, restricted_library_ids))
+            libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
         return libraries
 
     def __decode_id(self, trans, encoded_id, object_name=None):

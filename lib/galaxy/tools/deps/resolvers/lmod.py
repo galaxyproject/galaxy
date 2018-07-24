@@ -9,11 +9,14 @@ LMOD @ Github: https://github.com/TACC/Lmod
 import logging
 from os import getenv
 from os.path import exists
-from subprocess import PIPE, Popen
+from subprocess import (
+    PIPE,
+    Popen
+)
 
 from six import StringIO
 
-from ..resolvers import (
+from . import (
     Dependency,
     DependencyResolver,
     MappableDependencyResolver,

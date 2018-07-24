@@ -5,6 +5,9 @@ import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
+
+/* global $ */
+
 // TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
 /** Base galaxy client-side application.
@@ -69,6 +72,9 @@ GalaxyApp.prototype._init = function __init(options, bootstrapped) {
 
     self._initUser(options.user || {});
     self.debug("GalaxyApp.user: ", self.user);
+
+    self._initUserLocale();
+    self.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
 
     self._setUpListeners();
     self.trigger("ready", self);
@@ -169,6 +175,37 @@ GalaxyApp.prototype._initLocale = function _initLocale(options) {
     // TODO: temporary - remove when can require for plugins
     window._l = self.localize;
     return self;
+};
+
+/** add the localize fn to this object and the window namespace (as '_l') */
+GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
+    var self = this;
+
+    // Choose best locale
+    var global_locale = self.config.default_locale ? self.config.default_locale.toLowerCase() : false;
+
+    var extra_user_preferences = {};
+    if (self.user && self.user.attributes.preferences && "extra_user_preferences" in self.user.attributes.preferences) {
+        extra_user_preferences = JSON.parse(self.user.attributes.preferences.extra_user_preferences);
+    }
+
+    var user_locale =
+        "localization|locale" in extra_user_preferences
+            ? extra_user_preferences["localization|locale"].toLowerCase()
+            : false;
+
+    if (user_locale == "auto") {
+        user_locale = false;
+    }
+
+    var nav_locale =
+        typeof navigator === "undefined"
+            ? "__root"
+            : (navigator.language || navigator.userLanguage || "__root").toLowerCase();
+
+    let locale = user_locale || global_locale || nav_locale;
+
+    sessionStorage.setItem("currentLocale", locale);
 };
 
 /** set up the current user as a Backbone model (mvc/user/user-model) */

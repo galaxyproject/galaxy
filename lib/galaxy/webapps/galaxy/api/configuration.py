@@ -36,7 +36,10 @@ class ConfigurationController(BaseAPIController):
         :rtype:   dict
         """
         current_user = self.user_manager.current_user(trans)
-        return current_user.to_dict()
+        rval = None
+        if current_user:  # None for master API key for instance
+            rval = current_user.to_dict()
+        return rval
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):

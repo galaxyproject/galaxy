@@ -103,7 +103,7 @@ class MockAppConfig(Bunch):
     def __init__(self, root=None, **kwargs):
         Bunch.__init__(self, **kwargs)
         root = root or '/tmp'
-        self.security = security.SecurityHelper(id_secret='bler')
+        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
         self.use_remote_user = kwargs.get('use_remote_user', False)
         self.file_path = '/tmp'
         self.jobs_directory = '/tmp'
@@ -123,12 +123,16 @@ class MockAppConfig(Bunch):
 
         self.umask = 0o77
 
+        # Compliance related config
+        self.redact_email_in_job_name = False
+
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'chrom')
         self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
 
         self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
         self.preserve_python_environment = "always"
+        self.enable_beta_gdpr = False
 
         # set by MockDir
         self.root = root
@@ -138,7 +142,7 @@ class MockWebapp(object):
 
     def __init__(self, **kwargs):
         self.name = kwargs.get('name', 'galaxy')
-        self.security = security.SecurityHelper(id_secret='bler')
+        self.security = security.SecurityHelper(id_secret='6e46ed6483a833c100e68cc3f1d0dd76')
 
 
 class MockTrans(object):
@@ -182,12 +186,12 @@ class MockTrans(object):
 
     def fill_template(self, filename, template_lookup=None, **kwargs):
         template = template_lookup.get_template(filename)
-        template.output_encoding = 'utf-8'
         kwargs.update(h=MockTemplateHelpers())
         return template.render(**kwargs)
 
 
 class MockVisualizationsRegistry(object):
+    BUILT_IN_VISUALIZATIONS = ['trackster']
 
     def get_visualizations(self, trans, target):
         return []

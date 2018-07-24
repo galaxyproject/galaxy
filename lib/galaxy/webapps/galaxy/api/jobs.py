@@ -12,6 +12,7 @@ from sqlalchemy import or_
 from galaxy import exceptions
 from galaxy import model
 from galaxy import util
+from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -26,6 +27,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
     def __init__(self, app):
         super(JobController, self).__init__(app)
+        self.dataset_manager = DatasetManager(app)
         self.job_search = JobSearch(app)
 
     @expose_api
@@ -111,7 +113,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
         return out
 
-    @expose_api
+    @expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
         show( trans, id )
@@ -206,6 +208,27 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         else:
             return False
 
+    @expose_api
+    def resume(self, trans, id, **kwd):
+        """
+        * PUT /api/jobs/{id}/resume
+            Resumes a paused job
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing output dataset associations
+        """
+        job = self.__get_job(trans, id)
+        if not job:
+            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+        if job.state == job.states.PAUSED:
+            job.resume()
+        else:
+            exceptions.RequestParameterInvalidException("Job with id '%s' is not paused" % (job.tool_id))
+        return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
     @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):
         """
@@ -255,7 +278,9 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise exceptions.ObjectNotFound()
-        if not trans.user_is_admin() and job.user != trans.user:
+        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        if not trans.user_is_admin() and not belongs_to_user:
+            # Check access granted via output datasets.
             if not job.output_datasets:
                 raise exceptions.ItemAccessibilityException("Job has no output datasets.")
             for data_assoc in job.output_datasets:

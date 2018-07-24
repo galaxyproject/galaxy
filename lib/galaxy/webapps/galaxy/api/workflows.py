@@ -3,10 +3,15 @@ API operations for Workflows
 """
 from __future__ import absolute_import
 
+import json
 import logging
+import os
 
+import requests
+from markupsafe import escape
 from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
+from sqlalchemy.orm import joinedload
 
 from galaxy import (
     exceptions,
@@ -125,31 +130,36 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         user = trans.get_user()
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
-        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
-                desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
+        for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
+                joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+                joinedload("tags")).filter(
+                    filter1, trans.app.model.StoredWorkflow.table.c.deleted == false()).order_by(
+                    desc(trans.app.model.StoredWorkflow.table.c.update_time)).all():
 
             item = wf.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf.id)
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
-            item['number_of_steps'] = len(wf.latest_workflow.steps)
+            item['number_of_steps'] = wf.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf.id:
                     item['show_in_tool_panel'] = True
                     break
             rval.append(item)
-        for wf_sa in trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(
-                user=trans.user).join('stored_workflow').filter(
-                trans.app.model.StoredWorkflow.deleted == false()).order_by(
-                desc(trans.app.model.StoredWorkflow.update_time)).all():
+        for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
+                model.StoredWorkflowUserShareAssociation.stored_workflow).options(
+                joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")).options(
+                joinedload("stored_workflow").joinedload("user")).options(
+                joinedload("stored_workflow").joinedload("tags")).filter(model.StoredWorkflowUserShareAssociation.user == trans.user).filter(
+                model.StoredWorkflow.deleted == false()).order_by(
+                desc(model.StoredWorkflow.update_time)).all():
             item = wf_sa.stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
             encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
             item['url'] = url_for('workflow', id=encoded_id)
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
-            item['number_of_steps'] = len(wf_sa.stored_workflow.latest_workflow.steps)
+            item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             for x in user.stored_workflow_menu_entries:
                 if x.stored_workflow_id == wf_sa.id:
@@ -260,12 +270,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                              and will copy the outputs of the previously executed step.
         """
         ways_to_create = set([
+            'archive_source',
             'workflow_id',
             'installed_repository_file',
             'from_history_id',
             'shared_workflow_id',
             'workflow',
         ])
+
         if len(ways_to_create.intersection(payload)) == 0:
             message = "One parameter among - %s - must be specified" % ", ".join(ways_to_create)
             raise exceptions.RequestParameterMissingException(message)
@@ -275,11 +287,36 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.RequestParameterInvalidException(message)
 
         if 'installed_repository_file' in payload:
-            workflow_controller = trans.webapp.controllers['workflow']
-            result = workflow_controller.import_workflow(trans=trans,
-                                                         cntrller='api',
-                                                         **payload)
-            return result
+            installed_repository_file = payload.get('installed_repository_file', '')
+            if not os.path.exists(installed_repository_file):
+                raise exceptions.MessageException("Repository file '%s' not found.")
+            elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
+                workflow_data = None
+                with open(installed_repository_file, 'rb') as f:
+                    workflow_data = f.read()
+                return self.__api_import_from_archive(trans, workflow_data)
+            else:
+                raise exceptions.MessageException("You attempted to open an empty file.")
+
+        if 'archive_source' in payload:
+            archive_source = payload['archive_source']
+            archive_file = payload.get('archive_file')
+            archive_data = None
+            if archive_source:
+                try:
+                    archive_data = requests.get(archive_source).text
+                except Exception:
+                    raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
+            elif hasattr(archive_file, 'file'):
+                uploaded_file = archive_file.file
+                uploaded_file_name = uploaded_file.name
+                if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
+                    archive_data = uploaded_file.read()
+                else:
+                    raise exceptions.MessageException("You attempted to upload an empty file.")
+            else:
+                raise exceptions.MessageException("Please provide a URL or file.")
+            return self.__api_import_from_archive(trans, archive_data, "uploaded file")
 
         if 'from_history_id' in payload:
             from_history_id = payload.get('from_history_id')
@@ -442,18 +479,18 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :returns:   serialized version of the workflow
         """
         stored_workflow = self.__get_stored_workflow(trans, id)
-        workflow_dict = payload.get('workflow')
+        workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
-            new_workflow_name = payload.get('name') or workflow_dict.get('name')
+            new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
             if new_workflow_name:
                 stored_workflow.name = sanitize_html(new_workflow_name)
 
-            if 'annotation' in payload:
-                newAnnotation = sanitize_html(payload['annotation'])
+            if 'annotation' in workflow_dict:
+                newAnnotation = sanitize_html(workflow_dict['annotation'])
                 self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, newAnnotation)
 
-            if 'menu_entry' in payload or 'show_in_tool_panel' in workflow_dict:
-                if payload.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):
+            if 'menu_entry' in workflow_dict or 'show_in_tool_panel' in workflow_dict:
+                if workflow_dict.get('menu_entry') or workflow_dict.get('show_in_tool_panel'):
                     menuEntry = model.StoredWorkflowMenuEntry()
                     menuEntry.stored_workflow = stored_workflow
                     trans.get_user().stored_workflow_menu_entries.append(menuEntry)
@@ -490,9 +527,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         inputs = payload.get('inputs', {})
         module = module_factory.from_dict(trans, payload)
-        module_state = {}
-        populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
-        module.recover_state(module_state)
+        if 'tool_state' not in payload:
+            module_state = {}
+            populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
+            module.recover_state(module_state)
         return {
             'label'             : inputs.get('__label', ''),
             'annotation'        : inputs.get('__annotation', ''),
@@ -514,49 +552,52 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
         return tool
 
+    def __api_import_from_archive(self, trans, archive_data, source=None):
+        try:
+            data = json.loads(archive_data)
+        except Exception:
+            raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
+        if not data:
+            raise exceptions.MessageException("The data content is missing.")
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
+        workflow = workflow.latest_workflow
+        if workflow.has_errors:
+            return {"message": "Imported, but some steps in this workflow have validation errors.", "status": "error"}
+        elif len(workflow.steps) == 0:
+            return {"message": "Imported, but this workflow has no steps.", "status": "error"}
+        elif workflow.has_cycles:
+            return {"message": "Imported, but this workflow contains cycles.", "status": "error"}
+        return {"message": "Workflow '%s' imported successfully." % escape(workflow.name), "status": "success"}
+
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
-
         import_tools = util.string_as_bool(payload.get("import_tools", False))
         if import_tools and not trans.user_is_admin():
             raise exceptions.AdminRequiredException()
-
         publish = util.string_as_bool(payload.get("publish", False))
         # If 'publish' set, default to importable.
         importable = util.string_as_bool(payload.get("importable", publish))
         # Galaxy will try to upgrade tool versions that don't match exactly during import,
         # this prevents that.
-        exact_tools = util.string_as_bool(payload.get("exact_tools", False))
-
+        exact_tools = util.string_as_bool(payload.get("exact_tools", True))
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
-
         from_dict_kwds = dict(
-            source="API",
             publish=publish,
             exact_tools=exact_tools,
         )
         workflow, missing_tool_tups = self._workflow_from_dict(trans, data, **from_dict_kwds)
-
         if importable:
             self._make_item_accessible(trans.sa_session, workflow)
             trans.sa_session.flush()
-
         # galaxy workflow newly created id
         workflow_id = workflow.id
         # api encoded, id
         encoded_id = trans.security.encode_id(workflow_id)
-
-        # return list
-        rval = []
-
         item = workflow.to_dict(value_mapper={'id': trans.security.encode_id})
         item['url'] = url_for('workflow', id=encoded_id)
         item['owner'] = workflow.user.username
         item['number_of_steps'] = len(workflow.latest_workflow.steps)
-        rval.append(item)
-
-        #
         if import_tools:
             tools = {}
             for key in data['steps']:
@@ -623,8 +664,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         Schedule the workflow specified by `workflow_id` to run.
         """
-        # /usage is awkward in this context but is consistent with the rest of
-        # this module. Would prefer to redo it all to use /invocation(s).
         # Get workflow + accessibility check.
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
         workflow = stored_workflow.latest_workflow

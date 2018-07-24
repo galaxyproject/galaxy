@@ -32,7 +32,8 @@ var View = Backbone.View.extend({
             })
             .tooltip({
                 title: this.model.get("tooltip"),
-                placement: "bottom"
+                placement: "bottom",
+                trigger: "hover"
             });
         this.$progress
             .removeClass()

@@ -169,6 +169,8 @@ class TagManager(object):
         item_tag_assoc.user_tname = name
         item_tag_assoc.user_value = value
         item_tag_assoc.value = lc_value
+        # Need to flush to get an ID. We need an ID to apply multiple tags with the same tname to an object.
+        self.sa_session.flush()
         return item_tag_assoc
 
     def apply_item_tags(self, user, item, tags_str):
@@ -303,7 +305,7 @@ class TagManager(object):
         """Get name, value pair from a tag string."""
         # Use regular expression to parse name, value.
         reg_exp = re.compile("[" + self.key_value_separators + "]")
-        name_value_pair = reg_exp.split(tag_str)
+        name_value_pair = reg_exp.split(tag_str, 1)
         # Add empty slot if tag does not have value.
         if len(name_value_pair) < 2:
             name_value_pair.append(None)

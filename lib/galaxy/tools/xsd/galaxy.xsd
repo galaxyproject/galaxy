@@ -141,9 +141,10 @@ hyperlink in the tool menu.</xs:documentation>
       </xs:attribute>
       <xs:attribute name="version" type="xs:string" default="1.0.0">
         <xs:annotation gxdocs:best_practices="tool-versions">
-          <xs:documentation xml:lang="en">This string defaults to ``1.0.0`` if it is not
-included in the tag. It allows for tool versioning and should be increased with each new version
-of the tool.</xs:documentation>
+          <xs:documentation xml:lang="en">This string allows for tool versioning
+and should be increased with each new version of the tool. The value should
+follow the [PEP 440](https://www.python.org/dev/peps/pep-0440/) specification.
+It defaults to ``1.0.0`` if it is not included in the tag.</xs:documentation>
         </xs:annotation>
       </xs:attribute>
       <xs:attribute name="hidden" type="PermissiveBoolean" default="false">
@@ -1339,6 +1340,11 @@ The functional test tool
 provides a demonstration of using this tag.
 
 ```xml
+<outputs>
+    <data format="tabular" name="sample">
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" ext="tabular" visible="true" assign_primary_output="true" />
+    </data>
+</outputs>
 <test>
   <param name="num_param" value="7" />
   <param name="input" ftype="txt" value="simple_line.txt"/>
@@ -1357,6 +1363,7 @@ provides a demonstration of using this tag.
 </test>
 ```
 
+Note that this tool uses ``assign_primary_output="true"`` for ``<discover_data_sets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
@@ -1749,7 +1756,7 @@ managed by the Galaxy admins (for instance via
 [data managers](https://galaxyproject.org/admin/tools/data-managers/)
 ) and
 history files. A good example tool that demonstrates this is
-the [Bowtie 2](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
+the [Bowtie 2](https://github.com/galaxyproject/tools-iuc/blob/master/tools/bowtie2/bowtie2_wrapper.xml) wrapper.
 
 ```xml
 <conditional name="reference_genome">
@@ -2656,7 +2663,8 @@ be escaped with a backslash (``\``) when appearing in ``command`` or ``configfil
 Name | Description
 ---- | -----------
 ``\${GALAXY_SLOTS:-4}`` | Number of cores/threads allocated by the job runner or resource manager to the tool for the given job (here 4 is the default number of threads to use if running via custom runner that does not configure GALAXY_SLOTS or in an older Galaxy runtime).
-``\$GALAXY_MEMORY_MB`` | Amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
+``\$GALAXY_MEMORY_MB`` | Total amount of memory in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
+``\$GALAXY_MEMORY_MB_PER_SLOT`` | Amount of memory per slot in megabytes (1024^2 bytes) allocated by the administrator (via the resource manager) to the tool for the given job. If unset, tools should not attempt to limit memory usage.
 
 See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
 on the topic of ``GALAXY_SLOTS`` for more information and examples.
@@ -3230,7 +3238,7 @@ contained within the ``<param>`` tag set - it contains a set of ``<valid>`` and
 ### Character presets
 
 The following presets can be used when specifying the valid characters: the
-[constants from the ``string`` Python3 module](https://docs.python.org/3/library/string.html#string-constants),
+[constants](https://docs.python.org/3/library/string.html#string-constants) from the ``string`` Python3 module,
 plus ``default`` (equal to ``string.ascii_letters + string.digits + " -=_.()/+*^,:?!"``)
 and ``none`` (empty set).
 The ``string.letters``, ``string.lowercase`` and ``string.uppercase`` Python2
@@ -3259,10 +3267,10 @@ be dropped from the input.
 ```
 <sanitizer>
     <valid initial="string.printable">
-        <remove value="&apos;"/>
+        <remove value="&amp;"/>
     </valid>
     <mapping initial="none">
-        <add source="&apos;" target=""/>
+        <add source="&amp;" target=""/>
     </mapping>
 </sanitizer>
 ```
@@ -3315,7 +3323,8 @@ valid input for the mapping to occur.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Add the characters contained in the specified character preset (as defined above) to the list of valid characters.</xs:documentation>
+        <xs:documentation xml:lang="en">Add the characters contained in the specified character preset (as defined above) to the list of valid characters. The default
+is the ``none`` preset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3328,12 +3337,12 @@ valid input for the mapping to occur.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive is used to remove
 individual characters or preset lists of characters.
-Character must not be allowed as a valid input for the mapping to occur.
-Preset lists include default and none as well as those available from string.* (e.g. ``string.printable``).</xs:documentation>
+Character must not be allowed as a valid input for the mapping to occur.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="preset" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Remove the characters contained in the specified character preset (as defined above) from the list of valid characters.</xs:documentation>
+        <xs:documentation xml:lang="en">Remove the characters contained in the specified character preset (as defined above) from the list of valid characters. The default
+is the ``none`` preset.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">
@@ -3760,7 +3769,7 @@ The valid values for format can be found in
     <xs:attribute name="default_identifier_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
-This only applies to collections that are mapped over a non-collection input and that have equivalent structures.</xs:documentation>
+This only applies to collections that are mapped over a non-collection input and that have equivalent structures. If this references input elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead of ``input`` if ``input`` is in a conditional with ``name="cond"``). </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="metadata_source" type="xs:string">
@@ -3816,7 +3825,7 @@ metadata in the same way that the command line parameters are (discussed in the
 [command](#tool-command) directive).
 
 Creating collections in tools is covered in-depth in
-[planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
+[Planemo's documentation](https://planemo.readthedocs.io/en/latest/writing_advanced.html#creating-collections).
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -3865,7 +3874,9 @@ derive collection's type (e.g. ``collection_type``) from.</xs:documentation>
         <xs:documentation xml:lang="en">This is the name of input collection or
 dataset to derive "structure" of the output from (output element count and
 identifiers). For instance, if the referenced input has three ordered items with
-identifiers ``sample1``, ``sample2``,  and ``sample3``</xs:documentation>
+identifiers ``sample1``, ``sample2``,  and ``sample3``. If this references input
+elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead
+of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="inherit_format" type="xs:boolean">
@@ -3903,7 +3914,7 @@ conditionals are accessed using a hash named after the conditional.
           <param name="vcf_output" type="boolean" checked="false" label="VCF output"
             truevalue="--vcf" falsevalue="" />
         </when>
-      <conditional>
+      </conditional>
     </inputs>
     <outputs>
       <data format="txt" label="Alignment report on ${on_string}" name="output_txt" />
@@ -4544,7 +4555,7 @@ the path to the file created with this directive.</xs:documentation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the <configfiles> tag set. It tells Galaxy to
-write out a JSON representation of the tool parameters .
+write out a JSON representation of the tool parameters.
 
 *Example*
 
@@ -4568,6 +4579,9 @@ the specified name (i.e. ``inputs.json``).
 
 A contrived example of a tool that uses this is the test tool
 [inputs_as_json.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json.xml).
+
+By default this file will not contain paths for data or collection inputs. To include simple
+paths for data parameters set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -4583,6 +4597,11 @@ response to this directive.
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="data_style" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -4844,7 +4863,7 @@ checked.]]></xs:documentation>
   <xs:complexType name="ExitCode">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. Each <exit_code> tag defines a range of exit codes, and each range can be associated with a description of the error (e.g., "Out of Memory", "Invalid Sequence File") and an error level. The description just describes the condition and can be anything. The error level is either a warning or a fatal error. A warning means that stderr will be updated with the error's description. A fatal error means that the tool's execution will be marked as having an error and the workflow will stop. Note that, if the error level is not supplied, then a fatal error is assumed to have occurred.
+Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. Each <exit_code> tag defines a range of exit codes, and each range can be associated with a description of the error (e.g., "Out of Memory", "Invalid Sequence File") and an error level. The description just describes the condition and can be anything. The error level is either log, warning, fatal error, or fatal_oom. A warning means that stderr will be updated with the error's description. A fatal error means that the tool's execution will be marked as having an error and the workflow will stop. A fatal_oom indicates an out of memory condition and the job might be resubmitted if Galaxy is configured appropriately. Note that, if the error level is not supplied, then a fatal error is assumed to have occurred.
 
 The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied <exit_code> tags' ranges, then no errors are applied to the tool's execution.
 
@@ -4857,9 +4876,10 @@ The <exit_code> tag's supported attributes are as follows:
   * ``[m:n]``: the exit code must be greater than or equal to m and less than or equal to n;
   * ``[m:]``: the exit code must be greater than or equal to m;
   * ``[:n]``: the exit code must be less than or equal to n.
-* ``level``: This indicates the error level of the exit code. The level can have one of two values:
-  * ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A warning-level error will not cause the tool to fail.
-  * ``fatal``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+* ``level``: This indicates the error level of the exit code. If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
+  * ``log`` and ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``fatal``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail. 
+  * ``fatal_oom``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. Depending on the job configuration, a fatal_oom-level error will cause the tool to be resubmitted or fail. 
 * ``description``: This is an optional description of the error that corresponds to the exit code.
 
 The following is an example of the <exit_code> tag:
@@ -4867,10 +4887,10 @@ The following is an example of the <exit_code> tag:
 ```xml
 <stdio>
     <exit_code range="3:5" level="warning" description="Low disk space" />
-    <exit_code range="6:"  level="fatal"   description="Bad input dataset" />
+    <exit_code range="6:" level="fatal" description="Bad input dataset" />
     <!-- Catching fatal_oom allows the job runner to potentially resubmit to a resource with more
          memory if Galaxy is configured to do this. -->
-    <exit_code range="2"   level="fatal_oom"   description="Out of Memory" />
+    <exit_code range="2" level="fatal_oom" description="Out of Memory" />
 </stdio>
 ```
 
@@ -4920,14 +4940,15 @@ regular expressions can be found under
 
 A regular expression includes the following attributes:
 
-* ``source``: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values:
+* ``source``: This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the following values:
   * ``stdout``: the regular expression will be applied to stdout;
   * ``stderr``: the regular expression will be applied to stderr;
   * ``both``: the regular expression will be applied to both stderr and stdout (which is the default case).
 * ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the <regex> tag does not contain the match attribute, then the <regex> tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
-* ``level``: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). The level can be log, warning or fatal as described below.
- * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
- * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. If no level is specified, then the fatal error level will be assumed to have occurred.
+* ``level``: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
+  * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
+  * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. 
+  * ``fatal_oom``: In contrast to fatal the job might be resubmitted if possible according to the job configuration.
 * ``description``: Just like its ``exit_code`` counterpart, this is an optional description of the regular expression that has matched.
 
 The following is an example of regular expressions that may be used:
@@ -4970,10 +4991,14 @@ prepended with the string ``Fatal: Unknown error encountered``. Note that, if
 stderr contained ``error``, ``ERROR``, or ``ErRor`` then it would not matter -
 stderr was not being scanned.
 
-If the second regular expression did not match, then the third regular
-expression is checked. The third regular expression does not contain an error
-level, so an error level of ``fatal`` is assumed. The third regular expression
-also does not contain a source, so both stdout and stderr are checked. The third
+If the second regular expression does not match, the regular expression "out of memory"
+is checked on stdout. If found, Galaxy tries to resubmit the job with more memory 
+if configured correctly, otherwise the job fails.
+
+If the previous regular expressions does not match, then the fourth regular
+expression is checked. The fourth regular expression does not contain an error
+level, so an error level of ``fatal`` is assumed. The fourth regular expression
+also does not contain a source, so both stdout and stderr are checked. The fourth
 regular expression looks for 12 consecutive "C"s or "G"s in any order and in
 uppercase or lowercase. If stdout contained ``cgccGGCCcGGcG`` or stderr
 contained ``CCCCCCgggGGG``, then the regular expression would match, the tool
@@ -4981,7 +5006,7 @@ would be marked with a fatal error, and the stream that contained the
 12-nucleotide CG island would be prepended with ``Fatal: Fatal error - CG island
 12 nts long found``.
 
-Finally, if the tool did not match any of the fatal errors, then the fourth
+Finally, if the tool did not match any of the fatal errors, then the fifth
 regular expression is checked. Since no source is specified, both stdout and
 stderr are checked. If ``Branch A`` is at the beginning of stdout or stderr, then
 a warning will be registered and the source that contained ``Branch A`` will be
@@ -5113,7 +5138,7 @@ well. Likewise, the history menu includes an option allowing users to aggregate
 all such citations across an analysis in a list of citations.
 
 BibTeX entries for citations annotated with DOIs will be fetched by Galaxy from
-https://dx.doi.org/ and cached.
+https://doi.org/ and cached.
 
 ```xml
 <citations>
@@ -5335,6 +5360,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Documentation for LevelType</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
+      <xs:enumeration value="fatal_oom"/>
       <xs:enumeration value="fatal"/>
       <xs:enumeration value="warning"/>
       <xs:enumeration value="log"/>

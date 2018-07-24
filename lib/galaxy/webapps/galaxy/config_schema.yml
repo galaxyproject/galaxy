@@ -82,7 +82,7 @@ mapping:
           processes.
 
       database_engine_option_pool_recycle:
-        type: str
+        type: int
         default: -1
         required: false
         desc: |
@@ -124,6 +124,16 @@ mapping:
           Slow query logging.  Queries slower than the threshold indicated below will
           be logged to debug.  A value of '0' is disabled.  For example, you would set
           this to .005 to log all queries taking longer than 5 milliseconds.
+
+      enable_per_request_sql_debugging:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable's a per request sql debugging option. If this is set to true, append
+          ?sql_debug=1 to web request URLs to enable detailed logging on the backend of SQL
+          queries generated during that request. This is useful for debugging slow endpoints
+          during development.
 
       install_database_connection:
         type: str
@@ -331,7 +341,7 @@ mapping:
           install from in the admin interface (.sample used if default does not exist).
 
       watch_tools:
-        type: bool
+        type: str
         default: false
         required: false
         desc: |
@@ -344,6 +354,15 @@ mapping:
           but won't fail to load Galaxy if it is not and 'polling' which will use
           a less efficient monitoring scheme that may work in wider range of scenarios
           than the watchdog default.
+
+      watch_job_rules:
+        type: str
+        default: false
+        required: false
+        desc: |
+          Set to True to enable monitoring of dynamic job rules. If changes are
+          found, rules are automatically reloaded. Takes the same values as the
+          'watch_tools' option.
 
       enable_beta_mulled_containers:
         type: bool
@@ -454,7 +473,7 @@ mapping:
           when installed from a ToolShed. Defaults to tool_data_path.
 
       watch_tool_data_dir:
-        type: bool
+        type: str
         default: false
         required: false
         desc: |
@@ -631,7 +650,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       citation_cache_data_dir:
@@ -640,7 +659,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       citation_cache_lock_dir:
@@ -649,7 +668,7 @@ mapping:
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
-          external sources such as http://dx.doi.org/ by Galaxy - the following
+          external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
       collect_outputs_from:
@@ -897,6 +916,18 @@ mapping:
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
 
+      default_locale:
+        type: str
+        default: auto
+        required: false
+        desc: |
+          Default localization for Galaxy UI.
+          Allowed values are listed at the end of client/galaxy/scripts/nls/locale.js.
+          With the default value (auto), the locale will be automatically adjusted to
+          the user's navigator language.
+          Users can override this settings in their user preferences if the localization
+          settings are enabled in user_preferences_extra_conf.yml
+
       galaxy_infrastructure_url:
         type: str
         default: http://localhost:8080
@@ -1139,21 +1170,13 @@ mapping:
           this to True to inform Galaxy that mod_xsendfile is enabled upstream.
 
       nginx_x_accel_redirect_base:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
           should be set to the path defined in the nginx config as an internal redirect
           with access to Galaxy's data files (see documentation linked above).
-
-      nginx_x_archive_files_base:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          nginx can make use of mod_zip to create zip files containing multiple library
-          files.  If using X-Accel-Redirect, this can be the same value as that option.
 
       upstream_gzip:
         type: bool
@@ -1179,8 +1202,8 @@ mapping:
           `X-Frame-Options` header.
 
       nginx_upload_store:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -1189,8 +1212,8 @@ mapping:
           which files uploaded by the upload module will be placed.
 
       nginx_upload_path:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -1198,8 +1221,8 @@ mapping:
           requests.
 
       nginx_upload_job_files_store:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1208,14 +1231,23 @@ mapping:
           corresponding nginx configuration.
 
       nginx_upload_job_files_path:
-        type: bool
-        default: false
+        type: str
+        default: null
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
           completion by remote job runners (i.e. Pulsar) that initiate staging
           operations on the remote end.  See the Galaxy nginx documentation for the
           corresponding nginx configuration.
+
+      chunk_upload_size:
+        type: int
+        default: 104857600
+        required: false
+        desc: |
+          Galaxy can upload user files in chunks without using nginx. Enable the chunk
+          uploader by specifying a chunk size larger than 0. The chunk size is specified
+          in bytes (default: 100MB).
 
       dynamic_proxy_manage:
         type: bool
@@ -1541,6 +1573,17 @@ mapping:
           indicated sentry instance.  This connection string is available in your
           sentry instance under <project_name> -> Settings -> API Keys.
 
+      sentry_sloreq_threshold:
+        type: float
+        default: 0
+        required: false
+        desc: |
+          Sentry slow request logging.  Requests slower than the threshold
+          indicated below will be sent as events to the configured Sentry
+          server (above, sentry_dsn).  A value of '0' is disabled.  For
+          example, you would set this to .005 to log all queries taking longer
+          than 5 milliseconds.
+
       statsd_host:
         type: str
         required: false
@@ -1576,40 +1619,15 @@ mapping:
           useful if you are running multiple Galaxy instances and want to segment
           statistics between them within the same aggregator.
 
-      graphite_host:
-        type: str
+      statsd_influxdb:
+        type: bool
+        default: false
         required: false
         desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
-      graphite_port:
-        type: int
-        default: 2003
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
-
-      graphite_prefix:
-        type: str
-        default: galaxy
-        required: false
-        desc: |
-          Log to graphite
-          Graphite is an external statistics aggregator (https://github.com/graphite-project/carbon)
-          Enabling the following options will cause galaxy to log request timing and
-          other statistics to the configured graphite instance. The graphite_prefix is
-          useful if you are running multiple Galaxy instances and want to segment
-          statistics between them within the same aggregator.
+          If you are using telegraf to collect these metrics and then sending
+          them to InfluxDB, Galaxy can provide more nicely tagged metrics.
+          Instead of sending prefix + dot-separated-path, Galaxy will send
+          prefix with a tag path set to the page url
 
       library_import_dir:
         type: str
@@ -1784,6 +1802,18 @@ mapping:
         desc: |
           Set maximum size of ngrams
 
+      tool_test_data_directories:
+        type: str
+        default: 'test-data'
+        required: false
+        desc: |
+          Set tool test data directory. The test framework sets this value to
+          'test-data,https://github.com/galaxyproject/galaxy-test-data.git' which will
+          cause Galaxy to clone down extra test data on the fly for certain tools
+          distributed with Galaxy but this is likely not appropriate for production systems.
+          Instead one can simply clone that repository directly and specify a path here
+          instead of a Git HTTP repository.
+
       id_secret:
         type: str
         default: USING THE DEFAULT IS NOT SECURE!
@@ -1791,8 +1821,8 @@ mapping:
         desc: |
           Galaxy encodes various internal values when these values will be output in
           some format (for example, in a URL or cookie).  You should set a key to be
-          used by the algorithm that encodes and decodes these values.  It can be any
-          string up to 448 bits long.
+          used by the algorithm that encodes and decodes these values. It can be any
+          string with a length between 5 and 56 bytes.
           One simple way to generate a value for this is with the shell command:
             python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
 
@@ -1952,6 +1982,9 @@ mapping:
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
 
+          If enable_beta_gdpr is set to True, then this option will be
+          overridden and set to False.
+
       expose_user_email:
         type: bool
         default: false
@@ -1963,6 +1996,9 @@ mapping:
           This makes less sense on large public Galaxy instances where that data
           shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
           just the username and not email, or vice versa.
+
+          If enable_beta_gdpr is set to True, then this option will be
+          overridden and set to False.
 
       fetch_url_whitelist:
         type: str
@@ -1976,6 +2012,25 @@ mapping:
           It should be a comma separated list of IP addresses or IP address/mask, e.g.
           10.10.10.10,10.0.1.0/24,fd00::/8
 
+      enable_beta_gdpr:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables GDPR Compliance mode. This makes several changes to the way
+          Galaxy logs and exposes data externally such as removing emails and
+          usernames from logs and bug reports. It also causes the delete user
+          admin action to permanently redact their username and password, but
+          not to delete data associated with the account as this is not
+          currently easily implementable.
+
+          You are responsible for removing personal data from backups.
+
+          This forces expose_user_email and expose_user_name to be false, and
+          forces user_deletion to be true to support the right to erasure.
+
+          Please read the GDPR section under the special topics area of the
+          admin documentation.
       enable_beta_ts_api_install:
         type: bool
         default: true
@@ -2113,6 +2168,27 @@ mapping:
         required: false
         desc: |
           If OpenID is enabled, consumer cache directory to use.
+
+      enable_oidc:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables and disables OpenID Connect (OIDC) support.
+
+      oidc_config_file:
+        type: str
+        default: config/oidc_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC configuration file.
+
+      oidc_backends_config_file:
+        type: str
+        default: config/oidc_backends_config.xml
+        required: false
+        desc: |
+          Sets the path to OIDC backends configuration file.
 
       auth_config_file:
         type: str
@@ -2485,6 +2561,29 @@ mapping:
           overwrite default job resources such as number of processors, memory and
           walltime.
 
+      workflow_resource_params_file:
+        type: str
+        default: config/workflow_resource_params_conf.xml
+        required: false
+        desc: |
+          Similar to the above parameter, workflows can describe parameters used to
+          influence scheduling of jobs within the workflow. This requires both a description
+          of the fields available (which defaults to the definitions in
+          job_resource_params_file if not set).
+
+      workflow_resource_params_mapper:
+        type: str
+        default: config/workflow_resource_mapper_conf.yml
+        required: false
+        desc: |
+          This parameter describes how to map users and workflows to a set of workflow
+          resource parameter to present (typically input IDs from workflow_resource_params_file).
+          If this this is a function reference it will be passed various inputs (workflow model
+          object and user) and it should produce a list of input IDs. If it is a path
+          it is expected to an XML or YAML file describing how to map group names to parameter
+          descriptions (additional types of mappings via these files could be implemented but
+          haven't yet - for instance using workflow tags to do the mapping).
+
       cache_user_job_count:
         type: bool
         default: false
@@ -2594,4 +2693,3 @@ mapping:
         required: false
         desc: |
           persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-

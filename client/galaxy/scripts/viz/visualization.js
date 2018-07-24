@@ -5,7 +5,6 @@ import util_mod from "viz/trackster/util";
 import config_mod from "utils/config";
 import GridView from "mvc/grid/grid-view";
 import Tabs from "mvc/ui/ui-tabs";
-import Ui from "mvc/ui/ui-misc";
 /**
  * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes
  * to include in the representation; to_json_mappers defines mappers for returned objects.
@@ -313,7 +312,9 @@ var GenomeDataManager = Cache.extend({
         query_type =
             this.get("data_type") === "raw_data"
                 ? "state"
-                : this.get("data_type") === "data" ? "converted_datasets_state" : "error";
+                : this.get("data_type") === "data"
+                    ? "converted_datasets_state"
+                    : "error";
 
         var ss_deferred = new util_mod.ServerStateDeferred({
             ajax_settings: {
@@ -1109,12 +1110,11 @@ var TrackBrowserRouter = Backbone.Router.extend({
         // Can't put regular expression in routes dictionary.
         // NOTE: parentheses are used to denote parameters returned to callback.
         this.route(/([\w]+)$/, "change_location");
-        this.route(/([\w\+]+\:[\d,]+-[\d,]+)$/, "change_location");
+        this.route(/([\w+]+:[\d,]+-[\d,]+)$/, "change_location");
 
         // Handle navigate events from view.
-        var self = this;
-        self.view.on("navigate", new_loc => {
-            self.navigate(new_loc);
+        this.view.on("navigate", new_loc => {
+            this.navigate(new_loc);
         });
     },
 

@@ -14,7 +14,7 @@ from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
 log = logging.getLogger(__name__)
 
 
-class TagsController (BaseUIController, UsesTagsMixin):
+class TagsController(BaseUIController, UsesTagsMixin):
 
     @web.expose
     @web.require_login("edit item tags")

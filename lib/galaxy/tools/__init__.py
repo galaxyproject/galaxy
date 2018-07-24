@@ -8,7 +8,6 @@ import re
 import tarfile
 import tempfile
 import threading
-from cgi import FieldStorage
 from collections import OrderedDict
 from datetime import datetime
 from xml.etree import ElementTree
@@ -16,8 +15,9 @@ from xml.etree import ElementTree
 import packaging.version
 from mako.template import Template
 from paste import httpexceptions
-from six import string_types
+from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
+from webob.compat import cgi_FieldStorage
 
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
@@ -26,8 +26,8 @@ from galaxy import (
     model
 )
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
-from galaxy.managers import histories
 from galaxy.managers.jobs import JobSearch
+from galaxy.managers.tags import GalaxyTagManager
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -35,7 +35,6 @@ from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.deps import (
     CachedDependencyManager,
-    views
 )
 from galaxy.tools.fetcher import ToolLocationFetcher
 from galaxy.tools.parameters import (
@@ -56,6 +55,10 @@ from galaxy.tools.parameters.basic import (
     ToolParameter,
     workflow_building_modes,
 )
+from galaxy.tools.parameters.dataset_matcher import (
+    set_dataset_matcher_factory,
+    unset_dataset_matcher_factory,
+)
 from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, Section, UploadDataset
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
@@ -68,6 +71,7 @@ from galaxy.tools.test import parse_tests
 from galaxy.tools.toolbox import BaseGalaxyToolBox
 from galaxy.util import (
     ExecutionTimer,
+    in_directory,
     listify,
     Params,
     rst_to_html,
@@ -77,9 +81,9 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
+from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.version import VERSION_MAJOR
 from galaxy.web import url_for
@@ -103,6 +107,7 @@ MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
 GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",
+    "__DATA_FETCH__",
     # Legacy tools bundled with Galaxy.
     "vcf_to_maf_customtrack1",
     "laj_1",
@@ -111,7 +116,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "join1",
     "gff2bed1",
     "gff_filter_by_feature_count",
-    "Extract genomic DNA 1",
     "aggregate_scores_in_intervals2",
     "Interval_Maf_Merged_Fasta2",
     "GeneBed_Maf_Fasta2",
@@ -135,7 +139,6 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_maf_to_interval_0",
     "CONVERTER_wiggle_to_interval_0",
     # Tools improperly migrated to the tool shed (devteam)
-    "lastz_wrapper_2",
     "qualityFilter",
     "winSplitter",
     "pileup_interval",
@@ -166,10 +169,12 @@ GALAXY_LIB_TOOLS_VERSIONED = {
     "sam_to_bam": packaging.version.parse("1.1.3"),
     "PEsortedSAM2readprofile": packaging.version.parse("1.1.1"),
     "fetchflank": packaging.version.parse("1.0.1"),
+    "Extract genomic DNA 1": packaging.version.parse("3.0.0"),
+    "lastz_wrapper_2": packaging.version.parse("1.3"),
 }
 
 
-class ToolErrorLog:
+class ToolErrorLog(object):
     def __init__(self):
         self.error_stack = []
         self.max_errors = 100
@@ -357,7 +362,7 @@ class DefaultToolState(object):
         """
         Restore the state from a string
         """
-        values = json_fix(safe_loads(values)) or {}
+        values = safe_loads(values) or {}
         self.page = values.pop("__page__") if "__page__" in values else None
         self.rerun_remap_job_id = values.pop("__rerun_remap_job_id__") if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings(tool.inputs, values, app, ignore_errors=True)
@@ -438,12 +443,18 @@ class Tool(Dictifiable):
         except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
-        self.history_manager = histories.HistoryManager(app)
-        self._view = views.DependencyResolversView(app)
         # The job search is only relevant in a galaxy context, and breaks
         # loading tools into the toolshed for validation.
         if self.app.name == 'galaxy':
             self.job_search = JobSearch(app=self.app)
+
+    @property
+    def history_manager(self):
+        return self.app.history_manager
+
+    @property
+    def _view(self):
+        return self.app.dependency_resolvers_view
 
     @property
     def version_object(self):
@@ -497,7 +508,10 @@ class Tool(Dictifiable):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        if self.tool_type != "default":
+        if self.tool_type not in ["default", "manage_data"]:
+            return True
+
+        if self.tool_type == "manage_data" and self.profile < 18.09:
             return True
 
         config = self.app.config
@@ -742,7 +756,7 @@ class Tool(Dictifiable):
         self.is_workflow_compatible = self.check_workflow_compatible(tool_source)
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
-        self._macro_paths = tool_source._macro_paths
+        self._macro_paths = tool_source.macro_paths()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -757,16 +771,17 @@ class Tool(Dictifiable):
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
-        if self._allow_code_files:
-            for code_elem in root.findall("code"):
-                for hook_elem in code_elem.findall("hook"):
-                    for key, value in hook_elem.items():
-                        # map hook to function
-                        self.hook_map[key] = value
-                file_name = code_elem.get("file")
-                code_path = os.path.join(self.tool_dir, file_name)
-                with open(code_path) as f:
-                    exec(compile(f.read(), code_path, 'exec'), self.code_namespace)
+        for code_elem in root.findall("code"):
+            for hook_elem in code_elem.findall("hook"):
+                for key, value in hook_elem.items():
+                    # map hook to function
+                    self.hook_map[key] = value
+            file_name = code_elem.get("file")
+            code_path = os.path.join(self.tool_dir, file_name)
+            with open(code_path) as f:
+                compiled_code = compile(f.read(), code_path, 'exec')
+            if self._allow_code_files:
+                exec(compiled_code, self.code_namespace)
 
         # User interface hints
         uihints_elem = root.find("uihints")
@@ -791,7 +806,8 @@ class Tool(Dictifiable):
                 name = inputs_elem.get("name")
                 filename = inputs_elem.get("filename", None)
                 format = inputs_elem.get("format", "json")
-                content = dict(format=format)
+                data_style = inputs_elem.get("data_style", "skip")
+                content = dict(format=format, handle_files=data_style)
                 self.config_files.append((name, filename, content))
             for conf_elem in conf_parent_elem.findall("configfile"):
                 name = conf_elem.get("name")
@@ -823,6 +839,44 @@ class Tool(Dictifiable):
                 self.__tests = None
             self.__tests_populated = True
         return self.__tests
+
+    @property
+    def _repository_dir(self):
+        """If tool shed installed tool, the base directory of the repository installed."""
+        repository_dir = None
+
+        if hasattr(self, 'tool_shed') and self.tool_shed:
+            repository_dir = self.tool_dir
+            while True:
+                repository_dir_name = os.path.basename(repository_dir)
+                if repository_dir_name == self.repository_name:
+                    break
+
+                parent_repository_dir = os.path.dirname(repository_dir)
+                if repository_dir == parent_repository_dir:
+                    log.error("Problem finding repository dir for tool [%s]" % self.id)
+                    repository_dir = None
+
+        return repository_dir
+
+    def test_data_path(self, filename):
+        repository_dir = self._repository_dir
+        if repository_dir:
+            for root, dirs, files in os.walk(repository_dir):
+                if '.hg' in dirs:
+                    dirs.remove('.hg')
+                if 'test-data' in dirs:
+                    test_data_dir = os.path.join(root, 'test-data')
+                    result = os.path.abspath(os.path.join(test_data_dir, filename))
+                    if not in_directory(result, test_data_dir):
+                        # Don't raise an explicit exception and reveal details about what
+                        # files are or are not on the path, simply return None and let the
+                        # API raise a 404.
+                        return None
+                    else:
+                        return result
+        else:
+            return self.app.test_data_resolver.get_filename(filename)
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
@@ -872,8 +926,7 @@ class Tool(Dictifiable):
                 # If we have an nginx upload, save the action as a tuple instead of
                 # a string. The actual action needs to get url_for run to add any
                 # prefixes, and we want to avoid adding the prefix to the
-                # nginx_upload_path. This logic is handled in the tool_form.mako
-                # template.
+                # nginx_upload_path.
                 if self.nginx_upload and self.app.config.nginx_upload_path:
                     if '?' in unquote_plus(self.action):
                         raise Exception('URL parameters in a non-default tool action can not be used '
@@ -1062,7 +1115,10 @@ class Tool(Dictifiable):
                 group.file_type_name = elem.get('file_type_name', group.file_type_name)
                 group.default_file_type = elem.get('default_file_type', group.default_file_type)
                 group.metadata_ref = elem.get('metadata_ref', group.metadata_ref)
-                rval[group.file_type_name].refresh_on_change = True
+                try:
+                    rval[group.file_type_name].refresh_on_change = True
+                except KeyError:
+                    pass
                 group_page_source = XmlPageSource(elem)
                 group.inputs = self.parse_input_elem(group_page_source, enctypes, context)
                 rval[group.name] = group
@@ -1150,7 +1206,7 @@ class Tool(Dictifiable):
                     log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
-                                       output_encoding='utf-8', default_filters=['decode.utf8'],
+                                       default_filters=['decode.utf8'],
                                        encoding_errors='replace')
             except Exception:
                 log.exception("Exception while parsing help for tool with id '%s'", self.id)
@@ -1168,7 +1224,7 @@ class Tool(Dictifiable):
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
                     self.__help_by_page = [Template(rst_to_html(help_header + x + help_footer),
-                                                    input_encoding='utf-8', output_encoding='utf-8',
+                                                    input_encoding='utf-8',
                                                     default_filters=['decode.utf8'],
                                                     encoding_errors='replace')
                                            for x in self.__help_by_page]
@@ -1381,7 +1437,7 @@ class Tool(Dictifiable):
             return False, message
 
     def find_fieldstorage(self, x):
-        if isinstance(x, FieldStorage):
+        if isinstance(x, cgi_FieldStorage):
             raise InterruptedUpload(None)
         elif isinstance(x, dict):
             [self.find_fieldstorage(y) for y in x.values()]
@@ -1613,10 +1669,10 @@ class Tool(Dictifiable):
         """
         return output_collect.collect_primary_datasets(self, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey=input_dbkey)
 
-    def collect_dynamic_collections(self, output, tool_provided_metadata, **kwds):
-        """ Find files corresponding to dynamically structured collections.
+    def collect_dynamic_outputs(self, output, tool_provided_metadata, **kwds):
+        """Collect dynamic outputs associated with a job from this tool.
         """
-        return output_collect.collect_dynamic_collections(self, output, tool_provided_metadata, **kwds)
+        return output_collect.collect_dynamic_outputs(self, output, tool_provided_metadata, **kwds)
 
     def to_archive(self):
         tool = self
@@ -1818,6 +1874,7 @@ class Tool(Dictifiable):
         if self.input_translator:
             self.input_translator.translate(params)
 
+        set_dataset_matcher_factory(request_context, self)
         # create tool state
         state_inputs = {}
         state_errors = {}
@@ -1827,6 +1884,7 @@ class Tool(Dictifiable):
         tool_model = self.to_dict(request_context)
         tool_model['inputs'] = []
         self.populate_model(request_context, self.inputs, state_inputs, tool_model['inputs'])
+        unset_dataset_matcher_factory(request_context)
 
         # create tool help
         tool_help = ''
@@ -2247,16 +2305,16 @@ class DataManagerTool(OutputParameterJSONTool):
         user = trans.user
         assert user, 'You must be logged in to use this tool.'
         assert self.allow_user_access(user), "You must be an admin to access this tool."
-        history = user.data_manager_histories
-        if not history:
+        dm_history_associations = user.data_manager_histories
+        if not dm_history_associations:
             # create
             if create:
                 history = _create_data_manager_history(user)
             else:
                 history = None
         else:
-            for history in reversed(history):
-                history = history.history
+            for dm_history_association in reversed(dm_history_associations):
+                history = dm_history_association.history
                 if not history.deleted:
                     break
             if history.deleted:
@@ -2323,6 +2381,15 @@ class DatabaseOperationTool(Tool):
 
             map(check_dataset_instance, input_dataset_collection.dataset_instances)
 
+    def _add_datasets_to_history(self, history, elements):
+        datasets = []
+        for element_object in elements:
+            if getattr(element_object, "history_content_type", None) == "dataset":
+                datasets.append(element_object)
+
+        if datasets:
+            history.add_datasets(self.sa_session, datasets, set_hid=True)
+
     def produce_outputs(self, trans, out_data, output_collections, incoming, history):
         return self._outputs_dict()
 
@@ -2345,10 +2412,7 @@ class UnzipCollectionTool(DatabaseOperationTool):
         assert collection.collection_type == "paired"
         forward_o, reverse_o = collection.dataset_instances
         forward, reverse = forward_o.copy(copy_tags=tags), reverse_o.copy(copy_tags=tags)
-
-        # TODO: rename...
-        history.add_dataset(forward, set_hid=True)
-        history.add_dataset(reverse, set_hid=True)
+        self._add_datasets_to_history(history, [forward, reverse])
 
         out_data["forward"] = forward
         out_data["reverse"] = reverse
@@ -2365,9 +2429,7 @@ class ZipCollectionTool(DatabaseOperationTool):
         new_elements = odict()
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
-        history.add_dataset(forward, set_hid=False)
-        history.add_dataset(reverse, set_hid=False)
-
+        self._add_datasets_to_history(history, [forward, reverse])
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2445,52 +2507,83 @@ class MergeCollectionTool(DatabaseOperationTool):
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = odict()
         for key, value in new_element_structure.items():
-            copied_value = value.copy()
-            if getattr(copied_value, "history_content_type", None) == "dataset":
-                history.add_dataset(copied_value, set_hid=False)
+            if getattr(value, "history_content_type", None) == "dataset":
+                copied_value = value.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = value.copy()
             new_elements[key] = copied_value
 
+        self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
 
 
-class FilterFailedDatasetsTool(DatabaseOperationTool):
+class FilterDatasetsTool(DatabaseOperationTool):
+
+    def _get_new_elements(self, history, elements_to_copy):
+        new_elements = odict()
+        for dce in elements_to_copy:
+            element_identifier = dce.element_identifier
+            if getattr(dce.element_object, "history_content_type", None) == "dataset":
+                copied_value = dce.element_object.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = dce.element_object.copy()
+            new_elements[element_identifier] = copied_value
+        return new_elements
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        collection = incoming["input"]
+
+        if hasattr(collection, 'element_object'):
+            # A list
+            elements = collection.element_object.elements
+            collection_type = collection.element_object.collection_type
+        else:
+            # A list of pairs
+            elements = collection.collection.elements
+            collection_type = collection.collection.collection_type
+        # We only process list or list of pair collections. Higher order collection will be mapped over
+        assert collection_type in ("list", "list:paired")
+
+        elements_to_copy = []
+        for element in elements:
+            if collection_type == 'list':
+                if self.element_is_valid(element):
+                    elements_to_copy.append(element)
+            else:
+                valid = True
+                for child_element in element.child_collection.elements:
+                    if not self.element_is_valid(child_element):
+                        valid = False
+                if valid:
+                    elements_to_copy.append(element)
+
+        new_elements = self._get_new_elements(history=history, elements_to_copy=elements_to_copy)
+        self._add_datasets_to_history(history, itervalues(new_elements))
+        output_collections.create_collection(
+            next(iter(self.outputs.values())),
+            "output",
+            elements=new_elements
+        )
+
+
+class FilterFailedDatasetsTool(FilterDatasetsTool):
     tool_type = 'filter_failed_datasets_collection'
     require_dataset_ok = False
 
-    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        hdca = incoming["input"]
+    def element_is_valid(self, element):
+        return element.element_object.is_ok
 
-        assert hdca.collection.collection_type == "list" or hdca.collection.collection_type == 'list:paired'
 
-        new_elements = odict()
+class FilterEmptyDatasetsTool(FilterDatasetsTool):
+    tool_type = 'filter_empty_datasets_collection'
+    require_dataset_ok = False
 
-        for dce in hdca.collection.elements:
-            element = dce.element_object
-
-            valid = False
-
-            # dealing with a single element
-            if hasattr(element, "is_ok"):
-                if element.is_ok:
-                    valid = True
-            elif hasattr(element, "dataset_instances"):
-                # we are probably a list:paired dataset, both need to be in non error state
-                forward_o, reverse_o = element.dataset_instances
-                if forward_o.is_ok and reverse_o.is_ok:
-                    valid = True
-
-            if valid:
-                element_identifier = dce.element_identifier
-                copied_value = element.copy()
-                if getattr(copied_value, "history_content_type", None) == "dataset":
-                    history.add_dataset(copied_value, set_hid=False)
-                new_elements[element_identifier] = copied_value
-
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements
-        )
+    def element_is_valid(self, element):
+        return element.element_object.has_data()
 
 
 class FlattenTool(DatabaseOperationTool):
@@ -2500,6 +2593,7 @@ class FlattenTool(DatabaseOperationTool):
         hdca = incoming["input"]
         join_identifier = incoming["join_identifier"]
         new_elements = odict()
+        copied_datasets = []
 
         def add_elements(collection, prefix=""):
             for dce in collection.elements:
@@ -2509,10 +2603,13 @@ class FlattenTool(DatabaseOperationTool):
                 if dce.is_collection:
                     add_elements(dce_object, prefix=identifier)
                 else:
-                    copied_dataset = dce_object.copy()
-                    history.add_dataset(copied_dataset, set_hid=False)
+                    copied_dataset = dce_object.copy(force_flush=False)
+                    copied_dataset.visible = False
                     new_elements[identifier] = copied_dataset
+                    copied_datasets.append(copied_dataset)
+
         add_elements(hdca.collection)
+        self._add_datasets_to_history(history, copied_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2548,9 +2645,11 @@ class SortTool(DatabaseOperationTool):
 
         for dce in sorted_elements:
             dce_object = dce.element_object
-            copied_dataset = dce_object.copy()
-            history.add_dataset(copied_dataset, set_hid=False)
+            copied_dataset = dce_object.copy(force_flush=False)
+            copied_dataset.visible = False
             new_elements[dce.element_identifier] = copied_dataset
+
+        self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2570,9 +2669,11 @@ class RelabelFromFileTool(DatabaseOperationTool):
             new_label = new_label.strip()
             if new_label in new_elements:
                 raise Exception("New identifier [%s] appears twice in resulting collection, these values must be unique." % new_label)
-            copied_value = dce_object.copy()
-            if getattr(copied_value, "history_content_type", None) == "dataset":
-                history.add_dataset(copied_value, set_hid=False)
+            if getattr(dce_object, "history_content_type", None) == "dataset":
+                copied_value = dce_object.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = dce_object.copy()
             new_elements[new_label] = copied_value
 
         new_labels_path = new_labels_dataset_assoc.file_name
@@ -2587,7 +2688,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             for i, dce in enumerate(hdca.collection.elements):
                 dce_object = dce.element_object
                 element_identifier = dce.element_identifier
-                default = element_identifier if strict else None
+                default = None if strict else element_identifier
                 new_label = new_labels_dict.get(element_identifier, default)
                 if not new_label:
                     raise Exception("Failed to find new label for identifier [%s]" % element_identifier)
@@ -2600,6 +2701,92 @@ class RelabelFromFileTool(DatabaseOperationTool):
         for key in new_elements.keys():
             if not re.match("^[\w\-_]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
+        self._add_datasets_to_history(history, itervalues(new_elements))
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class ApplyRulesTool(DatabaseOperationTool):
+    tool_type = 'apply_rules'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        log.info(incoming)
+        hdca = incoming["input"]
+        rule_set = RuleSet(incoming["rules"])
+        copied_datasets = []
+
+        def copy_dataset(dataset):
+            copied_dataset = dataset.copy(force_flush=False)
+            copied_dataset.visible = False
+            copied_datasets.append(copied_dataset)
+            return copied_dataset
+
+        new_elements = self.app.dataset_collections_service.apply_rules(
+            hdca, rule_set, copy_dataset
+        )
+        self._add_datasets_to_history(history, copied_datasets)
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", collection_type=rule_set.collection_type, elements=new_elements
+        )
+
+
+class TagFromFileTool(DatabaseOperationTool):
+    tool_type = 'tag_from_file'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        hdca = incoming["input"]
+        how = incoming['how']
+        new_tags_dataset_assoc = incoming["tags"]
+        new_elements = odict()
+        tags_manager = GalaxyTagManager(trans.app.model.context)
+        new_datasets = []
+
+        def add_copied_value_to_new_elements(new_tags_dict, dce):
+            if getattr(dce.element_object, "history_content_type", None) == "dataset":
+                copied_value = dce.element_object.copy(force_flush=False)
+                # copy should never be visible, since part of a collection
+                copied_value.visble = False
+                new_datasets.append(copied_value)
+                new_tags = new_tags_dict.get(dce.element_identifier)
+                if new_tags:
+                    if how in ('add', 'remove') and dce.element_object.tags:
+                        # We need get the original tags and update them with the new tags
+                        old_tags = set(tag for tag in tags_manager.get_tags_str(dce.element_object.tags).split(',') if tag)
+                        if how == 'add':
+                            old_tags.update(set(new_tags))
+                        elif how == 'remove':
+                            old_tags = old_tags - set(new_tags)
+                        new_tags = old_tags
+                    tags_manager.add_tags_from_list(user=history.user, item=copied_value, new_tags_list=new_tags)
+            else:
+                # We have a collection, and we copy the elements so that we don't manipulate the original tags
+                copied_value = dce.element_object.copy(element_destination=history)
+                for new_element, old_element in zip(copied_value.dataset_elements, dce.element_object.dataset_elements):
+                    # TODO: This should be eliminated, but collections created by the collection builder
+                    # don't set `visible` to `False` if you don't hide the original elements.
+                    new_element.element_object.visible = False
+                    new_tags = new_tags_dict.get(new_element.element_identifier)
+                    if how in ('add', 'remove'):
+                        old_tags = set(tag for tag in tags_manager.get_tags_str(old_element.element_object.tags).split(',') if tag)
+                        if new_tags:
+                            if how == 'add':
+                                old_tags.update(set(new_tags))
+                            elif how == 'remove':
+                                old_tags = old_tags - set(new_tags)
+                        new_tags = old_tags
+                    tags_manager.add_tags_from_list(user=history.user, item=new_element.element_object, new_tags_list=new_tags)
+            new_elements[dce.element_identifier] = copied_value
+
+        new_tags_path = new_tags_dataset_assoc.file_name
+        new_tags = open(new_tags_path, "r").readlines(1024 * 1000000)
+        # We have a tabular file, where the first column is an existing element identifier,
+        # and the remaining columns represent new tags.
+        source_new_tags = (line.strip().split('\t') for line in new_tags)
+        new_tags_dict = {item[0]: item[1:] for item in source_new_tags}
+        for i, dce in enumerate(hdca.collection.elements):
+            add_copied_value_to_new_elements(new_tags_dict, dce)
+        self._add_datasets_to_history(history, new_datasets)
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements
         )
@@ -2626,15 +2813,19 @@ class FilterFromFileTool(DatabaseOperationTool):
             in_filter_file = element_identifier in filtered_identifiers
             passes_filter = in_filter_file if how_filter == "remove_if_absent" else not in_filter_file
 
-            copied_value = dce_object.copy()
-            if getattr(copied_value, "history_content_type", None) == "dataset":
-                history.add_dataset(copied_value, set_hid=False)
+            if getattr(dce_object, "history_content_type", None) == "dataset":
+                copied_value = dce_object.copy(force_flush=False)
+                copied_value.visible = False
+            else:
+                copied_value = dce_object.copy()
 
             if passes_filter:
                 filtered_elements[element_identifier] = copied_value
             else:
                 discarded_elements[element_identifier] = copied_value
 
+        self._add_datasets_to_history(history, itervalues(filtered_elements))
+        self._add_datasets_to_history(history, itervalues(discarded_elements))
         output_collections.create_collection(
             self.outputs["output_filtered"], "output_filtered", elements=filtered_elements
         )
@@ -2653,7 +2844,7 @@ for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
 
 
 # ---- Utility classes to be factored out -----------------------------------
-class TracksterConfig:
+class TracksterConfig(object):
     """ Trackster configuration encapsulation. """
 
     def __init__(self, actions):
@@ -2667,7 +2858,7 @@ class TracksterConfig:
         return TracksterConfig(actions)
 
 
-class SetParamAction:
+class SetParamAction(object):
     """ Set parameter action. """
 
     def __init__(self, name, output_name):

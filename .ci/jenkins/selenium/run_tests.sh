@@ -17,10 +17,18 @@ fi
 mkdir -p "$GALAXY_TEST_ERRORS_DIRECTORY"
 mkdir -p "$GALAXY_TEST_SCREENSHOTS_DIRECTORY"
 
-docker run -v `pwd`:`pwd`:rw -w `pwd` -u $UID $GALAXY_TEST_CLIENT_BUILD_IMAGE /bin/bash -c 'make client-production-maps'
+mkdir -p ~/.jenkins-yarn-cache
+YARN_CACHE_FOLDER=~/.jenkins-yarn-cache
+
+# Set git environment variables to enable Git. https://github.com/galaxyproject/galaxy/issues/5912
+# Setup volume and environment variable to cache this users yarn build.
+docker run -e GIT_COMMITTER_NAME=Jenkins -e GIT_COMMITTER_EMAIL=jenkins@galaxyproject.org \
+           -e YARN_CACHE_FOLDER=$YARN_CACHE_FOLDER -v $YARN_CACHE_FOLDER:$YARN_CACHE_FOLDER:rw \
+           -v `pwd`:`pwd`:rw -w `pwd` -u $UID $GALAXY_TEST_CLIENT_BUILD_IMAGE \
+           /bin/bash -c 'make client-production-maps'
 
 # Start Selenium server in the test Docker container.
-DOCKER_RUN_EXTRA_ARGS="-e USE_SELENIUM=1 -e GALAXY_TEST_SELENIUM_RETRIES=${GALAXY_TEST_SELENIUM_RETRIES} -e GALAXY_TEST_ERRORS_DIRECTORY=${GALAXY_TEST_ERRORS_DIRECTORY} -e GALAXY_TEST_SCREENSHOTS_DIRECTORY=${GALAXY_TEST_SCREENSHOTS_DIRECTORY} ${DOCKER_RUN_EXTRA_ARGS}"
+DOCKER_RUN_EXTRA_ARGS="-v $YARN_CACHE_FOLDER:$YARN_CACHE_FOLDER -e YARN_CACHE_FOLDER=$YARN_CACHE_FOLDER -e USE_SELENIUM=1 -e GALAXY_TEST_SELENIUM_RETRIES=${GALAXY_TEST_SELENIUM_RETRIES} -e GALAXY_TEST_ERRORS_DIRECTORY=${GALAXY_TEST_ERRORS_DIRECTORY} -e GALAXY_TEST_SCREENSHOTS_DIRECTORY=${GALAXY_TEST_SCREENSHOTS_DIRECTORY} ${DOCKER_RUN_EXTRA_ARGS}"
 export DOCKER_RUN_EXTRA_ARGS
 
 ./run_tests.sh --dockerize --db postgres --external_tmp --clean_pyc --skip_flakey_fails --selenium "$@"

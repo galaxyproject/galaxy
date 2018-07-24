@@ -1,5 +1,6 @@
-import jQuery from "jquery";
-var $ = jQuery;
+import $ from "jquery";
+import "bootstrap";
+import * as _ from "underscore";
 import GalaxyApp from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
@@ -7,14 +8,18 @@ import HistoryPanel from "./panels/history-panel";
 import Page from "layout/page";
 import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
+import Sharing from "components/Sharing.vue";
 import UserPreferences from "mvc/user/user-preferences";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
 import GridView from "mvc/grid/grid-view";
 import GridShared from "mvc/grid/grid-shared";
 import Workflows from "mvc/workflow/workflow";
+import WorkflowImport from "components/WorkflowImport.vue";
 import HistoryImport from "components/HistoryImport.vue";
+import HistoryView from "components/HistoryView.vue";
 import HistoryList from "mvc/history/history-list";
+import PluginList from "components/PluginList.vue";
 import ToolFormComposite from "mvc/tool/tool-form-composite";
 import QueryStringParsing from "utils/query-string-parsing";
 import Utils from "utils/utils";
@@ -22,7 +27,10 @@ import Ui from "mvc/ui/ui-misc";
 import DatasetError from "mvc/dataset/dataset-error";
 import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
+import DisplayStructure from "components/DisplayStructured.vue";
 import Vue from "vue";
+
+/* global Galaxy */
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
@@ -50,18 +58,24 @@ window.app = function app(options, bootstrapped) {
             "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
+            "(/)pages(/)sharing(/)": "show_pages_sharing",
             "(/)pages(/)(:action_id)": "show_pages",
+            "(/)visualizations(/)": "show_plugins",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
+            "(/)visualizations(/)sharing(/)": "show_visualizations_sharing",
             "(/)visualizations/(:action_id)": "show_visualizations",
-            "(/)workflows/import_workflow": "show_import_workflow",
-            "(/)workflows/run(/)": "show_run",
+            "(/)workflows/import": "show_workflows_import",
+            "(/)workflows/run(/)": "show_workflows_run",
             "(/)workflows(/)list": "show_workflows",
             "(/)workflows/list_published(/)": "show_workflows_published",
             "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
+            "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
+            "(/)histories/view": "show_history_view",
+            "(/)histories/show_structure": "show_history_structure",
             "(/)histories(/)(:action_id)": "show_histories",
             "(/)datasets(/)list(/)": "show_datasets",
             "(/)custom_builds": "show_custom_builds",
@@ -91,15 +105,17 @@ window.app = function app(options, bootstrapped) {
             var model = new UserPreferences.Model({
                 user_id: Galaxy.params.id
             });
-            this.page.display(new FormWrapper.View(model.get(form_id)));
+            this.page.display(new FormWrapper.View(_.extend(model.get(form_id), { active_tab: "user" })));
         },
 
         show_visualizations: function(action_id) {
+            var activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Visualizations",
-                    item: "visualization"
+                    item: "visualization",
+                    active_tab: activeTab
                 })
             );
         },
@@ -108,17 +124,46 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `visualization/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "visualizations/list"
+                    redirect: "visualizations/list",
+                    active_tab: "visualization"
                 })
             );
+        },
+
+        show_visualizations_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Visualizations",
+                    model_class: "Visualization"
+                }
+            }).$mount(vm);
         },
 
         show_workflows_published: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`
+                    url_base: `${Galaxy.root}workflow/list_published`,
+                    active_tab: "shared"
                 })
             );
+        },
+
+        show_history_view: function() {
+            var historyInstance = Vue.extend(HistoryView);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new historyInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(vm);
+        },
+
+        show_history_structure: function() {
+            let displayStructureInstance = Vue.extend(DisplayStructure);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new displayStructureInstance({ propsData: { id: QueryStringParsing.get(" id: ") } }).$mount(vm);
         },
 
         show_histories: function(action_id) {
@@ -141,6 +186,19 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
+        show_histories_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Histories",
+                    model_class: "History"
+                }
+            }).$mount(vm);
+        },
+
         show_histories_import: function() {
             var historyImportInstance = Vue.extend(HistoryImport);
             var vm = document.createElement("div");
@@ -160,7 +218,8 @@ window.app = function app(options, bootstrapped) {
         show_openids: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}user/openids_list`
+                    url_base: `${Galaxy.root}user/openids_list`,
+                    active_tab: "user"
                 })
             );
         },
@@ -168,17 +227,20 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`
+                    url_base: `${Galaxy.root}dataset/list`,
+                    active_tab: "user"
                 })
             );
         },
 
         show_pages: function(action_id) {
+            var activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
                     plural: "Pages",
-                    item: "page"
+                    item: "page",
+                    active_tab: activeTab
                 })
             );
         },
@@ -187,7 +249,8 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: "page/create",
-                    redirect: "pages/list"
+                    redirect: "pages/list",
+                    active_tab: "user"
                 })
             );
         },
@@ -196,9 +259,30 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `page/edit?id=${QueryStringParsing.get("id")}`,
-                    redirect: "pages/list"
+                    redirect: "pages/list",
+                    active_tab: "user"
                 })
             );
+        },
+
+        show_pages_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Pages",
+                    model_class: "Page"
+                }
+            }).$mount(vm);
+        },
+
+        show_plugins: function() {
+            var pluginListInstance = Vue.extend(PluginList);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new pluginListInstance().$mount(vm);
         },
 
         show_workflows: function() {
@@ -209,17 +293,21 @@ window.app = function app(options, bootstrapped) {
             this.page.display(
                 new FormWrapper.View({
                     url: `workflow/create`,
-                    redirect: "workflow/editor"
+                    redirect: "workflow/editor",
+                    active_tab: "workflow"
                 })
             );
         },
 
-        show_run: function() {
+        show_workflows_run: function() {
             this._loadWorkflow();
         },
 
-        show_import_workflow: function() {
-            this.page.display(new Workflows.ImportWorkflowView());
+        show_workflows_import: function() {
+            var workflowImportInstance = Vue.extend(WorkflowImport);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new workflowImportInstance().$mount(vm);
         },
 
         show_custom_builds: function() {
@@ -285,14 +373,15 @@ window.app = function app(options, bootstrapped) {
             Utils.get({
                 url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: response => {
-                    this.page.display(new ToolFormComposite.View(response));
+                    this.page.display(new ToolFormComposite.View(_.extend(response, { active_tab: "workflow" })));
                 },
                 error: response => {
                     var error_msg = response.err_msg || "Error occurred while loading the resource.";
                     var options = {
                         message: error_msg,
                         status: "danger",
-                        persistent: true
+                        persistent: true,
+                        active_tab: "workflow"
                     };
                     this.page.display(new Ui.Message(options));
                 }
@@ -302,6 +391,10 @@ window.app = function app(options, bootstrapped) {
 
     // render and start the router
     $(() => {
+        options.config = _.extend(options.config, {
+            hide_panels: Galaxy.params.hide_panels,
+            hide_masthead: Galaxy.params.hide_masthead
+        });
         Galaxy.page = new Page.View(
             _.extend(options, {
                 Left: ToolPanel,

@@ -100,10 +100,18 @@ var View = Backbone.View.extend({
         var options = this.model.attributes;
         if (new_val !== undefined) {
             if (new_val !== null && new_val !== "" && !this._isParameter(new_val)) {
-                isNaN(new_val) && (new_val = 0);
-                !options.precise && (new_val = Math.round(new_val));
-                options.max !== null && (new_val = Math.min(new_val, options.max));
-                options.min !== null && (new_val = Math.max(new_val, options.min));
+                if (isNaN(new_val)) {
+                    new_val = 0;
+                }
+                if (!options.precise) {
+                    new_val = Math.round(new_val);
+                }
+                if (options.max !== null && !isNaN(options.max)) {
+                    new_val = Math.min(new_val, options.max);
+                }
+                if (options.min !== null && !isNaN(options.min)) {
+                    new_val = Math.max(new_val, options.min);
+                }
             }
             this.model.set("value", new_val);
             this.model.trigger("change");

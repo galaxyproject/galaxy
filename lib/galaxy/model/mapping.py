@@ -14,18 +14,19 @@ from sqlalchemy import (
     desc,
     false,
     ForeignKey,
+    func,
     Integer,
     MetaData,
     not_,
     Numeric,
     select,
-    String,
-    Table,
+    String, Table,
     TEXT,
     Text,
     true,
     Unicode,
-    UniqueConstraint
+    UniqueConstraint,
+    VARCHAR
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
@@ -90,6 +91,47 @@ model.UserOpenID.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("openid", TEXT, index=True, unique=True),
     Column("provider", TrimmedString(255)))
+
+model.PSAAssociation.table = Table(
+    "psa_association", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('handle', VARCHAR(255)),
+    Column('secret', VARCHAR(255)),
+    Column('issued', Integer),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
+
+model.PSACode.table = Table(
+    "psa_code", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('email', VARCHAR(200)),
+    Column('code', VARCHAR(32)))
+
+model.PSANonce.table = Table(
+    "psa_nonce", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('timestamp', Integer),
+    Column('salt', VARCHAR(40)))
+
+model.PSAPartial.table = Table(
+    "psa_partial", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('token', VARCHAR(32)),
+    Column('data', TEXT),
+    Column('next_step', Integer),
+    Column('backend', VARCHAR(32)))
+
+model.UserAuthnzToken.table = Table(
+    "oidc_user_authnz_tokens", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('uid', VARCHAR(255)),
+    Column('provider', VARCHAR(32)),
+    Column('extra_data', JSONType, nullable=True),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
@@ -623,16 +665,13 @@ model.JobImportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("archive_dir", TEXT))
 
-
-JOB_METRIC_MAX_LENGTH = 1023
-
 model.JobMetricText.table = Table(
     "job_metric_text", metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(JOB_METRIC_MAX_LENGTH)))
+    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
 
 model.TaskMetricText.table = Table(
     "task_metric_text", metadata,
@@ -640,7 +679,7 @@ model.TaskMetricText.table = Table(
     Column("task_id", Integer, ForeignKey("task.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(JOB_METRIC_MAX_LENGTH)))
+    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
 
 model.JobMetricNumeric.table = Table(
     "job_metric_numeric", metadata,
@@ -648,7 +687,7 @@ model.JobMetricNumeric.table = Table(
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(22, 7)))
+    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
 
 model.TaskMetricNumeric.table = Table(
     "task_metric_numeric", metadata,
@@ -656,7 +695,7 @@ model.TaskMetricNumeric.table = Table(
     Column("task_id", Integer, ForeignKey("task.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(22, 7)))
+    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
 
 
 model.GenomeIndexToolData.table = Table(
@@ -847,7 +886,6 @@ model.WorkflowStep.table = Table(
     Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
     Column("type", String(64)),
     Column("tool_id", TEXT),
-    # Reserved for future
     Column("tool_version", TEXT),
     Column("tool_inputs", JSONType),
     Column("tool_errors", JSONType),
@@ -1421,6 +1459,20 @@ mapper(model.UserOpenID, model.UserOpenID.table, properties=dict(
         order_by=desc(model.UserOpenID.table.c.update_time))
 ))
 
+mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
+
+mapper(model.PSACode, model.PSACode.table, properties=None)
+
+mapper(model.PSANonce, model.PSANonce.table, properties=None)
+
+mapper(model.PSAPartial, model.PSAPartial.table, properties=None)
+
+mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
+                  backref='social_auth')
+))
+
 mapper(model.ValidationError, model.ValidationError.table)
 
 simple_mapping(model.HistoryDatasetAssociation,
@@ -1569,7 +1621,15 @@ mapper(model.History, model.History.table, properties=dict(
         backref="histories"),
     ratings=relation(model.HistoryRatingAssociation,
         order_by=model.HistoryRatingAssociation.table.c.id,
-        backref="histories")
+        backref="histories"),
+    average_rating=column_property(
+        select([func.avg(model.HistoryRatingAssociation.table.c.rating)]).where(model.HistoryRatingAssociation.table.c.history_id == model.History.table.c.id),
+        deferred=True
+    ),
+    users_shared_with_count=column_property(
+        select([func.count(model.HistoryUserShareAssociation.table.c.id)]).where(model.History.table.c.id == model.HistoryUserShareAssociation.table.c.history_id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2115,7 +2175,12 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
         primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id)),
         order_by=asc(model.WorkflowStep.table.c.order_index),
         cascade="all, delete-orphan",
-        lazy=False)
+        lazy=False),
+    step_count=column_property(
+        select([func.count(model.WorkflowStep.table.c.id)]).where(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
+        deferred=True
+    )
+
 ))
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
@@ -2178,7 +2243,11 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
         backref="stored_workflows"),
     ratings=relation(model.StoredWorkflowRatingAssociation,
         order_by=model.StoredWorkflowRatingAssociation.table.c.id,
-        backref="stored_workflows")
+        backref="stored_workflows"),
+    average_rating=column_property(
+        select([func.avg(model.StoredWorkflowRatingAssociation.table.c.rating)]).where(model.StoredWorkflowRatingAssociation.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2310,7 +2379,11 @@ mapper(model.Page, model.Page.table, properties=dict(
         backref="pages"),
     ratings=relation(model.PageRatingAssociation,
         order_by=model.PageRatingAssociation.table.c.id,
-        backref="pages")
+        backref="pages"),
+    average_rating=column_property(
+        select([func.avg(model.PageRatingAssociation.table.c.rating)]).where(model.PageRatingAssociation.table.c.page_id == model.Page.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2342,7 +2415,11 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
         backref="visualizations"),
     ratings=relation(model.VisualizationRatingAssociation,
         order_by=model.VisualizationRatingAssociation.table.c.id,
-        backref="visualizations")
+        backref="visualizations"),
+    average_rating=column_property(
+        select([func.avg(model.VisualizationRatingAssociation.table.c.rating)]).where(model.VisualizationRatingAssociation.table.c.visualization_id == model.Visualization.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2458,12 +2535,17 @@ def db_next_hid(self, n=1):
     :rtype:     int
     :returns:   the next history id
     """
-    conn = object_session(self).connection()
+    session = object_session(self)
+    conn = session.connection()
     table = self.table
     trans = conn.begin()
     try:
-        next_hid = select([table.c.hid_counter], table.c.id == self.id, for_update=True).scalar()
-        table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
+        if "postgres" not in session.bind.dialect.name:
+            next_hid = select([table.c.hid_counter], table.c.id == self.id, for_update=True).scalar()
+            table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
+        else:
+            stmt = table.update().where(table.c.id == self.id).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
+            next_hid = conn.execute(stmt).scalar() - n
         trans.commit()
         return next_hid
     except Exception:
@@ -2487,7 +2569,7 @@ model.WorkflowInvocation.update = _workflow_invocation_update
 
 def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0):
+        slow_query_log_threshold=0, thread_local_log=None):
     """Connect mappings to the database"""
     if engine_options is None:
         engine_options = {}
@@ -2498,7 +2580,7 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold)
+    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log)
 
     # Connect the metadata to the database.
     metadata.bind = engine
@@ -2519,4 +2601,5 @@ def init(file_path, url, engine_options=None, create_tables=False, map_install_m
     result.create_tables = create_tables
     # load local galaxy security policy
     result.security_agent = GalaxyRBACAgent(result)
+    result.thread_local_log = thread_local_log
     return result

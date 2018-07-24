@@ -1,10 +1,65 @@
-import * as VisualizationModel from "mvc/visualization/visualization-model";
-import * as bootstrap from "bootstrap";
-import * as Backbone from "libs/backbone";
+import "./jqglobals";
+// This is a really annoying hack to get bootstrap/jqui jquery bindings available correctly.
+/* global $ */
+import * as Backbone from "backbone";
+import * as d3 from "d3";
+import * as _ from "underscore";
+import "../../../../../client/galaxy/scripts/ui/peek-column-selector";
+import "../../../../../client/galaxy/scripts/ui/pagination";
 import "jquery-ui-bundle";
-import * as d3 from "libs/d3";
-import "ui/peek-column-selector";
-import "ui/pagination";
+import "bootstrap";
+
+//TODO: Finish unlinking this from the Galaxy codebase (package it, use that way?)
+
+var Visualization = Backbone.Model.extend({
+        /** default attributes for a model */
+        defaults: {
+            config: {}
+        },
+
+        /** override urlRoot to handle prefix */
+        urlRoot: function() {
+            var apiUrl = "api/visualizations";
+            return Galaxy.root + apiUrl;
+        },
+
+        /** Set up the model, determine if accessible, bind listeners
+         *  @see Backbone.Model#initialize
+         */
+        initialize: function(data) {
+            // munge config sub-object here since bbone won't handle defaults with this
+            if (_.isObject(data.config) && _.isObject(this.defaults.config)) {
+                _.defaults(data.config, this.defaults.config);
+            }
+
+            this._setUpListeners();
+        },
+
+        /** set up any event listeners */
+        _setUpListeners: function() {},
+
+        /** override set to properly allow update and trigger change when setting the sub-obj 'config' */
+        set: function(key, val) {
+            if (key === "config") {
+                var oldConfig = this.get("config");
+                if (_.isObject(oldConfig)) {
+                    val = _.extend(_.clone(oldConfig), val);
+                }
+            }
+            Backbone.Model.prototype.set.call(this, key, val);
+            return this;
+        },
+
+        /** String representation */
+        toString: function() {
+            var idAndTitle = this.get("id") || "";
+            if (this.get("title")) {
+                idAndTitle += `:${this.get("title")}`;
+            }
+            return `Visualization(${idAndTitle})`;
+        }
+    }
+);
 
 /**
  *  Two Variable scatterplot visualization using d3
@@ -194,7 +249,7 @@ export function scatterplot(renderTo, config, data) {
         //console.log( 'grid.h.lines:', grid.h.lines );
         return grid;
     }
-    var grid = renderGrid();
+    renderGrid();
 
     //// .................................................................... datapoints
     var datapoints = content
@@ -255,7 +310,7 @@ export function scatterplot(renderTo, config, data) {
         $(".chart-info-box").remove();
         axis.redraw();
         _redrawDatapointsClipped();
-        grid = renderGrid();
+        renderGrid();
 
         $(svg.node()).trigger("zoom.scatterplot", {
             scale: zoom.scale(),
@@ -376,7 +431,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
     /** initialize requires a configuration Object containing a dataset Object */
     initialize: function(attributes) {
         if (!this.model) {
-            this.model = new VisualizationModel.Visualization({ type: "scatterplot" });
+            this.model = new Visualization({ type: "scatterplot" });
         }
         //this.log( this + '.initialize, attributes:', attributes );
 
@@ -577,7 +632,7 @@ var ScatterplotConfigEditor = Backbone.View.extend({
             .save()
             .fail(function(xhr, status, message) {
                 console.error(xhr, status, message);
-                editor.trigger("save:error", view);
+                editor.trigger("save:error", this);
                 alert("Error loading data:\n" + xhr.responseText);
             })
             .then(function() {
@@ -755,7 +810,8 @@ ScatterplotConfigEditor.templates = {
  */
 var ScatterplotDisplay = Backbone.View.extend({
     initialize: function(attributes) {
-        (this.data = null), (this.dataset = attributes.dataset);
+        this.data = null;
+        this.dataset = attributes.dataset;
         this.lineCount = this.dataset.metadata_data_lines || null;
     },
 
@@ -765,8 +821,8 @@ var ScatterplotDisplay = Backbone.View.extend({
         var view = this,
             config = this.model.get("config"),
             //TODO: very tied to datasets - should be generalized eventually
-            baseUrl = window.parent && parent.galaxy_config ? parent.galaxy_config.root : "/",
-            xhr = jQuery.getJSON(baseUrl + "api/datasets/" + this.dataset.id, {
+            baseUrl = window.parent && window.parent.galaxy_config ? window.parent.galaxy_config.root : "/",
+            xhr = $.getJSON(baseUrl + "api/datasets/" + this.dataset.id, {
                 data_type: "raw_data",
                 provider: "dataset-column",
                 limit: config.pagination.perPage,
@@ -928,9 +984,9 @@ var ScatterplotDisplay = Backbone.View.extend({
         if (!this.data) {
             return;
         }
-        var view = this,
-            config = this.model.get("config"),
-            meanWorker = new Worker("/plugins/visualizations/scatterplot/static/worker-stats.js");
+        var view = this;
+        var config = this.model.get("config");
+        var meanWorker = new window.Worker("worker-stats.js");
         meanWorker.postMessage({
             data: this.data,
             keys: [config.xColumn, config.yColumn]
@@ -979,7 +1035,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         return "ScatterplotView()";
     }
 });
-var ScatterplotModel = VisualizationModel.Visualization.extend({
+var ScatterplotModel = Visualization.extend({
     defaults: {
         type: "scatterplot",
 

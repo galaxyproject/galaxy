@@ -8,11 +8,12 @@ export default {
 
         var newWin = window.open(GS_UPLOAD_URL, "GenomeSpace File Browser", "height=360px,width=600px");
 
-        successCalBack = options["successCallback"];
         window.addEventListener(
             "message",
             e => {
-                successCalBack(e.data);
+                if (options.successCallback && e.data.destination) {
+                    options.successCallback(e.data);
+                }
             },
             false
         );

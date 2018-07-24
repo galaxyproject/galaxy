@@ -16,6 +16,7 @@ import six
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement  # import directly to maintain ease of use in Datatype class definitions
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.util import (
     compression_utils,
     FILENAME_VALID_CHARS,
@@ -115,22 +116,6 @@ class Data(object):
         self.supported_display_apps = self.supported_display_apps.copy()
         self.composite_files = self.composite_files.copy()
         self.display_applications = odict()
-
-    def write_from_stream(self, dataset, stream):
-        """Writes data from a stream"""
-        fd = open(dataset.file_name, 'wb')
-        while True:
-            chunk = stream.read(1048576)
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-
-    def set_raw_data(self, dataset, data):
-        """Saves the data on the disc"""
-        fd = open(dataset.file_name, 'wb')
-        os.write(fd, data)
-        os.close(fd)
 
     def get_raw_data(self, dataset):
         """Returns the full data. To stream it open the file_name and read/write as needed"""
@@ -376,27 +361,26 @@ class Data(object):
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
-                    tmp_fh = tempfile.NamedTemporaryFile(delete=False)
-                    tmp_file_name = tmp_fh.name
-                    dir_items = sorted(os.listdir(file_path))
-                    base_path, item_name = os.path.split(file_path)
-                    tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (escape(item_name), len(dir_items)))
-                    tmp_fh.write('<body><p/><table cellpadding="2">\n')
-                    for index, fname in enumerate(dir_items):
-                        if index % 2 == 0:
-                            bgcolor = '#D8D8D8'
-                        else:
-                            bgcolor = '#FFFFFF'
-                        # Can't have an href link here because there is no route
-                        # defined for files contained within multiple subdirectory
-                        # levels of the primary dataset.  Something like this is
-                        # close, but not quite correct:
-                        # href = url_for(controller='dataset', action='display',
-                        # dataset_id=trans.security.encode_id(data.dataset.id),
-                        # preview=preview, filename=fname, to_ext=to_ext)
-                        tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
-                    tmp_fh.write('</table></body></html>\n')
-                    tmp_fh.close()
+                    with tempfile.NamedTemporaryFile(delete=False) as tmp_fh:
+                        tmp_file_name = tmp_fh.name
+                        dir_items = sorted(os.listdir(file_path))
+                        base_path, item_name = os.path.split(file_path)
+                        tmp_fh.write('<html><head><h3>Directory %s contents: %d items</h3></head>\n' % (escape(item_name), len(dir_items)))
+                        tmp_fh.write('<body><p/><table cellpadding="2">\n')
+                        for index, fname in enumerate(dir_items):
+                            if index % 2 == 0:
+                                bgcolor = '#D8D8D8'
+                            else:
+                                bgcolor = '#FFFFFF'
+                            # Can't have an href link here because there is no route
+                            # defined for files contained within multiple subdirectory
+                            # levels of the primary dataset.  Something like this is
+                            # close, but not quite correct:
+                            # href = url_for(controller='dataset', action='display',
+                            # dataset_id=trans.security.encode_id(data.dataset.id),
+                            # preview=preview, filename=fname, to_ext=to_ext)
+                            tmp_fh.write('<tr bgcolor="%s"><td>%s</td></tr>\n' % (bgcolor, escape(fname)))
+                        tmp_fh.write('</table></body></html>\n')
                     return self._yield_user_file_content(trans, data, tmp_file_name)
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
@@ -710,10 +694,9 @@ class Data(object):
         elif len(split_files) == 1:
             shutil.copyfileobj(open(split_files[0], 'rb'), open(output_file, 'wb'))
         else:
-            fdst = open(output_file, 'wb')
-            for fsrc in split_files:
-                shutil.copyfileobj(open(fsrc, 'rb'), fdst)
-            fdst.close()
+            with open(output_file, 'wb') as fdst:
+                for fsrc in split_files:
+                    shutil.copyfileobj(open(fsrc, 'rb'), fdst)
 
     merge = staticmethod(merge)
 
@@ -770,38 +753,10 @@ class Text(Data):
     file_ext = 'txt'
     line_class = 'line'
 
+    is_binary = False
+
     # Add metadata elements
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True, optional=True, visible=False, no_value=0)
-
-    def write_from_stream(self, dataset, stream):
-        """Writes data from a stream"""
-        # write it twice for now
-        fd, temp_name = tempfile.mkstemp()
-        while True:
-            chunk = stream.read(1048576)
-            if not chunk:
-                break
-            os.write(fd, chunk)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(dataset.file_name, 'w')
-        for line in open(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-
-    def set_raw_data(self, dataset, data):
-        """Saves the data on the disc"""
-        fd, temp_name = tempfile.mkstemp()
-        os.write(fd, data)
-        os.close(fd)
-        # rewrite the file with unix newlines
-        fp = open(dataset.file_name, 'w')
-        for line in open(temp_name, "U"):
-            line = line.strip() + '\n'
-            fp.write(line)
-        fp.close()
-        os.remove(temp_name)
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -818,9 +773,8 @@ class Text(Data):
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
         sample_size = 1048576
-        dataset_fh = open(dataset.file_name)
-        dataset_read = dataset_fh.read(sample_size)
-        dataset_fh.close()
+        with open(dataset.file_name) as dataset_fh:
+            dataset_read = dataset_fh.read(sample_size)
         sample_lines = dataset_read.count('\n')
         est_lines = int(sample_lines * (float(dataset.get_size()) / float(sample_size)))
         return est_lines
@@ -885,10 +839,9 @@ class Text(Data):
             # Computing the length is expensive!
             def _file_len(fname):
                 i = 0
-                f = open(fname)
-                for i, _ in enumerate(f):
-                    pass
-                f.close()
+                with open(fname) as f:
+                    for i, _ in enumerate(f):
+                        pass
                 return i + 1
             length = _file_len(input_files[0])
             parts = int(split_params['split_size'])
@@ -931,15 +884,13 @@ class Text(Data):
                         part_file = open(part_path, 'w')
                     part_file.write(a_line)
                     lines_remaining -= 1
-                if part_file is not None:
-                    part_file.close()
         except Exception as e:
             log.error('Unable to split files: %s' % str(e))
-            f.close()
-            if part_file is not None:
-                part_file.close()
             raise
-        f.close()
+        finally:
+            f.close()
+            if part_file:
+                part_file.close()
     split = classmethod(split)
 
     # ------------- Dataproviders
@@ -981,7 +932,7 @@ class Newick(Text):
     """New Hampshire/Newick Format"""
     edam_data = "data_0872"
     edam_format = "format_1910"
-    file_ext = "nhx"
+    file_ext = "newick"
 
     def __init__(self, **kwd):
         """Initialize foobar datatype"""
@@ -1002,6 +953,7 @@ class Newick(Text):
         return ['phyloviz']
 
 
+@build_sniff_from_prefix
 class Nexus(Text):
     """Nexus format as used By Paup, Mr Bayes, etc"""
     edam_data = "data_0872"
@@ -1015,16 +967,9 @@ class Nexus(Text):
     def init_meta(self, dataset, copy_from=None):
         Text.init_meta(self, dataset, copy_from=copy_from)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
-        f = open(filename, "r")
-        firstline = f.readline().upper()
-        f.close()
-
-        if "#NEXUS" in firstline:
-            return True
-        else:
-            return False
+        return file_prefix.string_io().read(6).upper() == "#NEXUS"
 
     def get_visualizations(self, dataset):
         """
@@ -1057,8 +1002,7 @@ def get_file_peek(file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipc
     :type  is_multi_byte: bool
 
     >>> fname = get_test_fname('4.bed')
-    >>> get_file_peek(fname, LINE_COUNT=1)
-    u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
+    >>> assert get_file_peek(fname, LINE_COUNT=1) == u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n'
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very

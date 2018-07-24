@@ -3,6 +3,8 @@
 Downloads files to temp locations.  This script is invoked by the Transfer
 Manager (galaxy.jobs.transfer_manager) and should not normally be invoked by
 hand.
+
+This is deprecated - it only works with older ini configurations of Galaxy.
 """
 import json
 import logging

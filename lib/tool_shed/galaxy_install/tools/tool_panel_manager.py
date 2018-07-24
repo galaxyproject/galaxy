@@ -82,7 +82,7 @@ class ToolPanelManager(object):
         lock = threading.Lock()
         lock.acquire(True)
         try:
-            fh = open(config_filename, 'wb')
+            fh = open(config_filename, 'w')
             fh.write('<?xml version="1.0"?>\n<toolbox tool_path="%s">\n' % str(tool_path))
             for elem in config_elems:
                 fh.write(xml_util.xml_to_string(elem, use_indent=True))

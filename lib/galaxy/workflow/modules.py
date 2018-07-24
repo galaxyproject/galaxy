@@ -41,6 +41,7 @@ from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
+from galaxy.util.rules_dsl import RuleSet
 from tool_shed.util import common_util
 
 log = logging.getLogger(__name__)
@@ -51,7 +52,15 @@ RUNTIME_STEP_META_STATE_KEY = "__STEP_META_STATE__"
 # actions (i.e. PJA specified at runtime on top of the workflow-wide defined
 # ones.
 RUNTIME_POST_JOB_ACTIONS_KEY = "__POST_JOB_ACTIONS__"
-NO_REPLACEMENT = object()
+
+
+class NoReplacement(object):
+
+    def __str__(self):
+        return "NO_REPLACEMENT singleton"
+
+
+NO_REPLACEMENT = NoReplacement()
 
 
 class WorkflowModule(object):
@@ -584,7 +593,7 @@ class ToolModule(WorkflowModule):
     type = "tool"
     name = "Tool"
 
-    def __init__(self, trans, tool_id, tool_version=None, exact_tools=False, **kwds):
+    def __init__(self, trans, tool_id, tool_version=None, exact_tools=True, **kwds):
         super(ToolModule, self).__init__(trans, content_id=tool_id, **kwds)
         self.tool_id = tool_id
         self.tool_version = tool_version
@@ -600,14 +609,14 @@ class ToolModule(WorkflowModule):
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
-    def from_dict(Class, trans, d, exact_tools=False, **kwds):
+    def from_dict(Class, trans, d, **kwds):
         tool_id = d.get('content_id') or d.get('tool_id')
         if tool_id is None:
             raise exceptions.RequestParameterInvalidException("No tool id could be located for step [%s]." % d)
         tool_version = d.get('tool_version')
         if tool_version:
             tool_version = str(tool_version)
-        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, exact_tools=exact_tools)
+        module = super(ToolModule, Class).from_dict(trans, d, tool_id=tool_id, tool_version=tool_version, **kwds)
         module.post_job_actions = d.get('post_job_actions', {})
         module.workflow_outputs = d.get('workflow_outputs', [])
         if module.tool:
@@ -625,7 +634,7 @@ class ToolModule(WorkflowModule):
     def from_workflow_step(Class, trans, step, **kwds):
         tool_id = trans.app.toolbox.get_tool_id(step.tool_id) or step.tool_id
         tool_version = step.tool_version
-        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version)
+        module = super(ToolModule, Class).from_workflow_step(trans, step, tool_id=tool_id, tool_version=tool_version, **kwds)
         module.workflow_outputs = step.workflow_outputs
         module.post_job_actions = {}
         for pja in step.post_job_actions:
@@ -718,7 +727,17 @@ class ToolModule(WorkflowModule):
                 extra_kwds = {}
                 if tool_output.collection:
                     extra_kwds["collection"] = True
-                    extra_kwds["collection_type"] = tool_output.structure.collection_type
+                    collection_type = tool_output.structure.collection_type
+                    if not collection_type and tool_output.structure.collection_type_from_rules:
+                        rule_param = tool_output.structure.collection_type_from_rules
+                        if rule_param in self.state.inputs:
+                            rule_json_str = self.state.inputs[rule_param]
+                            if rule_json_str:  # initialized to None...
+                                rules = rule_json_str
+                                if rules:
+                                    rule_set = RuleSet(rules)
+                                    collection_type = rule_set.collection_type
+                    extra_kwds["collection_type"] = collection_type
                     extra_kwds["collection_type_source"] = tool_output.structure.collection_type_source
                     formats = ['input']  # TODO: fix
                 elif tool_output.format_source is not None:
@@ -825,6 +844,9 @@ class ToolModule(WorkflowModule):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version)
+        if not tool.is_workflow_compatible:
+            message = "Specified tool [%s] in workflow is not workflow-compatible." % tool.id
+            raise Exception(message)
         tool_state = step.state
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
@@ -843,6 +865,7 @@ class ToolModule(WorkflowModule):
         else:
             iteration_elements_iter = [None]
 
+        resource_parameters = invocation.resource_parameters
         for iteration_elements in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
@@ -915,7 +938,8 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
-                completed_jobs=completed_jobs
+                completed_jobs=completed_jobs,
+                workflow_resource_parameters=resource_parameters
             )
             complete = True
         except PartialJobExecution as pje:
@@ -986,7 +1010,7 @@ class ToolModule(WorkflowModule):
         effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.mapped_over_output_actions:
-                ActionBox.execute_on_mapped_over(self.trans.app, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict)
+                ActionBox.execute_on_mapped_over(self.trans, self.trans.sa_session, pja, step_inputs, step_outputs, replacement_dict)
 
     def _handle_post_job_actions(self, step, job, replacement_dict):
         # Create new PJA associations with the created job, to be run on completion.
@@ -1043,12 +1067,12 @@ class WorkflowModuleFactory(object):
         assert type in self.module_types, "Unexpected workflow step type [%s] not found in [%s]" % (type, self.module_types.keys())
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
-    def from_workflow_step(self, trans, step):
+    def from_workflow_step(self, trans, step, **kwargs):
         """
         Return module initializd from the WorkflowStep object `step`.
         """
         type = step.type
-        return self.module_types[type].from_workflow_step(trans, step)
+        return self.module_types[type].from_workflow_step(trans, step, **kwargs)
 
 
 def is_tool_module_type(module_type):
@@ -1127,7 +1151,7 @@ class WorkflowModuleInjector(object):
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject(self, step, step_args=None, steps=None):
+    def inject(self, step, step_args=None, steps=None, **kwargs):
         """ Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.
@@ -1146,7 +1170,7 @@ class WorkflowModuleInjector(object):
         step.setup_input_connections_by_name()
 
         # Populate module.
-        module = step.module = module_factory.from_workflow_step(self.trans, step)
+        module = step.module = module_factory.from_workflow_step(self.trans, step, **kwargs)
 
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)

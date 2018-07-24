@@ -69,10 +69,9 @@ http {
     gzip on;
     gzip_http_version 1.1;
     gzip_vary on;
-    gzip_comp_level 4;
+    gzip_comp_level 6;
     gzip_proxied any;
     gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
-    gzip_comp_level 6;
     gzip_buffers 16 8k;
 
     # allow up to 3 minutes for Galaxy to respond to slow requests before timing out
@@ -296,7 +295,7 @@ nginx did not support shared modules, and the upload module is not yet shared-co
 and complicated process, the Galaxy Committers team maintains (for some platforms) versions of nginx modified from their
 upstream package sources (APT, EPEL, etc.) to include the upload module:
 
-- [Ubuntu (PPA)](https://launchpad.net/~galaxyproject/+archive/ubuntu/nginx)
+- [Ubuntu (PPA)](https://launchpad.net/~galaxyproject/+archive/ubuntu/nginx) (Be sure to install `nginx-extras`, not `nginx`)
 - [Enterprise Linux](https://depot.galaxyproject.org/yum/)
 
 To contribute support for additional platforms, please see the [Galaxy

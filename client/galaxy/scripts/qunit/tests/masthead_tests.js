@@ -1,12 +1,12 @@
-/* global define */
 import testApp from "qunit/test-app";
 import Masthead from "layout/masthead";
-import Galaxy from "galaxy";
+
+/* global QUnit */
+/* global $ */
 
 QUnit.module("Masthead test", {
     beforeEach: function() {
         testApp.create();
-        var self = this;
         this.masthead = new Masthead.View({
             brand: "brand",
             use_remote_user: "use_remote_user",
@@ -41,21 +41,18 @@ QUnit.module("Masthead test", {
 
 QUnit.test("tabs", function(assert) {
     var tab = this.masthead.collection.findWhere({ id: "analysis" });
-    var $tab = $("#analysis").find(".dropdown");
-    var $toggle = $tab.find(".dropdown-toggle");
-    var $note = $tab.find(".dropdown-note");
-    var $menu = $tab.find("ul");
+    var $tab = $("#analysis");
+    var $toggle = $tab.find(".nav-link");
+    var $note = $tab.find(".nav-note");
+    var $menu = $tab.find(".dropdown-menu");
     assert.ok(tab && $tab.length == 1, "Found analysis tab");
     tab.set("title", "Analyze");
     assert.ok($toggle.html() == "Analyze", "Correct title");
-    assert.ok(tab.get("target") == "_parent", "Correct initial target");
-    tab.set("target", "_target");
-    assert.ok($toggle.attr("target") == "_target", "Correct test target");
-    assert.ok($tab.css("visibility") == "visible", "Tab visible");
+    assert.ok($toggle.css("visibility") == "visible", "Tab visible");
     tab.set("visible", false);
-    assert.ok($tab.css("visibility") == "hidden", "Tab hidden");
+    assert.ok($toggle.css("visibility") == "hidden", "Tab hidden");
     tab.set("visible", true);
-    assert.ok($tab.css("visibility") == "visible", "Tab visible, again");
+    assert.ok($toggle.css("visibility") == "visible", "Tab visible, again");
     // TODO: cleanup global usage so window.Galaxy isn't needed here.
     assert.ok($toggle.attr("href") == window.Galaxy.root, "Correct initial url");
     tab.set("url", "_url");
@@ -67,7 +64,7 @@ QUnit.test("tabs", function(assert) {
     assert.ok($(".tooltip-inner").html() == "_tooltip", "Correct tooltip");
     tab.set("tooltip", null);
     $toggle.trigger("mouseover");
-    assert.ok($(".tooltip-inner").length == 0, "Tooltip removed");
+    assert.ok($(".tooltip-inner").length === 0, "Tooltip removed");
     tab.set("tooltip", "_tooltip_new");
     $toggle.trigger("mouseover");
     assert.ok($(".tooltip-inner").html() == "_tooltip_new", "Correct new tooltip");
@@ -75,13 +72,13 @@ QUnit.test("tabs", function(assert) {
     assert.ok($toggle.hasClass("_cls"), "Correct extra class");
     tab.set("cls", "_cls_new");
     assert.ok($toggle.hasClass("_cls_new") && !$toggle.hasClass("_cls"), "Correct new extra class");
-    assert.ok($note.html() == "", "Correct empty note");
+    assert.ok($note.html() === "", "Correct empty note");
     tab.set({ note: "_note", show_note: true });
     assert.ok($note.html() == "_note", "Correct new note");
     tab.set("toggle", true);
     assert.ok($toggle.hasClass("toggle"), "Toggled");
     tab.set("toggle", false);
-    assert.ok(!$toggle.hasClass("toggle"), "Untoggled");
+    assert.ok(!$tab.hasClass("toggle"), "Untoggled");
     tab.set("disabled", true);
     assert.ok($tab.hasClass("disabled"), "Correctly disabled");
     tab.set("disabled", false);
@@ -91,7 +88,9 @@ QUnit.test("tabs", function(assert) {
     assert.ok(!$tab.hasClass("active"), "Not highlighted");
     tab.set("active", true);
     assert.ok($tab.hasClass("active"), "Highlighted, again");
+    assert.ok($menu.length === 0, "Dropdown menu correctly empty");
     tab.set("menu", [{ title: "_menu_title", url: "_menu_url", target: "_menu_target" }]);
+    $menu = $tab.find(".dropdown-menu");
     assert.ok($menu.hasClass("dropdown-menu"), "Menu has correct class");
     assert.ok($menu.css("display") == "none", "Menu hidden");
     $toggle.trigger("click");
@@ -103,7 +102,7 @@ QUnit.test("tabs", function(assert) {
     assert.ok($item.attr("target") == "_menu_target", "Menu item has correct target");
     tab.set("menu", null);
     $item = $menu.find("a");
-    assert.ok($item.length == 0, "All menu items removed");
+    assert.ok($item.length === 0, "All menu items removed");
     tab.set("menu", [
         { title: "_menu_title_0", url: "_menu_url_0", target: "_menu_target_0" },
         { title: "_menu_title_1", url: "_menu_url_1", target: "_menu_target_1" }
@@ -114,10 +113,10 @@ QUnit.test("tabs", function(assert) {
     assert.ok($menu.css("display", "none"), "Menu manually hidden");
     tab.set("show_menu", true);
     assert.ok($menu.css("display", "block"), "Menu manually shown, again");
-    var tab = this.masthead.collection.findWhere({ id: "enable-scratchbook" });
-    var $tab = $("#enable-scratchbook").find(".dropdown");
-    assert.ok(tab && $tab.length == 1, "Found tab to enable scratchbook");
-    var $toggle = $tab.find(".dropdown-toggle");
+    tab = this.masthead.collection.findWhere({ id: "enable-scratchbook" });
+    $tab = $("#enable-scratchbook");
+    $toggle = $tab.find(".nav-link");
+    assert.ok(tab && $toggle.length == 1, "Found tab to enable scratchbook");
     assert.ok(!$toggle.hasClass("toggle"), "Untoggled before click");
     $toggle.trigger("click");
     assert.ok($toggle.hasClass("toggle"), "Toggled after click");

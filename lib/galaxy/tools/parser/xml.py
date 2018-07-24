@@ -8,6 +8,7 @@ from math import isinf
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
+from .error_level import StdioErrorLevel
 from .interface import (
     InputSource,
     PageSource,
@@ -252,7 +253,8 @@ class XmlToolSource(ToolSource):
             data_dict[output_def.name] = output_def
             return output_def
 
-        map(_parse, out_elem.findall("data"))
+        for _ in out_elem.findall("data"):
+            _parse(_)
 
         for collection_elem in out_elem.findall("collection"):
             name = collection_elem.get("name")
@@ -260,6 +262,7 @@ class XmlToolSource(ToolSource):
             default_format = collection_elem.get("format", "data")
             collection_type = collection_elem.get("type", None)
             collection_type_source = collection_elem.get("type_source", None)
+            collection_type_from_rules = collection_elem.get("type_from_rules", None)
             structured_like = collection_elem.get("structured_like", None)
             inherit_format = False
             inherit_metadata = False
@@ -276,6 +279,7 @@ class XmlToolSource(ToolSource):
             structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
+                collection_type_from_rules=collection_type_from_rules,
                 structured_like=structured_like,
                 dataset_collector_descriptions=dataset_collector_descriptions,
             )
@@ -380,6 +384,9 @@ class XmlToolSource(ToolSource):
         help_elem = self.root.find('help')
         return help_elem.text if help_elem is not None else None
 
+    def macro_paths(self):
+        return self._macro_paths
+
     def parse_tests_to_dict(self):
         tests_elem = self.root.find("tests")
         tests = []
@@ -390,8 +397,6 @@ class XmlToolSource(ToolSource):
         if tests_elem is not None:
             for i, test_elem in enumerate(tests_elem.findall("test")):
                 tests.append(_test_elem_to_dict(test_elem, i))
-
-            _copy_to_dict_if_present(tests_elem, rval, ["interactor"])
 
         return rval
 
@@ -418,7 +423,7 @@ def _test_elem_to_dict(test_elem, i):
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
     )
-    _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
+    _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
     return rval
 
 
@@ -431,7 +436,7 @@ def __parse_output_elems(test_elem):
     outputs = []
     for output_elem in test_elem.findall("output"):
         name, file, attributes = __parse_output_elem(output_elem)
-        outputs.append((name, file, attributes))
+        outputs.append({"name": name, "value": file, "attributes": attributes})
     return outputs
 
 
@@ -464,7 +469,7 @@ def __parse_output_collection_elem(output_collection_elem):
     if name is None:
         raise Exception("Test output collection does not have a 'name'")
     element_tests = __parse_element_tests(output_collection_elem)
-    return TestCollectionOutputDef(name, attrib, element_tests)
+    return TestCollectionOutputDef(name, attrib, element_tests).to_dict()
 
 
 def __parse_element_tests(parent_element):
@@ -565,7 +570,12 @@ def __parse_extra_files_elem(extra):
     assert extra_type == 'directory' or extra_name is not None, \
         'extra_files type (%s) requires a name attribute' % extra_type
     extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
-    return extra_type, extra_value, extra_name, extra_attributes
+    return {
+        "value": extra_value,
+        "name": extra_name,
+        "type": extra_type,
+        "attributes": extra_attributes
+    }
 
 
 def __expand_input_elems(root_elem, prefix=""):
@@ -628,8 +638,8 @@ def _copy_to_dict_if_present(elem, rval, attributes):
 def __parse_inputs_elems(test_elem, i):
     raw_inputs = []
     for param_elem in test_elem.findall("param"):
-        name, value, attrib = __parse_param_elem(param_elem, i)
-        raw_inputs.append((name, value, attrib))
+        raw_inputs.append(__parse_param_elem(param_elem, i))
+
     return raw_inputs
 
 
@@ -641,40 +651,43 @@ def __parse_param_elem(param_elem, i=0):
         value = attrib['value']
     else:
         value = None
-    attrib['children'] = param_elem
-    if attrib['children'] is not None:
+    children_elem = param_elem
+    if children_elem is not None:
         # At this time, we can assume having children only
         # occurs on DataToolParameter test items but this could
         # change and would cause the below parsing to change
         # based upon differences in children items
-        attrib['metadata'] = []
+        attrib['metadata'] = {}
         attrib['composite_data'] = []
         attrib['edit_attributes'] = []
         # Composite datasets need to be renamed uniquely
         composite_data_name = None
-        for child in attrib['children']:
+        for child in children_elem:
             if child.tag == 'composite_data':
-                attrib['composite_data'].append(child)
+                file_name = child.get("value")
+                attrib['composite_data'].append(file_name)
                 if composite_data_name is None:
                     # Generate a unique name; each test uses a
                     # fresh history.
                     composite_data_name = '_COMPOSITE_RENAMED_t%d_%s' \
                         % (i, uuid.uuid1().hex)
             elif child.tag == 'metadata':
-                attrib['metadata'].append(child)
-            elif child.tag == 'metadata':
-                attrib['metadata'].append(child)
+                attrib['metadata'][child.get("name")] = child.get("value")
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append(child)
             elif child.tag == 'collection':
-                attrib['collection'] = TestCollectionDef(child, __parse_param_elem)
+                attrib['collection'] = TestCollectionDef.from_xml(child, __parse_param_elem)
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
             # take precedence
             attrib['edit_attributes'].insert(0, {'type': 'name', 'value': composite_data_name})
     name = attrib.pop('name')
-    return (name, value, attrib)
+    return {
+        "name": name,
+        "value": value,
+        "attributes": attrib
+    }
 
 
 class StdioParser(object):
@@ -849,7 +862,6 @@ class StdioParser(object):
         Parses error level and returns error level enumeration. If
         unparsable, returns 'fatal'
         """
-        from galaxy.jobs.error_level import StdioErrorLevel
         return_level = StdioErrorLevel.FATAL
         try:
             if err_level:
@@ -857,6 +869,8 @@ class StdioParser(object):
                     return_level = StdioErrorLevel.LOG
                 elif (re.search("warning", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.WARNING
+                elif (re.search("fatal_oom", err_level, re.IGNORECASE)):
+                    return_level = StdioErrorLevel.FATAL_OOM
                 elif (re.search("fatal", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.FATAL
                 else:

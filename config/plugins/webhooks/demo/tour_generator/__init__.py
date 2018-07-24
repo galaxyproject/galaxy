@@ -1,6 +1,7 @@
 import logging
 import os
-from cgi import FieldStorage
+
+from webob.compat import cgi_FieldStorage
 
 from galaxy.util import Params
 
@@ -64,26 +65,13 @@ class TourGenerator(object):
                 self._use_datasets = False
                 return
 
-        test_data_paths = [os.path.abspath('test-data')]
-        test_data_cache_dir = os.path.abspath(
-            os.environ.get('GALAXY_TEST_DATA_REPO_CACHE', 'test-data-cache'))
-        test_data_paths.extend([
-            x[0] for x in os.walk(test_data_cache_dir) if '.git' not in x[0]])
-        if self._tool.tool_shed:
-            test_data_paths.append(os.path.abspath(os.path.join(
-                self._tool.tool_dir, 'test-data')))
-
         # Upload all test datasets
         for input_name, input in self._data_inputs.items():
             if input_name in test_datasets.keys():
-                for i, data_path in enumerate(test_data_paths):
-                    input_path = os.path.join(data_path,
-                                              test_datasets[input_name])
-                    if os.path.exists(input_path):
-                        break
-                    elif i + 1 == len(test_data_paths):  # the last path
-                        raise ValueError('Test dataset "%s" doesn\'t exist.' %
-                                         input_name)
+                filename = test_datasets[input_name]
+                input_path = self._tool.test_data_path(filename)
+                if not input_path:
+                    raise ValueError('Test dataset "%s" doesn\'t exist.' % input_name)
 
                 upload_tool = self._trans.app.toolbox.get_tool('upload1')
                 filename = os.path.basename(input_path)
@@ -97,7 +85,7 @@ class TourGenerator(object):
                             ),
                     }
 
-                    input_file = FieldStorage(headers=headers)
+                    input_file = cgi_FieldStorage(headers=headers)
                     input_file.file = input_file.make_file()
                     input_file.file.write(content)
 

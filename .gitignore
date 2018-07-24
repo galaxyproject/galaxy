@@ -7,6 +7,7 @@ scripts/scramble/archives
 
 # Python virtualenv
 .venv
+.venv3
 
 # Database stuff
 database/beaker_sessions
@@ -120,15 +121,16 @@ test/unit/**.log
 tool-data/shared/jars/
 
 # CSS build artifacts.
-sprite-*.less
+sprite-*.scss
 
 # JS, Local node_modules, and bower_components directories
-static/scripts/bundled/[0-9]*
 static/maps
-static/scripts/bundled/*.map
+static/plugins
+static/scripts
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
+client/galaxy/style/less/*
 
 # Documentation build files.
 doc/build

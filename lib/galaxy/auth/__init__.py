@@ -15,6 +15,7 @@ class AuthManager(object):
 
     def __init__(self, app):
         self.__app = app
+        self.redact_username_in_logs = app.config.redact_username_in_logs
         self.authenticators = get_authenticators(app.config.auth_config_file)
 
     def check_registration_allowed(self, email, username, password):
@@ -24,10 +25,10 @@ class AuthManager(object):
         for provider, options in self.active_authenticators(email, username, password):
             allow_reg = _get_allow_register(options)
             if allow_reg == 'challenge':
-                auth_result, msg = provider.authenticate(email, username, password, options)
-                if auth_result is True:
+                auth_results = provider.authenticate(email, username, password, options)
+                if auth_results[0] is True:
                     break
-                if auth_result is None:
+                if auth_results[0] is None:
                     message = 'Invalid email address/username or password.'
                     status = 'error'
                     break
@@ -117,7 +118,9 @@ class AuthManager(object):
                     passed_filter = eval(filter_str, {"__builtins__": None}, {'str': str})
                     if not passed_filter:
                         continue  # skip to next
-                yield authenticator.plugin, authenticator.options
+                options = authenticator.options
+                options['redact_username_in_logs'] = self.redact_username_in_logs
+                yield authenticator.plugin, options
         except Exception:
             log.exception("Active Authenticators Failure")
             raise

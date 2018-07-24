@@ -27,6 +27,14 @@ def test_validate_valid_tool():
         assert message is None
 
 
+def test_tool_validation_denies_allow_codefile():
+    with get_tool_validator() as tv, setup_bismark() as repo_dir:
+        full_path = os.path.join(repo_dir, 'bismark_methylation_extractor.xml')
+        tool, valid, message = tv.load_tool_from_config(repository_id=None,
+                                                        full_path=full_path)
+        assert tool._allow_code_files is False
+
+
 def test_validate_tool_without_index():
     with get_tool_validator() as tv, setup_bismark() as repo_dir:
         full_path = os.path.join(repo_dir, 'bismark_bowtie2_wrapper.xml')

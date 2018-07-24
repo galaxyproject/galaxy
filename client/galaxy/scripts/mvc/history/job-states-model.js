@@ -90,9 +90,24 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     model: JobStatesSummary,
 
     initialize: function() {
+        /* By default we wait for a polling update to do model fetch because
+           FETCH_STATE_ON_ADD is false to load the application and target components
+           as quickly as possible. that said if the polling is turned off
+           (!this.active) and collections are added - we need to fetch those still.
+           This happens for instance in the single history view where a history is
+           shown in a static way and not polled.
+        */
         if (FETCH_STATE_ON_ADD) {
             this.on({
                 add: model => model.fetch()
+            });
+        } else {
+            this.on({
+                add: model => {
+                    if (!this.active) {
+                        model.fetch();
+                    }
+                }
             });
         }
 
@@ -165,4 +180,4 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     }
 });
 
-export default { JobStatesSummary, JobStatesSummaryCollection, FETCH_STATE_ON_ADD };
+export default { JobStatesSummary, JobStatesSummaryCollection, FETCH_STATE_ON_ADD, NON_TERMINAL_STATES, ERROR_STATES };

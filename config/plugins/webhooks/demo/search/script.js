@@ -33,7 +33,7 @@ $(document).ready(function() {
             };
 
             // Open search overlay on click of magnifier icon in the masthead
-            self.parentElement.find( 'ul#searchover a' ).on( 'click', function( e ) {
+            self.parentElement.find( 'ul #searchover a' ).on( 'click', function( e ) {
                 e.preventDefault();
                 e.stopPropagation();
                 if ( $( '.search-screen-overlay' ).is( ':visible' ) ){
@@ -471,7 +471,6 @@ $(document).ready(function() {
                 removed_results_key = "removed_results",
                 pinned_results_key = "pinned_results",
                 class_tool_link = "tool-search-link";
-
             _.each( Galaxy.config.toolbox_in_panel, function( section ) {
                 if( section.model_class === "ToolSection" ) {
                     var all_tools = section.elems,
@@ -506,14 +505,15 @@ $(document).ready(function() {
                                                              tools_template );
                     }
                 }
-                else if( section.model_class === "Tool" || section.model_class === "DataSourceTool" ) {
-                    var attributes = section.attributes;
-                    if( item === attributes.id ) {
+                else if( section.model_class === "Tool" ) {
+                    // check if the tool is present in the search results
+                    if( _.contains( search_result, section.id ) ) {
+                        var attributes = section.attributes ? section.attributes : section;
                         if( !self.checkItemPresent( attributes.id, removed_results_key, self ) ) {
                             tool_template = tool_template + self._buildLinkTemplate( attributes.id, attributes.link,
-                                                attributes.name, attributes.description, attributes.target,
-                                                class_tool_link, self.checkItemPresent( attributes.id, pinned_results_key, self ),
-                                                attributes.version, attributes.min_width, attributes.form_style );
+                                attributes.name, attributes.description, attributes.target,
+                                class_tool_link, self.checkItemPresent( attributes.id, pinned_results_key, self ),
+                                attributes.version, attributes.min_width, attributes.form_style );
                         }
                     }
                 }

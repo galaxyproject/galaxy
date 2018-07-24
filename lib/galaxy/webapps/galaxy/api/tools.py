@@ -6,14 +6,22 @@ from six.moves.urllib.parse import unquote_plus
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.util.json import safe_dumps
+from galaxy.util.odict import odict
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.base.controller import UsesVisualizationMixin
+from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
+
+# Do not allow these tools to be called directly - they (it) enforces extra security and
+# provides access via a different API endpoint.
+PROTECTED_TOOLS = ["__DATA_FETCH__"]
 
 
 class ToolsController(BaseAPIController, UsesVisualizationMixin):
@@ -79,7 +87,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     def show(self, trans, id, **kwd):
         """
         GET /api/tools/{tool_id}
-        Returns tool information, including parameters and inputs.
+
+        Returns tool information
+
+            parameters:
+
+                io_details   - if true, parameters and inputs are returned
+                link_details - if true, hyperlink to the tool is returned
         """
         io_details = util.string_as_bool(kwd.get('io_details', False))
         link_details = util.string_as_bool(kwd.get('link_details', False))
@@ -97,6 +111,74 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool_version = kwd.get('tool_version', None)
         tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
         return tool.to_json(trans, kwd.get('inputs', kwd))
+
+    @expose_api
+    @web.require_admin
+    def test_data_path(self, trans, id, **kwd):
+        """
+        GET /api/tools/{tool_id}/test_data_path?tool_version={tool_version}
+        """
+        # TODO: eliminate copy and paste with above code.
+        if 'payload' in kwd:
+            kwd = kwd.get('payload')
+        tool_version = kwd.get('tool_version', None)
+        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
+        path = tool.test_data_path(kwd.get("filename"))
+        if path:
+            return path
+        else:
+            raise exceptions.ObjectNotFound("Specified test data path not found.")
+
+    @expose_api_anonymous_and_sessionless
+    def tests_summary(self, trans, **kwd):
+        """
+        GET /api/tools/tests_summary
+
+        Fetch summary information for each tool and version combination with tool tests
+        defined. This summary information currently includes tool name and a count of
+        the tests.
+
+        Fetch complete test data for each tool with /api/tools/{tool_id}/test_data?tool_version=<tool_version>
+        """
+        test_counts_by_tool = {}
+        for id, tool in self.app.toolbox.tools():
+            tests = tool.tests
+            if tests:
+                if tool.id not in test_counts_by_tool:
+                    test_counts_by_tool[tool.id] = {}
+                available_versions = test_counts_by_tool[tool.id]
+                available_versions[tool.version] = {
+                    "tool_name": tool.name,
+                    "count": len(tests),
+                }
+        return test_counts_by_tool
+
+    @expose_api_raw_anonymous_and_sessionless
+    def test_data(self, trans, id, **kwd):
+        """
+        GET /api/tools/{tool_id}/test_data?tool_version={tool_version}
+
+        This API endpoint is unstable and experimental. In particular the format of the
+        response has not been entirely nailed down (it exposes too many Galaxy
+        internals/Pythonisms in a rough way). If this endpoint is being used from outside
+        of scripts shipped with Galaxy let us know and please be prepared for the response
+        from this API to change its format in some ways.
+        """
+        # TODO: eliminate copy and paste with above code.
+        if 'payload' in kwd:
+            kwd = kwd.get('payload')
+        tool_version = kwd.get('tool_version', None)
+        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
+
+        # Encode in this method to handle odict objects in tool representation.
+        def json_encodeify(obj):
+            if isinstance(obj, odict):
+                return dict(obj)
+            else:
+                return obj
+
+        result = [t.to_dict() for t in tool.tests]
+        return safe_dumps(result, default=json_encodeify)
 
     @expose_api
     @web.require_admin
@@ -291,11 +373,49 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         return download_file
 
     @expose_api_anonymous
+    def fetch(self, trans, payload, **kwd):
+        """Adapt clean API to tool-constrained API.
+        """
+        request_version = '1'
+        history_id = payload.pop("history_id")
+        clean_payload = {}
+        files_payload = {}
+        for key, value in payload.items():
+            if key == "key":
+                continue
+            if key.startswith('files_') or key.startswith('__files_'):
+                files_payload[key] = value
+                continue
+            clean_payload[key] = value
+        validate_and_normalize_targets(trans, clean_payload)
+        clean_payload["check_content"] = trans.app.config.check_upload_content
+        request = dumps(clean_payload)
+        create_payload = {
+            'tool_id': "__DATA_FETCH__",
+            'history_id': history_id,
+            'inputs': {
+                'request_version': request_version,
+                'request_json': request,
+                'file_count': str(len(files_payload))
+            },
+        }
+        create_payload.update(files_payload)
+        return self._create(trans, create_payload, **kwd)
+
+    @expose_api_anonymous
     def create(self, trans, payload, **kwd):
         """
         POST /api/tools
         Executes tool using specified inputs and returns tool's outputs.
         """
+        tool_id = payload.get("tool_id")
+        if tool_id in PROTECTED_TOOLS:
+            raise exceptions.RequestParameterInvalidException("Cannot execute tool [%s] directly, must use alternative endpoint." % tool_id)
+        if tool_id is None:
+            raise exceptions.RequestParameterInvalidException("Must specify a valid tool_id to use this endpoint.")
+        return self._create(trans, payload, **kwd)
+
+    def _create(self, trans, payload, **kwd):
         # HACK: for now, if action is rerun, rerun tool.
         action = payload.get('action', None)
         if action == 'rerun':

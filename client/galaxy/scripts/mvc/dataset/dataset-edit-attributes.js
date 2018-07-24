@@ -12,6 +12,7 @@ var View = Backbone.View.extend({
         });
         this.message = new Ui.Message({ persistent: true });
         this.tabs = this._createTabs();
+        this.active_tab = "user";
         this.$el
             .append($("<h4/>").append("Edit dataset attributes"))
             .append(this.message.$el)

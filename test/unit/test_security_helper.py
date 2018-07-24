@@ -3,8 +3,8 @@
 from galaxy.web import security
 
 
-test_helper_1 = security.SecurityHelper(id_secret="sec1")
-test_helper_2 = security.SecurityHelper(id_secret="sec2")
+test_helper_1 = security.SecurityHelper(id_secret="secu1")
+test_helper_2 = security.SecurityHelper(id_secret="secu2")
 
 
 def test_maximum_length_handling_ascii():
@@ -129,5 +129,5 @@ def test_guid_generation():
 def test_encode_decode_guid():
     session_key = test_helper_1.get_new_guid()
     encoded_key = test_helper_1.encode_guid(session_key)
-    decoded_key = test_helper_1.decode_guid(encoded_key).encode("utf-8")
+    decoded_key = test_helper_1.decode_guid(encoded_key)
     assert session_key == decoded_key, "%s != %s" % (session_key, decoded_key)

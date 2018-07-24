@@ -49,3 +49,17 @@ preferences:
           checked: false
           value: false
           help: If you select yes, you will be able to select for each tool and workflow run if you would like to use this feature.
+
+    localization:
+        description: Localization
+        inputs:
+            - name: locale
+              label: Prefered language
+              type: select
+              required: False
+              options:
+                  - [Navigator default, auto]
+                  - [Chinese, zh]
+                  - [English, en]
+                  - [French, fr]
+                  - [Japanese, ja]

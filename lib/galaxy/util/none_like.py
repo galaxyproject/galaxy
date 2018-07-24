@@ -6,7 +6,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.model.metadata import MetadataCollection
 
 
-class RecursiveNone:
+class RecursiveNone(object):
     def __str__(self):
         return "None"
 

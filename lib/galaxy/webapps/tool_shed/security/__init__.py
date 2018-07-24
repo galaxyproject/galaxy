@@ -17,7 +17,7 @@ class Action(object):
         self.model = model
 
 
-class RBACAgent:
+class RBACAgent(object):
     """Handle Galaxy Tool Shed security"""
     permitted_actions = Bunch()
 

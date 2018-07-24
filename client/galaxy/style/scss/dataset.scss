@@ -1,0 +1,396 @@
+@import "sprite-history-states.scss";
+@import "sprite-history-buttons.scss";
+
+// ---------------------------------------------------------------------------- dataset states
+//.dataset .state-icon {
+.state-icon {
+    @extend .fa-icon;
+    display: inline-block;
+    margin-right: 4px;
+    vertical-align: middle;
+    width: 16px;
+    height: 16px;
+    line-height: 16px;
+    text-align: center;
+    font-size: 16px;
+}
+
+// ............................................................................ animated or composite state icons
+.state-icon-running {
+    //TODO: couldn't find a way to do this with fa/spinning.scss as mixin
+    -webkit-animation: spin 2s infinite linear;
+    -moz-animation: spin 2s infinite linear;
+    -o-animation: spin 2s infinite linear;
+    animation: spin 2s infinite linear;
+
+    @-moz-keyframes spin {
+        0% {
+            -moz-transform: rotate(0deg);
+        }
+        100% {
+            -moz-transform: rotate(359deg);
+        }
+    }
+    @-webkit-keyframes spin {
+        0% {
+            -webkit-transform: rotate(0deg);
+        }
+        100% {
+            -webkit-transform: rotate(359deg);
+        }
+    }
+    @-o-keyframes spin {
+        0% {
+            -o-transform: rotate(0deg);
+        }
+        100% {
+            -o-transform: rotate(359deg);
+        }
+    }
+    @-ms-keyframes spin {
+        0% {
+            -ms-transform: rotate(0deg);
+        }
+        100% {
+            -ms-transform: rotate(359deg);
+        }
+    }
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(359deg);
+        }
+    }
+    &:before {
+        content: $fa-var-spinner;
+    }
+}
+
+.state-icon-upload {
+    overflow: hidden;
+
+    &:before {
+        display: inline-block;
+        -webkit-animation: eclipse 2s infinite linear;
+        -moz-animation: eclipse 2s infinite linear;
+        -o-animation: eclipse 2s infinite linear;
+        animation: eclipse 2s infinite linear;
+
+        @-moz-keyframes eclipse {
+            0% {
+                -moz-transform: translate(0px, 16px);
+            }
+            100% {
+                -moz-transform: translate(0px, -16px);
+            }
+        }
+        @-webkit-keyframes eclipse {
+            0% {
+                -webkit-transform: translate(0px, 16px);
+            }
+            100% {
+                -webkit-transform: translate(0px, -16px);
+            }
+        }
+        @-o-keyframes eclipse {
+            0% {
+                -o-transform: translate(0px, 16px);
+            }
+            100% {
+                -o-transform: translate(0px, -16px);
+            }
+        }
+        @-ms-keyframes eclipse {
+            0% {
+                -ms-transform: translate(0px, 16px);
+            }
+            100% {
+                -ms-transform: translate(0px, -16px);
+            }
+        }
+        @keyframes eclipse {
+            0% {
+                transform: translate(0px, 16px);
+            }
+            100% {
+                transform: translate(0px, -16px);
+            }
+        }
+        content: $fa-var-arrow-up;
+    }
+}
+
+.state-icon-error {
+    background-color: white;
+    border-radius: 8px;
+    &:before {
+        font-size: 20px;
+        line-height: 16px;
+        color: red;
+        content: $fa-var-times-circle;
+    }
+}
+
+// ............................................................................ state bgs and icons
+.has-job-state-mixin {
+    // Change background/border color depending on state
+    &.state-ok,
+    &.state-failed_metadata {
+        background: $state-success-bg;
+        .state-icon {
+            display: none;
+        }
+    }
+
+    &.state-error,
+    &.state-empty {
+        background: $state-danger-bg;
+        .state-icon {
+            @extend .state-icon-error;
+        }
+    }
+
+    &.state-upload {
+        background: $state-info-bg;
+        .state-icon {
+            @extend .state-icon-upload;
+        }
+    }
+
+    &.state-queued {
+        background: $state-default-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-clock-o;
+            }
+        }
+    }
+
+    &.state-running,
+    &.state-setting_metadata {
+        background: $state-running-bg;
+        .state-icon {
+            @extend .state-icon-running;
+        }
+    }
+
+    &.state-paused {
+        background: $state-paused-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-pause;
+            }
+        }
+    }
+
+    &.state-discarded {
+        background: $state-default-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-trash-o;
+            }
+        }
+    }
+
+    &.state-noPermission {
+        background: $state-default-bg;
+        filter: alpha(opacity=60);
+        -moz-opacity: 0.6;
+        opacity: 0.6;
+        .state-icon {
+            font-size: 20px;
+            &:before {
+                content: $fa-var-lock;
+            }
+        }
+    }
+
+    &.state-new {
+        background: $state-default-bg;
+        .state-icon {
+            &:before {
+                content: $fa-var-clock-o;
+            }
+        }
+    }
+
+    &.state-loading {
+        background: $state-default-bg;
+        .state-icon {
+            @extend .state-icon-running;
+        }
+    }
+}
+
+.blinking {
+    animation: blinker 500ms linear infinite;
+}
+
+@keyframes blinker {
+    50% {
+        opacity: 0;
+    }
+}
+
+// ---------------------------------------------------------------------------- datasets as list-items
+.dataset {
+    @extend .has-job-state-mixin;
+
+    .details {
+        .summary {
+            .blurb {
+                margin-bottom: 2px;
+            }
+            .datatype,
+            .dbkey {
+                display: inline;
+                .value {
+                    font-weight: bold;
+                }
+            }
+            .datatype .value:after {
+                content: ",";
+                @extend %help-text;
+                margin-right: 4px;
+            }
+            .dbkey:after {
+                content: " ";
+                display: block;
+                @extend %vertical-spacing;
+            }
+            .info {
+                @extend %info-section;
+                overflow: auto;
+                .value {
+                    white-space: pre-line;
+                }
+            }
+            .job-error-text {
+                @extend %info-section;
+                overflow: auto;
+                white-space: pre;
+            }
+            // handle the last vertical gap in the parent as summary is used in other states as well (w/o info)
+            @extend %vertical-spacing;
+        }
+
+        .actions {
+            // bit hacky here bc dropdown wrapped in div
+            .metafile-dropdown {
+                display: inline-block;
+            }
+            .visualizations-dropdown {
+                display: inline-block;
+            }
+
+            .left {
+                @extend .icon-btn-group;
+                float: left;
+                .icon-btn {
+                    margin-right: $icon-btn-margin;
+                }
+            }
+            .right {
+                @extend .icon-btn-group;
+                float: right;
+                .icon-btn {
+                    margin-left: $icon-btn-margin;
+                }
+            }
+            &:not(:last-child) {
+                @extend %vertical-spacing;
+            }
+        }
+
+        .tags-display {
+            // Hidden by default; the interface toggles this.
+            display: none;
+        }
+        .annotation-display {
+            display: none;
+            @extend %vertical-spacing;
+            .annotation {
+                @extend %info-section;
+                //white-space: pre-line;
+                white-space: pre-wrap;
+                overflow: auto;
+            }
+            // fake placeholder for editable text annotation
+            .annotation:empty:after {
+                position: relative;
+                top: -4px;
+                font-size: 10px;
+                font-style: italic;
+                color: grey;
+                //TODO: move out for localization
+                content: "Click here to edit annotation";
+            }
+            textarea {
+                margin: 0px 0px 2px 0px;
+                display: inline-block;
+                border-radius: 3px;
+                width: 100%;
+            }
+        }
+
+        .display-applications {
+            .display-application:last-child {
+                @extend %vertical-spacing;
+            }
+        }
+
+        .toolhelp {
+            width: 100%;
+            background: #eee;
+            border-radius: 3px;
+            margin-top: 5px;
+            padding: 3px;
+        }
+
+        .dataset-peek {
+            @extend %vertical-spacing;
+            width: 100%;
+            margin: 0px;
+            border-radius: 3px;
+            background: white;
+            color: black;
+            font-size: 10px;
+            overflow: auto;
+
+            //TODO: there doesn't seem to be a way to pad text-only peeks (binary data, etc.)
+            th {
+                color: white;
+                background: $brand-primary;
+            }
+            table,
+            th,
+            tr,
+            td {
+                font-family: $font-family-monospace;
+                font-size: 10px;
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------- older styles
+pre.peek {
+    background: white;
+    color: black;
+    width: 100%;
+    font-size: 10px;
+    overflow: auto;
+    th {
+        color: white;
+        background: $brand-primary;
+    }
+    table,
+    th,
+    tr,
+    td {
+        font-family: $font-family-monospace;
+        font-size: 10px;
+    }
+}

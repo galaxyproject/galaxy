@@ -4,13 +4,14 @@ var path = require("path");
 var scriptsBase = path.join(__dirname, "galaxy/scripts");
 var libsBase = path.join(scriptsBase, "libs");
 
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+
 // libraries used on almost every page
 var commonLibs = [
     "polyfills",
     // jquery et al
     "jquery",
     "libs/jquery/jquery.migrate",
-    // jquery plugins
     "libs/jquery/jquery.autocomplete",
     "libs/jquery/jquery.event.hover",
     "libs/jquery/jquery.event.drag",
@@ -23,8 +24,8 @@ var commonLibs = [
     "libs/jquery/jstorage",
     "libs/jquery/jquery.complexify",
     "libs/farbtastic",
-    "libs/bootstrap",
-    "libs/bootstrap-tour",
+    "bootstrap",
+    "bootstrap-tour",
     "vue",
     // mvc
     "libs/underscore",
@@ -43,6 +44,7 @@ let buildconfig = {
         login: "./galaxy/scripts/apps/login.js",
         analysis: "./galaxy/scripts/apps/analysis.js",
         admin: "./galaxy/scripts/apps/admin.js",
+        chart: "./galaxy/scripts/apps/chart.js",
         extended: "./galaxy/scripts/apps/extended.js"
     },
     output: {
@@ -61,8 +63,17 @@ let buildconfig = {
     module: {
         rules: [
             {
+                test: /\.vue$/,
+                loader: "vue-loader",
+                options: {
+                    loaders: {
+                        js: "babel-loader"
+                    }
+                }
+            },
+            {
                 test: /\.js$/,
-                exclude: [/(node_modules|bower_components)/, libsBase],
+                exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
                 loader: "babel-loader"
             },
             {
@@ -79,8 +90,11 @@ let buildconfig = {
                 ]
             },
             {
-                test: /\.vue$/,
-                loader: "vue-loader"
+                test: /\.css$/,
+                use: [
+                    'style-loader',
+                    'css-loader'
+                ]
             }
         ]
     },
@@ -107,8 +121,9 @@ let buildconfig = {
             "window.jQuery": "jquery",
             _: "underscore",
             Backbone: "libs/backbone"
-        })
+        }),
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
+        new VueLoaderPlugin()
     ]
 };
 

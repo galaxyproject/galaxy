@@ -2,6 +2,8 @@ import inspect
 import logging
 import sys
 
+from galaxy.util import unicodify
+
 log = logging.getLogger(__name__)
 
 assertion_module_names = ['text', 'tabular', 'xml']
@@ -66,7 +68,11 @@ def verify_assertion(data, assertion_description):
     # - <has_column_titles><with_name name="sequence"><with_name
     # name="probability"></has_column_titles>.)
     if "output" in assert_function_args:
-        args["output"] = data
+        # This was read in as bytes for checksum and such, but all current
+        # assertions expect text data. If binary assertions are added at
+        # some point, just checkout for "output_bytes" for instance and pass
+        # data in unchanged.
+        args["output"] = unicodify(data)
 
     if "verify_assertions_function" in assert_function_args:
         args["verify_assertions_function"] = verify_assertions

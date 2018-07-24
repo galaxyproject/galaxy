@@ -44,21 +44,28 @@
     %endif
 
     ## start main tag
-    <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
+    <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
+
+      ## Logo, layered over tabs to be clickable
+      <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" class="navbar-brand">
+          <img class="navbar-brand-image" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
+          <span class="navbar-brand-title">
+          Galaxy Tool Shed
+          %if app.config.brand:
+              / ${app.config.brand}
+          %endif
+      </a>
+
 
     ## Tab area, fills entire width
-    <div style="position: relative; right: -50%; float: left;">
-        <div style="display: block; position: relative; right: 50%;">
-
-            <ul class="nav navbar-nav" border="0" cellspacing="0">
-    
+            <ul class="navbar-nav">
                 <%def name="tab( id, display, href, target='_parent', visible=True, extra_class='', menu_options=None )">
                     <%
-                    cls = ""
-                    a_cls = ""
+                    cls = "nav-item"
+                    a_cls = "nav-link"
                     extra = ""
                     if extra_class:
-                        cls += " " + extra_class
+                        cls = extra_class
                     if self.active_view == id:
                         cls += " active"
                     if menu_options:
@@ -69,39 +76,47 @@
                     if not visible:
                         style = "display: none;"
                     %>
+
                     <li class="${cls}" style="${style}">
+                      <a
                         %if href:
-                            <a class="${a_cls}"  target="${target}" href="${href}">${display}${extra}</a>
+                            class="${a_cls}" target="${target}" href="${href}"
                         %else:
-                            <a class="${a_cls}" >${display}${extra}</a>
+                            class="${a_cls}"
                         %endif
+						%if menu_options:
+							role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+						%endif
+                        >
+							${display}${extra}
+						</a>
                         %if menu_options:
-                            <ul class="dropdown-menu">
+                            <div class="dropdown-menu" aria-labelledby="navbarDropdown">
                                 %for menu_item in menu_options:
                                     %if not menu_item:
-                                        <li class="divider"></li>
+                                        <div class="dropdown-divider"></div>
                                     %else:
-                                        <li>
                                         %if len ( menu_item ) == 1:
-                                            ${menu_item[0]}
+                                            <a class="dropdown-item" href="#">
+                                                ${menu_item[0]}
+                                            </a>
                                         %elif len ( menu_item ) == 2:
                                             <% name, link = menu_item %>
-                                            <a href="${link}">${name | h}</a>
+                                            <a class="dropdown-item" href="${link}">${name | h}</a>
                                         %else:
                                             <% name, link, target = menu_item %>
-                                            <a target="${target}" href="${link}">${name | h}</a>
+                                            <a class="dropdown-item" target="${target}" href="${link}">${name | h}</a>
                                         %endif
-                                        </li>
                                     %endif
                                 %endfor
-                            </ul>
+                            </div>
                         %endif
                     </li>
                 </%def>
 
                 ## Repositories tab.
                 ${tab( "repositories", "Repositories", h.url_for( controller='/repository', action='index' ) )}
-                
+
                 ## Groups tab.
                 ${tab( "groups", "Groups", h.url_for( controller='/groups', action='index' ) )}
 
@@ -128,11 +143,11 @@
 
                 ## User tabs.
                 <%
-                    from markupsafe import escape 
+                    from markupsafe import escape
                     # Menu for user who is not logged in.
                     menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
                     if app.config.allow_user_creation:
-                        menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] ) 
+                        menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] )
                     extra_class = "loggedout-only"
                     visible = ( trans.user == None )
                     tab( "user", _("User"), None, visible=visible, menu_options=menu_options )
@@ -141,7 +156,7 @@
                         email = escape( trans.user.email )
                     else:
                         email = ""
-                    menu_options = [ [ '<a>Logged in as <span id="user-email">%s</span></a>' %  email ] ]
+                    menu_options = [ [ 'Logged in as <span id="user-email">%s</span>' %  email ] ]
                     if app.config.use_remote_user:
                         if app.config.remote_user_logout_href:
                             menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
@@ -153,26 +168,10 @@
                         menu_options.append( None )
                     if app.config.use_remote_user:
                         menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
-            
+
                     extra_class = "loggedin-only"
                     visible = ( trans.user != None )
                     tab( "user", "User", None, visible=visible, menu_options=menu_options )
                 %>
             </ul>
-        </div>
-    </div>
-    
-    ## Logo, layered over tabs to be clickable
-    <div class="navbar-brand">
-        <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}">
-        <img style="margin-left: 0.35em;" border="0" src="${h.url_for('/static/images/galaxyIcon_noText.png')}">
-        Galaxy Tool Shed
-        %if app.config.brand:
-            <span>/ ${app.config.brand}</span>
-        %endif
-        </a>
-    </div>
-    
-    ## end main tag
-    </div>
 </%def>

@@ -2,8 +2,8 @@ import re
 import traceback
 from logging import getLogger
 
+from galaxy.tools.parser.error_level import StdioErrorLevel
 from galaxy.util.bunch import Bunch
-from .error_level import StdioErrorLevel
 
 log = getLogger(__name__)
 

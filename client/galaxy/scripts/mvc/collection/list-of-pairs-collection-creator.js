@@ -593,8 +593,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 
         // ------------------------------------------------------------------------ API
         /** convert a pair into JSON compatible with the collections API */
-        _pairToJSON: function(pair, src) {
-            src = src || "hda";
+        _pairToJSON: function(pair) {
             //TODO: consider making this the pair structure when created instead
             return {
                 collection_type: "paired",
@@ -604,12 +603,12 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     {
                         name: "forward",
                         id: pair.forward.id,
-                        src: src
+                        src: pair.forward.src || "hda"
                     },
                     {
                         name: "reverse",
                         id: pair.reverse.id,
-                        src: src
+                        src: pair.reverse.src || "hda"
                     }
                 ]
             };
@@ -867,8 +866,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             this.paired.forEach((pair, i) => {
                 //TODO: cache these?
                 var pairView = new PairView({ pair: pair });
-                self
-                    .$(".paired-columns .column-datasets")
+                self.$(".paired-columns .column-datasets")
                     .append(pairView.render().$el)
                     .append(
                         [
@@ -1242,8 +1240,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 var $startTarget = $(ev.target).addClass("selected");
 
                 var moveListener = ev => {
-                    self
-                        .$(ev.target)
+                    self.$(ev.target)
                         .filter(".dataset")
                         .addClass("selected");
                 };
@@ -1558,7 +1555,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</span>",
                     '<span class="title-info unpaired-info"></span>',
                     "</div>",
-                    '<div class="unpaired-filter forward-unpaired-filter pull-left">',
+                    '<div class="unpaired-filter forward-unpaired-filter float-left">',
                     '<input class="search-query" placeholder="',
                     _l("Filter this list"),
                     '" />',
@@ -1586,7 +1583,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</span>",
                     '<span class="title-info unpaired-info"></span>',
                     "</div>",
-                    '<div class="unpaired-filter reverse-unpaired-filter pull-left">',
+                    '<div class="unpaired-filter reverse-unpaired-filter float-left">',
                     '<input class="search-query" placeholder="',
                     _l("Filter this list"),
                     '" />',
@@ -1636,35 +1633,35 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 [
                     '<div class="attributes clear">',
                     '<div class="clear">',
-                    '<label class="setting-prompt pull-right">',
+                    '<label class="setting-prompt float-right">',
                     _l("Hide original elements"),
                     "?",
-                    '<input class="hide-originals pull-right" type="checkbox" />',
+                    '<input class="hide-originals float-right" type="checkbox" />',
                     "</label>",
-                    '<label class="setting-prompt pull-right">',
+                    '<label class="setting-prompt float-right">',
                     _l("Remove file extensions from pair names"),
                     "?",
-                    '<input class="remove-extensions pull-right" type="checkbox" />',
+                    '<input class="remove-extensions float-right" type="checkbox" />',
                     "</label>",
                     "</div>",
                     '<div class="clear">',
-                    '<input class="collection-name form-control pull-right" ',
+                    '<input class="collection-name form-control float-right" ',
                     'placeholder="',
                     _l("Enter a name for your new list"),
                     '" />',
-                    '<div class="collection-name-prompt pull-right">',
+                    '<div class="collection-name-prompt float-right">',
                     _l("Name"),
                     ":</div>",
                     "</div>",
                     "</div>",
 
                     '<div class="actions clear vertically-spaced">',
-                    '<div class="other-options pull-left">',
+                    '<div class="other-options float-left">',
                     '<button class="cancel-create btn" tabindex="-1">',
                     _l("Cancel"),
                     "</button>",
                     '<div class="create-other btn-group dropup">',
-                    '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    '<button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
                     _l("Create a different kind of collection"),
                     ' <span class="caret"></span>',
                     "</button>",
@@ -1679,7 +1676,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     "</div>",
                     "</div>",
 
-                    '<div class="main-options pull-right">',
+                    '<div class="main-options float-right">',
                     '<button class="create-collection btn btn-primary">',
                     _l("Create list"),
                     "</button>",

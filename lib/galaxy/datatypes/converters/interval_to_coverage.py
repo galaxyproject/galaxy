@@ -131,22 +131,21 @@ if __name__ == "__main__":
         doc_optparse.exception()
 
     # Sort through a tempfile first
-    temp_file = tempfile.NamedTemporaryFile(mode="r")
-    environ['LC_ALL'] = 'POSIX'
-    subprocess.check_call([
-        'sort', '-f', '-n', '-k', chr_col_1 + 1, '-k', start_col_1 + 1, '-k', end_col_1 + 1, '-o', temp_file.name, in_fname
-    ])
+    with tempfile.NamedTemporaryFile(mode="r") as temp_file:
+        environ['LC_ALL'] = 'POSIX'
+        subprocess.check_call([
+            'sort', '-f', '-n', '-k', chr_col_1 + 1, '-k', start_col_1 + 1, '-k', end_col_1 + 1, '-o', temp_file.name, in_fname
+        ])
 
-    coverage = CoverageWriter(out_stream=open(out_fname, "a"),
-                              chromCol=chr_col_2, positionCol=position_col_2,
-                              forwardCol=forward_col_2, reverseCol=reverse_col_2, )
-    temp_file.seek(0)
-    interval = io.NiceReaderWrapper(temp_file,
-                                    chrom_col=chr_col_1,
-                                    start_col=start_col_1,
-                                    end_col=end_col_1,
-                                    strand_col=strand_col_1,
-                                    fix_strand=True)
-    main(interval, coverage)
-    temp_file.close()
+        coverage = CoverageWriter(out_stream=open(out_fname, "a"),
+                                  chromCol=chr_col_2, positionCol=position_col_2,
+                                  forwardCol=forward_col_2, reverseCol=reverse_col_2, )
+        temp_file.seek(0)
+        interval = io.NiceReaderWrapper(temp_file,
+                                        chrom_col=chr_col_1,
+                                        start_col=start_col_1,
+                                        end_col=end_col_1,
+                                        strand_col=strand_col_1,
+                                        fix_strand=True)
+        main(interval, coverage)
     coverage.close()

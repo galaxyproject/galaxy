@@ -23,8 +23,15 @@ uwsgi:
   # ':8080' to listen on all available network interfaces.
   http: 127.0.0.1:8080
 
+  # By default uWSGI allocates a very small buffer (4096 bytes) for the
+  # headers of each request. If you start receiving "invalid request
+  # block size" in your logs, it could mean you need a bigger buffer. We
+  # recommend at least 16384.
+  buffer-size: 16384
+
   # Number of web server (worker) processes to fork after the
-  # application has loaded.
+  # application has loaded. If this is set to greater than 1, thunder-
+  # lock likely should be enabled below.
   processes: 1
 
   # Number of threads for each web server process.
@@ -45,7 +52,8 @@ uwsgi:
   # --daemon and/or production deployments.
   master: false
 
-  # Path to the application's Python virtual environment.
+  # Path to the application's Python virtual environment. If using Conda
+  # for Galaxy's framework dependencies (not tools!), do not set this.
   virtualenv: .venv
 
   # Path to the application's Python library.
@@ -54,6 +62,10 @@ uwsgi:
   # The entry point which returns the web application (e.g. Galaxy,
   # Reports, etc.) that you are loading.
   module: galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # It is usually a good idea to set this to ``true`` if processes is
+  # greater than 1.
+  thunder-lock: false
 
   # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
   # (its default is to brutally reload workers)
@@ -132,6 +144,12 @@ galaxy:
   # example, you would set this to .005 to log all queries taking longer
   # than 5 milliseconds.
   #slow_query_log_threshold: 0
+
+  # Enable's a per request sql debugging option. If this is set to true,
+  # append ?sql_debug=1 to web request URLs to enable detailed logging
+  # on the backend of SQL queries generated during that request. This is
+  # useful for debugging slow endpoints during development.
+  #enable_per_request_sql_debugging: false
 
   # By default, Galaxy will use the same database to track user data and
   # tool shed install data.  There are many situations in which it is
@@ -272,6 +290,11 @@ galaxy:
   # which will use a less efficient monitoring scheme that may work in
   # wider range of scenarios than the watchdog default.
   #watch_tools: false
+
+  # Set to True to enable monitoring of dynamic job rules. If changes
+  # are found, rules are automatically reloaded. Takes the same values
+  # as the 'watch_tools' option.
+  #watch_job_rules: false
 
   # Enable Galaxy to fetch Docker containers registered with quay.io
   # generated from tool requirements resolved through conda. These
@@ -452,19 +475,19 @@ galaxy:
   #default_job_shell: /bin/bash
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_type: file
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_data_dir: database/citations/data
 
   # Citation related caching.  Tool citations information maybe fetched
-  # from external sources such as http://dx.doi.org/ by Galaxy - the
+  # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
@@ -618,6 +641,14 @@ galaxy:
   # standard).
   #pretty_datetime_format: $locale (UTC)
 
+  # Default localization for Galaxy UI. Allowed values are listed at the
+  # end of client/galaxy/scripts/nls/locale.js. With the default value
+  # (auto), the locale will be automatically adjusted to the user's
+  # navigator language. Users can override this settings in their user
+  # preferences if the localization settings are enabled in
+  # user_preferences_extra_conf.yml
+  #default_locale: auto
+
   # URL (with schema http/https) of the Galaxy instance as accessible
   # within your local network - if specified used as a default by pulsar
   # file staging and Jupyter Docker container for communicating back
@@ -752,12 +783,7 @@ galaxy:
   # Redirect.  This should be set to the path defined in the nginx
   # config as an internal redirect with access to Galaxy's data files
   # (see documentation linked above).
-  #nginx_x_accel_redirect_base: false
-
-  # nginx can make use of mod_zip to create zip files containing
-  # multiple library files.  If using X-Accel-Redirect, this can be the
-  # same value as that option.
-  #nginx_x_archive_files_base: false
+  #nginx_x_accel_redirect_base: null
 
   # If using compression in the upstream proxy server, use this option
   # to disable gzipping of library .tar.gz and .zip archives, since the
@@ -779,24 +805,29 @@ galaxy:
   # in detail in the documentation linked above.  The upload store is a
   # temporary directory in which files uploaded by the upload module
   # will be placed.
-  #nginx_upload_store: false
+  #nginx_upload_store: null
 
   # This value overrides the action set on the file upload form, e.g.
   # the web path where the nginx_upload_module has been configured to
   # intercept upload requests.
-  #nginx_upload_path: false
+  #nginx_upload_path: null
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_store: false
+  #nginx_upload_job_files_store: null
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_path: false
+  #nginx_upload_job_files_path: null
+
+  # Galaxy can upload user files in chunks without using nginx. Enable
+  # the chunk uploader by specifying a chunk size larger than 0. The
+  # chunk size is specified in bytes (default: 100MB).
+  #chunk_upload_size: 104857600
 
   # Have Galaxy manage dynamic proxy component for routing requests to
   # other services based on Galaxy's session cookie.  It will attempt to
@@ -990,6 +1021,13 @@ galaxy:
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
 
+  # Sentry slow request logging.  Requests slower than the threshold
+  # indicated below will be sent as events to the configured Sentry
+  # server (above, sentry_dsn).  A value of '0' is disabled.  For
+  # example, you would set this to .005 to log all queries taking longer
+  # than 5 milliseconds.
+  #sentry_sloreq_threshold: 0
+
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will
   # cause galaxy to log request timing and other statistics to the
@@ -1014,29 +1052,11 @@ galaxy:
   # between them within the same aggregator.
   #statsd_prefix: galaxy
 
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_host: null
-
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_port: 2003
-
-  # Log to graphite Graphite is an external statistics aggregator
-  # (https://github.com/graphite-project/carbon) Enabling the following
-  # options will cause galaxy to log request timing and other statistics
-  # to the configured graphite instance. The graphite_prefix is useful
-  # if you are running multiple Galaxy instances and want to segment
-  # statistics between them within the same aggregator.
-  #graphite_prefix: galaxy
+  # If you are using telegraf to collect these metrics and then sending
+  # them to InfluxDB, Galaxy can provide more nicely tagged metrics.
+  # Instead of sending prefix + dot-separated-path, Galaxy will send
+  # prefix with a tag path set to the page url
+  #statsd_influxdb: false
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
@@ -1146,13 +1166,22 @@ galaxy:
   # Set maximum size of ngrams
   #tool_ngram_maxsize: 4
 
+  # Set tool test data directory. The test framework sets this value to
+  # 'test-data,https://github.com/galaxyproject/galaxy-test-data.git'
+  # which will cause Galaxy to clone down extra test data on the fly for
+  # certain tools distributed with Galaxy but this is likely not
+  # appropriate for production systems. Instead one can simply clone
+  # that repository directly and specify a path here instead of a Git
+  # HTTP repository.
+  #tool_test_data_directories: test-data
+
   # Galaxy encodes various internal values when these values will be
   # output in some format (for example, in a URL or cookie).  You should
   # set a key to be used by the algorithm that encodes and decodes these
-  # values.  It can be any string up to 448 bits long. One simple way to
-  # generate a value for this is with the shell command:   python -c
-  # 'from __future__ import print_function; import time;
-  # print(time.time())' | md5sum | cut -f 1 -d ' '
+  # values. It can be any string with a length between 5 and 56 bytes.
+  # One simple way to generate a value for this is with the shell
+  # command:   python -c 'from __future__ import print_function; import
+  # time; print(time.time())' | md5sum | cut -f 1 -d ' '
   #id_secret: USING THE DEFAULT IS NOT SECURE!
 
   # User authentication can be delegated to an upstream proxy server
@@ -1245,7 +1274,8 @@ galaxy:
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.
+  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
+  # option will be overridden and set to False.
   #expose_user_name: false
 
   # Expose user list.  Setting this to True will expose the user list to
@@ -1254,7 +1284,8 @@ galaxy:
   # correct user show up. This makes less sense on large public Galaxy
   # instances where that data shouldn't be exposed.  For semi-public
   # Galaxies, it may make sense to expose just the username and not
-  # email, or vice versa.
+  # email, or vice versa.  If enable_beta_gdpr is set to True, then this
+  # option will be overridden and set to False.
   #expose_user_email: false
 
   # Whitelist for local network addresses for "Upload from URL" dialog.
@@ -1266,6 +1297,18 @@ galaxy:
   # separated list of IP addresses or IP address/mask, e.g.
   # 10.10.10.10,10.0.1.0/24,fd00::/8
   #fetch_url_whitelist: null
+
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing emails and
+  # usernames from logs and bug reports. It also causes the delete user
+  # admin action to permanently redact their username and password, but
+  # not to delete data associated with the account as this is not
+  # currently easily implementable.  You are responsible for removing
+  # personal data from backups.  This forces expose_user_email and
+  # expose_user_name to be false, and forces user_deletion to be true to
+  # support the right to erasure.  Please read the GDPR section under
+  # the special topics area of the admin documentation.
+  #enable_beta_gdpr: false
 
   # Enable the new interface for installing tools from Tool Shed via the
   # API. Admin menu will list both if enabled.
@@ -1357,6 +1400,15 @@ galaxy:
 
   # If OpenID is enabled, consumer cache directory to use.
   #openid_consumer_cache_path: database/openid_consumer_cache
+
+  # Enables and disables OpenID Connect (OIDC) support.
+  #enable_oidc: false
+
+  # Sets the path to OIDC configuration file.
+  #oidc_config_file: config/oidc_config.xml
+
+  # Sets the path to OIDC backends configuration file.
+  #oidc_backends_config_file: config/oidc_backends_config.xml
 
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
@@ -1599,6 +1651,23 @@ galaxy:
   # them to overwrite default job resources such as number of
   # processors, memory and walltime.
   #job_resource_params_file: config/job_resource_params_conf.xml
+
+  # Similar to the above parameter, workflows can describe parameters
+  # used to influence scheduling of jobs within the workflow. This
+  # requires both a description of the fields available (which defaults
+  # to the definitions in job_resource_params_file if not set).
+  #workflow_resource_params_file: config/workflow_resource_params_conf.xml
+
+  # This parameter describes how to map users and workflows to a set of
+  # workflow resource parameter to present (typically input IDs from
+  # workflow_resource_params_file). If this this is a function reference
+  # it will be passed various inputs (workflow model object and user)
+  # and it should produce a list of input IDs. If it is a path it is
+  # expected to an XML or YAML file describing how to map group names to
+  # parameter descriptions (additional types of mappings via these files
+  # could be implemented but haven't yet - for instance using workflow
+  # tags to do the mapping).
+  #workflow_resource_params_mapper: config/workflow_resource_mapper_conf.yml
 
   # If using job concurrency limits (configured in job_config_file),
   # several extra database queries must be performed to determine the

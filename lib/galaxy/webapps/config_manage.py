@@ -1,7 +1,6 @@
 from __future__ import absolute_import, print_function
 
 import argparse
-import copy
 import os
 import shutil
 import string
@@ -54,9 +53,14 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '127.0.0.1:$default_port',
         'type': 'str',
     }),
+    ('buffer-size', {
+        'desc': """By default uWSGI allocates a very small buffer (4096 bytes) for the headers of each request. If you start receiving "invalid request block size" in your logs, it could mean you need a bigger buffer. We recommend at least 16384.""",
+        'default': 16384,
+        'type': 'int',
+    }),
     ('processes', {
-        'desc': """Number of web server (worker) processes to fork after the application has loaded.""",
-        'default': '1',
+        'desc': """Number of web server (worker) processes to fork after the application has loaded. If this is set to greater than 1, thunder-lock likely should be enabled below.""",
+        'default': 1,
         'type': 'int',
     }),
     ('threads', {
@@ -66,7 +70,7 @@ UWSGI_OPTIONS = OrderedDict([
     }),
     ('offload-threads', {
         'desc': """Number of threads for serving static content and handling internal routing requests.""",
-        'default': '2',
+        'default': 2,
         'type': 'int',
     }),
     ('static-map.1', {
@@ -83,11 +87,11 @@ UWSGI_OPTIONS = OrderedDict([
     }),
     ('master', {
         'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
-        'default': 'false',
-        'type': 'str',
+        'default': False,
+        'type': 'bool',
     }),
     ('virtualenv', {
-        'desc': """Path to the application's Python virtual environment.""",
+        'desc': """Path to the application's Python virtual environment. If using Conda for Galaxy's framework dependencies (not tools!), do not set this.""",
         'default': '.venv',
         'type': 'str',
     }),
@@ -101,10 +105,15 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '$uwsgi_module',
         'type': 'str',
     }),
+    ('thunder-lock', {
+        'desc': """It is usually a good idea to set this to ``true`` if processes is greater than 1.""",
+        'default': False,
+        'type': 'bool',
+    }),
     ('die-on-term', {
         'desc': """Cause uWSGI to respect the traditional behavior of dying on SIGTERM (its default is to brutally reload workers)""",
-        'default': 'true',
-        'type': 'str',
+        'default': True,
+        'type': 'bool',
     }),
     ('hook-master-start.1', {
         'key': 'hook-master-start',
@@ -120,13 +129,13 @@ UWSGI_OPTIONS = OrderedDict([
     }),
     ('py-call-osafterfork', {
         'desc': """Feature necessary for proper mule signal handling""",
-        'default': 'true',
-        'type': 'str',
+        'default': True,
+        'type': 'bool',
     }),
     ('enable-threads', {
         'desc': """Ensure application threads will run if `threads` is unset.""",
-        'default': 'true',
-        'type': 'str',
+        'default': True,
+        'type': 'bool',
     }),
     # ('route-uri', {
     #     'default': '^/proxy/ goto:proxy'
@@ -144,7 +153,7 @@ UWSGI_OPTIONS = OrderedDict([
     #     'default': "['log:Proxy ${HTTP_HOST} to ${TARGET_HOST}', 'httpdumb:${TARGET_HOST}']",
     # }),
     # ('http-raw-body', {
-    #     'default': 'True'
+    #     'default': True
     # }),
 ])
 
@@ -659,8 +668,7 @@ def _replace_file(args, f, app_desc, from_path, to_path):
 def _build_sample_yaml(args, app_desc):
     schema = app_desc.schema
     f = StringIO()
-    options = copy.deepcopy(UWSGI_OPTIONS)
-    for key, value in options.items():
+    for key, value in UWSGI_OPTIONS.items():
         for field in ["desc", "default"]:
             if field not in value:
                 continue
@@ -679,7 +687,7 @@ def _build_sample_yaml(args, app_desc):
         description = description.lstrip()
         as_comment = "\n".join(["# %s" % l for l in description.split("\n")]) + "\n"
         f.write(as_comment)
-    _write_sample_section(args, f, 'uwsgi', Schema(options), as_comment=False, uwsgi_hack=True)
+    _write_sample_section(args, f, 'uwsgi', Schema(UWSGI_OPTIONS), as_comment=False, uwsgi_hack=True)
     _write_sample_section(args, f, app_desc.app_name, schema)
     destination = os.path.join(args.galaxy_root, app_desc.sample_destination)
     _write_to_file(args, f, destination)
@@ -739,6 +747,8 @@ def _write_option(args, f, key, option_value, as_comment=False, uwsgi_hack=False
         comment += "\n"
     as_comment_str = "#" if as_comment else ""
     if uwsgi_hack:
+        if option.get("type", "str") == "bool":
+            value = str(value).lower()
         key_val_str = "%s: %s" % (key, value)
     else:
         key_val_str = yaml.dump({key: value}, width=float("inf")).lstrip("{").rstrip("\n}")
@@ -751,10 +761,11 @@ def _parse_option_value(option_value):
     if isinstance(option_value, OptionValue):
         option = option_value.option
         value = option_value.value
-        option = option_value.option
         # Hack to get nicer YAML values during conversion
         if option.get("type", "str") == "bool":
             value = str(value).lower() == "true"
+        elif option.get("type", "str") == "int":
+            value = int(value)
     else:
         value = option_value
         option = OPTION_DEFAULTS

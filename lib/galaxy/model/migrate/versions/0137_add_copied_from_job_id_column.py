@@ -34,7 +34,7 @@ def downgrade(migrate_engine):
     # Drop the job table's copied_from_job_id column.
     try:
         jobs_table = Table("job", metadata, autoload=True)
-        copied_from_job_id = jobs_table.c.copied_from_job_id_column
+        copied_from_job_id = jobs_table.c.copied_from_job_id
         copied_from_job_id.drop()
     except Exception:
         log.exception("Dropping 'copied_from_job_id_column' column from job table failed.")

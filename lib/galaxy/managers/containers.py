@@ -111,20 +111,3 @@ class DatasetCollectionAsContainerManagerMixin(ContainerManagerMixin):
         elif isinstance(content, model.DatasetCollection):
             return self.collection_manager
         raise TypeError('Unknown contents class: ' + str(content))
-
-
-# ====
-class ContainableModelMixin:
-    """
-    Mixin for that which goes in a container.
-    """
-
-    # ---- interface
-    def parent_container(self, containable):
-        """
-        Return this item's parent container or None if unrecorded.
-        """
-        raise galaxy.exceptions.NotImplemented('Abstract class')
-
-    def set_parent_container(self, containable, new_parent_container):
-        raise galaxy.exceptions.NotImplemented('Abstract class')

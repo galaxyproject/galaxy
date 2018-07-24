@@ -198,51 +198,57 @@
             %if self.galaxy_config['message_box']:
                 <div id="messagebox" class="panel-message"></div>
             %endif
-            ## left panel
-            %if self.galaxy_config['left_panel']:
-                <div id="left">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <div class="unified-panel-icons" style="float: right"></div>
-                            <div class="unified-panel-title"></div>
+
+            <div id="columns">
+
+                ## left panel
+                %if self.galaxy_config['left_panel']:
+                    <div id="left">
+                        <div class="unified-panel-header" unselectable="on">
+                            <div class="unified-panel-header-inner">
+                                <div class="unified-panel-icons" style="float: right"></div>
+                                <div class="unified-panel-title"></div>
+                            </div>
+                        </div>
+                        <div class="unified-panel-body" style="overflow: auto;"></div>
+                        <div class="unified-panel-footer">
+                            <div id="left-panel-collapse" class="panel-collapse right"></span></div>
+                            <div id="left-panel-drag" class="drag"></div>
                         </div>
                     </div>
-                    <div class="unified-panel-body" style="overflow: auto;"></div>
-                    <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
-                    </div>
-                </div>
-            %endif
+                %endif
 
-            ## center panel
-            <div id="center">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <div class="unified-panel-title" style="float:left;"></div>
+                ## center panel
+                <div id="center">
+                    <div class="unified-panel-header" unselectable="on">
+                        <div class="unified-panel-header-inner">
+                            <div class="unified-panel-title" style="float:left;"></div>
+                        </div>
+                        <div style="clear: both"></div>
                     </div>
-                    <div style="clear: both"></div>
+                    <div class="unified-panel-body"></div>
                 </div>
-                <div class="unified-panel-body"></div>
+
+                ## right panel
+                %if self.galaxy_config['right_panel']:
+                    <div id="right">
+                        <div class="unified-panel-header" unselectable="on">
+                            <div class="unified-panel-header-inner">
+                                <div class="unified-panel-icons" style="float: right"></div>
+                                <div class="unified-panel-title"></div>
+                            </div>
+                        </div>
+                        <div class="unified-panel-body" style="overflow: auto;"></div>
+                        <div class="unified-panel-footer">
+                            <div id="right-panel-collapse" class="panel-collapse right"></span></div>
+                            <div id="right-panel-drag"  class="drag"></div>
+                        </div>
+                    </div>
+                %endif
             </div>
 
-            ## right panel
-            %if self.galaxy_config['right_panel']:
-                <div id="right">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <div class="unified-panel-icons" style="float: right"></div>
-                            <div class="unified-panel-title"></div>
-                        </div>
-                    </div>
-                    <div class="unified-panel-body" style="overflow: auto;"></div>
-                    <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
-                    </div>
-                </div>
-            %endif
         </div>
+
         <div id='dd-helper' style="display: none;"></div>
         ## Scripts can be loaded later since they progressively add features to
         ## the panels, but do not change layout

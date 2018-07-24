@@ -1,3 +1,5 @@
+"""Deprecated - only works with older ini files.
+"""
 from sys import argv
 
 from six.moves.configparser import ConfigParser

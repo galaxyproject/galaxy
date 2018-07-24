@@ -55,26 +55,24 @@ def rgConv(inpedfilepath, outhtmlname, outfilepath):
         pass  # already exists
     head = ' '.join(rsl)  # list of rs numbers
     # TODO add anno to rs but fbat will prolly barf?
-    pedf = open(inped, 'r')
-    o = open(outfpath, 'w', 2 ** 20)
-    o.write(head)
-    o.write('\n')
-    for i, row in enumerate(pedf):
-        if i == 0:
-            lrow = row.split()
-            try:
-                [int(x) for x in lrow[10:50]]  # look for non numeric codes
-            except Exception:
-                dorecode = 1
-        if dorecode:
-            lrow = row.strip().split()
-            p = lrow[:6]
-            g = lrow[6:]
-            gc = [recode.get(z, '0') for z in g]
-            lrow = p + gc
-            row = '%s\n' % ' '.join(lrow)
-        o.write(row)
-    o.close()
+    with open(inped, 'r') as pedf, open(outfpath, 'w', 2 ** 20) as o:
+        o.write(head)
+        o.write('\n')
+        for i, row in enumerate(pedf):
+            if i == 0:
+                lrow = row.split()
+                try:
+                    [int(x) for x in lrow[10:50]]  # look for non numeric codes
+                except Exception:
+                    dorecode = 1
+            if dorecode:
+                lrow = row.strip().split()
+                p = lrow[:6]
+                g = lrow[6:]
+                gc = [recode.get(z, '0') for z in g]
+                lrow = p + gc
+                row = '%s\n' % ' '.join(lrow)
+            o.write(row)
 
 
 def main():

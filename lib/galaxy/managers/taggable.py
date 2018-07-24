@@ -24,7 +24,7 @@ def _tag_str_gen(item):
 def _tags_to_strings(item):
     if not hasattr(item, 'tags'):
         return None
-    return list(_tag_str_gen(item))
+    return sorted(list(_tag_str_gen(item)))
 
 
 def _tags_from_strings(item, tag_handler, new_tags_list, user=None):

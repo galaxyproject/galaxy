@@ -1,5 +1,9 @@
 """
 Galaxy web framework helpers
+
+The functions in this module should be considered part of the API used by
+visualizations in their mako files through the `$h` object, see
+GalaxyWebTransaction in galaxy/web/framework/webapp.py
 """
 from datetime import datetime, timedelta
 
@@ -11,7 +15,11 @@ from galaxy.util import (
     hash_util,
     unicodify
 )
-from galaxy.util.json import safe_dumps as dumps  # Used by mako templates # noqa: F401
+from galaxy.util.json import safe_dumps as dumps  # noqa: F401
+from .tags import (
+    javascript_link,
+    stylesheet_link
+)
 from ..base import server_starttime
 
 
@@ -49,9 +57,8 @@ def truncate(content, length=100, suffix='...'):
     else:
         return content[:length].rsplit(' ', 1)[0] + suffix
 
+
 # Quick helpers for static content
-
-
 def css(*args):
     """
     Take a list of stylesheet names (no extension) and return appropriate string
@@ -59,8 +66,8 @@ def css(*args):
 
     Cache-bust with time that server started running on
     """
-    stylesheet_link_template = u'<link href="%s" media="screen" rel="stylesheet" type="text/css" />'
-    return "\n".join([stylesheet_link_template % url_for("/static/style/%s.css?v=%s" % (name, server_starttime)) for name in args])
+    urls = (url_for("/static/style/%s.css?v=%s" % (name, server_starttime)) for name in args)
+    return stylesheet_link(*urls)
 
 
 def js_helper(prefix, *args):
@@ -70,8 +77,8 @@ def js_helper(prefix, *args):
 
     Cache-bust with time that server started running on
     """
-    javascript_link_template = u'<script src="%s" type="text/javascript"></script>'
-    return "\n".join([javascript_link_template % url_for("/%s%s.js?v=%s" % (prefix, name, server_starttime)) for name in args])
+    urls = (url_for("/%s%s.js?v=%s" % (prefix, name, server_starttime)) for name in args)
+    return javascript_link(*urls)
 
 
 def js(*args):

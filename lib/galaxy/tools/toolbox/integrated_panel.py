@@ -26,7 +26,7 @@ its section) modify that file and restart Galaxy.
 """
 
 
-class ManagesIntegratedToolPanelMixin:
+class ManagesIntegratedToolPanelMixin(object):
 
     def _init_integrated_tool_panel(self, config):
         self.update_integrated_tool_panel = config.update_integrated_tool_panel

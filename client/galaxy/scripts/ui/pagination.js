@@ -1,13 +1,16 @@
-import jQuery from "jquery";
-("use_strict");
+//import $ from "jquery";
+// TODO:  This manipulates whatever jquery is available -- needs restructuring,
+// or removal (jquery plugins are a bad design choice for us at this point)
+// It is *only* used in the scatterplot viz, so this is safe.
+/* global $ */
 
-var $ = jQuery;
 /** Builds (twitter bootstrap styled) pagination controls.
  *  If the totalDataSize is not null, a horizontal list of page buttons is displayed.
  *  If totalDataSize is null, two links ('Prev' and 'Next) are displayed.
  *  When pages are changed, a 'pagination.page-change' event is fired
  *      sending the event and the (0-based) page requested.
  */
+
 function Pagination(element, options) {
     /** the total number of pages */
     this.numPages = null;
@@ -37,7 +40,7 @@ Pagination.prototype.defaults = {
 Pagination.prototype.init = function _init($element, options) {
     options = options || {};
     this.$element = $element;
-    this.options = jQuery.extend(true, {}, this.defaults, options);
+    this.options = $.extend(true, {}, this.defaults, options);
 
     this.currPage = this.options.startingPage;
     if (this.options.totalDataSize !== null) {
@@ -203,12 +206,12 @@ Pagination.create = function _create($element, options) {
 };
 
 // as jq plugin
-jQuery.fn.extend({
+$.fn.extend({
     pagination: function $pagination(options) {
-        var nonOptionsArgs = jQuery.makeArray(arguments).slice(1);
+        var nonOptionsArgs = $.makeArray(arguments).slice(1);
 
         // if passed an object - use that as an options map to create pagination for each selected
-        if (jQuery.type(options) === "object") {
+        if ($.type(options) === "object") {
             return this.map(function() {
                 Pagination.create($(this), options);
                 return this;
@@ -222,9 +225,9 @@ jQuery.fn.extend({
         // if a pagination control was found for this element, either...
         if (previousControl) {
             // invoke a function on the pagination object if passed a string (the function name)
-            if (jQuery.type(options) === "string") {
+            if ($.type(options) === "string") {
                 var fn = previousControl[options];
-                if (jQuery.type(fn) === "function") {
+                if ($.type(fn) === "function") {
                     return fn.apply(previousControl, nonOptionsArgs);
                 }
 
