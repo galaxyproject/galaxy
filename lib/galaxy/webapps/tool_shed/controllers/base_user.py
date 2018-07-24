@@ -171,25 +171,6 @@ class User(BaseUser, BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysM
                 status = 'warning'
         return (message, status, user, success)
 
-    def resend_verification_email(self, trans, email, username):
-        """
-        Function resends the verification email in case user wants to log in with an inactive account or he clicks the resend link.
-        """
-        if email is None:  # User is coming from outside registration form, load email from trans
-            email = trans.user.email
-        if username is None:  # User is coming from outside registration form, load email from trans
-            username = trans.user.username
-        is_activation_sent = self.send_verification_email(trans, email, username)
-        if is_activation_sent:
-            message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % (escape(email), url_for('/'))
-            status = 'error'
-        else:
-            message = 'This account has not been activated yet but we are unable to send the activation link. Please contact your local Galaxy administrator.<br><a target="_top" href="%s">Return to the home page</a>.' % url_for('/')
-            status = 'error'
-            if trans.app.config.error_email_to is not None:
-                message += '<br>Error contact: %s' % trans.app.config.error_email_to
-        return message, status
-
     def is_outside_grace_period(self, trans, create_time):
         """
         Function checks whether the user is outside the config-defined grace period for inactive accounts.
@@ -371,7 +352,7 @@ class User(BaseUser, BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysM
             success = False
         else:
             if trans.webapp.name == 'galaxy' and trans.app.config.user_activation_on:
-                is_activation_sent = self.send_verification_email(trans, email, username)
+                is_activation_sent = trans.app.auth_manager.send_verification_email(trans, email, username)
                 if is_activation_sent:
                     message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
                     success = True
@@ -384,60 +365,6 @@ class User(BaseUser, BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysM
                 message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
                 success = True
         return (message, status, user, success)
-
-    def send_verification_email(self, trans, email, username):
-        """
-        Send the verification email containing the activation link to the user's email.
-        """
-        if username is None:
-            username = trans.user.username
-        activation_link = self.prepare_activation_link(trans, escape(email))
-
-        host = trans.request.host.split(':')[0]
-        if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-            host = socket.getfqdn()
-        body = ("Hello %s,\n\n"
-                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
-                "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
-                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (escape(username), escape(email),
-                                      datetime.utcnow().strftime("%D"),
-                                      trans.request.host, activation_link,
-                                      trans.app.config.terms_url,
-                                      trans.app.config.error_email_to,
-                                      trans.app.config.instance_resource_url))
-        to = email
-        frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-        subject = 'Galaxy Account Activation'
-        try:
-            util.send_mail(frm, to, subject, body, trans.app.config)
-            return True
-        except Exception:
-            log.exception('Unable to send the activation email.')
-            return False
-
-    def prepare_activation_link(self, trans, email):
-        """
-        Prepare the account activation link for the user.
-        """
-        activation_token = self.get_activation_token(trans, email)
-        activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=email, qualified=True)
-        return activation_link
-
-    def get_activation_token(self, trans, email):
-        """
-        Check for the activation token. Create new activation token and store it in the database if no token found.
-        """
-        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-        activation_token = user.activation_token
-        if activation_token is None:
-            activation_token = hash_util.new_secure_hash(str(random.getrandbits(256)))
-            user.activation_token = activation_token
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-        return activation_token
 
     @web.expose
     def activate(self, trans, **kwd):
