@@ -5101,7 +5101,7 @@ class VisualizationAnnotationAssociation(object):
     pass
 
 
-class HistoryDatasetCollectionAnnotationAssociation(object):
+class HistoryDatasetCollectionAssociationAnnotationAssociation(object):
     pass
 
 
