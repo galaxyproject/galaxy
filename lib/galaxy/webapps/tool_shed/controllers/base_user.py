@@ -569,42 +569,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                              validate_publicname(trans, username)]).rstrip()
         return message
 
-    @web.expose
-    @web.require_login("to get most recently used tool")
-    @web.json_pretty
-    def get_most_recently_used_tool_async(self, trans):
-        """ Returns information about the most recently used tool. """
-
-        # Get most recently used tool.
-        query = trans.sa_session.query(self.app.model.Job.tool_id).join(self.app.model.History) \
-                                .filter(self.app.model.History.user == trans.user) \
-                                .order_by(self.app.model.Job.create_time.desc()).limit(1)
-        tool_id = query[0][0]  # Get first element in first row of query.
-        tool = self.get_toolbox().get_tool(tool_id)
-
-        # Return tool info.
-        tool_info = {"id": tool.id,
-                     "link": url_for(controller='tool_runner', tool_id=tool.id),
-                     "target": tool.target,
-                     "name": tool.name,  # TODO: translate this using _()
-                     "minsizehint": tool.uihints.get('minwidth', -1),
-                     "description": tool.description}
-        return tool_info
-
-    @web.expose
-    def set_user_pref_async(self, trans, pref_name, pref_value):
-        """ Set a user preference asynchronously. If user is not logged in, do nothing. """
-        if trans.user:
-            trans.log_action(trans.get_user(), "set_user_pref", "", {pref_name: pref_value})
-            trans.user.preferences[pref_name] = pref_value
-            trans.sa_session.flush()
-
-    @web.expose
-    def log_user_action_async(self, trans, action, context, params):
-        """ Log a user action asynchronously. If user is not logged in, do nothing. """
-        if trans.user:
-            trans.log_action(trans.get_user(), action, context, params)
-
     def __get_redirect_url(self, redirect):
         root_url = url_for('/', qualified=True)
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
