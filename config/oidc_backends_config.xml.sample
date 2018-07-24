@@ -3,7 +3,7 @@
     <provider name="Google">
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
-        <redirect_uri>http://localhost:8080/authnz/google/callback</redirect_uri>
+        <redirect_uri>http://localhost:8080/api/authnz/google/callback</redirect_uri>
 
         <!-- <prompt>select_account</prompt> -->
         <!--The value of this parameter (i.e., prompt) specifies whether the Google authorization server should prompt
