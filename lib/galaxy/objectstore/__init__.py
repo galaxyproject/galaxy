@@ -129,7 +129,7 @@ class ObjectStore(object):
         """
         Set an object store identifier (``object_store_id``) for the supplied object.
 
-        For simple object stores this may no be needed and so a no-op default
+        For simple object stores this may not be needed and so a no-op default
         method is provided by this class.
         """
 
@@ -492,7 +492,7 @@ class NestedObjectStore(ObjectStore):
     def create(self, obj, **kwargs):
         """Create a backing file in a random backend."""
         self.set_object_store_id(obj)
-        return self._call_method('create', obj, **kwargs)
+        return self._call_method('create', obj, False, False, **kwargs)
 
     def set_object_store_id(self, obj):
         """Set the object store ID (backend) to use."""
