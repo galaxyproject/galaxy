@@ -4,14 +4,11 @@ Manager and serializer for cloud-based storages.
 
 import datetime
 import logging
-import os
-import random
-import string
-from cgi import FieldStorage
 
 from galaxy.exceptions import (
     AuthenticationFailed,
     ItemAccessibilityException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException
@@ -35,13 +32,17 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 
 SUPPORTED_PROVIDERS = "{aws, azure, openstack}"
 
+# TODO: this configuration should be set in a config file.
+SINGED_URL_TTL = 3600
+
 
 class CloudManager(sharable.SharableModelManager):
 
     def __init__(self, app, *args, **kwargs):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
-    def _configure_provider(self, provider, credentials):
+    @staticmethod
+    def _configure_provider(provider, credentials):
         """
         Given a provider name and required credentials, it configures and returns a cloudbridge
         connection to the provider.
@@ -133,36 +134,72 @@ class CloudManager(sharable.SharableModelManager):
         except ProviderConnectionException as e:
             raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
 
-    def copy_from(self, trans, history_id, provider, bucket, obj, credentials):
+    @staticmethod
+    def _get_inputs(obj, key, input_args):
+        space_to_tab = None
+        if input_args.get('space_to_tab', "").lower() == "true":
+            space_to_tab = "Yes"
+        elif input_args.get('space_to_tab', "").lower() not in ["false", ""]:
+            raise RequestParameterInvalidException(
+                "The valid values for `space_to_tab` argument are `true` and `false`; received {}".format(
+                    input_args.get('space_to_tab')))
+
+        to_posix_lines = None
+        if input_args.get('to_posix_lines', "").lower() == "true":
+            to_posix_lines = "Yes"
+        elif input_args.get('to_posix_lines', "").lower() not in ["false", ""]:
+            raise RequestParameterInvalidException(
+                "The valid values for `to_posix_lines` argument are `true` and `false`; received {}".format(
+                    input_args.get('to_posix_lines')))
+
+        return {
+            'dbkey': input_args.get("dbkey", "?"),
+            'file_type': input_args.get("file_type", "auto"),
+            'files_0|type': 'upload_dataset',
+            'files_0|space_to_tab': space_to_tab,
+            'files_0|to_posix_lines': to_posix_lines,
+            'files_0|NAME': obj,
+            'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
+        }
+
+    def upload(self, trans, history_id, provider, bucket, objects, credentials, input_args=None):
         """
-        Implements the logic of copying a file from a cloud-based storage (e.g., Amazon S3)
+        Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
-        :param trans: Galaxy web transaction
+        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:       Galaxy web transaction
 
-        :type  history_id: string
-        :param history_id: the (encoded) id of history to which the object should be downloaded to.
+        :type  history_id:  string
+        :param history_id:  the (encoded) id of history to which the object should be uploaded to.
 
-        :type  provider: string
-        :param provider: the name of cloud-based resource provided. A list of supported providers is given in
-        `SUPPORTED_PROVIDERS` variable.
+        :type  provider:    string
+        :param provider:    the name of cloud-based resource provided. A list of supported providers is given in
+                            `SUPPORTED_PROVIDERS` variable.
 
-        :type  bucket: string
-        :param bucket: the name of a bucket from which data should be downloaded (e.g., a bucket name on AWS S3).
+        :type  bucket:      string
+        :param bucket:      the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
 
-        :type  obj: string
-        :param obj: the name of an object to be downloaded.
+        :type  objects:     list of string
+        :param objects:     the name of objects to be uploaded.
 
         :type  credentials: dict
         :param credentials: a dictionary containing all the credentials required to authenticated to the
-        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+                            specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
+                            "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
-        :rtype:  list of galaxy.model.Dataset
-        :return: a list of datasets created for the downloaded files.
+        :type  input_args:  dict
+        :param input_args:  a [Optional] a dictionary of input parameters:
+                            dbkey, file_type, space_to_tab, to_posix_lines (see galaxy/webapps/galaxy/api/cloud.py)
+
+        :rtype:             list of galaxy.model.Dataset
+        :return:            a list of datasets created for the uploaded files.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
+
+        if input_args is None:
+            input_args = {}
 
         connection = self._configure_provider(provider, credentials)
         try:
@@ -172,88 +209,68 @@ class CloudManager(sharable.SharableModelManager):
         except Exception as e:
             raise ItemAccessibilityException("Could not get the bucket `{}`: {}".format(bucket, str(e)))
 
-        key = bucket_obj.get(obj)
-        if key is None:
-            raise ObjectNotFound("Could not get the object `{}`.".format(obj))
-        staging_file_name = os.path.abspath(os.path.join(
-            trans.app.config.new_file_path,
-            "cd_" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11))))
+        datasets = []
+        for obj in objects:
+            try:
+                key = bucket_obj.get(obj)
+            except Exception as e:
+                raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
+            if key is None:
+                raise ObjectNotFound("Could not get the object `{}`.".format(obj))
 
-        with open(staging_file_name, "w+b") as staging_file:
-            key.save_content(staging_file)
-            staging_file.seek(0)
-            datasets = []
-            content = staging_file.read()
-            headers = {'content-disposition': 'form-data; name="{}"; filename="{}"'.format('files_0|file_data', obj), }
-
-            input_file = FieldStorage(headers=headers)
-            input_file.file = input_file.make_file()
-            input_file.file.write(content)
-
-            inputs = {
-                'dbkey': '?',
-                'file_type': 'auto',
-                'files_0|type': 'upload_dataset',
-                'files_0|space_to_tab': None,
-                'files_0|to_posix_lines': 'Yes',
-                'files_0|file_data': input_file,
-            }
-
-            params = Params(inputs, sanitize=False)
+            params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
             incoming = params.__dict__
-            upload_tool = trans.app.toolbox.get_tool('upload1')
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
-            output = upload_tool.handle_input(trans, incoming, history=history)
+            output = trans.app.toolbox.get_tool('upload1').handle_input(trans, incoming, history=history)
 
-            hids = {}
             job_errors = output.get('job_errors', [])
             if job_errors:
-                raise ValueError('Cannot upload a dataset.')
+                raise ValueError('Following error occurred while uploading the given object(s) from {}: {}'.format(
+                    provider, job_errors))
             else:
-                hids.update({staging_file: output['out_data'][0][1].hid})
                 for d in output['out_data']:
                     datasets.append(d[1].dataset)
-        os.remove(staging_file_name)
+
         return datasets
 
-    def copy_to(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
+    def download(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
         """
-        Implements the logic of copying dataset(s) belonging to a given history to a given cloud-based storage
+        Implements the logic of downloading dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
 
-        :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
-        :param trans: Galaxy web transaction
+        :type  trans:               galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:               Galaxy web transaction
 
-        :type  history_id: string
-        :param history_id: the (encoded) id of history from which the object should be copied.
+        :type  history_id:          string
+        :param history_id:          the (encoded) id of history from which the object should be downloaded.
 
-        :type  provider: string
-        :param provider: the name of cloud-based resource provided. A list of supported providers
-                         is given in `SUPPORTED_PROVIDERS` variable.
+        :type  provider:            string
+        :param provider:            the name of cloud-based resource provided. A list of supported providers
+                                    is given in `SUPPORTED_PROVIDERS` variable.
 
-        :type  bucket: string
-        :param bucket: the name of a bucket to which data should be copied (e.g., a bucket
-                       name on AWS S3).
+        :type  bucket:              string
+        :param bucket:              the name of a bucket to which data should be downloaded (e.g., a bucket
+                                    name on AWS S3).
 
-        :type  credentials: dict
-        :param credentials: a dictionary containing all the credentials required to authenticated
-                            to the specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
-                            "access_key": YOUR_AWS_ACCESS_TOKEN}).
+        :type  credentials:         dict
+        :param credentials:         a dictionary containing all the credentials required to authenticated
+                                    to the specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
+                                    "access_key": YOUR_AWS_ACCESS_TOKEN}).
 
-        :type  dataset_ids: set
-        :param dataset_ids: [Optional] The list of (decoded) dataset ID(s) belonging to the given
-                            history which should be copied to the given provider. If not provided,
-                            Galaxy copies all the datasets belonging to the given history.
+        :type  dataset_ids:         set
+        :param dataset_ids:         [Optional] The list of (decoded) dataset ID(s) belonging to the given
+                                    history which should be downloaded to the given provider. If not provided,
+                                    Galaxy downloads all the datasets belonging to the given history.
 
-        :type  overwrite_existing: boolean
-        :param overwrite_existing: [Optional] If set to "True", and an object with same name of the
-                                   dataset to be copied already exist in the bucket, Galaxy replaces
-                                   the existing object with the dataset to be copied. If set to
-                                   "False", Galaxy appends datetime to the dataset name to prevent
-                                   overwriting the existing object.
+        :type  overwrite_existing:  boolean
+        :param overwrite_existing:  [Optional] If set to "True", and an object with same name of the
+                                    dataset to be downloaded already exist in the bucket, Galaxy replaces
+                                    the existing object with the dataset to be downloaded. If set to
+                                    "False", Galaxy appends datetime to the dataset name to prevent
+                                    overwriting the existing object.
 
-        :rtype:  list
-        :return: A list of labels for the objects that were uploaded.
+        :rtype:                     list
+        :return:                    A list of labels for the objects that were uploaded.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -264,7 +281,7 @@ class CloudManager(sharable.SharableModelManager):
             raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
-        uploaded = []
+        downloaded = []
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
@@ -272,5 +289,5 @@ class CloudManager(sharable.SharableModelManager):
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
                 created_obj = bucket_obj.create_object(object_label)
                 created_obj.upload_from_file(hda.dataset.get_file_name())
-                uploaded.append(object_label)
-        return uploaded
+                downloaded.append(object_label)
+        return downloaded

@@ -40,21 +40,44 @@ class CloudController(BaseAPIController):
         return 'Not Implemented'
 
     @expose_api
-    def copy_from(self, trans, payload, **kwargs):
+    def upload(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/copy-from
-            Copies a given object from a given cloud-based bucket to a Galaxy history.
+        * POST /api/cloud/storage/upload
+            Uploads given objects from a given cloud-based bucket to a Galaxy history.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
-            *   history_id:    the (encoded) id of history to which the object should be copied to.
+            *   history_id:    the (encoded) id of history to which the object should be uploaded to.
             *   provider:      the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
-            *   bucket:        the name of a bucket from which data should be copied from (e.g., a bucket name on AWS S3).
-            *   object:        the name of an object to be copied.
+            *   bucket:        the name of a bucket from which data should be uploaded from (e.g., a bucket name on AWS S3).
+            *   objects:       a list of the names of objects to be uploaded.
             *   credentials:   a dictionary containing all the credentials required to authenticated to the
             specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+            *   input_args     [Optional; default value is an empty dict] a dictionary containing the following keys:
+
+                                **   `dbkey`:           [Optional; default value: is `?`]
+                                                        Sets the genome (e.g., `hg19`) of the objects being
+                                                        uploaded to Galaxy.
+
+                                **   `file_type`:       [Optional; default value is `auto`]
+                                                        Sets the Galaxy datatype (e.g., `bam`) for the
+                                                        objects being uploaded to Galaxy. See the following
+                                                        link for a complete list of Galaxy data types:
+                                                        https://galaxyproject.org/learn/datatypes/
+
+                                **   `space_to_tab`:    [Optional; default value is `False`]
+                                                        A boolean value ("true" or "false") that sets if spaces
+                                                        should be converted to tab in the objects being
+                                                        uploaded to Galaxy. Applicable only if `to_posix_lines`
+                                                        is True
+
+                                **   `to_posix_lines`:  [Optional; default value is `Yes`]
+                                                        A boolean value ("true" or "false"); if "Yes", converts
+                                                        universal line endings to POSIX line endings. Set to
+                                                        "False" if you upload a gzip, bz2 or zip archive
+                                                        containing a binary file.
 
         :param kwargs:
 
@@ -78,9 +101,9 @@ class CloudController(BaseAPIController):
         if bucket is None:
             missing_arguments.append("bucket")
 
-        obj = payload.get("object", None)
-        if obj is None:
-            missing_arguments.append("object")
+        objects = payload.get("objects", None)
+        if objects is None:
+            missing_arguments.append("objects")
 
         credentials = payload.get("credentials", None)
         if credentials is None:
@@ -94,22 +117,27 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
-        datasets = self.cloud_manager.download(trans=trans,
-                                               history_id=history_id,
-                                               provider=provider,
-                                               bucket=bucket,
-                                               obj=obj,
-                                               credentials=credentials)
+        if not isinstance(objects, list):
+            raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
+                type(objects)))
+
+        datasets = self.cloud_manager.upload(trans=trans,
+                                             history_id=history_id,
+                                             provider=provider,
+                                             bucket=bucket,
+                                             objects=objects,
+                                             credentials=credentials,
+                                             input_args=payload.get("input_args", None))
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))
         return rtv
 
     @expose_api
-    def copy_to(self, trans, payload, **kwargs):
+    def download(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/copy-to
-            Copies a given dataset in a given history to a given cloud-based bucket. Each dataset is named
+        * POST /api/cloud/storage/download
+            Downloads a given dataset in a given history to a given cloud-based bucket. Each dataset is named
             using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
             If no dataset ID is given, this API copies all the datasets belonging to a given history to a given
             cloud-based bucket.
@@ -118,26 +146,26 @@ class CloudController(BaseAPIController):
 
         :type  payload: dictionary
         :param payload: A dictionary structure containing the following keys:
-            *   history_id              the (encoded) id of history from which the object should be copied.
+            *   history_id              the (encoded) id of history from which the object should be downloaed.
             *   provider:               the name of a cloud-based resource provider (e.g., `aws`, `azure`, or `openstack`).
-            *   bucket:                 the name of a bucket to which data should be copied (e.g., a bucket name on AWS S3).
+            *   bucket:                 the name of a bucket to which data should be downloaded (e.g., a bucket name on AWS S3).
             *   credentials:            a dictionary containing all the credentials required to authenticated to the
                                         specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
                                         "access_key": YOUR_AWS_ACCESS_TOKEN}).
             *   dataset_ids:            [Optional; default: None]
                                         A list of encoded dataset IDs belonging to the specified history
-                                        that should be copied to the given bucket. If not provided, Galaxy copies
+                                        that should be downloaded to the given bucket. If not provided, Galaxy downloads
                                         all the datasets belonging the specified history.
             *   overwrite_existing:     [Optional; default: False]
                                         A boolean value. If set to "True", and an object with same name of the dataset
-                                        to be copied already exist in the bucket, Galaxy replaces the existing object
-                                        with the dataset to be copied. If set to "False", Galaxy appends datetime
+                                        to be downloaded already exist in the bucket, Galaxy replaces the existing object
+                                        with the dataset to be downloaded. If set to "False", Galaxy appends datetime
                                         to the dataset name to prevent overwriting an existing object.
 
         :param kwargs:
 
         :rtype:  dictionary
-        :return: Information about the copied datasets, including uploaded_dataset_labels
+        :return: Information about the downloaded datasets, including downloaded_dataset_labels
                  and destination bucket name.
         """
         missing_arguments = []
@@ -180,12 +208,12 @@ class CloudController(BaseAPIController):
                 raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
                                        "{}".format(invalid_dataset_ids))
 
-        uploaded = self.cloud_manager.copy_to(trans=trans,
-                                              history_id=history_id,
-                                              provider=provider,
-                                              bucket=bucket,
-                                              credentials=credentials,
-                                              dataset_ids=dataset_ids,
-                                              overwrite_existing=payload.get("overwrite_existing", False))
-        return {'uploaded_dataset_labels': uploaded,
+        uploaded = self.cloud_manager.download(trans=trans,
+                                               history_id=history_id,
+                                               provider=provider,
+                                               bucket=bucket,
+                                               credentials=credentials,
+                                               dataset_ids=dataset_ids,
+                                               overwrite_existing=payload.get("overwrite_existing", False))
+        return {'downloaded_dataset_labels': uploaded,
                 'bucket_name': bucket}
