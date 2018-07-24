@@ -71,10 +71,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         trans.sa_session.add(user)
         trans.sa_session.flush()
         trans.app.security_agent.create_private_user_role(user)
-        if trans.webapp.name == 'galaxy':
-            # We set default user permissions, before we log in and set the default history permissions
-            trans.app.security_agent.user_set_default_permissions(user,
-                                                                  default_access_private=trans.app.config.new_user_dataset_access_role_default_private)
         return user
 
     @web.expose
@@ -95,11 +91,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             message = 'You are already logged in.'
             status = 'info'
         elif kwd.get('login_button', False):
-            if trans.webapp.name == 'galaxy' and not refresh_frames:
-                if trans.app.config.require_login:
-                    refresh_frames = ['masthead', 'history', 'tools']
-                else:
-                    refresh_frames = ['masthead', 'history']
             csrf_check = trans.check_csrf_token()
             if csrf_check:
                 return csrf_check
@@ -110,15 +101,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             if trans.app.config.allow_user_creation:
                 create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
                     web.url_for(controller='user', action='create', cntrller='user')
-                if trans.webapp.name == 'galaxy':
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", create_account_str)
-                else:
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", create_account_str)
+                header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", create_account_str)
             else:
-                if trans.webapp.name == 'galaxy':
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy instance", "")
-                else:
-                    header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", "")
+                header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", "")
         return trans.fill_template('/webapps/tool_shed/user/login.mako',
                                    login=login,
                                    header=header,
@@ -162,7 +147,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
                     message, status = self.resend_verification_email(trans, user.email, user.username)
                 else:  # User is within the grace period, let him log in.
-                    message, success, status = self.proceed_login(trans, user, redirect)
+                    success = True
+                    trans.handle_user_login(user)
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
                 message, status = self.resend_verification_email(trans, user.email, user.username)
         else:  # activation is OFF
@@ -174,7 +160,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                                                          message='Your password has expired. Please change it to access Galaxy.',
                                                          redirect_home=True,
                                                          status='error'))
-            message, success, status = self.proceed_login(trans, user, redirect)
+            success = True
+            trans.handle_user_login(user)
             if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
@@ -182,22 +169,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                           (expiredate.days, user.email, redirect, url_for('/'))
                 status = 'warning'
         return (message, status, user, success)
-
-    def proceed_login(self, trans, user, redirect):
-        """
-        Function processes user login. It is called in case all the login requirements are valid.
-        """
-        message = ''
-        trans.handle_user_login(user)
-        if trans.webapp.name == 'galaxy':
-            trans.log_event("User logged in")
-            message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
-                (user.email, redirect, url_for('/'))
-            if trans.app.config.require_login:
-                message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for(controller="root", action="welcome")
-        success = True
-        status = 'done'
-        return message, success, status
 
     @web.expose
     def resend_verification(self, trans):
