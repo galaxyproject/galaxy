@@ -302,7 +302,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
-            return self.message_exception(trans, "User not found.")
+            message, status, user, success = self.__autoregistration(trans, username, password, status, kwd)
+            if not success:
+                return self.message_exception(trans, message)
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
@@ -337,27 +339,26 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
                 return {"message": "Your password will expire in %s days." % expiredate.days, "status": "warning"}
-        return {"message": "User logged in."}
+        return {"message": "Success."}
 
     def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
         """
         Does the autoregistration if enabled. Returns a message
         """
-        skip_login_handling = cntrller == 'admin' and trans.user_is_admin()
         autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
         user = None
         success = False
         if autoreg["auto_reg"]:
-            kwd['email'] = autoreg["email"]
-            kwd['username'] = autoreg["username"]
-            message = " ".join([validate_email(trans, kwd['email'], allow_empty=True),
-                                validate_publicname(trans, kwd['username'])]).rstrip()
+            kwd["email"] = autoreg["email"]
+            kwd["username"] = autoreg["username"]
+            message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
+                                validate_publicname(trans, kwd["username"])]).rstrip()
             if not message:
                 message, status, user, success = trans.app.auth_manager.register(trans, **kwd)
                 if success:
                     # The handle_user_login() method has a call to the history_set_default_permissions() method
                     # (needed when logging in with a history), user needs to have default permissions set before logging in
-                    if not skip_login_handling:
+                    if not trans.user_is_admin():
                         trans.handle_user_login(user)
                         trans.log_event("User (auto) created a new account")
                         trans.log_event("User logged in")
@@ -372,7 +373,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             else:
                 message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
         else:
-            message = "No such user or invalid password"
+            message = "No such user or invalid password."
         return message, status, user, success
 
     @web.expose
