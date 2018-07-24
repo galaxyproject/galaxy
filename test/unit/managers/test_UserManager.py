@@ -12,6 +12,7 @@ from six import string_types
 from galaxy import exceptions, model
 from galaxy.managers import base as base_manager
 from galaxy.managers import histories, users
+from galaxy.security.passwords import check_password
 from .base import BaseTestCase
 
 
@@ -35,7 +36,7 @@ class UserManagerTestCase(BaseTestCase):
         self.assertIsInstance(user2, model.User)
         self.assertIsNotNone(user2.id)
         self.assertEqual(user2.email, user2_data['email'])
-        self.assertEqual(user2.password, default_password)
+        self.assertTrue(check_password(default_password, user2.password))
 
         user3 = self.user_manager.create(**user3_data)
 

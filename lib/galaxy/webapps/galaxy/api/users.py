@@ -49,7 +49,6 @@ from galaxy.web.base.controller import (
     BaseAPIController,
     BaseUIController,
     CreatesApiKeysMixin,
-    CreatesUsersMixin,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
@@ -59,7 +58,7 @@ from galaxy.web.form_builder import AddressField
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
+class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
         super(UserAPIController, self).__init__(app)
@@ -203,7 +202,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             else:
-                user = self.create_user(trans=trans, email=email, username=username, password=password)
+                user = self.user_manager.create(email=email, username=username, password=password)
         else:
             raise exceptions.NotImplemented()
         item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id,
