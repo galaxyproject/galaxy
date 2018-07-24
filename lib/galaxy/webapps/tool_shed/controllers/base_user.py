@@ -3,12 +3,10 @@ Contains the user interface in the Universe class
 """
 
 import logging
-import random
 import socket
 from datetime import datetime, timedelta
 
 from markupsafe import escape
-from six.moves.urllib.parse import unquote
 from sqlalchemy import (
     func,
     or_
@@ -18,14 +16,12 @@ from galaxy import (
     util,
     web
 )
-from galaxy.queue_worker import send_local_control_task
 from galaxy.security.validate_user_input import (
     transform_publicname,
     validate_email,
     validate_password,
     validate_publicname
 )
-from galaxy.util import biostar, hash_util
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
@@ -170,54 +166,6 @@ class User(BaseUser, BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysM
                           (expiredate.days, user.email, redirect, url_for('/'))
                 status = 'warning'
         return (message, status, user, success)
-
-    def is_outside_grace_period(self, trans, create_time):
-        """
-        Function checks whether the user is outside the config-defined grace period for inactive accounts.
-        """
-        #  Activation is forced and the user is not active yet. Check the grace period.
-        activation_grace_period = trans.app.config.activation_grace_period
-        delta = timedelta(hours=int(activation_grace_period))
-        time_difference = datetime.utcnow() - create_time
-        return (time_difference > delta or activation_grace_period == 0)
-
-    @web.expose
-    def logout(self, trans, logout_all=False, **kwd):
-        if trans.webapp.name == 'galaxy':
-            csrf_check = trans.check_csrf_token()
-            if csrf_check:
-                return csrf_check
-
-            if trans.app.config.require_login:
-                refresh_frames = ['masthead', 'history', 'tools']
-            else:
-                refresh_frames = ['masthead', 'history']
-            if trans.user:
-                # Queue a quota recalculation (async) task -- this takes a
-                # while sometimes, so we don't want to block on logout.
-                send_local_control_task(trans.app,
-                                        'recalculate_user_disk_usage',
-                                        {'user_id': trans.security.encode_id(trans.user.id)})
-            # Since logging an event requires a session, we'll log prior to ending the session
-            trans.log_event("User logged out")
-        else:
-            refresh_frames = ['masthead']
-        trans.handle_user_logout(logout_all=logout_all)
-        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % \
-            (url_for('/'))
-        if biostar.biostar_logged_in(trans):
-            biostar_url = biostar.biostar_logout(trans)
-            if biostar_url:
-                # TODO: It would be better if we automatically logged this user out of biostar
-                message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % (biostar_url)
-        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
-            trans.response.send_redirect(trans.app.config.remote_user_logout_href)
-        else:
-            return trans.fill_template('/user/logout.mako',
-                                       refresh_frames=refresh_frames,
-                                       message=message,
-                                       status='done',
-                                       active_view="user")
 
     @web.expose
     def create(self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd):
@@ -367,40 +315,6 @@ class User(BaseUser, BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysM
         return (message, status, user, success)
 
     @web.expose
-    def activate(self, trans, **kwd):
-        """
-        Check whether token fits the user and then activate the user's account.
-        """
-        params = util.Params(kwd, sanitize=False)
-        email = params.get('email', None)
-        if email is not None:
-            email = unquote(email)
-        activation_token = params.get('activation_token', None)
-
-        if email is None or activation_token is None:
-            #  We don't have the email or activation_token, show error.
-            return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller="root", action="index")
-        else:
-            # Find the user
-            user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-            if not user:
-                # Probably wrong email address
-                return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller="root", action="index")
-            # If the user is active already don't try to activate
-            if user.active is True:
-                return trans.show_ok_message("Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
-            if user.activation_token == activation_token:
-                user.activation_token = None
-                user.active = True
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
-                return trans.show_ok_message("Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
-            else:
-                #  Tokens don't match. Activation is denied.
-                return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
-        return
-
-    @web.expose
     def reset_password(self, trans, email=None, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         if trans.app.config.smtp_server is None:
@@ -456,14 +370,3 @@ class User(BaseUser, BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysM
                              validate_password(trans, password, confirm),
                              validate_publicname(trans, username)]).rstrip()
         return message
-
-    def __get_redirect_url(self, redirect):
-        root_url = url_for('/', qualified=True)
-        # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
-        # or to enter a logout/login loop
-        if not util.compare_urls(root_url, redirect, compare_path=False) or util.compare_urls(url_for(controller='user', action='logout', qualified=True), redirect):
-            log.warning('Redirect URL is outside of Galaxy, will redirect to Galaxy root instead: %s', redirect)
-            redirect = root_url
-        elif util.compare_urls(url_for(controller='user', action='logout', qualified=True), redirect):
-            redirect = root_url
-        return redirect
