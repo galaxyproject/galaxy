@@ -316,10 +316,11 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
 
     def get_user(self):
         """Return the current user if logged in or None."""
-        if self.galaxy_session:
-            return self.galaxy_session.user
-        else:
-            return self.__user
+        user = self.__user
+        if not user and self.galaxy_session:
+            user = self.galaxy_session.user
+            self.__user = user
+        return user
 
     def set_user(self, user):
         """Set the current user."""

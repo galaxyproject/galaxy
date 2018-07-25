@@ -642,10 +642,10 @@ class DefaultToolAction(object):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
             if type(galaxy_session) == trans.model.GalaxySession:
-                job.session_id = galaxy_session.id
+                job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
-            job.user_id = trans.user.id
-        job.history_id = history.id
+            job.user_id = model.cached_id(trans.user)
+        job.history_id = model.cached_id(history)
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.
@@ -685,9 +685,9 @@ class DefaultToolAction(object):
                 target_dict[input.name] = []
                 for reduced_collection in reductions[prefixed_name]:
                     if hasattr(reduced_collection, "child_collection"):
-                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'dce'})
+                        target_dict[input.name].append({'id': model.cached_id(reduced_collection), 'src': 'dce'})
                     else:
-                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'hdca'})
+                        target_dict[input.name].append({'id': model.cached_id(reduced_collection), 'src': 'hdca'})
 
         if reductions:
             tool.visit_inputs(incoming, restore_reduction_visitor)
@@ -713,10 +713,7 @@ class DefaultToolAction(object):
             if dataset:
                 if not trans.app.security_agent.can_access_dataset(current_user_roles, dataset.dataset):
                     raise Exception("User does not have permission to use a dataset (%s) provided for input." % dataset.id)
-                if dataset in trans.sa_session:
-                    job.add_input_dataset(name, dataset=dataset)
-                else:
-                    job.add_input_dataset(name, dataset_id=dataset.id)
+                job.add_input_dataset(name, dataset=dataset)
             else:
                 job.add_input_dataset(name, None)
         job_str = job.log_str()

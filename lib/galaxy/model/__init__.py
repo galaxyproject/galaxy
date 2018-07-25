@@ -160,6 +160,32 @@ class UsesCreateAndUpdateTime(object):
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
 
 
+def cached_id(galaxy_model_object):
+    """Get model object id attribute without a firing a database query.
+
+    Useful to fetching the id of a typical Galaxy model object after a flush,
+    where SA is going to mark the id attribute as unloaded but we know the id
+    is immutable and so we can use the database identity to fetch.
+
+    With Galaxy's default SA initialization - any flush marks all attributes as
+    unloaded - even objects completely unrelated to the flushed changes and
+    even attributes we know to be immutable like id. See test_galaxy_mapping.py
+    for verification of this behavior. This method is a workaround that uses
+    the fact that we know all Galaxy objects use the id attribute as identity
+    and SA internals (_sa_instance_state) to infer the previously loaded ID
+    value. I tried digging into the SA internals extensively and couldn't find
+    a way to get the previously loaded values after a flush to allow a
+    generalization of this for other attributes.
+    """
+    if hasattr(galaxy_model_object, "_sa_instance_state"):
+        identity = galaxy_model_object._sa_instance_state.identity
+        if identity:
+            assert len(identity) == 1
+            return identity[0]
+
+    return galaxy_model_object.id
+
+
 class JobLike(object):
 
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
@@ -1434,7 +1460,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             if set_genome:
                 self.genome_build = genome_build
         for dataset in datasets:
-            dataset.history_id = self.id
+            dataset.history_id = cached_id(self)
         return datasets
 
     def add_dataset_collection(self, history_dataset_collection, set_hid=True):
