@@ -238,7 +238,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
             self.metadata = self.MetadataWrapper(dataset.metadata)
-            self.groups = {tag.user_value.lower() for tag in dataset.tags if tag.user_tname == 'group'}
+            if hasattr(dataset, 'tags'):
+                self.groups = {tag.user_value.lower() for tag in dataset.tags if tag.user_tname == 'group'}
+            else:
+                # May be a 'FakeDatasetAssociation'
+                self.groups = set()
         self.datatypes_registry = datatypes_registry
         self.false_path = getattr(dataset_path, "false_path", None)
         self.false_extra_files_path = getattr(dataset_path, "false_extra_files_path", None)
