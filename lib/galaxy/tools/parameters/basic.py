@@ -1052,12 +1052,8 @@ class SelectTagParameter(SelectToolParameter):
         self.is_dynamic = True
 
     def from_json(self, value, trans, other_values={}):
-        """
-        Label convention prepends column number with a 'c', but tool uses the integer. This
-        removes the 'c' when entered into a workflow.
-        """
         if self.multiple:
-            tag_list = set()
+            tag_list = []
             # split on newline and ,
             if isinstance(value, list) or isinstance(value, string_types):
                 if not isinstance(value, list):
@@ -1065,9 +1061,9 @@ class SelectTagParameter(SelectToolParameter):
                 for tag_str in value:
                     for tag in str(tag_str).split(','):
                         tag = tag.strip()
-                        if tag:
-                            tag_list.add(tag)
-            value = list(tag_list)
+                        if tag and tag not in tag_list:
+                            tag_list.append(tag)
+            value = tag_list
         else:
             if not value:
                 value = None
