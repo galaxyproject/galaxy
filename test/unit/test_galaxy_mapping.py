@@ -288,7 +288,7 @@ class MappingTests(unittest.TestCase):
         assert hist0.user == user
         assert hist1.user is None
         assert hist1.datasets[0].metadata.chromCol == 1
-        # The filename test has moved to objecstore
+        # The filename test has moved to objectstore
         # id = hist1.datasets[0].id
         # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
         # Do an update and check
@@ -445,7 +445,7 @@ class MappingTests(unittest.TestCase):
         # print(dir(galaxy_model_object._sa_instance_state._instance_dict))
         # assert False
 
-        # Verify cached_id works even immeidately after an initial flush, prevents a second SELECT
+        # Verify cached_id works even immediately after an initial flush, prevents a second SELECT
         # query that would be executed if object.id was used.
         galaxy_model_object_new = model.GalaxySession()
         session.add(galaxy_model_object_new)
@@ -453,7 +453,7 @@ class MappingTests(unittest.TestCase):
         assert galaxy.model.cached_id(galaxy_model_object_new)
         assert 'id' in inspect(galaxy_model_object_new).unloaded
 
-        # Verify a targetted flush prevent expiring unrelated objects.
+        # Verify a targeted flush prevent expiring unrelated objects.
         galaxy_model_object_new.id
         assert 'id' not in inspect(galaxy_model_object_new).unloaded
         session.flush(model.GalaxySession())
