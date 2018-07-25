@@ -1321,7 +1321,7 @@ model.VisualizationAnnotationAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("annotation", TEXT, index=True))
 
-model.HistoryDatasetCollectionAnnotationAssociation.table = Table(
+model.HistoryDatasetCollectionAssociationAnnotationAssociation.table = Table(
     "history_dataset_collection_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("history_dataset_collection_id", Integer,
@@ -2120,8 +2120,8 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
     tags=relation(model.HistoryDatasetCollectionTagAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
         backref='dataset_collections'),
-    annotations=relation(model.HistoryDatasetCollectionAnnotationAssociation,
-        order_by=model.HistoryDatasetCollectionAnnotationAssociation.table.c.id,
+    annotations=relation(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
+        order_by=model.HistoryDatasetCollectionAssociationAnnotationAssociation.table.c.id,
         backref="dataset_collections"),
     ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
         order_by=model.HistoryDatasetCollectionRatingAssociation.table.c.id,
@@ -2468,7 +2468,7 @@ annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=mo
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
 annotation_mapping(model.PageAnnotationAssociation, page=model.Page)
 annotation_mapping(model.VisualizationAnnotationAssociation, visualization=model.Visualization)
-annotation_mapping(model.HistoryDatasetCollectionAnnotationAssociation,
+annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
     history_dataset_collection=model.HistoryDatasetCollectionAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation,
     library_dataset_collection=model.LibraryDatasetCollectionAssociation)

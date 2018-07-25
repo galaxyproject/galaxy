@@ -69,7 +69,7 @@ class MappingTests(unittest.TestCase):
         dataset_collection = model.DatasetCollection(collection_type="paired")
         history_dataset_collection = model.HistoryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(history_dataset_collection)
-        persist_and_check_annotation(model.HistoryDatasetCollectionAnnotationAssociation, history_dataset_collection=history_dataset_collection)
+        persist_and_check_annotation(model.HistoryDatasetCollectionAssociationAnnotationAssociation, history_dataset_collection=history_dataset_collection)
 
         library_dataset_collection = model.LibraryDatasetCollectionAssociation(collection=dataset_collection)
         self.persist(library_dataset_collection)
