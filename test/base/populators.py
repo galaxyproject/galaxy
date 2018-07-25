@@ -789,23 +789,6 @@ class BaseDatasetCollectionPopulator(object):
                 element["paste_content"] = dataset_contents
                 elements.append(element)
 
-        # Endpoint doesn't yet respect {src: "pasted"} so simulate with multi-part uploads.
-        def paste_content_to_simluated_files(contents):
-            if isinstance(contents, list):
-                for el in contents:
-                    paste_content_to_simluated_files(el)
-            elif isinstance(contents, dict) and "paste_content" in contents:
-                contents["src"] = "files"
-                paste_content = contents.pop("paste_content")
-                # Emulate paste data behavior of adding newline.
-                if paste_content and not paste_content.endswith("\n"):
-                    paste_content += "\n"
-                files.append(paste_content)
-            elif isinstance(contents, dict):
-                for value in contents.values():
-                    paste_content_to_simluated_files(value)
-
-        paste_content_to_simluated_files(elements)
         name = kwds.get("name", "Test Dataset Collection")
 
         files_request_part = {}
