@@ -1,8 +1,11 @@
+import logging
+import socket
 from datetime import datetime
 
 from markupsafe import escape
 from sqlalchemy import (
     and_,
+    func,
     true
 )
 
@@ -10,9 +13,34 @@ from galaxy import (
     util,
     web
 )
-from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
+from galaxy.security.validate_user_input import (
+    validate_email,
+    validate_password,
+    validate_publicname
+)
 from galaxy.web import url_for
-from galaxy.webapps.tool_shed.controllers.base_user import User as BaseUser
+from galaxy.webapps.galaxy.controllers.user import User as BaseUser
+
+log = logging.getLogger(__name__)
+
+REQUIRE_LOGIN_TEMPLATE = """
+<p>
+    This %s has been configured such that only users who are logged in may use it.%s
+</p>
+"""
+
+PASSWORD_RESET_TEMPLATE = """
+To reset your Galaxy password for the instance at %s use the following link,
+which will expire %s.
+
+%s
+
+If you did not make this request, no action is necessary on your part, though
+you may want to notify an administrator.
+
+If you're having trouble using the link when clicking it from email client, you
+can also copy and paste it into your browser.
+"""
 
 
 class User(BaseUser):
@@ -20,6 +48,102 @@ class User(BaseUser):
     @web.expose
     def index(self, trans, cntrller='user', **kwd):
         return trans.fill_template('/webapps/tool_shed/user/index.mako', cntrller=cntrller)
+
+    @web.expose
+    def login(self, trans, refresh_frames=[], **kwd):
+        '''Handle Galaxy Log in'''
+        referer = trans.request.referer or ''
+        redirect = self.__get_redirect_url(kwd.get('redirect', referer).strip())
+        redirect_url = ''  # always start with redirect_url being empty
+        use_panels = util.string_as_bool(kwd.get('use_panels', False))
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        header = ''
+        user = trans.user
+        success = False
+        login = kwd.get('login', '')
+        if user:
+            # Already logged in.
+            redirect_url = redirect
+            message = 'You are already logged in.'
+            status = 'info'
+        elif kwd.get('login_button', False):
+            csrf_check = trans.check_csrf_token()
+            if csrf_check:
+                return csrf_check
+            response = self.__validate_login(trans, **kwd)
+            if trans.response.status == 400:
+                trans.response.status = 200
+                message = response.get("err_msg")
+                status = "error"
+            else:
+                success = True
+            if success:
+                redirect_url = redirect
+        if not success and not user and trans.app.config.require_login:
+            if trans.app.config.allow_user_creation:
+                create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
+                    web.url_for(controller='user', action='create', cntrller='user')
+                header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", create_account_str)
+            else:
+                header = REQUIRE_LOGIN_TEMPLATE % ("Galaxy tool shed", "")
+        return trans.fill_template('/webapps/tool_shed/user/login.mako',
+                                   login=login,
+                                   header=header,
+                                   use_panels=use_panels,
+                                   redirect_url=redirect_url,
+                                   redirect=redirect,
+                                   refresh_frames=refresh_frames,
+                                   message=message,
+                                   status=status,
+                                   openid_providers=trans.app.openid_providers,
+                                   form_input_auto_focus=True,
+                                   active_view="user")
+
+    @web.expose
+    def reset_password(self, trans, email=None, **kwd):
+        """Reset the user's password. Send an email with token that allows a password change."""
+        if trans.app.config.smtp_server is None:
+            return trans.show_error_message("Mail is not configured for this Galaxy instance "
+                                            "and password reset information cannot be sent. "
+                                            "Please contact your local Galaxy administrator.")
+        message = None
+        status = 'done'
+        if kwd.get('reset_password_button', False):
+            message = validate_email(trans, email, check_dup=False)
+            if not message:
+                # Default to a non-userinfo-leaking response message
+                message = ("Your reset request for %s has been received.  "
+                           "Please check your email account for more instructions.  "
+                           "If you do not receive an email shortly, please contact an administrator." % (escape(email)))
+                reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+                if not reset_user:
+                    # Perform a case-insensitive check only if the user wasn't found
+                    reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
+                if reset_user:
+                    prt = trans.app.model.PasswordResetToken(reset_user)
+                    trans.sa_session.add(prt)
+                    trans.sa_session.flush()
+                    host = trans.request.host.split(':')[0]
+                    if host in ['localhost', '127.0.0.1', '0.0.0.0']:
+                        host = socket.getfqdn()
+                    reset_url = url_for(controller='user',
+                                        action="change_password",
+                                        token=prt.token, qualified=True)
+                    body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
+                                                      reset_url)
+                    frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                    subject = 'Galaxy Password Reset'
+                    try:
+                        util.send_mail(frm, email, subject, body, trans.app.config)
+                        trans.sa_session.add(reset_user)
+                        trans.sa_session.flush()
+                        trans.log_event("User reset password: %s" % email)
+                    except Exception:
+                        log.exception('Unable to reset password.')
+        return trans.fill_template('/webapps/tool_shed/user/reset_password.mako',
+                                   message=message,
+                                   status=status)
 
     @web.expose
     def manage_user_info(self, trans, cntrller, **kwd):
@@ -136,7 +260,7 @@ class User(BaseUser):
                         user.active = False
                         trans.sa_session.add(user)
                         trans.sa_session.flush()
-                        is_activation_sent = self.send_verification_email(trans, user.email, user.username)
+                        is_activation_sent = trans.app.auth_manager.send_verification_email(trans, user.email, user.username)
                         if is_activation_sent:
                             message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                         else:
@@ -249,3 +373,11 @@ class User(BaseUser):
                                    status=status,
                                    message=message,
                                    display_top=kwd.get('redirect_home', False))
+
+    def __validate(self, trans, params, email, password, confirm, username):
+        # If coming from the tool shed webapp, we'll require a public user name
+        if not username:
+            return "A public user name is required in the tool shed."
+        if username in ['repos']:
+            return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % escape(username)
+        return super(User, self).__validate(trans, params, email, password, confirm, username)

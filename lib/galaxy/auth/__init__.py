@@ -10,8 +10,7 @@ from markupsafe import escape
 
 from galaxy.auth.util import get_authenticators, parse_auth_results
 from galaxy.exceptions import Conflict
-from galaxy.managers import users
-from galaxy.util import hash_util, restore_text, send_mail, string_as_bool
+from galaxy.util import hash_util, send_mail, string_as_bool
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -23,7 +22,6 @@ class AuthManager(object):
         self.__app = app
         self.redact_username_in_logs = app.config.redact_username_in_logs
         self.authenticators = get_authenticators(app.config.auth_config_file)
-        self.user_manager = users.UserManager(app)
 
     def check_registration_allowed(self, email, username, password):
         """Checks if the provided email/username is allowed to register."""
@@ -131,51 +129,6 @@ class AuthManager(object):
         except Exception:
             log.exception("Active Authenticators Failure")
             raise
-
-    def register(self, trans, email=None, username=None, password=None, subscribe_checked=False, **kwd):
-        """Registers a new user."""
-        email = restore_text(email)
-        username = restore_text(username)
-        status = None
-        message = None
-        is_admin = trans.user_is_admin()
-        user = self.user_manager.create(email=email, username=username, password=password)
-        if subscribe_checked:
-            # subscribe user to email list
-            if trans.app.config.smtp_server is None:
-                status = "error"
-                message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
-            else:
-                body = 'Join Mailing list.\n'
-                to = trans.app.config.mailing_join_addr
-                frm = email
-                subject = 'Join Mailing List'
-                try:
-                    send_mail(frm, to, subject, body, trans.app.config)
-                except Exception:
-                    log.exception('Subscribing to the mailing list has failed.')
-                    status = "warning"
-                    message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
-        if status != "error":
-            if not is_admin:
-                # The handle_user_login() method has a call to the history_set_default_permissions() method
-                # (needed when logging in with a history), user needs to have default permissions set before logging in
-                trans.handle_user_login(user)
-                trans.log_event("User created a new account")
-                trans.log_event("User logged in")
-            if trans.app.config.user_activation_on:
-                is_activation_sent = self.send_verification_email(trans, email, username)
-                if is_activation_sent:
-                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
-                else:
-                    status = "error"
-                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
-                    if trans.app.config.error_email_to is not None:
-                        message += ' Contact: %s' % trans.app.config.error_email_to
-        else:
-            # User activation is OFF, proceed without sending the activation email.
-            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
-        return message, status, user, status is None
 
     def send_verification_email(self, trans, email, username):
         """

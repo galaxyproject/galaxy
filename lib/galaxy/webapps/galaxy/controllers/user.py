@@ -3,11 +3,12 @@ Contains the user interface in the Universe class
 """
 
 import logging
+import socket
 from datetime import datetime, timedelta
 
 from markupsafe import escape
 from six.moves.urllib.parse import unquote
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -35,6 +36,19 @@ from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger(__name__)
+
+PASSWORD_RESET_TEMPLATE = """
+To reset your Galaxy password for the instance at %s use the following link,
+which will expire %s.
+
+%s
+
+If you did not make this request, no action is necessary on your part, though
+you may want to notify an administrator.
+
+If you're having trouble using the link when clicking it from email client, you
+can also copy and paste it into your browser.
+"""
 
 
 class UserOpenIDGrid(grids.Grid):
@@ -64,6 +78,42 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     def __init__(self, app):
         super(User, self).__init__(app)
         self.user_manager = users.UserManager(app)
+
+    def __openid_auth(self, trans, payload=None, **kwd):
+        '''Handles user request to access an OpenID provider'''
+        if not trans.app.config.enable_openid:
+            return self.message_exception(trans, 'OpenID authentication is not enabled in this instance of Galaxy.')
+        message = 'Unspecified failure authenticating via OpenID.'
+        auto_associate = util.string_as_bool(payload.get('auto_associate', False))
+        consumer = trans.app.openid_manager.get_consumer(trans)
+        openid_url = payload.get('openid_url')
+        openid_provider = payload.get('openid_provider')
+        redirect = payload.get('redirect')
+        method = payload.get('method')
+        if openid_url:
+            openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier(openid_url)
+        elif openid_provider:
+            openid_provider_obj = trans.app.openid_providers.get(openid_provider)
+        else:
+            return self.message_exception(trans, 'An OpenID provider was not specified.')
+        if openid_provider_obj:
+            process_url = trans.request.base.rstrip('/') + url_for(controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate)
+            request = None
+            try:
+                request = consumer.begin(openid_provider_obj.op_endpoint_url)
+                if request is None:
+                    message = 'No OpenID services are available at %s.' % openid_provider_obj.op_endpoint_url
+                    return self.message_exception(trans, message)
+            except Exception as e:
+                return self.message_exception(trans, 'Failed to begin OpenID authentication: %s.' % str(e))
+            if request is not None:
+                trans.app.openid_manager.add_sreg(trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional)
+                openid_redirect = request.redirectURL(trans.request.base, process_url)
+                trans.app.openid_manager.persist_session(trans, consumer)
+                if method == "redirect":
+                    trans.response.send_redirect(openid_redirect)
+                return {"openid_redirect": openid_redirect}
+        return {"status": "error", "message": message}
 
     @web.expose
     def openid_process(self, trans, **kwd):
@@ -217,42 +267,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             return self.__openid_auth(trans, payload, **kwd)
         return self.__validate_login(trans, payload, **kwd)
 
-    def __openid_auth(self, trans, payload=None, **kwd):
-        '''Handles user request to access an OpenID provider'''
-        if not trans.app.config.enable_openid:
-            return self.message_exception(trans, 'OpenID authentication is not enabled in this instance of Galaxy.')
-        message = 'Unspecified failure authenticating via OpenID.'
-        auto_associate = util.string_as_bool(payload.get('auto_associate', False))
-        consumer = trans.app.openid_manager.get_consumer(trans)
-        openid_url = payload.get('openid_url')
-        openid_provider = payload.get('openid_provider')
-        redirect = payload.get('redirect')
-        method = payload.get('method')
-        if openid_url:
-            openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier(openid_url)
-        elif openid_provider:
-            openid_provider_obj = trans.app.openid_providers.get(openid_provider)
-        else:
-            return self.message_exception(trans, 'An OpenID provider was not specified.')
-        if openid_provider_obj:
-            process_url = trans.request.base.rstrip('/') + url_for(controller='user', action='openid_process', redirect=redirect, openid_provider=openid_provider, auto_associate=auto_associate)
-            request = None
-            try:
-                request = consumer.begin(openid_provider_obj.op_endpoint_url)
-                if request is None:
-                    message = 'No OpenID services are available at %s.' % openid_provider_obj.op_endpoint_url
-                    return self.message_exception(trans, message)
-            except Exception as e:
-                return self.message_exception(trans, 'Failed to begin OpenID authentication: %s.' % str(e))
-            if request is not None:
-                trans.app.openid_manager.add_sreg(trans, request, required=openid_provider_obj.sreg_required, optional=openid_provider_obj.sreg_optional)
-                openid_redirect = request.redirectURL(trans.request.base, process_url)
-                trans.app.openid_manager.persist_session(trans, consumer)
-                if method == "redirect":
-                    trans.response.send_redirect(openid_redirect)
-                return {"openid_redirect": openid_redirect}
-        return {"status": "error", "message": message}
-
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
                                               auto_create_groups=False, auto_assign_roles_to_groups_only=False):
         for role_name in roles:
@@ -287,6 +301,41 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             elif not auto_assign_roles_to_groups_only and role:
                 trans.log_event("Assigning role to newly created user")
                 trans.app.security_agent.associate_user_role(user, role)
+
+    def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
+        """
+        Does the autoregistration if enabled. Returns a message
+        """
+        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
+        user = None
+        success = False
+        if autoreg["auto_reg"]:
+            kwd["email"] = autoreg["email"]
+            kwd["username"] = autoreg["username"]
+            message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
+                                validate_publicname(trans, kwd["username"])]).rstrip()
+            if not message:
+                message, status, user, success = self.__register(trans, **kwd)
+                if success:
+                    # The handle_user_login() method has a call to the history_set_default_permissions() method
+                    # (needed when logging in with a history), user needs to have default permissions set before logging in
+                    if not trans.user_is_admin():
+                        trans.handle_user_login(user)
+                        trans.log_event("User (auto) created a new account")
+                        trans.log_event("User logged in")
+                    if "attributes" in autoreg and "roles" in autoreg["attributes"]:
+                        self.__handle_role_and_group_auto_creation(
+                            trans, user, autoreg["attributes"]["roles"],
+                            auto_create_groups=autoreg["auto_create_groups"],
+                            auto_create_roles=autoreg["auto_create_roles"],
+                            auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
+                else:
+                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+            else:
+                message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
+        else:
+            message = "No such user or invalid password."
+        return message, status, user, success
 
     def __validate_login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
@@ -340,41 +389,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 expiredate = datetime.today() - user.last_password_change + pw_expires
                 return {"message": "Your password will expire in %s days." % expiredate.days, "status": "warning"}
         return {"message": "Success."}
-
-    def __autoregistration(self, trans, login, password, status, kwd, no_password_check=False, cntrller=None):
-        """
-        Does the autoregistration if enabled. Returns a message
-        """
-        autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
-        user = None
-        success = False
-        if autoreg["auto_reg"]:
-            kwd["email"] = autoreg["email"]
-            kwd["username"] = autoreg["username"]
-            message = " ".join([validate_email(trans, kwd["email"], allow_empty=True),
-                                validate_publicname(trans, kwd["username"])]).rstrip()
-            if not message:
-                message, status, user, success = trans.app.auth_manager.register(trans, **kwd)
-                if success:
-                    # The handle_user_login() method has a call to the history_set_default_permissions() method
-                    # (needed when logging in with a history), user needs to have default permissions set before logging in
-                    if not trans.user_is_admin():
-                        trans.handle_user_login(user)
-                        trans.log_event("User (auto) created a new account")
-                        trans.log_event("User logged in")
-                    if "attributes" in autoreg and "roles" in autoreg["attributes"]:
-                        self.__handle_role_and_group_auto_creation(
-                            trans, user, autoreg["attributes"]["roles"],
-                            auto_create_groups=autoreg["auto_create_groups"],
-                            auto_create_roles=autoreg["auto_create_roles"],
-                            auto_assign_roles_to_groups_only=autoreg["auto_assign_roles_to_groups_only"])
-                else:
-                    message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
-            else:
-                message = "Auto-registration failed, contact your local Galaxy administrator. %s" % message
-        else:
-            message = "No such user or invalid password."
-        return message, status, user, success
 
     @web.expose
     def resend_verification(self, trans):
@@ -493,7 +507,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                     message = self.__validate(trans, params, email, password, confirm, username)
                     if not message:
                         # All the values are valid
-                        message, status, user, success = trans.app.auth_manager.register(trans, subscribe_checked=subscribe_checked, **kwd)
+                        message, status, user, success = self.__register(trans, subscribe_checked=subscribe_checked, **kwd)
                         if success and not is_admin:
                             # The handle_user_login() method has a call to the history_set_default_permissions() method
                             # (needed when logging in with a history), user needs to have default permissions set before logging in
@@ -521,6 +535,51 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                                    registration_warning_message=registration_warning_message,
                                    message=message,
                                    status=status)
+
+    def __register(self, trans, email=None, username=None, password=None, subscribe_checked=False, **kwd):
+        """Registers a new user."""
+        email = util.restore_text(email)
+        username = util.restore_text(username)
+        status = None
+        message = None
+        is_admin = trans.user_is_admin()
+        user = self.user_manager.create(email=email, username=username, password=password)
+        if subscribe_checked:
+            # subscribe user to email list
+            if trans.app.config.smtp_server is None:
+                status = "error"
+                message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. <br>Please contact your local Galaxy administrator."
+            else:
+                body = 'Join Mailing list.\n'
+                to = trans.app.config.mailing_join_addr
+                frm = email
+                subject = 'Join Mailing List'
+                try:
+                    util.send_mail(frm, to, subject, body, trans.app.config)
+                except Exception:
+                    log.exception('Subscribing to the mailing list has failed.')
+                    status = "warning"
+                    message = "Now logged in as " + user.email + ". However, subscribing to the mailing list has failed."
+        if status != "error":
+            if not is_admin:
+                # The handle_user_login() method has a call to the history_set_default_permissions() method
+                # (needed when logging in with a history), user needs to have default permissions set before logging in
+                trans.handle_user_login(user)
+                trans.log_event("User created a new account")
+                trans.log_event("User logged in")
+            if trans.app.config.user_activation_on:
+                is_activation_sent = trans.app.auth_manager.send_verification_email(trans, email, username)
+                if is_activation_sent:
+                    message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+                else:
+                    status = "error"
+                    message = 'Unable to send activation email, please contact your local Galaxy administrator.'
+                    if trans.app.config.error_email_to is not None:
+                        message += ' Contact: %s' % trans.app.config.error_email_to
+        else:
+            # User activation is OFF, proceed without sending the activation email.
+            message = 'Now logged in as %s.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
+        return message, status, user, status is None
 
     @web.expose
     def activate(self, trans, **kwd):
@@ -555,6 +614,50 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 #  Tokens don't match. Activation is denied.
                 return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
         return
+
+    @expose_api_anonymous_and_sessionless
+    def reset_password(self, trans, payload={}, **kwd):
+        """Reset the user's password. Send an email with token that allows a password change."""
+        if trans.app.config.smtp_server is None:
+            return self.message_exception(trans, "Mail is not configured for this Galaxy instance "
+                                    "and password reset information cannot be sent. "
+                                    "Please contact your local Galaxy administrator.")
+        email = payload.get("email")
+        if not email:
+            return self.message_exception(trans, "Please provide your email.")
+        message = validate_email(trans, email, check_dup=False)
+        if message:
+            return self.message_exception(trans, message)
+        else:
+            # Default to a non-userinfo-leaking response message
+            message = ("Your reset request for %s has been received.  "
+                       "Please check your email account for more instructions.  "
+                       "If you do not receive an email shortly, please contact an administrator." % email)
+            reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+            if not reset_user:
+                # Perform a case-insensitive check only if the user wasn't found
+                reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
+            if reset_user:
+                prt = trans.app.model.PasswordResetToken(reset_user)
+                trans.sa_session.add(prt)
+                trans.sa_session.flush()
+                host = trans.request.host.split(':')[0]
+                if host in ['localhost', '127.0.0.1', '0.0.0.0']:
+                    host = socket.getfqdn()
+                reset_url = url_for(controller='root', action='login', token=prt.token)
+                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
+                                                  reset_url)
+                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                subject = 'Galaxy Password Reset'
+                try:
+                    util.send_mail(frm, email, subject, body, trans.app.config)
+                    trans.sa_session.add(reset_user)
+                    trans.sa_session.flush()
+                    trans.log_event('User reset password: %s' % email)
+                except Exception as e:
+                    log.debug(body)
+                    return self.message_exception(trans, "Failed to submit email. Please contact the administrator: %s" % str(e))
+        return {"message": "Reset link has been sent to your email."}
 
     def __validate(self, trans, params, email, password, confirm, username):
         message = "\n".join([validate_email(trans, email),

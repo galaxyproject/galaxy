@@ -21,7 +21,6 @@ log = logging.getLogger(__name__)
 
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
-    model_class = model.User
     foreign_key_name = 'user'
 
     # TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
@@ -30,13 +29,16 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
+    def __init__(self, app):
+        self.model_class = app.model.User
+        super(UserManager, self).__init__(app)
 
     def create(self, email=None, username=None, password=None, **kwargs):
         """
         Create a new user.
         """
         self._error_on_duplicate_email(email)
-        user = model.User(email=email)
+        user = self.model_class(email=email)
         user.set_password_cleartext(password)
         user.username = username
         if self.app.config.user_activation_on:
@@ -53,8 +55,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # can throw an sqlalx.IntegrityError if username not unique
         self.app.security_agent.create_private_user_role(user)
         # We set default user permissions, before we log in and set the default history permissions
-        permissions = self.app.config.new_user_dataset_access_role_default_private
-        self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
+        if hasattr(self.app.config, "new_user_dataset_access_role_default_private"):
+            permissions = self.app.config.new_user_dataset_access_role_default_private
+            self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
         return user
 
     def delete(self, user):

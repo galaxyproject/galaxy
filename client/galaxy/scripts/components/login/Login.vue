@@ -99,7 +99,7 @@ export default {
         reset: function(ev) {
             ev.preventDefault();
             axios
-                .post(`${Galaxy.root}api/users/reset_password`, {email: this.login})
+                .post(`${Galaxy.root}user/reset_password`, {email: this.login})
                 .then(response => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;

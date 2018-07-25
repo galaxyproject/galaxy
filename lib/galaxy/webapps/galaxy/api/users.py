@@ -3,9 +3,7 @@ API operations on User objects.
 """
 import json
 import logging
-import random
 import re
-import socket
 from datetime import datetime
 
 import six
@@ -14,7 +12,6 @@ from markupsafe import escape
 from sqlalchemy import (
     and_,
     false,
-    func,
     or_,
     true
 )
@@ -37,15 +34,13 @@ from galaxy.security.validate_user_input import (
 from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
-    hash_util,
     listify
 )
 from galaxy.util.odict import odict
 from galaxy.web import (
     _future_expose_api as expose_api,
     _future_expose_api_anonymous as expose_api_anonymous,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
-    url_for
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 )
 from galaxy.web.base.controller import (
     BaseAPIController,
@@ -58,19 +53,6 @@ from galaxy.web.form_builder import AddressField
 
 
 log = logging.getLogger(__name__)
-
-PASSWORD_RESET_TEMPLATE = """
-To reset your Galaxy password for the instance at %s use the following link,
-which will expire %s.
-
-%s
-
-If you did not make this request, no action is necessary on your part, though
-you may want to notify an administrator.
-
-If you're having trouble using the link when clicking it from email client, you
-can also copy and paste it into your browser.
-"""
 
 
 class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
@@ -442,7 +424,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 if trans.app.config.user_activation_on:
                     # Deactivate the user if email was changed and activation is on.
                     user.active = False
-                    if self.send_verification_email(trans, user.email, user.username):
+                    if trans.app.auth_manager.send_verification_email(trans, user.email, user.username):
                         message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                     else:
                         message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -524,60 +506,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         trans.log_event('User information added')
         return {'message': 'User information has been saved.'}
 
-    def send_verification_email(self, trans, email, username):
-        """
-        Send the verification email containing the activation link to the user's email.
-        """
-        if username is None:
-            username = trans.user.username
-        activation_link = self.prepare_activation_link(trans, escape(email))
-
-        host = trans.request.host.split(':')[0]
-        if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-            host = socket.getfqdn()
-        body = ("Hello %s,\n\n"
-                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
-                "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
-                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (escape(username), escape(email),
-                                      datetime.utcnow().strftime("%D"),
-                                      trans.request.host, activation_link,
-                                      trans.app.config.terms_url,
-                                      trans.app.config.error_email_to,
-                                      trans.app.config.instance_resource_url))
-        to = email
-        frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-        subject = 'Galaxy Account Activation'
-        try:
-            util.send_mail(frm, to, subject, body, trans.app.config)
-            return True
-        except Exception:
-            log.exception('Unable to send the activation email.')
-            return False
-
-    def prepare_activation_link(self, trans, email):
-        """
-        Prepare the account activation link for the user.
-        """
-        activation_token = self.get_activation_token(trans, email)
-        activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=email, qualified=True)
-        return activation_link
-
-    def get_activation_token(self, trans, email):
-        """
-        Check for the activation token. Create new activation token and store it in the database if no token found.
-        """
-        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-        activation_token = user.activation_token
-        if activation_token is None:
-            activation_token = hash_util.new_secure_hash(str(random.getrandbits(256)))
-            user.activation_token = activation_token
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-        return activation_token
-
     def _validate_email(self, email):
         ''' Validate email and username using regex '''
         if email == '' or not isinstance(email, six.string_types):
@@ -658,50 +586,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 trans.log_event('User change password')
                 return {'message': 'Password has been saved.'}
         raise MessageException('Failed to determine user, access denied.')
-
-    @expose_api_anonymous_and_sessionless
-    def reset_password(self, trans, payload={}, **kwd):
-        """Reset the user's password. Send an email with token that allows a password change."""
-        if trans.app.config.smtp_server is None:
-            return MessageException("Mail is not configured for this Galaxy instance "
-                                    "and password reset information cannot be sent. "
-                                    "Please contact your local Galaxy administrator.")
-        email = payload.get("email")
-        if not email:
-            raise MessageException("Please provide your email.")
-        message = validate_email(trans, email, check_dup=False)
-        if message:
-            raise MessageException(message)
-        else:
-            # Default to a non-userinfo-leaking response message
-            message = ("Your reset request for %s has been received.  "
-                       "Please check your email account for more instructions.  "
-                       "If you do not receive an email shortly, please contact an administrator." % email)
-            reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-            if not reset_user:
-                # Perform a case-insensitive check only if the user wasn't found
-                reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
-            if reset_user:
-                prt = trans.app.model.PasswordResetToken(reset_user)
-                trans.sa_session.add(prt)
-                trans.sa_session.flush()
-                host = trans.request.host.split(':')[0]
-                if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-                    host = socket.getfqdn()
-                reset_url = url_for(controller='root', action='login', token=prt.token)
-                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                                                  reset_url)
-                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-                subject = 'Galaxy Password Reset'
-                try:
-                    util.send_mail(frm, email, subject, body, trans.app.config)
-                    trans.sa_session.add(reset_user)
-                    trans.sa_session.flush()
-                    trans.log_event('User reset password: %s' % email)
-                except Exception as e:
-                    log.debug(body)
-                    raise MessageException("Failed to submit email. Please contact the administrator: %s" % str(e))
-        return {"message": "Reset link has been sent to your email."}
 
     @expose_api
     def get_permissions(self, trans, id, payload={}, **kwd):
