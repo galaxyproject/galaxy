@@ -4,7 +4,7 @@
         <b-form @submit.prevent="submit()">
             <b-card header="Welcome to Galaxy, please log in">
                 <b-form-group label="Username or Email Address">
-                    <b-form-input type="text" v-model="username"/>
+                    <b-form-input type="text" v-model="login"/>
                 </b-form-group>
                 <b-form-group label="Password">
                     <b-form-input type="password" v-model="password"/>
@@ -57,7 +57,7 @@ export default {
     },
     data() {
         return {
-            username: null,
+            login: null,
             password: null,
             url: null,
             provider: null,
@@ -76,7 +76,7 @@ export default {
             if (method == "openid") {
                 data = {openid_provider: this.provider, openid_url: this.url};
             } else {
-                data = {username: this.username, password: this.password};
+                data = {login: this.login, password: this.password};
             }
             axios
                 .post(`${Galaxy.root}user/login`, data)
@@ -99,7 +99,7 @@ export default {
         reset: function(ev) {
             ev.preventDefault();
             axios
-                .post(`${Galaxy.root}api/users/reset_password`, {email: this.username})
+                .post(`${Galaxy.root}api/users/reset_password`, {email: this.login})
                 .then(response => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;

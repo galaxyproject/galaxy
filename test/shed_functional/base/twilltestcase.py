@@ -1077,7 +1077,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             self.create_user_in_galaxy(email=email, password=password, username=username, redirect=redirect)
         if previously_created:
             params = {
-                "username": email,
+                "login": email,
                 "password": password
             }
             self.visit_galaxy_url('/user/login', params=params)

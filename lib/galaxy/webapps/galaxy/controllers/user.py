@@ -291,18 +291,18 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     def __validate_login(self, trans, payload=None, **kwd):
         '''Handle Galaxy Log in'''
         payload = payload or {}
-        username = kwd.get("username", payload.get("username"))
+        login = kwd.get("login", payload.get("login"))
         password = kwd.get("password", payload.get("password"))
         status = None
-        if not username or not password:
+        if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
         user = trans.sa_session.query(trans.app.model.User).filter(or_(
-            trans.app.model.User.table.c.email == username,
-            trans.app.model.User.table.c.username == username
+            trans.app.model.User.table.c.email == login,
+            trans.app.model.User.table.c.username == login
         )).first()
         log.debug("trans.app.config.auth_config_file: %s" % trans.app.config.auth_config_file)
         if user is None:
-            message, status, user, success = self.__autoregistration(trans, username, password, status, kwd)
+            message, status, user, success = self.__autoregistration(trans, login, password, status, kwd)
             if not success:
                 return self.message_exception(trans, message)
         elif user.deleted:
