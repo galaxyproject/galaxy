@@ -4,7 +4,7 @@ import toolshed_util from "mvc/toolshed/util";
 var View = Backbone.View.extend({
     el: "#center",
 
-    defaults: [{}],
+    defaults: [],
 
     initialize: function(options) {
         var that = this;
@@ -22,6 +22,7 @@ var View = Backbone.View.extend({
             repo_queue_template({
                 title: _l("Repository Installation Queue"),
                 repositories: repositories,
+                empty: _l("No repositories in queue."),
                 queue: toolshed_util.queueLength()
             })
         );
@@ -102,7 +103,7 @@ var View = Backbone.View.extend({
         if (repository_queue.hasOwnProperty(queue_key)) {
             return repository_queue[queue_key];
         }
-        return undefined;
+        return this.defaults;
     },
 
     reDraw: function(options) {
@@ -131,6 +132,7 @@ var View = Backbone.View.extend({
             "</tr>",
             "</thead>",
             "<tbody>",
+            "<% if (repositories.length > 0) { %>",
             "<% _.each(repositories, function(repository) { %>",
             '<tr id="queued_repository_<%= repository.get("id") %>">',
             '<td class="datasetRow"><%= repository.get("repository").name %></td>',
@@ -145,6 +147,9 @@ var View = Backbone.View.extend({
             "</td>",
             "</tr>",
             "<% }); %>",
+            "<% } else { %>",
+            '<tr><td colspan="6"><%= empty %></td></tr>',
+            "<% } %>",
             "</tbody>",
             "</table>",
             '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',

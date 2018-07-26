@@ -48,7 +48,7 @@ var AdminToolshedRouter = Backbone.Router.extend({
 
 var GalaxyAdminToolshedApp = Backbone.View.extend({
     app_config: {
-        known_views: ["toolsheds", "queue", "status", "categories", "repositories", "repoository"]
+        known_views: ["toolsheds", "queue", "status", "categories", "repositories", "repository"]
     },
 
     initialize: function() {
