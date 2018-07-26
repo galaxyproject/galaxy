@@ -898,6 +898,31 @@ steps:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
 
+    @skip_without_tool("collection_paired_test")
+    def test_workflow_flatten(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  - tool_id: 'collection_creates_dynamic_nested'
+    label: 'nested'
+    state:
+      sleep_time: 0
+      foo: 'dummy'
+  - tool_id: '__FLATTEN__'
+    state:
+      input:
+        $link: nested#list_output
+      join_identifier: '-'
+test_data: {}
+""", history_id=history_id)
+            details = self.dataset_populator.get_history_collection_details(history_id, hid=14)
+            assert details['collection_type'] == "list"
+            elements = details["elements"]
+            identifiers = [e['element_identifier'] for e in elements]
+            assert len(identifiers) == 6
+            assert "oe1-ie1" in identifiers
+
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
         with self.dataset_populator.test_history() as history_id:
