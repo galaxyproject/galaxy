@@ -492,7 +492,8 @@ class DatasetCollectionManager(object):
             identifiers = parent_identifiers + [element.element_identifier]
             if not element.is_collection:
                 data.append([])
-                sources.append({"identifiers": identifiers, "dataset": element_object})
+                source = {"identifiers": identifiers, "dataset": element_object, "tags": element.make_tag_string_list()}
+                sources.append(source)
             else:
                 child_collection_type_description = collection_type_description.child_collection_type_description()
                 element_data, element_sources = self.__init_rule_data(

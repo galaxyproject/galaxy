@@ -75,11 +75,22 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
-        identifier_index = int(rule_value[len("identifier"):])
+        if rule_value.startswith("identifier"):
+            identifier_index = int(rule_value[len("identifier"):])
 
-        new_rows = []
-        for index, row in enumerate(data):
-            new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
+
+        elif rule_value == "tags":
+
+            def sorted_tags(index):
+                tags = sorted(sources[index]["tags"])
+                return [",".join(tags)]
+
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + sorted_tags(index))
 
         return new_rows, sources
 

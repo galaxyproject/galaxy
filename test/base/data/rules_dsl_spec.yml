@@ -403,6 +403,15 @@
     data: [["moo", "cow"], ["meow", "cat"], ["bark", "dog"]]
 
 - rules:
+    - type: add_column_metadata
+      value: tags
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": ["farm"]}, {"identifiers": ["cat"], "tags": ["house"]}, {"identifiers": ["dog"], "tags": ["house", "firestation"]}]
+  final:
+    data: [["moo", "farm"], ["meow", "house"], ["bark", "firestation,house"]]
+
+- rules:
     - type: invalid_rule_type
   error: true
 

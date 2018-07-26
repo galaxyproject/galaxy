@@ -1182,6 +1182,7 @@ export default {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
                 }
+                metadataOptions["tags"] = _l("Tags");
             } else if (this.elementsType == "ftp") {
                 metadataOptions["path"] = _l("Path");
             } else if (this.elementsType == "library_datasets") {
@@ -1189,6 +1190,7 @@ export default {
             } else if (this.elementsType == "datasets") {
                 metadataOptions["hid"] = _l("History ID (hid)");
                 metadataOptions["name"] = _l("Name");
+                metadataOptions["tags"] = _l("Tags");
             } else {
                 metadataOptions = null;
             }
@@ -1682,7 +1684,8 @@ export default {
                     // sources are the elements
                     // TOOD: right thing is probably this: data.push([]);
                     data.push([]);
-                    sources.push({ identifiers: identifiers, dataset: elementObject });
+                    const source = { identifiers: identifiers, dataset: elementObject, tags: elementObject.tags };
+                    sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
                     let elementObj = this.populateElementsFromCollectionDescription(

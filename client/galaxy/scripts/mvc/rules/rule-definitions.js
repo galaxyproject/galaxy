@@ -174,6 +174,14 @@ const RULES = {
                     newRow.push(sources[index]["identifiers"][identifierIndex]);
                     return newRow;
                 };
+            } else if (ruleValue == "tags") {
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    const tags = sources[index]["tags"];
+                    tags.sort();
+                    newRow.push(tags.join(","));
+                    return newRow;
+                };
             } else if (ruleValue == "hid" || ruleValue == "name" || ruleValue == "path") {
                 newRow = (row, index) => {
                     const newRow = row.slice();
