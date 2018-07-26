@@ -167,7 +167,7 @@ const RULES = {
         apply: (rule, data, sources, columns) => {
             const ruleValue = rule.value;
             let newRow;
-            if (ruleValue.startsWith("identifier")) {
+            if (ruleValue.indexOf("identifier") == 0) {
                 const identifierIndex = parseInt(ruleValue.substring("identifier".length));
                 newRow = (row, index) => {
                     const newRow = row.slice();
