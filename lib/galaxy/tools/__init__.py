@@ -2707,7 +2707,6 @@ class ApplyRulesTool(DatabaseOperationTool):
     tool_type = 'apply_rules'
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        log.info(incoming)
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
