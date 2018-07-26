@@ -336,11 +336,11 @@ class User(BaseUser):
                     return trans.show_error_message("Invalid or expired password reset token, please request a new one.")
             else:
                 # The user is changing their own password, validate their current password
-                (ok, message) = trans.app.auth_manager.check_change_password(trans.user, current)
-                if ok:
-                    user = trans.user
-                else:
+                message = trans.app.auth_manager.check_change_password(trans.user, current)
+                if message:
                     status = 'error'
+                else:
+                    user = trans.user
             if user:
                 # Validate the new password
                 message = validate_password(trans, password, confirm)

@@ -112,7 +112,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.app.openid_manager.persist_session(trans, consumer)
                 if method == "redirect":
                     trans.response.send_redirect(openid_redirect)
-                return {"openid_redirect": openid_redirect}
+                return {"redirect": openid_redirect}
         return {"status": "error", "message": message}
 
     @web.expose
@@ -381,7 +381,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             pw_expires = trans.app.config.password_expiration_period
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
-                return self.message_exception(trans, "Your password has expired. Please change it to access Galaxy.")
+                change_password_url = url_for(controller='root', action='login', user=trans.security.encode_id(user.id))
+                return {"message": "Your password has expired. Please change it to access Galaxy.", "status": "warning", "redirect": change_password_url}
             trans.handle_user_login(user)
             trans.log_event("User logged in")
             if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
@@ -614,6 +615,17 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 #  Tokens don't match. Activation is denied.
                 return trans.show_error_message("You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>") % web.url_for(controller='root', action='index')
         return
+
+    @expose_api_anonymous_and_sessionless
+    def change_password(self, trans, payload={}, **kwd):
+        """
+        Allows to change own password.
+        """
+        user, message = trans.app.auth_manager.change_password(trans, **payload)
+        if user is None:
+            return self.message_exception(trans, message)
+        trans.handle_user_login(user)
+        return {"message": "Password has been changed."}
 
     @expose_api_anonymous_and_sessionless
     def reset_password(self, trans, payload={}, **kwd):

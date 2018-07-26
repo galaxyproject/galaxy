@@ -7,10 +7,13 @@ import socket
 from datetime import datetime
 
 from markupsafe import escape
+from sqlalchemy import and_, true
 
+from galaxy.managers import users
 from galaxy.auth.util import get_authenticators, parse_auth_results
-from galaxy.exceptions import Conflict
+from galaxy.exceptions import Conflict, MessageException
 from galaxy.util import hash_util, send_mail, string_as_bool
+from galaxy.security.validate_user_input import validate_password
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -22,6 +25,7 @@ class AuthManager(object):
         self.__app = app
         self.redact_username_in_logs = app.config.redact_username_in_logs
         self.authenticators = get_authenticators(app.config.auth_config_file)
+        self.user_manager = users.UserManager(app)
 
     def check_registration_allowed(self, email, username, password):
         """Checks if the provided email/username is allowed to register."""
@@ -104,12 +108,12 @@ class AuthManager(object):
                 auth_result = provider.authenticate_user(user, current_password, options)
                 if auth_result is True:
                     if string_as_bool(options.get("allow-password-change", False)):
-                        return (True, '')  # accept user
+                        return
                     else:
-                        return (False, 'Password change not supported.')
+                        return 'Password change not supported.'
                 elif auth_result is None:
                     break  # end authentication (skip rest)
-        return (False, 'Invalid current password.')
+        return 'Invalid current password.'
 
     def active_authenticators(self, email, username, password):
         """Yields AuthProvider instances for the provided configfile that match the
@@ -130,14 +134,62 @@ class AuthManager(object):
             log.exception("Active Authenticators Failure")
             raise
 
+    def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None, **kwd):
+        """
+        Allows to change a user password with a token.
+        """
+        if not token and not id:
+            return None, "Please provide a token or a user id and password."
+        if token:
+            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
+            if not token_result or not token_result.expiration_time > datetime.utcnow():
+                return None, "Invalid or expired password reset token, please request a new one."
+            user = token_result.user
+            message = self.__set_password(trans, user, password, confirm)
+            if message:
+                return None, message
+            token_result.expiration_time = datetime.utcnow()
+            trans.sa_session.add(token_result)
+            return user, "Password has been changed. Token has been invalidated."
+        else:
+            user = self.user_manager.by_id(trans.app.security.decode_id(id))
+            message = self.check_change_password(user, current)
+            if message:
+                return None, message
+            message = self.__set_password(trans, user, password, confirm)
+            if message:
+                return None, message
+            return user, "Password has been changed."
+
+    def __set_password(self, trans, user, password, confirm):
+        if not password:
+            return "Please provide a new password."
+        if user:
+            # Validate the new password
+            message = validate_password(trans, password, confirm)
+            if message:
+                return message
+            else:
+                # Save new password
+                user.set_password_cleartext(password)
+                # Invalidate all other sessions
+                for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
+                                                 .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                    other_galaxy_session.is_valid = False
+                    trans.sa_session.add(other_galaxy_session)
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+                trans.log_event("User change password")
+        else:
+            return "Failed to determine user, access denied."
+
     def send_verification_email(self, trans, email, username):
         """
         Send the verification email containing the activation link to the user's email.
         """
-        if username is None:
-            username = trans.user.username
-        activation_link = self.prepare_activation_link(trans, escape(email))
-
+        activation_link = self.__prepare_activation_link(trans, escape(email))
         host = trans.request.host.split(':')[0]
         if host in ['localhost', '127.0.0.1', '0.0.0.0']:
             host = socket.getfqdn()
@@ -163,15 +215,15 @@ class AuthManager(object):
             log.exception('Unable to send the activation email.')
             return False
 
-    def prepare_activation_link(self, trans, email):
+    def __prepare_activation_link(self, trans, email):
         """
         Prepare the account activation link for the user.
         """
-        activation_token = self.get_activation_token(trans, email)
+        activation_token = self.__get_activation_token(trans, email)
         activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=email, qualified=True)
         return activation_link
 
-    def get_activation_token(self, trans, email):
+    def __get_activation_token(self, trans, email):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
         """

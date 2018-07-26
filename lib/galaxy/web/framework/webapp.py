@@ -510,7 +510,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             # as maintenance overhead is far too high.
             allowed_paths = [
                 url_for('/user/reset_password'),
-                url_for('/api/users/set_password'),
+                url_for('/user/change_password'),
                 # client app route
                 # TODO: might be better as '/:username/login', '/:username/logout'
                 url_for(controller='root', action='login'),

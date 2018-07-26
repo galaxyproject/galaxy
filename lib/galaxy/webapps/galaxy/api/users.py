@@ -533,59 +533,10 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         Allows to the logged-in user to change own password.
         """
-        current = payload.get('current')
-        user = self._get_user(trans, id)
-        (ok, message) = trans.app.auth_manager.check_change_password(user, current)
-        if not ok:
+        user, message = trans.app.auth_manager.change_password(trans, id=id, **payload)
+        if user is None:
             raise MessageException(message)
-        return self.__set_password(trans, user, payload, **kwd)
-
-    @expose_api_anonymous_and_sessionless
-    def set_password_token(self, trans, payload={}, **kwd):
-        """
-        Allows to change a user password with a token.
-        """
-        token = payload.get('token')
-        if not token:
-            raise MessageException('Please provide a token.')
-        token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-        if not token_result or not token_result.expiration_time > datetime.utcnow():
-            raise MessageException('Invalid or expired password reset token, please request a new one.')
-        user = token_result.user
-        response = self.__set_password(trans, user, payload, **kwd)
-        trans.handle_user_login(token_result.user)
-        token_result.expiration_time = datetime.utcnow()
-        trans.sa_session.add(token_result)
-        return response
-
-    def __set_password(self, trans, user, payload={}, **kwd):
-        """
-        Allows to change a user password.
-        """
-        password = payload.get('password')
-        confirm = payload.get('confirm')
-        if not password:
-            raise MessageException('Please provide a new password.')
-        if user:
-            # Validate the new password
-            message = validate_password(trans, password, confirm)
-            if message:
-                raise MessageException(message)
-            else:
-                # Save new password
-                user.set_password_cleartext(password)
-                # Invalidate all other sessions
-                for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
-                                                 .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
-                    other_galaxy_session.is_valid = False
-                    trans.sa_session.add(other_galaxy_session)
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
-                trans.log_event('User change password')
-                return {'message': 'Password has been saved.'}
-        raise MessageException('Failed to determine user, access denied.')
+        return {"message": "Password has been changed."}
 
     @expose_api
     def get_permissions(self, trans, id, payload={}, **kwd):

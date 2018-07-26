@@ -81,12 +81,12 @@ export default {
             axios
                 .post(`${Galaxy.root}user/login`, data)
                 .then(response => {
-                    if (method == "openid") {
-                        window.location = response.data.openid_redirect;
+                    if (response.data.message && response.data.status) {
+                        alert(response.data.message);
+                    }
+                    if (response.data.redirect) {
+                        window.location = response.data.redirect;
                     } else {
-                        if (response.data.message && response.data.status) {
-                            alert(response.data.message);
-                        }
                         window.location = `${Galaxy.root}`;
                     }
                 })
