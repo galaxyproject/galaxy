@@ -95,6 +95,34 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
         return new_rows, sources
 
 
+class AddColumnGroupTagValueRuleDefinition(BaseRuleDefinition):
+    rule_type = "add_column_group_tag_value"
+
+    def validate_rule(self, rule):
+        _ensure_rule_contains_keys(rule, {"value": six.string_types})
+
+    def apply(self, rule, data, sources):
+        rule_value = rule["value"]
+        tag_prefix = "group:%s:" % rule_value
+
+        new_rows = []
+        for index, row in enumerate(data):
+            group_tag_value = None
+            source = sources[index]
+            tags = source["tags"]
+            for tag in sorted(tags):
+                if tag.startswith(tag_prefix):
+                    group_tag_value = tag[len(tag_prefix):]
+                    break
+
+            if group_tag_value is None:
+                group_tag_value = rule.get("default_value", "")
+
+            new_rows.append(row + [group_tag_value])
+
+        return new_rows, sources
+
+
 class AddColumnConcatenateRuleDefinition(BaseRuleDefinition):
     rule_type = "add_column_concatenate"
 
@@ -536,6 +564,7 @@ class RuleSet(object):
 
 RULES_DEFINITION_CLASSES = [
     AddColumnMetadataRuleDefinition,
+    AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,
     AddColumnBasenameRuleDefinition,
     AddColumnRegexRuleDefinition,

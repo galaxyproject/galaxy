@@ -412,6 +412,38 @@
     data: [["moo", "farm"], ["meow", "house"], ["bark", "firestation,house"]]
 
 - rules:
+    - type: add_column_group_tag_value
+      value: where
+      default_value: ''
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": ["group:where:farm"]}, {"identifiers": ["cat"], "tags": ["group:where:house"]}, {"identifiers": ["dog"], "tags": ["group:where:house"]}]
+  final:
+    data: [["moo", "farm"], ["meow", "house"], ["bark", "house"]]
+
+- doc: Test add_column_group_tag_value default value.
+  rules:
+    - type: add_column_group_tag_value
+      value: where
+      default_value: 'barn'
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": []}, {"identifiers": ["cat"], "tags": ["group:where:house"]}, {"identifiers": ["dog"], "tags": ["group:where:firestation"]}]
+  final:
+    data: [["moo", "barn"], ["meow", "house"], ["bark", "firestation"]]
+
+- doc: Test add_column_group_tag_value sorts and grabs first tag value if multiple present.
+  rules:
+    - type: add_column_group_tag_value
+      value: where
+      default_value: 'barn'
+  initial:
+    data: [["moo"], ["meow"], ["bark"]]
+    sources: [{"identifiers": ["cow"], "tags": []}, {"identifiers": ["cat"], "tags": ["group:where:house", "group:where:kittenpile"]}, {"identifiers": ["dog"], "tags": ["group:where:house", "group:where:firestation"]}]
+  final:
+    data: [["moo", "barn"], ["meow", "house"], ["bark", "firestation"]]
+
+- rules:
     - type: invalid_rule_type
   error: true
 

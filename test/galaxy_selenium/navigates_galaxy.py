@@ -1023,6 +1023,8 @@ class NavigatesGalaxy(HasDriver):
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
         else:
             tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
+        tool_element = tool_link.wait_for_present()
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", tool_element)
         tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):

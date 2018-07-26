@@ -196,6 +196,47 @@ const RULES = {
             return { data, columns };
         }
     },
+    add_column_group_tag_value: {
+        title: _l("Add Column from Group Tag Value"),
+        display: (rule, colHeaders) => {
+            return `Add column for value of group tag ${rule.value}.`;
+        },
+        init: (component, rule) => {
+            if (!rule) {
+                component.addColumnGroupTagValueValue = null;
+                component.addColumnGroupTagValueDefault = '';
+            } else {
+                component.addColumnGroupTagValueValue = rule.value;
+                component.addColumnGroupTagValueDefault = rule.default_value;
+            }
+        },
+        save: (component, rule) => {
+            rule.value = component.addColumnGroupTagValueValue;
+            rule.default_value = component.addColumnGroupTagValueDefault;
+        },
+        apply: (rule, data, sources, columns) => {
+            const ruleValue = rule.value;
+            const groupTagPrefix = `group:${ruleValue}:`;
+            const newRow = (row, index) => {
+                const newRow = row.slice();
+                const tags = sources[index]["tags"];
+                tags.sort();
+                let groupTagValue = rule.default_value;
+                for (let index in tags) {
+                    const tag = tags[index];
+                    if ( tag.indexOf(groupTagPrefix) == 0 ) {
+                        groupTagValue = tag.substr(groupTagPrefix.length);
+                        break;
+                    }
+                }
+                newRow.push(groupTagValue);
+                return newRow;
+            };
+            data = data.map(newRow);
+            columns.push(NEW_COLUMN);
+            return { data, columns };
+        }
+    },
     add_column_regex: {
         title: _l("Using a Regular Expression"),
         display: (rule, colHeaders) => {
