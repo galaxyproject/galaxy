@@ -337,7 +337,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             message = "No such user or invalid password."
         return message, status, user, success
 
-    def __validate_login(self, trans, payload=None, **kwd):
+    def __validate_login(self, trans, payload=None, pw_expires=False, **kwd):
         '''Handle Galaxy Log in'''
         payload = payload or {}
         login = kwd.get("login", payload.get("login"))
@@ -378,7 +378,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 message, status = self.resend_verification_email(trans, user.email, user.username)
                 return self.message_exception(trans, message, sanitize=False)
         else:  # activation is OFF
-            pw_expires = trans.app.config.password_expiration_period
+            pw_expires = pw_expires or trans.app.config.password_expiration_period
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
                 change_password_url = url_for(controller='root', action='login', user=trans.security.encode_id(user.id))

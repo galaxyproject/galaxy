@@ -9,11 +9,11 @@ from datetime import datetime
 from markupsafe import escape
 from sqlalchemy import and_, true
 
-from galaxy.managers import users
 from galaxy.auth.util import get_authenticators, parse_auth_results
-from galaxy.exceptions import Conflict, MessageException
-from galaxy.util import hash_util, send_mail, string_as_bool
+from galaxy.exceptions import Conflict
+from galaxy.managers import users
 from galaxy.security.validate_user_input import validate_password
+from galaxy.util import hash_util, send_mail, string_as_bool
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -134,12 +134,12 @@ class AuthManager(object):
             log.exception("Active Authenticators Failure")
             raise
 
-    def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None, **kwd):
+    def change_password(self, trans, password=None, confirm=None, token=None, id=None, user=None, current=None, **kwd):
         """
         Allows to change a user password with a token.
         """
-        if not token and not id:
-            return None, "Please provide a token or a user id and password."
+        if not token and not id and not user:
+            return None, "Please provide a token or a user and password."
         if token:
             token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
             if not token_result or not token_result.expiration_time > datetime.utcnow():
@@ -152,14 +152,18 @@ class AuthManager(object):
             trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
-            user = self.user_manager.by_id(trans.app.security.decode_id(id))
-            message = self.check_change_password(user, current)
-            if message:
-                return None, message
-            message = self.__set_password(trans, user, password, confirm)
-            if message:
-                return None, message
-            return user, "Password has been changed."
+            if not user:
+                user = self.user_manager.by_id(trans.app.security.decode_id(id))
+            if user:
+                message = self.check_change_password(user, current)
+                if message:
+                    return None, message
+                message = self.__set_password(trans, user, password, confirm)
+                if message:
+                    return None, message
+                return user, "Password has been changed."
+            else:
+                return user, "User not found."
 
     def __set_password(self, trans, user, password, confirm):
         if not password:

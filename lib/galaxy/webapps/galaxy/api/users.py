@@ -4,13 +4,11 @@ API operations on User objects.
 import json
 import logging
 import re
-from datetime import datetime
 
 import six
 import yaml
 from markupsafe import escape
 from sqlalchemy import (
-    and_,
     false,
     or_,
     true
@@ -39,8 +37,7 @@ from galaxy.util import (
 from galaxy.util.odict import odict
 from galaxy.web import (
     _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous,
-    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
+    _future_expose_api_anonymous as expose_api_anonymous
 )
 from galaxy.web.base.controller import (
     BaseAPIController,
