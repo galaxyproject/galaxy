@@ -296,7 +296,8 @@ class AddFilterEmptyRuleDefinition(BaseRuleDefinition):
         target_column = rule["target_column"]
 
         def _filter(index):
-            return not invert if len(data[target_column]) == 0 else invert
+            non_empty = len(data[index][target_column]) != 0
+            return not invert if non_empty else invert
 
         return _filter_index(_filter, data), _filter_index(_filter, sources)
 
