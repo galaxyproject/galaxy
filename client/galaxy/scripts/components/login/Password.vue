@@ -28,7 +28,7 @@ export default {
     data() {
         return {
             token: Galaxy.params.token,
-            user: Galaxy.params.user,
+            user: Galaxy.params.expired_user,
             password: null,
             confirm: null,
             current: null,

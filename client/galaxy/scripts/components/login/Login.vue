@@ -84,7 +84,9 @@ export default {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    if (response.data.redirect) {
+                    if (response.data.expired_user) {
+                        window.location = `${Galaxy.root}root/login?expired_user=${response.data.expired_user}`;
+                    } else if (response.data.redirect) {
                         window.location = response.data.redirect;
                     } else {
                         window.location = `${Galaxy.root}`;

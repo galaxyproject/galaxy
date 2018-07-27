@@ -13,7 +13,7 @@ window.app = function app(options, bootstrapped) {
         Galaxy.page = new Page.View(options);
         var vm = document.createElement("div");
         Galaxy.display(vm);
-        var component = Galaxy.params.token || Galaxy.params.user ? Password : Login;
+        var component = Galaxy.params.token || Galaxy.params.expired_user ? Password : Login;
         var loginInstance = Vue.extend(component);
         new loginInstance({propsData: options}).$mount(vm);
     });

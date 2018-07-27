@@ -4,7 +4,6 @@ $(function() {
   $("[name='password']").complexify({'minimumChars':6}, function(valid, complexity){
     var progressBar = $('.progress-bar');
     var color = valid ? 'lightgreen' : 'red';
-
     progressBar.css('background-color', color);
     progressBar.css({'width': complexity + '%'});
   });
@@ -17,6 +16,7 @@ $(function() {
         %if token:
             <input type="hidden" name="token" value="${token|h}"/>
         %else:
+            <input type="hidden" name="expired_user" value="${expired_user|h}"/>
             <div class="form-row">
                 <label>Current password:</label>
                 <input type="password" name="current" value="" size="40"/>

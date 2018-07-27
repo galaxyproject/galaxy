@@ -65,11 +65,15 @@ class User(BaseUser):
             csrf_check = trans.check_csrf_token()
             if csrf_check:
                 return csrf_check
-            response = self.__validate_login(trans, pw_expires=False, **kwd)
+            response = self.__validate_login(trans, **kwd)
             if trans.response.status == 400:
                 trans.response.status = 200
                 message = response.get("err_msg")
                 status = "error"
+            elif response.get("expired_user"):
+                change_password_url = url_for(controller='user', action='change_password', expired_user=response.get("expired_user"))
+                message = "%s<br>Click <a href='%s'>here</a> to change your password." % (response.get("message"), change_password_url)
+                status = "warning"
             else:
                 success = True
             if success:
@@ -308,7 +312,7 @@ class User(BaseUser):
                                                         **kwd))
 
     @web.expose
-    def change_password(self, trans, token=None, **kwd):
+    def change_password(self, trans, token=None, expired_user=None, **kwd):
         """
         Provides a form with which one can change their password.  If token is
         provided, don't require current password.
@@ -318,11 +322,11 @@ class User(BaseUser):
             confirm = kwd.get('confirm', '')
             current = kwd.get('current', '')
             user, message = trans.app.auth_manager.change_password(trans, password=password,
-                current=current, token=token, confirm=confirm, user=trans.user)
+                current=current, token=token, confirm=confirm, id=expired_user)
             if not user:
                 return trans.show_error_message(message)
             return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
-        return trans.fill_template('/webapps/tool_shed/user/change_password.mako', token=token)
+        return trans.fill_template('/webapps/tool_shed/user/change_password.mako', token=token, expired_user=expired_user)
 
     def __validate(self, trans, params, email, password, confirm, username):
         # If coming from the tool shed webapp, we'll require a public user name
