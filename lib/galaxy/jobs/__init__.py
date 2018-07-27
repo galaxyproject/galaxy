@@ -28,6 +28,7 @@ from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
@@ -707,11 +708,11 @@ class JobWrapper(HasResourceParameters):
         self.write_version_cmd = None
         self.version_string = ""
         self.__galaxy_lib_dir = None
-        # With job outputs in the working directory, we need the working
-        # directory to be set before prepare is run, or else premature deletion
-        # and job recovery fail.
-        # Create the working dir if necessary
-        self._create_working_directory()
+        # If the job has an object_store_id ensure working directory is setup, otherwise
+        # wait for that to be assigned before configuring it. Either way the working
+        # directory does not to be configured on this object before prepare() is called.
+        if job.object_store_id:
+            self._create_working_directory(job=job)
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
         self._dataset_path_rewriter = None
@@ -895,8 +896,9 @@ class JobWrapper(HasResourceParameters):
             self.write_version_cmd = None
         return self.extra_filenames
 
-    def _create_working_directory(self):
-        job = self.get_job()
+    def _create_working_directory(self, job=None):
+        if job is None:
+            job = self.get_job()
         try:
             self.app.object_store.create(
                 job, base_dir='job_work', dir_only=True, obj_dir=True)
@@ -931,7 +933,7 @@ class JobWrapper(HasResourceParameters):
         date_str = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         arc_dir = os.path.join(base, date_str)
         shutil.move(self.working_directory, arc_dir)
-        self._create_working_directory()
+        self._create_working_directory(job=job)
         log.debug('(%s) Previous working directory moved to %s',
                   self.job_id, arc_dir)
 
@@ -1163,11 +1165,36 @@ class JobWrapper(HasResourceParameters):
 
     def enqueue(self):
         job = self.get_job()
+        self._set_object_store_ids(job)
         # Change to queued state before handing to worker thread so the runner won't pick it up again
         self.change_state(model.Job.states.QUEUED, flush=False, job=job)
         # Persist the destination so that the job will be included in counts if using concurrency limits
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
         self.sa_session.flush()
+
+    def _set_object_store_ids(self, job):
+        if self.app.config.legacy_eager_objectstore_initialization:
+            return
+
+        if job.object_store_id:
+            # We aren't setting this during job creation anymore, but some existing
+            # jobs may have this set. Skip this following code if that is the case.
+            return
+
+        object_store_populator = ObjectStorePopulator(self.app)
+
+        # Ideally we would do this without loading the actual job association objects but
+        # change_state isn't yet optimized to do that anyway so we need to do that
+        # anyway. In the future though - this should be done with a custom query
+        # that just loads Dataset.ids, passes them through object store code, and sets
+        # object_store_id on those ids with a multi-update afterward. State below
+        # needs to happen the same way.
+        for dataset_assoc in job.output_datasets + job.output_library_datasets:
+            dataset = dataset_assoc.dataset
+            object_store_populator.set_object_store_id(dataset)
+
+        job.object_store_id = object_store_populator.object_store_id
+        self._create_working_directory(job=job)
 
     def finish(
         self,

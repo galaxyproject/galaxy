@@ -133,6 +133,7 @@ class MockAppConfig(Bunch):
         self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
+        self.legacy_eager_objectstore_initialization = True
 
         # set by MockDir
         self.root = root

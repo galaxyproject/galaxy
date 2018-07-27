@@ -420,7 +420,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
             else:
                 job.add_output_dataset(output_name, dataset)
             # Create an empty file immediately
-            if not dataset.dataset.external_filename:
+            if not dataset.dataset.external_filename and trans.app.config.legacy_eager_objectstore_initialization:
                 dataset.dataset.object_store_id = object_store_id
                 try:
                     trans.app.object_store.create(dataset.dataset)
