@@ -134,11 +134,11 @@ class AuthManager(object):
             log.exception("Active Authenticators Failure")
             raise
 
-    def change_password(self, trans, password=None, confirm=None, token=None, id=None, user=None, current=None, **kwd):
+    def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None, **kwd):
         """
         Allows to change a user password with a token.
         """
-        if not token and not id and not user:
+        if not token and not id:
             return None, "Please provide a token or a user and password."
         if token:
             token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
@@ -152,8 +152,7 @@ class AuthManager(object):
             trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
-            if not user:
-                user = self.user_manager.by_id(trans.app.security.decode_id(id))
+            user = self.user_manager.by_id(trans.app.security.decode_id(id))
             if user:
                 message = self.check_change_password(user, current)
                 if message:
