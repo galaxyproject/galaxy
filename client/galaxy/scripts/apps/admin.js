@@ -20,6 +20,7 @@ window.app = function app(options, bootstrapped) {
     /** Routes */
     var AdminRouter = Router.extend({
         routes: {
+            "(/)admin(/)" : "home",
             "(/)admin(/)users": "show_users",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
@@ -29,11 +30,22 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
-            "(/)admin/data_types": "show_data_types"
+            "(/)admin/data_types": "show_data_types",
+            "*notFound": "not_found"
         },
 
         authenticate: function() {
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
+        },
+
+        not_found: function() {
+            window.location.href = `${Galaxy.root}${Backbone.history.getFragment()}`;
+        },
+
+        home: function() {
+            this.page
+                .$("#galaxy_main")
+                .prop("src", `${Galaxy.root}admin/center?message=${options.message}&status=${options.status}`);
         },
 
         show_users: function() {
