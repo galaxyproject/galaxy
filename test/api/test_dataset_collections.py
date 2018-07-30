@@ -3,7 +3,7 @@ import tarfile
 
 from base import api
 from base.populators import DatasetCollectionPopulator, DatasetPopulator
-from six import StringIO
+from six import BytesIO
 
 
 class DatasetCollectionApiTestCase(api.ApiTestCase):
@@ -98,7 +98,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_dce) == 3, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
@@ -113,7 +113,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         hdca_id = dataset_collection['id']
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=hdca_id)
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
@@ -129,7 +129,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         pair = returned_dce[0]
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         pair_collection_name = pair['element_identifier']
@@ -143,7 +143,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
 
@@ -154,7 +154,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
 
