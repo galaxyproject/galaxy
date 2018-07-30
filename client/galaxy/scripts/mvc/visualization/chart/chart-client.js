@@ -45,7 +45,7 @@ export default Backbone.View.extend({
             })
             .fail(response => {
                 let message = response.responseJSON && response.responseJSON.err_msg;
-                this.errormessage = message || "Import failed for unkown reason.";
+                this.errormessage = message || "Import failed for an unknown reason.";
             });
     }
 });

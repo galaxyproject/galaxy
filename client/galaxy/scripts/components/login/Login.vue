@@ -95,7 +95,7 @@ export default {
                 .catch(error => {
                     this.messageVariant = "danger";
                     let message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for unkown reason.";
+                    this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
         reset: function(ev) {
@@ -109,7 +109,7 @@ export default {
                 .catch(error => {
                     this.messageVariant = "danger";
                     let message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Password reset failed for unkown reason.";
+                    this.messageText = message || "Password reset failed for an unknown reason.";
                 });
         }
     }

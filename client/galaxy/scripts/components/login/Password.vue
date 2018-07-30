@@ -58,7 +58,7 @@ export default {
                 .catch(error => {
                     this.messageVariant = "danger";
                     let message = error.response && error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for unkown reason.";
+                    this.messageText = message || "Login failed for an unknown reason.";
                 });
         }
     }
