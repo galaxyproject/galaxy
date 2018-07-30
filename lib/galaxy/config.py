@@ -662,7 +662,16 @@ class Configuration(object):
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
-        if kwargs.get("log_destination", None):
+        log_destination = kwargs.get("log_destination", None)
+        if log_destination == "stdout":
+            LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
+                'class': 'logging.StreamHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'stream': 'ext://sys.stdout',
+                'filters': ['stack']
+            }
+        elif log_destination:
             LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
                 'class': 'logging.FileHandler',
                 'formatter': 'stack',
