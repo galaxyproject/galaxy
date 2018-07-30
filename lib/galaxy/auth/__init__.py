@@ -134,7 +134,7 @@ class AuthManager(object):
             log.exception("Active Authenticators Failure")
             raise
 
-    def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None, **kwd):
+    def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """
         Allows to change a user password with a token.
         """
