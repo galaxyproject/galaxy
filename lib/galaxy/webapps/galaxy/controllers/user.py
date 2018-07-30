@@ -615,6 +615,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     def change_password(self, trans, payload={}, **kwd):
         """
         Allows to change own password.
+
+        :type   payload: dict
+        :param  payload: dictionary structure containing:
+            * id:               encoded user id
+            * current:          current user password
+            * token:            temporary token to change password (instead of id and current)
+            * password:         new password
+            * confirm:          new password (confirmation)
         """
         user, message = trans.app.auth_manager.change_password(trans, **payload)
         if user is None:
