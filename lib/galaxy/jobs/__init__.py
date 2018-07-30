@@ -712,7 +712,7 @@ class JobWrapper(HasResourceParameters):
         # wait for that to be assigned before configuring it. Either way the working
         # directory does not to be configured on this object before prepare() is called.
         if job.object_store_id:
-            self._create_working_directory(job=job)
+            self._setup_working_directory(job=job)
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
         self._dataset_path_rewriter = None
@@ -896,15 +896,12 @@ class JobWrapper(HasResourceParameters):
             self.write_version_cmd = None
         return self.extra_filenames
 
-    def _create_working_directory(self, job=None):
+    def _setup_working_directory(self, job=None):
         if job is None:
             job = self.get_job()
         try:
-            self.app.object_store.create(
-                job, base_dir='job_work', dir_only=True, obj_dir=True)
-            self.working_directory = self.app.object_store.get_filename(
-                job, base_dir='job_work', dir_only=True, obj_dir=True)
-
+            working_directory = self._create_working_directory(job)
+            self.working_directory = working_directory
             # The tool execution is given a working directory beneath the
             # "job" working directory.
             self.tool_working_directory = os.path.join(self.working_directory, "working")
@@ -914,6 +911,13 @@ class JobWrapper(HasResourceParameters):
         except ObjectInvalid:
             raise Exception('(%s) Unable to create job working directory',
                             job.id)
+
+    def _create_working_directory(self, job):
+        self.app.object_store.create(
+            job, base_dir='job_work', dir_only=True, obj_dir=True)
+        working_directory = self.app.object_store.get_filename(
+            job, base_dir='job_work', dir_only=True, obj_dir=True)
+        return working_directory
 
     def clear_working_directory(self):
         job = self.get_job()
@@ -933,7 +937,7 @@ class JobWrapper(HasResourceParameters):
         date_str = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
         arc_dir = os.path.join(base, date_str)
         shutil.move(self.working_directory, arc_dir)
-        self._create_working_directory(job=job)
+        self._setup_working_directory(job=job)
         log.debug('(%s) Previous working directory moved to %s',
                   self.job_id, arc_dir)
 
@@ -1194,7 +1198,7 @@ class JobWrapper(HasResourceParameters):
             object_store_populator.set_object_store_id(dataset)
 
         job.object_store_id = object_store_populator.object_store_id
-        self._create_working_directory(job=job)
+        self._setup_working_directory(job=job)
 
     def finish(
         self,
@@ -1908,9 +1912,8 @@ class TaskWrapper(JobWrapper):
     # Abstract this to be more useful for running tasks that *don't* necessarily compose a job.
 
     def __init__(self, task, queue):
-        super(TaskWrapper, self).__init__(task.job, queue)
         self.task_id = task.id
-        self.working_directory = task.working_directory
+        super(TaskWrapper, self).__init__(task.job, queue)
         if task.prepare_input_files_cmd is not None:
             self.prepare_input_files_cmds = [task.prepare_input_files_cmd]
         else:
@@ -2092,6 +2095,12 @@ class TaskWrapper(JobWrapper):
         required in the task case so they can be merged.
         """
         return os.path.join(self.working_directory, os.path.basename(output_path))
+
+    def _create_working_directory(self, job):
+        task = self.get_task()
+        working_directory = task.working_directory
+        safe_makedirs(working_directory)
+        return working_directory
 
 
 @six.add_metaclass(ABCMeta)
