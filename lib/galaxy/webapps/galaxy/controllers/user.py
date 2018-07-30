@@ -636,10 +636,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         if message:
             return self.message_exception(trans, message)
         else:
-            # Default to a non-userinfo-leaking response message
-            message = ("Your reset request for %s has been received.  "
-                       "Please check your email account for more instructions.  "
-                       "If you do not receive an email shortly, please contact an administrator." % email)
             reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
             if not reset_user:
                 # Perform a case-insensitive check only if the user wasn't found
