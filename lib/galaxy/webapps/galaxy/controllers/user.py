@@ -337,9 +337,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             message = "No such user or invalid password."
         return message, status, user, success
 
-    def __validate_login(self, trans, payload=None, **kwd):
+    def __validate_login(self, trans, payload={}, **kwd):
         '''Handle Galaxy Log in'''
-        payload = payload or {}
         login = kwd.get("login", payload.get("login"))
         password = kwd.get("password", payload.get("password"))
         status = None
