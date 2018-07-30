@@ -503,7 +503,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 # Create the user, save all the user info and login to Galaxy
                 if params.get('create_user_button', False):
                     # Check email and password validity
-                    message = self.__validate(trans, params, email, password, confirm, username)
+                    message = self.__validate(trans, email, password, confirm, username)
                     if not message:
                         # All the values are valid
                         message, status, user, success = self.__register(trans, subscribe_checked=subscribe_checked, **kwd)
@@ -669,7 +669,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                     return self.message_exception(trans, "Failed to submit email. Please contact the administrator: %s" % str(e))
         return {"message": "Reset link has been sent to your email."}
 
-    def __validate(self, trans, params, email, password, confirm, username):
+    def __validate(self, trans, email, password, confirm, username):
         message = "\n".join([validate_email(trans, email),
                              validate_password(trans, password, confirm),
                              validate_publicname(trans, username)]).rstrip()
