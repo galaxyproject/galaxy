@@ -14,6 +14,8 @@
                     <option value="${provider.id}">${provider.name}</option>
                 %endfor
                 </select> account.
+                <br>
+                This feature will be deprecated in 19.05 release.
             </div>
             <input type="hidden" name="method" value="redirect"/>
             <div class="form-row">
