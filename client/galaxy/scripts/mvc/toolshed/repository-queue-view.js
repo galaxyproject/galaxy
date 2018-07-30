@@ -116,8 +116,7 @@ var View = Backbone.View.extend({
     templateRepoQueue: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner"><%= title %></div>',
-            '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+                '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<div class="tab-pane" id="panel_header" id="repository_queue">',
             '<table id="queued_repositories" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
