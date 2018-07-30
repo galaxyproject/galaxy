@@ -297,7 +297,7 @@ admin:
 
   selectors:
     # TODO: place betters IDS or something on this in these grids in the DOM
-    datatypes_grid: '#datatypes-grid'
+    datatypes_grid: '#data-types-grid'
     data_tables_grid: '#data-tables-grid'
     display_applications_grid: '#display-applications-grid'
     update_jobs: 'form[name="jobs"]'
