@@ -23,6 +23,7 @@
                      <b-form-select v-model="provider" :options="openid_providers"/>
                 </b-form-group>
                 <b-button type="submit">Login with OpenID</b-button>
+                <b-form-text>This feature will be deprecated in release 19.05.</b-form-text>
             </b-card>
         </b-form>
         <br>
