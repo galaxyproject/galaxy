@@ -342,8 +342,10 @@ def _make_file(self, binary=None):
 def _read_lines(self):
     # Always make a new file
     self.file = self.make_file()
-    # Adapt `self.__file = None` to Python name mangling of class-private attributes
-    setattr(self, '_' + self.__class__.__name__ + '__file', None)
+    # Adapt `self.__file = None` to Python name mangling of class-private attributes.
+    # We need to patch the original FieldStorage class attribute, not the cgi_FieldStorage
+    # class.
+    setattr(self, '_FieldStorage__file', None)
     if self.outerboundary:
         self.read_lines_to_outerboundary()
     else:
