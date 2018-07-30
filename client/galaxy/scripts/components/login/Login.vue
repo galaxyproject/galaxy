@@ -16,10 +16,7 @@
         <br>
         <b-form v-if="openid_providers && openid_providers.length > 0" @submit.prevent="submit('openid')">
             <b-card header="OpenID login">
-                <b-form-group label="Enter a URL">
-                    <b-form-input type="text" v-model="url"/>
-                </b-form-group>
-                <b-form-group label="Or select a provider:">
+                <b-form-group label="Select a provider:">
                      <b-form-select v-model="provider" :options="openid_providers"/>
                 </b-form-group>
                 <b-button type="submit">Login with OpenID</b-button>

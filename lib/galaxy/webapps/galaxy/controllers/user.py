@@ -79,20 +79,17 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         super(User, self).__init__(app)
         self.user_manager = users.UserManager(app)
 
-    def __openid_auth(self, trans, payload=None, **kwd):
+    def __openid_auth(self, trans, payload=None):
         '''Handles user request to access an OpenID provider'''
         if not trans.app.config.enable_openid:
             return self.message_exception(trans, 'OpenID authentication is not enabled in this instance of Galaxy.')
         message = 'Unspecified failure authenticating via OpenID.'
         auto_associate = util.string_as_bool(payload.get('auto_associate', False))
         consumer = trans.app.openid_manager.get_consumer(trans)
-        openid_url = payload.get('openid_url')
         openid_provider = payload.get('openid_provider')
         redirect = payload.get('redirect')
         method = payload.get('method')
-        if openid_url:
-            openid_provider_obj = trans.app.openid_providers.new_provider_from_identifier(openid_url)
-        elif openid_provider:
+        if openid_provider:
             openid_provider_obj = trans.app.openid_providers.get(openid_provider)
         else:
             return self.message_exception(trans, 'An OpenID provider was not specified.')
@@ -263,8 +260,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     @expose_api_anonymous_and_sessionless
     def login(self, trans, payload={}, **kwd):
         '''Handle Galaxy Log in'''
-        if "openid_provider" in payload or "openid_url" in payload:
-            return self.__openid_auth(trans, payload, **kwd)
+        if "openid_provider" in payload:
+            return self.__openid_auth(trans, payload)
         return self.__validate_login(trans, payload, **kwd)
 
     def __handle_role_and_group_auto_creation(self, trans, user, roles, auto_create_roles=False,
