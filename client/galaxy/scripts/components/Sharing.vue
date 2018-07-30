@@ -37,13 +37,13 @@
                     <b-button @click="setSharing('disable_link_access')">Disable Access to {{model_class}} Link</b-button>
                     <div class="toolParamHelp">Disables {{model_class_lc}}'s link so that it is not accessible.</div>
                     <br/>
-                    <b-button @click="setSharing('publish')">Publish {{model_class}}</b-button>
+                    <b-button id="make_accessible_and_publish" @click="setSharing('publish')">Publish {{model_class}}</b-button>
                     <div class="toolParamHelp">Publishes the {{model_class_lc}} to Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section, where it is publicly listed and searchable.</div>
                     <br/>
                 </div>
                 <div v-else>
                     <!-- Item is importable and published. User can unpublish or disable import and unpublish. -->
-                    <b-button @click="setSharing('disable_link_access_and_unpublish')">Disable Access to {{model_class}} via Link and Unpublish</b-button>
+                    <b-button id="disable_link_access_and_unpublish" @click="setSharing('disable_link_access_and_unpublish')">Disable Access to {{model_class}} via Link and Unpublish</b-button>
                     <div class="toolParamHelp">Disables this {{model_class_lc}}'s link so that it is not accessible and removes {{model_class_lc}} from Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section so that it is not publicly listed or searchable.</div>
                     <br/>
                     <b-button @click="setSharing('unpublish')">Unpublish {{model_class}}</b-button>
@@ -55,7 +55,7 @@
                 <b-button @click="setSharing('make_accessible_via_link')">Make {{model_class}} Accessible via Link</b-button>
                 <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the {{model_class_lc}}.</div>
                 <br/>
-                <b-button @click="setSharing('make_accessible_and_publish')">Make {{model_class}} Accessible and Publish</b-button>
+                <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')">Make {{model_class}} Accessible and Publish</b-button>
                 <div class="toolParamHelp">Makes the {{model_class_lc}} accessible via link (see above) and publishes the {{model_class_lc}} to Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section, where it is publicly listed and searchable.</div>
             </div>
             <br/><br/>
@@ -72,7 +72,7 @@
                 <div v-else>
                     <p>You have not shared this {{model_class_lc}} with any users.</p>
                 </div>
-                <b-button :href="share_url">
+                <b-button :href="share_url" id="share_with_a_user">
                     <span>Share with a user</span>
                 </b-button>
             </div>
