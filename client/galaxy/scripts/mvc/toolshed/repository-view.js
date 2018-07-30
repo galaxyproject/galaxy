@@ -44,8 +44,10 @@ var ToolShedRepositoryView = Backbone.View.extend({
         this.options.repository_dependencies_template = this.templateRepoDependencies;
         this.options.repository_dependency_template = this.templateRepoDependency;
         this.options.tps_template_global_select = this.templateGlobalSectionSelect;
+        this.options.tps_template_global_create = this.templateGlobalSectionCreate;
         this.options.tps_template_tool_select = this.templateToolSectionSelect;
-        this.options.tps_select_options = this.templatePanelSelectOptions;
+        this.options.tps_template_tool_create = this.templateToolSectionCreate;
+        this.options.panel_section_options = this.templatePanelSelectOptions;
         this.options.tool_dependencies = models.get("tool_dependencies");
         this.options.shed_tool_conf = this.templateShedToolConf({
             shed_tool_confs: models.get("shed_conf")
@@ -129,19 +131,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             toolshed_util.addToQueue(repository_metadata);
             that.checkInstalled(repository_metadata);
         });
-        $(".tool_panel_section_picker").on("change", function() {
-            var new_value = $(this)
-                .find("option:selected")
-                .val();
-            var default_tps = $("#tool_panel_section_select")
-                .find("option:selected")
-                .val();
-            if (new_value == default_tps) {
-                $(this).attr("default", "active");
-            } else {
-                $(this).removeAttr("default");
-            }
-        });
+        that.toolTPSSelectionEvents();
         $(() => {
             $("#repository_dependencies").jstree();
         });
@@ -186,6 +176,25 @@ var ToolShedRepositoryView = Backbone.View.extend({
                     }
                 });
             });
+        });
+        $('.select-tps-button').click(function(params) {
+            var changeset = that.selectedChangeset();
+            var guid = params.target.attributes.getNamedItem('data-toolguid');
+            that.showToolTPSSelect(guid, changeset);
+        });
+        $('.create-tps-button').click(function(params) {
+            var changeset = that.selectedChangeset();
+            var guid = params.target.attributes.getNamedItem('data-toolguid');
+            that.showToolTPSCreate(guid, changeset);
+        });
+        $('.global-select-tps-button').click(function() {
+            $('#tool_panel_section').replaceWith(that.options.tps_template_global_select(that.options));
+            that.propagateTPS();
+            that.bindEvents();
+        });
+        $('.global-create-tps-button').click(function() {
+            $('#tool_panel_section').replaceWith(that.options.tps_template_global_create());
+            that.bindEvents();
         });
     },
 
@@ -287,7 +296,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     tpsSelection: function() {
-        new_tps = $("#tool_panel_section_select")
+        var new_tps = $("#tool_panel_section_select")
             .find("option:selected")
             .val();
         $('.tool_panel_section_picker[default="active"]').each(function() {
@@ -313,6 +322,74 @@ var ToolShedRepositoryView = Backbone.View.extend({
         Backbone.history.navigate(new_route, {
             trigger: true,
             replace: true
+        });
+    },
+
+    selectedChangeset: function() {
+        var changeset = $("#changeset")
+            .find("option:selected")
+            .val();
+        return changeset;
+    },
+
+    showToolTPSCreate: function(guid, changeset) {
+        var that = this;
+        var metadata = that.options.current_metadata;
+        var tools = metadata.tools;
+        var tool = toolshed_util.toolByGuid(guid, changeset, tools);
+        var selector = '#tool_tps_' + tool.clean;
+        $(selector).empty();
+        $(selector).append(that.options.tps_template_tool_create({tool: tool}));
+        $('.select-tps-button').click(function(params) {
+            var changeset = that.selectedChangeset();
+            var guid = params.target.attributes.getNamedItem('data-toolguid');
+            that.showToolTPSSelect(guid, changeset);
+        });
+        that.bindEvents();
+    },
+
+    showToolTPSSelect: function(guid, changeset) {
+        var that = this;
+        var metadata = that.options.current_metadata;
+        var tools = metadata.tools;
+        var tool = toolshed_util.toolByGuid(guid, changeset, tools);
+        var selector = '#tool_tps_' + tool.clean;
+        $(selector).empty();
+        $(selector).append(that.options.tps_template_tool_select({tool: tool,
+            panel_section_dict: that.options.panel_section_dict,
+            panel_section_options: that.options.panel_section_options}));
+        $('.create-tps-button').click(function(params) {
+            var changeset = that.selectedChangeset();
+            var guid = params.target.attributes.getNamedItem('data-toolguid');
+            that.showToolTPSCreate(guid, changeset);
+        });
+        that.bindEvents();
+    },
+
+    propagateTPS: function() {
+        var that = this;
+        $('#tool_panel_section_select').change(function() {
+            var new_tps = $('#tool_panel_section_select').find('option:selected').val();
+            $('.tool_panel_section_picker[default="active"]').each(function() {
+                $(this).val(new_tps);
+            });
+        });
+        that.toolTPSSelectionEvents();
+    },
+
+    toolTPSSelectionEvents: function() {
+        $(".tool_panel_section_picker").on("change", function() {
+            var new_value = $(this)
+                .find("option:selected")
+                .val();
+            var default_tps = $("#tool_panel_section_select")
+                .find("option:selected")
+                .val();
+            if (new_value == default_tps) {
+                $(this).attr("default", "active");
+            } else {
+                $(this).removeAttr("default");
+            }
         });
     },
 
@@ -408,20 +485,20 @@ var ToolShedRepositoryView = Backbone.View.extend({
             '<th style="padding-left: 40px;">Name</th>',
             "<th>Description</th>",
             "<th>Version</th>",
-            "<th><%= tps_template_global_select({tps: panel_section_dict, tps_select_options: tps_select_options}) %></tr>",
+            "<th><%= tps_template_global_select({panel_section_dict: panel_section_dict, panel_section_options: panel_section_options}) %></tr>",
             "</thead>",
             '<tbody id="tools_in_repo">',
             "<% _.each(current_metadata.tools, function(tool) { %>",
             '<tr id="libraryItem-<%= tool.clean %>" class="tool_row" style="display: table-row;" style="width: 15%">',
             '<td style="padding-left: 40px;">',
             '<div id="tool-<%= tool.clean %>" class="menubutton split popup" style="float: left;">',
-            '<a class="tool_form view-info" data-toggle="modal" data-target="toolform_<%= tool.clean %>" data-clean="<%= tool.clean %>" data-guid="<%= tool.guid %>" data-name="<%= tool.name %>" data-desc="<%= tool.description %>"><%= tool.name %></a>',
+            '<a class="tool_form view-info" data-toggle="modal" data-target="toolform_<%= tool.clean %>" data-clean="<%= tool.clean %>" data-guid="<%= tool.guid %>" data-name="<%= tool.name %>" data-desc="<%= tool.description %>"><%= tool["name"] %></a>',
             "</div>",
             "</td>",
             "<td><%= tool.description %></td>",
             '<td style="width: 15%"><%= tool.version %></td>',
             '<td style="width: 35%" id="tool_tps_<%= tool.clean %>">',
-            "<%= tps_template_tool_select({tool: tool, tps: panel_section_dict, tps_select_options: tps_select_options}) %>",
+            "<%= tps_template_tool_select({tool: tool, panel_section_dict: panel_section_dict, panel_section_options: panel_section_options}) %>",
             "</td>",
             "</tr>",
             "<% }); %>",
@@ -503,7 +580,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             '<div id="tool_panel_section">',
             '<div class="form-row" id="new_tps">',
             '<input id="new_tool_panel_section" name="new_tool_panel_section" type="textfield" value="" size="40"/>',
-            '<input class="btn btn-primary" type="button" id="select_existing" value="Select existing" />',
+            '<input class="btn btn-primary global-select-tps-button" type="button" id="select_existing" value="Select existing" />',
             '<div class="toolParamHelp" style="clear: both;">',
             "Add a new tool panel section to contain the installed tools (optional).",
             "</div>",
@@ -518,10 +595,10 @@ var ToolShedRepositoryView = Backbone.View.extend({
             '<div class="toolFormTitle">Tool Panel Section</div>',
             '<div class="toolFormBody">',
             '<div class="tab-pane" id="select_tps">',
-            '<select name="<%= name %>" id="<%= tps.id %>">',
-            "<%= tps_select_options({sections: tps.sections}) %>",
+            '<select name="<%= name %>" id="<%= panel_section_dict.id %>">',
+            "<%= panel_section_options({sections: panel_section_dict.sections}) %>",
             "</select>",
-            '<input class="btn btn-primary" type="button" id="create_new" value="Create new" />',
+            '<input class="btn btn-primary global-create-tps-button" type="button" id="create_new" value="Create new" />',
             '<div class="toolParamHelp" style="clear: both;">',
             "Select an existing tool panel section to contain the installed tools (optional).",
             "</div>",
@@ -535,7 +612,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         [
             '<div id="new_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="form-row">',
             '<input data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" size="40" name="new_tool_panel_section" id="new_tool_panel_section_<%= tool.clean %>" type="text">',
-            '<input id="per_tool_select_<%= tool.clean %>" class="btn btn-primary" data-toolguid="<%= tool.guid %>" value="Select existing" id="select_existing_<%= tool.clean %>" type="button">',
+            '<input id="per_tool_select_<%= tool.clean %>" class="btn btn-primary select-tps-button" data-toolguid="<%= tool.guid %>" value="Select existing" id="select_existing_<%= tool.clean %>" type="button">',
             "</div>"
         ].join("")
     ),
@@ -544,7 +621,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
         [
             '<div id="select_tps_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="tps_creator">',
             '<select default="active" style="width: 30em;" data-toolguid="<%= tool.guid %>" class="tool_panel_section_picker" name="tool_panel_section_id" id="tool_panel_section_select_<%= tool.clean %>">',
-            "<%= tps_select_options({sections: tps.sections}) %>",
+            "<%= panel_section_options({sections: panel_section_dict.sections}) %>",
             "</select>",
             '<input id="per_tool_create_<%= tool.clean %>" data-clean="<%= tool.clean %>" class="btn btn-primary create-tps-button" data-toolguid="<%= tool.guid %>" value="Create new" id="create_new_<%= tool.clean %>" type="button">',
             '<div style="clear: both;" class="toolParamHelp"></div>',
