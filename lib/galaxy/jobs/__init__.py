@@ -913,9 +913,9 @@ class JobWrapper(HasResourceParameters):
                             job.id)
 
     def _create_working_directory(self, job):
-        self.app.object_store.create(
+        self.object_store.create(
             job, base_dir='job_work', dir_only=True, obj_dir=True)
-        working_directory = self.app.object_store.get_filename(
+        working_directory = self.object_store.get_filename(
             job, base_dir='job_work', dir_only=True, obj_dir=True)
         return working_directory
 
@@ -928,10 +928,10 @@ class JobWrapper(HasResourceParameters):
                         self.working_directory)
             return
 
-        self.app.object_store.create(
+        self.object_store.create(
             job, base_dir='job_work', dir_only=True, obj_dir=True,
             extra_dir='_cleared_contents', extra_dir_at_root=True)
-        base = self.app.object_store.get_filename(
+        base = self.object_store.get_filename(
             job, base_dir='job_work', dir_only=True, obj_dir=True,
             extra_dir='_cleared_contents', extra_dir_at_root=True)
         date_str = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -1169,11 +1169,12 @@ class JobWrapper(HasResourceParameters):
 
     def enqueue(self):
         job = self.get_job()
-        self._set_object_store_ids(job)
         # Change to queued state before handing to worker thread so the runner won't pick it up again
         self.change_state(model.Job.states.QUEUED, flush=False, job=job)
         # Persist the destination so that the job will be included in counts if using concurrency limits
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
+        # Set object store after job destination so can leverage parameters...
+        self._set_object_store_ids(job)
         self.sa_session.flush()
 
     def _set_object_store_ids(self, job):
@@ -1186,6 +1187,9 @@ class JobWrapper(HasResourceParameters):
             return
 
         object_store_populator = ObjectStorePopulator(self.app)
+        object_store_id = self.get_destination_configuration("object_store_id", None)
+        if object_store_id:
+            object_store_populator.object_store_id = object_store_id
 
         # Ideally we would do this without loading the actual job association
         # objects but change_state isn't yet optimized to do that so we need to
@@ -1316,7 +1320,7 @@ class JobWrapper(HasResourceParameters):
                     dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, create=True)
+                    self.object_store.update_from_file(dataset.dataset, create=True)
                 self.__update_output(job, dataset)
                 if not purged:
                     self._collect_extra_files(dataset.dataset, self.working_directory)
@@ -1326,7 +1330,7 @@ class JobWrapper(HasResourceParameters):
                         with NamedTemporaryFile() as temp_fh:
                             temp_fh.write(dataset.datatype.generate_primary_file(dataset))
                             temp_fh.flush()
-                            self.app.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
+                            self.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
                             dataset.set_size()
                     except Exception as e:
                         log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
@@ -1522,7 +1526,7 @@ class JobWrapper(HasResourceParameters):
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.job_id).cleanup_after_job(self.sa_session)
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
-                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
+                self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
@@ -1537,7 +1541,7 @@ class JobWrapper(HasResourceParameters):
             for root, dirs, files in os.walk(temp_file_path):
                 extra_dir = root.replace(job_working_directory, '', 1).lstrip(os.path.sep)
                 for f in files:
-                    self.app.object_store.update_from_file(
+                    self.object_store.update_from_file(
                         dataset,
                         extra_dir=extra_dir,
                         alt_name=f,
@@ -1683,6 +1687,10 @@ class JobWrapper(HasResourceParameters):
         return None
 
     @property
+    def object_store(self):
+        return self.app.object_store
+
+    @property
     def tmp_dir_creation_statement(self):
         tmp_dir = self.get_destination_configuration("tmp_dir", None)
         if not tmp_dir or tmp_dir.lower() == "true":
@@ -1815,7 +1823,7 @@ class JobWrapper(HasResourceParameters):
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
-                self.app.object_store.update_from_file(dataset, create=True)
+                self.object_store.update_from_file(dataset, create=True)
             else:
                 # If the dataset is purged and Galaxy is configured to write directly
                 # to the object store from jobs - be sure that file is cleaned up. This
