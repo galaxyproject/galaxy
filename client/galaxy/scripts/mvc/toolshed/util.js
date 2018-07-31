@@ -50,10 +50,7 @@ var queueLength = () => {
 var toolByGuid = function(guid, changeset, tools) {
     var returned_tool;
     tools.forEach(function(tool) {
-        console.log(tool.guid);
-        console.log(guid.value);
         if (tool.guid == guid.value) {
-            console.log('An match was their');
             returned_tool = tool;
         }
     });

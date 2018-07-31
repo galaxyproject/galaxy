@@ -56,10 +56,9 @@ var RepoQueueCollection = Backbone.Collection.extend({
     fetch: function() {
         var repositories = Array();
         var repositories_enc;
-        if (window.localStorage.hasOwnProperty('repositories')) {
+        if (window.localStorage.hasOwnProperty("repositories")) {
             repositories_enc = JSON.parse(window.localStorage.repositories);
-        }
-        else {
+        } else {
             repositories_enc = [];
         }
         var queue_keys = Object.keys(repositories_enc);

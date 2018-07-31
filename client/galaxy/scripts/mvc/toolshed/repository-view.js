@@ -201,7 +201,6 @@ var ToolShedRepositoryView = Backbone.View.extend({
     checkInstalled: function(metadata) {
         var params = { name: metadata.name, owner: metadata.owner };
         var already_installed = false;
-        // var queued = that.repoQueued(metadata);
         $.get(`${Galaxy.root}api/tool_shed_repositories`, params, data => {
             for (var index = 0; index < data.length; index++) {
                 var repository = data[index];

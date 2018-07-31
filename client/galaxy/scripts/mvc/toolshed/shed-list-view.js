@@ -4,7 +4,6 @@ import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 
-
 var View = Backbone.View.extend({
     defaults: {
         tool_sheds: [
