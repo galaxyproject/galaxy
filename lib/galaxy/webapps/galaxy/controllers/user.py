@@ -405,7 +405,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
-        is_activation_sent = trans.app.auth_manager.send_verification_email(trans, email, username)
+        is_activation_sent = self.user_manager.send_verification_email(trans, email, username)
         if is_activation_sent:
             message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % (escape(email), url_for('/'))
             status = 'error'
@@ -564,7 +564,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.log_event("User created a new account")
                 trans.log_event("User logged in")
             if trans.app.config.user_activation_on:
-                is_activation_sent = trans.app.auth_manager.send_verification_email(trans, email, username)
+                is_activation_sent = self.user_manager.send_verification_email(trans, email, username)
                 if is_activation_sent:
                     message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
                 else:
@@ -624,7 +624,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             * password:         new password
             * confirm:          new password (confirmation)
         """
-        user, message = trans.app.auth_manager.change_password(trans, **payload)
+        user, message = self.user_manager.change_password(trans, **payload)
         if user is None:
             return self.message_exception(trans, message)
         trans.handle_user_login(user)

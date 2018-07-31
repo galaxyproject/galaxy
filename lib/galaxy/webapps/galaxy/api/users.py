@@ -421,7 +421,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 if trans.app.config.user_activation_on:
                     # Deactivate the user if email was changed and activation is on.
                     user.active = False
-                    if trans.app.auth_manager.send_verification_email(trans, user.email, user.username):
+                    if self.user_manager.send_verification_email(trans, user.email, user.username):
                         message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                     else:
                         message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -530,7 +530,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         """
         Allows to the logged-in user to change own password.
         """
-        user, message = trans.app.auth_manager.change_password(trans, id=id, **payload)
+        user, message = self.user_manager.change_password(trans, id=id, **payload)
         if user is None:
             raise MessageException(message)
         return {"message": "Password has been changed."}
