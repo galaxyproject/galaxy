@@ -16,7 +16,7 @@ $(function() {
         %if token:
             <input type="hidden" name="token" value="${token|h}"/>
         %else:
-            <input type="hidden" name="expired_user" value="${expired_user|h}"/>
+            <input type="hidden" name="id" value="${id|h}"/>
             <div class="form-row">
                 <label>Current password:</label>
                 <input type="password" name="current" value="" size="40"/>

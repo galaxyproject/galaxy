@@ -71,7 +71,7 @@ class User(BaseUser):
                 message = response.get("err_msg")
                 status = "error"
             elif response.get("expired_user"):
-                change_password_url = url_for(controller='user', action='change_password', expired_user=response.get("expired_user"))
+                change_password_url = url_for(controller='user', action='change_password', id=response.get("expired_user"))
                 message = "%s<br>Click <a href='%s'>here</a> to change your password." % (response.get("message"), change_password_url)
                 status = "warning"
             else:
@@ -312,7 +312,7 @@ class User(BaseUser):
                                                         **kwd))
 
     @web.expose
-    def change_password(self, trans, token=None, expired_user=None, **kwd):
+    def change_password(self, trans, token=None, id=None, **kwd):
         """
         Provides a form with which one can change their password.  If token is
         provided, don't require current password.
@@ -322,16 +322,16 @@ class User(BaseUser):
             confirm = kwd.get('confirm', '')
             current = kwd.get('current', '')
             user, message = trans.app.auth_manager.change_password(trans, password=password,
-                current=current, token=token, confirm=confirm, id=expired_user)
+                current=current, token=token, confirm=confirm, id=id)
             if not user:
                 return trans.show_error_message(message)
             return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
-        return trans.fill_template('/webapps/tool_shed/user/change_password.mako', token=token, expired_user=expired_user)
+        return trans.fill_template('/webapps/tool_shed/user/change_password.mako', token=token, id=id)
 
-    def __validate(self, trans, params, email, password, confirm, username):
+    def __validate(self, trans, email, password, confirm, username):
         # If coming from the tool shed webapp, we'll require a public user name
         if not username:
             return "A public user name is required in the tool shed."
         if username in ['repos']:
             return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % escape(username)
-        return super(User, self).__validate(trans, params, email, password, confirm, username)
+        return super(User, self).__validate(trans, email, password, confirm, username)
