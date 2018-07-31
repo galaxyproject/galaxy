@@ -1,6 +1,13 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 import "libs/jquery/jquery-ui";
+
+/* global $ */
+/* global Galaxy */
+
 var ToolShedCategories = Backbone.View.extend({
     el: "#center",
 
@@ -9,7 +16,6 @@ var ToolShedCategories = Backbone.View.extend({
     },
 
     initialize: function(options) {
-        var self = this;
         var shed = options.tool_shed.replace(/\//g, "%2f");
         this.options = _.defaults(this.options || options, this.defaults);
         this.model = new toolshed_model.Categories();
@@ -30,10 +36,9 @@ var ToolShedCategories = Backbone.View.extend({
     },
 
     bindEvents: function() {
-        var that = this;
         $("#search_box").autocomplete({
-            source: function(request, response) {
-                var shed_url = that.model.tool_shed.replace(/%2f/g, "/");
+            source: (request, response) => {
+                var shed_url = this.model.tool_shed.replace(/%2f/g, "/");
                 var base_url = `${Galaxy.root}api/tool_shed/search`;
                 var params = {
                     term: request.term,
@@ -46,14 +51,9 @@ var ToolShedCategories = Backbone.View.extend({
                 });
             },
             minLength: 3,
-            select: function(event, ui) {
+            select: (event, ui) => {
                 var tsr_id = ui.item.value;
-                var api_url = `${Galaxy.root}api/tool_shed/repository`;
-                var params = {
-                    tool_shed_url: that.model.tool_shed,
-                    tsr_id: tsr_id
-                };
-                var new_route = `repository/s/${that.model.tool_shed}/r/${tsr_id}`;
+                var new_route = `repository/s/${this.model.tool_shed}/r/${tsr_id}`;
                 Backbone.history.navigate(new_route, {
                     trigger: true,
                     replace: true

@@ -1,6 +1,9 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
+
 var View = Backbone.View.extend({
     defaults: {
         tool_sheds: [
@@ -12,7 +15,6 @@ var View = Backbone.View.extend({
     },
 
     initialize: function(options) {
-        var self = this;
         this.options = _.defaults(this.options || {}, this.defaults);
         this.model = new toolshed_model.ShedsCollection();
         this.listenTo(this.model, "sync", this.render);
@@ -41,7 +43,7 @@ var View = Backbone.View.extend({
     templateToolshedList: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-                '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<div class="unified-panel-body" id="list_toolsheds">',
             '<div class="form-row">',

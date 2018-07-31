@@ -1,14 +1,19 @@
-import toolshed_model from "mvc/toolshed/toolshed-model";
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import jstree from "libs/jquery/jstree";
+import toolshed_model from "mvc/toolshed/toolshed-model";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import FormView from "mvc/form/form-view";
 import toolshed_util from "mvc/toolshed/util";
+
+/* global $ */
+/* global Galaxy */
+
 var ToolShedRepositoryView = Backbone.View.extend({
     el: "#center",
 
     initialize: function(params) {
-        var self = this;
         this.options = _.defaults(this.options || {}, this.defaults);
         this.model = new toolshed_model.RepositoryCollection();
         this.listenTo(this.model, "sync", this.render);
@@ -62,20 +67,18 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     bindEvents: function() {
-        var that = this;
         $("#changeset").on("change", () => {
-            that.options.current_changeset = $("#changeset")
+            this.options.current_changeset = $("#changeset")
                 .find("option:selected")
                 .text();
-            that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
-            that.checkInstalled(that.options.current_metadata);
-            that.reDraw(that.options);
+            this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
+            this.checkInstalled(this.options.current_metadata);
+            this.reDraw(this.options);
         });
         $("#tool_panel_section_select").on("change", () => {
-            that.tpsSelection();
+            this.tpsSelection();
         });
         $("#install_repository").on("click", ev => {
-            var form = $("#repository_installation");
             ev.preventDefault();
             var params = {};
             params.repositories = JSON.stringify([
@@ -87,12 +90,11 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 ]
             ]);
             params.tool_shed_repository_ids = JSON.stringify([$("#install_repository").attr("data-tsrid")]);
-            params.tool_shed_url = that.model.tool_shed_url;
+            params.tool_shed_url = this.model.tool_shed_url;
             params.install_tool_dependencies = $("#install_tool_dependencies").val();
             params.install_repository_dependencies = $("#install_repository_dependencies").val();
             params.install_resolver_dependencies = $("#install_resolver_dependencies").val();
-            var tps = that.panelSelect(params);
-            params.tool_panel_section = JSON.stringify(that.panelSelect(params));
+            params.tool_panel_section = JSON.stringify(this.panelSelect(params));
             params.shed_tool_conf = $("select[name='shed_tool_conf']")
                 .find("option:selected")
                 .val();
@@ -100,28 +102,27 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 .find("option:selected")
                 .val();
             var url = $("#repository_installation").attr("action");
-            that.prepareInstall(params, url);
+            this.prepareInstall(params, url);
         });
         $("#queue_install").on("click", ev => {
-            that.options.current_changeset = $("#changeset")
+            this.options.current_changeset = $("#changeset")
                 .find("option:selected")
                 .text();
-            that.options.current_metadata = that.options.repository.metadata[that.options.current_changeset];
-            var changeset = that.options.current_changeset;
+            this.options.current_metadata = this.options.repository.metadata[this.options.current_changeset];
             var repository_metadata = {};
-            _.each(Object.keys(that.options.current_metadata), key => {
+            _.each(Object.keys(this.options.current_metadata), key => {
                 if (!repository_metadata[key]) {
-                    repository_metadata[key] = that.options.current_metadata[key];
+                    repository_metadata[key] = this.options.current_metadata[key];
                 }
             });
             repository_metadata.install_tool_dependencies = $("#install_tool_dependencies").val();
             repository_metadata.install_repository_dependencies = $("#install_repository_dependencies").val();
             repository_metadata.install_resolver_dependencies = $("#install_resolver_dependencies").val();
-            repository_metadata.tool_panel_section = JSON.stringify(that.panelSelect({}));
+            repository_metadata.tool_panel_section = JSON.stringify(this.panelSelect({}));
             repository_metadata.shed_tool_conf = $("select[name='shed_tool_conf']")
                 .find("option:selected")
                 .val();
-            repository_metadata.tool_shed_url = that.model.tool_shed_url;
+            repository_metadata.tool_shed_url = this.model.tool_shed_url;
             if (repository_metadata.tool_shed_url.substr(-1) == "/") {
                 repository_metadata.tool_shed_url = repository_metadata.tool_shed_url.substr(
                     0,
@@ -129,18 +130,17 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 );
             }
             toolshed_util.addToQueue(repository_metadata);
-            that.checkInstalled(repository_metadata);
+            this.checkInstalled(repository_metadata);
         });
-        that.toolTPSSelectionEvents();
+        this.toolTPSSelectionEvents();
         $(() => {
             $("#repository_dependencies").jstree();
         });
-        $(".tool_form").on("click", function() {
-            var guid = $(this).attr("data-guid");
-            var clean = $(this).attr("data-clean");
-            var name = $(this).attr("data-name");
-            var desc = $(this).attr("data-desc");
-            var tool_shed_url = that.model.tool_shed_url;
+        $(".tool_form").on("click", ev => {
+            var guid = $(ev.target).attr("data-guid");
+            var name = $(ev.target).attr("data-name");
+            var desc = $(ev.target).attr("data-desc");
+            var tool_shed_url = this.model.tool_shed_url;
             var tsr_id = $("#repository_details").attr("data-tsrid");
             var changeset = $("#changeset")
                 .find("option:selected")
@@ -177,32 +177,30 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 });
             });
         });
-        $('.select-tps-button').click(function(params) {
-            var changeset = that.selectedChangeset();
-            var guid = params.target.attributes.getNamedItem('data-toolguid');
-            that.showToolTPSSelect(guid, changeset);
+        $(".select-tps-button").click(function(params) {
+            var changeset = this.selectedChangeset();
+            var guid = params.target.attributes.getNamedItem("data-toolguid");
+            this.showToolTPSSelect(guid, changeset);
         });
-        $('.create-tps-button').click(function(params) {
-            var changeset = that.selectedChangeset();
-            var guid = params.target.attributes.getNamedItem('data-toolguid');
-            that.showToolTPSCreate(guid, changeset);
+        $(".create-tps-button").click(function(params) {
+            var changeset = this.selectedChangeset();
+            var guid = params.target.attributes.getNamedItem("data-toolguid");
+            this.showToolTPSCreate(guid, changeset);
         });
-        $('.global-select-tps-button').click(function() {
-            $('#tool_panel_section').replaceWith(that.options.tps_template_global_select(that.options));
-            that.propagateTPS();
-            that.bindEvents();
+        $(".global-select-tps-button").click(function() {
+            $("#tool_panel_section").replaceWith(this.options.tps_template_global_select(this.options));
+            this.propagateTPS();
+            this.bindEvents();
         });
-        $('.global-create-tps-button').click(function() {
-            $('#tool_panel_section').replaceWith(that.options.tps_template_global_create());
-            that.bindEvents();
+        $(".global-create-tps-button").click(function() {
+            $("#tool_panel_section").replaceWith(this.options.tps_template_global_create());
+            this.bindEvents();
         });
     },
 
     checkInstalled: function(metadata) {
-        var that = this;
         var params = { name: metadata.name, owner: metadata.owner };
         var already_installed = false;
-        var queued = that.repoQueued(metadata);
         $.get(`${Galaxy.root}api/tool_shed_repositories`, params, data => {
             for (var index = 0; index < data.length; index++) {
                 var repository = data[index];
@@ -226,7 +224,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
                     $("#install_repository").val("Install this revision");
                 }
             }
-            if (that.repoQueued(metadata) || already_installed) {
+            if (this.repoQueued(metadata) || already_installed) {
                 $("#queue_install").hide();
                 $("#queue_install").val("This revision is already in the queue");
             } else {
@@ -271,14 +269,13 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     repoQueued: function(metadata) {
-        var that = this;
-        if (!localStorage.repositories) {
+        if (!window.localStorage.repositories) {
             return;
         }
-        var queue_key = that.queueKey(metadata);
+        var queue_key = this.queueKey(metadata);
         var queued_repos;
-        if (localStorage.repositories) {
-            queued_repos = JSON.parse(localStorage.repositories);
+        if (window.localStorage.repositories) {
+            queued_repos = JSON.parse(window.localStorage.repositories);
         }
         if (queued_repos && queued_repos.hasOwnProperty(queue_key)) {
             return true;
@@ -305,10 +302,9 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     prepareInstall: function(params, api_url) {
-        var that = this;
         $.post(api_url, params, data => {
             var iri_parameters = JSON.parse(data);
-            that.doInstall(iri_parameters);
+            this.doInstall(iri_parameters);
         });
     },
 
@@ -333,62 +329,64 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     showToolTPSCreate: function(guid, changeset) {
-        var that = this;
-        var metadata = that.options.current_metadata;
+        var metadata = this.options.current_metadata;
         var tools = metadata.tools;
         var tool = toolshed_util.toolByGuid(guid, changeset, tools);
-        var selector = '#tool_tps_' + tool.clean;
+        var selector = "#tool_tps_" + tool.clean;
         $(selector).empty();
-        $(selector).append(that.options.tps_template_tool_create({tool: tool}));
-        $('.select-tps-button').click(function(params) {
-            var changeset = that.selectedChangeset();
-            var guid = params.target.attributes.getNamedItem('data-toolguid');
-            that.showToolTPSSelect(guid, changeset);
+        $(selector).append(this.options.tps_template_tool_create({ tool: tool }));
+        $(".select-tps-button").click(ev => {
+            var changeset = this.selectedChangeset();
+            var guid = ev.target.attributes.getNamedItem("data-toolguid");
+            this.showToolTPSSelect(guid, changeset);
         });
-        that.bindEvents();
+        this.bindEvents();
     },
 
     showToolTPSSelect: function(guid, changeset) {
-        var that = this;
-        var metadata = that.options.current_metadata;
+        var metadata = this.options.current_metadata;
         var tools = metadata.tools;
         var tool = toolshed_util.toolByGuid(guid, changeset, tools);
-        var selector = '#tool_tps_' + tool.clean;
+        var selector = "#tool_tps_" + tool.clean;
         $(selector).empty();
-        $(selector).append(that.options.tps_template_tool_select({tool: tool,
-            panel_section_dict: that.options.panel_section_dict,
-            panel_section_options: that.options.panel_section_options}));
-        $('.create-tps-button').click(function(params) {
-            var changeset = that.selectedChangeset();
-            var guid = params.target.attributes.getNamedItem('data-toolguid');
-            that.showToolTPSCreate(guid, changeset);
+        $(selector).append(
+            this.options.tps_template_tool_select({
+                tool: tool,
+                panel_section_dict: this.options.panel_section_dict,
+                panel_section_options: this.options.panel_section_options
+            })
+        );
+        $(".create-tps-button").click(ev => {
+            var changeset = this.selectedChangeset();
+            var guid = ev.target.attributes.getNamedItem("data-toolguid");
+            this.showToolTPSCreate(guid, changeset);
         });
-        that.bindEvents();
+        this.bindEvents();
     },
 
     propagateTPS: function() {
-        var that = this;
-        $('#tool_panel_section_select').change(function() {
-            var new_tps = $('#tool_panel_section_select').find('option:selected').val();
-            $('.tool_panel_section_picker[default="active"]').each(function() {
-                $(this).val(new_tps);
+        $("#tool_panel_section_select").change(() => {
+            var new_tps = $("#tool_panel_section_select")
+                .find("option:selected")
+                .val();
+            $('.tool_panel_section_picker[default="active"]').each(obj => {
+                obj.val(new_tps);
             });
         });
-        that.toolTPSSelectionEvents();
+        this.toolTPSSelectionEvents();
     },
 
     toolTPSSelectionEvents: function() {
-        $(".tool_panel_section_picker").on("change", function() {
-            var new_value = $(this)
-                .find("option:selected")
-                .val();
+        $(".tool_panel_section_picker").on("change", ev => {
+            let element = $(ev.target);
+            var new_value = element.find("option:selected").val();
             var default_tps = $("#tool_panel_section_select")
                 .find("option:selected")
                 .val();
             if (new_value == default_tps) {
-                $(this).attr("default", "active");
+                element.attr("default", "active");
             } else {
-                $(this).removeAttr("default");
+                element.removeAttr("default");
             }
         });
     },
@@ -396,7 +394,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
     templateRepoDetails: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-                '<div class="unified-panel-header-inner">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<div class="unified-panel-body" id="repository_details" data-tsrid="<%= repository.id %>">',
             '<form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">',
