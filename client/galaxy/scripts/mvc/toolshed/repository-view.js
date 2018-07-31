@@ -177,22 +177,22 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 });
             });
         });
-        $(".select-tps-button").click(function(params) {
+        $(".select-tps-button").on("click", (params) => {
             var changeset = this.selectedChangeset();
             var guid = params.target.attributes.getNamedItem("data-toolguid");
             this.showToolTPSSelect(guid, changeset);
         });
-        $(".create-tps-button").click(function(params) {
+        $(".create-tps-button").on("click", (params) => {
             var changeset = this.selectedChangeset();
             var guid = params.target.attributes.getNamedItem("data-toolguid");
             this.showToolTPSCreate(guid, changeset);
         });
-        $(".global-select-tps-button").click(function() {
+        $(".global-select-tps-button").on("click", () => {
             $("#tool_panel_section").replaceWith(this.options.tps_template_global_select(this.options));
             this.propagateTPS();
             this.bindEvents();
         });
-        $(".global-create-tps-button").click(function() {
+        $(".global-create-tps-button").on("click", () => {
             $("#tool_panel_section").replaceWith(this.options.tps_template_global_create());
             this.bindEvents();
         });
