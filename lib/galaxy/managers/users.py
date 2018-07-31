@@ -8,6 +8,7 @@ from datetime import datetime
 
 from markupsafe import escape
 from sqlalchemy import and_, desc, exc, true
+
 from galaxy import (
     exceptions,
     model,
@@ -258,9 +259,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
-            user = self.user_manager.by_id(trans.app.security.decode_id(id))
+            user = self.by_id(self.app.security.decode_id(id))
             if user:
-                message = self.check_change_password(user, current)
+                message = self.app.auth_manager.check_change_password(user, current)
                 if message:
                     return None, message
                 message = self.__set_password(trans, user, password, confirm)
@@ -282,12 +283,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 # Save new password
                 user.set_password_cleartext(password)
                 # Invalidate all other sessions
-                for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
-                                                 .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
-                    other_galaxy_session.is_valid = False
-                    trans.sa_session.add(other_galaxy_session)
+                if trans.galaxy_session:
+                    for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
+                                                     .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
                 trans.sa_session.flush()
                 trans.log_event("User change password")

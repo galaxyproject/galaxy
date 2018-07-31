@@ -18,6 +18,7 @@ from .base import BaseTestCase
 
 # =============================================================================
 default_password = '123456'
+changed_password = '654321'
 user2_data = dict(email='user2@user2.user2', username='user2', password=default_password)
 user3_data = dict(email='user3@user3.user3', username='user3', password=default_password)
 user4_data = dict(email='user4@user4.user4', username='user4', password=default_password)
@@ -118,6 +119,26 @@ class UserManagerTestCase(BaseTestCase):
         self.log("should return the most recent (i.e. most valid) api key")
         user2_api_key_2 = self.user_manager.create_api_key(user2)
         self.assertEqual(self.user_manager.valid_api_key(user2).key, user2_api_key_2)
+
+    def test_change_password(self):
+        self.log("should be able to create a user")
+        user2 = self.user_manager.create(**user2_data)
+        encoded_id = self.app.security.encode_id(user2.id)
+        self.assertIsInstance(user2, model.User)
+        self.assertIsNotNone(user2.id)
+        self.assertEqual(user2.email, user2_data["email"])
+        self.assertTrue(check_password(default_password, user2.password))
+        user, message = self.user_manager.change_password(self.trans)
+        self.assertEqual(message, "Please provide a token or a user and password.")
+        user, message = self.user_manager.change_password(self.trans, id=encoded_id, current=changed_password)
+        self.assertEqual(message, "Invalid current password.")
+        user, message = self.user_manager.change_password(self.trans, id=encoded_id, current=default_password, password=changed_password, confirm=default_password)
+        self.assertEqual(message, "Passwords don't match.")
+        user, message = self.user_manager.change_password(self.trans, id=encoded_id, current=default_password, password=default_password, confirm=changed_password)
+        self.assertEqual(message, "Passwords don't match.")
+        user, message = self.user_manager.change_password(self.trans, id=encoded_id, current=default_password, password=changed_password, confirm=changed_password)
+        self.assertFalse(check_password(default_password, user2.password))
+        self.assertTrue(check_password(changed_password, user2.password))
 
 
 # =============================================================================

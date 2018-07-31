@@ -10,6 +10,7 @@ from galaxy import (
     objectstore,
     quota
 )
+from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs import NoopQueue
 from galaxy.managers import tags
@@ -77,6 +78,7 @@ class MockApp(object):
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = Bunch(job_queue=NoopQueue())
         self.application_stack = ApplicationStack()
+        self.auth_manager = AuthManager(self)
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
@@ -120,6 +122,8 @@ class MockAppConfig(Bunch):
         self.expose_dataset_path = True
         self.allow_user_dataset_purge = True
         self.enable_old_display_applications = True
+        self.redact_username_in_logs = False
+        self.auth_config_file = "config/auth_conf.xml.sample"
 
         self.umask = 0o77
 
@@ -162,6 +166,9 @@ class MockTrans(object):
 
         self.request = Bunch(headers={})
         self.response = Bunch(headers={})
+
+    def log_event(self, message):
+        pass
 
     def get_user(self):
         if self.galaxy_session:
