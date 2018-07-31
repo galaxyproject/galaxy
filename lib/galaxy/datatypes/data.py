@@ -21,6 +21,7 @@ from galaxy.util import (
     compression_utils,
     FILENAME_VALID_CHARS,
     inflector,
+    smart_str,
     unicodify
 )
 from galaxy.util.bunch import Bunch
@@ -313,7 +314,7 @@ class Data(object):
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         filename = self._download_filename(dataset, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
-        return open(dataset.file_name)
+        return open(dataset.file_name, mode='rb')
 
     def to_archive(self, trans, dataset, name=""):
         """
@@ -355,13 +356,13 @@ class Data(object):
         # content from being rendered in the browser
         trans.response.headers['X-Content-Type-Options'] = 'nosniff'
         if isinstance(data, six.string_types):
-            return data
+            return smart_str(data)
         if filename and filename != "index":
             # For files in extra_files_path
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
-                    with tempfile.NamedTemporaryFile(delete=False) as tmp_fh:
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_fh:
                         tmp_file_name = tmp_fh.name
                         dir_items = sorted(os.listdir(file_path))
                         base_path, item_name = os.path.split(file_path)
@@ -404,7 +405,7 @@ class Data(object):
                 filename = self._download_filename(data, to_ext, hdca=kwd.get("hdca", None), element_identifier=kwd.get("element_identifier", None))
                 trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
-                return open(data.file_name)
+                return open(data.file_name, 'rb')
         if not os.path.exists(data.file_name):
             raise webob.exc.HTTPNotFound("File Not Found (%s)." % data.file_name)
         max_peek_size = 1000000  # 1 MB
@@ -426,14 +427,14 @@ class Data(object):
             # Check to see if this dataset's parent job is whitelisted
             # We cannot currently trust imported datasets for rendering.
             if not from_dataset.creating_job.imported and from_dataset.creating_job.tool_id in trans.app.config.sanitize_whitelist:
-                return open(filename)
+                return open(filename, mode='rb')
 
             # This is returning to the browser, it needs to be encoded.
             # TODO Ideally this happens a layer higher, but this is a bad
             # issue affecting many tools
-            return sanitize_html(open(filename).read()).encode('utf-8')
+            return sanitize_html(open(filename, 'rb').read()).encode('utf-8')
 
-        return open(filename)
+        return open(filename, mode='rb')
 
     def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None):
         def escape(raw_identifier):

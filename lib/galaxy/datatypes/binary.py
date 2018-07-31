@@ -67,7 +67,7 @@ class Binary(data.Data):
         fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
-        return open(dataset.file_name)
+        return open(dataset.file_name, mode='rb')
 
 
 class Ab1(Binary):

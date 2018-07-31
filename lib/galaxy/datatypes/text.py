@@ -153,7 +153,7 @@ class Ipynb(Json):
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
                 log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
-            return open(ofilename)
+            return open(ofilename, mode='rb')
 
     def set_meta(self, dataset, **kwd):
         """
