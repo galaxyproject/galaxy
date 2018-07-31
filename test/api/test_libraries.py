@@ -127,7 +127,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
             "targets": json.dumps(targets),
-            "__files": {"files_0|file_data": open(bed_test_data_path)}
+            "__files": {"files_0|file_data": open(bed_test_data_path, 'r')}
         }
         self.dataset_populator.fetch(payload)
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
