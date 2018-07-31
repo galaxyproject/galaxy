@@ -1,3 +1,4 @@
+import * as Backbone from "backbone";
 import mod_shed_list_view from "mvc/toolshed/shed-list-view";
 import mod_categories_view from "mvc/toolshed/categories-view";
 import mod_repositories_view from "mvc/toolshed/repositories-view";
@@ -5,6 +6,9 @@ import mod_repository_view from "mvc/toolshed/repository-view";
 import mod_repoqueue_view from "mvc/toolshed/repository-queue-view";
 import mod_repo_status_view from "mvc/toolshed/repo-status-view";
 import mod_workflows_view from "mvc/toolshed/workflows-view";
+
+/* global Galaxy */
+
 var AdminToolshedRouter = Backbone.Router.extend({
     initialize: function() {
         this.routesHit = 0;
