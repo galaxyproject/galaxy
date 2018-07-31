@@ -5,9 +5,10 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 import unittest
+from datetime import datetime
 
-import sqlalchemy
 from six import string_types
+from sqlalchemy import desc
 
 from galaxy import exceptions, model
 from galaxy.managers import base as base_manager
@@ -57,7 +58,7 @@ class UserManagerTestCase(BaseTestCase):
         self.assertEqual(self.user_manager.list(offset=3), [])
 
         self.log("should be able to order")
-        self.assertEqual(self.user_manager.list(order_by=(sqlalchemy.desc(model.User.create_time))),
+        self.assertEqual(self.user_manager.list(order_by=(desc(model.User.create_time))),
             [user3, user2, self.admin_user])
 
     def test_invalid_create(self):
@@ -139,6 +140,15 @@ class UserManagerTestCase(BaseTestCase):
         user, message = self.user_manager.change_password(self.trans, id=encoded_id, current=default_password, password=changed_password, confirm=changed_password)
         self.assertFalse(check_password(default_password, user2.password))
         self.assertTrue(check_password(changed_password, user2.password))
+        reset_user, prt = self.user_manager.get_reset_token(self.trans, user2.email)
+        user, message = self.user_manager.change_password(self.trans, token=prt.token, password=default_password, confirm=default_password)
+        self.assertTrue(check_password(default_password, user2.password))
+        self.assertFalse(check_password(changed_password, user2.password))
+        prt.expiration_time = datetime.utcnow()
+        self.trans.sa_session.add(prt)
+        self.trans.sa_session.flush()
+        user, message = self.user_manager.change_password(self.trans, token=prt.token, password=default_password, confirm=default_password)
+        self.assertEqual(message, "Invalid or expired password reset token, please request a new one.")
 
 
 # =============================================================================

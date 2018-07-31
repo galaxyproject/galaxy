@@ -258,7 +258,7 @@ class User(BaseUser):
                         user.active = False
                         trans.sa_session.add(user)
                         trans.sa_session.flush()
-                        is_activation_sent = self.user_manager.send_verification_email(trans, user.email, user.username)
+                        is_activation_sent = self.user_manager.send_activation_email(trans, user.email, user.username)
                         if is_activation_sent:
                             message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                         else:

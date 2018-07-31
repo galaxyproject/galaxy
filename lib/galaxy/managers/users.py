@@ -7,7 +7,7 @@ import socket
 from datetime import datetime
 
 from markupsafe import escape
-from sqlalchemy import and_, desc, exc, true
+from sqlalchemy import and_, desc, exc, func, true
 
 from galaxy import (
     exceptions,
@@ -19,10 +19,23 @@ from galaxy.managers import (
     base,
     deletable
 )
-from galaxy.security.validate_user_input import validate_password, validate_publicname
+from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
+
+PASSWORD_RESET_TEMPLATE = """
+To reset your Galaxy password for the instance at %s use the following link,
+which will expire %s.
+
+%s
+
+If you did not make this request, no action is necessary on your part, though
+you may want to notify an administrator.
+
+If you're having trouble using the link when clicking it from email client, you
+can also copy and paste it into your browser.
+"""
 
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
@@ -296,14 +309,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
-    def send_verification_email(self, trans, email, username):
+    def send_activation_email(self, trans, email, username):
         """
         Send the verification email containing the activation link to the user's email.
         """
-        activation_link = self.__prepare_activation_link(trans, escape(email))
-        host = trans.request.host.split(':')[0]
-        if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-            host = socket.getfqdn()
+        activation_token = self.__get_activation_token(trans, escape(email))
+        activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=escape(email), qualified=True)
+        host = self.__get_host(trans)
         body = ("Hello %s,\n\n"
                 "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
                 "%s \n\n"
@@ -326,14 +338,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             log.exception('Unable to send the activation email.')
             return False
 
-    def __prepare_activation_link(self, trans, email):
-        """
-        Prepare the account activation link for the user.
-        """
-        activation_token = self.__get_activation_token(trans, email)
-        activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=email, qualified=True)
-        return activation_link
-
     def __get_activation_token(self, trans, email):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
@@ -346,6 +350,55 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.add(user)
             trans.sa_session.flush()
         return activation_token
+
+    def send_reset_email(self, trans, payload={}, **kwd):
+        """Reset the user's password. Send an email with token that allows a password change."""
+        if self.app.config.smtp_server is None:
+            return self.message_exception(trans, "Mail is not configured for this Galaxy instance "
+                                    "and password reset information cannot be sent. "
+                                    "Please contact your local Galaxy administrator.")
+        email = payload.get("email")
+        if not email:
+            return "Please provide your email."
+        message = validate_email(trans, email, check_dup=False)
+        if message:
+            return message
+        else:
+            reset_user, prt = self.get_reset_token(trans, email)
+            if prt:
+                host = self.__get_host(trans)
+                reset_url = url_for(controller='root', action='login', token=prt.token)
+                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
+                                                  reset_url)
+                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                subject = 'Galaxy Password Reset'
+                try:
+                    util.send_mail(frm, email, subject, body, trans.app.config)
+                    trans.sa_session.add(reset_user)
+                    trans.sa_session.flush()
+                    trans.log_event('User reset password: %s' % email)
+                except Exception as e:
+                    log.debug(body)
+                    return "Failed to submit email. Please contact the administrator: %s" % str(e)
+            else:
+                return "Failed to produce password reset token. User not found."
+
+    def get_reset_token(self, trans, email):
+        reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+        if not reset_user:
+            # Perform a case-insensitive check only if the user wasn't found
+            reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
+        if reset_user:
+            prt = trans.app.model.PasswordResetToken(reset_user)
+            trans.sa_session.add(prt)
+            trans.sa_session.flush()
+            return reset_user, prt
+
+    def __get_host(self, trans):
+        host = trans.request.host.split(':')[0]
+        if host in ['localhost', '127.0.0.1', '0.0.0.0']:
+            host = socket.getfqdn()
+        return host
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

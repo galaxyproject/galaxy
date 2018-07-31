@@ -3,12 +3,11 @@ Contains the user interface in the Universe class
 """
 
 import logging
-import socket
 from datetime import datetime, timedelta
 
 from markupsafe import escape
 from six.moves.urllib.parse import unquote
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -36,19 +35,6 @@ from galaxy.web.form_builder import CheckboxField
 from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger(__name__)
-
-PASSWORD_RESET_TEMPLATE = """
-To reset your Galaxy password for the instance at %s use the following link,
-which will expire %s.
-
-%s
-
-If you did not make this request, no action is necessary on your part, though
-you may want to notify an administrator.
-
-If you're having trouble using the link when clicking it from email client, you
-can also copy and paste it into your browser.
-"""
 
 
 class UserOpenIDGrid(grids.Grid):
@@ -153,11 +139,11 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 if not trans.user.active and trans.app.config.user_activation_on:  # Account activation is ON and the user is INACTIVE.
                     if (trans.app.config.activation_grace_period != 0):  # grace period is ON
                         if self.is_outside_grace_period(trans, trans.user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                            message, status = self.resend_verification_email(trans, trans.user.email, trans.user.username)
+                            message, status = self.resend_activation_email(trans, trans.user.email, trans.user.username)
                         else:  # User is within the grace period, let him log in.
                             pass
                     else:  # Grace period is off. Login is disabled and user will have the activation email resent.
-                        message, status = self.resend_verification_email(trans, trans.user.email, trans.user.username)
+                        message, status = self.resend_activation_email(trans, trans.user.email, trans.user.username)
                 elif not user_openid.user or user_openid.user == trans.user:
                     if openid_provider_obj.id:
                         user_openid.provider = openid_provider_obj.id
@@ -365,13 +351,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if (trans.app.config.activation_grace_period != 0):  # grace period is ON
                 if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message, status = self.resend_verification_email(trans, user.email, user.username, unescaped=True)
+                    message, status = self.resend_activation_email(trans, user.email, user.username, unescaped=True)
                     return self.message_exception(trans, message, sanitize=False)
                 else:  # User is within the grace period, let him log in.
                     trans.handle_user_login(user)
                     trans.log_event("User logged in")
             else:  # Grace period is off. Login is disabled and user will have the activation email resent.
-                message, status = self.resend_verification_email(trans, user.email, user.username)
+                message, status = self.resend_activation_email(trans, user.email, user.username)
                 return self.message_exception(trans, message, sanitize=False)
         else:  # activation is OFF
             pw_expires = trans.app.config.password_expiration_period
@@ -391,13 +377,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         """
         Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """
-        message, status = self.resend_verification_email(trans, None, None)
+        message, status = self.resend_activation_email(trans, None, None)
         if status == 'done':
             return trans.show_ok_message(message)
         else:
             return trans.show_error_message(message)
 
-    def resend_verification_email(self, trans, email, username):
+    def resend_activation_email(self, trans, email, username):
         """
         Function resends the verification email in case user wants to log in with an inactive account or he clicks the resend link.
         """
@@ -405,7 +391,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             email = trans.user.email
         if username is None:  # User is coming from outside registration form, load email from trans
             username = trans.user.username
-        is_activation_sent = self.user_manager.send_verification_email(trans, email, username)
+        is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
         if is_activation_sent:
             message = 'This account has not been activated yet. The activation link has been sent again. Please check your email address <b>%s</b> including the spam/trash folder.<br><a target="_top" href="%s">Return to the home page</a>.' % (escape(email), url_for('/'))
             status = 'error'
@@ -564,7 +550,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 trans.log_event("User created a new account")
                 trans.log_event("User logged in")
             if trans.app.config.user_activation_on:
-                is_activation_sent = self.user_manager.send_verification_email(trans, email, username)
+                is_activation_sent = self.user_manager.send_activation_email(trans, email, username)
                 if is_activation_sent:
                     message = 'Now logged in as %s.<br>Verification email has been sent to your email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.<br><a target="_top" href="%s">Return to the home page.</a>' % (escape(user.email), url_for('/'))
                 else:
@@ -633,41 +619,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     @expose_api_anonymous_and_sessionless
     def reset_password(self, trans, payload={}, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
-        if trans.app.config.smtp_server is None:
-            return self.message_exception(trans, "Mail is not configured for this Galaxy instance "
-                                    "and password reset information cannot be sent. "
-                                    "Please contact your local Galaxy administrator.")
-        email = payload.get("email")
-        if not email:
-            return self.message_exception(trans, "Please provide your email.")
-        message = validate_email(trans, email, check_dup=False)
+        message = self.user_manager.send_reset_email(trans, payload)
         if message:
             return self.message_exception(trans, message)
-        else:
-            reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-            if not reset_user:
-                # Perform a case-insensitive check only if the user wasn't found
-                reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
-            if reset_user:
-                prt = trans.app.model.PasswordResetToken(reset_user)
-                trans.sa_session.add(prt)
-                trans.sa_session.flush()
-                host = trans.request.host.split(':')[0]
-                if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-                    host = socket.getfqdn()
-                reset_url = url_for(controller='root', action='login', token=prt.token)
-                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
-                                                  reset_url)
-                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-                subject = 'Galaxy Password Reset'
-                try:
-                    util.send_mail(frm, email, subject, body, trans.app.config)
-                    trans.sa_session.add(reset_user)
-                    trans.sa_session.flush()
-                    trans.log_event('User reset password: %s' % email)
-                except Exception as e:
-                    log.debug(body)
-                    return self.message_exception(trans, "Failed to submit email. Please contact the administrator: %s" % str(e))
         return {"message": "Reset link has been sent to your email."}
 
     def __validate(self, trans, email, password, confirm, username):
