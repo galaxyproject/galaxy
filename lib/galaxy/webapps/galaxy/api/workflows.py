@@ -722,12 +722,30 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
 
+        :param  step_details:       fetch details about individual invocation steps
+                                    and populate a steps attribute in the resulting
+                                    dictionary. Defaults to false.
+        :type   step_details:       bool
+
+        :param  legacy_job_state:   If step_details is rrue, and this is set to true
+                                    populate the invocation step state with the job state
+                                    instead of the invocation step state. This will also
+                                    produce one step per job in mapping jobs to mimic the
+                                    older behavior with respect to collections. Partially
+                                    scheduled steps may provide incomplete information
+                                    and the listed steps outputs are the mapped over
+                                    step outputs but the individual job outputs
+                                    when this is set - at least for now.
+        :type   legacy_job_state:   bool
+
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         if workflow_invocation:
-            return self.__encode_invocation(trans, workflow_invocation, step_details=kwd.get('step_details', False))
+            step_details = util.string_as_bool(kwd.get('step_details', 'False'))
+            legacy_job_state = util.string_as_bool(kwd.get('legacy_job_state', 'False'))
+            return self.__encode_invocation(trans, workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state)
         return None
 
     @expose_api
@@ -817,9 +835,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __get_stored_workflow(self, trans, workflow_id):
         return self.workflow_manager.get_stored_workflow(trans, workflow_id)
 
-    def __encode_invocation(self, trans, invocation, view="element", step_details=False):
+    def __encode_invocation(self, trans, invocation, view="element", step_details=False, legacy_job_state=False):
         return self.encode_all_ids(
             trans,
-            invocation.to_dict(view, step_details=step_details),
+            invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state),
             True
         )

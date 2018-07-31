@@ -4287,7 +4287,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
         else:
             raise Exception("Unknown output type encountered")
 
-    def to_dict(self, view='collection', value_mapper=None, step_details=False):
+    def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
             steps = []
@@ -4296,7 +4296,19 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
                     v = step.to_dict(view='element')
                 else:
                     v = step.to_dict(view='collection')
-                steps.append(v)
+                if legacy_job_state:
+                    step_jobs = step.jobs
+                    if step_jobs:
+                        for step_job in step_jobs:
+                            v_clone = v.copy()
+                            v_clone["state"] = step_job.state
+                            v_clone["job_id"] = step_job.id
+                            steps.append(v_clone)
+                    else:
+                        v["state"] = None
+                        steps.append(v)
+                else:
+                    steps.append(v)
             rval['steps'] = steps
 
             inputs = {}
