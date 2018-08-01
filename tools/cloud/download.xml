@@ -10,11 +10,11 @@
     <command interpreter="python">
         download_to_cloud.py
             --provider=$provider
-            --access=$access
-            --secret=$secret
-            --bucket=$bucket
-            --object=$object
-            --output=$output
+            --credentials=credentials
+            --bucket=bucket
+            --object_label=object_label
+            --filename=filename
+            --overwrite_existing=overwrite_existing
     </command>
     <inputs>
         <param name="provider" type="text" label="Provider" />
