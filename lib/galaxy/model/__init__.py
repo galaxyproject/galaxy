@@ -186,6 +186,17 @@ def cached_id(galaxy_model_object):
     return galaxy_model_object.id
 
 
+class JobsBuilder(object):
+    """Abstraction to build one or many Jobs in batch."""
+
+    def __init__(self):
+        self.jobs = []
+        self.job_relationships = {}
+
+    def build(self, sa_session):
+        pass
+
+
 class JobLike(object):
 
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
@@ -768,25 +779,43 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable):
         self.params = params
 
     def add_parameter(self, name, value):
-        self.parameters.append(JobParameter(name, value))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_parameter(name, value)
+        else:
+            self.parameters.append(JobParameter(name, value))
 
     def add_input_dataset(self, name, dataset=None, dataset_id=None):
-        assoc = JobToInputDatasetAssociation(name, dataset)
-        if dataset is None and dataset_id is not None:
-            assoc.dataset_id = dataset_id
-        self.input_datasets.append(assoc)
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_input_dataset(name, dataset_id)
+        else:
+            assoc = JobToInputDatasetAssociation(name, dataset)
+            if dataset is None and dataset_id is not None:
+                assoc.dataset_id = dataset_id
+            self.input_datasets.append(assoc)
 
     def add_output_dataset(self, name, dataset):
-        self.output_datasets.append(JobToOutputDatasetAssociation(name, dataset))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_output_dataset(name, dataset)
+        else:
+            self.output_datasets.append(JobToOutputDatasetAssociation(name, dataset))
 
     def add_input_dataset_collection(self, name, dataset_collection):
-        self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_input_dataset_collection(name, cached_id(dataset_collection))
+        else:
+            self.input_dataset_collections.append(JobToInputDatasetCollectionAssociation(name, dataset_collection))
 
     def add_output_dataset_collection(self, name, dataset_collection_instance):
-        self.output_dataset_collection_instances.append(JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_output_dataset_collection(name, dataset_collection_instance)
+        else:
+            self.output_dataset_collection_instances.append(JobToOutputDatasetCollectionAssociation(name, dataset_collection_instance))
 
     def add_implicit_output_dataset_collection(self, name, dataset_collection):
-        self.output_dataset_collections.append(JobToImplicitOutputDatasetCollectionAssociation(name, dataset_collection))
+        if hasattr(self, "jobs_builder"):
+            self.jobs_builder.add_implicit_output_dataset_collection(name, dataset_collection)
+        else:
+            self.output_dataset_collections.append(JobToImplicitOutputDatasetCollectionAssociation(name, dataset_collection))
 
     def add_input_library_dataset(self, name, dataset):
         self.input_library_datasets.append(JobToInputLibraryDatasetAssociation(name, dataset))
@@ -1418,10 +1447,9 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                 dataset.hid = self._next_hid()
         if quota and self.user:
             self.user.adjust_total_disk_usage(dataset.quota_amount(self.user))
-        dataset.history = self
         if genome_build not in [None, '?']:
             self.genome_build = genome_build
-        dataset.history_id = self.id
+        dataset.history_id = cached_id(self)
         return dataset
 
     def add_datasets(self, sa_session, datasets, parent_id=None, genome_build=None, set_hid=True, quota=True, flush=False):
@@ -1456,7 +1484,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         set_genome = genome_build not in [None, '?']
         for i, dataset in enumerate(datasets):
             dataset.hid = base_hid + i
-            dataset.history = self
+            dataset.history_id = cached_id(self)
             if set_genome:
                 self.genome_build = genome_build
         for dataset in datasets:
@@ -3355,6 +3383,42 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
         if top_level_populated and self.has_subcollections:
             return all(e.child_collection.populated for e in self.elements)
         return top_level_populated
+
+    @property
+    def dataset_action_tuples(self):
+        if not hasattr(self, '_dataset_action_tuples'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+            dataset_permission = alias(DatasetPermissions.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            depth_collection_type = self.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_from = select_from.outerjoin(dataset_permission, dataset.c.id == dataset_permission.c.dataset_id)
+
+            select_stmt = select([dataset_permission.c.action, dataset_permission.c.role_id]).select_from(select_from).where(dc.c.id == self.id).distinct()
+
+            _dataset_action_tuples = []
+            for _dataset_action_tuple in db_session.execute(select_stmt).fetchall():
+                _dataset_action_tuples.append(_dataset_action_tuple)
+
+            self._dataset_action_tuples = _dataset_action_tuples
+
+        return self._dataset_action_tuples
 
     @property
     def waiting_for_elements(self):

@@ -64,7 +64,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_resource_params__']
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -94,12 +94,17 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     has_remaining_jobs = False
 
     if (job_count < burst_at or burst_threads < 2):
+        jobs_builder = model.JobsBuilder()
+        execution_cache.jobs_builder = jobs_builder
         for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
             if max_num_jobs and jobs_executed >= max_num_jobs:
                 has_remaining_jobs = True
                 break
             else:
                 execute_single_job(execution_slice, completed_jobs[i])
+        full_flush_timer = ExecutionTimer()
+        trans.sa_session.flush()
+        log.info("Flushing all job(s) for execution slice %s" % full_flush_timer)
     else:
         # TODO: re-record success...
         q = Queue()

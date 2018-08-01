@@ -17,7 +17,7 @@ class ModelOperationToolAction(DefaultToolAction):
             execution_cache = ToolExecutionCache(trans)
 
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, _ = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+        history, inp_data, inp_dataset_collections, _, _ = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
 
         tool.check_inputs_ready(inp_data, inp_dataset_collections)
 
@@ -26,7 +26,7 @@ class ModelOperationToolAction(DefaultToolAction):
             execution_cache = ToolExecutionCache(trans)
 
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
+        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
 
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
@@ -55,7 +55,7 @@ class ModelOperationToolAction(DefaultToolAction):
         #
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
         self._produce_outputs(trans, tool, out_data, output_collections, incoming=incoming, history=history, tags=preserved_tags)
-        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles)
+        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         job.state = job.states.OK
         trans.sa_session.add(job)
