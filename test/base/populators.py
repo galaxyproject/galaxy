@@ -982,7 +982,7 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
         response = state_func()
-        raise TimeoutAssertionError("%s Current response containing state [%s]." % (e.message, response.json()))
+        raise TimeoutAssertionError("%s Current response containing state [%s]." % (str(e), response.json()))
 
 
 class GiPostGetMixin:
