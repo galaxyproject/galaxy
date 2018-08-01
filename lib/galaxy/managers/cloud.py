@@ -285,6 +285,8 @@ class CloudManager(sharable.SharableModelManager):
         history = self.get_accessible(history_id, trans.user)
         downloaded = []
         for hda in history.datasets:
+            if hda.deleted or hda.purged or hda.state != "ok":
+                continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
                 args = {
