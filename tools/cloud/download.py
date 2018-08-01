@@ -3,7 +3,12 @@
 """
 
 import argparse
+import datetime
 import sys
+
+from galaxy.exceptions import ObjectNotFound
+from galaxy.managers.cloud import CloudManager
+
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
@@ -17,13 +22,17 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 
-def configure_provider(provider, credentials):
-    pass
-
-def download(history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
+def download(provider, credentials, bucket, object_label, filename, overwrite_existing):
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
-    connection = configure_provider(provider, credentials)
+    connection = CloudManager.configure_provider(provider, credentials)
+    bucket_obj = connection.object_store.get(bucket)
+    if bucket_obj is None:
+        raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
+    if overwrite_existing is False and bucket_obj.get(object_label) is not None:
+        object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+    created_obj = bucket_obj.create_object(object_label)
+    created_obj.upload_from_file(filename)
 
 def __main__():
     parser = argparse.ArgumentParser()
