@@ -44,7 +44,7 @@ class CloudManager(sharable.SharableModelManager):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
     @staticmethod
-    def _configure_provider(provider, credentials):
+    def configure_provider(provider, credentials):
         """
         Given a provider name and required credentials, it configures and returns a cloudbridge
         connection to the provider.
@@ -203,7 +203,7 @@ class CloudManager(sharable.SharableModelManager):
         if input_args is None:
             input_args = {}
 
-        connection = self._configure_provider(provider, credentials)
+        connection = self.configure_provider(provider, credentials)
         try:
             bucket_obj = connection.object_store.get(bucket)
             if bucket_obj is None:
