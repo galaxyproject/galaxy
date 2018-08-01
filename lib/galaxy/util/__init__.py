@@ -102,7 +102,7 @@ def is_binary(value, binary_chars=None):
     if binary_chars is None:
         binary_chars = BINARY_CHARS
     for binary_char in binary_chars:
-        if binary_char in value:
+        if binary_char in smart_str(value):
             return True
     return False
 
