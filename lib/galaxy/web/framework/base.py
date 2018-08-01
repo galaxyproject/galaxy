@@ -448,7 +448,7 @@ class Response(object):
         """
         if "\n" in url or "\r" in url:
             raise webob.exc.HTTPInternalServerError("Invalid redirect URL encountered.")
-        raise webob.exc.HTTPFound(url, headers=self.wsgi_headeritems())
+        raise webob.exc.HTTPFound(location=url)
 
     def wsgi_headeritems(self):
         """
