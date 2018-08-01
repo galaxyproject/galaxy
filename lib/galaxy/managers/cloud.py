@@ -3,6 +3,7 @@ Manager and serializer for cloud-based storages.
 """
 
 import logging
+from galaxy import model
 from galaxy import util
 from galaxy.exceptions import (
     AuthenticationFailed,
@@ -39,6 +40,13 @@ SINGED_URL_TTL = 3600
 
 
 class CloudManager(sharable.SharableModelManager):
+
+    # This manager does not manage a history; however,
+    # some of its functions require operations
+    # on history objects using methods from the base
+    # manager class (e.g., get_accessible), which requires
+    # setting this property.
+    model_class = model.History
 
     def __init__(self, app, *args, **kwargs):
         super(CloudManager, self).__init__(app, *args, **kwargs)
