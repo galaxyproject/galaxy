@@ -8,7 +8,7 @@
         <requirement type="package" version="0.3.3">cloudbridge</requirement>
     </requirements>
     <command interpreter="python">
-        download_to_cloud.py
+        download.py
             --provider=$provider
             --credentials=credentials
             --bucket=bucket
