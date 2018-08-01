@@ -11,6 +11,7 @@ import time
 import types
 
 import routes
+import six
 import webob.compat
 import webob.exc
 import webob.exc as httpexceptions  # noqa: F401
@@ -333,6 +334,8 @@ def _make_file(self, binary=None):
     # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
     # but for performance reasons it's way better to use Paste's tempfile than to
     # create a new one and copy.
+    if six.PY2:
+        return tempfile.NamedTemporaryFile()
     if self._binary_file or self.length >= 0:
         return tempfile.NamedTemporaryFile("wb+")
     else:
