@@ -1331,17 +1331,16 @@ class ToolModule(WorkflowModule):
 
         # Combine workflow and runtime post job actions into the effective post
         # job actions for this execution.
-        flush_required = False
         effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
             if pja.action_type in ActionBox.immediate_actions or isinstance(self.tool, DatabaseOperationTool):
                 ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)
             else:
-                pjaa = model.PostJobActionAssociation(pja, job_id=job.id)
+                if job.id:
+                    pjaa = model.PostJobActionAssociation(pja, job_id=job.id)
+                else:
+                    pjaa = model.PostJobActionAssociation(pja, job=job)
                 self.trans.sa_session.add(pjaa)
-                flush_required = True
-        if flush_required:
-            self.trans.sa_session.flush()
 
     def __restore_step_meta_runtime_state(self, step_runtime_state):
         if RUNTIME_POST_JOB_ACTIONS_KEY in step_runtime_state:
