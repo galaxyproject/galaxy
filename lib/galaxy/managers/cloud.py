@@ -32,6 +32,9 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 
 SUPPORTED_PROVIDERS = "{aws, azure, openstack}"
 
+DOWNLOAD_TOOL = "download_to_cloud"
+DOWNLOAD_TOOL_VERSION = "0.1.0"
+
 # TODO: this configuration should be set in a config file.
 SINGED_URL_TTL = 3600
 
@@ -286,7 +289,7 @@ class CloudManager(sharable.SharableModelManager):
                     "overwrite_existing": overwrite_existing
                 }
                 incoming = (util.Params(args, sanitize=False)).__dict__
-                d2c = trans.app.toolbox.get_tool('download_to_cloud', "0.1.0")
+                d2c = trans.app.toolbox.get_tool(DOWNLOAD_TOOL, DOWNLOAD_TOOL_VERSION)
                 job = d2c.execute(trans, incoming, history=history)
                 downloaded.append(object_label)
         return downloaded
