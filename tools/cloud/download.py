@@ -77,7 +77,7 @@ def __main__():
                         required=True)
 
     args = parser.parse_args(sys.argv[1:])
-    download(args)
+    download(args.provider, args.credentials, args.bucket, args.object_label, args.filename, args.overwrite_existing)
 
 if __name__ == "__main__":
-    __main__()
+    sys.exit(__main__())
