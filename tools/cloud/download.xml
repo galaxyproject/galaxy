@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<tool id="download_to_cloud" name="Download dataset" version="0.1.0" workflow_compatible="false">
+    <description>
+        to Cloud
+    </description>
+    <requirements>
+        <requirement type="package" version="0.3.3">cloudbridge</requirement>
+    </requirements>
+    <command interpreter="python">
+        download_to_cloud.py
+            --provider=$provider
+            --access=$access
+            --secret=$secret
+            --bucket=$bucket
+            --object=$object
+            --output=$output
+    </command>
+    <inputs>
+        <param name="provider" type="text" label="Provider" />
+        <param name="access" type="text" label="Access key" />
+        <param name="secret" type="text" label="Secret key" />
+        <param name="bucket" type="text" label="Bucket name" />
+        <param name="object" type="text" label="Object name" />
+    </inputs>
+    <outputs>
+        <data name="output" type="data" label="Output file"/>
+    </outputs>
+    <help>
+
+**What it does**
+
+Downloads a dataset from Galaxy to a cloud-based storage.
+
+    </help>
+</tool>
