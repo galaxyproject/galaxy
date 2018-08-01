@@ -36,12 +36,46 @@ def download(provider, credentials, bucket, object_label, filename, overwrite_ex
 
 def __main__():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p', '--provider', type=str, help="Provider", required=True)
-    parser.add_argument('-a', '--access', type=str, help="AWS access key", required=True)
-    parser.add_argument('-s', '--secret', type=str, help="AWS secret key", required=True)
-    parser.add_argument('-b', '--bucket', type=str, help="AWS S3 bucket name", required=True)
-    parser.add_argument('-o', '--object', type=str, help="AWS S3 object name", required=True)
-    parser.add_argument('-u', '--output', type=str, help="Downloaded file", required=True)
+    parser.add_argument('-p',
+                        '--provider',
+                        type=str,
+                        help="Provider",
+                        required=True)
+
+    parser.add_argument('-c',
+                        '--credentials',
+                        type=str,
+                        help="Credentials required to authorize access",
+                        required=True)
+
+    parser.add_argument('-b',
+                        '--bucket',
+                        type=str,
+                        help="The cloud-based storage bucket in which data should be written",
+                        required=True)
+
+    parser.add_argument('-o',
+                        '--object_label',
+                        type=str,
+                        help="The label of the object created on the cloud-based storage for "
+                             "the data to be persisted",
+                        required=True)
+
+    parser.add_argument('-f',
+                        '--filename',
+                        type=str,
+                        help="The (absolute) filename of the data to be persisted on the "
+                             "cloud-based storage",
+                        required=True)
+
+    parser.add_argument('-w',
+                        '--overwrite_existing',
+                        type=str,
+                        help="Sets if an object with the given `object_label` exists, this tool "
+                             "should overwrite it (true) or append a time stamp to avoid "
+                             "overwriting (false)",
+                        required=True)
+
     args = parser.parse_args(sys.argv[1:])
     download(args)
 
