@@ -4,7 +4,7 @@ Manager and serializer for cloud-based storages.
 
 import datetime
 import logging
-
+from galaxy import util
 from galaxy.exceptions import (
     AuthenticationFailed,
     ItemAccessibilityException,
@@ -272,22 +272,21 @@ class CloudManager(sharable.SharableModelManager):
         :rtype:                     list
         :return:                    A list of labels for the objects that were uploaded.
         """
-        if CloudProviderFactory is None:
-            raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
-        connection = self._configure_provider(provider, credentials)
-
-        bucket_obj = connection.object_store.get(bucket)
-        if bucket_obj is None:
-            raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
-
-        history = trans.sa_session.query(trans.app.model.History).get(history_id)
+        history = self.get_accessible(history_id, trans.user)
         downloaded = []
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
-                if overwrite_existing is False and bucket_obj.get(object_label) is not None:
-                    object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-                created_obj = bucket_obj.create_object(object_label)
-                created_obj.upload_from_file(hda.dataset.get_file_name())
+                args = {
+                    "provider": provider,
+                    "credentials": credentials,
+                    "bucket": bucket,
+                    "object_label": object_label,
+                    "filename": hda.dataset.get_file_name(),
+                    "overwrite_existing": overwrite_existing
+                }
+                incoming = (util.Params(args, sanitize=False)).__dict__
+                d2c = trans.app.toolbox.get_tool('download_to_cloud', "0.1.0")
+                job = d2c.execute(trans, incoming, history=history)
                 downloaded.append(object_label)
         return downloaded
