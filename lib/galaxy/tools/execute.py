@@ -68,7 +68,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             del params['__workflow_resource_params__']
         if validate_outputs:
             params['__validate_outputs__'] = True
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info, flush_job=False)
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
             execution_tracker.record_success(execution_slice, job, result)
@@ -100,6 +100,13 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             break
         else:
             execute_single_job(execution_slice, completed_jobs[i])
+
+    full_flush_timer = ExecutionTimer()
+    trans.sa_session.flush()
+    for job in execution_tracker.successful_jobs:
+        # Put the job in the queue if tracking in memory
+        app.job_manager.enqueue(job, tool=tool)
+        trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)

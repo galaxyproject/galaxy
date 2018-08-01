@@ -276,7 +276,7 @@ class DefaultToolAction(object):
                         preserved_tags[tag.value] = tag
         return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
-    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None):
+    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None, flush_job=True):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
@@ -578,9 +578,14 @@ class DefaultToolAction(object):
             trans.sa_session.flush()
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
         else:
-            # Dispatch to a job handler. enqueue() is responsible for flushing the job
-            app.job_manager.enqueue(job, tool=tool)
-            trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
+            if flush_job:
+                job_flush_timer = ExecutionTimer()
+                trans.sa_session.flush()
+                log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
+
+                # Dispatch to a job handler. enqueue() is responsible for flushing the job
+                app.job_manager.enqueue(job, tool=tool)
+                trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):

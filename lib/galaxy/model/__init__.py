@@ -5300,6 +5300,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             for step in self.steps:
                 if step.workflow_step.type == 'tool':
                     for job in step.jobs:
+                        if job is None:
+                            continue
                         for step_input in step.workflow_step.input_connections:
                             output_step_type = step_input.output_step.type
                             if output_step_type in ['data_input', 'data_collection_input']:
