@@ -2,7 +2,6 @@
 Manager and serializer for cloud-based storages.
 """
 
-import datetime
 import logging
 from galaxy import util
 from galaxy.exceptions import (
