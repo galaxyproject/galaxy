@@ -18,10 +18,11 @@
     </command>
     <inputs>
         <param name="provider" type="text" label="Provider" />
-        <param name="access" type="text" label="Access key" />
-        <param name="secret" type="text" label="Secret key" />
-        <param name="bucket" type="text" label="Bucket name" />
-        <param name="object" type="text" label="Object name" />
+        <param name="credentials" type="text" label="Credentials" />
+        <param name="bucket" type="text" label="Bucket" />
+        <param name="object_label" type="text" label="Object Label" />
+        <param name="filename" type="text" label="Filename" />
+        <param name="overwrite_existing" type="text" label="overwrite_existing" />
     </inputs>
     <outputs>
         <data name="output" type="data" label="Output file"/>
