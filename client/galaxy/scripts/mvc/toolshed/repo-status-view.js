@@ -50,11 +50,6 @@ var ToolShedRepoStatusView = Backbone.View.extend({
         $("#center").css("overflow", "auto");
     },
 
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
-    },
-
     templateRepoStatus: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',

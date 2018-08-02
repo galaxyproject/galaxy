@@ -76,11 +76,6 @@ var View = Backbone.View.extend({
         $("#from_workflow").on("click", this.loadWorkflows);
     },
 
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
-    },
-
     templateWorkflows: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',

@@ -62,12 +62,6 @@ var ToolShedCategories = Backbone.View.extend({
         });
     },
 
-    reDraw: function(options) {
-        this.$el.empty();
-        this.model.url = `${this.model.url}?tool_shed_url=${this.options.tool_shed}`;
-        this.initialize(options);
-    },
-
     templateCategoryList: _.template(
         [
             '<style type="text/css">',

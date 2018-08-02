@@ -108,13 +108,6 @@ var View = Backbone.View.extend({
         return this.defaults;
     },
 
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
-        this.model.fetch();
-        this.render(options);
-    },
-
     templateRepoQueue: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
