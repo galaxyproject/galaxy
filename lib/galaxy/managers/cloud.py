@@ -301,7 +301,7 @@ class CloudManager(sharable.SharableModelManager):
                 object_label = hda.name
                 args = {
                     "provider": provider,
-                    "credentials": args_file,
+                    "credentials_file": args_file,
                     "bucket": bucket,
                     "object_label": object_label,
                     "filename": hda.dataset.get_file_name(),

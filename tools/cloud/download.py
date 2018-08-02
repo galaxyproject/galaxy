@@ -52,9 +52,10 @@ def __main__():
                         required=True)
 
     parser.add_argument('-c',
-                        '--credentials',
+                        '--credentials_file',
                         type=str,
-                        help="Credentials required to authorize access",
+                        help="A file that contains a JSON object containing user credentials "
+                             "required to authorize access",
                         required=True)
 
     parser.add_argument('-b',
