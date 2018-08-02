@@ -1,3 +1,5 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import _l from "utils/localization";
 import jQuery from "jquery";
 var $ = jQuery;
@@ -13,6 +15,8 @@ import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import Vue from "vue";
 
+/* global Galaxy */
+
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
@@ -20,7 +24,7 @@ window.app = function app(options, bootstrapped) {
     /** Routes */
     var AdminRouter = Router.extend({
         routes: {
-            "(/)admin(/)" : "home",
+            "(/)admin(/)": "home",
             "(/)admin(/)users": "show_users",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
