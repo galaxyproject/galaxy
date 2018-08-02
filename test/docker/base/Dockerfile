@@ -10,7 +10,9 @@ ENV DEBIAN_FRONTEND=noninteractive \
     MYSQL_MAJOR=5.7 \
     POSTGRES_MAJOR=9.5 \
     GALAXY_ROOT=/galaxy \
-    GALAXY_VIRTUAL_ENV=/galaxy_venv
+    GALAXY_VIRTUAL_ENV=/galaxy_venv \
+    GALAXY_VIRTUAL_ENV_2=/galaxy_venv \
+    GALAXY_VIRTUAL_ENV_3=/galaxy_venv3
 
 # Pre-install a bunch of packages to speed up ansible steps.
 RUN apt-get update -y && apt-get install -y software-properties-common apt-transport-https curl && \
@@ -79,11 +81,15 @@ RUN mkdir /etc/galaxy && cd /tmp/ansible && mkdir roles && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN cd $GALAXY_ROOT && \
-    ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; } && \
-    dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt && \
-    [ -f $dev_requirements ] && $GALAXY_VIRTUAL_ENV/bin/pip install -r $dev_requirements
+    for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
+        export GALAXY_VIRTUAL_ENV=$VENV && \
+        ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; } && \
+        dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt && \
+        [ -f $dev_requirements ] && $VENV/bin/pip install -r $dev_requirements; done
 
-RUN . $GALAXY_VIRTUAL_ENV/bin/activate && \
+RUN for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
+    export GALAXY_VIRTUAL_ENV=$VENV && \
+    . $GALAXY_VIRTUAL_ENV/bin/activate && \
     pip install psycopg2 && \
     pip install mysql && \
     cd $GALAXY_ROOT && \
@@ -101,7 +107,7 @@ RUN . $GALAXY_VIRTUAL_ENV/bin/activate && \
     echo "Prepopulating toolshed sqlite database" && \
     TOOL_SHED_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/toolshed.sqlite" bash create_db.sh tool_shed && \
     echo "Prepopulating toolshed mysql database" && \
-    TOOL_SHED_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/toolshed?unix_socket=/var/run/mysqld/mysqld.sock" bash create_db.sh tool_shed
+    TOOL_SHED_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/toolshed?unix_socket=/var/run/mysqld/mysqld.sock" bash create_db.sh tool_shed; done
 
 # bcftools for Galaxy.
 RUN mkdir -p /tmp/install && \

@@ -18,7 +18,7 @@ echo "Creating galaxy user with uid $GALAXY_TEST_UID - it may already exist and 
 useradd -u $GALAXY_TEST_UID -r -g galaxy -d /home/galaxy -c "Galaxy User" galaxy -s /bin/bash | true
 echo "Setting galaxy user password - the operation may fail."
 echo "galaxy:galaxy" | chpasswd | true
-chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" /galaxy_venv
+chown -R "$GALAXY_TEST_UID:$GALAXY_TEST_UID" "${GALAXY_VIRTUAL_ENV:-/galaxy_venv}"
 
 : ${GALAXY_TEST_DATABASE_TYPE:-"postgres"}
 if [ "$GALAXY_TEST_DATABASE_TYPE" = "postgres" ];
