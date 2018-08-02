@@ -2,7 +2,11 @@
 Manager and serializer for cloud-based storages.
 """
 
+import json
 import logging
+import os
+import random
+import string
 from galaxy import model
 from galaxy import util
 from galaxy.exceptions import (
@@ -288,10 +292,16 @@ class CloudManager(sharable.SharableModelManager):
             if hda.deleted or hda.purged or hda.state != "ok":
                 continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
+                args_file = os.path.abspath(os.path.join(
+                    trans.app.config.new_file_path,
+                    "cd_" + ''.join(random.SystemRandom().choice(
+                        string.ascii_uppercase + string.digits) for _ in range(11))))
+                with open(args_file, "w") as f:
+                    f.write(json.dumps(credentials))
                 object_label = hda.name
                 args = {
                     "provider": provider,
-                    "credentials": credentials,
+                    "credentials": args_file,
                     "bucket": bucket,
                     "object_label": object_label,
                     "filename": hda.dataset.get_file_name(),
