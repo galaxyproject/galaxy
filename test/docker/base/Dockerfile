@@ -88,10 +88,10 @@ RUN cd $GALAXY_ROOT && \
         [ -f $dev_requirements ] && $VENV/bin/pip install -r $dev_requirements; done
 
 RUN for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
-    export GALAXY_VIRTUAL_ENV=$VENV && \
-    . $GALAXY_VIRTUAL_ENV/bin/activate && \
-    pip install psycopg2 && \
-    pip install mysql && \
+        export GALAXY_VIRTUAL_ENV=$VENV && \
+        . $GALAXY_VIRTUAL_ENV/bin/activate && \
+        pip install psycopg2 && \
+        pip install mysql; done && \
     cd $GALAXY_ROOT && \
     echo "Prepopulating postgres database" && \
     su -c '/usr/lib/postgresql/${POSTGRES_MAJOR}/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
@@ -107,7 +107,7 @@ RUN for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
     echo "Prepopulating toolshed sqlite database" && \
     TOOL_SHED_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/toolshed.sqlite" bash create_db.sh tool_shed && \
     echo "Prepopulating toolshed mysql database" && \
-    TOOL_SHED_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/toolshed?unix_socket=/var/run/mysqld/mysqld.sock" bash create_db.sh tool_shed; done
+    TOOL_SHED_CONFIG_DATABASE_CONNECTION="mysql://galaxy:galaxy@localhost/toolshed?unix_socket=/var/run/mysqld/mysqld.sock" bash create_db.sh tool_shed
 
 # bcftools for Galaxy.
 RUN mkdir -p /tmp/install && \
