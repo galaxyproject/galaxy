@@ -87,7 +87,8 @@ def __main__():
                         required=True)
 
     args = parser.parse_args(sys.argv[1:])
-    download(args.provider, args.credentials_file, args.bucket, args.object_label, args.filename, args.overwrite_existing)
+    overwrite_existing = args.overwrite_existing.lower() == "true"
+    download(args.provider, args.credentials_file, args.bucket, args.object_label, args.filename, overwrite_existing)
 
 if __name__ == "__main__":
     sys.exit(__main__())
