@@ -177,12 +177,12 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 });
             });
         });
-        $(".select-tps-button").on("click", (params) => {
+        $(".select-tps-button").on("click", params => {
             var changeset = this.selectedChangeset();
             var guid = params.target.attributes.getNamedItem("data-toolguid");
             this.showToolTPSSelect(guid, changeset);
         });
-        $(".create-tps-button").on("click", (params) => {
+        $(".create-tps-button").on("click", params => {
             var changeset = this.selectedChangeset();
             var guid = params.target.attributes.getNamedItem("data-toolguid");
             this.showToolTPSCreate(guid, changeset);
