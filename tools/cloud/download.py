@@ -5,6 +5,7 @@
 import argparse
 import datetime
 import json
+import os
 import sys
 
 from galaxy.exceptions import ObjectNotFound
@@ -25,6 +26,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 def load_credential(credentials_file):
     with open(credentials_file, "r") as f:
         credentials = f.read()
+    os.remove(credentials_file)
     return json.loads(credentials)
 
 
