@@ -196,8 +196,9 @@ collection_builders:
 histories:
   sharing:
     selectors:
-      user_n_menu: '#user-${n}-popup'
+      unshare_user_button: '.unshare_user'
       share_with_a_user_button: '#share_with_a_user'
+      make_accessible_and_publish: '#make_accessible_and_publish'
     labels:
       unshare: 'Unshare'
 
@@ -220,7 +221,7 @@ tool_form:
     citations: '.citations-formatted'
     reference: '.citations-formatted .formatted-reference'
     show_bibtex: 'button.citations-to-bibtex'
-    bibtex_area: '.citations-bibtex textarea'
+    bibtex_area: 'code.citations-bibtex'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
 
   labels:

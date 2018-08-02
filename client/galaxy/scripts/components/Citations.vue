@@ -2,7 +2,7 @@
     <b-card>
         <h4 slot="header" class="mb-0">
             Citations
-            <b-button v-if="viewRender" @click="toggleViewRender" title="Show all in BibTeX format.">
+            <b-button v-if="viewRender" @click="toggleViewRender" title="Show all in BibTeX format." class="citations-to-bibtex">
                 <i class="fa fa-pencil-square-o"></i>
                 Show BibTeX
             </b-button>
@@ -20,7 +20,7 @@
             </p>
         </span>
         <pre v-else>
-            <code>
+            <code class="citations-bibtex">
                 {{ content }}
             </code>
         </pre>
