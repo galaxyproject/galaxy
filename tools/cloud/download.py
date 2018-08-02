@@ -4,6 +4,7 @@
 
 import argparse
 import datetime
+import json
 import sys
 
 from galaxy.exceptions import ObjectNotFound
@@ -21,8 +22,14 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
+def load_credential(credentials_file):
+    with open(credentials_file, "r") as f:
+        credentials = f.read()
+    return json.loads(credentials)
 
-def download(provider, credentials, bucket, object_label, filename, overwrite_existing):
+
+def download(provider, credentials_file, bucket, object_label, filename, overwrite_existing):
+    credentials = load_credential(credentials_file)
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
     connection = CloudManager.configure_provider(provider, credentials)
