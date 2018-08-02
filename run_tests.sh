@@ -261,7 +261,7 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.05.3'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.09.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
