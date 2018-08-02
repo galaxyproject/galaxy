@@ -10,7 +10,7 @@
     <command interpreter="python">
         download.py
             --provider=$provider
-            --credentials=$credentials
+            --credentials_file=$credentials_file
             --bucket=$bucket
             --object_label=$object_label
             --filename=$filename
