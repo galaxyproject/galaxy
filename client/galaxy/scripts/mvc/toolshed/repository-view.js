@@ -177,12 +177,12 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 });
             });
         });
-        $(".select-tps-button").on("click", (params) => {
+        $(".select-tps-button").on("click", params => {
             var changeset = this.selectedChangeset();
             var guid = params.target.attributes.getNamedItem("data-toolguid");
             this.showToolTPSSelect(guid, changeset);
         });
-        $(".create-tps-button").on("click", (params) => {
+        $(".create-tps-button").on("click", params => {
             var changeset = this.selectedChangeset();
             var guid = params.target.attributes.getNamedItem("data-toolguid");
             this.showToolTPSCreate(guid, changeset);
@@ -394,7 +394,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
     templateRepoDetails: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner">Repository information for <strong><%= repository.name %></strong> from <strong><%= repository.owner %></strong><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner">Repository information for&nbsp;<strong><%= repository.name %></strong>&nbsp;from&nbsp;<strong><%= repository.owner %></strong><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<div class="unified-panel-body" id="repository_details" data-tsrid="<%= repository.id %>">',
             '<form id="repository_installation" name="install_repository" method="post" action="<%= api_url %>">',

@@ -35,11 +35,6 @@ var View = Backbone.View.extend({
         );
     },
 
-    reDraw: function(options) {
-        this.$el.empty();
-        this.render(options);
-    },
-
     templateToolshedList: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',

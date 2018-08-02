@@ -61,11 +61,6 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
         });
     },
 
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
-    },
-
     templateCategoryContents: _.template(
         [
             '<style type="text/css">',
