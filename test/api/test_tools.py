@@ -1386,8 +1386,11 @@ class ToolsTestCase(api.ApiTestCase):
         }
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         create = self._run("identifier_source", history_id, inputs, assert_ok=True)
-        assert create['implicit_collections'][0]['elements'][0]['element_identifier'] == 'B'
-        assert create['implicit_collections'][1]['elements'][0]['element_identifier'] == 'A'
+        for implicit_collection in create['implicit_collections']:
+            if implicit_collection['output_name'] == 'outputA':
+                assert implicit_collection['elements'][0]['element_identifier'] == 'A'
+            else:
+                assert implicit_collection['elements'][0]['element_identifier'] == 'B'
 
     @skip_without_tool("collection_creates_pair")
     def test_map_over_collection_output(self):

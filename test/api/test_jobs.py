@@ -489,7 +489,8 @@ class JobsApiTestCase(api.ApiTestCase):
         jobs_response = self._get("jobs", data=dict(state=states))
         self._assert_status_code_is(jobs_response, 200)
         jobs = jobs_response.json()
-        assert not filter(lambda j: j["state"] not in states, jobs)
+        assert not [j for j in jobs if not j['state'] in states]
+        return [j for j in jobs if j['tool_id'] == 'upload1']
         return filter(lambda j: j["tool_id"] == "upload1", jobs)
 
     def __history_with_new_dataset(self):

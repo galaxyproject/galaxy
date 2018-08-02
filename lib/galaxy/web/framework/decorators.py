@@ -268,7 +268,7 @@ def _future_expose_api(func, to_json=True, user_required=True, user_or_session_r
                 return __api_error_response(trans, err_code=error_code, status_code=403)
             try:
                 decoded_user_id = trans.security.decode_id(kwargs['payload']['run_as'])
-            except TypeError:
+            except (TypeError, ValueError):
                 error_message = "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
                 error_code = error_codes.USER_INVALID_RUN_AS
                 return __api_error_response(trans, err_code=error_code, err_msg=error_message, status_code=400)

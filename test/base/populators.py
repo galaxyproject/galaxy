@@ -312,8 +312,8 @@ class BaseDatasetPopulator(object):
         if filename:
             data["filename"] = filename
         display_response = self._get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
-        assert display_response.status_code == 200, display_response.content
-        return display_response.content
+        assert display_response.status_code == 200, display_response.text
+        return display_response.text
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
@@ -984,7 +984,7 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
         response = state_func()
-        raise TimeoutAssertionError("%s Current response containing state [%s]." % (e.message, response.json()))
+        raise TimeoutAssertionError("%s Current response containing state [%s]." % (str(e), response.json()))
 
 
 class GiPostGetMixin:

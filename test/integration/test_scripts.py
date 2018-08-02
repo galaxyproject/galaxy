@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import unittest
 
+import six
 import yaml
 from base import integration_util
 from base.populators import DatasetPopulator
@@ -177,7 +178,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         clean_env = {
             "PATH": os.environ.get("PATH", None),
         }  # Don't let testing environment variables interfere with config.
-        return subprocess.check_output(cmd, cwd=cwd, env=clean_env)
+        return six.text_type(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
 
     def write_config_file(self):
         config_dir = self.config_dir

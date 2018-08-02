@@ -174,6 +174,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         def json_encodeify(obj):
             if isinstance(obj, odict):
                 return dict(obj)
+            elif isinstance(obj, map):
+                return list(obj)
             else:
                 return obj
 

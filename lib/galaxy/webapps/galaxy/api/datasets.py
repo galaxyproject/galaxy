@@ -306,7 +306,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                                                                     alt_name=filename)
                 else:
                     file_path = hda.file_name
-                rval = open(file_path)
+                rval = open(file_path, 'rb')
 
             else:
                 display_kwd = kwd.copy()
