@@ -241,12 +241,12 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             if not trans.app.security_agent.dataset_is_public(dataset):
                 raise exceptions.InternalServerError('An error occured while making dataset public.')
         elif action == 'make_private':
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
                 dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role)
                 trans.sa_session.add(dp)
                 trans.sa_session.flush()
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
         elif action == 'set_permissions':
