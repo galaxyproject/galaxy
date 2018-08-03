@@ -284,7 +284,9 @@ class CloudManager(sharable.SharableModelManager):
                                     overwriting the existing object.
 
         :rtype:                     list
-        :return:                    A list of labels for the objects that were uploaded.
+        :return:                    A list of JSON objects with `object` (the label of the downloaded
+                                    dataset) and `job_id` (the encoded ID of a job created for downloading
+                                    the dataset) keys.
         """
         history = self.get_accessible(history_id, trans.user)
         downloaded = []

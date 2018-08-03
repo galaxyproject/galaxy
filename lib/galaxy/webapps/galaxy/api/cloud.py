@@ -137,9 +137,9 @@ class CloudController(BaseAPIController):
     def download(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/storage/download
-            Downloads a given dataset in a given history to a given cloud-based bucket. Each dataset is named
+            Downloads given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named
             using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
-            If no dataset ID is given, this API copies all the datasets belonging to a given history to a given
+            If no dataset ID is given, this API downloads all the datasets belonging to a given history to a given
             cloud-based bucket.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
@@ -164,9 +164,10 @@ class CloudController(BaseAPIController):
 
         :param kwargs:
 
-        :rtype:  dictionary
-        :return: Information about the downloaded datasets, including downloaded_dataset_labels
-                 and destination bucket name.
+        :rtype:     dictionary
+        :return:    Information about the downloaded datasets, containing the following keys:
+                        *   `bucket_name`:          The name of bucket/container to which the listed datasets are downloaded.
+                        *   `downloaded_dataset`:   A list of JSON objects describing the download datasets.
         """
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
