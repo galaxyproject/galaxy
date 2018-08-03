@@ -26,7 +26,7 @@
         <param name="credentials_file" type="text" label="Credentials File" />
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" label="Object Label" />
-        <param name="overwrite_existing" type="text" label="overwrite_existing" />
+        <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
     </inputs>
     <outputs>
         <data name="output" type="data" label="Output file"/>
