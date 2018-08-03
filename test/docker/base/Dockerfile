@@ -12,7 +12,8 @@ ENV DEBIAN_FRONTEND=noninteractive \
     GALAXY_ROOT=/galaxy \
     GALAXY_VIRTUAL_ENV=/galaxy_venv \
     GALAXY_VIRTUAL_ENV_2=/galaxy_venv \
-    GALAXY_VIRTUAL_ENV_3=/galaxy_venv3
+    GALAXY_VIRTUAL_ENV_3=/galaxy_venv3 \
+    LC_ALL=C.UTF-8
 
 # Pre-install a bunch of packages to speed up ansible steps.
 RUN apt-get update -y && apt-get install -y software-properties-common apt-transport-https curl && \
@@ -36,7 +37,7 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
             g++ gcc gfortran git-core libffi-dev liblapack-dev \
             libncurses5-dev libopenblas-dev libpam0g-dev libpq-dev libsparsehash-dev make \
             mercurial nginx-extras patch postgresql postgresql \
-            postgresql-client python-boto python-dev \
+            postgresql-client python-boto python-dev python3-dev \
             python-prettytable python-psycopg2 python-virtualenv python-pip \
             rsync slurm-drmaa-dev swig sysstat unzip \
             autoconf automake build-essential libatlas-base-dev libblas-dev openssl \
@@ -88,11 +89,11 @@ RUN cd $GALAXY_ROOT && \
         dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt && \
         [ -f $dev_requirements ] && $VENV/bin/pip install -r $dev_requirements; done
 
-RUN for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
+RUN for VENV in $GALAXY_VIRTUAL_ENV_3 $GALAXY_VIRTUAL_ENV_2; do \
         export GALAXY_VIRTUAL_ENV=$VENV && \
         . $GALAXY_VIRTUAL_ENV/bin/activate && \
-        pip install psycopg2 && \
-        pip install mysql; done && \
+        pip install psycopg2; done && \
+    pip install mysql && \
     cd $GALAXY_ROOT && \
     echo "Prepopulating postgres database" && \
     su -c '/usr/lib/postgresql/${POSTGRES_MAJOR}/bin/pg_ctl -o "-F" start -D /opt/galaxy/db' postgres && \
