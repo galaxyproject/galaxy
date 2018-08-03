@@ -215,5 +215,5 @@ class CloudController(BaseAPIController):
                                                credentials=credentials,
                                                dataset_ids=dataset_ids,
                                                overwrite_existing=payload.get("overwrite_existing", False))
-        return {'downloaded_dataset_labels': uploaded,
+        return {'downloaded_dataset': uploaded,
                 'bucket_name': bucket}

@@ -311,5 +311,9 @@ class CloudManager(sharable.SharableModelManager):
                 d2c = trans.app.toolbox.get_tool(DOWNLOAD_TOOL, DOWNLOAD_TOOL_VERSION)
                 res = d2c.execute(trans, incoming, history=history)
                 job = res[0]
-                downloaded.append(object_label)
+                downloaded.append(json.dumps(
+                    {
+                        "object": object_label,
+                        "job_id": trans.app.security.encode_id(job.id)
+                    }))
         return downloaded
