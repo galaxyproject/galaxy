@@ -47,47 +47,28 @@ def download(provider, credentials_file, bucket, object_label, filename, overwri
 
 def parse_args(args):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-p',
-                        '--provider',
-                        type=str,
-                        help="Provider",
-                        required=True)
+    parser.add_argument('-p', '--provider', type=str, required=True, help="Provider")
 
-    parser.add_argument('-b',
-                        '--bucket',
-                        type=str,
-                        help="The cloud-based storage bucket in which data should be written",
-                        required=True)
+    parser.add_argument('-b', '--bucket', type=str, required=True,
+                        help="The cloud-based storage bucket in which data should be written.")
 
-    parser.add_argument('-o',
-                        '--object_label',
-                        type=str,
+    parser.add_argument('-o', '--object_label', type=str, required=True,
                         help="The label of the object created on the cloud-based storage for "
-                             "the data to be persisted",
-                        required=True)
+                             "the data to be persisted.")
 
-    parser.add_argument('-f',
-                        '--filename',
-                        type=str,
+    parser.add_argument('-f', '--filename', type=str, required=True,
                         help="The (absolute) filename of the data to be persisted on the "
-                             "cloud-based storage",
-                        required=True)
+                             "cloud-based storage.")
 
-    parser.add_argument('-w',
-                        '--overwrite_existing',
-                        type=str,
+    parser.add_argument('-w', '--overwrite_existing', type=str, required=True,
                         help="Sets if an object with the given `object_label` exists, this tool "
                              "should overwrite it (true) or append a time stamp to avoid "
-                             "overwriting (false)",
-                        required=True)
+                             "overwriting (false).")
 
-    parser.add_argument('-c',
-                        '--credentials_file',
-                        type=str,
+    parser.add_argument('-c', '--credentials_file', type=str, required=False,
                         help="[Optional] A file that contains a JSON object containing user credentials "
                              "required to authorize access to the cloud-based storage provider."
-                             "Use either this file, or pass the credentials using provider-specific args.",
-                        required=False)
+                             "Use either this file, or pass the credentials using provider-specific args.")
 
     parser.add_argument('--ca_access_key', type=str, required=False, help="AWS Credentials: Access Key" )
     parser.add_argument('--ca_secret_key', type=str, required=False, help="AWS Credentials: Secret Key")
@@ -95,11 +76,11 @@ def parse_args(args):
     parser.add_argument('--cm_subscription_id', type=str, required=False, help="Azure Credentials: Subscription ID")
     parser.add_argument('--cm_client_id', type=str, required=False, help="Azure Credentials: Client ID")
     parser.add_argument('--cm_secret', type=str, required=False, help="Azure Credentials: Secret")
-    parser.add_argument('--cm_tenant', type=str, help="Azure Credentials: Tenant", required=False)
+    parser.add_argument('--cm_tenant', type=str, required=False, help="Azure Credentials: Tenant")
 
-    parser.add_argument('--co_username', type=str, help="OpenStack Credentials: Username", required=False)
-    parser.add_argument('--co_password', type=str, help="OpenStack Credentials: Password", required=False)
-    parser.add_argument('--co_auth_url', type=str, help="OpenStack Credentials: Auth URL", required=False)
+    parser.add_argument('--co_username', type=str, required=False, help="OpenStack Credentials: Username")
+    parser.add_argument('--co_password', type=str, required=False, help="OpenStack Credentials: Password")
+    parser.add_argument('--co_auth_url', type=str, required=False, help="OpenStack Credentials: Auth URL")
     parser.add_argument('--co_project_name', type=str, required=False, help="OpenStack Credentials: Project Name")
     parser.add_argument('--co_project_domain_name', type=str, required=False, help="OpenStack Credentials: Project Domain Name")
     parser.add_argument('--co_user_domain_name', type=str, required=False, help="OpenStack Credentials: User Domain Name")
