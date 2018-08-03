@@ -53,13 +53,6 @@ def __main__():
                         help="Provider",
                         required=True)
 
-    parser.add_argument('-c',
-                        '--credentials_file',
-                        type=str,
-                        help="A file that contains a JSON object containing user credentials "
-                             "required to authorize access",
-                        required=True)
-
     parser.add_argument('-b',
                         '--bucket',
                         type=str,
@@ -87,6 +80,68 @@ def __main__():
                              "should overwrite it (true) or append a time stamp to avoid "
                              "overwriting (false)",
                         required=True)
+
+    parser.add_argument('-c',
+                        '--credentials_file',
+                        type=str,
+                        help="A file that contains a JSON object containing user credentials "
+                             "required to authorize access",
+                        required=False)
+
+    parser.add_argument('--ca_access_key',
+                        type=str,
+                        help="",
+                        required=False)
+
+    parser.add_argument('--ca_secret_key',
+                        type=str,
+                        help="",
+                        required=False)
+
+
+    parser.add_argument('--cm_subscription_id',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--cm_client_id',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--cm_secret',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--cm_tenant',
+                        type=str,
+                        help="",
+                        required=False)
+
+
+    parser.add_argument('--co_username',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--co_password',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--co_auth_url',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--co_project_name',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--co_project_domain_name',
+                        type=str,
+                        help="",
+                        required=False)
+    parser.add_argument('--co_user_domain_name',
+                        type=str,
+                        help="",
+                        required=False)
+
 
     args = parser.parse_args(sys.argv[1:])
     overwrite_existing = args.overwrite_existing.lower() == "true"
