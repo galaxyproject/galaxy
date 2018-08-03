@@ -9,7 +9,7 @@
     </requirements>
     <command interpreter="python">
         download.py
-            --input=$filename
+            --filename=$filename
             --provider=$provider
             --credentials_file=$credentials_file
             --bucket=$bucket
