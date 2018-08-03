@@ -289,7 +289,7 @@ class CloudManager(sharable.SharableModelManager):
         history = self.get_accessible(history_id, trans.user)
         downloaded = []
         for hda in history.datasets:
-            if hda.deleted or hda.purged or hda.state != "ok":
+            if hda.deleted or hda.purged or hda.state != "ok" or hda.creating_job.tool_id == DOWNLOAD_TOOL:
                 continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 args_file = os.path.abspath(os.path.join(
