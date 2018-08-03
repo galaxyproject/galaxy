@@ -222,57 +222,6 @@ class DatasetSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin)
         return permissions
 
 
-class DatasetDeserializer(base.ModelDeserializer, deletable.PurgableDeserializerMixin):
-    model_manager_class = DatasetManager
-
-    def __init__(self, app):
-        super(DatasetDeserializer, self).__init__(app)
-        # TODO: this manager may make more sense inside rbac_secured
-        self.role_manager = roles.RoleManager(app)
-
-    def add_deserializers(self):
-        super(DatasetDeserializer, self).add_deserializers()
-        # not much to set here besides permissions and purged/deleted
-        deletable.PurgableDeserializerMixin.add_deserializers(self)
-
-        self.deserializers.update({
-            'permissions' : self.deserialize_permissions,
-        })
-
-    def deserialize_permissions(self, dataset, key, permissions, user=None, **context):
-        """
-        Create permissions for each list of encoded role ids in the (validated)
-        `permissions` dictionary, where `permissions` is in the form::
-
-            { 'manage': [ <role id 1>, ... ], 'access': [ <role id 2>, ... ] }
-        """
-        self.manager.permissions.manage.error_unless_permitted(dataset, user)
-        self._validate_permissions(permissions, **context)
-        manage = self._list_of_roles_from_ids(permissions['manage'])
-        access = self._list_of_roles_from_ids(permissions['access'])
-        self.manager.permissions.set(dataset, manage, access, flush=False)
-        return permissions
-
-    def _validate_permissions(self, permissions, **context):
-        self.validate.type('permissions', permissions, dict)
-        for permission_key in ('manage', 'access'):
-            if(not isinstance(permissions.get(permission_key, None), list)):
-                msg = 'permissions requires "{0}" as a list of role ids'.format(permission_key)
-                raise exceptions.RequestParameterInvalidException(msg)
-
-        # TODO: push down into permissions?
-        manage_permissions = permissions['manage']
-        if len(manage_permissions) < 1:
-            raise exceptions.RequestParameterInvalidException('At least one managing role is required')
-
-        return permissions
-
-    def _list_of_roles_from_ids(self, id_list):
-        # TODO: this may make more sense inside rbac_secured
-        # note: no checking of valid roles is made
-        return self.role_manager.by_ids([self.app.security.decode_id(id_) for id_ in id_list])
-
-
 # ============================================================================= AKA DatasetInstanceManager
 class DatasetAssociationManager(base.ModelManager,
                                 secured.AccessibleManagerMixin,
