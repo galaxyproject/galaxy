@@ -81,6 +81,7 @@ RUN mkdir /etc/galaxy && cd /tmp/ansible && mkdir roles && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN cd $GALAXY_ROOT && \
+    virtualenv -p /usr/bin/python3 $GALAXY_VIRTUAL_ENV_3 && \
     for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
         export GALAXY_VIRTUAL_ENV=$VENV && \
         ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; } && \
