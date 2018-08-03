@@ -298,7 +298,7 @@ class CloudManager(sharable.SharableModelManager):
                         string.ascii_uppercase + string.digits) for _ in range(11))))
                 with open(args_file, "w") as f:
                     f.write(json.dumps(credentials))
-                object_label = hda.name
+                object_label = hda.name.replace(" ", "_")
                 args = {
                     "provider": provider,
                     "credentials_file": args_file,
