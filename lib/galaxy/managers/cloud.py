@@ -309,6 +309,7 @@ class CloudManager(sharable.SharableModelManager):
                 }
                 incoming = (util.Params(args, sanitize=False)).__dict__
                 d2c = trans.app.toolbox.get_tool(DOWNLOAD_TOOL, DOWNLOAD_TOOL_VERSION)
-                job = d2c.execute(trans, incoming, history=history)
+                res = d2c.execute(trans, incoming, history=history)
+                job = res[0]
                 downloaded.append(object_label)
         return downloaded
