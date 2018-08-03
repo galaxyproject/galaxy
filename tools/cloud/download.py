@@ -30,9 +30,9 @@ def load_credential(credentials_file):
     return json.loads(credentials)
 
 
-def download(provider, credentials_file, bucket, object_label, filename, overwrite_existing):
-    if not os.path.exists(filename):
-        raise Exception("The file `{}` does not exist.".format(filename))
+def download(provider, credentials_file, bucket, object_label, input, overwrite_existing):
+    if not os.path.exists(input):
+        raise Exception("The file `{}` does not exist.".format(input))
     credentials = load_credential(credentials_file)
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -43,7 +43,7 @@ def download(provider, credentials_file, bucket, object_label, filename, overwri
     if overwrite_existing is False and bucket_obj.get(object_label) is not None:
         object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
     created_obj = bucket_obj.create_object(object_label)
-    created_obj.upload_from_file(filename)
+    created_obj.upload_from_file(input)
 
 def __main__():
     parser = argparse.ArgumentParser()
@@ -73,8 +73,8 @@ def __main__():
                              "the data to be persisted",
                         required=True)
 
-    parser.add_argument('-f',
-                        '--filename',
+    parser.add_argument('-i',
+                        '--input',
                         type=str,
                         help="The (absolute) filename of the data to be persisted on the "
                              "cloud-based storage",
@@ -90,7 +90,7 @@ def __main__():
 
     args = parser.parse_args(sys.argv[1:])
     overwrite_existing = args.overwrite_existing.lower() == "true"
-    download(args.provider, args.credentials_file, args.bucket, args.object_label, args.filename, overwrite_existing)
+    download(args.provider, args.credentials_file, args.bucket, args.object_label, args.input, overwrite_existing)
 
 if __name__ == "__main__":
     sys.exit(__main__())

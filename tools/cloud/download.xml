@@ -9,14 +9,15 @@
     </requirements>
     <command interpreter="python">
         download.py
+            --input=$input
             --provider=$provider
             --credentials_file=$credentials_file
             --bucket=$bucket
             --object_label=$object_label
-            --filename=$filename
             --overwrite_existing=$overwrite_existing
     </command>
     <inputs>
+        <param name="input" type="data" label="Datasets to be downloaded to a cloud-based storage:" />
         <param name="provider" label="Provider" type="select">
             <option value="aws">Amazon Simple Storage Service (S3)</option>
             <option value="azure">Microsoft Azure Blob Storage</option>
@@ -25,7 +26,6 @@
         <param name="credentials_file" type="text" label="Credentials File" />
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" label="Object Label" />
-        <param name="filename" type="text" label="Filename" />
         <param name="overwrite_existing" type="text" label="overwrite_existing" />
     </inputs>
     <outputs>
