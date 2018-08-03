@@ -4,8 +4,9 @@ User Manager testing.
 
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
+import json
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from six import string_types
 from sqlalchemy import desc
@@ -14,6 +15,7 @@ from galaxy import exceptions, model
 from galaxy.managers import base as base_manager
 from galaxy.managers import histories, users
 from galaxy.security.passwords import check_password
+from galaxy.webapps.galaxy.controllers.user import User
 from .base import BaseTestCase
 
 
@@ -122,7 +124,7 @@ class UserManagerTestCase(BaseTestCase):
         self.assertEqual(self.user_manager.valid_api_key(user2).key, user2_api_key_2)
 
     def test_change_password(self):
-        self.log("should be able to create a user")
+        self.log("should be able to change password")
         user2 = self.user_manager.create(**user2_data)
         encoded_id = self.app.security.encode_id(user2.id)
         self.assertIsInstance(user2, model.User)
@@ -145,10 +147,40 @@ class UserManagerTestCase(BaseTestCase):
         self.assertTrue(check_password(default_password, user2.password))
         self.assertFalse(check_password(changed_password, user2.password))
         prt.expiration_time = datetime.utcnow()
-        self.trans.sa_session.add(prt)
-        self.trans.sa_session.flush()
         user, message = self.user_manager.change_password(self.trans, token=prt.token, password=default_password, confirm=default_password)
         self.assertEqual(message, "Invalid or expired password reset token, please request a new one.")
+
+    def test_login(self):
+        self.log("should be able to validate user credentials")
+        user2 = self.user_manager.create(**user2_data)
+        self.app.security.encode_id(user2.id)
+        self.assertIsInstance(user2, model.User)
+        self.assertIsNotNone(user2.id)
+        self.assertEqual(user2.email, user2_data["email"])
+        self.assertTrue(check_password(default_password, user2.password))
+        controller = User(self.app)
+        response = json.loads(controller.login(self.trans))
+        self.assertEqual(response["err_msg"], "Please specify a username and password.")
+        response = json.loads(controller.login(self.trans, payload={"login": user2.email, "password": changed_password}))
+        self.assertEqual(response["err_msg"], "Invalid password.")
+        response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": changed_password}))
+        self.assertEqual(response["err_msg"], "Invalid password.")
+        user2.deleted = True
+        response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": default_password}))
+        self.assertEqual(response["err_msg"], "This account has been marked deleted, contact your local Galaxy administrator to restore the account. Contact: admin@email.to.")
+        user2.deleted = False
+        user2.external = True
+        response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": default_password}))
+        self.assertEqual(response["err_msg"], "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it. Contact: admin@email.to.")
+        user2.external = False
+        self.trans.app.config.password_expiration_period = timedelta(days=1)
+        user2.last_password_change = datetime.today() - timedelta(days=1)
+        response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": default_password}))
+        self.assertEqual(response["message"], "Your password has expired. Please reset or change it to access Galaxy.")
+        self.assertEqual(response["expired_user"], self.trans.security.encode_id(user2.id))
+        self.trans.app.config.password_expiration_period = timedelta(days=10)
+        response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": default_password}))
+        self.assertEqual(response["message"], "Your password will expire in 11 day(s).")
 
 
 # =============================================================================

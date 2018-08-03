@@ -124,6 +124,8 @@ class MockAppConfig(Bunch):
         self.enable_old_display_applications = True
         self.redact_username_in_logs = False
         self.auth_config_file = "config/auth_conf.xml.sample"
+        self.error_email_to = "admin@email.to"
+        self.password_expiration_period = 0
 
         self.umask = 0o77
 
@@ -158,14 +160,20 @@ class MockTrans(object):
         self.webapp = MockWebapp(**kwargs)
         self.sa_session = self.app.model.session
         self.workflow_building_mode = False
+        self.error_message = None
+        self.anonymous = False
+        self.debug = True
 
         self.galaxy_session = None
         self.__user = user
         self.security = self.app.security
         self.history = history
 
-        self.request = Bunch(headers={})
-        self.response = Bunch(headers={})
+        self.request = Bunch(headers={}, body=None)
+        self.response = Bunch(headers={}, set_content_type=lambda i : None)
+
+    def handle_user_login(self, user):
+        pass
 
     def log_event(self, message):
         pass

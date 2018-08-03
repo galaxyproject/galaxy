@@ -339,13 +339,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         elif user.deleted:
             message = "This account has been marked deleted, contact your local Galaxy administrator to restore the account."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s" % trans.app.config.error_email_to
-            return self.message_exception(trans, message)
+                message += " Contact: %s." % trans.app.config.error_email_to
+            return self.message_exception(trans, message, sanitize=False)
         elif user.external:
             message = "This account was created for use with an external authentication method, contact your local Galaxy administrator to activate it."
             if trans.app.config.error_email_to is not None:
-                message += " Contact: %s" % trans.app.config.error_email_to
-            return self.message_exception(trans, message)
+                message += " Contact: %s." % trans.app.config.error_email_to
+            return self.message_exception(trans, message, sanitize=False)
         elif not trans.app.auth_manager.check_password(user, password):
             return self.message_exception(trans, "Invalid password.")
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
@@ -369,7 +369,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
             if pw_expires and user.last_password_change < datetime.today() - timedelta(days=pw_expires.days / 10):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
-                return {"message": "Your password will expire in %s days." % expiredate.days, "status": "warning"}
+                return {"message": "Your password will expire in %s day(s)." % expiredate.days, "status": "warning"}
         return {"message": "Success."}
 
     @web.expose
