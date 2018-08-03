@@ -294,16 +294,16 @@ class CloudManager(sharable.SharableModelManager):
             if hda.deleted or hda.purged or hda.state != "ok" or hda.creating_job.tool_id == DOWNLOAD_TOOL:
                 continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
-                args_file = os.path.abspath(os.path.join(
+                credentials_file = os.path.abspath(os.path.join(
                     trans.app.config.new_file_path,
                     "cd_" + ''.join(random.SystemRandom().choice(
                         string.ascii_uppercase + string.digits) for _ in range(11))))
-                with open(args_file, "w") as f:
+                with open(credentials_file, "w") as f:
                     f.write(json.dumps(credentials))
                 object_label = hda.name.replace(" ", "_")
                 args = {
                     "provider": provider,
-                    "credentials_file": args_file,
+                    "credentials_file": credentials_file,
                     "bucket": bucket,
                     "object_label": object_label,
                     "filename": hda.dataset.get_file_name(),
