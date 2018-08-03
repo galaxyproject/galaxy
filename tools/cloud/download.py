@@ -45,7 +45,7 @@ def download(provider, credentials_file, bucket, object_label, filename, overwri
     created_obj = bucket_obj.create_object(object_label)
     created_obj.upload_from_file(filename)
 
-def __main__():
+def parse_args(args):
     parser = argparse.ArgumentParser()
     parser.add_argument('-p',
                         '--provider',
@@ -84,66 +84,30 @@ def __main__():
     parser.add_argument('-c',
                         '--credentials_file',
                         type=str,
-                        help="A file that contains a JSON object containing user credentials "
-                             "required to authorize access",
+                        help="[Optional] A file that contains a JSON object containing user credentials "
+                             "required to authorize access to the cloud-based storage provider."
+                             "Use either this file, or pass the credentials using provider-specific args.",
                         required=False)
 
-    parser.add_argument('--ca_access_key',
-                        type=str,
-                        help="",
-                        required=False)
+    parser.add_argument('--ca_access_key', type=str, required=False, help="AWS Credentials: Access Key" )
+    parser.add_argument('--ca_secret_key', type=str, required=False, help="AWS Credentials: Secret Key")
 
-    parser.add_argument('--ca_secret_key',
-                        type=str,
-                        help="",
-                        required=False)
+    parser.add_argument('--cm_subscription_id', type=str, required=False, help="Azure Credentials: Subscription ID")
+    parser.add_argument('--cm_client_id', type=str, required=False, help="Azure Credentials: Client ID")
+    parser.add_argument('--cm_secret', type=str, required=False, help="Azure Credentials: Secret")
+    parser.add_argument('--cm_tenant', type=str, help="Azure Credentials: Tenant", required=False)
 
+    parser.add_argument('--co_username', type=str, help="OpenStack Credentials: Username", required=False)
+    parser.add_argument('--co_password', type=str, help="OpenStack Credentials: Password", required=False)
+    parser.add_argument('--co_auth_url', type=str, help="OpenStack Credentials: Auth URL", required=False)
+    parser.add_argument('--co_project_name', type=str, required=False, help="OpenStack Credentials: Project Name")
+    parser.add_argument('--co_project_domain_name', type=str, required=False, help="OpenStack Credentials: Project Domain Name")
+    parser.add_argument('--co_user_domain_name', type=str, required=False, help="OpenStack Credentials: User Domain Name")
 
-    parser.add_argument('--cm_subscription_id',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--cm_client_id',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--cm_secret',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--cm_tenant',
-                        type=str,
-                        help="",
-                        required=False)
+    return parser.parse_args(args)
 
-
-    parser.add_argument('--co_username',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--co_password',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--co_auth_url',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--co_project_name',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--co_project_domain_name',
-                        type=str,
-                        help="",
-                        required=False)
-    parser.add_argument('--co_user_domain_name',
-                        type=str,
-                        help="",
-                        required=False)
-
-
-    args = parser.parse_args(sys.argv[1:])
+def __main__():
+    args = parse_args(sys.argv[1:])
     overwrite_existing = args.overwrite_existing.lower() == "true"
     download(args.provider, args.credentials_file, args.bucket, args.object_label, args.filename, overwrite_existing)
 
