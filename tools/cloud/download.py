@@ -31,6 +31,8 @@ def load_credential(credentials_file):
 
 
 def download(provider, credentials_file, bucket, object_label, filename, overwrite_existing):
+    if not os.path.exists(filename):
+        raise Exception("The file `{}` does not exist.".format(filename))
     credentials = load_credential(credentials_file)
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
