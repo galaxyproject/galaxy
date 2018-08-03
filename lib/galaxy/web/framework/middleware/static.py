@@ -3,7 +3,7 @@ import os
 from paste import request
 from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
-from webob.static import FileApp
+from paste.fileapp import FileApp
 
 
 class CacheableStaticURLParser(StaticURLParser):
