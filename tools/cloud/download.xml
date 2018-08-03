@@ -10,20 +10,23 @@
     <command interpreter="python">
         download.py
             --filename=$filename
-            --provider=${connection.provider}
-            --credentials_file=$credentials_file
-            --credentials_a_access_key=$access_key
-            --credentials_a_secret_key=$secret_key
-            --credentials_m_subscription_id=$subscription_id
-            --credentials_m_client_id=$client_id
-            --credentials_m_secret=$secret
-            --credentials_m_tenant=$tenant
-            --credentials_o_username=$username
-            --credentials_o_password=$password
-            --credentials_o_auth_url=$auth_url
-            --credentials_o_project_name=$project_name
-            --credentials_o_project_domain_name=$project_domain_name
-            --credentials_o_user_domain_name=$user_domain_name
+            --provider=$connection.provider
+            #if $connection.provider=="aws"
+                --ca_access_key=$connection.access_key
+                --ca_secret_key=$connection.secret_key
+            #else if $connection.provider=="azure"
+                --cm_subscription_id=$connection.subscription_id
+                --cm_client_id=$connection.client_id
+                --cm_secret=$connection.secret
+                --cm_tenant=$connection.tenant
+            #else if $connection.provider=="openstack"
+                --co_username=$connection.username
+                --co_password=$connection.password
+                --co_auth_url=$connection.auth_url
+                --co_project_name=$connection.project_name
+                --co_project_domain_name=$connection.project_domain_name
+                --co_user_domain_name=$connection.user_domain_name
+            #end if
             --bucket=$bucket
             --object_label=$object_label
             --overwrite_existing=$overwrite_existing
@@ -55,7 +58,6 @@
                 <param name="user_domain_name" label="User Domain Name" type="text"/>
             </when>
         </conditional>
-        <param name="credentials_file" type="hidden" label="Credentials File" />
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" label="Object Label" />
         <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
