@@ -1,9 +1,9 @@
 import os
 
 from paste import request
+from paste.fileapp import FileApp
 from paste.httpheaders import ETAG
 from paste.urlparser import StaticURLParser
-from paste.fileapp import FileApp
 
 
 class CacheableStaticURLParser(StaticURLParser):
