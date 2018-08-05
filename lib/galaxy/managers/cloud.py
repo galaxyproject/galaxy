@@ -34,7 +34,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
-SUPPORTED_PROVIDERS = "{aws, azure, openstack}"
+SUPPORTED_PROVIDERS = {"aws": 0, "azure": 1, "openstack": 2}
 
 DOWNLOAD_TOOL = "download_to_cloud"
 DOWNLOAD_TOOL_VERSION = "0.1.0"
@@ -140,7 +140,7 @@ class CloudManager(sharable.SharableModelManager):
             connection = CloudProviderFactory().create_provider(ProviderList.OPENSTACK, config)
         else:
             raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
-                                                   "providers: {}.".format(provider, SUPPORTED_PROVIDERS))
+                                                   "providers: {}.".format(provider, SUPPORTED_PROVIDERS.keys()))
 
         try:
             if connection.authenticate():
@@ -302,7 +302,7 @@ class CloudManager(sharable.SharableModelManager):
                     f.write(json.dumps(credentials))
                 connection = credentials
                 connection["provider"] = provider
-                connection["__current_case__"] = 0
+                connection["__current_case__"] = SUPPORTED_PROVIDERS[provider]
                 object_label = hda.name.replace(" ", "_")
                 args = {
                     "connection": connection,
