@@ -23,17 +23,34 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
-def load_credential(credentials_file):
-    with open(credentials_file, "r") as f:
-        credentials = f.read()
-    os.remove(credentials_file)
-    return json.loads(credentials)
+def load_credential(args):
+    if args.credentials_file:
+        with open(args.credentials_file, "r") as f:
+            credentials = f.read()
+        os.remove(args.credentials_file)
+        return json.loads(credentials)
+    else:
+        if args.provider == "aws":
+            return {'aws_access_key': args.ca_access_key,
+                    'aws_secret_key': args.ca_secret_key}
 
+        elif args.provider == "azure":
+            return {'azure_subscription_id': args.cm_subscription_id,
+                    'azure_client_id': args.cm_client_id,
+                    'azure_secret': args.cm_secret,
+                    'azure_tenant': args.cm_tenant}
 
-def download(provider, credentials_file, bucket, object_label, filename, overwrite_existing):
+        elif args.provider == "openstack":
+            return {'os_username': args.co_username,
+                    'os_password': args.co_password,
+                    'os_auth_url': args.co_auth_url,
+                    'os_project_name': args.co_project_name,
+                    'os_project_domain_name': args.co_project_domain_name,
+                    'os_user_domain_name': args.co_user_domain_name}
+
+def download(provider, credentials, bucket, object_label, filename, overwrite_existing):
     if not os.path.exists(filename):
         raise Exception("The file `{}` does not exist.".format(filename))
-    credentials = load_credential(credentials_file)
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
     connection = CloudManager.configure_provider(provider, credentials)
@@ -89,8 +106,12 @@ def parse_args(args):
 
 def __main__():
     args = parse_args(sys.argv[1:])
+    if args.provider not in ["aws", "azure", "openstack"]:
+        raise Exception("Invalid Provider `{}`; see `SUPPORTED_PROVIDERS` in lib/galaxy/managers/cloud.py "
+                        "for a list of supported providers.".format(args.provider))
     overwrite_existing = args.overwrite_existing.lower() == "true"
-    download(args.provider, args.credentials_file, args.bucket, args.object_label, args.filename, overwrite_existing)
+    credentials = load_credential(args)
+    download(args.provider, credentials, args.bucket, args.object_label, args.filename, overwrite_existing)
 
 if __name__ == "__main__":
     sys.exit(__main__())
