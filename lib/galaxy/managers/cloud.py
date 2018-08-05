@@ -309,7 +309,7 @@ class CloudManager(sharable.SharableModelManager):
                     "credentials_file": credentials_file,
                     "bucket": bucket,
                     "object_label": object_label,
-                    "filename": hda.dataset.get_file_name(),
+                    "filename": hda,
                     "overwrite_existing": overwrite_existing
                 }
                 incoming = (util.Params(args, sanitize=False)).__dict__
