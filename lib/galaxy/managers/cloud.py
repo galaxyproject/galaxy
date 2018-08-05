@@ -34,6 +34,8 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
+# Any change to this list, MUST be reflected in the DOWNLOAD_TOOL wrapper
+# (tools/cloud/download.xml).
 SUPPORTED_PROVIDERS = {"aws": 0, "azure": 1, "openstack": 2}
 
 DOWNLOAD_TOOL = "download_to_cloud"

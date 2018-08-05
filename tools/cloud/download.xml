@@ -33,6 +33,13 @@
     </command>
     <inputs>
         <param name="filename" type="data" label="Datasets to be downloaded to a cloud-based storage:" />
+        <!--    ************************ NOTE ************************
+                Any change, even order, to the following parameters
+                (provider, provider options, and credential parameters
+                of different providers), MUST be reflected in the
+                CloudManager (lib/galaxy/managers/cloud.py).
+                ******************************************************
+        -->
         <conditional name="connection">
             <param name="provider" type="select" label="Cloud-Based Storage Provider">
                 <option value="aws">Amazon Simple Storage Service (S3)</option>
