@@ -1187,12 +1187,12 @@ class JobWrapper(HasResourceParameters):
 
         object_store_populator = ObjectStorePopulator(self.app)
 
-        # Ideally we would do this without loading the actual job association objects but
-        # change_state isn't yet optimized to do that anyway so we need to do that
-        # anyway. In the future though - this should be done with a custom query
-        # that just loads Dataset.ids, passes them through object store code, and sets
-        # object_store_id on those ids with a multi-update afterward. State below
-        # needs to happen the same way.
+        # Ideally we would do this without loading the actual job association
+        # objects but change_state isn't yet optimized to do that so we need to
+        # do that anyway. In the future though - this should be done with a
+        # custom query that just loads Dataset.ids, passes them through object
+        # store code, and sets object_store_id on those ids with a multi-update
+        # afterward. State below needs to happen the same way.
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
             object_store_populator.set_object_store_id(dataset)
