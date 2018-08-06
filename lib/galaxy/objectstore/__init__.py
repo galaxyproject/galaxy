@@ -808,3 +808,24 @@ def _create_object_in_session(obj):
         object_session(obj).flush()
     else:
         raise Exception(NO_SESSION_ERROR_MESSAGE)
+
+
+class ObjectStorePopulator(object):
+    """ Small helper for interacting with the object store and making sure all
+    datasets from a job end up with the same object_store_id.
+    """
+
+    def __init__(self, app):
+        self.object_store = app.object_store
+        self.object_store_id = None
+
+    def set_object_store_id(self, data):
+        # Create an empty file immediately.  The first dataset will be
+        # created in the "default" store, all others will be created in
+        # the same store as the first.
+        data.dataset.object_store_id = self.object_store_id
+        try:
+            self.object_store.create(data.dataset)
+        except ObjectInvalid:
+            raise Exception('Unable to create output dataset: object store is full')
+        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output

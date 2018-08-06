@@ -6,9 +6,9 @@ from json import dumps
 from six import string_types
 
 from galaxy import model
-from galaxy.exceptions import ObjectInvalid
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
@@ -364,11 +364,9 @@ class DefaultToolAction(object):
                     trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
             data.copy_tags_to(preserved_tags)
 
-            # Must flush before setting object store id currently.
-            # TODO: optimize this.
-
-            trans.sa_session.flush()
-            if not completed_job:
+            if not completed_job and trans.app.config.legacy_eager_objectstore_initialization:
+                # Must flush before setting object store id currently.
+                trans.sa_session.flush()
                 object_store_populator.set_object_store_id(data)
 
             # This may not be neccesary with the new parent/child associations
@@ -748,27 +746,6 @@ class DefaultToolAction(object):
         if on_text:
             name += (" on " + on_text)
         return name
-
-
-class ObjectStorePopulator(object):
-    """ Small helper for interacting with the object store and making sure all
-    datasets from a job end up with the same object_store_id.
-    """
-
-    def __init__(self, app):
-        self.object_store = app.object_store
-        self.object_store_id = None
-
-    def set_object_store_id(self, data):
-        # Create an empty file immediately.  The first dataset will be
-        # created in the "default" store, all others will be created in
-        # the same store as the first.
-        data.dataset.object_store_id = self.object_store_id
-        try:
-            self.object_store.create(data.dataset)
-        except ObjectInvalid:
-            raise Exception('Unable to create output dataset: object store is full')
-        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
 
 
 class OutputCollections(object):
