@@ -181,6 +181,9 @@ class UserManagerTestCase(BaseTestCase):
         self.trans.app.config.password_expiration_period = timedelta(days=10)
         response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": default_password}))
         self.assertEqual(response["message"], "Your password will expire in 11 day(s).")
+        self.trans.app.config.password_expiration_period = timedelta(days=100)
+        response = json.loads(controller.login(self.trans, payload={"login": user2.username, "password": default_password}))
+        self.assertEqual(response["message"], "Success.")
 
 
 # =============================================================================
