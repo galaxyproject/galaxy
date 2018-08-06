@@ -31,22 +31,22 @@ def load_credential(args):
         return json.loads(credentials)
     else:
         if args.provider == "aws":
-            return {'aws_access_key': args.ca_access_key,
-                    'aws_secret_key': args.ca_secret_key}
+            return {'access_key': args.ca_access_key,
+                    'secret_key': args.ca_secret_key}
 
         elif args.provider == "azure":
-            return {'azure_subscription_id': args.cm_subscription_id,
-                    'azure_client_id': args.cm_client_id,
-                    'azure_secret': args.cm_secret,
-                    'azure_tenant': args.cm_tenant}
+            return {'subscription_id': args.cm_subscription_id,
+                    'client_id': args.cm_client_id,
+                    'secret': args.cm_secret,
+                    'tenant': args.cm_tenant}
 
         elif args.provider == "openstack":
-            return {'os_username': args.co_username,
-                    'os_password': args.co_password,
-                    'os_auth_url': args.co_auth_url,
-                    'os_project_name': args.co_project_name,
-                    'os_project_domain_name': args.co_project_domain_name,
-                    'os_user_domain_name': args.co_user_domain_name}
+            return {'username': args.co_username,
+                    'password': args.co_password,
+                    'auth_url': args.co_auth_url,
+                    'project_name': args.co_project_name,
+                    'project_domain_name': args.co_project_domain_name,
+                    'user_domain_name': args.co_user_domain_name}
 
 def download(provider, credentials, bucket, object_label, filename, overwrite_existing):
     if not os.path.exists(filename):
