@@ -787,7 +787,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
         ),
-        modes: ["raw", "ftp", "library_datasets"]
+        modes: ["raw", "ftp", "datasets", "library_datasets"]
     },
     group_tags: {
         multiple: true,
@@ -795,7 +795,7 @@ const MAPPING_TARGETS = {
         help: _l(
             "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
         ),
-        modes: ["raw", "ftp", "library_datasets"]
+        modes: ["raw", "ftp", "datasets", "library_datasets"]
     },
     name: {
         label: _l("Name"),
