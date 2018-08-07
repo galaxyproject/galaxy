@@ -31,6 +31,91 @@ from galaxy.exceptions import error_codes  # noqa: I201
 from galaxy.tools.verify.test_data import TestDataResolver
 
 
+SIMPLE_NESTED_WORKFLOW_YAML = """
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: second_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: random_lines#out_file1
+      steps:
+        - tool_id: random_lines1
+          label: random_lines
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+  - tool_id: cat1
+    label: second_cat
+    state:
+      input1:
+        $link: nested_workflow#workflow_output
+      queries:
+        - input2:
+            $link: nested_workflow#workflow_output
+"""
+
+NESTED_WORKFLOW_AUTO_LABELS = """
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: second_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - source: 1#out_file1
+      steps:
+        - tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+  - tool_id: cat1
+    label: second_cat
+    state:
+      input1:
+        $link: nested_workflow#1:out_file1
+      queries:
+        - input2:
+            $link: nested_workflow#1:out_file1
+"""
+
+
 class BaseWorkflowsApiTestCase(api.ApiTestCase):
     # TODO: Find a new file for this class.
 
@@ -838,6 +923,23 @@ test_data:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+
+    def test_run_subworkflow_auto_labels(self):
+            history_id = self.dataset_populator.new_history()
+            workflow_run_description = """%s
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""" % NESTED_WORKFLOW_AUTO_LABELS
+            job_summary = self._run_jobs(workflow_run_description, history_id=history_id)
+            assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
+
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            self.assertEqual(
+                "chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n",
+                content)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
