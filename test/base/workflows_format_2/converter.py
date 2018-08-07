@@ -133,7 +133,7 @@ def _python_to_workflow(as_python, conversion_context):
         if "label" in output and "id" in output:
             raise Exception("label and id are aliases for outputs, may only define one")
         if "label" not in output and "id" not in output:
-            raise Exception("Output must define a label.")
+            label = ""
 
         raw_label = output.pop("label", None)
         raw_id = output.pop("id", None)

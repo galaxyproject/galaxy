@@ -81,6 +81,16 @@ class ToolsTestCase(api.ApiTestCase):
         assert f2_info["min"] is None
         assert f2_info["max"] is None
 
+    @skip_without_tool("collection_creates_list")
+    def test_show_output_collection(self):
+        tool_info = self._show_valid_tool("collection_creates_list")
+
+        outputs = tool_info["outputs"]
+        assert len(outputs) == 1
+        output = outputs[0]
+        assert output["label"] == "Duplicate List"
+        assert output["inherit_format"] is True
+
     @skip_without_tool("test_data_source")
     def test_data_source_ok_request(self):
         with self.dataset_populator.test_history() as history_id:
