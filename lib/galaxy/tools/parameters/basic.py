@@ -1061,7 +1061,7 @@ class SelectTagParameter(SelectToolParameter):
                 for tag_str in value:
                     for tag in str(tag_str).split(','):
                         tag = tag.strip()
-                        if tag and tag not in tag_list:
+                        if tag:
                             tag_list.append(tag)
             value = tag_list
         else:
