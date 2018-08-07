@@ -1073,8 +1073,7 @@ class SelectTagParameter(SelectToolParameter):
 
     def get_tag_list(self, other_values):
         """
-        Generate a select list containing the columns of the associated
-        dataset (if found).
+        Generate a select list containing the tags of the associated dataset (if found).
         """
         # Get the value of the associated data reference (a dataset)
         history_items = other_values.get(self.data_ref, None)
