@@ -1,4 +1,11 @@
 """
+This tool implements the logic of downloading data
+from Galaxy to a cloud-based storage.
+
+This tool depends on the CloudManager for configuring
+a connection to a cloud-based resource provider. Also,
+it leverages Cloudbridge (github.com/CloudVE/cloudbridge)
+to download a dataset to a cloud-based storage.
 
 """
 
@@ -90,14 +97,17 @@ def parse_args(args):
                              "required to authorize access to the cloud-based storage provider."
                              "Use either this file, or pass the credentials using provider-specific args.")
 
+    # Amazon Web Services (AWS) specific credentials to read/write to Amazon Simple Storage Service (S3).
     parser.add_argument('--ca_access_key', type=str, required=False, help="AWS Credentials: Access Key")
     parser.add_argument('--ca_secret_key', type=str, required=False, help="AWS Credentials: Secret Key")
 
+    # Microsoft Azure specifc configuration and credentials to read/write to an Azure Blob Storage account.
     parser.add_argument('--cm_subscription_id', type=str, required=False, help="Azure Credentials: Subscription ID")
     parser.add_argument('--cm_client_id', type=str, required=False, help="Azure Credentials: Client ID")
     parser.add_argument('--cm_secret', type=str, required=False, help="Azure Credentials: Secret")
     parser.add_argument('--cm_tenant', type=str, required=False, help="Azure Credentials: Tenant")
 
+    # OpenStack-specific configuration and credentials to read/write to Object Storage (Swift).
     parser.add_argument('--co_username', type=str, required=False, help="OpenStack Credentials: Username")
     parser.add_argument('--co_password', type=str, required=False, help="OpenStack Credentials: Password")
     parser.add_argument('--co_auth_url', type=str, required=False, help="OpenStack Credentials: Auth URL")
