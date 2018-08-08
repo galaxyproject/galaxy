@@ -70,7 +70,7 @@
         <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
     </inputs>
     <outputs>
-        <data name="output" type="data" label="Output file"/>
+        <data name="output" type="data" label="Output log" hidden="false"/>
     </outputs>
     <help>
 
