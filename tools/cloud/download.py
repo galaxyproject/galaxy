@@ -46,7 +46,9 @@ def load_credential(args):
             return {'subscription_id': args.cm_subscription_id,
                     'client_id': args.cm_client_id,
                     'secret': args.cm_secret,
-                    'tenant': args.cm_tenant}
+                    'tenant': args.cm_tenant,
+                    'storage_account': args.cm_storage_account,
+                    'resource_group': args.cm_resource_group}
 
         elif args.provider == "openstack":
             return {'username': args.co_username,
@@ -106,6 +108,8 @@ def parse_args(args):
     parser.add_argument('--cm_client_id', type=str, required=False, help="Azure Credentials: Client ID")
     parser.add_argument('--cm_secret', type=str, required=False, help="Azure Credentials: Secret")
     parser.add_argument('--cm_tenant', type=str, required=False, help="Azure Credentials: Tenant")
+    parser.add_argument('--cm_storage_account', type=str, required=False, help="Azure storage account")
+    parser.add_argument('--cm_resource_group', type=str, required=False, help="Azure resource group")
 
     # OpenStack-specific configuration and credentials to read/write to Object Storage (Swift).
     parser.add_argument('--co_username', type=str, required=False, help="OpenStack Credentials: Username")
