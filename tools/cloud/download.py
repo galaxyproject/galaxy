@@ -23,6 +23,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
+
 def load_credential(args):
     if args.credentials_file:
         with open(args.credentials_file, "r") as f:
@@ -48,6 +49,7 @@ def load_credential(args):
                     'project_domain_name': args.co_project_domain_name,
                     'user_domain_name': args.co_user_domain_name}
 
+
 def download(provider, credentials, bucket, object_label, filename, overwrite_existing):
     if not os.path.exists(filename):
         raise Exception("The file `{}` does not exist.".format(filename))
@@ -61,6 +63,7 @@ def download(provider, credentials, bucket, object_label, filename, overwrite_ex
         object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
     created_obj = bucket_obj.create_object(object_label)
     created_obj.upload_from_file(filename)
+
 
 def parse_args(args):
     parser = argparse.ArgumentParser()
