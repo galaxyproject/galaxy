@@ -493,6 +493,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     :type src: str
                     :param id: identifier
                     :type id: str
+                    :param id: tags
+                    :type id: list
                 :type element: dict
             :type name: list
             :param name: name of the collection
