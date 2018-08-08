@@ -173,26 +173,25 @@ class DatasetCollectionManager(object):
         # If we have elements, this is an internal request, don't need to load
         # objects from identifiers.
         if elements is None:
-            elements = self._element_identifiers_to_elements(trans, collection_type_description, element_identifiers)
+            elements = self._element_identifiers_to_elements(trans,
+                                                             collection_type_description=collection_type_description,
+                                                             element_identifiers=element_identifiers,
+                                                             hide_source_items=hide_source_items)
         else:
             if has_subcollections:
                 # Nested collection - recursively create collections as needed.
-                self.__recursively_create_collections_for_elements(trans, elements)
+                self.__recursively_create_collections_for_elements(trans, elements, hide_source_items)
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
             dataset_collection = builder.build_collection(type_plugin, elements)
-            if hide_source_items:
-                log.debug("Hiding source items during dataset collection creation")
-                for dataset in dataset_collection.dataset_instances:
-                    dataset.visible = False
         else:
             dataset_collection = model.DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
 
-    def _element_identifiers_to_elements(self, trans, collection_type_description, element_identifiers):
+    def _element_identifiers_to_elements(self, trans, collection_type_description, element_identifiers, hide_source_items=False):
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
             self.__recursively_create_collections_for_identifiers(trans, element_identifiers)
@@ -200,9 +199,13 @@ class DatasetCollectionManager(object):
         for element_identifier in element_identifiers:
             if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
                 new_collection = True
-                elements = self.__load_elements(trans, element_identifier['element_identifiers'])
+                elements = self.__load_elements(trans=trans,
+                                                element_identifiers=element_identifier['element_identifiers'],
+                                                hide_source_items=hide_source_items)
         if not new_collection:
-            elements = self.__load_elements(trans, element_identifiers)
+            elements = self.__load_elements(trans=trans,
+                                            element_identifiers=element_identifiers,
+                                            hide_source_items=hide_source_items)
         return elements
 
     def _append_tags(self, dataset_collection_instance, implicit_inputs=None, tags=None):
@@ -342,7 +345,7 @@ class DatasetCollectionManager(object):
 
         return element_identifiers
 
-    def __recursively_create_collections_for_elements(self, trans, elements):
+    def __recursively_create_collections_for_elements(self, trans, elements, hide_source_items):
         if elements is self.ELEMENTS_UNINITIALIZED:
             return
 
@@ -362,17 +365,18 @@ class DatasetCollectionManager(object):
                 trans=trans,
                 collection_type=collection_type,
                 elements=sub_elements,
+                hide_source_items=hide_source_items
             )
             new_elements[key] = collection
         elements.update(new_elements)
 
-    def __load_elements(self, trans, element_identifiers):
+    def __load_elements(self, trans, element_identifiers, hide_source_items=False):
         elements = odict.odict()
         for element_identifier in element_identifiers:
-            elements[element_identifier["name"]] = self.__load_element(trans, element_identifier)
+            elements[element_identifier["name"]] = self.__load_element(trans, element_identifier, hide_source_items)
         return elements
 
-    def __load_element(self, trans, element_identifier):
+    def __load_element(self, trans, element_identifier, hide_source_items):
         # if not isinstance( element_identifier, dict ):
         #    # Is allowing this to just be the id of an hda too clever? Somewhat
         #    # consistent with other API methods though.
@@ -401,8 +405,10 @@ class DatasetCollectionManager(object):
 
         if src_type == 'hda':
             decoded_id = int(trans.app.security.decode_id(encoded_id))
-            element = self.hda_manager.get_accessible(decoded_id, trans.user)
-            element = self.hda_manager.copy(element, history=element.history, hide_copy=True)
+            hda = self.hda_manager.get_accessible(decoded_id, trans.user)
+            element = self.hda_manager.copy(hda, history=hda.history, hide_copy=True)
+            if hide_source_items:
+                hda.visible = False
             tags = element_identifier.pop('tags', [])
             if tags:
                 self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=",".join(str(_) for _ in tags))
