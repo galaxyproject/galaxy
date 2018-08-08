@@ -43,7 +43,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         not_found: function() {
-            window.location.href = `${Galaxy.root}${Backbone.history.getFragment()}`;
+            window.location.href = window.location.href;
         },
 
         home: function() {
