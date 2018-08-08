@@ -1641,12 +1641,14 @@ export default {
         creationElementsFromDatasets() {
             const sources = this.hotData["sources"];
             const data = this.hotData["data"];
+            const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
                 (dataIndex, identifier) => {
                     const source = sources[dataIndex];
+                    const res = this._datasetFor(dataIndex, data, mappingAsDict);
                     const src = this.elementsType == "datasets" ? "hda" : "ldda";
-                    return { id: source["id"], name: identifier, src: src };
+                    return { id: source["id"], name: identifier, src: src, tags: res.tags };
                 },
                 identifier => {
                     return { name: identifier, src: "new_collection" };
@@ -1746,7 +1748,7 @@ export default {
                 }
                 res["url"] = url;
                 res["src"] = "url";
-            } else {
+            } else if (mappingAsDict.ftp_path) {
                 const ftpPathColumn = mappingAsDict.ftp_path.columns[0];
                 const ftpPath = data[dataIndex][ftpPathColumn];
                 res["ftp_path"] = ftpPath;
