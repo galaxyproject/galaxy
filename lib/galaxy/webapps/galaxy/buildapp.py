@@ -473,6 +473,13 @@ def populate_api_routes(webapp, app):
             action='index_invocations',
             conditions=dict(method=['GET'])
         )
+        webapp.mapper.connect(
+            'list_invocations',
+            '/api/invocations',
+            controller='workflows',
+            action='index_invocations',
+            conditions=dict(method=['GET'])
+        )
 
         webapp.mapper.connect(
             'workflow_%s_contents' % name,

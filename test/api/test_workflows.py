@@ -2890,11 +2890,18 @@ steps:
         self._assert_has_keys(pja, "action_type", "output_name", "action_arguments")
 
     @skip_without_tool("cat1")
-    def test_only_own_invocations_accessible(self):
+    def test_only_own_invocations_indexed_and_accessible(self):
         workflow_id, usage = self._run_workflow_once_get_invocation("test_usage")
         with self._different_user():
             usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, usage["id"]))
             self._assert_status_code_is(usage_details_response, 403)
+
+        invocation_ids = self._all_user_invocation_ids()
+        assert usage["id"] in invocation_ids
+
+        with self._different_user():
+            invocation_ids = self._all_user_invocation_ids()
+            assert usage["id"] not in invocation_ids
 
     @skip_without_tool("cat1")
     def test_invocation_usage(self):
@@ -2902,10 +2909,17 @@ steps:
         invocation_id = usage["id"]
         usage_details = self._invocation_details(workflow_id, invocation_id)
         # Assert some high-level things about the structure of data returned.
-        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
+        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id", "history_id")
 
-        # stored_workflow vs workflow thing makes following state false.
-        # assert usage_details["workflow_id"] == workflow_id
+        # Check invocations for this workflow invocation by history and regardless of history.
+        history_invocations_response = self._get("invocations", {"history_id": usage_details["history_id"]})
+        self._assert_status_code_is(history_invocations_response, 200)
+        assert len(history_invocations_response.json()) == 1
+        assert history_invocations_response.json()[0]["id"] == invocation_id
+
+        # Check history invocations for this workflow invocation.
+        invocation_ids = self._all_user_invocation_ids()
+        assert invocation_id in invocation_ids
 
         # Wait for the invocation to be fully scheduled, so we have details on all steps.
         self._wait_for_invocation_state(workflow_id, invocation_id, 'scheduled')
@@ -3229,6 +3243,12 @@ test_data:
                 'tool_inputs',
                 'input_steps',
             )
+
+    def _all_user_invocation_ids(self):
+        all_invocations_for_user = self._get("invocations")
+        self._assert_status_code_is(all_invocations_for_user, 200)
+        invocation_ids = [i["id"] for i in all_invocations_for_user.json()]
+        return invocation_ids
 
 
 RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])
