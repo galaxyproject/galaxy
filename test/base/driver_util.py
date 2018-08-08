@@ -761,6 +761,12 @@ class TestDriver(object):
         for temp_directory in self.temp_directories:
             cleanup_directory(temp_directory)
 
+    def mkdtemp(self):
+        """Return a temp directory that is properly cleaned up or not based on the config."""
+        temp_directory = tempfile.mkdtemp()
+        self.temp_directories.append(temp_directory)
+        return temp_directory
+
     def run(self):
         """Driver whole test.
 

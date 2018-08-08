@@ -13,8 +13,8 @@ from datetime import datetime
 from xml.etree import ElementTree
 
 import packaging.version
+import webob.exc
 from mako.template import Template
-from paste import httpexceptions
 from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
 from webob.compat import cgi_FieldStorage
@@ -474,7 +474,7 @@ class Tool(Dictifiable):
     def tool_versions(self):
         # If we have versions, return them.
         if self.lineage:
-            return self.lineage.get_versions()
+            return self.lineage.tool_versions
         else:
             return []
 
@@ -1418,8 +1418,8 @@ class Tool(Dictifiable):
                 dataset_collection_elements=execution_slice.dataset_collection_elements,
                 completed_job=completed_job,
             )
-        except httpexceptions.HTTPFound as e:
-            # if it's a paste redirect exception, pass it up the stack
+        except webob.exc.HTTPFound as e:
+            # if it's a webob redirect exception, pass it up the stack
             raise e
         except ToolInputsNotReadyException as e:
             return False, e
@@ -1892,9 +1892,6 @@ class Tool(Dictifiable):
             tool_help = self.help.render(static_path=url_for('/static'), host_url=url_for('/', qualified=True))
             tool_help = unicodify(tool_help, 'utf-8')
 
-        # create tool versions
-        tool_versions = self.lineage.tool_versions if self.lineage else []  # lineage may be `None` if tool is not loaded into tool panel
-
         # update tool model
         tool_model.update({
             'id'            : self.id,
@@ -1904,7 +1901,7 @@ class Tool(Dictifiable):
             'sharable_url'  : self.sharable_url,
             'message'       : tool_message,
             'warnings'      : tool_warnings,
-            'versions'      : tool_versions,
+            'versions'      : self.tool_versions,
             'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
             'errors'        : state_errors,
             'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
@@ -2044,24 +2041,23 @@ class Tool(Dictifiable):
                 raise exceptions.MessageException('This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id)
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
                 if self.id == tool_id:
-                    if tool_version is None:
-                        # for some reason jobs don't always keep track of the tool version.
-                        message = ''
-                    else:
-                        message = 'This job was run with tool version "%s", which is not available.  ' % tool_version
+                    if tool_version:
+                        message = 'This job was run with tool version "%s", which is not available. ' % tool_version
                         if len(tools) > 1:
-                            message += 'You can re-run the job with the selected tool or choose another version of the tool.'
+                            message += 'You can re-run the job with the selected tool or choose another version of the tool. '
                         else:
-                            message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
+                            message += 'You can re-run the job with this tool version, which is a different version of the original tool. '
                 else:
                     new_tool_shed_url = '%s/%s/' % (tool.sharable_url, tool.changeset_revision)
                     old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
                     old_tool_shed_url = '%s/view/%s/%s/' % (old_tool_shed_url, tool.repository_owner, tool.repository_name)
-                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
+                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available. ' % (old_tool_shed_url, tool_id, tool_version)
                     if len(tools) > 1:
-                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (new_tool_shed_url, self.id)
+                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool. ' % (new_tool_shed_url, self.id)
                     else:
-                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (new_tool_shed_url, self.id)
+                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool. ' % (new_tool_shed_url, self.id)
+            if len(self.tool_versions) > 1 and tool_version != self.tool_versions[-1]:
+                message += 'There is a newer version of this tool available.'
         except Exception as e:
             raise exceptions.MessageException(str(e))
         return message

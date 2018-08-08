@@ -8,6 +8,9 @@ import hashlib
 import hmac
 import logging
 
+from . import smart_str
+
+
 log = logging.getLogger(__name__)
 
 BLOCK_SIZE = 1024 * 1024
@@ -55,7 +58,7 @@ def new_secure_hash(text_type=None):
     hexdigest of the sha1 hash of the argument `text_type`.
     """
     if text_type:
-        return sha1(text_type).hexdigest()
+        return sha1(smart_str(text_type)).hexdigest()
     else:
         return sha1()
 

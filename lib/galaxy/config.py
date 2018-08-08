@@ -374,6 +374,9 @@ class Configuration(object):
         self.enable_beta_ts_api_install = string_as_bool(kwargs.get('enable_beta_ts_api_install', 'True'))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
+        # Set this to go back to setting the object store in the tool request instead of
+        # in the job handler.
+        self.legacy_eager_objectstore_initialization = string_as_bool(kwargs.get('legacy_eager_objectstore_initialization', 'False'))
         # These workflow modules should not be considered part of Galaxy's
         # public API yet - the module state definitions may change and
         # workflows built using these modules may not function in the
@@ -723,7 +726,16 @@ class Configuration(object):
                 'qualname': 'COMPLIANCE'
             }
 
-        if kwargs.get("log_destination", None):
+        log_destination = kwargs.get("log_destination", None)
+        if log_destination == "stdout":
+            LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
+                'class': 'logging.StreamHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'stream': 'ext://sys.stdout',
+                'filters': ['stack']
+            }
+        elif log_destination:
             LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
                 'class': 'logging.FileHandler',
                 'formatter': 'stack',

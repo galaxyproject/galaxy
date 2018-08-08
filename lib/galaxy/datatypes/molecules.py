@@ -429,7 +429,7 @@ class OBFS(Binary):
 
         This allows us to format the data shown in the central pane via the "eye" icon.
         """
-        return "This is a OpenBabel Fastsearch format. You can speed up your similarity and substructure search with it."
+        return b"This is a OpenBabel Fastsearch format. You can speed up your similarity and substructure search with it."
 
     def get_mime(self):
         """Returns the mime type of the datatype (pretend it is text for peek)"""

@@ -65,7 +65,7 @@ DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 gzip_magic = b'\x1f\x8b'
 bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
-NULL_CHAR = '\000'
+NULL_CHAR = b'\000'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -102,7 +102,7 @@ def is_binary(value, binary_chars=None):
     if binary_chars is None:
         binary_chars = BINARY_CHARS
     for binary_char in binary_chars:
-        if binary_char in value:
+        if binary_char in smart_str(value):
             return True
     return False
 

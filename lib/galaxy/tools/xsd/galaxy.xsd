@@ -2099,6 +2099,11 @@ $attribute_list:checked,truevalue,falsevalue:5
 
 A dataset from the current history. Multiple types might be used for the param form.
 
+#### ``group_tag``
+
+$attribute_list:multiple,date_ref:5
+
+
 ##### Examples
 
 The following will find all "coordinate interval files" contained within the
@@ -2356,10 +2361,10 @@ as a comma separated list.
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
 
-Only valid if ``type`` attribute value is ``select`` or ``data_column``. Used
-with select lists whose options are dynamically generated based on certain
-metadata attributes of the dataset upon which this parameter depends (usually
-but not always the tool's input dataset).
+Only valid if ``type`` attribute value is ``select``, ``data_column``, or
+``group_tag``. Used with select lists whose options are dynamically generated
+based on certain metadata attributes of the dataset or collection upon which
+this parameter depends (usually but not always the tool's input dataset).
 
             ]]></xs:documentation>
           </xs:annotation>
@@ -2509,6 +2514,7 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="file"/>
       <xs:enumeration value="data"/>
       <xs:enumeration value="drill_down"/>
+      <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
     </xs:restriction>
   </xs:simpleType>

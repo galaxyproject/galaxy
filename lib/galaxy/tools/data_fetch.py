@@ -7,6 +7,7 @@ import sys
 import tempfile
 
 import bdbag.bdbag_api
+from six.moves import StringIO
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -210,6 +211,10 @@ def _has_src_to_path(item):
         path = sniff.stream_url_to_file(url)
         if name is None:
             name = url.split("/")[-1]
+    elif src == "pasted":
+        path = sniff.stream_to_file(StringIO(item["paste_content"]))
+        if name is None:
+            name = "Pasted Entry"
     else:
         assert src == "path"
         path = item["path"]
