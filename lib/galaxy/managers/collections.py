@@ -403,17 +403,21 @@ class DatasetCollectionManager(object):
             message = message_template % element_identifier
             raise RequestParameterInvalidException(message)
 
+        tags = element_identifier.pop('tags', None)
+        tag_str = ''
+        if tags:
+            tag_str = ",".join(str(_) for _ in tags)
         if src_type == 'hda':
             decoded_id = int(trans.app.security.decode_id(encoded_id))
             hda = self.hda_manager.get_accessible(decoded_id, trans.user)
             element = self.hda_manager.copy(hda, history=hda.history, hide_copy=True)
             if hide_source_items:
                 hda.visible = False
-            tags = element_identifier.pop('tags', [])
-            if tags:
-                self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=",".join(str(_) for _ in tags))
+            self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'ldda':
-            element = self.ldda_manager.get(trans, encoded_id)
+            element = self.ldda_manager.get(trans, encoded_id, check_accessible=True)
+            element = element.to_history_dataset_association(trans.history, add_to_history=True)
+            self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'hdca':
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
             element = self.__get_history_collection_instance(trans, encoded_id).collection

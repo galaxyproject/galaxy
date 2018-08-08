@@ -423,7 +423,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __create_hda_from_ldda(self, trans, content, history):
-        hda = None
         ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
@@ -512,21 +511,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         source = kwd.get("source", payload.get("source", "new_collection"))
 
-        def convert_lddas(element_identifiers):
-            for ei in element_identifiers:
-                src = ei.get("src")
-                if src == "ldda":
-                    # Convert lddas to hdas since there is no direct representation of library items in history.
-                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
-                    ei["id"] = trans.security.encode_id(hda.id)
-                    ei["src"] = "hda"
-                elif src == "new_collection" and "element_identifiers" in ei:
-                    convert_lddas(ei["element_identifiers"])
-
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
-            convert_lddas(payload.get("element_identifiers", []))
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
