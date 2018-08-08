@@ -128,5 +128,5 @@ EXAMPLE_3 = {
         "type": "list:paired",
     },
     "check": check_example_3,
-    "output_hid": 7,
+    "output_hid": 6,
 }
