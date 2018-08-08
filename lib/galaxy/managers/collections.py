@@ -402,11 +402,10 @@ class DatasetCollectionManager(object):
         if src_type == 'hda':
             decoded_id = int(trans.app.security.decode_id(encoded_id))
             element = self.hda_manager.get_accessible(decoded_id, trans.user)
-            element = self.hda_manager.copy(element, history=element.history)
-            # __load_element is called when creating new collections, we don't want new HDAs to be visible
-            element.visible = False
+            element = self.hda_manager.copy(element, history=element.history, hide_copy=True)
             tags = element_identifier.pop('tags', [])
-            self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=",".join(str(_) for _ in tags))
+            if tags:
+                self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=",".join(str(_) for _ in tags))
         elif src_type == 'ldda':
             element = self.ldda_manager.get(trans, encoded_id)
         elif src_type == 'hdca':

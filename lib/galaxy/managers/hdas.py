@@ -97,11 +97,13 @@ class HDAManager(datasets.DatasetAssociationManager,
             self.session().flush()
         return hda
 
-    def copy(self, hda, history=None, **kwargs):
+    def copy(self, hda, history=None, hide_copy=False, **kwargs):
         """
         Copy hda, including annotation and tags, add to history and return the given HDA.
         """
         copy = hda.copy(parent_id=kwargs.get('parent_id'), copy_hid=False)
+        if hide_copy:
+            copy.visible = False
         # add_dataset will update the hid to the next avail. in history
         if history:
             history.add_dataset(copy)
