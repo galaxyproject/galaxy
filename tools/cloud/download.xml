@@ -28,7 +28,7 @@
                 --co_user_domain_name=$connection.user_domain_name
             #end if
             --bucket=$bucket
-            --object_label=$filename.name
+            --object_label=$filename.name.replace(" ", "_")
             --overwrite_existing=$overwrite_existing
     </command>
     <inputs>
