@@ -19,6 +19,8 @@
                 --cm_client_id=$connection.client_id
                 --cm_secret=$connection.secret
                 --cm_tenant=$connection.tenant
+                --cm_storage_account=$connection.storage_account
+                --cm_resource_group=$connection.resource_group
             #else if $connection.provider=="openstack"
                 --co_username=$connection.username
                 --co_password=$connection.password
@@ -55,6 +57,8 @@
                 <param name="client_id" label="Client ID" type="text"/>
                 <param name="secret" label="Secret" type="text"/>
                 <param name="tenant" label="Tenant" type="text"/>
+                <param name="storage_account" label="Storage Account" type="text"/>
+                <param name="resource_group" label="Resource Group" type="text"/>
             </when>
             <when value="openstack">
                 <param name="username" label="Username" type="text"/>
