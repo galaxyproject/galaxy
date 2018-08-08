@@ -111,6 +111,12 @@ class CloudManager(sharable.SharableModelManager):
                       'azure_client_id': client,
                       'azure_secret': secret,
                       'azure_tenant': tenant}
+            storage_account = credentials.get("storage_account")
+            if storage_account:
+                config["azure_storage_account"] = storage_account
+            resource_group = credentials.get("resource_group")
+            if resource_group:
+                config["azure_resource_group"] = resource_group
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         elif provider == "openstack":
             username = credentials.get('username', None)
