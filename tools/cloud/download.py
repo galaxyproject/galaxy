@@ -87,7 +87,7 @@ def parse_args(args):
                              "required to authorize access to the cloud-based storage provider."
                              "Use either this file, or pass the credentials using provider-specific args.")
 
-    parser.add_argument('--ca_access_key', type=str, required=False, help="AWS Credentials: Access Key" )
+    parser.add_argument('--ca_access_key', type=str, required=False, help="AWS Credentials: Access Key")
     parser.add_argument('--ca_secret_key', type=str, required=False, help="AWS Credentials: Secret Key")
 
     parser.add_argument('--cm_subscription_id', type=str, required=False, help="Azure Credentials: Subscription ID")
@@ -104,6 +104,7 @@ def parse_args(args):
 
     return parser.parse_args(args)
 
+
 def __main__():
     args = parse_args(sys.argv[1:])
     if args.provider not in ["aws", "azure", "openstack"]:
@@ -112,6 +113,7 @@ def __main__():
     overwrite_existing = args.overwrite_existing.lower() == "true"
     credentials = load_credential(args)
     download(args.provider, credentials, args.bucket, args.object_label, args.filename, overwrite_existing)
+
 
 if __name__ == "__main__":
     sys.exit(__main__())
