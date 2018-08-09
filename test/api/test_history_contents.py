@@ -277,7 +277,8 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
                                                                     'name': 'element_id2',
                                                                     'tags': ['another_new_tag']}
                                                                    ]),
-                                'type': 'dataset_collection'}
+                                'type': 'dataset_collection',
+                                'copy_elements': True}
             r = self._post("histories/%s/contents" % self.history_id, creation_payload).json()
             assert r['elements'][0]['object']['id'] != hda_id, "HDA has not been copied"
             assert len(r['elements'][0]['object']['tags']) == 1
