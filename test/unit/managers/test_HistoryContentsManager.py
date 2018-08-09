@@ -59,7 +59,7 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         self.log("calling contents on an history with both hdas and collections should return both")
         hdca = self.add_list_collection_to_history(history, hdas)
         all_contents = list(self.contents_manager.contents(history))
-        self.assertEqual(all_contents, list(ordered_hda_contents) + hdca.dataset_instances + [hdca])
+        self.assertEqual(all_contents, list(ordered_hda_contents) + [hdca])
 
     def test_contained(self):
         user2 = self.user_manager.create(**user2_data)
@@ -70,8 +70,8 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
 
         self.log("calling contained on an history with both hdas and collections should return only hdas")
         hdas = [self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)]
-        hdca = self.add_list_collection_to_history(history, hdas)
-        self.assertEqual(list(self.contents_manager.contained(history)), hdas + hdca.dataset_instances)
+        self.add_list_collection_to_history(history, hdas)
+        self.assertEqual(list(self.contents_manager.contained(history)), hdas)
 
     def test_subcontainers(self):
         user2 = self.user_manager.create(**user2_data)
@@ -92,12 +92,8 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         contents = []
         contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)])
         contents.append(self.add_list_collection_to_history(history, contents[:3]))
-        for hda in contents[-1].dataset_instances:
-            contents.insert(-1, hda)
-        contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(7, 9)])
+        contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(4, 6)])
         contents.append(self.add_list_collection_to_history(history, contents[4:6]))
-        for hda in contents[-1].dataset_instances:
-            contents.insert(-1, hda)
 
         self.log("should be able to limit and offset")
         results = self.contents_manager.contents(history)
@@ -114,23 +110,16 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         user2 = self.user_manager.create(**user2_data)
         history = self.history_manager.create(name='history', user=user2)
         contents = []
-        invisible = []
         contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)])
         contents.append(self.add_list_collection_to_history(history, contents[:3]))
-        for hda in contents[-1].dataset_instances:
-            contents.insert(-1, hda)
-            invisible.append(hda)
-        contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(7, 9)])
-        contents.append(self.add_list_collection_to_history(history, contents[7:9]))
-        for hda in contents[-1].dataset_instances:
-            contents.insert(-1, hda)
-            invisible.append(hda)
+        contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(4, 6)])
+        contents.append(self.add_list_collection_to_history(history, contents[4:6]))
 
         self.log("should allow filter on deleted")
         self.hda_manager.delete(contents[1])
-        self.hda_manager.delete(contents[6])
-        contents[8].deleted = True
-        deleted = [contents[1], contents[6], contents[8]]
+        self.hda_manager.delete(contents[4])
+        contents[6].deleted = True
+        deleted = [contents[1], contents[4], contents[6]]
         self.app.model.context.flush()
 
         # TODO: cross db compat?
@@ -147,10 +136,9 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
 
         self.log("should allow filter on visible")
         contents[2].visible = False
-        contents[7].visible = False
-        contents[8].visible = False
-        invisible.extend([contents[2], contents[7], contents[8]])
-        invisible.sort(key=lambda hda: hda.hid)
+        contents[5].visible = False
+        contents[6].visible = False
+        invisible = [contents[2], contents[5], contents[6]]
         self.app.model.context.flush()
 
         filters = [text('visible = 0')]
@@ -159,10 +147,10 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
             filters=[HDA.visible == false()]), invisible)
         filter_limited_contents = self.contents_manager.contents(history,
             filters=[HDA.visible == false()], limit=2, offset=1)
-        self.assertEqual(filter_limited_contents, invisible[1:3])
+        self.assertEqual(filter_limited_contents, invisible[1:])
 
         self.log("should allow filtering more than one attribute")
-        deleted_and_invisible = [contents[8]]
+        deleted_and_invisible = [contents[6]]
 
         filters = [text('deleted = 1'), text('visible = 0')]
         self.assertEqual(self.contents_manager.contents(history, filters=filters), deleted_and_invisible)
@@ -173,7 +161,7 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         self.assertEqual(offset_too_far, [])
 
         self.log("should allow filtering more than one attribute")
-        deleted_and_invisible = [contents[8]]
+        deleted_and_invisible = [contents[6]]
         # note the two syntaxes both work
         self.assertEqual(self.contents_manager.contents(history,
             filters=[text('deleted = 1'), text('visible = 0')]), deleted_and_invisible)
@@ -184,9 +172,9 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         self.assertEqual(offset_too_far, [])
 
         self.log("should allow filtering using like")
-        # find 'hda-0'
-        self.assertEqual([contents[0]],
-            self.contents_manager.contents(history, filters=[HDA.name.like('%-0'), text('visible = 1')]))
+        # find 'hda-4'
+        self.assertEqual([contents[4]],
+            self.contents_manager.contents(history, filters=[HDA.name.like('%-4')]))
         # the collections added above have the default name 'test collection'
         self.assertEqual(self.contents_manager.subcontainers(history),
             self.contents_manager.contents(history, filters=[HDA.name.like('%collect%')]))
@@ -197,12 +185,8 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         contents = []
         contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)])
         contents.append(self.add_list_collection_to_history(history, contents[:3]))
-        for hda in contents[-1].dataset_instances:
-            contents.insert(-1, hda)
         contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(4, 6)])
         contents.append(self.add_list_collection_to_history(history, contents[4:6]))
-        for hda in contents[-1].dataset_instances:
-            contents.insert(-1, hda)
 
         self.log("should default to hid order_by")
         self.assertEqual(self.contents_manager.contents(history), contents)
@@ -275,7 +259,7 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         HDA = self.hda_manager.model_class
         self.assertEqual(self.contents_manager.contents_count(history, filters=[HDA.deleted == true()]), 3)
         filters = [text('visible = 0')]
-        self.assertEqual(self.contents_manager.contents_count(history, filters=filters), 8)
+        self.assertEqual(self.contents_manager.contents_count(history, filters=filters), 3)
 
         filters = [text('deleted = 1'), text('visible = 0')]
         self.assertEqual(self.contents_manager.contents_count(history, filters=filters), 1)

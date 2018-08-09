@@ -44,7 +44,7 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
                                            element_identifiers=element_identifiers)
         self.assertIsInstance(hdca, model.HistoryDatasetCollectionAssociation)
         self.assertEqual(hdca.name, 'test collection')
-        self.assertEqual(hdca.hid, 7)
+        self.assertEqual(hdca.hid, 4)
         self.assertFalse(hdca.deleted)
         self.assertTrue(hdca.visible)
 
@@ -61,19 +61,19 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
         self.assertEqual(collection.elements[0].element_identifier, 'one')
         self.assertEqual(collection.elements[0].element_index, 0)
         self.assertEqual(collection.elements[0].element_type, 'hda')
-        self.assertEqual(collection.elements[0].element_object.dataset, hda1.dataset)
+        self.assertEqual(collection.elements[0].element_object, hda1)
 
         self.assertIsInstance(collection.elements[1], model.DatasetCollectionElement)
         self.assertEqual(collection.elements[1].element_identifier, 'two')
         self.assertEqual(collection.elements[1].element_index, 1)
         self.assertEqual(collection.elements[1].element_type, 'hda')
-        self.assertEqual(collection.elements[1].element_object.dataset, hda2.dataset)
+        self.assertEqual(collection.elements[1].element_object, hda2)
 
         self.assertIsInstance(collection.elements[2], model.DatasetCollectionElement)
         self.assertEqual(collection.elements[2].element_identifier, 'three')
         self.assertEqual(collection.elements[2].element_index, 2)
         self.assertEqual(collection.elements[2].element_type, 'hda')
-        self.assertEqual(collection.elements[2].element_object.dataset, hda3.dataset)
+        self.assertEqual(collection.elements[2].element_object, hda3)
 
         self.log("should be able to create a new Collection via objects")
         elements = dict(one=hda1, two=hda2, three=hda3)
