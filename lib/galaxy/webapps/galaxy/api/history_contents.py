@@ -356,6 +356,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             'source'              = 'new_collection' (default 'source' if type is
                                     'dataset_collection' - no need to specify this)
             'collection_type'     = For example, "list", "paired", "list:paired".
+            'copy_elements'       = Copy child HDAs when creating new collection,
+                                    defaults to False in the API but is set to True in the UI,
+                                    so that we can modify HDAs with tags when creating collections.
             'name'                = Name of new dataset collection.
             'element_identifiers' = Recursive list structure defining collection.
                                     Each element must have 'src' which can be
@@ -499,6 +502,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             :param name: name of the collection
             :type name: str
             :param hide_source_items: whether to mark the original hdas as hidden
+            :type name: bool
+            :param copy_elements: whether to copy HDAs when creating collection
             :type name: bool
         :type  payload: dict
 
