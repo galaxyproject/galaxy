@@ -26,7 +26,7 @@ var View = Backbone.View.extend({
         this.setElement(
             $("<div/>")
                 .addClass("ui-form-composite")
-                .append((this.$message = $("<div/>")))
+                .append((this.$message = $("<div/>").addClass("mb-4")))
                 .append((this.$header = $("<div/>")))
                 .append((this.$steps = $("<div/>")))
         );
@@ -227,10 +227,10 @@ var View = Backbone.View.extend({
             }
         });
         this.$header
-            .addClass("ui-form-header")
+            .addClass("h4")
             .empty()
             .append(`<b>Workflow: ${this.model.get("name")}<b>`)
-            .append(this.execute_btn.$el);
+            .append(this.execute_btn.$el.addClass("float-right mt-3"));
     },
 
     /** Render message */

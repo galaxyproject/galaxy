@@ -72,7 +72,7 @@ hr {
   height: 0;
   overflow: visible; }
 
-h1, h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, .ui-form-composite .ui-form-header, h4, .ui-portlet .portlet-header .portlet-title .portlet-title-text, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-text, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-text, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-text, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-text, h5, h6 {
+h1, h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, h4, h5, h6 {
   margin-top: 0;
   margin-bottom: 0.5rem; }
 
@@ -297,7 +297,7 @@ template {
 [hidden] {
   display: none !important; }
 
-h1, h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, .ui-form-composite .ui-form-header, h4, .ui-portlet .portlet-header .portlet-title .portlet-title-text, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-text, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-text, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-text, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-text, h5, h6,
+h1, h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6 {
   margin-bottom: 0.5rem;
   font-family: inherit;
@@ -311,10 +311,10 @@ h1, .h1 {
 h2, .h2 {
   font-size: 1.4rem; }
 
-h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, .ui-form-composite .ui-form-header, .h3 {
+h3, .upload-view-default .upload-box .upload-helper, .upload-view-composite .upload-box .upload-helper, .h3 {
   font-size: 1.2rem; }
 
-h4, .ui-portlet .portlet-header .portlet-title .portlet-title-text, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-text, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-text, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-text, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-text, .h4 {
+h4, .h4 {
   font-size: 1rem; }
 
 h5, .h5 {
@@ -5782,7 +5782,7 @@ button.bg-dark:focus {
 .my-1 {
   margin-bottom: 0.25rem !important; }
 
-.ml-1,
+.ml-1, .ui-portlet .portlet-header .portlet-operations > *, .ui-portlet-repeat .portlet-header .portlet-operations > *, .ui-portlet-panel .portlet-header .portlet-operations > *, .ui-portlet-section .portlet-header .portlet-operations > *, .ui-portlet-limited .portlet-header .portlet-operations > *, .ui-portlet-narrow .portlet-header .portlet-operations > *, .ui-portlet-plain .portlet-header .portlet-operations > *,
 .mx-1 {
   margin-left: 0.25rem !important; }
 
@@ -6909,15 +6909,13 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
   h2,
   h3,
   .upload-view-default .upload-box .upload-helper,
-  .upload-view-composite .upload-box .upload-helper,
-  .ui-form-composite .ui-form-header {
+  .upload-view-composite .upload-box .upload-helper {
     orphans: 3;
     widows: 3; }
   h2,
   h3,
   .upload-view-default .upload-box .upload-helper,
-  .upload-view-composite .upload-box .upload-helper,
-  .ui-form-composite .ui-form-header {
+  .upload-view-composite .upload-box .upload-helper {
     page-break-after: avoid; }
   @page {
     size: a3; }
@@ -10812,77 +10810,17 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   padding-left: 10px; }
 
 .ui-form-composite {
-  max-width: 900px;
   height: 100%;
   flex-direction: column;
   display: flex; }
-  .ui-form-composite .ui-form-header {
-    margin-top: 0px; }
-    .ui-form-composite .ui-form-header .ui-label {
-      width: calc(100% - 200px); }
   .ui-form-composite .ui-steps {
-    overflow: auto;
-    margin-top: 15px;
-    border: dashed 1px #cb9d39;
-    border-radius: 0.1875rem;
-    padding: 1rem; }
-    .ui-form-composite .ui-steps .ui-portlet-narrow {
-      padding: 0px 1rem 0px 1rem; }
-      .ui-form-composite .ui-steps .ui-portlet-narrow .portlet-header {
-        padding: 1px 5px 0px 8px; }
-      .ui-form-composite .ui-steps .ui-portlet-narrow .portlet-content {
-        padding: 0px 1rem 0px 1rem; }
-      .ui-form-composite .ui-steps .ui-portlet-narrow .ui-table-section,
-      .ui-form-composite .ui-steps .ui-portlet-narrow .ui-portlet-repeat .portlet-content,
-      .ui-form-composite .ui-steps .ui-portlet-narrow .ui-portlet-panel .portlet-content,
-      .ui-form-composite .ui-steps .ui-portlet-narrow .ui-portlet-section .portlet-content {
-        padding-left: 3rem; }
-  .ui-form-composite .ui-message {
-    margin-top: 0px;
-    margin-bottom: 10px; }
+    overflow: auto; }
 
 .ui-portlet, .ui-portlet-repeat, .ui-portlet-panel, .ui-portlet-section, .ui-portlet-limited, .ui-portlet-narrow, .ui-portlet-plain {
-  position: relative;
-  clear: both;
-  width: auto;
-  height: auto; }
-  .ui-portlet .portlet-header, .ui-portlet-repeat .portlet-header, .ui-portlet-panel .portlet-header, .ui-portlet-section .portlet-header, .ui-portlet-limited .portlet-header, .ui-portlet-narrow .portlet-header, .ui-portlet-plain .portlet-header {
-    overflow: visible;
-    width: 100%; }
-    .ui-portlet .portlet-header .portlet-title, .ui-portlet-repeat .portlet-header .portlet-title, .ui-portlet-panel .portlet-header .portlet-title, .ui-portlet-section .portlet-header .portlet-title, .ui-portlet-limited .portlet-header .portlet-title, .ui-portlet-narrow .portlet-header .portlet-title, .ui-portlet-plain .portlet-header .portlet-title {
-      word-wrap: break-word; }
-      .ui-portlet .portlet-header .portlet-title .portlet-title-text, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-text, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-text, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-text, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-text {
-        vertical-align: middle; }
-      .ui-portlet .portlet-header .portlet-title .portlet-title-text.no-highlight.collapsible, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-text.no-highlight.collapsible, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-text.no-highlight.collapsible, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text.no-highlight.collapsible, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-text.no-highlight.collapsible, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text.no-highlight.collapsible, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-text.no-highlight.collapsible, .ui-portlet .portlet-header .portlet-title .portlet-title-text.collapsible.ui-button-icon, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-text.collapsible.ui-button-icon, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-text.collapsible.ui-button-icon, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text.collapsible.ui-button-icon, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-text.collapsible.ui-button-icon, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text.collapsible.ui-button-icon, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-text.collapsible.ui-button-icon {
-        cursor: pointer;
-        text-decoration: underline; }
-      .ui-portlet .portlet-header .portlet-title .portlet-title-icon, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-icon, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-icon, .ui-portlet-section .portlet-header .portlet-title .portlet-title-icon, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-icon, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-icon, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-icon {
-        font-size: 1.2em;
-        vertical-align: middle;
-        margin-right: 5px; }
-    .ui-portlet .portlet-header .portlet-operations .ui-button-icon, .ui-portlet-repeat .portlet-header .portlet-operations .ui-button-icon, .ui-portlet-panel .portlet-header .portlet-operations .ui-button-icon, .ui-portlet-section .portlet-header .portlet-operations .ui-button-icon, .ui-portlet-limited .portlet-header .portlet-operations .ui-button-icon, .ui-portlet-narrow .portlet-header .portlet-operations .ui-button-icon, .ui-portlet-plain .portlet-header .portlet-operations .ui-button-icon {
-      margin-left: 1rem; }
-  .ui-portlet .portlet-content, .ui-portlet-repeat .portlet-content, .ui-portlet-panel .portlet-content, .ui-portlet-section .portlet-content, .ui-portlet-limited .portlet-content, .ui-portlet-narrow .portlet-content, .ui-portlet-plain .portlet-content {
-    clear: both; }
-    .ui-portlet .portlet-content .portlet-body, .ui-portlet-repeat .portlet-content .portlet-body, .ui-portlet-panel .portlet-content .portlet-body, .ui-portlet-section .portlet-content .portlet-body, .ui-portlet-limited .portlet-content .portlet-body, .ui-portlet-narrow .portlet-content .portlet-body, .ui-portlet-plain .portlet-content .portlet-body {
-      padding: 0px;
-      height: 100%;
-      width: 100%; }
-    .ui-portlet .portlet-content .portlet-buttons, .ui-portlet-repeat .portlet-content .portlet-buttons, .ui-portlet-panel .portlet-content .portlet-buttons, .ui-portlet-section .portlet-content .portlet-buttons, .ui-portlet-limited .portlet-content .portlet-buttons, .ui-portlet-narrow .portlet-content .portlet-buttons, .ui-portlet-plain .portlet-content .portlet-buttons {
-      margin-top: 0.75rem;
-      margin-bottom: 0.75rem; }
-      .ui-portlet .portlet-content .portlet-buttons > .btn, .ui-portlet-repeat .portlet-content .portlet-buttons > .btn, .ui-portlet-panel .portlet-content .portlet-buttons > .btn, .ui-portlet-section .portlet-content .portlet-buttons > .btn, .ui-portlet-limited .portlet-content .portlet-buttons > .btn, .ui-portlet-narrow .portlet-content .portlet-buttons > .btn, .ui-portlet-plain .portlet-content .portlet-buttons > .btn, .ui-portlet .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-repeat .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-panel .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-section .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-limited .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-narrow .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet-plain .portlet-content .portlet-buttons > input[type="submit"], .ui-portlet .portlet-content .portlet-buttons >
-      button, .ui-portlet-repeat .portlet-content .portlet-buttons >
-      button, .ui-portlet-panel .portlet-content .portlet-buttons >
-      button, .ui-portlet-section .portlet-content .portlet-buttons >
-      button, .ui-portlet-limited .portlet-content .portlet-buttons >
-      button, .ui-portlet-narrow .portlet-content .portlet-buttons >
-      button, .ui-portlet-plain .portlet-content .portlet-buttons >
-      button, .ui-portlet .portlet-content .portlet-buttons > .action-button, .ui-portlet-repeat .portlet-content .portlet-buttons > .action-button, .ui-portlet-panel .portlet-content .portlet-buttons > .action-button, .ui-portlet-section .portlet-content .portlet-buttons > .action-button, .ui-portlet-limited .portlet-content .portlet-buttons > .action-button, .ui-portlet-narrow .portlet-content .portlet-buttons > .action-button, .ui-portlet-plain .portlet-content .portlet-buttons > .action-button, .ui-portlet .portlet-content .portlet-buttons > .menubutton, .ui-portlet-repeat .portlet-content .portlet-buttons > .menubutton, .ui-portlet-panel .portlet-content .portlet-buttons > .menubutton, .ui-portlet-section .portlet-content .portlet-buttons > .menubutton, .ui-portlet-limited .portlet-content .portlet-buttons > .menubutton, .ui-portlet-narrow .portlet-content .portlet-buttons > .menubutton, .ui-portlet-plain .portlet-content .portlet-buttons > .menubutton {
-        margin-right: 5px; }
-  .ui-portlet .portlet-content.nopadding, .ui-portlet-repeat .portlet-content.nopadding, .ui-portlet-panel .portlet-content.nopadding, .ui-portlet-section .portlet-content.nopadding, .ui-portlet-limited .portlet-content.nopadding, .ui-portlet-narrow .portlet-content.nopadding, .ui-portlet-plain .portlet-content.nopadding,
-  .ui-portlet .portlet-body.nopadding, .ui-portlet-repeat .portlet-body.nopadding, .ui-portlet-panel .portlet-body.nopadding, .ui-portlet-section .portlet-body.nopadding, .ui-portlet-limited .portlet-body.nopadding, .ui-portlet-narrow .portlet-body.nopadding, .ui-portlet-plain .portlet-body.nopadding {
-    padding: 0px; }
+  height: 100%; }
+  .ui-portlet .portlet-header .portlet-title .portlet-title-text.collapsible, .ui-portlet-repeat .portlet-header .portlet-title .portlet-title-text.collapsible, .ui-portlet-panel .portlet-header .portlet-title .portlet-title-text.collapsible, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text.collapsible, .ui-portlet-limited .portlet-header .portlet-title .portlet-title-text.collapsible, .ui-portlet-narrow .portlet-header .portlet-title .portlet-title-text.collapsible, .ui-portlet-plain .portlet-header .portlet-title .portlet-title-text.collapsible {
+    cursor: pointer;
+    text-decoration: underline; }
   .ui-portlet .portlet-backdrop, .ui-portlet-repeat .portlet-backdrop, .ui-portlet-panel .portlet-backdrop, .ui-portlet-section .portlet-backdrop, .ui-portlet-limited .portlet-backdrop, .ui-portlet-narrow .portlet-backdrop, .ui-portlet-plain .portlet-backdrop {
     display: none;
     z-index: 10;
@@ -10905,9 +10843,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     border-bottom-left-radius: 0px;
     border-top-left-radius: 0px;
     padding: 0px 2px; }
-    .ui-portlet-repeat .portlet-header .portlet-title-text, .ui-portlet-panel .portlet-header .portlet-title-text, .ui-portlet-section .portlet-header .portlet-title-text {
-      vertical-align: middle;
-      line-height: 20px !important; }
   .ui-portlet-repeat .portlet-content, .ui-portlet-panel .portlet-content, .ui-portlet-section .portlet-content {
     padding-right: 0px; }
 

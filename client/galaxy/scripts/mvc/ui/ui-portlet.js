@@ -66,7 +66,7 @@ export var View = Backbone.View.extend({
         if (options.icon) {
             this.$title_icon
                 .removeClass()
-                .addClass("portlet-title-icon fa")
+                .addClass("portlet-title-icon fa mr-1")
                 .addClass(options.icon)
                 .show();
         } else {
