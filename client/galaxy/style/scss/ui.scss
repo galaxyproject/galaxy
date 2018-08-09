@@ -368,7 +368,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 .ui-form-section {
-    border-left: solid 3px $form-heading-bg;
+    border-left: solid 3px $side-panel-bg;
     border-radius: $border-radius-large !important;
     padding-left: 10px;
 }
@@ -416,43 +416,28 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-portlet-repeat {
+.ui-portlet-section {
     @extend .ui-portlet;
     border: none;
-    border-left: solid 3px $form-heading-bg;
+    border-left: solid 3px $side-panel-bg;
     border-radius: $border-radius-large;
     margin-bottom: $ui-margin-vertical;
     .portlet-header {
-        background: $form-heading-bg;
+        background: $side-panel-bg;
         border-radius: $border-radius-large;
+        border-bottom: solid darken($side-panel-bg, 10%) 1px;
         border-bottom-left-radius: 0px;
         border-top-left-radius: 0px;
         padding: 0px 2px;
     }
     .portlet-content {
         padding-right: 0px;
-    }
-}
-
-.ui-portlet-panel {
-    @extend .ui-portlet-repeat;
-    margin-top: $ui-margin-vertical;
-    border-left: solid 3px $side-panel-bg;
-    .portlet-header {
-        background: $side-panel-bg;
-        border-bottom: solid darken($side-panel-bg, 10%) 1px;
-    }
-}
-
-.ui-portlet-section {
-    @extend .ui-portlet-panel;
-    .portlet-highlight {
-        text-decoration: underline;
+        margin-left: 5px;
     }
 }
 
 .ui-portlet-narrow {
-    @extend .ui-portlet-limited;
+    @extend .ui-portlet;
     border: none;
     margin-bottom: $ui-margin-vertical-large;
     .portlet-header {
@@ -463,7 +448,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             }
         }
     }
-    .ui-portlet-repeat {
+    .ui-portlet-section {
         .portlet-header {
             border-radius: $border-radius-large;
             border-bottom-left-radius: 0px;
@@ -474,22 +459,14 @@ $ui-margin-horizontal-large: $margin-v * 2;
         padding: 0px;
     }
     .ui-table-section,
-    .ui-portlet-repeat .portlet-content {
+    .ui-portlet-section .portlet-content {
         padding-left: $ui-margin-horizontal;
     }
-}
-
-.ui-portlet-limited {
-    @extend .ui-portlet;
-    max-width: 900px;
 }
 
 .ui-portlet-plain {
     @extend .ui-portlet;
     border: none;
-    .portlet-content {
-        padding: 0px;
-    }
 }
 
 // popovers

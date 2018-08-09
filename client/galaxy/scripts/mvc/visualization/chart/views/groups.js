@@ -105,7 +105,6 @@ export default Backbone.View.extend({
         this.listenTo(this.chart.groups, "add", function(group) {
             self.repeat.add({
                 id: group.id,
-                cls: "ui-portlet-panel",
                 $el: new GroupView(self.app, { group: group }).$el,
                 ondel: function() {
                     self.chart.groups.remove(group);
