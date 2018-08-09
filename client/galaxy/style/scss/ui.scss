@@ -402,6 +402,8 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
     .portlet-content {
         @extend .card-body;
+        @extend .pl-2;
+        @extend .pr-2;
     }
     .portlet-backdrop {
         display: none;
@@ -419,19 +421,19 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-portlet-section {
     @extend .ui-portlet;
     border: none;
-    border-left: solid 3px $side-panel-bg;
+    border-left: solid 3px $gray-200;
     border-radius: $border-radius-large;
     margin-bottom: $ui-margin-vertical;
     .portlet-header {
-        background: $side-panel-bg;
+        background: $gray-200;
         border-radius: $border-radius-large;
-        border-bottom: solid darken($side-panel-bg, 10%) 1px;
+        border-bottom: solid darken($gray-200, 10%) 1px;
         border-bottom-left-radius: 0px;
         border-top-left-radius: 0px;
         padding: 5px;
     }
     .portlet-content {
-        padding-right: 0px;
+        @extend .pr-0;
     }
 }
 
