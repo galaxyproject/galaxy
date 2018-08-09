@@ -704,7 +704,7 @@ export default Backbone.View.extend({
             content.workflow = this.workflow;
             content.datatypes = this.datatypes;
             content.icon = WorkflowIcons[node.type];
-            content.cls = "ui-portlet-narrow";
+            content.cls = "ui-portlet-section";
             if (node) {
                 var form_type = node.type == "tool" ? "Tool" : "Default";
                 $el.append(new FormWrappers[form_type](content).form.$el);

@@ -71,7 +71,7 @@ var View = Backbone.View.extend({
                     cls_disable: "fa fa-undo",
                     errors: step.messages,
                     initial_errors: true,
-                    cls: "ui-portlet-narrow",
+                    cls: "ui-portlet-section",
                     hide_operations: true,
                     needs_refresh: false,
                     always_refresh: step.step_type != "tool"
@@ -269,7 +269,7 @@ var View = Backbone.View.extend({
             this.wp_form = new Form({
                 title: "<b>Workflow Parameters</b>",
                 inputs: this.wp_inputs,
-                cls: "ui-portlet-narrow",
+                cls: "ui-portlet-section",
                 onchange: function() {
                     _.each(self.wp_form.input_list, (input_def, i) => {
                         _.each(input_def.links, step => {
@@ -285,7 +285,7 @@ var View = Backbone.View.extend({
     /** Render workflow parameters */
     _renderHistory: function() {
         this.history_form = new Form({
-            cls: "ui-portlet-narrow",
+            cls: "ui-portlet-section",
             title: "<b>History Options</b>",
             inputs: [
                 {
@@ -322,7 +322,7 @@ var View = Backbone.View.extend({
         this.workflow_resource_parameters_form = null;
         if (!_.isEmpty(this.model.get("workflow_resource_parameters"))) {
             this.workflow_resource_parameters_form = new Form({
-                cls: "ui-portlet-narrow",
+                cls: "ui-portlet-section",
                 title: "<b>Workflow Resource Options</b>",
                 inputs: this.model.get("workflow_resource_parameters")
             });
@@ -343,7 +343,7 @@ var View = Backbone.View.extend({
         this.display_use_cached_job_checkbox = display_use_cached_job_checkbox === "true";
         if (this.display_use_cached_job_checkbox) {
             this.job_options_form = new Form({
-                cls: "ui-portlet-narrow",
+                cls: "ui-portlet-section",
                 title: "<b>Job re-use Options</b>",
                 inputs: [
                     {

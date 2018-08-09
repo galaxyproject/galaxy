@@ -428,39 +428,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
         border-bottom: solid darken($side-panel-bg, 10%) 1px;
         border-bottom-left-radius: 0px;
         border-top-left-radius: 0px;
-        padding: 0px 2px;
+        padding: 5px;
     }
     .portlet-content {
         padding-right: 0px;
-        margin-left: 5px;
-    }
-}
-
-.ui-portlet-narrow {
-    @extend .ui-portlet;
-    border: none;
-    margin-bottom: $ui-margin-vertical-large;
-    .portlet-header {
-        border-radius: $border-radius-base;
-        .portlet-operations {
-            .ui-button-icon {
-                margin-left: 3px;
-            }
-        }
-    }
-    .ui-portlet-section {
-        .portlet-header {
-            border-radius: $border-radius-large;
-            border-bottom-left-radius: 0px;
-            border-top-left-radius: 0px;
-        }
-    }
-    .portlet-content {
-        padding: 0px;
-    }
-    .ui-table-section,
-    .ui-portlet-section .portlet-content {
-        padding-left: $ui-margin-horizontal;
     }
 }
 
