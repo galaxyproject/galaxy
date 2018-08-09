@@ -302,9 +302,9 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         # Test filtering types with index.
         assert pre_collection_count == 0
         assert post_collection_count == 1
-        assert post_combined_count == pre_dataset_count * 2 + 1
-        assert post_combined_count == pre_combined_count * 2 + 1
-        assert pre_dataset_count * 2 == post_dataset_count
+        assert post_combined_count == pre_dataset_count + 1
+        assert post_combined_count == pre_combined_count + 1
+        assert pre_dataset_count == post_dataset_count
 
         # Test show dataset colleciton.
         collection_url = "histories/%s/contents/dataset_collections/%s" % (self.history_id, dataset_collection["id"])

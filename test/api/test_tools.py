@@ -1606,7 +1606,7 @@ class ToolsTestCase(api.ApiTestCase):
                 "header": {'batch': True, 'values': [dict(src="hdca", id=hdca_id)]}
             }
             self._run("collection_type_source", history_id, inputs, assert_ok=True, wait_for_job=True)
-            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=6)
+            collection_details = self.dataset_populator.get_history_collection_details(history_id, hid=4)
             assert collection_details['elements'][0]['object']['elements'][0]['element_type'] == 'hda'
 
     @skip_without_tool("multi_data_param")

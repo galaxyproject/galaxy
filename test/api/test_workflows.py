@@ -1726,8 +1726,8 @@ steps:
         $link: first_cat#out_file1
 """)
             DELETED = 0
-            PAUSED_1 = 4
-            PAUSED_2 = 6
+            PAUSED_1 = 3
+            PAUSED_2 = 5
             hdca1 = self.dataset_collection_populator.create_list_in_history(history_id,
                                                                              contents=[("sample1-1", "1 2 3")]).json()
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -1744,7 +1744,7 @@ steps:
             # in which case we can disable this test.
             self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=False)
             contents = self.__history_contents(history_id)
-            assert contents[1]['deleted']
+            assert contents[DELETED]['deleted']
             assert contents[PAUSED_1]['state'] == 'paused'
             assert contents[PAUSED_2]['state'] == 'paused'
 
