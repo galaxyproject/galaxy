@@ -469,8 +469,7 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         with self._different_user():
             second_history_id = self._new_history()
             create_response = self._post("histories/%s/contents/dataset_collections" % second_history_id, create_data)
-            # TODO: This should be 403 and a proper JSON response.
-            self._assert_status_code_is(create_response, 400)
+            self._assert_status_code_is(create_response, 403)
 
     def __check_create_collection_response(self, response):
         self._assert_status_code_is(response, 200)
