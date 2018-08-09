@@ -233,13 +233,20 @@ class BaseDatasetPopulator(object):
 
     @contextlib.contextmanager
     def test_history(self, **kwds):
+        cleanup = "GALAXY_TEST_NO_CLEANUP" not in os.environ
+
         def wrap_up():
             cancel_executions = kwds.get("cancel_executions", True)
-            if cancel_executions:
+            if cleanup and cancel_executions:
                 self.cancel_history_jobs(history_id)
 
+        require_new = kwds.get("require_new", True)
         try:
-            history_id = self.new_history()
+            history_id = None
+            if not require_new:
+                history_id = kwds.get("GALAXY_TEST_HISTORY_ID", None)
+
+            history_id = history_id or self.new_history()
             yield history_id
             wrap_up()
         except Exception:
