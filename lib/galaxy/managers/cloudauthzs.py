@@ -10,7 +10,7 @@ from galaxy.managers import base
 from galaxy.managers import deletable
 from galaxy.managers import sharable
 
-og = logging.getLogger(__name__)
+log = logging.getLogger(__name__)
 
 
 class CloudAuthzManager(sharable.SharableModelManager):
@@ -26,7 +26,7 @@ class CloudAuthzManager(sharable.SharableModelManager):
         if qres is None:
             raise exceptions.ObjectNotFound
         if qres.user_id != trans.user.id:
-            og.critical('The user with ID:`{}` requested creation of a cloudauthz record and associating it with '
+            log.critical('The user with ID:`{}` requested creation of a cloudauthz record and associating it with '
                         'the authnz record ID:`{}`, which belongs to another user.'.format(trans.user.id, authn_id))
             raise exceptions.ItemAccessibilityException
 
