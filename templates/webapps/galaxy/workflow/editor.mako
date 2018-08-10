@@ -375,7 +375,7 @@
                 </div>
             </div>
         </div>
-        <div id='workflow-parameters-box' style="display:none; position: absolute; /*width: 150px; height: 150px;*/ right: 0px; top: 0px; border-bottom: solid gray 1px; border-left: solid grey 1px; padding: 7px; background: #EEEEEE; z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; /*min-width: 50px; min-height: 50px*/">
+        <div id='workflow-parameters-box' style="display:none; position: relative; right: 0px; top: 0px; border: solid grey 1px; padding: 5px; background: #EEEEEE; z-index: 20000; overflow: auto; max-width: 300px; max-height: 300px;">
             <div style="margin-bottom:5px;"><b>Workflow Parameters</b></div>
             <div id="workflow-parameters-container">
             </div>
