@@ -301,7 +301,13 @@ then
     # locally before testing - you will need to do this also if using this script for Selenium testing.
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
-    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
+    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
+        -e "BUILD_NUMBER=$BUILD_NUMBER" \
+        -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
+        -e "LC_ALL=C" \
+        --rm \
+        -v `pwd`:/galaxy \
+        -v `pwd`/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh $DOCKER_IMAGE "$@"
     exit $?
 fi
 
