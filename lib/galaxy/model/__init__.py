@@ -1939,6 +1939,9 @@ class Dataset(StorableObject):
             self.external_extra_files_path = extra_files_path
     extra_files_path = property(get_extra_files_path, set_extra_files_path)
 
+    def extra_files_path_exists(self):
+        return self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+
     def _calculate_size(self):
         if self.external_filename:
             try:
@@ -2126,6 +2129,9 @@ class DatasetInstance(object):
     @property
     def extra_files_path(self):
         return self.dataset.extra_files_path
+
+    def extra_files_path_exists(self):
+        return self.dataset.extra_files_path_exists()
 
     @property
     def datatype(self):
