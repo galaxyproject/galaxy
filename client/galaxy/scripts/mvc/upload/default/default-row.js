@@ -225,13 +225,13 @@ export default Backbone.View.extend({
         this.$info_progress.show();
         this.$el.removeClass().addClass("upload-row");
         if (status == "success") {
-            this.$el.addClass("success");
+            this.$el.addClass("table-success");
             this.$percentage.html("100%");
         } else if (status == "error") {
-            this.$el.addClass("danger");
+            this.$el.addClass("table-danger");
             this.$info_progress.hide();
         } else if (status == "warning") {
-            this.$el.addClass("warning");
+            this.$el.addClass("table-warning");
             this.$info_progress.hide();
         }
     },

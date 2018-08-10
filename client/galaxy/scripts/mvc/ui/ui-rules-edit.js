@@ -54,7 +54,7 @@ var View = Backbone.View.extend({
             }
         });
         this.instance.$mount(vm);
-        this.workflowRuntimeCompatible = false;
+        this.collapsible_disabled = true;
     },
 
     _fetcCollectionAndEdit: function() {
@@ -114,14 +114,9 @@ var View = Backbone.View.extend({
     },
 
     // update
-    refreshDefinition: function(input_def) {
-        self.target = input_def.target;
-        // refresh
-        this._refresh();
+    update: function(input_def) {
+        this.target = input_def.target;
     },
-
-    // refresh
-    _refresh: function() {},
 
     // get value
     _getValue: function() {

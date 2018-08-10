@@ -5,7 +5,6 @@ import tarfile
 import tempfile
 
 import requests
-from mercurial import commands
 
 from galaxy import (
     util,
@@ -43,7 +42,6 @@ class UploadController(BaseUIController):
         repository_id = kwd.get('repository_id', '')
         repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
         repo_dir = repository.repo_path(trans.app)
-        repo = hg_util.get_repo_for_repository(trans.app, repository=None, repo_path=repo_dir, create=False)
         uncompress_file = util.string_as_bool(kwd.get('uncompress_file', 'true'))
         remove_repo_files_not_in_tar = util.string_as_bool(kwd.get('remove_repo_files_not_in_tar', 'true'))
         uploaded_file = None
@@ -65,11 +63,9 @@ class UploadController(BaseUIController):
                 # Use mercurial clone to fetch repository, contents will then be copied over.
                 uploaded_directory = tempfile.mkdtemp()
                 repo_url = 'http%s' % url[len('hg'):]
-                repo_url = repo_url.encode('ascii', 'replace')
-                try:
-                    commands.clone(hg_util.get_configured_ui(), repo_url, uploaded_directory)
-                except Exception as e:
-                    message = 'Error uploading via mercurial clone: %s' % basic_util.to_html_string(str(e))
+                cloned_ok, error_message = hg_util.clone_repository(repo_url, uploaded_directory)
+                if not cloned_ok:
+                    message = 'Error uploading via mercurial clone: %s' % error_message
                     status = 'error'
                     basic_util.remove_dir(uploaded_directory)
                     uploaded_directory = None
@@ -211,11 +207,8 @@ class UploadController(BaseUIController):
                                 content_alert_str = commit_util.check_file_content_for_html_and_images(full_path)
                             else:
                                 content_alert_str = ''
-                            hg_util.add_changeset(repo.ui, repo, full_path)
-                            # Convert from unicode to prevent "TypeError: array item must be char"
-                            full_path = full_path.encode('ascii', 'replace')
-                            hg_util.commit_changeset(repo.ui,
-                                                     repo,
+                            hg_util.add_changeset(repo_dir, full_path)
+                            hg_util.commit_changeset(repo_dir,
                                                      full_path_to_changeset=full_path,
                                                      username=trans.user.username,
                                                      message=commit_message)
@@ -236,7 +229,7 @@ class UploadController(BaseUIController):
                                                     admin_only=admin_only)
                 if ok:
                     # Update the repository files for browsing.
-                    hg_util.update_repository(repo)
+                    hg_util.update_repository(repo_dir)
                     # Get the new repository tip.
                     if tip == repository.tip(trans.app):
                         message = 'No changes to repository.  '

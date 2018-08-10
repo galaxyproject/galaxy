@@ -230,6 +230,9 @@ GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
 GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 config/shed_tool_conf.xml) used when testing
                                 installed to tools with -installed.
+GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
+                                is fairly limited and not compatible with parrallel testing
+                                so should be limited to debugging one off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR         Defaults to test/shed_functional/test_data.
@@ -257,7 +260,7 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.01.4'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.05.3'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -303,6 +306,7 @@ then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
 
+run_default_functional_tests="1"
 # Loop through and consume the main arguments.
 # Some loops will consume more than one argument (there are extra "shift"s in some cases).
 while :
@@ -339,7 +343,7 @@ do
           test_script="./scripts/functional_tests.py"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
-        	  api_script=$2
+              api_script=$2
               shift 2
           else
               api_script="./test/api"
@@ -520,6 +524,9 @@ do
           shift
           ;;
       --)
+          # Do not default to running the functional tests in this case, caller
+          # is opting to run specific tests so don't interfere with that by default.
+          unset run_default_functional_tests;
           shift
           break
           ;;
@@ -529,7 +536,13 @@ do
           exit 1
           ;;
       *)
-          break;
+          if [ -n "$1" ]; then
+            test_target="$1"
+            shift
+          fi
+          # Maybe we shouldn't break here but for now to pass more than one argument to the
+          # underlying test driver (scripts/nosetests.py) use -- instead.
+          break
           ;;
     esac
 done
@@ -573,10 +586,12 @@ elif [ -n "$unit_extra" ]; then
     extra_args="--with-doctest $unit_extra"
 elif [ -n "$integration_extra" ]; then
     extra_args="$integration_extra"
-elif [ -n "$1" ] ; then
-    extra_args="$1"
-else
+elif [ -n "$test_target" ] ; then
+    extra_args="$test_target"
+elif [ -n "$run_default_functional_tests" ] ; then
     extra_args='--exclude="^get" functional'
+else
+    extra_args=""
 fi
 
 if [ -n "$xunit_report_file" ]; then
@@ -593,7 +608,7 @@ if [ -n "$with_framework_test_tools_arg" ]; then
     GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
     export GALAXY_TEST_TOOL_CONF
 fi
-python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args
+python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
 exit ${exit_status}

@@ -1,3 +1,8 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+
+/* global Galaxy */
+
 var ToolShedModel = Backbone.Model.extend({
     defaults: {
         url: "https://toolshed.g2.bx.psu.edu/",
@@ -49,16 +54,20 @@ var RepoQueueCollection = Backbone.Collection.extend({
     url: "#",
     model: RepoQueueModel,
     fetch: function() {
-        var collection = this;
         var repositories = Array();
-        var repositories_enc = JSON.parse(localStorage.repositories);
+        var repositories_enc;
+        if (window.localStorage.hasOwnProperty("repositories")) {
+            repositories_enc = JSON.parse(window.localStorage.repositories);
+        } else {
+            repositories_enc = [];
+        }
         var queue_keys = Object.keys(repositories_enc);
         _.each(queue_keys, key => {
             var repo = repositories_enc[key];
             repo.queue_key = key;
             repositories.push(repo);
         });
-        collection.reset(repositories);
+        this.reset(repositories);
         return Backbone.Collection.prototype.fetch.call(this);
     }
 });

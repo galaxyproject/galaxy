@@ -1,11 +1,17 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 import "libs/jquery/jquery-ui";
+
+/* global $ */
+/* global Galaxy */
+
 var ToolShedCategoryContentsView = Backbone.View.extend({
     el: "#center",
 
     initialize: function(params) {
-        var self = this;
         this.model = new toolshed_model.CategoryCollection();
         this.listenTo(this.model, "sync", this.render);
         var shed = params.tool_shed.replace(/\//g, "%2f");
@@ -30,10 +36,9 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
     },
 
     bindEvents: function() {
-        var that = this;
         $("#search_box").autocomplete({
-            source: function(request, response) {
-                var shed_url = that.model.tool_shed.replace(/%2f/g, "/");
+            source: (request, response) => {
+                var shed_url = this.model.tool_shed.replace(/%2f/g, "/");
                 var base_url = `${Galaxy.root}api/tool_shed/search`;
                 var params = {
                     term: request.term,
@@ -47,18 +52,13 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
             minLength: 3,
             select: function(event, ui) {
                 var tsr_id = ui.item.value;
-                var new_route = `repository/s/${that.model.tool_shed}/r/${tsr_id}`;
+                var new_route = `repository/s/${this.model.tool_shed}/r/${tsr_id}`;
                 Backbone.history.navigate(new_route, {
                     trigger: true,
                     replace: true
                 });
             }
         });
-    },
-
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
     },
 
     templateCategoryContents: _.template(
@@ -68,8 +68,7 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
             "li.ui-menu-item { list-style-type: none; }",
             "</style>",
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner">Repositories in <%= category.get("name") %></div>',
-            '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner">Repositories in <%= category.get("name") %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<div class="unified-panel-body" id="list_repositories">',
             '<div id="standard-search" style="height: 2em; margin: 1em;">',

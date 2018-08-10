@@ -1,5 +1,11 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import Utils from "utils/utils";
 import NodeView from "mvc/workflow/workflow-view-node";
+
+/* global $ */
+/* global Galaxy */
+
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
         this.app = app;
@@ -146,7 +152,7 @@ var Node = Backbone.Model.extend({
             data: {
                 type: this.type,
                 tool_id: this.content_id,
-                inputs: this.tool_state
+                tool_state: this.tool_state
             },
             success: data => {
                 var newData = Object.assign({}, data, copiedData);
@@ -187,6 +193,7 @@ var Node = Backbone.Model.extend({
         }
     },
     init_field_data: function(data) {
+        console.debug("init_field_data: ", data);
         if (data.type) {
             this.type = data.type;
         }

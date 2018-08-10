@@ -1,3 +1,5 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import _l from "utils/localization";
 import jQuery from "jquery";
 var $ = jQuery;
@@ -9,9 +11,11 @@ import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
 import Utils from "utils/utils";
 import Page from "layout/page";
-import UserAPIKeys from "components/admin/UserAPIKeys.vue";
 import DataTables from "components/admin/DataTables.vue";
+import DataTypes from "components/admin/DataTypes.vue";
 import Vue from "vue";
+
+/* global Galaxy */
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
@@ -20,6 +24,7 @@ window.app = function app(options, bootstrapped) {
     /** Routes */
     var AdminRouter = Router.extend({
         routes: {
+            "(/)admin(/)": "home",
             "(/)admin(/)users": "show_users",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
@@ -28,12 +33,23 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)repositories": "show_repositories",
             "(/)admin(/)forms": "show_forms",
             "(/)admin(/)form(/)(:form_id)": "show_form",
-            "(/)admin/api_keys": "show_user_api_keys",
-            "(/)admin/data_tables": "show_data_tables"
+            "(/)admin/data_tables": "show_data_tables",
+            "(/)admin/data_types": "show_data_types",
+            "*notFound": "not_found"
         },
 
         authenticate: function() {
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
+        },
+
+        not_found: function() {
+            window.location.href = window.location.href;
+        },
+
+        home: function() {
+            this.page
+                .$("#galaxy_main")
+                .prop("src", `${Galaxy.root}admin/center?message=${options.message}&status=${options.status}`);
         },
 
         show_users: function() {
@@ -90,16 +106,16 @@ window.app = function app(options, bootstrapped) {
             );
         },
 
-        show_user_api_keys: function() {
-            var vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            new Vue(UserAPIKeys).$mount(vueMount);
-        },
-
         show_data_tables: function() {
             var vueMount = document.createElement("div");
             this.page.display(vueMount);
             new Vue(DataTables).$mount(vueMount);
+        },
+
+        show_data_types: function() {
+            var vueMount = document.createElement("div");
+            this.page.display(vueMount);
+            new Vue(DataTypes).$mount(vueMount);
         },
 
         show_forms: function() {

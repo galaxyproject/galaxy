@@ -39,7 +39,7 @@ var ANY_COLLECTION_TYPE_DESCRIPTION = {
         return "AnyCollectionType[]";
     },
     append: function() {
-        throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
+        return ANY_COLLECTION_TYPE_DESCRIPTION;
     },
     equal: function(other) {
         return other === this;

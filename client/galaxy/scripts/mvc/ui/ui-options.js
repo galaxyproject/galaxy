@@ -61,8 +61,10 @@ var Base = Backbone.View.extend({
     },
 
     /** Update available options */
-    update: function(options) {
-        this.model.set("data", options);
+    update: function(input_def) {
+        if (input_def.data) {
+            this.model.set("data", input_def.data);
+        }
     },
 
     _changeData: function() {
@@ -161,8 +163,7 @@ var Base = Backbone.View.extend({
             if (new_value !== null) {
                 var values = $.isArray(new_value) ? new_value : [new_value];
                 _.each(values, v => {
-                    self
-                        .$(`input[value="${v}"]`)
+                    self.$(`input[value="${v}"]`)
                         .first()
                         .prop("checked", true);
                 });

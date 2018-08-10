@@ -1,63 +1,60 @@
 <template>
-    <div class="ui-portlet-limited">
-        <div class="portlet-header">
-            <div class="portlet-title">
-                <i class="portlet-title-icon fa fa-upload"></i>
-                <span class="portlet-title-text"><b>Import a History from an Archive</b></span>
-            </div>
-        </div>
-        <div class="portlet-content">
-            <div v-if="errormessage" class="ui-message ui-show alert alert-danger">
-                {{ errormessage }}
-            </div>
-            <div class="portlet-body">
-                <form ref="form">
-                    <div class="ui-form-element">
-                        <div class="ui-form-title">Archived History URL</div>
-                        <input class="ui-input" type="text" name="archive_source"/>
-                    </div>
-                    <div class="ui-form-element">
-                        <div class="ui-form-title">Archived History file</div>
-                        <input type="file" name="archive_file"/>
-                    </div>
-                </form>
-            </div>
-            <div class="portlet-buttons">
-                <input class="btn btn-primary" type="button" value="Import History" @click="submit"/>
-            </div>
-        </div>
-    </div>
+    <b-form @submit="submit">
+        <b-card title="Import a history from an archive">
+            <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+            <p>Please provide a Galaxy history export URL or a history file.</p>
+            <b-form-group label="Archived History URL">
+                <b-form-input type="url" v-model="sourceURL"/>
+            </b-form-group>
+            <b-form-group label="Archived History File">
+                <b-form-file v-model="sourceFile"/>
+            </b-form-group>
+            <b-button type="submit">Import history</b-button>
+        </b-card>
+    </b-form>
 </template>
 <script>
+import axios from "axios";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
+
 export default {
     data() {
         return {
-            errormessage: null
+            sourceFile: null,
+            sourceURL: null,
+            errorMessage: null
         };
     },
+    computed: {
+        hasErrorMessage() {
+            return this.errorMessage != null;
+        }
+    },
     methods: {
-        submit: function() {
-            $.ajax({
-                url: `${Galaxy.root}api/histories`,
-                data: new FormData(this.$refs.form),
-                cache: false,
-                contentType: false,
-                processData: false,
-                method: "POST"
-            })
-                .done(response => {
-                    window.location = `${Galaxy.root}histories/list?message=${response.message}&status=success`;
-                })
-                .fail(response => {
-                    let message = response.responseJSON && response.responseJSON.err_msg;
-                    this.errormessage = message || "Import failed for unkown reason.";
-                });
+        submit: function(ev) {
+            ev.preventDefault();
+            if (!this.sourceFile && !this.sourceURL) {
+                this.errorMessage = "You must provide a history archive URL or file.";
+            } else {
+                let formData = new FormData();
+                formData.append("archive_file", this.sourceFile);
+                formData.append("archive_source", this.sourceURL);
+                axios
+                    .post(`${Galaxy.root}api/histories`, formData)
+                    .then(response => {
+                        window.location = `${Galaxy.root}histories/list?message=${
+                            response.data.message
+                        }&status=success`;
+                    })
+                    .catch(error => {
+                        let message = error.response.data && error.response.data.err_msg;
+                        this.errorMessage = message || "Import failed for unkown reason.";
+                    });
+            }
         }
     }
 };
 </script>
-<style>
-.ui-show {
-    display: block;
-}
-</style>

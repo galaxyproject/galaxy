@@ -54,7 +54,7 @@ CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
-    images_and_versions = subprocess.check_output(command).strip().splitlines()
+    images_and_versions = six.text_type(subprocess.check_output(command)).strip().splitlines()
     images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
     name_filter = get_filter(namespace)
 
@@ -241,9 +241,9 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
     resolver_type = "cached_mulled_singularity"
     container_type = "singularity"
 
-    def __init__(self, app_info=None, hash_func="v2"):
+    def __init__(self, app_info=None, hash_func="v2", **kwds):
         super(CachedMulledSingularityContainerResolver, self).__init__(app_info)
-        self.cache_directory = os.path.join(app_info.container_image_cache_path, "singularity", "mulled")
+        self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
         self.hash_func = hash_func
 
     def resolve(self, enabled_container_types, tool_info):
@@ -392,7 +392,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
         self._involucro_context_kwds = {
             'involucro_bin': self._get_config_option("involucro_path", None)
         }
-        self.cache_directory = os.path.join(app_info.container_image_cache_path, "singularity", "mulled")
+        self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
         self.hash_func = hash_func
         self._mulled_kwds = {
             'channels': self._get_config_option("channels", DEFAULT_CHANNELS, prefix="mulled"),

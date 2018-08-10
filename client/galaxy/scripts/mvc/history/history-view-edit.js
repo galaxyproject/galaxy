@@ -1,6 +1,5 @@
+import * as _ from "underscore";
 import HISTORY_VIEW from "mvc/history/history-view";
-import HISTORY_CONTENTS from "mvc/history/history-contents";
-import STATES from "mvc/dataset/states";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
@@ -10,10 +9,13 @@ import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
 import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
 import LIST_OF_PAIRS_COLLECTION_CREATOR from "mvc/collection/list-of-pairs-collection-creator";
 import faIconButton from "ui/fa-icon-button";
-import PopupMenu from "mvc/ui/popup-menu";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";
+
+/* global Galaxy */
+/* global jQuery */
+/* global $ */
 
 /* =============================================================================
 TODO:
@@ -168,7 +170,8 @@ var HistoryViewEdit = _super.extend(
                 $activator: faIconButton({
                     title: _l("Edit history tags"),
                     classes: "history-tag-btn",
-                    faIcon: "fa-tags"
+                    faIcon: "fa-tags",
+                    tooltipConfig: { placement: "top" }
                 }).appendTo($where.find(".controls .actions"))
             });
         },
@@ -191,7 +194,8 @@ var HistoryViewEdit = _super.extend(
                 $activator: faIconButton({
                     title: _l("Edit history annotation"),
                     classes: "history-annotate-btn",
-                    faIcon: "fa-comment"
+                    faIcon: "fa-comment",
+                    tooltipConfig: { placement: "top" }
                 }).appendTo($where.find(".controls .actions"))
             });
         },
@@ -273,7 +277,9 @@ var HistoryViewEdit = _super.extend(
                 actions.push({
                     html: _l("Permanently delete datasets"),
                     func: function() {
-                        if (confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))) {
+                        if (
+                            window.confirm(_l("This will permanently remove the data in your datasets. Are you sure?"))
+                        ) {
                             var action = HDA_MODEL.HistoryDatasetAssociation.prototype.purge;
                             const historyContents = panel.getSelectedModels();
                             const selectedDatasets = historyContents.filter(
@@ -314,8 +320,8 @@ var HistoryViewEdit = _super.extend(
 
         buildCollection: function(collectionType, selection, hideSourceItems) {
             var panel = this;
-            var selection = selection || panel.getSelectedModels();
-            var hideSourceItems = hideSourceItems || false;
+            selection = selection || panel.getSelectedModels();
+            hideSourceItems = hideSourceItems || false;
             var createFunc;
             if (collectionType == "list") {
                 createFunc = LIST_COLLECTION_CREATOR.createListCollection;
@@ -542,7 +548,6 @@ var HistoryViewEdit = _super.extend(
             ev.preventDefault();
             //ev.stopPropagation();
 
-            var self = this;
             var dataTransfer = ev.originalEvent.dataTransfer;
             var data = dataTransfer.getData("text");
 
@@ -550,22 +555,21 @@ var HistoryViewEdit = _super.extend(
             try {
                 data = JSON.parse(data);
             } catch (err) {
-                self.warn("error parsing JSON from drop:", data);
+                this.warn("error parsing JSON from drop:", data);
             }
 
-            self.trigger("droptarget:drop", ev, data, self);
+            this.trigger("droptarget:drop", ev, data, this);
             return false;
         },
 
         /** handler that copies data into the contents */
         dataDropped: function(data) {
-            var self = this;
             // HDA: dropping will copy it to the history
             if (_.isObject(data) && data.model_class === "HistoryDatasetAssociation" && data.id) {
-                if (self.contents.currentPage !== 0) {
-                    return self.contents.fetchPage(0).then(() => self.model.contents.copy(data.id));
+                if (this.contents.currentPage !== 0) {
+                    return this.contents.fetchPage(0).then(() => this.model.contents.copy(data.id));
                 }
-                return self.model.contents.copy(data.id);
+                return this.model.contents.copy(data.id);
             }
             return jQuery.when();
         },

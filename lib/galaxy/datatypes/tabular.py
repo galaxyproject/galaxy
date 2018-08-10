@@ -94,11 +94,11 @@ class TabularData(data.Text):
             max_peek_size = 1000000  # 1 MB
             if os.stat(dataset.file_name).st_size < max_peek_size:
                 self._clean_and_set_mime_type(trans, dataset.get_mime())
-                return open(dataset.file_name)
+                return open(dataset.file_name, mode='rb')
             else:
                 trans.response.set_content_type("text/html")
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
+                                                  truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
                                                   data=dataset)
         else:
             column_names = 'null'
@@ -425,7 +425,7 @@ class Sam(Tabular):
     data_sources = {"data": "bam", "index": "bigwig"}
 
     def __init__(self, **kwd):
-        """Initialize taxonomy datatype"""
+        """Initialize sam datatype"""
         super(Sam, self).__init__(**kwd)
         self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
                              'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
@@ -783,7 +783,7 @@ class Eland(Tabular):
     MetadataElement(name="barcodes", default=[], param=metadata.ListParameter, desc="Set of barcodes", readonly=True, visible=False, no_value=[])
 
     def __init__(self, **kwd):
-        """Initialize taxonomy datatype"""
+        """Initialize eland datatype"""
         super(Eland, self).__init__(**kwd)
         self.column_names = ['MACHINE', 'RUN_NO', 'LANE', 'TILE', 'X', 'Y',
                              'INDEX', 'READ_NO', 'SEQ', 'QUAL', 'CHROM', 'CONTIG',

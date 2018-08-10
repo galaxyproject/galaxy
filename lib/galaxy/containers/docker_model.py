@@ -176,9 +176,7 @@ class DockerContainer(Container):
 class DockerService(Container):
 
     def __init__(self, interface, id, name=None, image=None, inspect=None):
-        self._interface = interface
-        self._id = id
-        self._name = name
+        super(DockerService, self).__init__(interface, id, name=name)
         self._image = image
         self._inspect = inspect
         self._env = {}
@@ -278,11 +276,14 @@ class DockerService(Container):
     @property
     def env(self):
         if not self._env:
-            for env_str in self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Env']:
-                try:
-                    self._env.update([env_str.split('=', 1)])
-                except ValueError:
-                    self._env[env_str] = None
+            try:
+                for env_str in self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Env']:
+                    try:
+                        self._env.update([env_str.split('=', 1)])
+                    except ValueError:
+                        self._env[env_str] = None
+            except KeyError as exc:
+                log.debug('Cannot retrieve container environment: KeyError: %s', str(exc))
         return self._env
 
     @property

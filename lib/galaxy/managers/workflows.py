@@ -344,8 +344,8 @@ class WorkflowContentsManager(UsesAnnotations):
     def workflow_to_dict(self, trans, stored, style="export"):
         """ Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
-        'editor'. The Galaxy team will do it best to preserve the backward compatibility of the
-        'export' stye - this is the export method meant to be portable across Galaxy instances and over
+        'editor'. The Galaxy team will do its best to preserve the backward compatibility of the
+        'export' style - this is the export method meant to be portable across Galaxy instances and over
         time. The 'editor' style is subject to rapid and unannounced changes. The 'instance' export
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
@@ -393,13 +393,13 @@ class WorkflowContentsManager(UsesAnnotations):
                     errors[step.id] = step_errors
         if missing_tools:
             workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
-            raise exceptions.MessageException('Following tools missing: %s' % missing_tools)
+            raise exceptions.MessageException('Following tools missing: %s' % ', '.join(missing_tools))
         workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
         step_order_indices = {}
         for step in workflow.steps:
             step_order_indices[step.id] = step.order_index
         step_models = []
-        for i, step in enumerate(workflow.steps):
+        for step in workflow.steps:
             step_model = None
             if step.type == 'tool':
                 incoming = {}
@@ -444,7 +444,7 @@ class WorkflowContentsManager(UsesAnnotations):
         }
 
     def _workflow_resource_parameters(self, trans, stored, workflow):
-        """Get workflow scheduling resource parameters for this user and workflow or None if unconfigured.
+        """Get workflow scheduling resource parameters for this user and workflow or None if not configured.
         """
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
@@ -474,11 +474,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
-            config_form = None
-            if trans.history:
-                # If in a web session, attach form html. No reason to do
-                # so for API requests.
-                config_form = module.get_config_form()
+            config_form = module.get_config_form()
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -500,7 +496,7 @@ class WorkflowContentsManager(UsesAnnotations):
             # Connections
             input_connections = step.input_connections
             input_connections_type = {}
-            multiple_input = {}  # Boolean value indicating if this can be mutliple
+            multiple_input = {}  # Boolean value indicating if this can be multiple
             if (step.type is None or step.type == 'tool') and module.tool:
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
@@ -601,7 +597,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'id': step.order_index,
                 'type': module.type,
                 'content_id': content_id,
-                'tool_id': content_id,  # For worklfows exported to older Galaxies,
+                'tool_id': content_id,  # For workflows exported to older Galaxies,
                                         # eliminate after a few years...
                 'tool_version': step.tool_version,
                 'name': module.get_name(),
@@ -712,7 +708,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     input_conn_dicts.append(input_conn)
                 input_conn_dict[input_name] = input_conn_dicts
 
-            # Preserve backward compatability. Previously Galaxy
+            # Preserve backward compatibility. Previously Galaxy
             # assumed input connections would be dictionaries not
             # lists of dictionaries, so replace any singleton list
             # with just the dictionary so that workflows exported from
@@ -792,8 +788,8 @@ class WorkflowContentsManager(UsesAnnotations):
         return item
 
     def __walk_step_dicts(self, data):
-        """ Walk over the supplid step dictionaries and return them in a way designed
-        to preserve step order when possible.
+        """ Walk over the supplied step dictionaries and return them in a way
+        designed to preserve step order when possible.
         """
         supplied_steps = data['steps']
         # Try to iterate through imported workflow in such a way as to
@@ -885,7 +881,7 @@ class WorkflowContentsManager(UsesAnnotations):
             workflow_outputs = step_dict['workflow_outputs']
             found_output_names = set([])
             for workflow_output in workflow_outputs:
-                # Allow workflow outputs as list of output_names for backward compatiblity.
+                # Allow workflow outputs as list of output_names for backward compatibility.
                 if not isinstance(workflow_output, dict):
                     workflow_output = {"output_name": workflow_output}
                 output_name = workflow_output["output_name"]

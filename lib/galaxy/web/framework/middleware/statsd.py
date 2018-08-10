@@ -42,5 +42,4 @@ class StatsdMiddleware(object):
 
         page = environ.get('controller_action_key', None) or environ.get('PATH_INFO', "NOPATH").strip('/').replace('/', '.')
         self.statsd_client.timing(self.metric_infix + page, dt)
-        self.statsd_client.timing(self.metric_infix + '__global__', dt)
         return req

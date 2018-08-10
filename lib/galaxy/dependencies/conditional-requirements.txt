@@ -9,7 +9,6 @@ raven
 pbs_python
 drmaa
 statsd
-graphitesend
 docker
 azure-storage==0.32.0
 # PyRods not in PyPI

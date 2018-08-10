@@ -19,8 +19,8 @@ selenium = "*"
 testfixtures = "*"
 watchdog = "*"
 pygithub3 = {version = "*", markers = "python_version < '3'"}
-Sphinx = "*"
+Sphinx = "<1.7"  # Docs do not build with sphinx 1.7 for some reason, can't find issue.
 sphinx_rtd_theme = "*"
-lxml = "*"
+lxml = "!=4.2.2"
 recommonmark = "*"
 nodeenv = "*"

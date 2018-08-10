@@ -1138,6 +1138,10 @@ function createCollectionViaRules(selection, defaultHideSourceItems) {
         elements = selection.toJSON();
         elementsType = "datasets";
         importType = "collections";
+    } else if (selection.elements) {
+        elementsType = selection.selectionType;
+        importType = selection.dataType || "collections";
+        elements = selection.elements;
     } else {
         const hasNonWhitespaceChars = RegExp(/[^\s]/);
         // Have pasted data, data from a history dataset, or FTP list.

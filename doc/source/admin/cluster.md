@@ -146,30 +146,14 @@ Runs jobs via the [TORQUE Resource Manager](http://www.adaptivecomputing.com/pro
 
 #### Dependencies
 
-Galaxy uses the [pbs_python](https://oss.trac.surfsara.nl/pbs_python/) module to interface with TORQUE.  pbs_python must be compiled against your TORQUE installation, so it cannot be provided with Galaxy.  However, we provide all the necessary automation to compile it - ([more about Galaxy's Framework dependencies](framework_dependencies.html)):
+Galaxy uses the [pbs_python](https://github.com/ehiggs/pbs-python) module to interface with TORQUE.  pbs_python must be compiled against your TORQUE installation, so it cannot be provided with Galaxy. You can install the package as follows:
 
 ```console
-galaxy_user@galaxy_server% cd /clusterfs/galaxy/galaxy-app
-galaxy_user@galaxy_server% LIBTORQUE_DIR=/path/to/libtorque python scripts/scramble.py -e pbs_python
+galaxy_user@galaxy_server% git clone https://github.com/ehiggs/pbs-python
+galaxy_user@galaxy_server% cd pbs-python
+galaxy_user@galaxy_server% source /clusterfs/galaxy/galaxy-app/.venv/bin/activate
+galaxy_user@galaxy_server% python setup.py install
 ```
-
-
-#### Newer versions of TORQUE (>4.2)
-
-Galaxy is compatible with newer versions of TORQUE now that pbs_python has been updated to add support for TORQUE >= v4.2.  Scrambling the new version of pbs_python is accomplished simply by modifying eggs.ini to use the new version of pbs_python:
-
-```ini
-;pbs_python = 4.3.5
-pbs_python = 4.4.0
-```
-
-
-Then scramble as normal:
-```console
-galaxy_user@galaxy_server% cd /clusterfs/galaxy/galaxy-app
-galaxy_user@galaxy_server% LIBTORQUE_DIR=/path/to/libtorque python scripts/scramble.py -e pbs_python
-```
-
 
 As of May 2014 there are still some outstanding bugs in pbs_python. Notably, error code translation is out of alignment.  For example if you get error #15025 "Bad UID for Job Execution" pbs_python will report this error incorrectly as "Queue already exists".  You may consult the [TORQUE source code](https://github.com/adaptivecomputing/torque/blob/4.2.7/src/include/pbs_error_db.h) for the proper error message that corresponds with a given error number.
    

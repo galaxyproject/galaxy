@@ -9,7 +9,7 @@ import re
 from collections import namedtuple
 
 from galaxy import util
-from galaxy.dataset_collections.structure import UnitializedTree
+from galaxy.dataset_collections.structure import UninitializedTree
 from galaxy.tools.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
@@ -233,7 +233,7 @@ def collect_dynamic_outputs(
                 name = unnamed_output_dict.get("name", "unnamed collection")
                 collection_type = unnamed_output_dict["collection_type"]
                 collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
-                structure = UnitializedTree(collection_type_description)
+                structure = UninitializedTree(collection_type_description)
                 hdca = collections_service.precreate_dataset_collection_instance(
                     trans, history, name, structure=structure
                 )
@@ -404,19 +404,20 @@ class JobContext(object):
                 dbkey = self.input_dbkey
 
             # Create new primary dataset
-            name = fields_match.name or designation
+            dataset_name = fields_match.name or designation
 
             link_data = discovered_file.match.link_data
-
+            tag_list = discovered_file.match.tag_list
             dataset = self.create_dataset(
                 ext=ext,
                 designation=designation,
                 visible=visible,
                 dbkey=dbkey,
-                name=name,
+                name=dataset_name,
                 filename=filename,
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
+                tag_list=tag_list,
             )
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
@@ -473,6 +474,7 @@ class JobContext(object):
         library_folder=None,
         link_data=False,
         primary_data=None,
+        tag_list=[],
     ):
         app = self.app
         sa_session = self.sa_session
@@ -493,13 +495,18 @@ class JobContext(object):
             metadata_source = self.inp_data[metadata_source_name]
 
         sa_session.flush()
+
+        if tag_list:
+            app.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
+
         # Move data from temp location to dataset location
         if not link_data:
             app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
         else:
             primary_data.link_to(filename)
 
-        primary_data.set_size()
+        # We are sure there are no extra files, so optimize things that follow by settting total size also.
+        primary_data.set_size(no_extra_files=True)
         # If match specified a name use otherwise generate one from
         # designation.
         primary_data.name = name
@@ -586,7 +593,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             sa_session.flush()
             # Move data from temp location to dataset location
             app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-            primary_data.set_size()
+            # We are sure there are no extra files, so optimize things that follow by settting total size also.
+            primary_data.set_size(no_extra_files=True)
             # If match specified a name use otherwise generate one from
             # designation.
             primary_data.name = fields_match.name or "%s (%s)" % (outdata.name, designation)
@@ -664,6 +672,7 @@ DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
 
 
 def discover_files(output_name, tool_provided_metadata, extra_file_collectors, job_working_directory, matchable):
+    extra_file_collectors = list(extra_file_collectors)
     if extra_file_collectors and extra_file_collectors[0].discover_via == "tool_provided_metadata":
         # just load entries from tool provided metadata...
         assert len(extra_file_collectors) == 1
@@ -869,6 +878,10 @@ class JsonCollectedDatasetMatch(object):
     @property
     def link_data(self):
         return bool(self.as_dict.get("link_data_only", False))
+
+    @property
+    def tag_list(self):
+        return self.as_dict.get("tags", [])
 
     @property
     def object_id(self):

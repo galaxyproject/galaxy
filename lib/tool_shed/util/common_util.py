@@ -164,7 +164,7 @@ def get_repository_dependencies(app, tool_shed_url, repository_name, repository_
         log.warning("The URL\n%s\nraised the exception:\n%s\n", util.build_url(tool_shed_url, pathspec=pathspec, params=params), e)
     if tool_shed_accessible:
         if len(raw_text) > 2:
-            encoded_text = json.loads(raw_text)
+            encoded_text = json.loads(util.unicodify(raw_text))
             repository_dependencies_dict = encoding_util.tool_shed_decode(encoded_text)
     return tool_shed_accessible, repository_dependencies_dict
 

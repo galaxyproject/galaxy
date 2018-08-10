@@ -21,7 +21,7 @@
             'get_new_module_info' : h.url_for( controller='workflow', action='get_new_module_info' ),
             'workflow_index'      : h.url_for( '/workflows/list' ),
             'save_workflow'       : h.url_for( controller='workflow', action='save_workflow' ),
-            'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as') 
+            'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as')
         },
         'workflows' : [{
             'id'                  : trans.security.encode_id( workflow.id ),
@@ -195,6 +195,9 @@
 
 ## Render a tool in the tool panel
 <%def name="render_tool( tool, section )">
+    <%
+        import markupsafe
+    %>
     %if not tool.hidden:
         %if tool.is_workflow_compatible:
             %if section:
@@ -205,9 +208,9 @@
                 %if "[[" in tool.description and "]]" in tool.description:
                     ${tool.description.replace( '[[', '<a id="link-${tool.id}" href="workflow_globals.app.add_node_for_tool( ${tool.id} )">' % tool.id ).replace( "]]", "</a>" )}
                 %elif tool.name:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.name}</a> ${tool.description}
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )" style="text-decoration: none; display: block;"><span style="text-decoration: underline">${tool.name | h}</span> ${tool.description}</a>
                 %else:
-                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${tool.name}' )">${tool.description}</a>
+                    <a id="link-${tool.id}" href="#" onclick="workflow_globals.app.add_node_for_tool( '${tool.id}', '${markupsafe.escape( tool.name ) | h}' )">${tool.description}</a>
                 %endif
             </div>
         %else:
@@ -270,6 +273,14 @@
         </div>
     </div>
 
+    <div class="unified-panel-controls">
+        <div id="tool-search" class="bar">
+            <input id="tool-search-query" class="search-query parent-width" name="query" placeholder="search tools" autocomplete="off" type="text">
+             <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
+             <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
+        </div>
+    </div>
+
     <div class="unified-panel-body" style="overflow: auto;">
         <div class="toolMenuContainer">
             <div class="toolMenu" id="workflow-tool-menu">
@@ -277,15 +288,6 @@
                     from galaxy.workflow.modules import load_module_sections
                     module_sections = load_module_sections( trans )
                 %>
-                %if trans.app.config.message_box_visible:
-                    <div id="tool-search" style="top: 95px;">
-                %else:
-                    <div id="tool-search">
-                %endif
-                    <input type="text" name="query" placeholder="search tools" id="tool-search-query" class="search-query parent-width" />
-                    <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
-                </div>
-
                 <div class="toolSectionWrapper">
                     ${render_module_section(module_sections['inputs'])}
                 </div>
@@ -354,7 +356,7 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner" style="float: right">
+        <div class="panel-header-buttons" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
         <div class="unified-panel-header-inner" id="workflow-canvas-title">

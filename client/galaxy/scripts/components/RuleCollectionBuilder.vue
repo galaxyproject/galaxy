@@ -63,9 +63,9 @@
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
                             <column-selector :target.sync="addColumnRegexTarget" :col-headers="activeRuleColHeaders" />
-                            <input type="radio" v-model="addColumnRegexType" value="global">Create column matching expression.<br />
-                            <input type="radio" v-model="addColumnRegexType" value="groups">Create columns matching expression groups.<br />
-                            <input type="radio" v-model="addColumnRegexType" value="replacement">Create column from expression replacement.<br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="global">Create column matching expression.</label><br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="groups">Create columns matching expression groups.</label><br />
+                            <label><input type="radio" v-model="addColumnRegexType" value="replacement">Create column from expression replacement.</label><br />
                             <regular-expression-input :target.sync="addColumnRegexExpression" />
                             <label v-if="addColumnRegexType=='groups'">
                                 {{ l("Number of Groups") }}
@@ -189,8 +189,8 @@
                         </rule-component>
                         <div v-if="displayRuleType == 'mapping'">
                             <div class="map"
-                                 v-for="map in mapping"
-                                 v-bind:index="map.index"
+                                 v-for="(map, index) in mapping"
+                                 v-bind:index="index"
                                  v-bind:key="map.type">
                                 <column-selector
                                     :class="'rule-map-' + map.type.replace(/_/g, '-')"
@@ -202,11 +202,11 @@
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
                                     :value-as-list="true">
-                                    <span v-b-tooltip.hover.focus :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(map.index)"></span>
+                                    <span v-b-tooltip.hover :title="titleRemoveMapping" class="fa fa-times" @click="removeMapping(index)"></span>
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
-                                <button v-b-tooltip.hover.focus :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
+                                <button v-b-tooltip.hover :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
@@ -220,7 +220,7 @@
                                       {{ mappingTargets()[target].label }}
                                     </a>
                                 </div>
-                                <b-button v-b-tooltip.hover.focus.bottom :title="titleApplyColumnDefinitions" class="rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">{{ l("Apply") }}</b-button>
+                                <b-button v-b-tooltip.hover.bottom :title="titleApplyColumnDefinitions" class="rule-mapping-ok" v-if="!hasActiveMappingEdit" @click="displayRuleType = null">{{ l("Apply") }}</b-button>
                             </div>
                         </div>
                         <div class="rule-summary" v-if="displayRuleType == null">
@@ -256,7 +256,7 @@
                             </ol>
                             <div class="rules-buttons">
                                 <div class="btn-group dropup">
-                                  <button type="button" v-b-tooltip.hover.focus.bottom :title="titleRulesMenu" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                  <button type="button" v-b-tooltip.hover.bottom :title="titleRulesMenu" class="rule-menu-rules-button primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-plus"></span> {{ l("Rules") }}<span class="caret"></span>
                                   </button>
                                   <div class="dropdown-menu" role="menu">
@@ -268,7 +268,7 @@
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" v-b-tooltip.hover.focus.bottom :title="titleFilterMenu" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.bottom :title="titleFilterMenu" class="rule-menu-filter-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Filter") }}<span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
@@ -280,12 +280,12 @@
                                   </div>
                                 </div>
                                 <div class="btn-group dropup">
-                                    <button type="button" v-b-tooltip.hover.focus.bottom :title="titleColumMenu" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <button type="button" v-b-tooltip.hover.bottom :title="titleColumMenu" class="rule-menu-column-button primary-button dropdown-toggle" data-toggle="dropdown">
                                         <span class="fa fa-plus"></span> {{ l("Column") }}<span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
-                                        <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="elementsType == 'collection_contents'"/>
+                                        <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="metadataOptions"/>
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
@@ -311,13 +311,13 @@
             </div>
         </rule-modal-middle>
         <rule-modal-footer v-if="ruleView == 'source'">
-            <b-button v-b-tooltip.hover.focus :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
+            <b-button v-b-tooltip.hover :title="titleSourceCancel" @click="cancelSourceEdit" class="rule-btn-cancel">
                 {{ l("Cancel") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+            <b-button v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
                 {{ l("Reset") }}
             </b-button>
-           <b-button v-b-tooltip.hover.focus :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
+           <b-button v-b-tooltip.hover :title="titleSourceApply" @click="attemptRulePreview" class="rule-btn-okay">
                 {{ l("Apply")}}
             </b-button>
         </rule-modal-footer>
@@ -343,29 +343,36 @@
                         <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
                     </select2>
                 </div>
+                <label v-if="showAddNameTag">
+                    {{ l("Add nametag for name") }}:
+                </label>
+                <input type="checkbox" v-model="addNameTag" v-if="showAddNameTag"/>
                 <div class="rule-footer-name-group" v-if="showCollectionNameInput">
                     <b-input class="collection-name"
-                    :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover.focus v-model="collectionName" />
+                    :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover v-model="collectionName" />
                     <label>
                         {{ l("Name") }}:
                     </label>
                 </div>
             </div>
 
-            <b-button v-b-tooltip.hover.focus :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
+            <b-button v-b-tooltip.hover :help="titleCancel" @click="cancel" class="creator-cancel-btn rule-btn-cancel" tabindex="-1">
                 {{ l("Cancel") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
+            <b-button v-b-tooltip.hover @click="resetRulesAndState" :title="titleReset" class="creator-reset-btn rule-btn-reset">
                 {{ l("Reset") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" :disabled="!validInput">
+            <b-button v-b-tooltip.hover @click="createCollection" :title="titleFinish" class="create-collection rule-btn-okay" variant="primary" :disabled="!validInput">
                 {{ finishButtonTitle }}
             </b-button>
         </rule-modal-footer>
     </state-div>
     <state-div v-else-if="state == 'wait'">
-        <rule-modal-header>
-            {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete.") }}
+        <rule-modal-header v-if="importType == 'datasets'">
+            {{ l("Datasets submitted to Galaxy for creation, this dialog will close when dataset creation is complete. You may close this dialog at any time, but you will not be informed of errors with dataset creation and you may have to refresh your history manually to view new datasets once complete.") }}
+        </rule-modal-header>
+        <rule-modal-header v-else-if="importType == 'collections'">
+            {{ l("Galaxy is waiting for collection creation, this dialog will close when this is complete. You may close this dialog at any time, but you will not be informed of errors with collection creation and you may have to refresh your history manually to view new collections once complete.") }}
         </rule-modal-header>
         <rule-modal-footer>
             <b-button @click="cancel" class="creator-cancel-btn" tabindex="-1">
@@ -382,10 +389,10 @@
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </rule-modal-middle>
         <rule-modal-footer>
-            <b-button v-b-tooltip.hover.focus :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
+            <b-button v-b-tooltip.hover :title="titleCancel" @click="cancel" class="creator-cancel-btn" tabindex="-1">
                 {{ l("Close") }}
             </b-button>
-            <b-button v-b-tooltip.hover.focus :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
+            <b-button v-b-tooltip.hover :title="titleErrorOkay" @click="state = 'build'" tabindex="-1">
                 {{ l("Okay") }}
             </b-button>
         </rule-modal-footer>
@@ -583,7 +590,7 @@ const RegularExpressionInput = {
         <div>
             <label for="regular_expression" v-b-tooltip.hover :title="title">{{ label }}</label>
             <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
-            <input v-b-tooltip.hover.focus.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
+            <input v-b-tooltip.hover.left :title="title" name="regular_expression" class="rule-regular-expression" type="text" :value="target" @input="$emit('update:target', $event.target.value)" />
         </div>
     `,
     props: {
@@ -782,7 +789,7 @@ const RuleModalHeader = {
 
 const RuleModalMiddle = {
     template: `<div class="middle flex-row flex-row-container"><slot></slot></div>`
-}
+};
 
 const RuleModalFooter = {
     template: `
@@ -830,6 +837,27 @@ export default {
                         value: "identifier0"
                     });
                 }
+            } else if (this.elementsType == "datasets") {
+                rules.push(
+                    {
+                        type: "add_column_metadata",
+                        value: "hid"
+                    },
+                    {
+                        type: "add_column_metadata",
+                        value: "name"
+                    }
+                );
+            } else if (this.elementsType == "library_datasets") {
+                rules.push({
+                    type: "add_column_metadata",
+                    value: "name"
+                });
+            } else if (this.elementsType == "ftp") {
+                rules.push({
+                    type: "add_column_metadata",
+                    value: "path"
+                });
             }
         }
         return {
@@ -846,7 +874,7 @@ export default {
             waitingJobState: "new",
             titleReset: _l("Undo all reordering and discards"),
             titleNumericSort: _l(
-                "By default columns will be sorted lexiographically, check this option if the columns are numeric values and should be sorted as numbers"
+                "By default columns will be sorted lexicographically, check this option if the columns are numeric values and should be sorted as numbers"
             ),
             titleInvertFilterRegex: _l("Remove rows not matching the specified regular expression at specified column"),
             titleInvertFilterEmpty: _l("Remove rows that have non-empty values at specified column"),
@@ -908,6 +936,7 @@ export default {
             genomes: [],
             genome: null,
             hideSourceItems: this.defaultHideSourceItems,
+            addNameTag: false,
             orientation: orientation
         };
     },
@@ -964,7 +993,11 @@ export default {
     computed: {
         exisistingDatasets() {
             const elementsType = this.elementsType;
-            return elementsType === "datasets" || elementsType === "collection_contents" || elementsType === "library_datasets";
+            return (
+                elementsType === "datasets" ||
+                elementsType === "collection_contents" ||
+                elementsType === "library_datasets"
+            );
         },
         showFileTypeSelector() {
             return !this.exisistingDatasets && !this.mappingAsDict.file_type;
@@ -978,6 +1011,9 @@ export default {
                 this.elementsType != "collection_contents" &&
                 !this.mappingAsDict.collection_name
             );
+        },
+        showAddNameTag() {
+            return this.importType == "collections" && this.elementsType != "collection_contents";
         },
         titleFinish() {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
@@ -1054,14 +1090,14 @@ export default {
         },
         hotData() {
             let data, sources, columns;
-            if (this.elementsType == "datasets") {
-                data = this.initialElements.map(el => [el["hid"], el["name"]]);
+            if (
+                this.elementsType == "datasets" ||
+                this.elementsType == "library_datasets" ||
+                this.elementsType == "ftp"
+            ) {
+                data = this.initialElements.map(el => []);
                 sources = this.initialElements.slice();
-                columns = ["new", "new"];
-            } else if (this.elementsType == "library_datasets") {
-                data = this.initialElements.map(el => [el["name"]]);
-                sources = this.initialElements.slice();
-                columns = ["new"];
+                columns = [];
             } else if (this.elementsType == "collection_contents") {
                 const collection = this.initialElements;
                 if (collection) {
@@ -1127,7 +1163,7 @@ export default {
             return asDict;
         },
         metadataOptions() {
-            const metadataOptions = {};
+            let metadataOptions = {};
             if (this.elementsType == "collection_contents") {
                 let collectionType;
                 if (this.initialElements) {
@@ -1146,6 +1182,15 @@ export default {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
                 }
+            } else if (this.elementsType == "ftp") {
+                metadataOptions["path"] = _l("Path");
+            } else if (this.elementsType == "library_datasets") {
+                metadataOptions["name"] = _l("Name");
+            } else if (this.elementsType == "datasets") {
+                metadataOptions["hid"] = _l("History ID (hid)");
+                metadataOptions["name"] = _l("Name");
+            } else {
+                metadataOptions = null;
             }
             return metadataOptions;
         },
@@ -1167,10 +1212,12 @@ export default {
         validInput() {
             const identifierColumns = this.identifierColumns();
             const mappingAsDict = this.mappingAsDict;
-            const buildingCollection = identifierColumns.length > 0 && this.elementsType != "collection_contents";
+            const buildingCollection = this.importType == "collections";
+            const requiresName =
+                buildingCollection && this.elementsType != "collection_contents" && !mappingAsDict.collection_name;
 
             let valid = true;
-            if (buildingCollection && !mappingAsDict.collection_name) {
+            if (requiresName) {
                 valid = this.collectionName.length > 0;
             }
 
@@ -1179,16 +1226,17 @@ export default {
                 valid = false;
             }
 
+            const requiresSourceColumn = this.elementsType == "ftp" || this.elementsType == "raw";
+            if (requiresSourceColumn && !mappingAsDict.ftp_path && !mappingAsDict.url) {
+                valid = false;
+            }
             for (var rule of this.rules) {
                 if (rule.error) {
                     valid = false;
                 }
             }
 
-            // raw tabular variant can build stand-alone datasets without identifier
-            // columns for the collection builder for existing datasets cannot do this.
-            const fromDatasets = this.elementsType == "datasets" || this.elementsType == "library_datasets";
-            if (fromDatasets && identifierColumns.length == 0) {
+            if (buildingCollection && identifierColumns.length == 0) {
                 valid = false;
             }
             return valid;
@@ -1324,6 +1372,7 @@ export default {
                     this.state = "error";
                     this.errorMessage =
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
+                    this.doFullJobCheck(jobId);
                 } else {
                     const history =
                         parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
@@ -1338,6 +1387,24 @@ export default {
                     .catch(this.renderFetchError);
             };
             setTimeout(doJobCheck, 1000);
+        },
+        doFullJobCheck(jobId) {
+            const handleJobShow = jobResponse => {
+                const stderr = jobResponse.data.stderr;
+                if (stderr) {
+                    let errorMessage = "An error was encountered while running your upload job. ";
+                    if (stderr.indexOf("binary file contains inappropriate content") > -1) {
+                        errorMessage +=
+                            "The problem may be that the batch uploader will not automatically decompress your files the way the normal uploader does, please specify a correct extension or upload decompressed data.";
+                    }
+                    errorMessage += "Upload job completed with standard error: " + stderr;
+                    this.errorMessage = errorMessage;
+                }
+            };
+            axios
+                .get(`${Galaxy.root}api/jobs/${jobId}?full=True`)
+                .then(handleJobShow)
+                .catch(this.renderFetchError);
         },
         renderFetchError(error) {
             this.state = "error";
@@ -1378,10 +1445,13 @@ export default {
                     new AjaxQueue.AjaxQueue(
                         _.map(elements, (elements, name) => {
                             return () => {
-                               const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
-                               return response;
+                                const response = this.creationFn(elements, collectionType, name, this.hideSourceItems);
+                                return response;
                             };
-                    })).done(this.oncreate).fail(this.renderFetchError);
+                        })
+                    )
+                        .done(this.oncreate)
+                        .fail(this.renderFetchError);
                 }
             } else if (this.elementsType == "collection_contents") {
                 this.resetSource();
@@ -1402,6 +1472,9 @@ export default {
                             collection_type: collectionType,
                             name: collectionName
                         };
+                        if (this.addNameTag) {
+                            target["tags"] = ["name:" + collectionName];
+                        }
                         targets.push(target);
                     }
                 } else {
@@ -1419,7 +1492,8 @@ export default {
                     axios
                         .post(`${Galaxy.root}api/tools/fetch`, {
                             history_id: historyId,
-                            targets: targets
+                            targets: targets,
+                            auto_decompress: true
                         })
                         .then(this.refreshAndWait)
                         .catch(this.renderFetchError);
@@ -1483,7 +1557,10 @@ export default {
                         identifierColumnIndex < numIdentifierColumns;
                         identifierColumnIndex++
                     ) {
-                        let identifier = rowData[identifierColumns[identifierColumnIndex]];
+                        // typeof indicates identifier is a string, but the raw string value coming from this data
+                        // structure sometimes does not work as expected with indexOf below, I don't understand why
+                        // but as a result this cast here seems needed.
+                        let identifier = String(rowData[identifierColumns[identifierColumnIndex]]);
                         if (identifierColumnIndex + 1 == numIdentifierColumns) {
                             // At correct final position in nested structure for this dataset.
                             if (collectionTypeAtDepth === "paired") {
@@ -1530,6 +1607,7 @@ export default {
                                 subcollection[subElementProp] = childCollectionElements;
                                 subcollection.collection_type = collectionTypeAtDepth;
                                 elementsAtDepth = childCollectionElements;
+                                identifiersAtDepth = identifiersAtDepth[identifier];
                             }
                         }
                     }
@@ -1638,7 +1716,13 @@ export default {
                 const urlColumn = mappingAsDict.url.columns[0];
                 let url = data[dataIndex][urlColumn];
                 if (url.indexOf("://") == -1) {
-                    url = "http://" + url;
+                    // special case columns containing SRA links. EBI serves these a lot
+                    // faster over FTP.
+                    if(url.indexOf("ftp.sra.") !== -1) {
+                        url = "ftp://" + url;
+                    } else {
+                        url = "http://" + url;
+                    }
                 }
                 res["url"] = url;
                 res["src"] = "url";
@@ -1658,7 +1742,7 @@ export default {
             if (mappingAsDict.file_type) {
                 const fileTypeColumn = mappingAsDict.file_type.columns[0];
                 const fileType = data[dataIndex][fileTypeColumn];
-                res["ext"] = file_type;
+                res["ext"] = fileType;
             } else if (this.extension) {
                 res["ext"] = this.extension;
             }
@@ -1671,6 +1755,29 @@ export default {
                 const infoColumn = mappingAsDict.info.columns[0];
                 const info = data[dataIndex][infoColumn];
                 res["info"] = info;
+            }
+            const tags = [];
+            if (mappingAsDict.tags) {
+                const tagColumns = mappingAsDict.tags.columns;
+                for (var tagColumn of tagColumns) {
+                    const tag = data[dataIndex][tagColumn];
+                    tags.push(tag);
+                }
+            }
+            if (mappingAsDict.group_tags) {
+                const groupTagColumns = mappingAsDict.group_tags.columns;
+                for (var groupTagColumn of groupTagColumns) {
+                    const tag = data[dataIndex][groupTagColumn];
+                    tags.push("group:" + tag);
+                }
+            }
+            if (mappingAsDict.name_tag) {
+                const nameTagColumn = mappingAsDict.name_tag.columns[0];
+                const nameTag = data[dataIndex][nameTagColumn];
+                tags.push("name:" + nameTag);
+            }
+            if (tags.length > 0) {
+                res["tags"] = tags;
             }
             return res;
         }

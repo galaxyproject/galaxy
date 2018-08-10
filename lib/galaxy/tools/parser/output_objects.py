@@ -12,6 +12,9 @@ class ToolOutputBase(Dictifiable):
         self.hidden = hidden
         self.collection = False
 
+    def to_dict(self, view='collection', value_mapper=None, app=None):
+        return super(ToolOutputBase, self).to_dict(view=view, value_mapper=value_mapper)
+
 
 class ToolOutput(ToolOutputBase):
     """
@@ -57,7 +60,7 @@ class ToolOutput(ToolOutputBase):
         return iter((self.format, self.metadata_source, self.parent))
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
-        as_dict = super(ToolOutput, self).to_dict(view=view, value_mapper=value_mapper)
+        as_dict = super(ToolOutput, self).to_dict(view=view, value_mapper=value_mapper, app=app)
         format = self.format
         if format and format != "input" and app:
             edam_format = app.datatypes_registry.edam_formats.get(self.format)
@@ -82,6 +85,8 @@ class ToolOutputCollection(ToolOutputBase):
       </collection>
     <outputs>
     """
+
+    dict_collection_visible_keys = ['name', 'default_format', 'label', 'hidden', 'inherit_format', 'inherit_metadata']
 
     def __init__(
         self,
@@ -188,8 +193,8 @@ class ToolOutputCollectionStructure(object):
             raise ValueError("Cannot set both type and type_source on collection output.")
         if collection_type is None and structured_like is None and dataset_collector_descriptions is None and collection_type_source is None and collection_type_from_rules is None:
             raise ValueError("Output collection types must specify source of collection type information (e.g. structured_like or type_source).")
-        if dataset_collector_descriptions and (structured_like or collection_type_source or collection_type_from_rules):
-            raise ValueError("Cannot specify dynamic structure (discovered_datasets) and collection type source attributes such as structured_like or type_source.")
+        if dataset_collector_descriptions and (structured_like or collection_type_from_rules):
+            raise ValueError("Cannot specify dynamic structure (discovered_datasets) and collection type attributes structured_like or collection_type_from_rules.")
         self.dynamic = dataset_collector_descriptions is not None
 
     def collection_prototype(self, inputs, type_registry):

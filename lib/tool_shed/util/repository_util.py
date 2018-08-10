@@ -260,7 +260,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
     if not os.path.exists(repository_path):
         os.makedirs(repository_path)
     # Create the local repository.
-    hg_util.get_repo_for_repository(app, repository=None, repo_path=repository_path, create=True)
+    hg_util.init_repository(repo_path=repository_path)
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % (repository.user.username, repository.name)
     app.hgweb_config_manager.add_entry(lhs, repository_path)
@@ -430,7 +430,6 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
 
 def get_repo_info_dict(app, user, repository_id, changeset_revision):
     repository = get_repository_in_tool_shed(app, repository_id)
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
                                                                                       repository_id,
@@ -440,7 +439,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         # in the repository's changelog.  This generally occurs only with repositories of type
         # repository_suite_definition or tool_dependency_definition.
         next_downloadable_changeset_revision = \
-            metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+            metadata_util.get_next_downloadable_changeset_revision(app, repository, changeset_revision)
         if next_downloadable_changeset_revision and next_downloadable_changeset_revision != changeset_revision:
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
                                                                                               repository_id,
@@ -470,11 +469,12 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
+    repo_path = repository.repo_path(app)
+    ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
     repo_info_dict = create_repo_info_dict(app=app,
                                            repository_clone_url=repository_clone_url,
                                            changeset_revision=changeset_revision,
-                                           ctx_rev=str(ctx.rev()),
+                                           ctx_rev=ctx_rev,
                                            repository_owner=repository.user.username,
                                            repository_name=repository.name,
                                            repository=repository,

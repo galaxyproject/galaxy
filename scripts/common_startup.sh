@@ -103,17 +103,6 @@ else
     DEV_WHEELS=1
 fi
 
-: ${GALAXY_CONFIG_FILE:=config/galaxy.yml}
-if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=config/galaxy.ini
-fi
-if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=universe_wsgi.ini
-fi
-if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
-    GALAXY_CONFIG_FILE=config/galaxy.yml.sample
-fi
-
 : ${GALAXY_VIRTUAL_ENV:=.venv}
 # GALAXY_CONDA_ENV is not set here because we don't want to execute the Galaxy version check if we don't need to
 
@@ -257,4 +246,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
         exit 1
     fi
+else
+    echo "Regenerating static plugin directories."
+    python ./scripts/plugin_staging.py
 fi

@@ -33,13 +33,13 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
         if replacement is None:
             match = pattern.search(source)
             if not match:
-                raise Exception("Problem apply regular expression [%s] to [%s]." % (regex, source))
+                raise Exception("Problem applying regular expression [%s] to [%s]." % (regex, source))
 
             if group_count:
-                if len(match.groups()) != group_count + 1:
-                    raise Exception("Problem apply regular expression.")
+                if len(match.groups()) != group_count:
+                    raise Exception("Problem applying regular expression, wrong number of groups found.")
 
-                result = row + [match.groups()[1:len(match.groups())]]
+                result = row + list(match.groups())
             else:
                 result = row + [match.group(0)]
         else:
@@ -124,7 +124,7 @@ class AddColumnRegexRuleDefinition(BaseRuleDefinition):
         target = rule["target_column"]
         expression = rule["expression"]
         replacement = rule.get("replacement")
-        group_count = rule.get("rule_count")
+        group_count = rule.get("group_count")
 
         return apply_regex(expression, target, data, replacement, group_count), sources
 
@@ -296,7 +296,8 @@ class AddFilterEmptyRuleDefinition(BaseRuleDefinition):
         target_column = rule["target_column"]
 
         def _filter(index):
-            return not invert if len(data[target_column]) == 0 else invert
+            non_empty = len(data[index][target_column]) != 0
+            return not invert if non_empty else invert
 
         return _filter_index(_filter, data), _filter_index(_filter, sources)
 
@@ -372,21 +373,13 @@ class SortRuleDefinition(BaseRuleDefinition):
 
         sortable = zip(data, sources)
 
-        def sort_func(a, b):
-            a_val = a[0][target]
-            b_val = b[0][target]
+        def sort_func(item):
+            a_val = item[0][target]
             if numeric:
                 a_val = float(a_val)
-                b_val = float(b_val)
+            return a_val
 
-            if a_val < b_val:
-                return -1
-            elif b_val < a_val:
-                return 1
-            else:
-                return 0
-
-        sorted_data = sorted(sortable, sort_func)
+        sorted_data = sorted(sortable, key=sort_func)
 
         new_data = []
         new_sources = []

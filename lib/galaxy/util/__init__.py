@@ -33,7 +33,7 @@ except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
 
-from six import binary_type, iteritems, string_types, text_type
+from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
 from six.moves.urllib import (
     parse as urlparse,
@@ -62,10 +62,10 @@ CHUNK_SIZE = 65536  # 64k
 DATABASE_MAX_STRING_SIZE = 32768
 DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
-gzip_magic = '\037\213'
-bz2_magic = 'BZh'
+gzip_magic = b'\x1f\x8b'
+bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
-NULL_CHAR = '\000'
+NULL_CHAR = b'\000'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -102,7 +102,7 @@ def is_binary(value, binary_chars=None):
     if binary_chars is None:
         binary_chars = BINARY_CHARS
     for binary_char in binary_chars:
-        if binary_char in value:
+        if binary_char in smart_str(value):
             return True
     return False
 
@@ -234,7 +234,10 @@ def xml_to_string(elem, pretty=False):
     if pretty:
         elem = pretty_print_xml(elem)
     try:
-        return ElementTree.tostring(elem)
+        if PY2:
+            return ElementTree.tostring(elem)
+        else:
+            return ElementTree.tostring(elem, encoding='unicode')
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
@@ -932,27 +935,23 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     u"""
     Returns a unicode string or None.
 
-    >>> unicodify(None) is None
-    True
-    >>> unicodify('simple string') == u'simple string'
-    True
-    >>> unicodify(3) == u'3'
-    True
-    >>> unicodify(Exception('message')) == u'message'
-    True
-    >>> unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
-    True
-    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), 'latin-1') == s
-    True
-    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
-    True
-    >>> s = u'lâtín strìñg'; unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
-    True
+    >>> assert unicodify(None) is None
+    >>> assert unicodify('simple string') == u'simple string'
+    >>> assert unicodify(3) == u'3'
+    >>> assert unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == u'strĩñg'
+    >>> assert unicodify(Exception('message')) == u'message'
+    >>> assert unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
+    >>> s = u'cómplǐcḁtëd strĩñg'; assert unicodify(s) == s
+    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), 'latin-1') == s
+    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1')) == u'l\ufffdt\ufffdn str\ufffd\ufffdg'
+    >>> s = u'lâtín strìñg'; assert unicodify(s.encode('latin-1'), error='ignore') == u'ltn strg'
     """
-    if value is None:
-        return None
+    if value is None or isinstance(value, text_type):
+        return value
     try:
-        if not isinstance(value, string_types) and not isinstance(value, binary_type):
+        if isinstance(value, bytearray):
+            value = bytes(value)
+        elif not isinstance(value, string_types) and not isinstance(value, binary_type):
             # In Python 2, value is not an instance of basestring
             # In Python 3, value is not an instance of bytes or str
             value = str(value)
@@ -978,18 +977,22 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
     >>> assert smart_str(None, strings_only=True) is None
     >>> assert smart_str(3) == b'3'
     >>> assert smart_str(3, strings_only=True) == 3
-    >>> assert smart_str(b'a bytes string') == b'a bytes string'
+    >>> s = b'a bytes string'; assert smart_str(s) == s
+    >>> s = bytearray(b'a bytes string'); assert smart_str(s) == s
     >>> assert smart_str(u'a simple unicode string') == b'a simple unicode string'
     >>> assert smart_str(u'à strange ünicode ڃtring') == b'\\xc3\\xa0 strange \\xc3\\xbcnicode \\xda\\x83tring'
     >>> assert smart_str(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string', encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
+    >>> assert smart_str(bytearray(b'\\xc3\\xa0n \\xc3\\xabncoded utf-8 string'), encoding='latin-1') == b'\\xe0n \\xebncoded utf-8 string'
     """
     if strings_only and isinstance(s, (type(None), int)):
         return s
-    if not isinstance(s, string_types) and not isinstance(s, binary_type):
-        # In Python 2, s is not an instance of basestring
-        # In Python 3, s is not an instance of bytes or str
+    if not isinstance(s, string_types) and not isinstance(s, (binary_type, bytearray)):
+        # In Python 2, s is not an instance of basestring or bytearray
+        # In Python 3, s is not an instance of str, bytes or bytearray
         s = str(s)
-    if not isinstance(s, binary_type):
+    # Now in Python 2, value is an instance of basestring or bytearray
+    # Now in Python 3, value is an instance of str, bytes or bytearray
+    if not isinstance(s, (binary_type, bytearray)):
         return s.encode(encoding, errors)
     elif s and encoding != DEFAULT_ENCODING:
         return s.decode(DEFAULT_ENCODING, errors).encode(encoding, errors)
@@ -1163,15 +1166,6 @@ def stringify_dictionary_keys(in_dict):
     return out_dict
 
 
-def recursively_stringify_dictionary_keys(d):
-    if isinstance(d, dict):
-        return dict([(k.encode(DEFAULT_ENCODING), recursively_stringify_dictionary_keys(v)) for k, v in iteritems(d)])
-    elif isinstance(d, list):
-        return [recursively_stringify_dictionary_keys(x) for x in d]
-    else:
-        return d
-
-
 def mkstemp_ln(src, prefix='mkstemp_ln_'):
     """
     From tempfile._mkstemp_inner, generate a hard link in the same dir with a
@@ -1270,7 +1264,7 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ['bytes', 'KB', 'MB', 'GB', 'TB']
+    words = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB']
     prefix = ''
     try:
         size = float(size)

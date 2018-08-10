@@ -243,10 +243,10 @@ var DatasetCollection = Backbone.Model.extend(BASE_MVC.LoggableMixin)
                 //TODO: same patterns as DatasetCollectionElement _createObjectModel - refactor to BASE_MVC.hasSubModel?
                 var elements = this.get("elements") || [];
                 this.unset("elements", { silent: true });
-                var self = this;
+                var parentHdcaId = this.get("parent_hdca_id") || this.get("id");
                 _.each(elements, (element, index) => {
                     _.extend(element, {
-                        parent_hdca_id: self.get("id")
+                        parent_hdca_id: parentHdcaId
                     });
                 });
                 this.elements = new collectionClass(elements);

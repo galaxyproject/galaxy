@@ -60,12 +60,13 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner(object):
-    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: x >= 0, default=0))
+    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
         """Start the job runner
         """
         self.app = app
+        self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
         self.sa_session = app.model.context
         self.nworkers = nworkers
         runner_param_specs = self.DEFAULT_SPECS.copy()
@@ -118,12 +119,7 @@ class BaseJobRunner(object):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
         put_timer = ExecutionTimer()
-        job = job_wrapper.get_job()
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state(model.Job.states.QUEUED, flush=False, job=job)
-        # Persist the destination so that the job will be included in counts if using concurrency limits
-        job_wrapper.set_job_destination(job_wrapper.job_destination, None, flush=False, job=job)
-        self.sa_session.flush()
+        job_wrapper.enqueue()
         self.mark_as_queued(job_wrapper)
         log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
 
@@ -451,6 +447,10 @@ class JobState(object):
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
 
+        self.redact_email_in_job_name = True
+        if self.job_wrapper:
+            self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
+
         self.cleanup_file_attributes = ['job_file', 'output_file', 'error_file', 'exit_code_file']
 
     def set_defaults(self, files_dir):
@@ -464,7 +464,7 @@ class JobState(object):
             job_name = 'g%s' % id_tag
             if self.job_wrapper.tool.old_id:
                 job_name += '_%s' % self.job_wrapper.tool.old_id
-            if self.job_wrapper.user:
+            if not self.redact_email_in_job_name and self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
             self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
 

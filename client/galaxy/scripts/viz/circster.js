@@ -52,7 +52,7 @@ var UsesTicks = {
             .enter()
             .append("g")
             .attr("class", "tick")
-            .attr("transform", d => `rotate(${d.angle * 180 / Math.PI - 90})translate(${d.radius},0)`);
+            .attr("transform", d => `rotate(${(d.angle * 180) / Math.PI - 90})translate(${d.radius},0)`);
 
         // Add line + text for ticks.
         var tick_coords = [];
@@ -564,8 +564,7 @@ var CircsterTrackView = Backbone.View.extend({
 
                     // Add new data path and apply preferences.
                     var color = self.get_fill_color();
-                    self
-                        ._render_chrom_data(self.parent_elt, chrom_arc, data)
+                    self._render_chrom_data(self.parent_elt, chrom_arc, data)
                         .style("stroke", color)
                         .style("fill", color);
                 });
@@ -606,8 +605,7 @@ var CircsterTrackView = Backbone.View.extend({
                 // Transition each path for data and color.
                 var color = track.get("config").get_value("color");
                 chrom_data_paths.each(function(path, index) {
-                    d3
-                        .select(this)
+                    d3.select(this)
                         .transition()
                         .duration(1000)
                         .style("stroke", color)
@@ -705,7 +703,7 @@ var CircsterTrackView = Backbone.View.extend({
             .sort(null);
 
         var init_arcs = pie_layout(chroms_info);
-        var gap_per_chrom = 2 * Math.PI * this.total_gap / chroms_info.length;
+        var gap_per_chrom = (2 * Math.PI * this.total_gap) / chroms_info.length;
 
         var chrom_arcs = _.map(init_arcs, (arc, index) => {
             // For short chroms, endAngle === startAngle.
@@ -952,7 +950,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
             .selectAll("g.tick")
             .data(new_data)
             .transition()
-            .attr("transform", d => `rotate(${d.angle * 180 / Math.PI - 90})translate(${d.radius},0)`);
+            .attr("transform", d => `rotate(${(d.angle * 180) / Math.PI - 90})translate(${d.radius},0)`);
     },
 
     /**
@@ -1086,8 +1084,7 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
         // Return angle at position.
         return (
             chrom_angle_data.endAngle -
-            (chrom_angle_data.endAngle - chrom_angle_data.startAngle) *
-                (chrom_angle_data.data.len - position) /
+            ((chrom_angle_data.endAngle - chrom_angle_data.startAngle) * (chrom_angle_data.data.len - position)) /
                 chrom_angle_data.data.len
         );
     }

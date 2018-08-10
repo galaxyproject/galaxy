@@ -1634,13 +1634,9 @@ class AdminToolshed(AdminGalaxy):
                         repo_files_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir, name))
                     else:
                         repo_files_dir = os.path.abspath(os.path.join(relative_install_dir, name))
-                    repo = hg_util.get_repo_for_repository(trans.app,
-                                                           repository=None,
-                                                           repo_path=repo_files_dir,
-                                                           create=False)
                     repository_clone_url = os.path.join(tool_shed_url, 'repos', owner, name)
-                    hg_util.pull_repository(repo, repository_clone_url, latest_ctx_rev)
-                    hg_util.update_repository(repo, latest_ctx_rev)
+                    hg_util.pull_repository(repo_files_dir, repository_clone_url, latest_ctx_rev)
+                    hg_util.update_repository(repo_files_dir, latest_ctx_rev)
                     # Remove old Data Manager entries
                     if repository.includes_data_managers:
                         dmh = data_manager.DataManagerHandler(trans.app)

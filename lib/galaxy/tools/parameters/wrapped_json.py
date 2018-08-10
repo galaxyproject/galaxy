@@ -5,7 +5,7 @@ log = logging.getLogger(__name__)
 SKIP_INPUT = object()
 
 
-def json_wrap(inputs, input_values, as_dict=None, handle_files="SKIP"):
+def json_wrap(inputs, input_values, as_dict=None, handle_files="skip"):
     if as_dict is None:
         as_dict = {}
 
@@ -19,8 +19,15 @@ def json_wrap(inputs, input_values, as_dict=None, handle_files="SKIP"):
     return as_dict
 
 
-def _json_wrap_input(input, value, handle_files="SKIP"):
+def _json_wrap_input(input, value, handle_files="skip"):
     input_type = input.type
+
+    def _data_input_to_path(v):
+        path = _cast_if_not_none(v, str)
+        if path == "None":
+            path = None
+        return path
+
     if input_type == "repeat":
         repeat_job_value = []
         for d in value:
@@ -44,15 +51,21 @@ def _json_wrap_input(input, value, handle_files="SKIP"):
         json_wrap(input.inputs, values, section_job_value)
         json_value = section_job_value
     elif input_type == "data" and input.multiple:
-        if handle_files == "SKIP":
+        if handle_files == "paths":
+            json_value = list(map(_data_input_to_path, value))
+        elif handle_files == "skip":
             return SKIP_INPUT
-        raise NotImplementedError()
+        else:
+            raise NotImplementedError()
     elif input_type == "data":
-        if handle_files == "SKIP":
+        if handle_files == "paths":
+            json_value = _data_input_to_path(value)
+        elif handle_files == "skip":
             return SKIP_INPUT
-        raise NotImplementedError()
+        else:
+            raise NotImplementedError()
     elif input_type == "data_collection":
-        if handle_files == "SKIP":
+        if handle_files == "skip":
             return SKIP_INPUT
         raise NotImplementedError()
     elif input_type in ["select", "text", "color", "hidden"]:
@@ -65,7 +78,10 @@ def _json_wrap_input(input, value, handle_files="SKIP"):
         json_value = _cast_if_not_none(value, bool)
     elif input_type == "data_column":
         # value is a SelectToolParameterWrapper()
-        json_value = [int(_) for _ in _cast_if_not_none(value.value, list)]
+        if input.multiple:
+            json_value = [int(_) for _ in _cast_if_not_none(value.value, list)]
+        else:
+            json_value = [_cast_if_not_none(value.value, int)]
     else:
         raise NotImplementedError("input_type [%s] not implemented" % input_type)
 

@@ -8,6 +8,7 @@ import HistoryPanel from "./panels/history-panel";
 import Page from "layout/page";
 import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
+import Sharing from "components/Sharing.vue";
 import UserPreferences from "mvc/user/user-preferences";
 import CustomBuilds from "mvc/user/user-custom-builds";
 import Tours from "mvc/tours";
@@ -57,9 +58,11 @@ window.app = function app(options, bootstrapped) {
             "(/)openids(/)list": "show_openids",
             "(/)pages(/)create(/)": "show_pages_create",
             "(/)pages(/)edit(/)": "show_pages_edit",
+            "(/)pages(/)sharing(/)": "show_pages_sharing",
             "(/)pages(/)(:action_id)": "show_pages",
             "(/)visualizations(/)": "show_plugins",
             "(/)visualizations(/)edit(/)": "show_visualizations_edit",
+            "(/)visualizations(/)sharing(/)": "show_visualizations_sharing",
             "(/)visualizations/(:action_id)": "show_visualizations",
             "(/)workflows/import": "show_workflows_import",
             "(/)workflows/run(/)": "show_workflows_run",
@@ -68,6 +71,7 @@ window.app = function app(options, bootstrapped) {
             "(/)workflows/create(/)": "show_workflows_create",
             "(/)histories(/)citations(/)": "show_history_citations",
             "(/)histories(/)rename(/)": "show_histories_rename",
+            "(/)histories(/)sharing(/)": "show_histories_sharing",
             "(/)histories(/)import(/)": "show_histories_import",
             "(/)histories(/)permissions(/)": "show_histories_permissions",
             "(/)histories/view": "show_history_view",
@@ -105,7 +109,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_visualizations: function(action_id) {
-            var activeTab = action_id == "list_published" ? "shared" : "visualization";
+            var activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
@@ -124,6 +128,19 @@ window.app = function app(options, bootstrapped) {
                     active_tab: "visualization"
                 })
             );
+        },
+
+        show_visualizations_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Visualizations",
+                    model_class: "Visualization"
+                }
+            }).$mount(vm);
         },
 
         show_workflows_published: function() {
@@ -167,6 +184,19 @@ window.app = function app(options, bootstrapped) {
                     redirect: "histories/list"
                 })
             );
+        },
+
+        show_histories_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Histories",
+                    model_class: "History"
+                }
+            }).$mount(vm);
         },
 
         show_histories_import: function() {
@@ -233,6 +263,19 @@ window.app = function app(options, bootstrapped) {
                     active_tab: "user"
                 })
             );
+        },
+
+        show_pages_sharing: function() {
+            var sharingInstance = Vue.extend(Sharing);
+            var vm = document.createElement("div");
+            this.page.display(vm);
+            new sharingInstance({
+                propsData: {
+                    id: QueryStringParsing.get("id"),
+                    plural_name: "Pages",
+                    model_class: "Page"
+                }
+            }).$mount(vm);
         },
 
         show_plugins: function() {

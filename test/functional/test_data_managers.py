@@ -1,5 +1,4 @@
 import logging
-import new
 import os.path
 import shutil
 import tempfile
@@ -105,7 +104,7 @@ def build_tests(tmp_dir=None, testing_shed_tools=False, master_api_key=None, use
                 namespace['tool_id'] = tool_id
                 namespace['master_api_key'] = master_api_key
                 namespace['user_api_key'] = user_api_key
-            # The new.classobj function returns a new class object, with name name, derived
+            # Create a new class object, with name name, derived
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
-            new_class_obj = new.classobj(name, baseclasses, namespace)
+            new_class_obj = type(name, baseclasses, namespace)
             G[name] = new_class_obj

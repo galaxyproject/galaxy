@@ -341,9 +341,8 @@ class Grid(object):
                     else:
                         link = None
                     target = column.target
-                    value = column.get_value(trans, self, item)
-                    if isinstance(value, str):
-                        value = text_type(value, 'utf-8')
+                    value = unicodify(column.get_value(trans, self, item))
+                    if value:
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
                         'link'      : link,
@@ -580,6 +579,8 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
         else:
             ave_item_rating = item.average_rating
             num_ratings = 2  # just used for pluralization
+        if not ave_item_rating:
+            ave_item_rating = 0
         return trans.fill_template("tool_shed_rating.mako",
                                    ave_item_rating=ave_item_rating,
                                    num_ratings=num_ratings,
@@ -847,12 +848,6 @@ class SharingStatusColumn(GridColumn):
             return item.users_shared_with_count > 0
 
         return item.users_shared_with
-
-    def get_link(self, trans, grid, item):
-        is_shared = self._is_shared(item)
-        if not item.deleted and (is_shared or item.importable or item.published):
-            return dict(operation="share or publish", id=item.id)
-        return None
 
     def filter(self, trans, user, query, column_filter):
         """ Modify query to filter histories by sharing status. """

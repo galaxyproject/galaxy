@@ -2,7 +2,7 @@ import json
 import logging
 import os
 
-from galaxy.dataset_collections.structure import UnitializedTree
+from galaxy.dataset_collections.structure import UninitializedTree
 from galaxy.exceptions import RequestParameterMissingException
 from galaxy.tools.actions import upload_common
 from galaxy.util import ExecutionTimer
@@ -66,7 +66,10 @@ class FetchUploadToolAction(BaseUploadToolAction):
         def replace_file_srcs(request_part):
             if isinstance(request_part, dict):
                 if request_part.get("src", None) == "files":
-                    path_def = next(files_iter)
+                    try:
+                        path_def = next(files_iter)
+                    except StopIteration:
+                        path_def = None
                     if path_def is None or path_def["file_data"] is None:
                         raise RequestParameterMissingException("Failed to find uploaded file matching target with src='files'")
                     request_part["path"] = path_def["file_data"]["local_filename"]
@@ -121,7 +124,8 @@ def _precreate_fetched_hdas(trans, history, target, outputs):
         uploaded_dataset = Bunch(
             type='file', name=name, file_type=file_type, dbkey=dbkey
         )
-        data = upload_common.new_upload(trans, '', uploaded_dataset, library_bunch=None, history=history)
+        tag_list = item.get("tags", [])
+        data = upload_common.new_upload(trans, '', uploaded_dataset, library_bunch=None, history=history, tag_list=tag_list)
         outputs.append(data)
         item["object_id"] = data.id
 
@@ -136,11 +140,12 @@ def _precreate_fetched_collection_instance(trans, history, target, outputs):
     if not name:
         return
 
+    tags = target.get("tags", [])
     collections_service = trans.app.dataset_collections_service
     collection_type_description = collections_service.collection_type_descriptions.for_collection_type(collection_type)
-    structure = UnitializedTree(collection_type_description)
+    structure = UninitializedTree(collection_type_description)
     hdca = collections_service.precreate_dataset_collection_instance(
-        trans, history, name, structure=structure
+        trans, history, name, structure=structure, tags=tags
     )
     outputs.append(hdca)
     # Following flushed needed for an ID.

@@ -19,6 +19,7 @@ from galaxy import (
 from galaxy.managers import workflows
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.model.mapping import desc
+from galaxy.security.validate_user_input import validate_publicname
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -120,6 +121,12 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
         )
     )
     operations = [
+        grids.GridOperation(
+            'Run',
+            condition=(lambda item: not item.deleted),
+            allow_multiple=False,
+            url_args=dict(controller='workflows', action="run")
+        ),
         grids.GridOperation(
             "Import",
             condition=(lambda item: not item.deleted),
@@ -360,6 +367,20 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
             session.flush()
             return trans.fill_template("/workflow/sharing.mako", use_panels=True, item=stored)
+
+    @web.expose
+    @web.require_login("share Galaxy items")
+    def set_public_username(self, trans, id, username, **kwargs):
+        """ Set user's public username and delegate to sharing() """
+        user = trans.get_user()
+        # message from validate_publicname does not contain input, no need
+        # to escape.
+        message = validate_publicname(trans, username, user)
+        if message:
+            return trans.fill_template("/workflow/sharing.mako", item=self.get_item(trans, id), message=message, status="error")
+        user.username = username
+        trans.sa_session.flush()
+        return self.sharing(trans, id, **kwargs)
 
     @web.expose
     @web.require_login("to import a workflow", use_panels=True)
@@ -691,7 +712,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         parser = SingleTagContentsParser('id')
         parser.feed(response_data)
         myexp_workflow_id = parser.tag_content
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflow', action='list')
+        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for(controller='workflows', action='list')
         if myexp_workflow_id:
             return trans.show_message(
                 """Workflow '%s' successfully exported to myExperiment. <br/>
@@ -814,9 +835,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Index page with message
             workflow_id = trans.security.encode_id(stored_workflow.id)
             return trans.show_message('Workflow "%s" created from current history. '
-                                      'You can <a href="%s" target="_parent">edit</a> or <a href="%s">run</a> the workflow.'
+                                      'You can <a href="%s" target="_parent">edit</a> or <a href="%s" target="_parent">run</a> the workflow.'
                                       % (escape(workflow_name), url_for(controller='workflow', action='editor', id=workflow_id),
-                                         url_for(controller='workflow', action='run', id=workflow_id)))
+                                         url_for(controller='workflows', action='run', id=workflow_id)))
 
     def get_item(self, trans, id):
         return self.get_stored_workflow(trans, id)

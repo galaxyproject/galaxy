@@ -593,8 +593,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 
         // ------------------------------------------------------------------------ API
         /** convert a pair into JSON compatible with the collections API */
-        _pairToJSON: function(pair, src) {
-            src = src || "hda";
+        _pairToJSON: function(pair) {
             //TODO: consider making this the pair structure when created instead
             return {
                 collection_type: "paired",
@@ -604,12 +603,12 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     {
                         name: "forward",
                         id: pair.forward.id,
-                        src: src
+                        src: pair.forward.src || "hda"
                     },
                     {
                         name: "reverse",
                         id: pair.reverse.id,
-                        src: src
+                        src: pair.reverse.src || "hda"
                     }
                 ]
             };
@@ -867,8 +866,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             this.paired.forEach((pair, i) => {
                 //TODO: cache these?
                 var pairView = new PairView({ pair: pair });
-                self
-                    .$(".paired-columns .column-datasets")
+                self.$(".paired-columns .column-datasets")
                     .append(pairView.render().$el)
                     .append(
                         [
@@ -1242,8 +1240,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 var $startTarget = $(ev.target).addClass("selected");
 
                 var moveListener = ev => {
-                    self
-                        .$(ev.target)
+                    self.$(ev.target)
                         .filter(".dataset")
                         .addClass("selected");
                 };

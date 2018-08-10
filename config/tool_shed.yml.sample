@@ -34,7 +34,8 @@ uwsgi:
   # --daemon and/or production deployments.
   master: false
 
-  # Path to the application's Python virtual environment.
+  # Path to the application's Python virtual environment. If using Conda
+  # for Galaxy's framework dependencies (not tools!), do not set this.
   virtualenv: .venv
 
   # Path to the application's Python library.
@@ -176,6 +177,24 @@ tool_shed:
   # header 'GX_SECRET' that is identical the one below
   #remote_user_secret: changethisinproductiontoo
 
+  # If use_remote_user is enabled and your external authentication
+  # method just returns bare usernames, set a default mail domain to be
+  # appended to usernames, to become your Galaxy usernames (email
+  # addresses).
+  #remote_user_maildomain: null
+
+  # If use_remote_user is enabled, the header that the upstream proxy
+  # provides the remote username in defaults to HTTP_REMOTE_USER (the
+  # 'HTTP_' is prepended by WSGI).  This option allows you to change the
+  # header.  Note, you still need to prepend 'HTTP_' to the header in
+  # this option, but your proxy server should *not* include 'HTTP_' at
+  # the beginning of the header name.
+  #remote_user_header: HTTP_REMOTE_USER
+
+  # If use_remote_user is enabled, you can set this to a URL that will
+  # log your users out.
+  #remote_user_logout_href: null
+
   # Configuration for debugging middleware
   #debug: false
 
@@ -196,6 +215,13 @@ tool_shed:
 
   # Force everyone to log in (disable anonymous access)
   #require_login: false
+
+  # Allow unregistered users to create new accounts (otherwise, they
+  # will have to be created by an admin).
+  #allow_user_creation: true
+
+  # Allow administrators to delete accounts.
+  #allow_user_deletion: false
 
   # For use by email messages sent from the tool shed
   #smtp_server: smtp.your_tool_shed_server
@@ -262,4 +288,95 @@ tool_shed:
 
   # Serving static files (needed if running standalone)
   #static_style_dir: static/style/blue
+
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing
+  # emails/usernames from logs and bug reports.  You are responsible for
+  # removing personal data from backups.  Please read the GDPR section
+  # under the special topics area of the admin documentation.
+  #enable_beta_gdpr: false
+
+  # For help on configuring the Advanced proxy features, see:
+  # http://usegalaxy.org/production  Apache can handle file downloads
+  # (Galaxy-to-user) via mod_xsendfile.  Set this to True to inform
+  # Galaxy that mod_xsendfile is enabled upstream.
+  #apache_xsendfile: false
+
+  # The same download handling can be done by nginx using X-Accel-
+  # Redirect.  This should be set to the path defined in the nginx
+  # config as an internal redirect with access to Galaxy's data files
+  # (see documentation linked above).
+  #nginx_x_accel_redirect_base: null
+
+  # This value overrides the action set on the file upload form, e.g.
+  # the web path where the nginx_upload_module has been configured to
+  # intercept upload requests.
+  #nginx_upload_path: null
+
+  # E-mail domains blacklist is used for filtering out users that are
+  # using disposable email address during the registration.  If their
+  # address domain matches any domain in the blacklist, they are refused
+  # the registration.
+  #blacklist_file: config/disposable_email_blacklist.conf
+
+  # Append "/{brand}" to the "Galaxy" text in the masthead.
+  #brand: null
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_type: file
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_data_dir: database/citations/data
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_lock_dir: database/citations/lock
+
+  # If proxy-prefix is enabled and you're running more than one Galaxy
+  # instance behind one hostname, you will want to set this to the same
+  # path as the prefix in the filter above.  This value becomes the
+  # "path" attribute set in the cookie so the cookies from each instance
+  # will not clobber each other.
+  #cookie_path: null
+
+  # Enable authentication via OpenID.  Allows users to log in to their
+  # Galaxy account by authenticating with an OpenID provider.
+  #enable_openid: false
+
+  # Turn on logging of user actions to the database.  Actions currently
+  # logged are grid views, tool searches, and use of "recently" used
+  # tools menu.  The log_events and log_actions functionality will
+  # eventually be merged.
+  #log_actions: true
+
+  # Password expiration period (in days). Users are required to change
+  # their password every x days. Users will be redirected to the change
+  # password screen when they log in after their password expires. Enter
+  # 0 to disable password expiration.
+  #password_expiration_period: 0
+
+  # Log to Sentry Sentry is an open source logging and error aggregation
+  # platform.  Setting sentry_dsn will enable the Sentry middleware and
+  # errors will be sent to the indicated sentry instance.  This
+  # connection string is available in your sentry instance under
+  # <project_name> -> Settings -> API Keys.
+  #sentry_dsn: null
+
+  # Galaxy Session Timeout This provides a timeout (in minutes) after
+  # which a user will have to log back in. A duration of 0 disables this
+  # feature.
+  #session_duration: 0
+
+  # The URL linked by the "Terms and Conditions" link in the "Help"
+  # menu, as well as on the user registration and login forms and in the
+  # activation emails.
+  #terms_url: null
 
