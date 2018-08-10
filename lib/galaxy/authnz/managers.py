@@ -1,5 +1,5 @@
 
-import cloudauthz
+from cloudauthz import CloudAuthz
 import importlib
 import logging
 import xml.etree.ElementTree as ET
@@ -145,17 +145,14 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def request_cloud_access_tokens(self, cloudauthz):
+    @staticmethod
+    def get_cloud_access_credentials(cloudauthz):
         """
 
         :param cloudauthz:
         :return:
         """
-        ca = cloudauthz.CloudAuthz()
         config = cloudauthz.config
         config['id_token'] = cloudauthz.authn.get_id_token()
-        import ast
-        dicctt = ast.literal_eval(cloudauthz.authn.extra_data)
-        config['id_token'] = dicctt.get('id_token')
-        re = ca.authorize(cloudauthz.provider, config)
-        pass
+        ca = CloudAuthz()
+        return ca.authorize(cloudauthz.provider, config)
