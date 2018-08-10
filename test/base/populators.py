@@ -467,7 +467,7 @@ class BaseWorkflowPopulator(object):
     def load_workflow_from_resource(self, name, filename=None):
         if filename is None:
             filename = "data/%s.ga" % name
-        content = resource_string(__name__, filename)
+        content = resource_string(__name__, filename).decode('utf-8')
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name, **create_kwds):
