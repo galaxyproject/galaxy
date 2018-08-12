@@ -508,6 +508,17 @@ do
               shift 1
           fi
           ;;
+      -integration_py3|--integration_py3)
+          test_script="pytest"
+          report_file="./run_api_tests_python_3.html"
+          if [ $# -gt 1 ]; then
+              integration_extra=$2
+              shift 2
+          else
+              integration_extra="./test/integration"
+              shift 1
+          fi
+          ;;
       --no_cleanup)
           GALAXY_TEST_NO_CLEANUP=1
           export GALAXY_TEST_NO_CLEANUP
