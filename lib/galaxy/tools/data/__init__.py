@@ -185,10 +185,11 @@ class ToolDataTableManager(object):
         # add new elems
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
-        with RenamedTemporaryFile(full_path) as out:
+        with RenamedTemporaryFile(full_path, mode='w') as out:
             out.write('<?xml version="1.0"?>\n<tables>\n')
             for elem in out_elems:
-                out.write(util.xml_to_string(elem, pretty=True))
+                elem = util.xml_to_string(elem, pretty=True)
+                out.write(elem)
             out.write('</tables>\n')
         os.chmod(full_path, 0o644)
         if out_path_is_new:
@@ -626,9 +627,10 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                     # ensure last existing line ends with new line
                     data_table_fh.seek(-1, 2)  # last char in file
                     last_char = data_table_fh.read(1)
-                    if last_char not in ['\n', '\r']:
-                        data_table_fh.write('\n')
-                data_table_fh.write("%s\n" % (self.separator.join(fields)))
+                    if last_char not in [b'\n', b'\r']:
+                        data_table_fh.write(b'\n')
+                    fields = "%s\n" % self.separator.join(fields)
+                data_table_fh.write(fields.encode('utf-8'))
         return not is_error
 
     def _remove_entry(self, values):

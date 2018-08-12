@@ -3,6 +3,7 @@ import os
 import threading
 import time
 
+from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import xml_util
 
@@ -31,15 +32,14 @@ class DataManagerHandler(object):
         lock = threading.Lock()
         lock.acquire(True)
         try:
-            fh = open(config_filename, 'wb')
-            if data_managers_path is not None:
-                fh.write('<?xml version="1.0"?>\n<data_managers tool_path="%s">\n    ' % data_managers_path)
-            else:
-                fh.write('<?xml version="1.0"?>\n<data_managers>\n    ')
-            for elem in config_elems:
-                fh.write(xml_util.xml_to_string(elem))
-            fh.write('</data_managers>\n')
-            fh.close()
+            with RenamedTemporaryFile(config_filename, mode='w') as fh:
+                if data_managers_path is not None:
+                    fh.write('<?xml version="1.0"?>\n<data_managers tool_path="%s">\n    ' % data_managers_path)
+                else:
+                    fh.write('<?xml version="1.0"?>\n<data_managers>\n    ')
+                for elem in config_elems:
+                    fh.write(xml_util.xml_to_string(elem))
+                fh.write('</data_managers>\n')
         except Exception:
             log.exception("Exception in DataManagerHandler.data_manager_config_elems_to_xml_file")
         finally:
