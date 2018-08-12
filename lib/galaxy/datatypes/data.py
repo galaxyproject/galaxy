@@ -252,7 +252,19 @@ class Data(object):
                     util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, trans.app.config.gid)
                     tmpf = os.path.join(tmpd, 'library_download.' + params.do_action)
                     archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
-                    archive.add = lambda x, y: archive.write(x, y.encode('CP437'))
+
+                    def zipfile_add(fpath, arcname):
+                        encoded_arcname = arcname.encode('CP437')
+                        try:
+                            archive.write(fpath, encoded_arcname)
+                        except TypeError:
+                            # Despite documenting the need for CP437 encoded arcname,
+                            # python 3 actually needs this to be a unicode string ...
+                            # https://bugs.python.org/issue24110
+                            archive.write(fpath, arcname)
+
+                    archive.add = zipfile_add
+
                 elif params.do_action == 'tgz':
                     archive = util.streamball.StreamBall('w|gz')
                 elif params.do_action == 'tbz':
@@ -285,7 +297,7 @@ class Data(object):
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
-                        tmpfh = open(tmpf)
+                        tmpfh = open(tmpf, 'rb')
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type("application/x-zip-compressed")
                         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.zip"' % outfname
@@ -432,7 +444,7 @@ class Data(object):
             # This is returning to the browser, it needs to be encoded.
             # TODO Ideally this happens a layer higher, but this is a bad
             # issue affecting many tools
-            return sanitize_html(open(filename, 'rb').read()).encode('utf-8')
+            return sanitize_html(open(filename, 'r').read()).encode('utf-8')
 
         return open(filename, mode='rb')
 
