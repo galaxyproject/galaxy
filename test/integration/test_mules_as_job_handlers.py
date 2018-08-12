@@ -13,10 +13,11 @@ class _BaseMulesIntegrationTestCase(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
     require_uwsgi = True
+    expected_server_name = 'main.web'
 
     def test_runs_on_mule(self):
         tool_id = 'config_vars'
-        expect_server_name = 'main.mule'
+        expect_server_name = self.expected_server_name
         dataset_populator = DatasetPopulator(self.galaxy_interactor)
         history_id = dataset_populator.new_history()
         payload = dataset_populator.run_tool(
@@ -38,6 +39,8 @@ class _BaseMulesIntegrationTestCase(integration_util.IntegrationTestCase):
 @integration_util.skip_if_jenkins
 class SingleMuleAsJobHandlersIntegrationTestCase(_BaseMulesIntegrationTestCase):
 
+    expected_server_name = 'main.job-handlers'
+
     @classmethod
     def handle_uwsgi_cli_command(cls, command):
         command.extend([
@@ -49,6 +52,8 @@ class SingleMuleAsJobHandlersIntegrationTestCase(_BaseMulesIntegrationTestCase):
 
 @integration_util.skip_if_jenkins
 class MultipleMulesAsJobHandlersIntegrationTestCase(_BaseMulesIntegrationTestCase):
+
+    expected_server_name = 'main.job-handlers'
 
     @classmethod
     def handle_uwsgi_cli_command(cls, command):

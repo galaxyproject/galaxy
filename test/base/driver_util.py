@@ -411,10 +411,11 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
         conn = http_client.HTTPConnection(host, port)
         try:
             conn.request("GET", "/")
-            if conn.getresponse().status == 200:
+            response = conn.getresponse()
+            if response.status == 200:
                 break
         except socket.error as e:
-            if e[0] not in [61, 111]:
+            if e.errno not in [61, 111]:
                 raise
         time.sleep(sleep_amount)
     else:
@@ -670,8 +671,6 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "uwsgi",
             "--http",
             "%s:%s" % (host, port),
-            "--pythonpath",
-            os.path.join(galaxy_root, "lib"),
             "--yaml",
             yaml_config_path,
             "--module",
@@ -679,6 +678,9 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "--enable-threads",
             "--die-on-term",
         ]
+        for p in sys.path:
+            uwsgi_command.append('--pythonpath')
+            uwsgi_command.append(p)
 
         handle_uwsgi_cli_command = getattr(
             config_object, "handle_uwsgi_cli_command", None
