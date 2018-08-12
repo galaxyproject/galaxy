@@ -21,6 +21,9 @@ class RecursiveNone(object):
     def __nonzero__(self):
         return False
 
+    def __bool__(self):
+        return False
+
 
 class NoneDataset(RecursiveNone):
     def __init__(self, datatypes_registry=None, ext='data', dbkey='?'):
