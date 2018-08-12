@@ -105,9 +105,9 @@ class CloudController(BaseAPIController):
         if objects is None:
             missing_arguments.append("objects")
 
-        credentials = payload.get("credentials", None)
-        if credentials is None:
-            missing_arguments.append("credentials")
+        authz_id = payload.get("authz_id", None)
+        if authz_id is None:
+            missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
             raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
@@ -126,7 +126,7 @@ class CloudController(BaseAPIController):
                                              provider=provider,
                                              bucket=bucket,
                                              objects=objects,
-                                             credentials=credentials,
+                                             authz_id=authz_id,
                                              input_args=payload.get("input_args", None))
         rtv = []
         for dataset in datasets:
