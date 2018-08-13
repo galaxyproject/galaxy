@@ -105,8 +105,8 @@ class CloudController(BaseAPIController):
         if objects is None:
             missing_arguments.append("objects")
 
-        authz_id = payload.get("authz_id", None)
-        if authz_id is None:
+        encoded_authz_id = payload.get("authz_id", None)
+        if encoded_authz_id is None:
             missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
@@ -116,6 +116,11 @@ class CloudController(BaseAPIController):
             history_id = self.decode_id(encoded_history_id)
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
+
+        try:
+            authz_id = self.decode_id(encoded_authz_id)
+        except exceptions.MalformedId as e:
+            raise ActionInputError('Invalid authz ID. {}'.format(e))
 
         if not isinstance(objects, list):
             raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
