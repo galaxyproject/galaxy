@@ -749,7 +749,6 @@ class Trr(Binary):
     False
     """
     file_ext = "trr"
-    edam_format = "format_3590"
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
