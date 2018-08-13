@@ -21,7 +21,8 @@ class CloudAuthzManager(sharable.SharableModelManager):
     def __init__(self, app, *args, **kwargs):
         super(CloudAuthzManager, self).__init__(app, *args, **kwargs)
 
-    def can_user_assume_authn(self, trans, authn_id):
+    @staticmethod
+    def can_user_assume_authn(trans, authn_id):
         qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
         if qres is None:
             msg = "Authentication record with the given `authn_id` (`{}`) not found.".format(authn_id)
