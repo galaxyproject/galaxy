@@ -8,6 +8,7 @@ from math import isinf
 from galaxy.tools.deps import requirements
 from galaxy.util import string_as_bool, xml_text, xml_to_string
 from galaxy.util.odict import odict
+from .error_level import StdioErrorLevel
 from .interface import (
     InputSource,
     PageSource,
@@ -252,7 +253,8 @@ class XmlToolSource(ToolSource):
             data_dict[output_def.name] = output_def
             return output_def
 
-        map(_parse, out_elem.findall("data"))
+        for _ in out_elem.findall("data"):
+            _parse(_)
 
         for collection_elem in out_elem.findall("collection"):
             name = collection_elem.get("name")
@@ -860,7 +862,6 @@ class StdioParser(object):
         Parses error level and returns error level enumeration. If
         unparsable, returns 'fatal'
         """
-        from galaxy.jobs.error_level import StdioErrorLevel
         return_level = StdioErrorLevel.FATAL
         try:
             if err_level:

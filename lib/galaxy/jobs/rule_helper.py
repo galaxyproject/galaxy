@@ -154,7 +154,7 @@ class RuleHelper(object):
 
         if not isinstance(hash_value, int):
             # Convert hash_value string into index
-            as_hex = hashlib.md5(hash_value).hexdigest()
+            as_hex = hashlib.md5(util.smart_str(hash_value)).hexdigest()
             hash_value = int(as_hex, 16)
         # else assumed to be 'random' int from 0-~Inf
         random_index = hash_value % len(lst)

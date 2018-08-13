@@ -193,7 +193,7 @@ class MetadataCollection(object):
             meta_dict['__extension__'] = dataset_meta_dict['__extension__']
         if filename is None:
             return json.dumps(meta_dict)
-        json.dump(meta_dict, open(filename, 'wb+'))
+        json.dump(meta_dict, open(filename, 'wt+'))
 
     def __getstate__(self):
         # cannot pickle a weakref item (self._parent), when
@@ -513,7 +513,7 @@ class FileParameter(MetadataParameter):
         if value:
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             object_session(target_context.parent).add(new_value)
-            object_session(target_context.parent).flush()
+            object_session(target_context.parent).flush([new_value])
             shutil.copy(value.file_name, new_value.file_name)
             return self.unwrap(new_value)
         return None
@@ -563,7 +563,7 @@ class FileParameter(MetadataParameter):
         if object_session(dataset):
             mf = galaxy.model.MetadataFile(name=self.spec.name, dataset=dataset, **kwds)
             object_session(dataset).add(mf)
-            object_session(dataset).flush()  # flush to assign id
+            object_session(dataset).flush([mf])  # flush to assign id
             return mf
         else:
             # we need to make a tmp file that is accessable to the head node,
@@ -745,28 +745,28 @@ class JobExternalOutputMetadataWrapper(object):
                 cPickle.dump(dataset, open(metadata_files.filename_in, 'wb+'))
                 # file to store metadata results of set_meta()
                 metadata_files.filename_out = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_out_%s_" % key).name)
-                open(metadata_files.filename_out, 'wb+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                open(metadata_files.filename_out, 'wt+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 # file to store a 'return code' indicating the results of the set_meta() call
                 # results code is like (True/False - if setting metadata was successful/failed , exception or string of reason of success/failure )
                 metadata_files.filename_results_code = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_results_%s_" % key).name)
                 # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
-                json.dump((False, 'External set_meta() not called'), open(metadata_files.filename_results_code, 'wb+'))
+                json.dump((False, 'External set_meta() not called'), open(metadata_files.filename_results_code, 'wt+'))
                 # file to store kwds passed to set_meta()
                 metadata_files.filename_kwds = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_kwds_%s_" % key).name)
-                json.dump(kwds, open(metadata_files.filename_kwds, 'wb+'), ensure_ascii=True)
+                json.dump(kwds, open(metadata_files.filename_kwds, 'wt+'), ensure_ascii=True)
                 # existing metadata file parameters need to be overridden with cluster-writable file locations
                 metadata_files.filename_override_metadata = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_override_%s_" % key).name)
-                open(metadata_files.filename_override_metadata, 'wb+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                open(metadata_files.filename_override_metadata, 'wt+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
                 override_metadata = []
                 for meta_key, spec_value in dataset.metadata.spec.items():
                     if isinstance(spec_value.param, FileParameter) and dataset.metadata.get(meta_key, None) is not None:
                         metadata_temp = MetadataTempFile()
                         shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
                         override_metadata.append((meta_key, metadata_temp.to_JSON()))
-                json.dump(override_metadata, open(metadata_files.filename_override_metadata, 'wb+'))
+                json.dump(override_metadata, open(metadata_files.filename_override_metadata, 'wt+'))
                 # add to session and flush
                 sa_session.add(metadata_files)
-                sa_session.flush()
+                sa_session.flush([metadata_files])
             metadata_files_list.append(metadata_files)
         args = '"%s" "%s" %s %s' % (metadata_path_on_compute(datatypes_config),
                                     job_metadata,

@@ -29,6 +29,7 @@
   <tool file="tool_provided_metadata_9.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
+  <tool file="inputs_as_json_with_paths.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_output_action.xml" />
@@ -83,6 +84,7 @@
   <tool file="paths_as_file.xml" />
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
+  <tool file="column_param_configfile.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
@@ -129,6 +131,8 @@
   <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_cat_group_tag.xml" />
+  <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="cheetah_problem_unbound_var.xml" />

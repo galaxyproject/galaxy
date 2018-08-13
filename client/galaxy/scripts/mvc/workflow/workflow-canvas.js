@@ -84,6 +84,12 @@ class ScrollPanel {
     }
 }
 
+// Zoom levels to use for zooming the workflow canvas
+const zoomLevels = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
+
+// Default zoome level (1)
+const defaultZoomLevel = 7;
+
 class CanvasManager {
     constructor(app, canvas_viewport, overview) {
         this.app = app;
@@ -92,11 +98,42 @@ class CanvasManager {
         this.overview = overview;
         this.oc = overview.find("#overview-canvas");
         this.ov = overview.find("#overview-viewport");
+        // Initialize zooming
+        this.zoomLevel = defaultZoomLevel;
+        this.canvasZoom = zoomLevels[defaultZoomLevel];
+        this.initZoomControls();
         // Make overview box draggable
         this.init_drag();
         // Initialize Copy & Paste events
         this.init_copy_paste();
     }
+    setZoom(zoomLevel) {
+        this.zoomLevel = Math.min(Math.max(0, zoomLevel), zoomLevels.length);
+        this.canvasZoom = zoomLevels[this.zoomLevel];
+        // Set CSS transform to appropriate zoom level
+        this.cv.css("transform-origin", "top left");
+        this.cv.css("transform", "scale(" + this.canvasZoom + ")");
+        // Modify canvas size to account for scale
+        this.cv.css("width", `${100 / this.canvasZoom}%`);
+        this.cv.css("height", `${100 / this.canvasZoom}%`);
+        // Update canvas size
+        this.app.workflow.fit_canvas_to_nodes();
+    }
+    initZoomControls() {
+        var zoomControl = $('<div class="btn-group-vertical"/>').css({
+            position: "absolute",
+            left: "1rem",
+            bottom: "1rem"
+        });
+        zoomControl.append(
+            $('<div class="btn btn-secondary fa fa-plus"/>').click(() => this.setZoom(this.zoomLevel + 1))
+        );
+        zoomControl.append(
+            $('<div class="btn btn-secondary fa fa-minus"/>').click(() => this.setZoom(this.zoomLevel - 1))
+        );
+        this.cv.closest("#workflow-canvas-body").append(zoomControl);
+    }
+
     init_drag() {
         var self = this;
         var move = (x, y) => {
@@ -131,7 +168,7 @@ class CanvasManager {
                 x_adjust = p.left - o.left;
             })
             .bind("drag", (e, d) => {
-                move(d.offsetX + x_adjust, d.offsetY + y_adjust);
+                move((d.offsetX + x_adjust) / this.canvasZoom, (d.offsetY + y_adjust) / this.canvasZoom);
             })
             .bind("dragend", () => {
                 self.app.workflow.fit_canvas_to_nodes();
@@ -150,7 +187,7 @@ class CanvasManager {
 
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
 
-                move(-(new_x_offset / o_w * in_w), -(new_y_offset / o_h * in_h));
+                move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
             }
@@ -164,7 +201,7 @@ class CanvasManager {
                 var o_h = self.oc.height();
                 var new_x_offset = d.offsetX - self.overview.offset().left;
                 var new_y_offset = d.offsetY - self.overview.offset().top;
-                move(-(new_x_offset / o_w * in_w), -(new_y_offset / o_h * in_h));
+                move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
             })
             .bind("dragend", () => {
                 self.overview.addClass("blockaclick");
@@ -236,11 +273,11 @@ class CanvasManager {
         var o_h = oc.height();
         var cc_pos = cc.position();
         ov.css({
-            left: -(cc_pos.left / in_w * o_w),
-            top: -(cc_pos.top / in_h * o_h),
+            left: -((cc_pos.left / in_w) * o_w),
+            top: -((cc_pos.top / in_h) * o_h),
             // Subtract 2 to account for borders (maybe just change box sizing style instead?)
-            width: cv.width() / in_w * o_w - 2,
-            height: cv.height() / in_h * o_h - 2
+            width: (cv.width() / in_w) * o_w - 2,
+            height: (cv.height() / in_h) * o_h - 2
         });
     }
     draw_overview() {
@@ -263,21 +300,21 @@ class CanvasManager {
         var cv_h = this.cv.height();
         if (in_w < cv_w && in_h < cv_h) {
             // Canvas is smaller than viewport
-            o_w = in_w / cv_w * size;
+            o_w = (in_w / cv_w) * size;
             shift_w = (size - o_w) / 2;
-            o_h = in_h / cv_h * size;
+            o_h = (in_h / cv_h) * size;
             shift_h = (size - o_h) / 2;
         } else if (in_w < in_h) {
             // Taller than wide
             shift_h = 0;
             o_h = size;
-            o_w = Math.ceil(o_h * in_w / in_h);
+            o_w = Math.ceil((o_h * in_w) / in_h);
             shift_w = (size - o_w) / 2;
         } else {
             // Wider than tall
             o_w = size;
             shift_w = 0;
-            o_h = Math.ceil(o_w * in_h / in_w);
+            o_h = Math.ceil((o_w * in_h) / in_w);
             shift_h = (size - o_h) / 2;
         }
         canvas_el.parent().css({
@@ -295,10 +332,10 @@ class CanvasManager {
             c.lineWidth = 1;
             var node_element = $(node.element);
             var position = node_element.position();
-            var x = position.left / in_w * o_w;
-            var y = position.top / in_h * o_h;
-            var w = node_element.width() / in_w * o_w;
-            var h = node_element.height() / in_h * o_h;
+            var x = (position.left / in_w) * o_w;
+            var y = (position.top / in_h) * o_h;
+            var w = (node_element.width() / in_w) * o_w;
+            var h = (node_element.height() / in_h) * o_h;
             if (node.errors) {
                 c.fillStyle = "#FFCCCC";
                 c.strokeStyle = "#AA6666";

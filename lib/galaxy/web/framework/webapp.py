@@ -29,7 +29,9 @@ from galaxy.managers import context
 from galaxy.util import (
     asbool,
     safe_makedirs,
-    safe_str_cmp
+    safe_str_cmp,
+    smart_str,
+    unicodify
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework import (
@@ -316,10 +318,11 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
 
     def get_user(self):
         """Return the current user if logged in or None."""
-        if self.galaxy_session:
-            return self.galaxy_session.user
-        else:
-            return self.__user
+        user = self.__user
+        if not user and self.galaxy_session:
+            user = self.galaxy_session.user
+            self.__user = user
+        return user
 
     def set_user(self, user):
         """Set the current user."""
@@ -346,7 +349,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         """Convenience method for setting a session cookie"""
         # The galaxysession cookie value must be a high entropy 128 bit random number encrypted
         # using a server secret key.  Any other value is invalid and could pose security issues.
-        self.response.cookies[name] = value
+        self.response.cookies[name] = unicodify(value)
         self.response.cookies[name]['path'] = path
         self.response.cookies[name]['max-age'] = 3600 * 24 * age  # 90 days
         tstamp = time.localtime(time.time() + 3600 * 24 * age)
@@ -404,8 +407,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         if not master_api_key:
             return False
         # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(master_api_key).hexdigest()
-        provided_hash = hashlib.sha256(api_key).hexdigest()
+        master_hash = hashlib.sha256(smart_str(master_api_key)).hexdigest()
+        provided_hash = hashlib.sha256(smart_str(api_key)).hexdigest()
         return safe_str_cmp(master_hash, provided_hash)
 
     def _ensure_valid_session(self, session_cookie, create=True):
@@ -604,7 +607,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             user.set_random_password(length=12)
             user.external = True
             # Replace invalid characters in the username
-            for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-']:
+            for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-' + '.']:
                 username = username.replace(char, '-')
             # Find a unique username - user can change it later
             if self.sa_session.query(self.app.model.User).filter_by(username=username).first():
@@ -931,7 +934,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def fill_template_mako(self, filename, template_lookup=None, **kwargs):
         template_lookup = template_lookup or self.webapp.mako_template_lookup
         template = template_lookup.get_template(filename)
-        template.output_encoding = 'utf-8'
 
         data = dict(caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)
         data.update(self.template_context)
@@ -940,7 +942,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
 
     def stream_template_mako(self, filename, **kwargs):
         template = self.webapp.mako_template_lookup.get_template(filename)
-        template.output_encoding = 'utf-8'
         data = dict(caller=self, t=self, trans=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)
         data.update(self.template_context)
         data.update(kwargs)

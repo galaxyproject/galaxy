@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Script for submitting Galaxy job information to the Galactic radio telescope.
+"""Script for submitting Galaxy job information to the Galactic Radio Telescope.
 
 See doc/source/admin/grt.rst for more detailed usage information.
 """
@@ -24,14 +24,16 @@ def main(argv):
                         default=default_config)
     parser.add_argument("-l", "--loglevel", choices=['debug', 'info', 'warning', 'error', 'critical'],
                         help="Set the logging level", default='warning')
+
     args = parser.parse_args()
+    logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
 
     logging.info('Loading GRT configuration...')
     try:
         with open(args.grt_config) as handle:
             config = yaml.safe_load(handle)
     except Exception:
-        logging.info('Using default GRT configuration')
+        logging.warning('Using default GRT configuration')
         with open(sample_config) as handle:
             config = yaml.safe_load(handle)
 
@@ -46,10 +48,12 @@ def main(argv):
     }
     r = requests.post(GRT_URL + 'api/whoami', headers=headers)
     data = r.json()
-    # we get back some information about which reports had previously been uploaded.
+    # Get back some information about which reports had previously been uploaded.
     remote_reports = data['uploaded_reports']
-    # so now we can know which to send.
+    logging.debug("Remote reports: %s", remote_reports)
     local_reports = [x.strip('.json') for x in os.listdir(REPORT_DIR) if x.endswith('.json')]
+    logging.debug("Local reports: %s", local_reports)
+    # Now we know which to send.
     for report_id in local_reports:
         if report_id not in remote_reports:
             logging.info("Uploading %s", report_id)
@@ -61,7 +65,10 @@ def main(argv):
                 'identifier': report_id
             }
             r = requests.post(GRT_URL + 'api/v2/upload', files=files, headers=headers, data=data)
-            logging.info("Uploaded successfully", report_id)
+            if r.ok:
+                logging.info("Uploaded successfully %s", report_id)
+            else:
+                logging.critical("Non-OK response: %s", r.status_code)
 
 
 if __name__ == '__main__':

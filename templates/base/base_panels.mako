@@ -219,27 +219,29 @@
                 </div>
             %endif
             ${self.overlay(visible=self.overlay_visible)}
-            %if self.has_left_panel:
-                <div id="left">
-                    ${self.left_panel()}
-                    <div class="unified-panel-footer">
-                        <div id="left-panel-collapse" class="panel-collapse"></div>
-                        <div id="left-panel-drag" class="drag"></div>
-                    </div>
-                </div><!--end left-->
-            %endif
-            <div id="center" class="inbound">
-                ${self.center_panel()}
-            </div><!--end center-->
-            %if self.has_right_panel:
-                <div id="right">
-                    ${self.right_panel()}
-                    <div class="unified-panel-footer">
-                        <div id="right-panel-collapse" class="panel-collapse right"></div>
-                        <div id="right-panel-drag" class="drag"></div>
-                    </div>
-                </div><!--end right-->
-            %endif
+            <div id="columns">
+                %if self.has_left_panel:
+                    <div id="left">
+                        ${self.left_panel()}
+                        <div class="unified-panel-footer">
+                            <div id="left-panel-collapse" class="panel-collapse"></div>
+                            <div id="left-panel-drag" class="drag"></div>
+                        </div>
+                    </div><!--end left-->
+                %endif
+                <div id="center" class="inbound">
+                    ${self.center_panel()}
+                </div><!--end center-->
+                %if self.has_right_panel:
+                    <div id="right">
+                        ${self.right_panel()}
+                        <div class="unified-panel-footer">
+                            <div id="right-panel-collapse" class="panel-collapse right"></div>
+                            <div id="right-panel-drag" class="drag"></div>
+                        </div>
+                    </div><!--end right-->
+                %endif
+            </div><!--end columns-->
         </div><!--end everything-->
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

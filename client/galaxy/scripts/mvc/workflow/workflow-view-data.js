@@ -111,9 +111,10 @@ var OutputCalloutView = Backbone.View.extend({
                             var outputName = view.output.name;
                             if (node.isWorkflowOutput(outputName)) {
                                 node.removeWorkflowOutput(outputName);
-                                view
-                                    .$("img")
-                                    .attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`);
+                                view.$("img").attr(
+                                    "src",
+                                    `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
+                                );
                             } else {
                                 node.addWorkflowOutput(outputName);
                                 view.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);

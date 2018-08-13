@@ -60,7 +60,7 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner(object):
-    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: x >= 0, default=0))
+    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
         """Start the job runner
@@ -119,12 +119,7 @@ class BaseJobRunner(object):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
         put_timer = ExecutionTimer()
-        job = job_wrapper.get_job()
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state(model.Job.states.QUEUED, flush=False, job=job)
-        # Persist the destination so that the job will be included in counts if using concurrency limits
-        job_wrapper.set_job_destination(job_wrapper.job_destination, None, flush=False, job=job)
-        self.sa_session.flush()
+        job_wrapper.enqueue()
         self.mark_as_queued(job_wrapper)
         log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
 

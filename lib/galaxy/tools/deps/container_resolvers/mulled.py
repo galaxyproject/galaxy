@@ -54,7 +54,7 @@ CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
-    images_and_versions = subprocess.check_output(command).strip().splitlines()
+    images_and_versions = six.text_type(subprocess.check_output(command)).strip().splitlines()
     images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
     name_filter = get_filter(namespace)
 

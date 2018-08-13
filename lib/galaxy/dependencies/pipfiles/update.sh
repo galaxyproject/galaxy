@@ -34,17 +34,21 @@ ENVS="develop
 flake8
 default"
 
+export PIPENV_IGNORE_VIRTUALENVS=1
 for env in $ENVS; do
     cd "$THIS_DIRECTORY/$env"
-    pipenv lock
+    pipenv lock -v
     # Strip out hashes and trailing whitespace for unhashed version
     # of this requirements file, needed for pipenv < 11.1.2
     pipenv lock -r | sed -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' > pinned-requirements.txt
     # Fix oscillating environment markers
     sed -i.orig -e "s/^cffi==\([^;]\+\).*$/cffi==\1/" \
+                -e "s/^cmd2==\([^;]\+\).*$/cmd2==\1/" \
                 -e "s/^enum34==\([^;]\+\).*$/enum34==\1; python_version < '3.4'/" \
                 -e "s/^funcsigs==\([^;]\+\).*$/funcsigs==\1; python_version < '3.3'/" \
-                -e "s/^py2-ipaddress==\([^;]\+\).*$/py2-ipaddress==\1; python_version < '3'/" pinned-requirements.txt
+                -e "s/^futures==\([^;]\+\).*$/futures==\1; python_version == '2.6' or python_version == '2.7'/" \
+                -e "s/^py2-ipaddress==\([^;]\+\).*$/py2-ipaddress==\1; python_version < '3'/" \
+                -e "s/^subprocess32==\([^;]\+\).*$/subprocess32==\1; python_version < '3.0'/" pinned-requirements.txt
 done
 
 if [ "$commit" -eq "1" ];

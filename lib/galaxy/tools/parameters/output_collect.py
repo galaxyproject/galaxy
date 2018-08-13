@@ -407,7 +407,7 @@ class JobContext(object):
             dataset_name = fields_match.name or designation
 
             link_data = discovered_file.match.link_data
-
+            tag_list = discovered_file.match.tag_list
             dataset = self.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -417,6 +417,7 @@ class JobContext(object):
                 filename=filename,
                 metadata_source_name=metadata_source_name,
                 link_data=link_data,
+                tag_list=tag_list,
             )
             log.debug(
                 "(%s) Created dynamic collection dataset for path [%s] with element identifier [%s] for output [%s] %s",
@@ -473,6 +474,7 @@ class JobContext(object):
         library_folder=None,
         link_data=False,
         primary_data=None,
+        tag_list=[],
     ):
         app = self.app
         sa_session = self.sa_session
@@ -493,6 +495,10 @@ class JobContext(object):
             metadata_source = self.inp_data[metadata_source_name]
 
         sa_session.flush()
+
+        if tag_list:
+            app.tag_handler.add_tags_from_list(self.job.user, primary_data, tag_list)
+
         # Move data from temp location to dataset location
         if not link_data:
             app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
@@ -666,6 +672,7 @@ DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
 
 
 def discover_files(output_name, tool_provided_metadata, extra_file_collectors, job_working_directory, matchable):
+    extra_file_collectors = list(extra_file_collectors)
     if extra_file_collectors and extra_file_collectors[0].discover_via == "tool_provided_metadata":
         # just load entries from tool provided metadata...
         assert len(extra_file_collectors) == 1
@@ -871,6 +878,10 @@ class JsonCollectedDatasetMatch(object):
     @property
     def link_data(self):
         return bool(self.as_dict.get("link_data_only", False))
+
+    @property
+    def tag_list(self):
+        return self.as_dict.get("tags", [])
 
     @property
     def object_id(self):

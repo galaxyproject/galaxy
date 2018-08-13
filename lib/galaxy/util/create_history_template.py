@@ -187,7 +187,7 @@ def inputs_recursive(trans, input_params, param_values, depth=1, upgrade_message
                         tool_parameter_template += '<a class="input-dataset-show-params" target="galaxy_main" data-hda-id="' + encoded_id + '"'
                         tool_parameter_template += 'href="' + dataset_info_url + '">' + str(hda.hid) + ':' + hda.name + '</a>'
                     else:
-                        tool_parameter_template += element.hid + ':' + element.name
+                        tool_parameter_template += str(element.hid) + ':' + element.name
                     tool_parameter_template += '</td><td></td></tr>'
             elif input.visible:
                 label = input.label if (hasattr(input, "label") and input.label) else input.name

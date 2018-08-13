@@ -4,6 +4,7 @@ import os
 from galaxy.tools.cwl import tool_proxy
 from galaxy.tools.deps import requirements
 from galaxy.util.odict import odict
+from .error_level import StdioErrorLevel
 from .interface import (
     PageSource,
     PagesSource,
@@ -77,8 +78,6 @@ class CwlToolSource(ToolSource):
 
     def parse_stdio(self):
         # TODO: remove duplication with YAML
-        from galaxy.jobs.error_level import StdioErrorLevel
-
         # New format - starting out just using exit code.
         exit_code_lower = ToolStdioExitCode()
         exit_code_lower.range_start = float("-inf")

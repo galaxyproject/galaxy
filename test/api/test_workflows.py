@@ -31,6 +31,91 @@ from galaxy.exceptions import error_codes  # noqa: I201
 from galaxy.tools.verify.test_data import TestDataResolver
 
 
+SIMPLE_NESTED_WORKFLOW_YAML = """
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: second_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: random_lines#out_file1
+      steps:
+        - tool_id: random_lines1
+          label: random_lines
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+  - tool_id: cat1
+    label: second_cat
+    state:
+      input1:
+        $link: nested_workflow#workflow_output
+      queries:
+        - input2:
+            $link: nested_workflow#workflow_output
+"""
+
+NESTED_WORKFLOW_AUTO_LABELS = """
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: second_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: outer_input
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - source: 1#out_file1
+      steps:
+        - tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    label: nested_workflow
+    connect:
+      inner_input: first_cat#out_file1
+  - tool_id: cat1
+    label: second_cat
+    state:
+      input1:
+        $link: nested_workflow#1:out_file1
+      queries:
+        - input2:
+            $link: nested_workflow#1:out_file1
+"""
+
+
 class BaseWorkflowsApiTestCase(api.ApiTestCase):
     # TODO: Find a new file for this class.
 
@@ -857,6 +942,23 @@ test_data:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
+    def test_run_subworkflow_auto_labels(self):
+            history_id = self.dataset_populator.new_history()
+            workflow_run_description = """%s
+
+test_data:
+  outer_input:
+    value: 1.bed
+    type: File
+""" % NESTED_WORKFLOW_AUTO_LABELS
+            job_summary = self._run_jobs(workflow_run_description, history_id=history_id)
+            assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
+
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            self.assertEqual(
+                "chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n",
+                content)
+
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
     def test_workflow_run_zip_collections(self):
@@ -897,6 +999,31 @@ steps:
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual(content.strip(), "samp1\t10.0\nsamp2\t20.0\nsamp1\t20.0\nsamp2\t40.0")
+
+    @skip_without_tool("collection_paired_test")
+    def test_workflow_flatten(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  - tool_id: 'collection_creates_dynamic_nested'
+    label: 'nested'
+    state:
+      sleep_time: 0
+      foo: 'dummy'
+  - tool_id: '__FLATTEN__'
+    state:
+      input:
+        $link: nested#list_output
+      join_identifier: '-'
+test_data: {}
+""", history_id=history_id)
+            details = self.dataset_populator.get_history_collection_details(history_id, hid=14)
+            assert details['collection_type'] == "list"
+            elements = details["elements"]
+            identifiers = [e['element_identifier'] for e in elements]
+            assert len(identifiers) == 6
+            assert "oe1-ie1" in identifiers
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
@@ -943,7 +1070,7 @@ test_data:
             def filter_jobs_by_tool(tool_id):
                 return [j for j in summary.jobs if j["tool_id"] == tool_id]
 
-            assert len(filter_jobs_by_tool("upload1")) == 2, jobs
+            assert len(filter_jobs_by_tool("__DATA_FETCH__")) == 1, jobs
             assert len(filter_jobs_by_tool("exit_code_from_file")) == 2, jobs
             assert len(filter_jobs_by_tool("__FILTER_FAILED_DATASETS__")) == 1, jobs
             # Follow proves one job was filtered out of the result of cat1
@@ -1393,7 +1520,7 @@ test_data:
   text_input1:
     type: "list:paired"
         """, history_id=history_id)
-            hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=5)
+            hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=1)
             assert hdca['collection_type'] == 'list:paired'
             assert len(hdca['elements'][0]['object']["elements"]) == 2
 
@@ -2320,6 +2447,54 @@ test_data:
             content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
             assert content["history_content_type"] == "dataset_collection", content
             assert not content["visible"]
+
+    @skip_without_tool("cat")
+    def test_tag_auto_propagation(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - label: first_cat
+    tool_id: cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        add_tags:
+            - "name:treated1fb"
+            - "group:condition:treated"
+            - "group:type:single-read"
+            - "machine:illumina"
+  - label: second_cat
+    tool_id: cat
+    state:
+      input1:
+        $link: first_cat#out_file1
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+""", history_id=history_id)
+
+            details0 = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
+            tags = details0["tags"]
+            assert len(tags) == 4, details0
+            assert "name:treated1fb" in tags, tags
+            assert "group:condition:treated" in tags, tags
+            assert "group:type:single-read" in tags, tags
+            assert "machine:illumina" in tags, tags
+
+            details1 = self.dataset_populator.get_history_dataset_details(history_id, hid=3, wait=True, assert_ok=True)
+            tags = details1["tags"]
+            assert len(tags) == 3, details1
+            assert "name:treated1fb" in tags, tags
+            assert "group:condition:treated" in tags, tags
+            assert "group:type:single-read" in tags, tags
+            assert "machine:illumina" not in tags, tags
 
     @skip_without_tool("collection_creates_pair")
     def test_run_add_tag_on_collection_output(self):

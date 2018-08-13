@@ -748,8 +748,8 @@ class TabularToolDataField(Dictifiable):
         sha1 = hashlib.sha1()
         fmap = self.get_filesize_map(True)
         for k in sorted(fmap.keys()):
-            sha1.update(k)
-            sha1.update(str(fmap[k]))
+            sha1.update(util.smart_str(k))
+            sha1.update(util.smart_str(fmap[k]))
         return sha1.hexdigest()
 
     def to_dict(self):

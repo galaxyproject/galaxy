@@ -1340,6 +1340,11 @@ The functional test tool
 provides a demonstration of using this tag.
 
 ```xml
+<outputs>
+    <data format="tabular" name="sample">
+      <discover_datasets pattern="(?P&lt;designation&gt;.+)\.report\.tsv" ext="tabular" visible="true" assign_primary_output="true" />
+    </data>
+</outputs>
 <test>
   <param name="num_param" value="7" />
   <param name="input" ftype="txt" value="simple_line.txt"/>
@@ -1358,6 +1363,7 @@ provides a demonstration of using this tag.
 </test>
 ```
 
+Note that this tool uses ``assign_primary_output="true"`` for ``<discover_data_sets>``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``<output>`` tag of the test.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:complexContent>
@@ -2093,6 +2099,11 @@ $attribute_list:checked,truevalue,falsevalue:5
 
 A dataset from the current history. Multiple types might be used for the param form.
 
+#### ``group_tag``
+
+$attribute_list:multiple,date_ref:5
+
+
 ##### Examples
 
 The following will find all "coordinate interval files" contained within the
@@ -2350,10 +2361,10 @@ as a comma separated list.
           <xs:annotation>
             <xs:documentation xml:lang="en"><![CDATA[
 
-Only valid if ``type`` attribute value is ``select`` or ``data_column``. Used
-with select lists whose options are dynamically generated based on certain
-metadata attributes of the dataset upon which this parameter depends (usually
-but not always the tool's input dataset).
+Only valid if ``type`` attribute value is ``select``, ``data_column``, or
+``group_tag``. Used with select lists whose options are dynamically generated
+based on certain metadata attributes of the dataset or collection upon which
+this parameter depends (usually but not always the tool's input dataset).
 
             ]]></xs:documentation>
           </xs:annotation>
@@ -2503,6 +2514,7 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="file"/>
       <xs:enumeration value="data"/>
       <xs:enumeration value="drill_down"/>
+      <xs:enumeration value="group_tag"/>
       <xs:enumeration value="data_collection"/>
     </xs:restriction>
   </xs:simpleType>
@@ -3908,7 +3920,7 @@ conditionals are accessed using a hash named after the conditional.
           <param name="vcf_output" type="boolean" checked="false" label="VCF output"
             truevalue="--vcf" falsevalue="" />
         </when>
-      <conditional>
+      </conditional>
     </inputs>
     <outputs>
       <data format="txt" label="Alignment report on ${on_string}" name="output_txt" />
@@ -4549,7 +4561,7 @@ the path to the file created with this directive.</xs:documentation>
       <xs:documentation xml:lang="en"><![CDATA[
 
 This tag set is contained within the <configfiles> tag set. It tells Galaxy to
-write out a JSON representation of the tool parameters .
+write out a JSON representation of the tool parameters.
 
 *Example*
 
@@ -4573,6 +4585,9 @@ the specified name (i.e. ``inputs.json``).
 
 A contrived example of a tool that uses this is the test tool
 [inputs_as_json.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json.xml).
+
+By default this file will not contain paths for data or collection inputs. To include simple
+paths for data parameters set the ``data_style`` attribute to ``paths`` (see [inputs_as_json_with_paths.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/inputs_as_json_with_paths.xml) for an example).
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -4588,6 +4603,11 @@ response to this directive.
         <xs:attribute name="filename" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Path relative to the working directory of the tool for the inputs JSON file created in response to this directive.</xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="data_style" type="xs:string">
+          <xs:annotation>
+            <xs:documentation xml:lang="en">Set to 'paths' to include dataset paths in the resulting file.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>

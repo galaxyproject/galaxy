@@ -489,7 +489,8 @@ class JobsApiTestCase(api.ApiTestCase):
         jobs_response = self._get("jobs", data=dict(state=states))
         self._assert_status_code_is(jobs_response, 200)
         jobs = jobs_response.json()
-        assert not filter(lambda j: j["state"] not in states, jobs)
+        assert not [j for j in jobs if not j['state'] in states]
+        return [j for j in jobs if j['tool_id'] == 'upload1']
         return filter(lambda j: j["tool_id"] == "upload1", jobs)
 
     def __history_with_new_dataset(self):
@@ -506,13 +507,13 @@ class JobsApiTestCase(api.ApiTestCase):
         if not history_id:
             history_id = self.dataset_populator.new_history()
         if collection_type == 'list':
-            create_reposonse = self.dataset_collection_populator.create_list_in_history(history_id).json()
+            fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, direct_upload=True).json()
         elif collection_type == 'pair':
-            create_reposonse = self.dataset_collection_populator.create_pair_in_history(history_id).json()
+            fetch_response = self.dataset_collection_populator.create_pair_in_history(history_id, direct_upload=True).json()
         elif collection_type == 'list:pair':
-            create_reposonse = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()
-        self.dataset_collection_populator.wait_for_dataset_collection(create_reposonse)
-        return history_id, create_reposonse['id']
+            fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()
+        self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        return history_id, fetch_response["outputs"][0]['id']
 
     def __jobs_index(self, **kwds):
         jobs_response = self._get("jobs", **kwds)

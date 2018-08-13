@@ -25,8 +25,10 @@ import logging
 import re
 
 import routes
-from paste import httpexceptions
+import webob.exc
 from six.moves.urllib.parse import urlparse
+
+from galaxy.util import smart_str
 
 log = logging.getLogger(__name__)
 
@@ -92,12 +94,12 @@ class BatchMiddleware(object):
             response = self._process_batch_request(request, request_environ, start_response)
             responses.append(response)
 
-        batch_response_body = json.dumps(responses)
+        batch_response_body = smart_str(json.dumps(responses))
         start_response('200 OK', [
             ('Content-Length', len(batch_response_body)),
             ('Content-Type', 'application/json'),
         ])
-        return batch_response_body
+        return [batch_response_body]
 
     def _read_post_payload(self, environ):
         request_body_size = int(environ.get('CONTENT_LENGTH', 0))
@@ -140,13 +142,10 @@ class BatchMiddleware(object):
         request_environ['QUERY_STRING'] = parsed.query
 
         request_body = request.get('body', u'')
-        # set this to None so webob/request will copy the body using the raw bytes
-        # if we set it, webob will try to use the buffer interface on a unicode string
-        request_environ['CONTENT_LENGTH'] = None
-        # this may well need to change in py3
-        request_body = io.BytesIO(bytearray(request_body, encoding='utf8'))
+        request_body = bytearray(request_body, encoding='utf8')
+        request_environ['CONTENT_LENGTH'] = len(request_body)
+        request_body = io.BytesIO(request_body)
         request_environ['wsgi.input'] = request_body
-        # log.debug( 'request_environ:\n%s', pprint.pformat( request_environ ) )
 
         return request_environ
 
@@ -161,7 +160,7 @@ class BatchMiddleware(object):
         try:
             response = self.galaxy.handle_request(environ, start_response, body_renderer=self.body_renderer)
         # handle errors from galaxy.handle_request (only 404s)
-        except httpexceptions.HTTPNotFound:
+        except webob.exc.HTTPNotFound:
             response = dict(status=404, headers=self._default_headers(), body={})
         return response
 

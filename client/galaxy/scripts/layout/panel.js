@@ -43,14 +43,13 @@ var SidePanel = Backbone.View.extend({
 
     /** panel dom template. id is 'right' or 'left' */
     _templateHeader: function(data) {
-        return [
-            '<div class="unified-panel-header" unselectable="on">',
-            '<div class="unified-panel-header-inner">',
-            '<div class="panel-header-buttons" style="float: right"/>',
-            '<div class="panel-header-text"/>',
-            "</div>",
-            "</div>"
-        ].join("");
+        return `<div class="unified-panel-header" unselectable="on">
+                    <div class="unified-panel-header-inner">
+                        <div class="panel-header-buttons" style="float: right"/>
+                        <div class="panel-header-text"/>
+                    </div>
+                </div>
+                <div class="unified-panel-controls"/>`;
     },
 
     /** panel dom template. id is 'right' or 'left' */
@@ -78,20 +77,22 @@ var SidePanel = Backbone.View.extend({
     _mousedownDragHandler: function(ev) {
         var self = this;
         var draggingLeft = this.id === "left";
-        var prevX = ev.pageX;
+        // Save the mouse position and width of the element (panel) when the
+        // drag interaction is first started
+        var initialX = ev.pageX;
+        var initialWidth = self.$el.width();
 
         function move(e) {
-            var delta = e.pageX - prevX;
-            prevX = e.pageX;
-            var oldWidth = self.$el.width();
-            var newWidth = draggingLeft ? oldWidth + delta : oldWidth - delta;
+            var delta = e.pageX - initialX;
+            var newWidth = draggingLeft ? initialWidth + delta : initialWidth - delta;
             // Limit range
             newWidth = Math.min(MAX_PANEL_WIDTH, Math.max(MIN_PANEL_WIDTH, newWidth));
             self.resize(newWidth);
         }
 
-        // this is a page wide overlay that assists in capturing the move and release of the mouse
-        // if not provided, progress and end wouldn't fire if the mouse moved out of the drag button area
+        // This is a page wide overlay that assists in capturing the move and
+        // release of the mouse. If not provided, progress and end wouldn't fire
+        // if the mouse moved out of the drag button area.
         $("#dd-helper")
             .show()
             .on("mousemove", move)

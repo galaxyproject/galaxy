@@ -13,10 +13,13 @@ from json import dump, load, loads
 
 from six.moves.urllib.request import urlopen
 
-from galaxy import util
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
 from galaxy.datatypes.upload_util import handle_upload, UploadProblemException
+from galaxy.util import (
+    bunch,
+    unicodify
+)
 
 assert sys.version_info[:2] >= (2, 7)
 
@@ -36,12 +39,9 @@ def file_err(msg, dataset):
 
 
 def safe_dict(d):
-    """
-    Recursively clone json structure with UTF-8 dictionary keys
-    http://mellowmachines.com/blog/2009/06/exploding-dictionary-with-unicode-keys-as-python-arguments/
-    """
+    """Recursively clone JSON structure with unicode dictionary keys."""
     if isinstance(d, dict):
-        return dict([(k.encode('utf-8'), safe_dict(v)) for k, v in d.items()])
+        return dict([(unicodify(k), safe_dict(v)) for k, v in d.items()])
     elif isinstance(d, list):
         return [safe_dict(x) for x in d]
     else:
@@ -108,7 +108,7 @@ def add_file(dataset, registry, output_path):
     if not os.path.exists(dataset.path):
         raise UploadProblemException('Uploaded temporary file (%s) does not exist.' % dataset.path)
 
-    if not os.path.getsize(dataset.path) > 0:
+    if check_content and not os.path.getsize(dataset.path) > 0:
         raise UploadProblemException('The uploaded file is empty')
 
     stdout, ext, datatype, is_binary, converted_path = handle_upload(
@@ -141,7 +141,12 @@ def add_file(dataset, registry, output_path):
         # Move the dataset to its "real" path. converted_path is a tempfile so we move it even if purge_source is False.
         if purge_source or converted_path:
             try:
-                shutil.move(converted_path or dataset.path, output_path)
+                # If user has indicated that the original file to be purged and have converted_path tempfile
+                if purge_source and converted_path:
+                    shutil.move(converted_path, output_path)
+                    os.remove(dataset.path)
+                else:
+                    shutil.move(converted_path or dataset.path, output_path)
             except OSError as e:
                 # We may not have permission to remove the input
                 if e.errno != errno.EACCES:
@@ -170,7 +175,7 @@ def add_composite_file(dataset, output_path, files_path):
     if dataset.composite_files:
         os.mkdir(files_path)
         for name, value in dataset.composite_files.items():
-            value = util.bunch.Bunch(**value)
+            value = bunch.Bunch(**value)
             if dataset.composite_file_paths[value.name] is None and not value.optional:
                 raise UploadProblemException('A required composite data file was not provided (%s)' % name)
             elif dataset.composite_file_paths[value.name] is not None:
@@ -249,7 +254,7 @@ def __main__():
 
     metadata = []
     for dataset in datasets:
-        dataset = util.bunch.Bunch(**safe_dict(dataset))
+        dataset = bunch.Bunch(**safe_dict(dataset))
         try:
             output_path = output_paths[int(dataset.dataset_id)][0]
         except Exception:

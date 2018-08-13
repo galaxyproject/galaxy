@@ -273,6 +273,14 @@
         </div>
     </div>
 
+    <div class="unified-panel-controls">
+        <div id="tool-search" class="bar">
+            <input id="tool-search-query" class="search-query parent-width" name="query" placeholder="search tools" autocomplete="off" type="text">
+             <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
+             <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
+        </div>
+    </div>
+
     <div class="unified-panel-body" style="overflow: auto;">
         <div class="toolMenuContainer">
             <div class="toolMenu" id="workflow-tool-menu">
@@ -280,16 +288,6 @@
                     from galaxy.workflow.modules import load_module_sections
                     module_sections = load_module_sections( trans )
                 %>
-                %if trans.app.config.message_box_visible:
-                    <div id="tool-search" style="top: 95px;">
-                %else:
-                    <div id="tool-search">
-                %endif
-                    <input type="text" name="query" placeholder="search tools" id="tool-search-query" class="search-query parent-width" />
-                    <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
-                    <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
-                </div>
-
                 <div class="toolSectionWrapper">
                     ${render_module_section(module_sections['inputs'])}
                 </div>
@@ -358,7 +356,7 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner" style="float: right">
+        <div class="panel-header-buttons" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
         <div class="unified-panel-header-inner" id="workflow-canvas-title">

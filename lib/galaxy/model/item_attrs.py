@@ -128,6 +128,8 @@ class UsesAnnotations(object):
             annotation_assoc = annotation_assoc.filter_by(history=item)
         elif item.__class__ == galaxy.model.HistoryDatasetAssociation:
             annotation_assoc = annotation_assoc.filter_by(hda=item)
+        elif item.__class__ == galaxy.model.HistoryDatasetCollectionAssociation:
+            annotation_assoc = annotation_assoc.filter_by(history_dataset_collection=item)
         elif item.__class__ == galaxy.model.StoredWorkflow:
             annotation_assoc = annotation_assoc.filter_by(stored_workflow=item)
         elif item.__class__ == galaxy.model.WorkflowStep:

@@ -203,7 +203,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
     @selenium_test
     def test_list_paired_display(self):
         history_id = self.current_history_id()
-        collection = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()
+        collection = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()["outputs"][0]
         collection_hid = collection["hid"]
         self.home()
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
