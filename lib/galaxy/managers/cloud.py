@@ -62,16 +62,21 @@ class CloudManager(sharable.SharableModelManager):
         if provider == 'aws':
             access = credentials.get('access_key', None)
             if access is None:
-                missing_credentials.append('access_key')
+                access = credentials.get("AccessKeyId", None)
+                if access is None:
+                    missing_credentials.append('access_key')
             secret = credentials.get('secret_key', None)
             if secret is None:
-                missing_credentials.append('secret_key')
+                secret = credentials.get("SecretAccessKey", None)
+                if secret is None:
+                    missing_credentials.append('secret_key')
             if len(missing_credentials) > 0:
                 raise RequestParameterMissingException("The following required key(s) are missing from the provided "
                                                        "credentials object: {}".format(missing_credentials))
-
+            session_token = credentials.get("SessionToken")
             config = {'aws_access_key': access,
-                      'aws_secret_key': secret}
+                      'aws_secret_key': secret,
+                      "aws_session_token": session_token}
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
             subscription = credentials.get('subscription_id', None)
