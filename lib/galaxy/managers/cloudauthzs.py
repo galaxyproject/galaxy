@@ -24,11 +24,14 @@ class CloudAuthzManager(sharable.SharableModelManager):
     def can_user_assume_authn(self, trans, authn_id):
         qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
         if qres is None:
-            raise exceptions.ObjectNotFound
+            msg = "Authentication record with the given `authn_id` (`{}`) not found.".format(authn_id)
+            log.debug(msg)
+            raise exceptions.ObjectNotFound(msg)
         if qres.user_id != trans.user.id:
-            log.critical('The user with ID:`{}` requested creation of a cloudauthz record and associating it with '
-                        'the authnz record ID:`{}`, which belongs to another user.'.format(trans.user.id, authn_id))
-            raise exceptions.ItemAccessibilityException
+            msg = "The request authentication with ID `{}` is not accessible to user with ID " \
+                  "`{}`.".format(authn_id, trans.user.id)
+            log.warn(msg)
+            raise exceptions.ItemAccessibilityException(msg)
 
 
 class CloudAuthzsSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

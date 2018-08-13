@@ -110,12 +110,7 @@ class CloudAuthzController(BaseAPIController):
         except Exception:
             raise MalformedId('Invalid `authn_id`!')
 
-        try:
-            self.cloudauthz_manager.can_user_assume_authn(trans, authn_id)
-        except ObjectNotFound:
-            raise ObjectNotFound('Authentication record with the given `authn_id` not found.')
-        except ItemAccessibilityException:
-            raise ItemAccessibilityException('The specified authentication with ID:`{}` belongs to another user.'.format(authn_id))
+        self.cloudauthz_manager.can_user_assume_authn(trans, authn_id)
 
         try:
             new_cloudauthz = self.cloudauthz_manager.create(
