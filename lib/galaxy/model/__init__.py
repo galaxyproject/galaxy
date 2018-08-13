@@ -54,7 +54,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
-from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
 
@@ -2753,7 +2752,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     uuid=(lambda uuid: str(uuid) if uuid else None)(hda.dataset.uuid),
                     hid=hda.hid,
                     file_ext=hda.ext,
-                    peek=(lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None)(hda),
+                    peek=unicodify(hda.display_peek()) if hda.peek and hda.peek != 'no peek' else None,
                     model_class=self.__class__.__name__,
                     name=hda.name,
                     deleted=hda.deleted,
@@ -2779,8 +2778,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
         if hda.extended_metadata is not None:
             rval['extended_metadata'] = hda.extended_metadata.data
-
-        rval['peek'] = to_unicode(hda.display_peek())
 
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get(name)
