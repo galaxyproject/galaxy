@@ -168,12 +168,16 @@ class CloudManager(sharable.SharableModelManager):
         }
 
     @staticmethod
-    def _can_user_assume_authz(user, authz):
-        if user.id != authz.user_id:
+    def _get_authz_config(trans, authz_id):
+        authz = trans.sa_session.query(trans.app.model.CloudAuthz).get(authz_id)
+        if authz is None:
+            raise ObjectNotFound("An authorization configuration with given ID not found.")
+        if trans.user.id != authz.user_id:
             msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
-                  "ID:`{}`.".format(authz.id, user.id)
+                  "ID:`{}`.".format(authz.id, trans.user.id)
             log.warn(msg)
             raise ItemAccessibilityException(msg)
+        return authz
 
     def upload(self, trans, history_id, provider, bucket, objects, authz_id, input_args=None):
         """
@@ -214,8 +218,7 @@ class CloudManager(sharable.SharableModelManager):
         if input_args is None:
             input_args = {}
 
-        authz = trans.sa_session.query(trans.app.model.CloudAuthz).get(authz_id)
-        self._can_user_assume_authz(trans.user, authz)
+        authz = self._get_authz_config(trans, authz_id)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(authz)
         connection = self._configure_provider(provider, credentials)
         try:
