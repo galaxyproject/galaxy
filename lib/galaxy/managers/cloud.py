@@ -210,7 +210,7 @@ class CloudManager(sharable.SharableModelManager):
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(authz)
         connection = self._configure_provider(provider, credentials)
         try:
-            bucket_obj = connection.object_store.get(bucket)
+            bucket_obj = connection.storage.buckets.get(bucket)
             if bucket_obj is None:
                 raise RequestParameterInvalidException("The bucket `{}` not found.".format(bucket))
         except Exception as e:
@@ -219,7 +219,7 @@ class CloudManager(sharable.SharableModelManager):
         datasets = []
         for obj in objects:
             try:
-                key = bucket_obj.get(obj)
+                key = bucket_obj.objects.get(obj)
             except Exception as e:
                 raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
             if key is None:
