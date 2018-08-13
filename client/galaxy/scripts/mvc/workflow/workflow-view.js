@@ -322,6 +322,10 @@ export default Backbone.View.extend({
                     self.workflow.clear_active_node();
                 },
                 "Auto Re-layout": layout_editor,
+                Download: {
+                    url: `${Galaxy.root}api/workflows/${self.options.id}/download?format=json-download`,
+                    action: function() {}
+                },
                 Close: close_editor
             });
         }
