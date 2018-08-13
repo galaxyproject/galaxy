@@ -736,6 +736,50 @@ class H5(Binary):
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Trr(Binary):
+    """
+    Class describing an trr file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('em.trr')
+    >>> Trr().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Trr().sniff(fname)
+    False
+    """
+    file_ext = "trr"
+    edam_format = "format_3590"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = 1993
+
+    def sniff(self, filename):
+        # The first 4 bytes of any trr file containing 1993
+        try:
+            header = open(filename, 'rb').read(struct.calcsize('>1i'))
+            if struct.unpack('>1i', header)[0] == self._magic_number:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GROMACS trr file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary GROMACS trr file (%s)" % (nice_size(dataset.get_size()))
+
+
 class Biom2(H5):
     """
     Class describing a biom2 file (http://biom-format.org/documentation/biom_format.html)
