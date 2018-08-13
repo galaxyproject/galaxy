@@ -167,6 +167,14 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
+    @staticmethod
+    def _can_user_assume_authz(user, authz):
+        if user.id != authz.user_id:
+            msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
+                  "ID:`{}`.".format(authz.id, user.id)
+            log.warn(msg)
+            raise ItemAccessibilityException(msg)
+
     def upload(self, trans, history_id, provider, bucket, objects, authz_id, input_args=None):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
@@ -207,6 +215,7 @@ class CloudManager(sharable.SharableModelManager):
             input_args = {}
 
         authz = trans.sa_session.query(trans.app.model.CloudAuthz).get(authz_id)
+        self._can_user_assume_authz(trans.user, authz)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(authz)
         connection = self._configure_provider(provider, credentials)
         try:
