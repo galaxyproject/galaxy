@@ -397,7 +397,7 @@ class RepositoryDependencyInstallManager(object):
                     response = _urlopen(url, payload).read()
                     if response:
                         try:
-                            required_repo_info_dict = json.loads(response)
+                            required_repo_info_dict = json.loads(response.decode('utf-8'))
                         except Exception as e:
                             log.exception(e)
                             return all_repo_info_dicts
