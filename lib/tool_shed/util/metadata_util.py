@@ -113,6 +113,7 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
     """
     Return a list of changesets for the provided repository.
     """
+    sa_session = app.model.context.current
     if downloadable:
         metadata_revisions = repository.downloadable_revisions
     else:
@@ -120,10 +121,16 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
     repo_path = repository.repo_path(app)
     changeset_tups = []
     for repository_metadata in metadata_revisions:
-        try:
-            rev = hg_util.changeset2rev(repo_path, repository_metadata.changeset_revision)
-        except Exception:
-            rev = -1
+        if repository_metadata.numeric_revision == -1:
+            try:
+                rev = hg_util.changeset2rev(repo_path, repository_metadata.changeset_revision)
+                repository_metadata.numeric_revision = rev
+                sa_session.add(repository_metadata)
+                sa_session.flush()
+            except Exception:
+                rev = -1
+        else:
+            rev = repository_metadata.numeric_revision
         changeset_tups.append((rev, repository_metadata.changeset_revision))
     if sort_revisions:
         changeset_tups.sort(key=itemgetter(0), reverse=reverse)
@@ -218,13 +225,13 @@ def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
     all_metadata_records = sa_session.query(app.model.RepositoryMetadata) \
                                      .filter(and_(app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id(id),
                                                   app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision)) \
-                                     .order_by(app.model.RepositoryMetadata.table.c.update_time.desc()) \
                                      .all()
     if len(all_metadata_records) > 1:
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[1:]:
-            sa_session.delete(repository_metadata)
-            sa_session.flush()
+            print(repository_metadata)
+            # sa_session.delete(repository_metadata)
+            # sa_session.flush()
         return all_metadata_records[0]
     elif all_metadata_records:
         return all_metadata_records[0]

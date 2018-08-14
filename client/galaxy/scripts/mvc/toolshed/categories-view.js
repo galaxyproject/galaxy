@@ -89,7 +89,7 @@ var ToolShedCategories = Backbone.View.extend({
             "<% _.each(categories, function(category) { %>",
             "<tr>",
             "<td>",
-            '<a href="#/category/s/<%= tool_shed %>/c/<%= category.get("id") %>"><%= category.get("name") %></a>',
+            '<a href="#/category/s/<%= tool_shed %>/c/<%= category.get("id") %>/k/name/p/1/t/asc"><%= category.get("name") %></a>',
             "</td>",
             '<td><%= category.get("description") %></td>',
             '<td><%= category.get("repositories") %></td>',

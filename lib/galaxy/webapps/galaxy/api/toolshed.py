@@ -188,9 +188,12 @@ class ToolShedController(BaseAPIController):
         :param tool_shed_url: the url of the toolshed to get repositories from
         :param category_id: the category to get repositories from
         """
+        sort_order = kwd.get('sort_order', 'asc')
+        sort_key = kwd.get('sort_key', 'name')
+        page = kwd.get('page', 1)
         tool_shed_url = urlunquote(kwd.get('tool_shed_url', ''))
         category_id = kwd.get('category_id', '')
-        params = dict(installable=True)
+        params = dict(installable=True, sort_order=sort_order, sort_key=sort_key, page=page)
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
         url = util.build_url(tool_shed_url, pathspec=['api', 'categories', category_id, 'repositories'], params=params)
         repositories = []
