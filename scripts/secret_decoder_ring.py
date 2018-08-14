@@ -42,7 +42,7 @@ security_helper = SecurityHelper(id_secret=id_secret)
 if args.action == 'decode':
     sys.stdout.write(security_helper.decode_guid(args.value.lstrip('F')))
 elif args.action == 'encode':
-    sys.stdout.write(security_helper.encode_guid(args.value))
+    sys.stdout.write(security_helper.encode_guid(args.value).decode('utf-8'))
 else:
     sys.stdout.write("Unknown argument")
 sys.stdout.write('\n')

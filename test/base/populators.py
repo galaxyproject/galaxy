@@ -24,10 +24,10 @@ from .workflows_format_2 import (
 
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = resource_string(__name__, "data/test_workflow_1.ga")
+workflow_str = resource_string(__name__, "data/test_workflow_1.ga").decode('utf-8')
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga")
+workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga").decode('utf-8')
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
@@ -467,7 +467,7 @@ class BaseWorkflowPopulator(object):
     def load_workflow_from_resource(self, name, filename=None):
         if filename is None:
             filename = "data/%s.ga" % name
-        content = resource_string(__name__, filename)
+        content = resource_string(__name__, filename).decode('utf-8')
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name, **create_kwds):

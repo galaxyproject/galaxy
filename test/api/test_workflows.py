@@ -940,7 +940,7 @@ test_data:
             self._run_jobs(workflow_run_description, history_id=history_id)
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
-            self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+            self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
 
     def test_run_subworkflow_auto_labels(self):
             history_id = self.dataset_populator.new_history()
@@ -956,7 +956,7 @@ test_data:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual(
-                "chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n",
+                "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
                 content)
 
     @skip_without_tool("cat1")
@@ -1340,7 +1340,8 @@ test_data:
     value: 1.bed
     type: File
 """, history_id=history_id, wait=True)
-            self.assertEqual("chr16\t142908\t143003\tCCDS10397.1_cds_0_0_chr16_142909_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
+            self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
+            # self.assertEqual("chr16\t142908\t143003\tCCDS10397.1_cds_0_0_chr16_142909_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("cat_list")
     @skip_without_tool("random_lines1")
@@ -1406,7 +1407,7 @@ test_data:
     value: 1.bed
     type: File
 """, history_id=history_id, wait=True)
-            self.assertEqual("chr16\t142908\t143003\tCCDS10397.1_cds_0_0_chr16_142909_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
+            self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("cat_list")
     @skip_without_tool("random_lines1")
@@ -1462,7 +1463,7 @@ test_data:
     value: 1.bed
     type: File
 """, history_id=history_id, wait=True)
-            self.assertEqual("chr16\t142908\t143003\tCCDS10397.1_cds_0_0_chr16_142909_f\t0\t+\nchr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
+            self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("empty_list")
     @skip_without_tool("count_list")
@@ -1873,7 +1874,7 @@ test_data:
 
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
-            self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+            self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
 
     @flakey
     @skip_without_tool('cat1')
@@ -2878,7 +2879,7 @@ steps:
         run_workflow_response = self._post("workflows", data=workflow_request)
         self._assert_status_code_is(run_workflow_response, 200)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        self.assertEqual("3\n", self.dataset_populator.get_history_dataset_content(history_id))
+        self.assertEqual("2\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     def test_pja_import_export(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_pja_import", add_pja=True)

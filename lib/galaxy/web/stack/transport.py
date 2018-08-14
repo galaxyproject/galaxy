@@ -5,6 +5,8 @@ from __future__ import absolute_import
 import logging
 import threading
 
+from galaxy.util import unicodify
+
 try:
     import uwsgi
 except ImportError:
@@ -109,7 +111,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             self.__lock(lock)
             try:
                 log.debug('Acquired message lock, waiting for new message')
-                msg = uwsgi.farm_get_msg()
+                msg = unicodify(uwsgi.farm_get_msg())
                 log.debug('Received message: %s', msg)
                 if msg == self.SHUTDOWN_MSG:
                     self.running = False

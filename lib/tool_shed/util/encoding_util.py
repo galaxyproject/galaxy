@@ -2,7 +2,10 @@ import binascii
 import json
 import logging
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 from galaxy.util.hash_util import hmac_new
 
 log = logging.getLogger(__name__)
@@ -35,6 +38,6 @@ def tool_shed_encode(val):
         value = json.dumps(val)
     else:
         value = val
-    a = hmac_new('ToolShedAndGalaxyMustHaveThisSameKey', value)
-    b = binascii.hexlify(value)
+    a = hmac_new(b'ToolShedAndGalaxyMustHaveThisSameKey', smart_str(value))
+    b = binascii.hexlify(smart_str(value)).decode('utf-8')
     return "%s:%s" % (a, b)

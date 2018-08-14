@@ -48,9 +48,9 @@ class UsesShed(object):
         with open(config["shed_tool_data_table_config"], 'w') as shed_data_table_config:
             shed_data_table_config.write(SHED_DATA_TABLES)
 
-    def install_repository(self, owner, name, changeset):
+    def install_repository(self, owner, name, changeset, tool_shed_url='https://toolshed.g2.bx.psu.edu'):
         payload = {
-            'tool_shed_url': 'https://toolshed.g2.bx.psu.edu',
+            'tool_shed_url': tool_shed_url,
             'name': name,
             'owner': owner,
             'changeset_revision': changeset
