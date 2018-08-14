@@ -1,4 +1,5 @@
 import six
+from galaxy.exceptions import MalformedContents
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
@@ -238,10 +239,18 @@ class Storage:
     def is_integrity_error(cls, exception):
         return exception.__class__ is IntegrityError
 
-def contains_required_data(request=None, is_new=False, response=None, **kwargs):
-    if is_new and response is not None and isinstance(response, dict):
-        if not response.get("id_token"):
-            return False
+def contains_required_data(response=None, is_new=False, **kwargs):
+    hint_msg = "Visit the identity provider's permitted applications page " \
+               "(e.g., visit `https://myaccount.google.com/u/0/permissions` " \
+               "for Google), then revoke the access of this Galaxy instance, " \
+               "and then retry to login. If the problem persists, contact " \
+               "the Admin of this Galaxy instance."
+    if response is None or not isinstance(response, dict):
+        raise MalformedContents(err_msg="`response` not found. {}".format(hint_msg))
+    if not response.get("id_token"):
+        raise MalformedContents(err_msg="Missing identity token. {}".format(hint_msg))
+    if is_new and not response.get("refresh_token"):
+        raise MalformedContents(err_msg="Missing refresh token. {}".format(hint_msg))
 
 
 def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None,
