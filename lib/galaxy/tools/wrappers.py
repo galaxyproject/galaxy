@@ -2,7 +2,7 @@ import logging
 import os
 import tempfile
 
-from six import string_types
+from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
@@ -171,6 +171,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
     def __getattr__(self, key):
         return getattr(self.input, key)
 
+    def __iter__(self):
+        if not self.input.multiple:
+            raise Exception("Tried to iterate over a non-multiple parameter.")
+        return self.value.__iter__()
+
 
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
     """
@@ -233,6 +238,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
             self.metadata = self.MetadataWrapper(dataset.metadata)
+            if hasattr(dataset, 'tags'):
+                self.groups = {tag.user_value.lower() for tag in dataset.tags if tag.user_tname == 'group'}
+            else:
+                # May be a 'FakeDatasetAssociation'
+                self.groups = set()
         self.datatypes_registry = datatypes_registry
         self.false_path = getattr(dataset_path, "false_path", None)
         self.false_extra_files_path = getattr(dataset_path, "false_extra_files_path", None)
@@ -363,6 +373,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def __init__(self, job_working_directory, has_collection, dataset_paths=[], **kwargs):
         super(DatasetCollectionWrapper, self).__init__()
         self.job_working_directory = job_working_directory
+        self._dataset_elements_cache = {}
+        self.dataset_paths = dataset_paths
+        self.kwargs = kwargs
 
         if has_collection is None:
             self.__input_supplied = False
@@ -381,6 +394,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         else:
             collection = has_collection
             self.name = None
+        self.collection = collection
 
         elements = collection.elements
         element_instances = odict.odict()
@@ -400,6 +414,16 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
 
         self.__element_instances = element_instances
         self.__element_instance_list = element_instance_list
+
+    def get_datasets_for_group(self, group):
+        group = text_type(group).lower()
+        if not self._dataset_elements_cache.get(group):
+            wrappers = []
+            for element in self.collection.dataset_elements:
+                if any([t for t in element.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                    wrappers.append(self._dataset_wrapper(element.element_object, self.dataset_paths, identifier=element.element_identifier, **self.kwargs))
+            self._dataset_elements_cache[group] = wrappers
+        return self._dataset_elements_cache[group]
 
     def keys(self):
         if not self.__input_supplied:

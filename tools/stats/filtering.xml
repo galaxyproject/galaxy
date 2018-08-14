@@ -4,7 +4,7 @@
     <edam_operation>operation_0335</edam_operation>
   </edam_operations>
   <command>
-    python '$__tool_directory__/filtering.py' $input $out_file1 '$inputs' ${input.metadata.columns} "${input.metadata.column_types}" $header_lines
+    python '$__tool_directory__/filtering.py' '$input' '$out_file1' '$inputs' ${input.metadata.columns} "${input.metadata.column_types}" $header_lines
   </command>
   <configfiles>
     <inputs name="inputs" />

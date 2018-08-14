@@ -88,45 +88,43 @@ def __main__():
 
     assert len(args) == 3, "Invalid command line specified."
 
-    input = open(args[0], 'rb')
-    output = open(args[1], 'wb')
-    num_lines = int(args[2])
-    assert num_lines > 0, "You must select at least one line."
+    with open(args[0], 'rb') as input, open(args[1], 'wb') as output:
+        num_lines = int(args[2])
+        assert num_lines > 0, "You must select at least one line."
 
-    if options.seed is not None:
-        try:
-            # Select version 1, which results in the same seed for python 2 and 3
-            random.seed(options.seed, version=1)
-        except TypeError:
-            # We're on python 2.X, which doesn't know the version argument
-            random.seed(options.seed)
+        if options.seed is not None:
+            seed_int = int("".join([str(ord(_)) for _ in options.seed]))
+            try:
+                # Select version 1, which results in the same seed for python 2 and 3
+                random.seed(seed_int, version=1)
+            except TypeError:
+                # We're on python 2.X, which doesn't know the version argument
+                random.seed(seed_int)
 
-    # get line offsets
-    line_offsets = []
-    teller = input.tell
-    readliner = input.readline
-    appender = line_offsets.append
-    while True:
-        offset = teller()
-        if readliner():
-            appender(offset)
-        else:
-            break
+        # get line offsets
+        line_offsets = []
+        teller = input.tell
+        readliner = input.readline
+        appender = line_offsets.append
+        while True:
+            offset = teller()
+            if readliner():
+                appender(offset)
+            else:
+                break
 
-    total_lines = len(line_offsets)
-    assert num_lines <= total_lines, "Error: asked to select more lines (%i) than there were in the file (%i)." % (num_lines, total_lines)
+        total_lines = len(line_offsets)
+        assert num_lines <= total_lines, "Error: asked to select more lines (%i) than there were in the file (%i)." % (num_lines, total_lines)
 
-    # get random line offsets
-    line_offsets = get_random(line_offsets, num_lines)
+        # get random line offsets
+        line_offsets = get_random(line_offsets, num_lines)
 
-    # write out random lines
-    seeker = input.seek
-    writer = output.write
-    for line_offset in line_offsets:
-        seeker(line_offset)
-        writer(readliner())
-    input.close()
-    output.close()
+        # write out random lines
+        seeker = input.seek
+        writer = output.write
+        for line_offset in line_offsets:
+            seeker(line_offset)
+            writer(readliner())
     print("Kept %i of %i total lines." % (num_lines, total_lines))
     if options.seed is not None:
         print('Used random seed of "%s".' % options.seed)

@@ -279,60 +279,30 @@ $ui-margin-horizontal-large: 10px;
 
 // thumbnails
 .ui-thumbnails {
-    margin-bottom: 10px;
-    .ui-thumbnails-grid {
-        .ui-thumbnails-item {
-            padding: 5px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 5px;
-            .ui-thumbnails-title {
-                text-align: center;
-                font-size: 0.9em;
-                word-wrap: break-work;
-                font-weight: bold;
-                width: 100px;
-            }
-            .ui-thumbnails-image {
-                padding: 10px;
-                width: 100px;
-                height: 86px;
-            }
-            .ui-thumbnails-icon {
-                width: 100px;
-                height: 86px;
-                font-size: 4em;
-                padding: 20px 26px;
-                color: lighten(#25537b, 10%);
-            }
-            .ui-thumbnails-description-title {
-                font-weight: bold;
-            }
-            .ui-thumbnails-description-text {
-                word-wrap: break-word;
-            }
+    .ui-thumbnails-item {
+        cursor: pointer;
+        .ui-thumbnails-image {
+            padding: 10px;
+            width: 100px;
+            height: 86px;
         }
-        .ui-thumbnails-item:hover {
-            .ui-thumbnails-title {
-                text-decoration: underline;
-            }
-            .ui-thumbnails-description-title {
-                text-decoration: underline;
-            }
-            .ui-thumbnails-description-text {
-                text-decoration: underline;
-            }
+        .ui-thumbnails-icon {
+            width: 100px;
+            height: 86px;
+            font-size: 4em;
+            padding: 20px 26px;
+            color: lighten(#25537b, 10%);
         }
-        .ui-thumbnail-current-highlight {
-            border-color: #66afe9;
-            background-color: #eeeeff;
-            outline: 0;
-            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
-            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
+        .ui-thumbnails-text {
+            word-wrap: break-word;
         }
-        .ui-thumbnails-item-float {
-            float: left;
-            height: 140px;
+    }
+    .ui-thumbnails-item:hover {
+        .ui-thumbnails-title {
+            text-decoration: underline;
+        }
+        .ui-thumbnails-text {
+            text-decoration: underline;
         }
     }
 }

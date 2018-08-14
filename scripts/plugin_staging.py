@@ -18,7 +18,10 @@ def link_up_static(f):
     elif not os.path.exists(dest_parent):
         # Create parent dir structure to symlink directly to static.
         os.makedirs(dest_parent)
-    os.symlink(src, dest)
+    try:
+        os.symlink(src, dest)
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":

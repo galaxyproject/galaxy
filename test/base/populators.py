@@ -6,6 +6,11 @@ import unittest
 from functools import wraps
 from operator import itemgetter
 
+try:
+    from nose.tools import nottest
+except ImportError:
+    def nottest(x):
+        return x
 import requests
 from pkg_resources import resource_string
 from six import StringIO
@@ -19,10 +24,10 @@ from .workflows_format_2 import (
 
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = resource_string(__name__, "data/test_workflow_1.ga")
+workflow_str = resource_string(__name__, "data/test_workflow_1.ga").decode('utf-8')
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga")
+workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga").decode('utf-8')
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
@@ -108,6 +113,22 @@ def summarize_instance_history_on_error(method):
     return wrapped_method
 
 
+@nottest
+def uses_test_history(**test_history_kwd):
+    """Can override require_new and cancel_executions using kwds to decorator.
+    """
+
+    def method_wrapper(method):
+        @wraps(method)
+        def wrapped_method(api_test_case, *args, **kwds):
+            with api_test_case.dataset_populator.test_history(**test_history_kwd) as history_id:
+                method(api_test_case, history_id, *args, **kwds)
+
+        return wrapped_method
+
+    return method_wrapper
+
+
 def _raise_skip_if(check):
     if check:
         from nose.plugins.skip import SkipTest
@@ -185,17 +206,9 @@ class BaseDatasetPopulator(object):
             raise
 
     def wait_for_history_jobs(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
-        query_params = {"history_id": history_id}
-
-        def get_jobs():
-            jobs_response = self._get("jobs", query_params)
-            assert jobs_response.status_code == 200
-            return jobs_response.json()
 
         def has_active_jobs():
-            jobs = get_jobs()
-            active_jobs = [j for j in jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
-
+            active_jobs = self.active_history_jobs(history_id)
             if len(active_jobs) == 0:
                 return True
             else:
@@ -204,7 +217,7 @@ class BaseDatasetPopulator(object):
         try:
             wait_on(has_active_jobs, "active jobs", timeout=timeout)
         except TimeoutAssertionError as e:
-            jobs = get_jobs()
+            jobs = self.history_jobs(history_id)
             message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e.message)
             raise TimeoutAssertionError(message)
 
@@ -217,6 +230,22 @@ class BaseDatasetPopulator(object):
     def get_job_details(self, job_id, full=False):
         return self._get("jobs/%s?full=%s" % (job_id, full))
 
+    def cancel_history_jobs(self, history_id, wait=True):
+        active_jobs = self.active_history_jobs(history_id)
+        for active_job in active_jobs:
+            self.cancel_job(active_job["id"])
+
+    def history_jobs(self, history_id):
+        query_params = {"history_id": history_id}
+        jobs_response = self._get("jobs", query_params)
+        assert jobs_response.status_code == 200
+        return jobs_response.json()
+
+    def active_history_jobs(self, history_id):
+        all_history_jobs = self.history_jobs(history_id)
+        active_jobs = [j for j in all_history_jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+        return active_jobs
+
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
 
@@ -225,14 +254,25 @@ class BaseDatasetPopulator(object):
 
     @contextlib.contextmanager
     def test_history(self, **kwds):
-        # TODO: In the future allow targeting a specific history here
-        # and/or deleting everything in the resulting history when done.
-        # These would be cool options for remote Galaxy test execution.
+        cleanup = "GALAXY_TEST_NO_CLEANUP" not in os.environ
+
+        def wrap_up():
+            cancel_executions = kwds.get("cancel_executions", True)
+            if cleanup and cancel_executions:
+                self.cancel_history_jobs(history_id)
+
+        require_new = kwds.get("require_new", True)
         try:
-            history_id = self.new_history()
+            history_id = None
+            if not require_new:
+                history_id = kwds.get("GALAXY_TEST_HISTORY_ID", None)
+
+            history_id = history_id or self.new_history()
             yield history_id
+            wrap_up()
         except Exception:
             self._summarize_history(history_id)
+            wrap_up()
             raise
 
     def new_history(self, **kwds):
@@ -427,7 +467,7 @@ class BaseWorkflowPopulator(object):
     def load_workflow_from_resource(self, name, filename=None):
         if filename is None:
             filename = "data/%s.ga" % name
-        content = resource_string(__name__, filename)
+        content = resource_string(__name__, filename).decode('utf-8')
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name, **create_kwds):
