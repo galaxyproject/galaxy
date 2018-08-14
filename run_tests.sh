@@ -429,6 +429,11 @@ do
           framework_test=1;
           shift 1
           ;;
+      -framework_py3|--framework_py3)
+          report_file="run_framework_tests.html"
+          framework_test=1;
+          shift 1
+          ;;
       -d|-data_managers|--data_managers)
           data_managers_test=1;
           shift 1
