@@ -40,6 +40,8 @@ AUTH_PIPELINE = (
     # defined).
     'social_core.pipeline.social_auth.auth_allowed',
 
+    'galaxy.authnz.psa_authnz.contains_required_data',
+
     # Checks if the current social-account is already associated in the site.
     'social_core.pipeline.social_auth.social_user',
 
@@ -235,6 +237,11 @@ class Storage:
     @classmethod
     def is_integrity_error(cls, exception):
         return exception.__class__ is IntegrityError
+
+def contains_required_data(request=None, is_new=False, response=None, **kwargs):
+    if is_new and response is not None and isinstance(response, dict):
+        if not response.get("id_token"):
+            return False
 
 
 def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None,
