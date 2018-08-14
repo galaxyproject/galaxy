@@ -39,7 +39,7 @@ from .nose_util import run
 from .test_logging import logging_config_file
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-DEFAULT_WEB_HOST = "localhost"
+DEFAULT_WEB_HOST = socket.gethostbyname('localhost')
 DEFAULT_CONFIG_PREFIX = "GALAXY"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
@@ -951,7 +951,7 @@ def setup_keep_outdir():
 
 
 def target_url_parts():
-    host = os.environ.get('GALAXY_TEST_HOST')
+    host = socket.gethostbyname(os.environ.get('GALAXY_TEST_HOST', DEFAULT_WEB_HOST))
     port = os.environ.get('GALAXY_TEST_PORT')
     default_url = "http://%s:%s" % (host, port)
     url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)
