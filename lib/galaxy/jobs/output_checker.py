@@ -3,6 +3,7 @@ import traceback
 from logging import getLogger
 
 from galaxy.tools.parser.error_level import StdioErrorLevel
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 
 log = getLogger(__name__)
@@ -29,6 +30,9 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
     # By default, the tool succeeded. This covers the case where the code
     # has a bug but the tool was ok, and it lets a workflow continue.
     state = DETECTED_JOB_STATE.OK
+
+    stdout = unicodify(stdout)
+    stderr = unicodify(stderr)
 
     try:
         # Check exit codes and match regular expressions against stdout and
