@@ -246,10 +246,25 @@ def contains_required_data(response=None, is_new=False, **kwargs):
                "and then retry to login. If the problem persists, contact " \
                "the Admin of this Galaxy instance."
     if response is None or not isinstance(response, dict):
+        # This can happen only if PSA is not able to decode the `authnz code`
+        # sent back from the identity provider. PSA internally handles such
+        # scenarios; however, this case is implemented to prevent uncaught
+        # server-side errors.
         raise MalformedContents(err_msg="`response` not found. {}".format(hint_msg))
     if not response.get("id_token"):
+        # This can happen if a non-OIDC compliant backend is used;
+        # e.g., an OAuth2.0-based backend that only generates access token.
         raise MalformedContents(err_msg="Missing identity token. {}".format(hint_msg))
     if is_new and not response.get("refresh_token"):
+        # An identity provider (e.g., Google) sends a refresh token the first
+        # time user consents Galaxy's access (i.e., the first time user logs in
+        # to a galaxy instance using their credentials with the identity provider).
+        # There could be variety of scenarios under which a refresh token might
+        # be missing; e.g., a manipulated Galaxy's database, where a user's records
+        # from galaxy_user and oidc_user_authnz_tokens tables deleted after the
+        # user has provided consent. This can also happen under dev efforts.
+        # The solution is to revoke the consent by visiting the identity provider's
+        # website, and then retry the login process.
         raise MalformedContents(err_msg="Missing refresh token. {}".format(hint_msg))
 
 
