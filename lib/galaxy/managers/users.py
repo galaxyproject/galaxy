@@ -354,9 +354,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def send_reset_email(self, trans, payload={}, **kwd):
         """Reset the user's password. Send an email with token that allows a password change."""
         if self.app.config.smtp_server is None:
-            return self.message_exception(trans, "Mail is not configured for this Galaxy instance "
-                                    "and password reset information cannot be sent. "
-                                    "Please contact your local Galaxy administrator.")
+            return "Mail is not configured for this Galaxy instance and password reset information cannot be sent. Please contact your local Galaxy administrator."
         email = payload.get("email")
         if not email:
             return "Please provide your email."
