@@ -106,7 +106,7 @@ class BatchMiddleware(object):
         request_body = environ['wsgi.input'].read(request_body_size) or '{}'
         # TODO: json decode error handling
         # log.debug( 'request_body: (%s)\n%s', type( request_body ), request_body )
-        payload = json.loads(request_body)
+        payload = json.loads(request_body.decode('utf-8'))
         return payload
 
     def _is_allowed_route(self, route):
@@ -170,7 +170,7 @@ class BatchMiddleware(object):
         return dict(
             status=trans.response.status,
             headers=trans.response.headers,
-            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0])
+            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0].decode('utf-8'))
         )
 
     def _default_headers(self):

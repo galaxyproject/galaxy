@@ -1,4 +1,10 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+
 import _l from "utils/localization";
+
+/* global Galaxy */
+/* global $ */
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -7,8 +13,6 @@ var AdminPanel = Backbone.View.extend({
         this.root = options.root;
         this.config = options.config;
         this.settings = options.settings;
-        this.message = options.message;
-        this.status = options.status;
         this.model = new Backbone.Model({
             title: `Galaxy version ${Galaxy.config.version_major}`
         });
@@ -173,9 +177,6 @@ var AdminPanel = Backbone.View.extend({
             });
             self.$el.append($section);
         });
-        this.page
-            .$("#galaxy_main")
-            .prop("src", `${this.root}admin/center?message=${this.message}&status=${this.status}`);
     },
 
     _templateSection: function(options) {

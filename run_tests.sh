@@ -11,6 +11,7 @@ cat <<EOF
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
+'${0##*/} -api_py3 (test_path)'     for running all the test scripts in the ./test/api directory using python 3
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
@@ -230,6 +231,9 @@ GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
 GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 config/shed_tool_conf.xml) used when testing
                                 installed to tools with -installed.
+GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
+                                is fairly limited and not compatible with parrallel testing
+                                so should be limited to debugging one off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR         Defaults to test/shed_functional/test_data.
@@ -257,7 +261,7 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.05.3'
+DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.09.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -272,6 +276,10 @@ then
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
     DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
+    if [ "$1" = "--python3" ]; then
+        DOCKER_RUN_EXTRA_ARGS="-e GALAXY_VIRTUAL_ENV=/galaxy_venv3 $DOCKER_RUN_EXTRA_ARGS"
+        shift 1
+    fi
     if [ "$1" = "--db" ]; then
        db_type=$2
        shift 2
@@ -293,7 +301,13 @@ then
     # locally before testing - you will need to do this also if using this script for Selenium testing.
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
-    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS -e "BUILD_NUMBER=$BUILD_NUMBER" -e "GALAXY_TEST_DATABASE_TYPE=$db_type" --rm -v `pwd`:/galaxy $DOCKER_IMAGE "$@"
+    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
+        -e "BUILD_NUMBER=$BUILD_NUMBER" \
+        -e "GALAXY_TEST_DATABASE_TYPE=$db_type" \
+        -e "LC_ALL=C" \
+        --rm \
+        -v `pwd`:/galaxy \
+        -v `pwd`/test/docker/base/run_test_wrapper.sh:/usr/local/bin/run_test_wrapper.sh $DOCKER_IMAGE "$@"
     exit $?
 fi
 
@@ -339,6 +353,18 @@ do
           with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_api_tests.html"
+          if [ $# -gt 1 ]; then
+              api_script=$2
+              shift 2
+          else
+              api_script="./test/api"
+              shift 1
+          fi
+          ;;
+      -api_py3|--api_py3)
+          with_framework_test_tools_arg="-with_framework_test_tools"
+          test_script="pytest"
+          report_file="./run_api_tests_python_3.html"
           if [ $# -gt 1 ]; then
               api_script=$2
               shift 2
@@ -482,6 +508,17 @@ do
               shift 1
           fi
           ;;
+      -integration_py3|--integration_py3)
+          test_script="pytest"
+          report_file="./run_api_tests_python_3.html"
+          if [ $# -gt 1 ]; then
+              integration_extra=$2
+              shift 2
+          else
+              integration_extra="./test/integration"
+              shift 1
+          fi
+          ;;
       --no_cleanup)
           GALAXY_TEST_NO_CLEANUP=1
           export GALAXY_TEST_NO_CLEANUP
@@ -592,7 +629,11 @@ else
 fi
 
 if [ -n "$xunit_report_file" ]; then
-    xunit_args="--with-xunit --xunit-file $xunit_report_file"
+    if [ "$test_script" = 'pytest' ]; then
+        xunit_args="--junit-xml $xunit_report_file"
+    else
+        xunit_args="--with-xunit --xunit-file $xunit_report_file"
+    fi
 else
     xunit_args=""
 fi
@@ -605,7 +646,11 @@ if [ -n "$with_framework_test_tools_arg" ]; then
     GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
     export GALAXY_TEST_TOOL_CONF
 fi
-python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
+if [ "$test_script" = 'pytest' ]; then
+    python -m "$test_script" -v --html "$report_file" $xunit_args $extra_args "$@"
+else
+    python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
+fi
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
 exit ${exit_status}

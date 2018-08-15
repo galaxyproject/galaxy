@@ -470,7 +470,7 @@ class InstallRepositoryManager(object):
             # dictionaries, a dictionary defining the Repository, a dictionary defining the
             # Repository revision (RepositoryMetadata), and a dictionary including the additional
             # information required to install the repository.
-            items = json.loads(raw_text)
+            items = json.loads(util.unicodify(raw_text))
             repository_revision_dict = items[1]
             repo_info_dict = items[2]
         else:
