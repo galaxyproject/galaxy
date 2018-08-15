@@ -1,11 +1,11 @@
 import six
-from galaxy.exceptions import MalformedContents
 from social_core.actions import do_auth, do_complete, do_disconnect
 from social_core.backends.utils import get_backend
 from social_core.strategy import BaseStrategy
 from social_core.utils import module_member, setting_name
 from sqlalchemy.exc import IntegrityError
 
+from galaxy.exceptions import MalformedContents
 from ..authnz import IdentityProvider
 from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
@@ -238,6 +238,7 @@ class Storage:
     @classmethod
     def is_integrity_error(cls, exception):
         return exception.__class__ is IntegrityError
+
 
 def contains_required_data(response=None, is_new=False, **kwargs):
     hint_msg = "Visit the identity provider's permitted applications page " \
