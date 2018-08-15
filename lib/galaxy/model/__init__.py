@@ -4790,7 +4790,11 @@ class UserAuthnzToken(UserMixin):
         self.lifetime = lifetime
         self.assoc_type = assoc_type
 
-    def get_id_token(self):
+    def get_id_token(self, strategy):
+        if self.access_token_expired():
+            # Access and ID tokens have same expiration time;
+            # hence, if one is expired, the other is expired too.
+            self.refresh_token(strategy)
         return self.extra_data.get('id_token', None) if self.extra_data is not None else None
 
     def get_access_token(self):
