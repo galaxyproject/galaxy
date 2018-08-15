@@ -4797,9 +4797,6 @@ class UserAuthnzToken(UserMixin):
             self.refresh_token(strategy)
         return self.extra_data.get('id_token', None) if self.extra_data is not None else None
 
-    def get_access_token(self):
-        return self.extra_data.get('access_token', None) if self.extra_data is not None else None
-
     def set_extra_data(self, extra_data=None):
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
             self.trans.sa_session.add(self)
