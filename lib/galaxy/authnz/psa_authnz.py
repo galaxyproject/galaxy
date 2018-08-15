@@ -41,6 +41,8 @@ AUTH_PIPELINE = (
     # defined).
     'social_core.pipeline.social_auth.auth_allowed',
 
+    # Checks if the decoded response contains all the required fields such
+    # as an ID token or a refresh token.
     'galaxy.authnz.psa_authnz.contains_required_data',
 
     # Checks if the current social-account is already associated in the site.
