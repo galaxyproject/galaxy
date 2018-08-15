@@ -88,6 +88,8 @@ class GalaxyInteractorApi(object):
         self.api_url = "%s/api" % kwds["galaxy_url"].rstrip("/")
         self.master_api_key = kwds["master_api_key"]
         self.api_key = self.__get_user_key(kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user"))
+        if kwds.get('user_api_key_is_admin_key', False):
+            self.master_api_key = self.api_key
         self.keep_outputs_dir = kwds["keep_outputs_dir"]
 
         self.uploads = {}
