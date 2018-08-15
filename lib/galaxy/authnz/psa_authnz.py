@@ -243,6 +243,41 @@ class Storage:
 
 
 def contains_required_data(response=None, is_new=False, **kwargs):
+    """
+    This function is called as part of authentication and authorization
+    pipeline before user is authenticated or authorized (see AUTH_PIPELINE).
+
+    This function asserts if all the data required by Galaxy for a user
+    is provided. It raises an exception if any of the required data is missing,
+    and returns void if otherwise.
+
+    :type  response: dict
+    :param response:    a dictionary containing decoded response from
+                        OIDC backend that contain the following keys
+                        among others:
+                        -   id_token;       see: http://openid.net/specs/openid-connect-core-1_0.html#IDToken
+                        -   access_token;   see: https://tools.ietf.org/html/rfc6749#section-1.4
+                        -   refresh_token;  see: https://tools.ietf.org/html/rfc6749#section-1.5
+                        -   token_type;     see: https://tools.ietf.org/html/rfc6750#section-6.1.1
+                        -   scope;          see: http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+                        -   expires_in;     is the expiration time of the access and ID tokens in seconds since
+                                            the response was generated.
+
+    :type  is_new: bool
+    :param is_new: has the user been authenticated?
+
+    :param kwargs:      may contain the following keys among others:
+                        -   uid:        user ID
+                        -   user:       Galaxy user; if user is already authenticated
+                        -   backend:    the backend that is used for user authentication.
+                        -   storage:    an instance of Storage class.
+                        -   strategy:   an instance of the Strategy class.
+                        -   state:      the state code received from identity provider.
+                        -   details:    details about the user's third-party identity as requested in `scope`.
+
+    :rtype:  void
+    :return: Raises an exception if any of the required arguments is missing, and pass if all are given.
+    """
     hint_msg = "Visit the identity provider's permitted applications page " \
                "(e.g., visit `https://myaccount.google.com/u/0/permissions` " \
                "for Google), then revoke the access of this Galaxy instance, " \
