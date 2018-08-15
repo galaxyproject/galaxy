@@ -6,7 +6,10 @@ from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
-from galaxy.util import odict
+from galaxy.util import (
+    odict,
+    smart_str,
+)
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
@@ -320,7 +323,7 @@ class HasDatasets(object):
     def paths_as_file(self, sep="\n"):
         handle, filepath = tempfile.mkstemp(prefix="gx_file_list", dir=self.job_working_directory)
         contents = sep.join(map(str, self))
-        os.write(handle, contents)
+        os.write(handle, smart_str(contents))
         os.close(handle)
         return filepath
 
