@@ -4,6 +4,7 @@ import sys
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir + '/' + os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
+import pytest
 from base import driver_util
 
 TEST_PREFIX = 'TestForTool_'
@@ -21,25 +22,38 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
         return self.build_tool_tests(return_test_classes=True)
 
 
-def __generate_testcases():
+def galaxy_driver():
     driver = DefaultGalaxyTestDriver()
     driver.setup()
-    tests = driver.build_tests()
+    return driver
+
+
+@pytest.fixture(scope='module')
+def driver(request):
+    request.addfinalizer(DRIVER.tear_down)
+    return DRIVER
+
+
+def cases():
+    # We setup a global driver, so that the driver fixture can tear down the driver
+    # Ideally `galaxy_driver` or `cases` would be fixtures and clean up after the yield,
+    # but that's not compatible with the use use of pytest.mark.parametrize
+    global DRIVER
+    DRIVER = galaxy_driver()
+    tests = DRIVER.build_tests()
     for test_name, test_class in tests.items():
         if test_name.startswith(TEST_PREFIX):
-            yield (test_name[len(TEST_PREFIX):], test_class)
-    driver.tear_down()
+            test_class.runTest = lambda : None
+            test_instance = test_class()
+            for index in range(test_instance.test_count):
+                yield (test_name[len(TEST_PREFIX):] + "|%d" % index, test_instance, index)
 
 
 def idfn(val):
     return val[0]
 
 
-def pytest_generate_tests(metafunc):
-    if 'tool_test' in metafunc.fixturenames:
-        metafunc.parametrize("tool_test", __generate_testcases(), ids=idfn)
-
-
-def test_tool(tool_test):
-    test = tool_test[1]
-    test.do_it(test)
+@pytest.mark.parametrize("testcases", cases(), ids=idfn)
+def test_tool(testcases, driver):
+    test = testcases[1]
+    test.do_it(test_index=testcases[2])
