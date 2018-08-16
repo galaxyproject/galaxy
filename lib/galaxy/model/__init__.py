@@ -54,7 +54,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
-from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
 
@@ -2753,7 +2752,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     uuid=(lambda uuid: str(uuid) if uuid else None)(hda.dataset.uuid),
                     hid=hda.hid,
                     file_ext=hda.ext,
-                    peek=(lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None)(hda),
+                    peek=unicodify(hda.display_peek()) if hda.peek and hda.peek != 'no peek' else None,
                     model_class=self.__class__.__name__,
                     name=hda.name,
                     deleted=hda.deleted,
@@ -2779,8 +2778,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
         if hda.extended_metadata is not None:
             rval['extended_metadata'] = hda.extended_metadata.data
-
-        rval['peek'] = to_unicode(hda.display_peek())
 
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get(name)
@@ -4793,11 +4790,12 @@ class UserAuthnzToken(UserMixin):
         self.lifetime = lifetime
         self.assoc_type = assoc_type
 
-    def get_id_token(self):
+    def get_id_token(self, strategy):
+        if self.access_token_expired():
+            # Access and ID tokens have same expiration time;
+            # hence, if one is expired, the other is expired too.
+            self.refresh_token(strategy)
         return self.extra_data.get('id_token', None) if self.extra_data is not None else None
-
-    def get_access_token(self):
-        return self.extra_data.get('access_token', None) if self.extra_data is not None else None
 
     def set_extra_data(self, extra_data=None):
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
