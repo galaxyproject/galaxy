@@ -107,13 +107,6 @@ class PSAAuthnz(IdentityProvider):
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
 
-    def _on_the_fly_config(self, trans):
-        trans.app.model.PSACode.trans = trans
-        trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.PSANonce.trans = trans
-        trans.app.model.PSAPartial.trans = trans
-        trans.app.model.PSAAssociation.trans = trans
-
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
@@ -130,13 +123,13 @@ class PSAAuthnz(IdentityProvider):
         self.config['user'] = user
 
     def authenticate(self, trans):
-        self._on_the_fly_config(trans)
+        on_the_fly_config(trans)
         strategy = Strategy(trans, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
-        self._on_the_fly_config(trans)
+        on_the_fly_config(trans)
         self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
         strategy = Strategy(trans, Storage, self.config)
         strategy.session_set(BACKENDS_NAME[self.config['provider']] + '_state', state_token)
@@ -149,7 +142,7 @@ class PSAAuthnz(IdentityProvider):
         return redirect_url, self.config.get('user', None)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
-        self._on_the_fly_config(trans)
+        on_the_fly_config(trans)
         self.config[setting_name('DISCONNECT_REDIRECT_URL')] =\
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans, Storage, self.config)
@@ -240,6 +233,14 @@ class Storage:
     @classmethod
     def is_integrity_error(cls, exception):
         return exception.__class__ is IntegrityError
+
+
+def on_the_fly_config(trans):
+    trans.app.model.PSACode.trans = trans
+    trans.app.model.UserAuthnzToken.trans = trans
+    trans.app.model.PSANonce.trans = trans
+    trans.app.model.PSAPartial.trans = trans
+    trans.app.model.PSAAssociation.trans = trans
 
 
 def contains_required_data(response=None, is_new=False, **kwargs):
