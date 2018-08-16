@@ -1,5 +1,9 @@
 
 from cloudauthz import CloudAuthz
+
+from galaxy import exceptions
+from galaxy import model
+
 import importlib
 import logging
 import xml.etree.ElementTree as ET
@@ -109,6 +113,20 @@ class AuthnzManager(object):
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider'.format(provider)
             log.debug(msg)
             return False, msg, None
+
+    @staticmethod
+    def can_user_assume_authn(trans, authn_id):
+        qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
+        if qres is None:
+            msg = "Authentication record with the given `authn_id` (`{}`) not found.".format(
+                trans.security.encode_id(authn_id))
+            log.debug(msg)
+            raise exceptions.ObjectNotFound(msg)
+        if qres.user_id != trans.user.id:
+            msg = "The request authentication with ID `{}` is not accessible to user with ID " \
+                  "`{}`.".format(trans.security.encode_id(authn_id), trans.security.encode_id(trans.user.id))
+            log.warn(msg)
+            raise exceptions.ItemAccessibilityException(msg)
 
     def authenticate(self, provider, trans):
         """
