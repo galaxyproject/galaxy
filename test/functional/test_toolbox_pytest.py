@@ -46,7 +46,7 @@ def cases():
             test_class.runTest = lambda : None
             test_instance = test_class()
             for index in range(test_instance.test_count):
-                yield (test_name[len(TEST_PREFIX):] + "|%d" % index, test_instance, index)
+                yield (test_name[len(TEST_PREFIX):] + "_test_%d" % (index + 1), test_instance, index)
 
 
 def idfn(val):
