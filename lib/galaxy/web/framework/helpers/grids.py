@@ -700,7 +700,7 @@ class IndividualTagsColumn(CommunityTagsColumn):
         if isinstance(column_filter, list):
             # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
             column_filter = ",".join(column_filter)
-        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter)
         clause_list = []
         for name, value in raw_tags:
             if name:
