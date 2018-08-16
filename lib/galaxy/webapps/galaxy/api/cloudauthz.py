@@ -112,6 +112,12 @@ class CloudAuthzController(BaseAPIController):
 
         self.cloudauthz_manager.can_user_assume_authn(trans, authn_id)
 
+        # No two authorization configuration with
+        # exact same key/value should not exist.
+        for ca in trans.user.cloudauthzs:
+            if ca.equals(trans.user.id, provider, authn_id, config):
+                raise ActionInputError("A similar cloud authorization configuration is already defined.")
+
         try:
             new_cloudauthz = self.cloudauthz_manager.create(
                 user_id=trans.user.id,
