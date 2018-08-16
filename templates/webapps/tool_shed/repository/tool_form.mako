@@ -114,8 +114,7 @@
                             # Help is Mako template, so render using current static path.
                             tool_help = tool_help.render( static_path=h.url_for( '/static' ) )
                             # Convert to unicode to display non-ascii characters.
-                            if type( tool_help ) is not unicode:
-                                tool_help = unicode( tool_help, 'utf-8')
+                            tool_help = util.unicodify( tool_help, 'utf-8')
                         %>
                         ${tool_help}
                     </div>
