@@ -4886,6 +4886,21 @@ class CloudAuthz(object):
         self.last_update = datetime.now()
         self.last_activity = datetime.now()
 
+    def __eq__(self, other):
+        if not isinstance(other, CloudAuthz):
+            return False
+        return self.equals(other.user_id, other.provider, other.authn_id, other.config)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def equals(self, user_id, provider, authn_id, config):
+        return (self.user_id == user_id and
+                self.provider == provider and
+                self.authn_id == authn_id and
+                len({k: self.config[k] for k in self.config if k in config and
+                     self.config[k] == config[k]}) == len(self.config))
+
 
 class Page(Dictifiable):
     dict_element_visible_keys = ['id', 'title', 'latest_revision_id', 'slug', 'published', 'importable', 'deleted']
