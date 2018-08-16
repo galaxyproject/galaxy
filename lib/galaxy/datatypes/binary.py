@@ -1906,6 +1906,57 @@ class NetCDF(Binary):
         except Exception:
             return False
 
+class Dcd(Binary):
+    """
+    Class describing a dcd file from the CHARMM molecular simulation program
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_glucose_vacuum.dcd')
+    >>> Dcd().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Dcd().sniff(fname)
+    False
+    """
+    file_ext = "dcd"
+    edam_format = "format_3842" # molecular simulation data
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = b'CORD'
+
+    def sniff(self, filename):
+        # The second struct of any dcd file contain 'CORD'
+        #. First struct is not sufficient, velocity files will match.
+        #. Not checking for endianness
+        try:
+            intsize=4
+            header = open(filename, 'rb')
+            ignore = struct.unpack("=i",header.read(intsize))
+            if header.read(intsize) == self._magic_number: 
+                return True
+            else:
+                header.seek(0)
+                intsize=8
+                if header.read(intsize) == self._magic_number: 
+                    return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary CHARMM/NAMD dcd file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary CHARMM/NAMD dcd file (%s)" % (nice_size(dataset.get_size()))
 
 class DAA(Binary):
     """
