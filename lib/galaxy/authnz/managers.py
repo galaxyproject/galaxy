@@ -5,7 +5,7 @@ import logging
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
-from .psa_authnz import PSAAuthnz
+from .psa_authnz import *
 
 log = logging.getLogger(__name__)
 
@@ -90,8 +90,15 @@ class AuthnzManager(object):
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
 
+    def _unify_provider_name(self, provider):
+        if provider in self.oidc_backends_config:
+            return provider.lower()
+        for k, v in BACKENDS_NAME.iteritems():
+            if v == provider:
+                return k.lower()
+
     def _get_authnz_backend(self, provider):
-        provider = provider.lower()
+        provider = self._unify_provider_name(provider)
         if provider in self.oidc_backends_config:
             try:
                 return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
@@ -145,14 +152,17 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    @staticmethod
-    def get_cloud_access_credentials(cloudauthz):
+    def get_cloud_access_credentials(self, trans, cloudauthz):
         """
 
+        :param trans:
         :param cloudauthz:
         :return:
         """
         config = cloudauthz.config
-        config['id_token'] = cloudauthz.authn.get_id_token()
+        success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
+        strategy = Strategy(trans, Storage, backend.config)
+        on_the_fly_config(trans)
+        config['id_token'] = cloudauthz.authn.get_id_token(strategy)
         ca = CloudAuthz()
         return ca.authorize(cloudauthz.provider, config)
