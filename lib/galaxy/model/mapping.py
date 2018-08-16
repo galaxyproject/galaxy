@@ -1694,6 +1694,8 @@ mapper(model.User, model.User.table, properties=dict(
     api_keys=relation(model.APIKeys,
         backref="user",
         order_by=desc(model.APIKeys.table.c.create_time)),
+    cloudauthzs=relation(model.CloudAuthz,
+                         primaryjoin=model.CloudAuthz.table.c.user_id == model.User.table.c.id),
 ))
 
 mapper(model.PasswordResetToken, model.PasswordResetToken.table,
