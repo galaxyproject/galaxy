@@ -53,7 +53,7 @@
                         tag_value = tag.user_value
 
                     ## Convert tag name, value to unicode.
-                    if isinstance( tag_name, str ):
+                    if isinstance( tag_name, six.binary_type ):
                         tag_name = unicodify( escape( tag_name ) )
                         if tag_value:
                             tag_value = unicodify( escape( tag_value ) )
@@ -201,9 +201,9 @@
                     tag_value = escape( tag.user_value )
 
                 ## Tag names and values may be string or unicode object.
-                if isinstance( tag_name, str ):
+                if isinstance( tag_name, six.binary_type ):
                     tag_names_and_values[unicodify(tag_name, 'utf-8')] = unicodify(tag_value, 'utf-8')
-                else: ## isInstance( tag_name, unicode ):
+                else:
                     tag_names_and_values[tag_name] = tag_value
         %>
         var options =

@@ -144,13 +144,10 @@ class Grid(object):
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance(column_filter, list):
                         # Filter is a list; process each item.
-                        column_filter = [text_type(_).encode('utf-8') if not isinstance(_, string_types) else _ for _ in column_filter]
                         extra_url_args["f-" + column.key] = dumps(column_filter)
                     else:
                         # Process singleton filter.
-                        if not isinstance(column_filter, string_types):
-                            column_filter = text_type(column_filter)
-                        extra_url_args["f-" + column.key] = column_filter.encode("utf-8")
+                        extra_url_args["f-" + column.key] = column_filter
         # Process sort arguments.
         sort_key = None
         if 'sort' in kwargs:
@@ -672,7 +669,7 @@ class CommunityTagsColumn(TextColumn):
         if isinstance(column_filter, list):
             # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
             column_filter = ",".join(column_filter)
-        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter)
         clause_list = []
         for name, value in raw_tags:
             if name:

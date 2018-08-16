@@ -203,9 +203,9 @@ class Biom1(Json):
         is_biom = False
         segment_size = int(load_size / 2)
         try:
-            with open(file_prefix.filename, "r") as fh:
+            with open(file_prefix.filename, "rb") as fh:
                 prev_str = ""
-                segment_str = fh.read(segment_size)
+                segment_str = fh.read(segment_size).decode('utf-8')
                 if segment_str.strip().startswith('{'):
                     while segment_str:
                         current_str = prev_str + segment_str
@@ -215,7 +215,7 @@ class Biom1(Json):
                                 is_biom = True
                                 break
                         prev_str = segment_str
-                        segment_str = fh.read(segment_size)
+                        segment_str = fh.read(segment_size).decode('utf-8')
         except Exception:
             pass
         return is_biom

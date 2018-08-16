@@ -115,3 +115,4 @@ def build_tests(app=None,
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
             new_class_obj = type(str(name), baseclasses, namespace)
             G[name] = new_class_obj
+    return G

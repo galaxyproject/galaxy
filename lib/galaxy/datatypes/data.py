@@ -798,10 +798,11 @@ class Text(Data):
         skipping all blank lines and comments.
         """
         data_lines = 0
-        for line in open(dataset.file_name):
-            line = line.strip()
-            if line and not line.startswith('#'):
-                data_lines += 1
+        with compression_utils.get_fileobj(dataset.file_name) as in_file:
+            for line in in_file:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    data_lines += 1
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
