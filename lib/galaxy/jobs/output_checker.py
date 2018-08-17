@@ -15,6 +15,9 @@ DETECTED_JOB_STATE = Bunch(
 )
 
 
+ERROR_PEAK = 2000
+
+
 def check_output(tool, stdout, stderr, tool_exit_code, job):
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
@@ -130,11 +133,14 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
             # log.debug( "Tool did not define exit code or stdio handling; "
             #          + "checking stderr for success" )
             if stderr:
-                peak = stderr[0:250]
-                log.debug("Tool produced standard error failing job - [%s]" % peak)
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
             else:
                 state = DETECTED_JOB_STATE.OK
+
+        if DETECTED_JOB_STATE != DETECTED_JOB_STATE.OK and stderr:
+            if stderr:
+                peak = stderr[0:ERROR_PEAK]
+                log.debug("job failed, standard error is - [%s]" % peak)
 
     # On any exception, return True.
     except Exception:
