@@ -221,6 +221,8 @@ class CloudManager(sharable.SharableModelManager):
             params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
             incoming = params.__dict__
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
+            if not history:
+                raise ObjectNotFound("History with ID `{}` not found.".format(trans.app.security.encode_id(history_id)))
             output = trans.app.toolbox.get_tool('upload1').handle_input(trans, incoming, history=history)
 
             job_errors = output.get('job_errors', [])
