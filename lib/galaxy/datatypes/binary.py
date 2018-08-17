@@ -1932,15 +1932,15 @@ class Dcd(Binary):
         # Not checking for endianness
         try:
             intsize = 4
-            header = open(filename, 'rb')
-            struct.unpack("=i", header.read(intsize))
-            if header.read(intsize) == self._magic_number:
-                return True
-            else:
-                header.seek(0)
-                intsize = 8
+            with open(filename, 'rb') as header:
+                struct.unpack("=i", header.read(intsize))
                 if header.read(intsize) == self._magic_number:
                     return True
+                else:
+                    header.seek(0)
+                    intsize = 8
+                    if header.read(intsize) == self._magic_number:
+                        return True
             return False
         except Exception:
             return False
