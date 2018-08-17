@@ -210,8 +210,11 @@ class CloudManager(sharable.SharableModelManager):
         if input_args is None:
             input_args = {}
 
-        authz = self._get_authz_config(trans, authz_id)
-        credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, authz)
+        try:
+            authz = self._get_authz_config(trans, authz_id)
+            credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, authz)
+        except Exception as e:
+            raise e
         connection = self._configure_provider(provider, credentials)
         try:
             bucket_obj = connection.storage.buckets.get(bucket)
