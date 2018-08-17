@@ -1906,6 +1906,7 @@ class NetCDF(Binary):
         except Exception:
             return False
 
+
 class Dcd(Binary):
     """
     Class describing a dcd file from the CHARMM molecular simulation program
@@ -1919,7 +1920,7 @@ class Dcd(Binary):
     False
     """
     file_ext = "dcd"
-    edam_format = "format_3842" # molecular simulation data
+    edam_format = "format_3842"  # molecular simulation data
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
@@ -1927,18 +1928,18 @@ class Dcd(Binary):
 
     def sniff(self, filename):
         # The second struct of any dcd file contain 'CORD'
-        #. First struct is not sufficient, velocity files will match.
-        #. Not checking for endianness
+        # First struct is not sufficient, velocity files will match.
+        # Not checking for endianness
         try:
-            intsize=4
+            intsize = 4
             header = open(filename, 'rb')
-            ignore = struct.unpack("=i",header.read(intsize))
-            if header.read(intsize) == self._magic_number: 
+            struct.unpack("=i", header.read(intsize))
+            if header.read(intsize) == self._magic_number:
                 return True
             else:
                 header.seek(0)
-                intsize=8
-                if header.read(intsize) == self._magic_number: 
+                intsize = 8
+                if header.read(intsize) == self._magic_number:
                     return True
             return False
         except Exception:
@@ -1957,6 +1958,7 @@ class Dcd(Binary):
             return dataset.peek
         except Exception:
             return "Binary CHARMM/NAMD dcd file (%s)" % (nice_size(dataset.get_size()))
+
 
 class DAA(Binary):
     """
