@@ -128,6 +128,18 @@ class AuthnzManager(object):
             log.warn(msg)
             raise exceptions.ItemAccessibilityException(msg)
 
+    @staticmethod
+    def try_get_authz_config(trans, authz_id):
+        qres = trans.sa_session.query(model.CloudAuthz).get(authz_id)
+        if qres is None:
+            raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
+        if trans.user.id != qres.user_id:
+            msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
+                  "ID:`{}`.".format(qres.id, trans.user.id)
+            log.warn(msg)
+            raise exceptions.ItemAccessibilityException(msg)
+        return qres
+
     def authenticate(self, provider, trans):
         """
         :type provider: string

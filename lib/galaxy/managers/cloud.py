@@ -169,15 +169,7 @@ class CloudManager(sharable.SharableModelManager):
 
     @staticmethod
     def _get_authz_config(trans, authz_id):
-        authz = trans.sa_session.query(trans.app.model.CloudAuthz).get(authz_id)
-        if authz is None:
-            raise ObjectNotFound("An authorization configuration with given ID not found.")
-        if trans.user.id != authz.user_id:
-            msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
-                  "ID:`{}`.".format(authz.id, trans.user.id)
-            log.warn(msg)
-            raise ItemAccessibilityException(msg)
-        return authz
+        return trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
 
     def upload(self, trans, history_id, provider, bucket, objects, authz_id, input_args=None):
         """
