@@ -4,6 +4,7 @@ from cloudauthz import CloudAuthz
 from galaxy import exceptions
 from galaxy import model
 
+import copy
 import importlib
 import logging
 import xml.etree.ElementTree as ET
@@ -189,7 +190,7 @@ class AuthnzManager(object):
         :param cloudauthz:
         :return:
         """
-        config = cloudauthz.config
+        config = copy.deepcopy(cloudauthz.config)
         success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
         strategy = Strategy(trans, Storage, backend.config)
         on_the_fly_config(trans)
