@@ -112,7 +112,10 @@ class CloudAuthzController(BaseAPIController):
         except Exception:
             raise MalformedId('Invalid `authn_id`!')
 
-        trans.app.authnz_manager.can_user_assume_authn(trans, authn_id)
+        try:
+            trans.app.authnz_manager.can_user_assume_authn(trans, authn_id)
+        except Exception as e:
+            raise e
 
         # No two authorization configuration with
         # exact same key/value should not exist.
