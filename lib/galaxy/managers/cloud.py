@@ -167,10 +167,6 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
-    @staticmethod
-    def _get_authz_config(trans, authz_id):
-        return trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
-
     def upload(self, trans, history_id, provider, bucket, objects, authz_id, input_args=None):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
@@ -211,8 +207,7 @@ class CloudManager(sharable.SharableModelManager):
             input_args = {}
 
         try:
-            authz = self._get_authz_config(trans, authz_id)
-            credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, authz)
+            credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, authz_id)
         except Exception as e:
             raise e
         connection = self._configure_provider(provider, credentials)

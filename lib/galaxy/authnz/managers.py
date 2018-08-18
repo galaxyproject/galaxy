@@ -183,13 +183,14 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def get_cloud_access_credentials(self, trans, cloudauthz):
+    def get_cloud_access_credentials(self, trans, authz_id):
         """
 
         :param trans:
-        :param cloudauthz:
+        :param authz_id:
         :return:
         """
+        cloudauthz = self.try_get_authz_config(trans, authz_id)
         config = copy.deepcopy(cloudauthz.config)
         success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
         strategy = Strategy(trans, Storage, backend.config)
