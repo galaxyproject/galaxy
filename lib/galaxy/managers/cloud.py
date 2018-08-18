@@ -172,6 +172,10 @@ class CloudManager(sharable.SharableModelManager):
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
 
+        This manager does NOT require use credentials, instead, it uses a more secure method,
+        which leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz) and automatically
+        requests temporary credentials to access the defined resources.
+
         :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans:       Galaxy web transaction
 
@@ -188,10 +192,10 @@ class CloudManager(sharable.SharableModelManager):
         :type  objects:     list of string
         :param objects:     the name of objects to be uploaded.
 
-        :type  credentials: dict
-        :param credentials: a dictionary containing all the credentials required to authenticated to the
-                            specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
-                            "access_key": YOUR_AWS_ACCESS_TOKEN}).
+        :type  authz_id:    int
+        :param authz_id:    the ID of CloudAuthz to be used for authorizing access to the resource provider. You may
+                            get a list of the defined authorizations via `/api/cloud/authz`. Also, you can
+                            use `/api/cloud/authz/create` to define a new authorization.
 
         :type  input_args:  dict
         :param input_args:  a [Optional] a dictionary of input parameters:
