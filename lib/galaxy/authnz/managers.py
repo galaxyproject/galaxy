@@ -131,6 +131,22 @@ class AuthnzManager(object):
 
     @staticmethod
     def try_get_authz_config(trans, authz_id):
+        """
+        It returns a cloudauthz config (see model.CloudAuthz) with the
+        given ID; and raise an exception if either a config with given
+        ID does not exist, or the configuration is defined for a another
+        user than trans.user.
+
+        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:       Galaxy web transaction
+
+        :type  authz_id:    int
+        :param authz_id:    The ID of a CloudAuthz configuration to be used for
+                            getting temporary credentials.
+
+        :rtype :            model.CloudAuthz
+        :return:            a cloudauthz configuration.
+        """
         qres = trans.sa_session.query(model.CloudAuthz).get(authz_id)
         if qres is None:
             raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
