@@ -185,10 +185,29 @@ class AuthnzManager(object):
 
     def get_cloud_access_credentials(self, trans, authz_id):
         """
+        This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
+        to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
+        for temporary access credentials to a given resource.
 
-        :param trans:
-        :param authz_id:
-        :return:
+        It first checks if a cloudauthz config with the given ID (`authz_id`) is
+        available and can be assumed by the user, and raises an exception if either
+        is false. Otherwise, it then extends the cloudauthz configuration as required
+        by the CloudAuthz library for the provider specified in the configuration.
+        For instance, it adds on-the-fly values such as a valid OpenID Connect
+        identity token, as required by CloudAuthz for AWS. Then requests temporary
+        credentials from the CloudAuthz library using the updated configuration.
+
+        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:       Galaxy web transaction
+
+        :type  authz_id:    int
+        :param authz_id:    The ID of a CloudAuthz configuration to be used for
+                            getting temporary credentials.
+
+        :rtype:             dict
+        :return:            a dictionary containing credentials to access a cloud-based
+                            resource provider. See CloudAuthz (https://github.com/galaxyproject/cloudauthz)
+                            for details on the content of this dictionary.
         """
         cloudauthz = self.try_get_authz_config(trans, authz_id)
         config = copy.deepcopy(cloudauthz.config)
