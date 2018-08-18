@@ -115,9 +115,9 @@ class AuthnzManager(object):
             log.debug(msg)
             return False, msg, None
 
-    def _extend_cloudauthz(self, trans, cloudauthz):
+    def _extend_cloudauthz_config(self, trans, cloudauthz):
         config = copy.deepcopy(cloudauthz.config)
-        if config.provider == "aws":
+        if cloudauthz.provider == "aws":
             success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
             strategy = Strategy(trans, Storage, backend.config)
             on_the_fly_config(trans)
@@ -235,6 +235,6 @@ class AuthnzManager(object):
                             for details on the content of this dictionary.
         """
         cloudauthz = self.try_get_authz_config(trans, authz_id)
-        config = self._extend_cloudauthz(trans, cloudauthz)
+        config = self._extend_cloudauthz_config(trans, cloudauthz)
         ca = CloudAuthz()
         return ca.authorize(cloudauthz.provider, config)
