@@ -115,6 +115,15 @@ class AuthnzManager(object):
             log.debug(msg)
             return False, msg, None
 
+    def _extend_cloudauthz(self, trans, cloudauthz):
+        config = copy.deepcopy(cloudauthz.config)
+        if config.provider == "aws":
+            success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
+            strategy = Strategy(trans, Storage, backend.config)
+            on_the_fly_config(trans)
+            config['id_token'] = cloudauthz.authn.get_id_token(strategy)
+        return config
+
     @staticmethod
     def can_user_assume_authn(trans, authn_id):
         qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
@@ -226,10 +235,6 @@ class AuthnzManager(object):
                             for details on the content of this dictionary.
         """
         cloudauthz = self.try_get_authz_config(trans, authz_id)
-        config = copy.deepcopy(cloudauthz.config)
-        success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
-        strategy = Strategy(trans, Storage, backend.config)
-        on_the_fly_config(trans)
-        config['id_token'] = cloudauthz.authn.get_id_token(strategy)
+        config = self._extend_cloudauthz(trans, cloudauthz)
         ca = CloudAuthz()
         return ca.authorize(cloudauthz.provider, config)
