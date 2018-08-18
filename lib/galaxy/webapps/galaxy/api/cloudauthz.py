@@ -10,7 +10,6 @@ from the provider to access the user's resources.
 
 import logging
 
-from galaxy import web
 from galaxy.exceptions import (
     ActionInputError,
     InternalServerError,
@@ -22,6 +21,9 @@ from galaxy.exceptions import (
 )
 from galaxy.managers import cloudauthzs
 from galaxy.web.base.controller import BaseAPIController
+from galaxy.web import (
+    _future_expose_api as expose_api
+)
 
 log = logging.getLogger(__name__)
 
@@ -36,7 +38,7 @@ class CloudAuthzController(BaseAPIController):
         self.cloudauthz_manager = cloudauthzs.CloudAuthzManager(app)
         self.cloudauthz_serializer = cloudauthzs.CloudAuthzsSerializer(app)
 
-    @web.expose_api
+    @expose_api
     def index(self, trans, **kwargs):
         """
         * GET /api/cloud/authz
@@ -56,7 +58,7 @@ class CloudAuthzController(BaseAPIController):
                 cloudauthz, user=trans.user, trans=trans, **self._parse_serialization_params(kwargs, 'summary')))
         return rtv
 
-    @web.expose_api
+    @expose_api
     def create(self, trans, payload, **kwargs):
         """
         * POST /api/cloud/authz/create
