@@ -14,7 +14,7 @@ class AuthenticationApiTestCase(api.ApiTestCase):
         self._setup_user(TEST_USER_EMAIL, TEST_USER_PASSWORD)
         baseauth_url = self._api_url("authenticate/baseauth", use_key=False)
         unencoded_credentials = "%s:%s" % (TEST_USER_EMAIL, TEST_USER_PASSWORD)
-        authorization = base64.b64encode(unencoded_credentials)
+        authorization = base64.b64encode(bytearray(unencoded_credentials, encoding="utf-8"))
         headers = {
             "Authorization": authorization,
         }

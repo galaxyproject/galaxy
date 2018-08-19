@@ -370,7 +370,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_progress = subworkflow_invoker.progress
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
-            workflow_output_label = workflow_output.label or "%s:%s" % (step.order_index, workflow_output.output_name)
+            workflow_output_label = workflow_output.label or "%s:%s" % (workflow_output.workflow_step.order_index, workflow_output.output_name)
             replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)

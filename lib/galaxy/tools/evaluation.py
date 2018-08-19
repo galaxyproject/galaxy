@@ -32,6 +32,7 @@ from galaxy.tools.wrappers import (
     SelectToolParameterWrapper,
     ToolParameterValueWrapper,
 )
+from galaxy.util import smart_str
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -574,8 +575,8 @@ class ToolEvaluator(object):
             value = fill_template(content, context=context)
         else:
             value = content
-        with open(config_filename, "w") as f:
-            f.write(value)
+        with open(config_filename, "wb") as f:
+            f.write(smart_str(value))
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, 0o644)
 

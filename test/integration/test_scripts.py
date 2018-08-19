@@ -131,7 +131,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         json_file = os.path.join(self.config_dir, json_files[0])
         with open(json_file, "r") as f:
             export = json.load(f)
-        assert export["version"] == 1
+        assert export["version"] == 2
 
     def test_admin_cleanup_datasets(self):
         self._scripts_check_argparse_help("cleanup_datasets/admin_cleanup_datasets.py")
@@ -177,7 +177,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         clean_env = {
             "PATH": os.environ.get("PATH", None),
         }  # Don't let testing environment variables interfere with config.
-        return subprocess.check_output(cmd, cwd=cwd, env=clean_env)
+        return subprocess.check_output(cmd, cwd=cwd, env=clean_env).decode('utf-8')
 
     def write_config_file(self):
         config_dir = self.config_dir

@@ -161,7 +161,7 @@ class ExecutionTracker(object):
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = {}
+        self.implicit_collections = collections.OrderedDict()
 
     @property
     def param_combinations(self):

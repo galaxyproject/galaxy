@@ -1,3 +1,5 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import _l from "utils/localization";
 import jQuery from "jquery";
 var $ = jQuery;
@@ -15,6 +17,8 @@ import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Vue from "vue";
 
+/* global Galaxy */
+
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
@@ -22,6 +26,7 @@ window.app = function app(options, bootstrapped) {
     /** Routes */
     var AdminRouter = Router.extend({
         routes: {
+            "(/)admin(/)": "home",
             "(/)admin(/)users": "show_users",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
@@ -32,11 +37,22 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
             "(/)admin/data_types": "show_data_types",
-            "(/)admin/data_manager": "show_data_manager"
+            "(/)admin/data_manager": "show_data_manager",
+            "*notFound": "not_found"
         },
 
         authenticate: function() {
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
+        },
+
+        not_found: function() {
+            window.location.href = window.location.href;
+        },
+
+        home: function() {
+            this.page
+                .$("#galaxy_main")
+                .prop("src", `${Galaxy.root}admin/center?message=${options.message}&status=${options.status}`);
         },
 
         show_users: function() {

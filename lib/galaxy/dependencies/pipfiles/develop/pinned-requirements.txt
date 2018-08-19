@@ -21,6 +21,9 @@ pathtools==0.1.2
 pbr==4.1.0
 pygithub3==0.5.1; python_version < '3'
 pygments==2.2.0
+pytest==3.7.0
+pytest-html==1.19.0
+pytest-pythonpath==0.7.2
 pytz==2018.5
 pyyaml==3.12
 recommonmark==0.4.0

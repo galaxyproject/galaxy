@@ -25,7 +25,7 @@ import logging
 import re
 
 import routes
-from paste import httpexceptions
+import webob.exc
 from six.moves.urllib.parse import urlparse
 
 from galaxy.util import smart_str
@@ -106,7 +106,7 @@ class BatchMiddleware(object):
         request_body = environ['wsgi.input'].read(request_body_size) or '{}'
         # TODO: json decode error handling
         # log.debug( 'request_body: (%s)\n%s', type( request_body ), request_body )
-        payload = json.loads(request_body)
+        payload = json.loads(request_body.decode('utf-8'))
         return payload
 
     def _is_allowed_route(self, route):
@@ -160,7 +160,7 @@ class BatchMiddleware(object):
         try:
             response = self.galaxy.handle_request(environ, start_response, body_renderer=self.body_renderer)
         # handle errors from galaxy.handle_request (only 404s)
-        except httpexceptions.HTTPNotFound:
+        except webob.exc.HTTPNotFound:
             response = dict(status=404, headers=self._default_headers(), body={})
         return response
 
@@ -170,7 +170,7 @@ class BatchMiddleware(object):
         return dict(
             status=trans.response.status,
             headers=trans.response.headers,
-            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0])
+            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0].decode('utf-8'))
         )
 
     def _default_headers(self):

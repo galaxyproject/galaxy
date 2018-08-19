@@ -1,9 +1,9 @@
 <template>
     <div class="ui-thumbnails">
-        <div v-if="error" class="ui-message ui-show alert alert-danger">
+        <div v-if="error" class="alert alert-danger">
             {{ error }}
         </div>
-        <div v-else class="ui-thumbnails-grid">
+        <div v-else>
             <input class="search-query parent-width" name="query" placeholder="search visualizations" autocomplete="off" type="text" v-model="search">
             <div v-for="plugin in plugins">
                 <table v-if="match(plugin)">
@@ -13,10 +13,10 @@
                             <div v-else class="ui-thumbnails-icon fa fa-eye"/>
                         </td>
                         <td>
-                            <div class="ui-thumbnails-description-title ui-form-info">
+                            <div class="ui-thumbnails-title font-weight-bold text-dark">
                                 {{ plugin.html }}
                             </div>
-                            <div class="ui-thumbnails-description-text ui-form-info">
+                            <div class="ui-thumbnails-text text-dark">
                                 {{ plugin.description }}
                             </div>
                         </td>
@@ -25,19 +25,19 @@
                         <td/>
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
-                                <div class="ui-form-info ui-bold">Select a dataset to visualize:</div>
+                                <div class="font-weight-bold text-dark">Select a dataset to visualize:</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :value="file.id">{{ file.name }}</option>
                                     </select>
                                     <div class="icon-dropdown fa fa-caret-down"/>
                                 </div>
-                                <button type="button" class="ui-button-default ui-float-left btn btn-primary" @click="create(plugin)">
+                                <button type="button" class="ui-button-default float-left mt-3 btn btn-primary" @click="create(plugin)">
                                     <i class="icon fa fa-check ui-margin-right"/>
                                     <span class="title">Create Visualization</span>
                                 </button>
                             </div>
-                            <div v-else class="ui-message ui-show alert alert-danger">
+                            <div v-else class="alert alert-danger">
                                 There is no suitable dataset in your current history which can be visualized with this plugin.
                             </div>
                         </td>
@@ -124,17 +124,3 @@ export default {
     }
 };
 </script>
-<style>
-.ui-show {
-    display: block;
-    margin-top: 0px;
-}
-.ui-bold {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.ui-float-left {
-    float: left;
-    margin-top: 10px;
-}
-</style>

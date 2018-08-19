@@ -299,7 +299,7 @@ class UWSGIApplicationStack(MessageApplicationStack):
         if self._farms_dict is None:
             self._farms_dict = {}
             farms = uwsgi.opt.get('farm', [])
-            farms = [farms] if isinstance(farms, string_types) else farms
+            farms = farms if isinstance(farms, list) else [unicodify(farms)]
             for farm in farms:
                 name, mules = farm.split(':', 1)
                 self._farms_dict[name] = [int(m) for m in mules.split(',')]

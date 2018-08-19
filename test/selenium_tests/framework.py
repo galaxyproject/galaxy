@@ -93,6 +93,7 @@ def managed_history(f):
         finally:
             if "GALAXY_TEST_NO_CLEANUP" not in os.environ:
                 current_history_id = self.current_history_id()
+                self.dataset_populator.cancel_history_jobs(current_history_id)
                 self.api_delete("histories/%s" % current_history_id)
 
     return func_wrapper

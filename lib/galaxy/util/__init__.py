@@ -65,7 +65,7 @@ DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 gzip_magic = b'\x1f\x8b'
 bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
-NULL_CHAR = '\000'
+NULL_CHAR = b'\000'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -102,7 +102,7 @@ def is_binary(value, binary_chars=None):
     if binary_chars is None:
         binary_chars = BINARY_CHARS
     for binary_char in binary_chars:
-        if binary_char in value:
+        if binary_char in smart_str(value):
             return True
     return False
 
@@ -331,8 +331,15 @@ def get_file_size(value, default=None):
                 return default
 
 
-def shrink_stream_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
-    rval = ''
+def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
+    """
+    Shrinks bytes read from `value` to `size`.
+
+    `value` needs to implement tell/seek, so files need to be opened in binary mode.
+    Returns unicode text with invalid characters replaced.
+    """
+    rval = b''
+    join_by = smart_str(join_by)
     if get_file_size(value) > size:
         start = value.tell()
         len_join_by = len(join_by)
@@ -363,7 +370,7 @@ def shrink_stream_by_size(value, size, join_by="..", left_larger=True, beginning
             if not data:
                 break
             rval += data
-    return rval
+    return unicodify(rval)
 
 
 def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
