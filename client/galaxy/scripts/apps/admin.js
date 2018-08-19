@@ -127,7 +127,7 @@ window.app = function app(options, bootstrapped) {
             // always set the route back to the base, i.e.
             // `${Galaxy.root}admin/data_manager`
             DataManagerRouter.replace("/");
-            new Vue({ router: DataManagerRouter, mode: "history", render: h => h(DataManagerView) }).$mount(vueMount);
+            new Vue({ router: DataManagerRouter, render: h => h(DataManagerView) }).$mount(vueMount);
         },
 
         show_forms: function() {

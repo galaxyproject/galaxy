@@ -41,7 +41,7 @@
                     {{ dataManager['name'] }}
                   </div>
                   <div>
-                    <i>{{ dataManager['description'].toLowerCase() }}</i>
+                    <i>{{ dataManager['description'] }}</i>
                   </div>
                 </b-button>
                 <b-button :to="{name: 'DataManagerJobs', params: { id: dataManager['id'] }}">

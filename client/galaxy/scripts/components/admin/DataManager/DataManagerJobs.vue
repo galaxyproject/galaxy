@@ -27,33 +27,29 @@
         </b-row>
       </b-container>
       <b-table :fields="tableFields" :items="tableItems" :filter="filter" hover responsive striped>
+        <!-- enables cell formatting for the command line column -->
+        <span slot="html" slot-scope="data" v-html="data.value">
+        </span>
         <template slot="actions" slot-scope="row">
-          <!-- we use @click.stop here to prevent emitting of a 'row-clicked' event  -->
           <b-button-group>
-            <b-button :href="jobs[row.index]['runUrl']" v-b-tooltip.hover title="Rerun">
+            <b-button v-b-tooltip.hover title="Rerun" :href="jobs[row.index]['runUrl']">
               <span class="fa fa-refresh" />
             </b-button>
-            <b-button v-b-tooltip.hover title="View Info" :href="jobs[row.index]['infoUrl']" target="galaxy_main">
+            <b-button v-b-tooltip.hover title="View Info" :to="{name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] }}">
               <span class="fa fa-info-circle" />
             </b-button>
-            <b-button v-if="!showCommandLine" @click.stop="onInfoButtonClick(row)" :pressed.sync="row.detailsShowing">
+            <b-button v-if="!showCommandLine" @click.stop="row.toggleDetails()" :pressed.sync="row.detailsShowing">
               {{ row.detailsShowing ? 'Hide' : 'Show'}} Command Line
             </b-button>
           </b-button-group>
         </template>
         <template slot="row-details" slot-scope="row">
           <b-card>
-            <b-container fluid>
-              <b-row>
-                <b-col cols="auto">
-                  Command line:
-                </b-col>
-                <b-col>
-                  <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
-                </b-col>
-              </b-row>
-              <b-button class="mt-3" @click="row.toggleDetails">Hide Command Line</b-button>
-            </b-container>
+            <h5>Command Line</h5>
+            <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
+            <template slot="footer">
+              <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
+            </template>
           </b-card>
         </template>
       </b-table>
@@ -64,10 +60,12 @@
 <script>
 import axios from "axios";
 import Alert from "components/Alert.vue";
+import DataManagerJob from "components/admin/DataManager/DataManagerJob.vue";
 
 export default {
     components: {
-        Alert
+        Alert,
+        DataManagerJob
     },
     props: {
         id: {
@@ -88,7 +86,7 @@ export default {
                 { key: "jobRunnerName", label: "Job Runner" },
                 { key: "jobRunnerExternalId", label: "PID/Cluster ID", sortable: true }
             ],
-            showCommandLine: false,
+            showCommandLine: true,
             filter: "",
             viewOnly: false,
             message: "",
@@ -103,7 +101,12 @@ export default {
                     to: "/"
                 },
                 {
-                    text: "Jobs for " + this.dataManager["name"] + " (" + this.dataManager["description"] + ") ",
+                    text: this.dataManager["name"] + " ( " + this.dataManager["description"] + " )",
+                    href: this.dataManager["toolUrl"],
+                    target: "_blank"
+                },
+                {
+                    text: "Jobs",
                     active: true
                 }
             ];
@@ -113,16 +116,19 @@ export default {
             if (this.showCommandLine) {
                 tableFields.splice(5, 0, {
                     key: "commandLine",
-                    tdClass: "command-line"
+                    tdClass: ["code", "command-line"]
                 });
             }
             return tableFields;
         },
         tableItems() {
-            let tableItems = this.jobs;
+            let tableItems = this.jobs.slice(0);
+
             for (const item of tableItems) {
+                // Nice time formatting
                 item["updateTime"] = item["updateTime"].replace("T", "\n");
 
+                // color state cells accordingly
                 switch (item["state"]) {
                     case "ok":
                         item["_cellVariants"] = { state: "success" };
@@ -148,12 +154,6 @@ export default {
             return tableItems;
         }
     },
-    methods: {
-        onInfoButtonClick(row) {
-            row.toggleDetails();
-            this.$refs["popover" + row.index].$emit("close");
-        }
-    },
     created() {
         axios
             .get(`${Galaxy.root}data_manager/jobs_list?id=${this.id}`)
@@ -172,7 +172,8 @@ export default {
 </script>
 
 <style>
-pre.code {
+/* can not be scoped because of command line tdClass */
+.code {
     background: black;
     color: white;
     padding: 1em;
