@@ -203,7 +203,7 @@ class CloudManager(sharable.SharableModelManager):
 
         connection = self._configure_provider(provider, credentials)
         try:
-            bucket_obj = connection.object_store.get(bucket)
+            bucket_obj = connection.storage.buckets.get(bucket)
             if bucket_obj is None:
                 raise RequestParameterInvalidException("The bucket `{}` not found.".format(bucket))
         except Exception as e:
@@ -212,7 +212,7 @@ class CloudManager(sharable.SharableModelManager):
         datasets = []
         for obj in objects:
             try:
-                key = bucket_obj.get(obj)
+                key = bucket_obj.objects.get(obj)
             except Exception as e:
                 raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
             if key is None:
@@ -278,7 +278,7 @@ class CloudManager(sharable.SharableModelManager):
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
         connection = self._configure_provider(provider, credentials)
 
-        bucket_obj = connection.object_store.get(bucket)
+        bucket_obj = connection.storage.buckets.get(bucket)
         if bucket_obj is None:
             raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
 
@@ -287,9 +287,9 @@ class CloudManager(sharable.SharableModelManager):
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
-                if overwrite_existing is False and bucket_obj.get(object_label) is not None:
+                if overwrite_existing is False and bucket_obj.objects.get(object_label) is not None:
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-                created_obj = bucket_obj.create_object(object_label)
+                created_obj = bucket_obj.objects.create(object_label)
                 created_obj.upload_from_file(hda.dataset.get_file_name())
                 downloaded.append(object_label)
         return downloaded
