@@ -118,16 +118,7 @@ export default {
             ];
         },
         tableItems() {
-            let tableItems = this.hdaInfo
-                .slice(0)
-                .concat(
-                    this.hdaInfo.slice(0),
-                    this.hdaInfo.slice(0),
-                    this.hdaInfo.slice(0),
-                    this.hdaInfo.slice(0),
-                    this.hdaInfo.slice(0),
-                    this.hdaInfo.slice(0)
-                );
+            let tableItems = this.hdaInfo;
             return tableItems;
         }
     },
