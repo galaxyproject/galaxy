@@ -177,10 +177,10 @@ class Cloud(ObjectStore):
                 bucket = self.conn.storage.buckets.create(bucket_name)
             log.debug("Using cloud ObjectStore with bucket '%s'", bucket.name)
             return bucket
-        except Exception:
+        except Exception as e:
             # These two generic exceptions will be replaced by specific exceptions
             # once proper exceptions are exposed by CloudBridge.
-            log.exception("Could not get bucket '%s'.", bucket_name)
+            log.exception("Could not get bucket '{}'. {}".format(bucket_name, e.message))
         raise Exception
 
     def _fix_permissions(self, rel_path):
