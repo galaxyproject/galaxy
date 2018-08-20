@@ -14,7 +14,6 @@ from base import rules_test_data  # noqa: I100
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
-    flakey,
     load_data_dict,
     skip_without_tool,
     wait_on,
@@ -1876,31 +1875,30 @@ test_data:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
 
-    @flakey
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         # We launch a workflow
-        with self.dataset_populator.test_history() as history_id:
-            workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id)
+        with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
+            workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id_one)
             run_workflow_response = self._post("workflows", data=workflow_request).json()
             # We copy the workflow inputs to a new history
             new_workflow_request = workflow_request.copy()
             new_ds_map = json.loads(new_workflow_request['ds_map'])
-            with self.dataset_populator.test_history() as new_history_id:
-                for key, input_values in run_workflow_response['inputs'].items():
-                    copy_payload = {"content": input_values['id'], "source": "hda", "type": "dataset"}
-                    copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload).json()
-                    new_ds_map[key]['id'] = copy_response['id']
-                new_workflow_request['ds_map'] = json.dumps(new_ds_map)
-                new_workflow_request['history'] = "hist_id=%s" % new_history_id
-                new_workflow_request['use_cached_job'] = True
-                # We run the workflow again, it should not produce any new outputs
-                new_workflow_response = self._post("workflows", data=new_workflow_request).json()
-                first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
-                second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
-                assert first_wf_output['file_name'] == second_wf_output['file_name'], \
-                    "first output:\n%s\nsecond output:\n%s" % (first_wf_output, second_wf_output)
+            for key, input_values in run_workflow_response['inputs'].items():
+                copy_payload = {"content": input_values['id'], "source": "hda", "type": "dataset"}
+                copy_response = self._post("histories/%s/contents" % history_id_two, data=copy_payload).json()
+                new_ds_map[key]['id'] = copy_response['id']
+            new_workflow_request['ds_map'] = json.dumps(new_ds_map, sort_keys=True)
+            new_workflow_request['history'] = "hist_id=%s" % history_id_two
+            new_workflow_request['use_cached_job'] = True
+            # We run the workflow again, it should not produce any new outputs
+            self.dataset_populator.wait_for_history(history_id_one, assert_ok=True)
+            new_workflow_response = self._post("workflows", data=new_workflow_request).json()
+            first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
+            second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
+            assert first_wf_output['file_name'] == second_wf_output['file_name'], \
+                "first output:\n%s\nsecond output:\n%s" % (first_wf_output, second_wf_output)
 
     @skip_without_tool('cat1')
     def test_nested_workflow_rerun_with_use_cached_job(self):
