@@ -1907,6 +1907,109 @@ class NetCDF(Binary):
             return False
 
 
+class Dcd(Binary):
+    """
+    Class describing a dcd file from the CHARMM molecular simulation program
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_glucose_vacuum.dcd')
+    >>> Dcd().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Dcd().sniff(fname)
+    False
+    """
+    file_ext = "dcd"
+    edam_data = "data_3842"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = b'CORD'
+
+    def sniff(self, filename):
+        # Match the keyword 'CORD' at position 4 or 8 - intsize dependent
+        # Not checking for endianness
+        try:
+            with open(filename, 'rb') as header:
+                intsize = 4
+                header.seek(intsize)
+                if header.read(intsize) == self._magic_number:
+                    return True
+                else:
+                    intsize = 8
+                    header.seek(intsize)
+                    if header.read(intsize) == self._magic_number:
+                        return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary CHARMM/NAMD dcd file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary CHARMM/NAMD dcd file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Vel(Binary):
+    """
+    Class describing a velocity file from the CHARMM molecular simulation program
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_charmm.vel')
+    >>> Vel().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Vel().sniff(fname)
+    False
+    """
+    file_ext = "vel"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = b'VELD'
+
+    def sniff(self, filename):
+        # Match the keyword 'VELD' at position 4 or 8 - intsize dependent
+        # Not checking for endianness
+        try:
+            with open(filename, 'rb') as header:
+                intsize = 4
+                header.seek(intsize)
+                if header.read(intsize) == self._magic_number:
+                    return True
+                else:
+                    intsize = 8
+                    header.seek(intsize)
+                    if header.read(intsize) == self._magic_number:
+                        return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary CHARMM velocity file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary CHARMM velocity file (%s)" % (nice_size(dataset.get_size()))
+
+
 class DAA(Binary):
     """
     Class describing an DAA (diamond alignment archive) file
