@@ -145,7 +145,7 @@ class BatchMiddleware(object):
         request_environ['QUERY_STRING'] = parsed.query
 
         request_body = request.get('body', u'')
-        request_body = bytearray(request_body, encoding='utf8')
+        request_body = request_body.encode('utf8')
         request_environ['CONTENT_LENGTH'] = len(request_body)
         request_body = io.BytesIO(request_body)
         request_environ['wsgi.input'] = request_body
