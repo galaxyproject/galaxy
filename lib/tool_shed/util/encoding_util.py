@@ -39,5 +39,5 @@ def tool_shed_encode(val):
     else:
         value = val
     a = hmac_new(b'ToolShedAndGalaxyMustHaveThisSameKey', smart_str(value))
-    b = binascii.hexlify(smart_str(value)).decode('utf-8')
+    b = unicodify(binascii.hexlify(smart_str(value)))
     return "%s:%s" % (a, b)

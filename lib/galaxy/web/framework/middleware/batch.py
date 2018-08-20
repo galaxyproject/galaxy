@@ -28,7 +28,10 @@ import routes
 import webob.exc
 from six.moves.urllib.parse import urlparse
 
-from galaxy.util import smart_str
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 
@@ -106,7 +109,7 @@ class BatchMiddleware(object):
         request_body = environ['wsgi.input'].read(request_body_size) or '{}'
         # TODO: json decode error handling
         # log.debug( 'request_body: (%s)\n%s', type( request_body ), request_body )
-        payload = json.loads(request_body.decode('utf-8'))
+        payload = json.loads(unicodify(request_body))
         return payload
 
     def _is_allowed_route(self, route):
@@ -170,7 +173,7 @@ class BatchMiddleware(object):
         return dict(
             status=trans.response.status,
             headers=trans.response.headers,
-            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0].decode('utf-8'))
+            body=json.loads(unicodify(self.galaxy.make_body_iterable(trans, body)[0]))
         )
 
     def _default_headers(self):
