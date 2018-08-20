@@ -42,7 +42,7 @@ def build_tests(app=None,
                 master_api_key=None,
                 user_api_key=None,
                 name_prefix="TestForTool_",
-                baselass=ToolTestCase,
+                baseclass=ToolTestCase,
                 create_admin=False,
                 user_email=None,
                 G=None,
@@ -84,7 +84,7 @@ def build_tests(app=None,
         if contains and contains not in tool_id:
                 continue
         name = name_prefix + tool_id.replace(' ', '_')
-        baseclasses = (baselass, )
+        baseclasses = (baseclass, )
         namespace = dict()
 
         all_versions_test_count = 0
@@ -108,6 +108,7 @@ def build_tests(app=None,
                 namespace["galaxy_interactor"] = galaxy_interactor
                 namespace['master_api_key'] = master_api_key
                 namespace['user_api_key'] = user_api_key or galaxy_interactor.api_key
+                namespace['test_count'] = count
 
                 all_versions_test_count += 1
 
