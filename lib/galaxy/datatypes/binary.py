@@ -1920,6 +1920,7 @@ class Dcd(Binary):
     False
     """
     file_ext = "dcd"
+    edam_data = "data_3842"
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
