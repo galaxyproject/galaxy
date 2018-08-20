@@ -65,7 +65,7 @@ DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 gzip_magic = b'\x1f\x8b'
 bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
-NULL_CHAR = b'\000'
+NULL_CHAR = b'\x00'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -88,21 +88,20 @@ def remove_protocol_from_url(url):
     return new_url.rstrip('/')
 
 
-def is_binary(value, binary_chars=None):
+def is_binary(value):
     """
     File is binary if it contains a null-byte by default (e.g. behavior of grep, etc.).
     This may fail for utf-16 files, but so would ASCII encoding.
     >>> is_binary( string.printable )
     False
-    >>> is_binary( '\\xce\\x94' )
+    >>> is_binary( b'\\xce\\x94' )
     False
-    >>> is_binary( '\\000' )
+    >>> is_binary( b'\\x00' )
     True
     """
-    if binary_chars is None:
-        binary_chars = BINARY_CHARS
-    for binary_char in binary_chars:
-        if binary_char in smart_str(value):
+    value = smart_str(value)
+    for binary_char in BINARY_CHARS:
+        if binary_char in value:
             return True
     return False
 
