@@ -77,9 +77,9 @@ def process_key(incoming_key, d):
     if len(key_parts) == 1:
         # Regular parameter
         d[incoming_key] = object()
-    elif key_parts[0].rsplit('_', maxsplit=1)[-1].isdigit():
+    elif key_parts[0].rsplit('_', 1)[-1].isdigit():
         # Repeat
-        input_name_index = key_parts[0].rsplit('_', maxsplit=1)
+        input_name_index = key_parts[0].rsplit('_', 1)
         input_name, index = input_name_index
         if input_name not in d:
             d[input_name] = []
