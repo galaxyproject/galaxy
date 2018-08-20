@@ -1920,7 +1920,6 @@ class Dcd(Binary):
     False
     """
     file_ext = "dcd"
-    edam_format = "format_3842"  # molecular simulation data
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
@@ -1972,7 +1971,6 @@ class Vel(Binary):
     False
     """
     file_ext = "vel"
-    edam_format = "format_3842"  # molecular simulation data
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
