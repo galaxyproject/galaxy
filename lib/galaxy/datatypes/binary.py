@@ -1927,18 +1927,17 @@ class Dcd(Binary):
         self._magic_number = b'CORD'
 
     def sniff(self, filename):
-        # The second struct of any dcd file contain 'CORD'
-        # First struct is not sufficient, velocity files will match.
+        # Match the keyword 'CORD' at position 4 or 8 - intsize dependent
         # Not checking for endianness
         try:
-            intsize = 4
             with open(filename, 'rb') as header:
-                struct.unpack("=i", header.read(intsize))
+                intsize = 4
+                header.seek(intsize)
                 if header.read(intsize) == self._magic_number:
                     return True
                 else:
-                    header.seek(0)
                     intsize = 8
+                    header.seek(intsize)
                     if header.read(intsize) == self._magic_number:
                         return True
             return False
