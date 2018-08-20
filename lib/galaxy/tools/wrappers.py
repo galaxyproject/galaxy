@@ -452,7 +452,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def __getattr__(self, key):
         if not self.__input_supplied:
             return None
-        return self.__element_instances[key]
+        try:
+            return self.__element_instances[key]
+        except KeyError:
+            raise AttributeError()
 
     def __iter__(self):
         if not self.__input_supplied:
