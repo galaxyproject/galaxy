@@ -171,7 +171,7 @@ class CloudManager(sharable.SharableModelManager):
         :param trans:       Galaxy web transaction
 
         :type  history_id:  string
-        :param history_id:  the (encoded) id of history to which the object should be uploaded to.
+        :param history_id:  the (decoded) id of history to which the object should be uploaded to.
 
         :type  provider:    string
         :param provider:    the name of cloud-based resource provided. A list of supported providers is given in
