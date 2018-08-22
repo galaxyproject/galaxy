@@ -7,6 +7,7 @@ sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "te
 import pytest
 from base import driver_util
 
+SKIPTEST = os.path.join(os.path.dirname(__file__), 'known_broken_tools.txt')
 TEST_PREFIX = 'TestForTool_'
 
 
@@ -20,6 +21,12 @@ class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
     def build_tests(self):
         """Build framework tool test methods."""
         return self.build_tool_tests(return_test_classes=True)
+
+
+def get_skiplist():
+    with open(SKIPTEST) as skiptest:
+        skiplist = [l.strip() for l in skiptest if l.strip() and not l.startswith('#')]
+        return skiplist
 
 
 def galaxy_driver():
@@ -40,13 +47,16 @@ def cases():
     # but that's not compatible with the use use of pytest.mark.parametrize
     global DRIVER
     DRIVER = galaxy_driver()
+    skiplist = get_skiplist()
     tests = DRIVER.build_tests()
     for test_name, test_class in tests.items():
         if test_name.startswith(TEST_PREFIX):
             test_class.runTest = lambda : None
             test_instance = test_class()
-            for index in range(test_instance.test_count):
-                yield (test_name[len(TEST_PREFIX):] + "_test_%d" % (index + 1), test_instance, index)
+            if test_instance.tool_id not in skiplist:
+                # TODO: mark this as skip instead of not collecting the test
+                for index in range(test_instance.test_count):
+                    yield (test_name[len(TEST_PREFIX):] + "_test_%d" % (index + 1), test_instance, index)
 
 
 def idfn(val):
