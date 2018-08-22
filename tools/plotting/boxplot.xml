@@ -1,8 +1,8 @@
-<tool id="qual_stats_boxplot" name="Boxplot" version="1.0.0">
+<tool id="qual_stats_boxplot" name="Boxplot" version="1.0.1">
   <description>of quality statistics</description>
   <command>gnuplot &lt; '$gnuplot_commands' 2&gt;&amp;1 || echo "Error running gnuplot." >&amp;2</command>
   <requirements>
-    <requirement type="package" version="4.6">gnuplot</requirement>
+    <requirement type="package" version="5.2.3">gnuplot</requirement>
   </requirements>
   <inputs>
     <param name="input_file" type="data" format="tabular" label="Quality Statistics File"/>
@@ -44,7 +44,7 @@ set offsets 1, 1, 1, 1
 plot '${input_file}' using ${xcol}:${q1col}:${lwcol}:${rwcol}:${q3col} with candlesticks lt 1  lw 1 title 'Quartiles' whiskerbars, \
       ''         using ${xcol}:${medcol}:${medcol}:${medcol}:${medcol} with candlesticks lt -1 lw 2 title 'Medians'\
 #if str( $use_outliers['use_outliers_type'] ) == 'use_outliers':
-,      "&lt; python -c \"for xval, yvals in [ ( fields[${xcol} - 1], fields[${use_outliers['outliercol']} - 1].split( ',' ) ) for fields in [ line.rstrip( '\\n\\r' ).split( '\\t' ) for line in open( '${input_file}' ) if not line.startswith( '#' ) ] if len( fields ) &gt; max( ${xcol} - 1, ${use_outliers['outliercol']} - 1 ) ]: print '\\n'.join( [ '%s\\t%s' % ( xval, yval ) for yval in yvals if yval ] )\"" using 1:2 with points pt 29 title 'Outliers'
+,      "&lt; python -c \"for xval, yvals in [ ( fields[${xcol} - 1], fields[${use_outliers['outliercol']} - 1].split( ',' ) ) for fields in [ line.rstrip( '\\n\\r' ).split( '\\t' ) for line in open( '${input_file}' ) if not line.startswith( '#' ) ] if len( fields ) &gt; max( ${xcol} - 1, ${use_outliers['outliercol']} - 1 ) ]: print('\\n'.join( [ '%s\\t%s' % ( xval, yval ) for yval in yvals if yval ] ))\"" using 1:2 with points pt 29 title 'Outliers'
 #end if
     </configfile>
   </configfiles>
@@ -66,7 +66,7 @@ plot '${input_file}' using ${xcol}:${q1col}:${lwcol}:${rwcol}:${q3col} with cand
       <param name="rwcol" value="12" />
       <param name="use_outliers_type" value="use_outliers" />
       <param name="outliercol" value="13" />
-      <output name="output_file" file="boxplot_summary_statistics_out.png" />
+      <output name="output_file" file="boxplot_summary_statistics_out.png" compare="sim_size"/>
     </test>
   </tests>
   <help>
