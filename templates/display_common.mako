@@ -6,7 +6,7 @@
 ## used across webapps, and each webapp has its own model.
 
 <%! from galaxy import model %>
-<% from galaxy import unicodify %>
+<%! from galaxy.util import unicodify %>
 
 ## Get display name for a class.
 <%def name="get_class_display_name( a_class )">
