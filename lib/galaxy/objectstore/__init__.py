@@ -632,7 +632,7 @@ class DistributedObjectStore(NestedObjectStore):
     def create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
         if obj.object_store_id is None or not self.exists(obj, **kwargs):
-            if obj.object_store_id is None or obj.object_store_id not in self.weighted_backend_ids:
+            if obj.object_store_id is None or obj.object_store_id not in self.backends:
                 try:
                     obj.object_store_id = random.choice(self.weighted_backend_ids)
                 except IndexError:
