@@ -46,9 +46,9 @@
       <param name="input2" value="fr.qualsolid" ftype="qualsolid" />
       <param name="paired" value="no"/>
       <param name="qual" value="0" />
-      <param name="trim_first_base" value="No" />
+      <param name="trim_first_base" value="No (bowtie)" />
       <param name="trim_name" value="No" />
-      <param name="double_encode" value="No"/>
+      <param name="double_encode" value="No (bowtie)"/>
       <output name="out_file1" file="solid2fastq_out_1.fastq"/>
     </test>
     <test>
@@ -58,9 +58,9 @@
       <param name="input3" value="rr.csfasta" ftype="csfasta"/>
       <param name="input4" value="rr.qualsolid" ftype="qualsolid" />
       <param name="qual" value="0" />
-      <param name="trim_first_base" value="No" />
+      <param name="trim_first_base" value="No (bowtie)" />
       <param name="trim_name" value="Yes" />
-      <param name="double_encode" value="No"/>
+      <param name="double_encode" value="No (bowtie)"/>
       <output name="out_file1" file="solid2fastq_out_2.fastq"/>
       <output name="out_file2" file="solid2fastq_out_3.fastq"/>
     </test>
