@@ -1,6 +1,8 @@
 import contextlib
 import json
 import os
+import random
+import string
 import time
 import unittest
 from functools import wraps
@@ -422,6 +424,60 @@ class BaseDatasetPopulator(object):
             src = 'hdca'
         return dict(src=src, id=history_content["id"])
 
+    def get_roles(self):
+        roles_response = self.galaxy_interactor.get("roles", admin=True)
+        assert roles_response.status_code == 200
+        return roles_response.json()
+
+    def user_email(self):
+        users_response = self.galaxy_interactor.get("users")
+        users = users_response.json()
+        assert len(users) == 1
+        return users[0]["email"]
+
+    def user_id(self):
+        users_response = self.galaxy_interactor.get("users")
+        users = users_response.json()
+        assert len(users) == 1
+        return users[0]["id"]
+
+    def user_private_role_id(self):
+        user_email = self.user_email()
+        roles = self.get_roles()
+        users_roles = [r for r in roles if r["name"] == user_email]
+        assert len(users_roles) == 1
+        return users_roles[0]["id"]
+
+    def create_role(self, user_ids, description=None):
+        payload = {
+            "name": self.get_random_name(prefix="testpop"),
+            "description": description or "Test Role",
+            "user_ids": json.dumps(user_ids),
+        }
+        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
+        assert role_response.status_code == 200
+        return role_response.json()[0]
+
+    def make_private(self, history_id, dataset_id):
+        role_id = self.user_private_role_id()
+        # Give manage permission to the user.
+        payload = {
+            "access": json.dumps([role_id]),
+            "manage": json.dumps([role_id]),
+        }
+        url = "histories/%s/contents/%s/permissions" % (history_id, dataset_id)
+        update_response = self.galaxy_interactor._put(url, payload, admin=True)
+        assert update_response.status_code == 200, update_response.content
+        return update_response.json()
+
+    def get_random_name(self, prefix=None, suffix=None, len=10):
+        # stolen from navigates_galaxy.py
+        return '%s%s%s' % (
+            prefix or '',
+            ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len)),
+            suffix or '',
+        )
+
 
 class DatasetPopulator(BaseDatasetPopulator):
 
@@ -577,20 +633,16 @@ class LibraryPopulator(object):
             LIBRARY_ADD_in=perm_list,
             LIBRARY_MANAGE_in=perm_list,
         )
-        self.galaxy_interactor.post("libraries/%s/permissions" % library_id, data=permissions, admin=True)
+        response = self.galaxy_interactor.post("libraries/%s/permissions" % library_id, data=permissions, admin=True)
+        api_asserts.assert_status_code_is(response, 200)
 
     def user_email(self):
-        users_response = self.galaxy_interactor.get("users")
-        users = users_response.json()
-        assert len(users) == 1
-        return users[0]["email"]
+        # deprecated - use DatasetPopulator
+        return self.dataset_populator.user_email()
 
     def user_private_role_id(self):
-        user_email = self.user_email()
-        roles_response = self.galaxy_interactor.get("roles", admin=True)
-        users_roles = [r for r in roles_response.json() if r["name"] == user_email]
-        assert len(users_roles) == 1
-        return users_roles[0]["id"]
+        # deprecated - use DatasetPopulator
+        return self.dataset_populator.user_private_role_id()
 
     def create_dataset_request(self, library, **kwds):
         upload_option = kwds.get("upload_option", "upload_file")

@@ -160,7 +160,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
 
     def test_hda_security(self):
         element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
-
+        self.dataset_populator.make_private(self.history_id, element_identifiers[0]["id"])
         with self._different_user():
             history_id = self.dataset_populator.new_history()
             payload = dict(
@@ -169,11 +169,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
                 element_identifiers=json.dumps(element_identifiers),
                 collection_type="paired",
             )
-
-            self._post("dataset_collections", payload)
-            # TODO: re-enable once there is a way to restrict access
-            # to this dataset via the API.
-            # self._assert_status_code_is( create_response, 403 )
+            create_response = self._post("dataset_collections", payload)
+            self._assert_status_code_is(create_response, 403)
 
     def test_enforces_unique_names(self):
         element_identifiers = self.dataset_collection_populator.list_identifiers(self.history_id)
