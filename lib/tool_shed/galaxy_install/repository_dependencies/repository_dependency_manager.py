@@ -14,6 +14,7 @@ from galaxy.util import (
     asbool,
     build_url,
     smart_str,
+    unicodify,
     url_get,
 )
 from tool_shed.galaxy_install.tools import tool_panel_manager
@@ -397,7 +398,7 @@ class RepositoryDependencyInstallManager(object):
                     response = _urlopen(url, payload).read()
                     if response:
                         try:
-                            required_repo_info_dict = json.loads(response.decode('utf-8'))
+                            required_repo_info_dict = json.loads(unicodify(response))
                         except Exception as e:
                             log.exception(e)
                             return all_repo_info_dicts

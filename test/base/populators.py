@@ -16,6 +16,7 @@ from pkg_resources import resource_string
 from six import StringIO
 
 from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.util import unicodify
 from . import api_asserts
 from .workflows_format_2 import (
     convert_and_import_workflow,
@@ -24,10 +25,10 @@ from .workflows_format_2 import (
 
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = resource_string(__name__, "data/test_workflow_1.ga").decode('utf-8')
+workflow_str = unicodify(resource_string(__name__, "data/test_workflow_1.ga"))
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga").decode('utf-8')
+workflow_random_x2_str = unicodify(resource_string(__name__, "data/test_workflow_2.ga"))
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
@@ -467,7 +468,7 @@ class BaseWorkflowPopulator(object):
     def load_workflow_from_resource(self, name, filename=None):
         if filename is None:
             filename = "data/%s.ga" % name
-        content = resource_string(__name__, filename).decode('utf-8')
+        content = unicodify(resource_string(__name__, filename))
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name, **create_kwds):

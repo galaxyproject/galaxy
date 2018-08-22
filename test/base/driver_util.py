@@ -553,7 +553,7 @@ def get_ip_address(ifname):
     return socket.inet_ntoa(fcntl.ioctl(
         s.fileno(),
         0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
+        struct.pack('256s', ifname[:15].encode('utf-8'))
     )[20:24])
 
 
@@ -895,7 +895,7 @@ class GalaxyTestDriver(TestDriver):
             testing_installed_tools
         )
 
-    def build_tool_tests(self, testing_shed_tools=None):
+    def build_tool_tests(self, testing_shed_tools=None, return_test_classes=False):
         if self.app is None:
             return
 
@@ -909,12 +909,14 @@ class GalaxyTestDriver(TestDriver):
         import functional.test_toolbox
         functional.test_toolbox.toolbox = self.app.toolbox
         # When testing data managers, do not test toolbox.
-        functional.test_toolbox.build_tests(
+        test_classes = functional.test_toolbox.build_tests(
             app=self.app,
             testing_shed_tools=testing_shed_tools,
             master_api_key=get_master_api_key(),
             user_api_key=get_user_api_key(),
         )
+        if return_test_classes:
+            return test_classes
         return functional.test_toolbox
 
     def run_tool_test(self, tool_id, index=0, resource_parameters={}):

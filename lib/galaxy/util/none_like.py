@@ -18,11 +18,9 @@ class RecursiveNone(object):
         setattr(self, name, value)
         return value
 
-    def __nonzero__(self):
-        return False
-
     def __bool__(self):
         return False
+    __nonzero__ = __bool__
 
 
 class NoneDataset(RecursiveNone):

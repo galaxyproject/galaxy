@@ -13,14 +13,14 @@ log = logging.getLogger(__name__)
 DEFAULT_SHELL = '/bin/bash'
 
 DEFAULT_JOB_FILE_TEMPLATE = Template(
-    resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh').decode('UTF-8')
+    unicodify(resource_string(__name__, 'DEFAULT_JOB_FILE_TEMPLATE.sh'))
 )
 
 SLOTS_STATEMENT_CLUSTER_DEFAULT = \
-    resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh').decode('UTF-8')
+    unicodify(resource_string(__name__, 'CLUSTER_SLOTS_STATEMENT.sh'))
 
 MEMORY_STATEMENT_DEFAULT = \
-    resource_string(__name__, 'MEMORY_STATEMENT.sh').decode('UTF-8')
+    unicodify(resource_string(__name__, 'MEMORY_STATEMENT.sh'))
 
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"

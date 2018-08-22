@@ -11,7 +11,6 @@ cat <<EOF
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
-'${0##*/} -api_py3 (test_path)'     for running all the test scripts in the ./test/api directory using python 3
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
@@ -351,20 +350,8 @@ do
           ;;
       -a|-api|--api)
           with_framework_test_tools_arg="-with_framework_test_tools"
-          test_script="./scripts/functional_tests.py"
-          report_file="./run_api_tests.html"
-          if [ $# -gt 1 ]; then
-              api_script=$2
-              shift 2
-          else
-              api_script="./test/api"
-              shift 1
-          fi
-          ;;
-      -api_py3|--api_py3)
-          with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="pytest"
-          report_file="./run_api_tests_python_3.html"
+          report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
               api_script=$2
               shift 2
@@ -498,19 +485,8 @@ do
           fi
           ;;
       -i|-integration|--integration)
-          report_file="run_integration_tests.html"
-          test_script="./scripts/nosetests.py"
-          if [ $# -gt 1 ]; then
-              integration_extra=$2
-              shift 2
-          else
-              integration_extra='test/integration'
-              shift 1
-          fi
-          ;;
-      -integration_py3|--integration_py3)
           test_script="pytest"
-          report_file="./run_api_tests_python_3.html"
+          report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
               integration_extra=$2
               shift 2

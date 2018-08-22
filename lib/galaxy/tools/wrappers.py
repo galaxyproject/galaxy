@@ -1,5 +1,4 @@
 import logging
-import os
 import tempfile
 
 from six import string_types, text_type
@@ -318,10 +317,10 @@ class HasDatasets(object):
         return DatasetFilenameWrapper(dataset, **wrapper_kwds)
 
     def paths_as_file(self, sep="\n"):
-        handle, filepath = tempfile.mkstemp(prefix="gx_file_list", dir=self.job_working_directory)
         contents = sep.join(map(str, self))
-        os.write(handle, contents)
-        os.close(handle)
+        with tempfile.NamedTemporaryFile(mode='w+', prefix="gx_file_list", dir=self.job_working_directory, delete=False) as fh:
+            fh.write(contents)
+            filepath = fh.name
         return filepath
 
 
@@ -449,7 +448,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def __getattr__(self, key):
         if not self.__input_supplied:
             return None
-        return self.__element_instances[key]
+        try:
+            return self.__element_instances[key]
+        except KeyError:
+            raise AttributeError()
 
     def __iter__(self):
         if not self.__input_supplied:

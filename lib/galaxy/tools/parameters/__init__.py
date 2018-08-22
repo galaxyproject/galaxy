@@ -203,7 +203,7 @@ def params_to_strings(params, param_values, app, nested=False):
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app)
-        rval[key] = value if nested else str(dumps(value))
+        rval[key] = value if nested else str(dumps(value, sort_keys=True))
     return rval
 
 
