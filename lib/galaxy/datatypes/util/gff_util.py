@@ -188,7 +188,7 @@ class GFFReaderWrapper(NiceReaderWrapper):
         if not self.seed_interval:
             while not self.seed_interval:
                 try:
-                    self.seed_interval = GenomicIntervalReader.next(self)
+                    self.seed_interval = super(GenomicIntervalReader, self).__next__()
                 except ParseError as e:
                     handle_parse_error(e)
                 # TODO: When no longer supporting python 2.4 use finally:
@@ -215,7 +215,7 @@ class GFFReaderWrapper(NiceReaderWrapper):
         feature_intervals.append(self.seed_interval)
         while True:
             try:
-                interval = GenomicIntervalReader.next(self)
+                interval = super(GenomicIntervalReader, self).__next__()
                 raw_size += len(self.current_line)
             except StopIteration as e:
                 # No more intervals to read, but last feature needs to be
