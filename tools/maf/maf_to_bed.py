@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import os
 import sys
+from collections import OrderedDict
 
 from bx.align import maf
 
@@ -23,14 +24,15 @@ def __main__():
     primary_spec = None
 
     if "None" in species:
-        species = set()
+        species = OrderedDict()
         try:
             for i, m in enumerate(maf.Reader(open(input_filename, 'r'))):
                 for c in m.components:
                     spec, chrom = maf.src_split(c.src)
                     if not spec or not chrom:
-                        spec = chrom = c.src
-                    species.add(spec)
+                        spec = c.src
+                    species[spec] = None
+            species = species.keys()
         except Exception:
             print("Invalid MAF file specified", file=sys.stderr)
             return
