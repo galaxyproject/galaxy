@@ -37,7 +37,7 @@ class RoleAPIController(BaseAPIController):
         role_id = id
         try:
             decoded_role_id = trans.security.decode_id(role_id)
-        except TypeError:
+        except Exception:
             trans.response.status = 400
             return "Malformed role id ( %s ) specified, unable to decode." % str(role_id)
         try:
