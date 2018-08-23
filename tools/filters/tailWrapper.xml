@@ -1,6 +1,7 @@
 <tool id="Show tail1" name="Select last" version="1.0.0">
   <description>lines from a dataset</description>
-  <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
+  <command detect_errors="exit_code">
+perl '$__tool_directory__/tailWrapper.pl' '$input' $lineNum '$out_file1'</command>
   <inputs>
     <param name="lineNum" size="5" type="integer" value="10" label="Select last" help="lines"/>
     <param format="txt" name="input" type="data" label="from"/>
