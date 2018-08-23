@@ -172,9 +172,9 @@ def setup_galaxy_config(
     galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
 
     tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
-    conda_auto_install = conda_auto_install or os.environ.get('GALAXY_TEST_CONDA_AUTO_INSTALL', False)
-    conda_auto_init = conda_auto_init or os.environ.get('GALAXY_TEST_CONDA_AUTO_INIT', False)
-    conda_prefix = os.environ.get('GALAXY_TEST_CONDA_PREFIX', None)
+    conda_auto_install = os.environ.get('GALAXY_TEST_CONDA_AUTO_INSTALL', conda_auto_install)
+    conda_auto_init = os.environ.get('GALAXY_TEST_CONDA_AUTO_INIT', conda_auto_init)
+    conda_prefix = os.environ.get('GALAXY_TEST_CONDA_PREFIX')
     if tool_conf is None:
         # As a fallback always at least allow upload.
         tool_conf = FRAMEWORK_UPLOAD_TOOL_CONF
@@ -240,8 +240,6 @@ def setup_galaxy_config(
         # Used by shed's twill dependency stuff - todo read from
         # Galaxy's config API.
         os.environ["GALAXY_TEST_TOOL_DEPENDENCY_DIR"] = tool_dependency_dir
-    if conda_prefix:
-        config['conda_prefix'] = conda_prefix
     return config
 
 
