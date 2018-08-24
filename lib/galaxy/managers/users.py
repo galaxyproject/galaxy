@@ -56,7 +56,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             self.session().flush()
             # TODO:?? flush needed for permissions below? If not, make optional
         except sqlalchemy.exc.IntegrityError as db_err:
-            raise exceptions.Conflict(db_err.message)
+            raise exceptions.Conflict(str(db_err))
 
         # can throw an sqlalx.IntegrityError if username not unique
 
@@ -103,12 +103,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return super(UserManager, self).list(filters=filters, order_by=order_by, **kwargs)
 
     # ---- admin
-    def is_admin(self, user):
-        """
-        Return True if this user is an admin.
+    def is_admin(self, user, trans=None):
+        """Return True if this user is an admin (or session is authenticated as admin).
+
+        Do not pass trans to simply check if an existing user object is an admin user,
+        pass trans when checking permissions.
         """
         admin_emails = self._admin_emails()
-        return user and admin_emails and user.email in admin_emails
+        if user is None:
+            # Anonymous session or master_api_key used, if master_api_key is detected
+            # return True.
+            log.info("in is_admin.... %s" % trans)
+            rval = bool(trans and trans.user_is_admin())
+            return rval
+        return bool(admin_emails and user.email in admin_emails)
 
     def _admin_emails(self):
         """
@@ -130,7 +138,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         :raises exceptions.AdminRequiredException: if `user` is not an admin.
         """
         # useful in admin only methods
-        if not self.is_admin(user):
+        if not self.is_admin(user, trans=kwargs.get("trans", None)):
             raise exceptions.AdminRequiredException(msg, **kwargs)
         return user
 

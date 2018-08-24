@@ -458,6 +458,27 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``legacy_eager_objectstore_initialization``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    As of 18.09, Galaxy defaults to setting up the object store
+    configuration for output datasets during the job queue step in job
+    handlers. This should generally provide for more robust job
+    submission, more configurability, and a better user experience but
+    may in some cases slightly slow down the job handler job setup
+    process. On the off chance that an admin would like to or need to
+    optimize job handlers at the expense of user experience and web
+    handling this option will remain for some time by setting this
+    option to true. This behavior however should be considered
+    deprecated and this option will likely be removed in future
+    versions of Galaxy. For more information see
+    https://github.com/galaxyproject/galaxy/issues/6513.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_mulled_containers``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

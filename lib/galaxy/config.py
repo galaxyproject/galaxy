@@ -374,6 +374,9 @@ class Configuration(object):
         self.enable_beta_ts_api_install = string_as_bool(kwargs.get('enable_beta_ts_api_install', 'True'))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
+        # Set this to go back to setting the object store in the tool request instead of
+        # in the job handler.
+        self.legacy_eager_objectstore_initialization = string_as_bool(kwargs.get('legacy_eager_objectstore_initialization', 'False'))
         # These workflow modules should not be considered part of Galaxy's
         # public API yet - the module state definitions may change and
         # workflows built using these modules may not function in the
@@ -723,6 +726,24 @@ class Configuration(object):
                 'qualname': 'COMPLIANCE'
             }
 
+        log_destination = kwargs.get("log_destination", None)
+        if log_destination == "stdout":
+            LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
+                'class': 'logging.StreamHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'stream': 'ext://sys.stdout',
+                'filters': ['stack']
+            }
+        elif log_destination:
+            LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
+                'class': 'logging.FileHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'filename': kwargs['log_destination'],
+                'filters': ['stack']
+            }
+
     @property
     def sentry_dsn_public(self):
         """
@@ -849,7 +870,8 @@ class Configuration(object):
             port = None
         return port
 
-    def _parse_allowed_origin_hostnames(self, kwargs):
+    @staticmethod
+    def _parse_allowed_origin_hostnames(kwargs):
         """
         Parse a CSV list of strings/regexp of hostnames that should be allowed
         to use CORS and will be sent the Access-Control-Allow-Origin header.
@@ -862,7 +884,7 @@ class Configuration(object):
             # a string enclosed in fwd slashes will be parsed as a regexp: e.g. /<some val>/
             if string[0] == '/' and string[-1] == '/':
                 string = string[1:-1]
-                return re.compile(string, flags=(re.UNICODE | re.LOCALE))
+                return re.compile(string, flags=(re.UNICODE))
             return string
 
         return [parse(v) for v in allowed_origin_hostnames if v]

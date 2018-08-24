@@ -12,6 +12,9 @@ class ToolOutputBase(Dictifiable):
         self.hidden = hidden
         self.collection = False
 
+    def to_dict(self, view='collection', value_mapper=None, app=None):
+        return super(ToolOutputBase, self).to_dict(view=view, value_mapper=value_mapper)
+
 
 class ToolOutput(ToolOutputBase):
     """
@@ -57,7 +60,7 @@ class ToolOutput(ToolOutputBase):
         return iter((self.format, self.metadata_source, self.parent))
 
     def to_dict(self, view='collection', value_mapper=None, app=None):
-        as_dict = super(ToolOutput, self).to_dict(view=view, value_mapper=value_mapper)
+        as_dict = super(ToolOutput, self).to_dict(view=view, value_mapper=value_mapper, app=app)
         format = self.format
         if format and format != "input" and app:
             edam_format = app.datatypes_registry.edam_formats.get(self.format)
@@ -82,6 +85,8 @@ class ToolOutputCollection(ToolOutputBase):
       </collection>
     <outputs>
     """
+
+    dict_collection_visible_keys = ['name', 'default_format', 'label', 'hidden', 'inherit_format', 'inherit_metadata']
 
     def __init__(
         self,

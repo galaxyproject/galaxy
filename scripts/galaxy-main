@@ -33,6 +33,8 @@ from logging.config import fileConfig
 
 from six.moves.configparser import ConfigParser
 
+from galaxy.util import unicodify
+
 try:
     from daemonize import Daemonize
 except ImportError:
@@ -175,9 +177,12 @@ class GalaxyConfigBuilder(object):
             galaxy_root = kwds.get("galaxy_root", GALAXY_ROOT_DIR)
             config_file = find_config(config_file, galaxy_root)
             config_file = absolute_config_path(config_file, galaxy_root=galaxy_root)
-        self.config_file = config_file
+        self.config_file = unicodify(config_file)
         # FIXME: this won't work for non-Paste ini configs
-        self.config_section = self.app_name if not self.config_is_ini else 'app:%s' % (kwds.get("app") or (args and args.app) or DEFAULT_INI_APP)
+        if self.config_is_ini:
+            self.config_section = "app:%s" % unicodify(kwds.get("app") or (args and args.app) or DEFAULT_INI_APP)
+        else:
+            self.config_section = self.app_name
         self.log_file = (args and args.log_file)
 
     @classmethod

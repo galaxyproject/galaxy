@@ -43,7 +43,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         # Publish the history
         self.click_popup_option(self.history2_name, 'Share or Publish')
-        self.wait_for_and_click_selector('input[name="make_accessible_and_publish"]')
+        self.components.histories.sharing.make_accessible_and_publish.wait_for_and_click()
 
         self.navigate_to_saved_histories_page()
 

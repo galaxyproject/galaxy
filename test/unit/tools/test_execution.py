@@ -2,7 +2,7 @@
 """
 from unittest import TestCase
 
-from paste import httpexceptions
+import webob.exc
 
 import galaxy.model
 from galaxy.tools.parameters import params_to_incoming
@@ -76,7 +76,7 @@ class ToolExecutionTestCase(TestCase, tools_support.UsesApp, tools_support.UsesT
         redirect_raised = False
         try:
             self.__handle_with_incoming(param1="moo")
-        except httpexceptions.HTTPFound:
+        except webob.exc.HTTPFound:
             redirect_raised = True
         assert redirect_raised
 
@@ -177,7 +177,7 @@ class MockAction(object):
         self.execution_call_args.append(kwds)
         num_calls = len(self.execution_call_args)
         if self.expect_redirect:
-            raise httpexceptions.HTTPFound("http://google.com")
+            raise webob.exc.HTTPFound(location="http://google.com")
         if self.exception_after_exection is not None:
             if num_calls > self.exception_after_exection:
                 raise Exception("Test Exception")

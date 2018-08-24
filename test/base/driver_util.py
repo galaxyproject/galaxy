@@ -39,7 +39,7 @@ from .nose_util import run
 from .test_logging import logging_config_file
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-DEFAULT_WEB_HOST = "localhost"
+DEFAULT_WEB_HOST = socket.gethostbyname('localhost')
 DEFAULT_CONFIG_PREFIX = "GALAXY"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
@@ -172,6 +172,9 @@ def setup_galaxy_config(
     galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
 
     tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    conda_auto_install = os.environ.get('GALAXY_TEST_CONDA_AUTO_INSTALL', conda_auto_install)
+    conda_auto_init = os.environ.get('GALAXY_TEST_CONDA_AUTO_INIT', conda_auto_init)
+    conda_prefix = os.environ.get('GALAXY_TEST_CONDA_PREFIX')
     if tool_conf is None:
         # As a fallback always at least allow upload.
         tool_conf = FRAMEWORK_UPLOAD_TOOL_CONF
@@ -192,6 +195,7 @@ def setup_galaxy_config(
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
         chunk_upload_size=100,
+        conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
         cleanup_job='onsuccess',
@@ -411,10 +415,11 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
         conn = http_client.HTTPConnection(host, port)
         try:
             conn.request("GET", "/")
-            if conn.getresponse().status == 200:
+            response = conn.getresponse()
+            if response.status == 200:
                 break
         except socket.error as e:
-            if e[0] not in [61, 111]:
+            if e.errno not in [61, 111]:
                 raise
         time.sleep(sleep_amount)
     else:
@@ -552,7 +557,7 @@ def get_ip_address(ifname):
     return socket.inet_ntoa(fcntl.ioctl(
         s.fileno(),
         0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
+        struct.pack('256s', ifname[:15].encode('utf-8'))
     )[20:24])
 
 
@@ -670,8 +675,6 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "uwsgi",
             "--http",
             "%s:%s" % (host, port),
-            "--pythonpath",
-            os.path.join(galaxy_root, "lib"),
             "--yaml",
             yaml_config_path,
             "--module",
@@ -679,6 +682,9 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "--enable-threads",
             "--die-on-term",
         ]
+        for p in sys.path:
+            uwsgi_command.append('--pythonpath')
+            uwsgi_command.append(p)
 
         handle_uwsgi_cli_command = getattr(
             config_object, "handle_uwsgi_cli_command", None
@@ -760,6 +766,12 @@ class TestDriver(object):
             server_wrapper.stop()
         for temp_directory in self.temp_directories:
             cleanup_directory(temp_directory)
+
+    def mkdtemp(self):
+        """Return a temp directory that is properly cleaned up or not based on the config."""
+        temp_directory = tempfile.mkdtemp()
+        self.temp_directories.append(temp_directory)
+        return temp_directory
 
     def run(self):
         """Driver whole test.
@@ -887,7 +899,7 @@ class GalaxyTestDriver(TestDriver):
             testing_installed_tools
         )
 
-    def build_tool_tests(self, testing_shed_tools=None):
+    def build_tool_tests(self, testing_shed_tools=None, return_test_classes=False):
         if self.app is None:
             return
 
@@ -901,12 +913,14 @@ class GalaxyTestDriver(TestDriver):
         import functional.test_toolbox
         functional.test_toolbox.toolbox = self.app.toolbox
         # When testing data managers, do not test toolbox.
-        functional.test_toolbox.build_tests(
+        test_classes = functional.test_toolbox.build_tests(
             app=self.app,
             testing_shed_tools=testing_shed_tools,
             master_api_key=get_master_api_key(),
             user_api_key=get_user_api_key(),
         )
+        if return_test_classes:
+            return test_classes
         return functional.test_toolbox
 
     def run_tool_test(self, tool_id, index=0, resource_parameters={}):
@@ -943,7 +957,7 @@ def setup_keep_outdir():
 
 
 def target_url_parts():
-    host = os.environ.get('GALAXY_TEST_HOST')
+    host = socket.gethostbyname(os.environ.get('GALAXY_TEST_HOST', DEFAULT_WEB_HOST))
     port = os.environ.get('GALAXY_TEST_PORT')
     default_url = "http://%s:%s" % (host, port)
     url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)

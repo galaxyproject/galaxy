@@ -553,6 +553,59 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
 
+    @expose_api
+    def show_roles(self, trans, encoded_dataset_id, **kwd):
+        """
+        Display information about current or available roles for a given dataset permission.
+
+        * GET /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to query
+        :type   encoded_dataset_id:      an encoded id string
+
+        :returns:   either dict of current roles for all permission types
+                    or dict of available roles to choose from (is the same for any permission type)
+        :rtype:     dictionary
+
+        :raises: InsufficientPermissionsException
+        """
+        hda = self.hda_manager.get_owned(self.decode_id(encoded_dataset_id), trans.user, current_history=trans.history, trans=trans)
+        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
+
+    @expose_api
+    def update_permissions(self, trans, history_id, history_content_id, payload=None, **kwd):
+        """
+        Set permissions of the given library dataset to the given role ids.
+
+        * PUT /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
+        :type   encoded_dataset_id:      an encoded id string
+        :param   payload: dictionary structure containing:
+            :param  action:     (required) describes what action should be performed
+                                available actions: make_private, remove_restrictions, set_permissions
+            :type   action:     string
+            :param  access_ids[]:      list of Role.id defining roles that should have access permission on the dataset
+            :type   access_ids[]:      string or list
+            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the dataset
+            :type   manage_ids[]:      string or list
+            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
+            :type   modify_ids[]:      string or list
+        :type:      dictionary
+
+        :returns:   dict of current roles for all available permission types
+        :rtype:     dictionary
+
+        :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
+                    RequestParameterMissingException
+        """
+        if payload:
+            kwd.update(payload)
+        hda = self.hda_manager.get_owned(self.decode_id(history_content_id), trans.user, current_history=trans.history, trans=trans)
+        assert hda is not None
+        self.hda_manager.update_permissions(trans, hda, **kwd)
+        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
+
     @expose_api_anonymous
     def update(self, trans, history_id, id, payload, **kwd):
         """
@@ -587,7 +640,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __update_dataset(self, trans, history_id, id, payload, **kwd):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        if trans.user is None:
+        anonymous_user = not trans.user_is_admin() and trans.user is None
+        if anonymous_user:
             hda = self.hda_manager.by_id(self.decode_id(id))
             if hda.history != trans.history:
                 raise exceptions.AuthenticationRequired('API authentication required for this request')
@@ -602,7 +656,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # logged in user: use full payload, check state if deleting, and make sure the history is theirs
         else:
-            hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+            hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history, trans=trans)
 
             # only check_state if not deleting, otherwise cannot delete uploading files
             check_state = not payload.get('deleted', False)

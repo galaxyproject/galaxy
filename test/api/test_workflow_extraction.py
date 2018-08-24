@@ -133,7 +133,7 @@ test_data:
 """)
         job_id = self._job_id_for_tool(jobs_summary.jobs, "collection_paired_test")
         downloaded_workflow = self._extract_and_download_workflow(
-            dataset_collection_ids=[jobs_summary.inputs["text_input1"]["hid"]],
+            dataset_collection_ids=["1"],
             job_ids=[job_id],
         )
         self.__check_workflow(
@@ -172,7 +172,7 @@ test_data:
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat1")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "cat_collection")
         downloaded_workflow = self._extract_and_download_workflow(
-            dataset_collection_ids=[jobs_summary.inputs["text_input1"]["hid"]],
+            dataset_collection_ids=["1"],
             job_ids=[job1_id, job2_id],
         )
         print(jobs_summary.inputs["text_input1"])
@@ -273,7 +273,7 @@ test_data:
         tool_ids = ["cat1", "collection_creates_pair", "cat_collection", "cat_list"]
         job_ids = [functools.partial(self._job_id_for_tool, jobs_summary.jobs)(_) for _ in tool_ids]
         downloaded_workflow = self._extract_and_download_workflow(
-            dataset_collection_ids=["3"],
+            dataset_collection_ids=["1"],
             job_ids=job_ids,
         )
         self.__check_workflow(

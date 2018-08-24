@@ -29,7 +29,7 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
     if num_discover_dataset_blocks == 0 and legacy:
         collectors = [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        collectors = map(lambda elem: dataset_collection_description(**elem.attrib), primary_dataset_elems)
+        collectors = [dataset_collection_description(**e.attrib) for e in primary_dataset_elems]
 
     if num_discover_dataset_blocks > 1:
         for collector in collectors:

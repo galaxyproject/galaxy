@@ -8,16 +8,16 @@ import re
 import tarfile
 import tempfile
 import threading
-from cgi import FieldStorage
 from collections import OrderedDict
 from datetime import datetime
 from xml.etree import ElementTree
 
 import packaging.version
+import webob.exc
 from mako.template import Template
-from paste import httpexceptions
 from six import itervalues, string_types
 from six.moves.urllib.parse import unquote_plus
+from webob.compat import cgi_FieldStorage
 
 import tool_shed.util.repository_util as repository_util
 import tool_shed.util.shed_util_common
@@ -81,7 +81,6 @@ from galaxy.util import (
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
@@ -363,7 +362,7 @@ class DefaultToolState(object):
         """
         Restore the state from a string
         """
-        values = json_fix(safe_loads(values)) or {}
+        values = safe_loads(values) or {}
         self.page = values.pop("__page__") if "__page__" in values else None
         self.rerun_remap_job_id = values.pop("__rerun_remap_job_id__") if "__rerun_remap_job_id__" in values else None
         self.inputs = params_from_strings(tool.inputs, values, app, ignore_errors=True)
@@ -475,7 +474,7 @@ class Tool(Dictifiable):
     def tool_versions(self):
         # If we have versions, return them.
         if self.lineage:
-            return self.lineage.get_versions()
+            return self.lineage.tool_versions
         else:
             return []
 
@@ -509,7 +508,10 @@ class Tool(Dictifiable):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        if self.tool_type != "default":
+        if self.tool_type not in ["default", "manage_data"]:
+            return True
+
+        if self.tool_type == "manage_data" and self.profile < 18.09:
             return True
 
         config = self.app.config
@@ -804,7 +806,8 @@ class Tool(Dictifiable):
                 name = inputs_elem.get("name")
                 filename = inputs_elem.get("filename", None)
                 format = inputs_elem.get("format", "json")
-                content = dict(format=format)
+                data_style = inputs_elem.get("data_style", "skip")
+                content = dict(format=format, handle_files=data_style)
                 self.config_files.append((name, filename, content))
             for conf_elem in conf_parent_elem.findall("configfile"):
                 name = conf_elem.get("name")
@@ -858,22 +861,34 @@ class Tool(Dictifiable):
 
     def test_data_path(self, filename):
         repository_dir = self._repository_dir
+        test_data = None
         if repository_dir:
-            for root, dirs, files in os.walk(repository_dir):
-                if '.hg' in dirs:
-                    dirs.remove('.hg')
-                if 'test-data' in dirs:
-                    test_data_dir = os.path.join(root, 'test-data')
-                    result = os.path.abspath(os.path.join(test_data_dir, filename))
-                    if not in_directory(result, test_data_dir):
-                        # Don't raise an explicit exception and reveal details about what
-                        # files are or are not on the path, simply return None and let the
-                        # API raise a 404.
-                        return None
-                    else:
-                        return result
+            return self.__walk_test_data(dir=repository_dir, filename=filename)
         else:
-            return self.app.test_data_resolver.get_filename(filename)
+            if self.tool_dir:
+                tool_dir = self.tool_dir
+                if isinstance(self, DataManagerTool):
+                    tool_dir = os.path.dirname(self.tool_dir)
+                test_data = self.__walk_test_data(tool_dir, filename=filename)
+        if not test_data:
+            test_data = self.app.test_data_resolver.get_filename(filename)
+        return test_data
+
+    def __walk_test_data(self, dir, filename):
+        for root, dirs, files in os.walk(dir):
+            if '.hg' in dirs:
+                dirs.remove('.hg')
+            if 'test-data' in dirs:
+                test_data_dir = os.path.join(root, 'test-data')
+                result = os.path.abspath(os.path.join(test_data_dir, filename))
+                if not in_directory(result, test_data_dir):
+                    # Don't raise an explicit exception and reveal details about what
+                    # files are or are not on the path, simply return None and let the
+                    # API raise a 404.
+                    return None
+                else:
+                    if os.path.exists(result):
+                        return result
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
@@ -1203,7 +1218,7 @@ class Tool(Dictifiable):
                     log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
-                                       output_encoding='utf-8', default_filters=['decode.utf8'],
+                                       default_filters=['decode.utf8'],
                                        encoding_errors='replace')
             except Exception:
                 log.exception("Exception while parsing help for tool with id '%s'", self.id)
@@ -1221,7 +1236,7 @@ class Tool(Dictifiable):
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
                     self.__help_by_page = [Template(rst_to_html(help_header + x + help_footer),
-                                                    input_encoding='utf-8', output_encoding='utf-8',
+                                                    input_encoding='utf-8',
                                                     default_filters=['decode.utf8'],
                                                     encoding_errors='replace')
                                            for x in self.__help_by_page]
@@ -1415,8 +1430,8 @@ class Tool(Dictifiable):
                 dataset_collection_elements=execution_slice.dataset_collection_elements,
                 completed_job=completed_job,
             )
-        except httpexceptions.HTTPFound as e:
-            # if it's a paste redirect exception, pass it up the stack
+        except webob.exc.HTTPFound as e:
+            # if it's a webob redirect exception, pass it up the stack
             raise e
         except ToolInputsNotReadyException as e:
             return False, e
@@ -1434,7 +1449,7 @@ class Tool(Dictifiable):
             return False, message
 
     def find_fieldstorage(self, x):
-        if isinstance(x, FieldStorage):
+        if isinstance(x, cgi_FieldStorage):
             raise InterruptedUpload(None)
         elif isinstance(x, dict):
             [self.find_fieldstorage(y) for y in x.values()]
@@ -1889,9 +1904,6 @@ class Tool(Dictifiable):
             tool_help = self.help.render(static_path=url_for('/static'), host_url=url_for('/', qualified=True))
             tool_help = unicodify(tool_help, 'utf-8')
 
-        # create tool versions
-        tool_versions = self.lineage.tool_versions if self.lineage else []  # lineage may be `None` if tool is not loaded into tool panel
-
         # update tool model
         tool_model.update({
             'id'            : self.id,
@@ -1901,7 +1913,7 @@ class Tool(Dictifiable):
             'sharable_url'  : self.sharable_url,
             'message'       : tool_message,
             'warnings'      : tool_warnings,
-            'versions'      : tool_versions,
+            'versions'      : self.tool_versions,
             'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
             'errors'        : state_errors,
             'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
@@ -2041,24 +2053,23 @@ class Tool(Dictifiable):
                 raise exceptions.MessageException('This dataset was created by an obsolete tool (%s). Can\'t re-run.' % tool_id)
             if (self.id != tool_id and self.old_id != tool_id) or self.version != tool_version:
                 if self.id == tool_id:
-                    if tool_version is None:
-                        # for some reason jobs don't always keep track of the tool version.
-                        message = ''
-                    else:
-                        message = 'This job was run with tool version "%s", which is not available.  ' % tool_version
+                    if tool_version:
+                        message = 'This job was run with tool version "%s", which is not available. ' % tool_version
                         if len(tools) > 1:
-                            message += 'You can re-run the job with the selected tool or choose another version of the tool.'
+                            message += 'You can re-run the job with the selected tool or choose another version of the tool. '
                         else:
-                            message += 'You can re-run the job with this tool version, which is a different version of the original tool.'
+                            message += 'You can re-run the job with this tool version, which is a different version of the original tool. '
                 else:
                     new_tool_shed_url = '%s/%s/' % (tool.sharable_url, tool.changeset_revision)
                     old_tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_id.split('/repos/')[0])
                     old_tool_shed_url = '%s/view/%s/%s/' % (old_tool_shed_url, tool.repository_owner, tool.repository_name)
-                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available.  ' % (old_tool_shed_url, tool_id, tool_version)
+                    message = 'This job was run with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, version "%s", which is not available. ' % (old_tool_shed_url, tool_id, tool_version)
                     if len(tools) > 1:
-                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool.' % (new_tool_shed_url, self.id)
+                        message += 'You can re-run the job with the selected <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a> or choose another derivation of the tool. ' % (new_tool_shed_url, self.id)
                     else:
-                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool.' % (new_tool_shed_url, self.id)
+                        message += 'You can re-run the job with <a href=\"%s\" target=\"_blank\">tool id \"%s\"</a>, which is a derivation of the original tool. ' % (new_tool_shed_url, self.id)
+            if len(self.tool_versions) > 1 and tool_version != self.tool_versions[-1]:
+                message += 'There is a newer version of this tool available.'
         except Exception as e:
             raise exceptions.MessageException(str(e))
         return message
@@ -2302,16 +2313,16 @@ class DataManagerTool(OutputParameterJSONTool):
         user = trans.user
         assert user, 'You must be logged in to use this tool.'
         assert self.allow_user_access(user), "You must be an admin to access this tool."
-        history = user.data_manager_histories
-        if not history:
+        dm_history_associations = user.data_manager_histories
+        if not dm_history_associations:
             # create
             if create:
                 history = _create_data_manager_history(user)
             else:
                 history = None
         else:
-            for history in reversed(history):
-                history = history.history
+            for dm_history_association in reversed(dm_history_associations):
+                history = dm_history_association.history
                 if not history.deleted:
                     break
             if history.deleted:

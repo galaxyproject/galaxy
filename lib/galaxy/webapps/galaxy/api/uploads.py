@@ -43,7 +43,7 @@ class UploadsAPIController(BaseAPIController):
         chunk_size = os.fstat(session_chunk.file.fileno()).st_size
         if chunk_size > trans.app.config.chunk_upload_size:
             raise MessageException("Invalid chunk size.")
-        with open(target_file, "a") as f:
+        with open(target_file, "ab") as f:
             while True:
                 read_chunk = session_chunk.file.read(self.READ_CHUNK_SIZE)
                 if not read_chunk:

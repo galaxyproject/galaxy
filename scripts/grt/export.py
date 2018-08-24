@@ -20,31 +20,24 @@ import galaxy.app
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import hash_util
-from galaxy.util.script import app_properties_from_args, config_file_from_args, populate_config_args
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
-def _init(args, need_app=False):
+def _init(args):
     properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
         logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")
 
-    if need_app:
-        config_file = config_file_from_args(args)
-        app = galaxy.app.UniverseApplication(global_conf={'__file__': config_file, 'here': os.getcwd()})
-    else:
-        app = None
-
     model = galaxy.config.init_models_from_config(config, object_store=object_store)
     return (
         model,
         object_store,
         config,
-        app
     )
 
 
@@ -135,7 +128,7 @@ def main(argv):
                         help="Set the logging level", default='warning')
     parser.add_argument("-b", "--batch-size", type=int, default=1000,
                         help="Batch size for sql queries")
-    parser.add_argument("-m", "--max-records", type=int, default=0,
+    parser.add_argument("-m", "--max-records", type=int, default=5000000,
                         help="Maximum number of records to include in a single report. This option should ONLY be used when reporting historical data. Setting this may require running GRT multiple times to capture all historical logs.")
     populate_config_args(parser)
 
@@ -172,7 +165,7 @@ def main(argv):
         last_job_sent = -1
 
     annotate('galaxy_init', 'Loading Galaxy...')
-    model, object_store, gxconfig, app = _init(args, need_app=config['grt']['share_toolbox'])
+    model, object_store, gxconfig = _init(args)
 
     # Galaxy overrides our logging level.
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
@@ -409,16 +402,8 @@ def main(argv):
 
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:
-        if config['grt']['share_toolbox']:
-            toolbox = [
-                (tool.id, tool.name, tool.version, tool.tool_shed, tool.repository_id, tool.repository_name)
-                for tool_id, tool in app.toolbox._tools_by_id.items()
-            ]
-        else:
-            toolbox = None
-
         json.dump({
-            "version": 1,
+            "version": 2,
             "galaxy_version": gxconfig.version_major,
             "generated": REPORT_IDENTIFIER,
             "report_hash": "sha256:" + sha,
@@ -430,7 +415,6 @@ def main(argv):
                 "total": sa_session.query(model.User.id).count(),
             },
             "jobs": job_state_data,
-            "tools": toolbox
         }, handle)
 
     # Write our checkpoint file so we know where to start next time.

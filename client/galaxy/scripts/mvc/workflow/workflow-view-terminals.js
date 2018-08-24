@@ -194,13 +194,15 @@ var BaseOutputTerminalView = TerminalView.extend({
     },
     onDrag: function(e, d) {
         var onmove = () => {
+            // FIXME: global
+            var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
             var po = $(d.proxy)
                 .offsetParent()
                 .offset();
 
             var x = d.offsetX - po.left;
             var y = d.offsetY - po.top;
-            $(d.proxy).css({ left: x, top: y });
+            $(d.proxy).css({ left: x / canvasZoom, top: y / canvasZoom });
             d.proxy.terminal.redraw();
             // FIXME: global
             window.workflow_globals.canvas_manager.update_viewport_overlay();

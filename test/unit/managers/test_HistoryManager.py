@@ -3,6 +3,7 @@
 """
 import unittest
 
+import mock
 import sqlalchemy
 from six import string_types
 from sqlalchemy import true
@@ -497,6 +498,24 @@ class HistorySerializerTestCase(BaseTestCase):
 
         self.log('serialized should jsonify well')
         self.assertIsJsonifyable(serialized)
+
+    def test_history_resume(self):
+        user2 = self.user_manager.create(**user2_data)
+        history = self.history_manager.create(name='history', user=user2)
+        # No running jobs
+        history.resume_paused_jobs()
+        # Mock running jobs
+        with mock.patch('galaxy.model.History.paused_jobs', new_callable=mock.PropertyMock) as mock_paused_jobs:
+            job = model.Job()
+            job.state = model.Job.states.PAUSED
+            jobs = [job]
+            self.trans.sa_session.add(jobs[0])
+            self.trans.sa_session.flush()
+            assert job.state == model.Job.states.PAUSED
+            mock_paused_jobs.return_value = jobs
+            history.resume_paused_jobs()
+            mock_paused_jobs.assert_called_once()
+            assert job.state == model.Job.states.NEW, job.state
 
     def _history_state_from_states_and_deleted(self, user, hda_state_and_deleted_tuples):
         history = self.history_manager.create(name='name', user=user)

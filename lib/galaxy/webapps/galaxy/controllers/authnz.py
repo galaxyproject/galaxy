@@ -4,6 +4,7 @@ OAuth 2.0 and OpenID Connect Authentication and Authorization Controller.
 
 from __future__ import absolute_import
 
+import json
 import logging
 
 from galaxy import web
@@ -42,7 +43,7 @@ class OIDC(BaseUIController):
             log.debug(msg)
             return trans.show_error_message(msg)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
-        return trans.response.send_redirect(web.url_for(redirect_uri))
+        return json.dumps({"redirect_uri": redirect_uri})
 
     @web.expose
     def callback(self, trans, provider, **kwargs):

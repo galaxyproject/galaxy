@@ -1,7 +1,9 @@
 # Common test data for rule testing meant to be shared between API and Selenium tests.
 from pkg_resources import resource_string
 
-RULES_DSL_SPEC_STR = resource_string(__name__, "data/rules_dsl_spec.yml")
+from galaxy.util import unicodify
+
+RULES_DSL_SPEC_STR = unicodify(resource_string(__name__, "data/rules_dsl_spec.yml"))
 
 
 def check_example_1(hdca, dataset_populator):
@@ -128,5 +130,5 @@ EXAMPLE_3 = {
         "type": "list:paired",
     },
     "check": check_example_3,
-    "output_hid": 7,
+    "output_hid": 6,
 }

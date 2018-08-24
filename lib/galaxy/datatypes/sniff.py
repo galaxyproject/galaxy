@@ -18,7 +18,10 @@ from six.moves import filter
 from six.moves.urllib.request import urlopen
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.util import (
+    compression_utils,
+    smart_str
+)
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,
@@ -70,14 +73,14 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
             break
         if not data_checked:
             # See if we're uploading a compressed file
-            if zipfile.is_zipfile(filename):
-                is_compressed = True
-            else:
-                try:
-                    if text_type(chunk[:2]) == text_type(util.gzip_magic):
-                        is_compressed = True
-                except Exception:
-                    pass
+            try:
+                # Convert chunk to a bytestring if it is not already.
+                # Check if the first 2 bytes of the chunk are equal to the
+                # gzip magic number.
+                if smart_str(chunk)[:2] == util.gzip_magic:
+                    is_compressed = True
+            except Exception:
+                pass
             if not is_compressed:
                 is_binary = util.is_binary(chunk)
             data_checked = True
@@ -105,7 +108,8 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write("1 2\\r3 4")
     >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -133,7 +137,8 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
     Transforms in place a 'sep' separated file to a tab separated one
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\n3 4\\n")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write("1 2\\n3 4\\n")
     >>> sep2tabs(fname)
     (2, None)
     >>> open(fname).read()
@@ -170,7 +175,8 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     so that files do not need to be read twice
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write("1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -413,7 +419,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'dmnd'
     >>> fname = get_test_fname('1.xls')
-    >>> guess_ext(fname, sniff_order)
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'excel.xls'
     >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
     >>> guess_ext(fname, sniff_order)
@@ -461,7 +467,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'ttl'
     >>> fname = get_test_fname('1.hdt')
-    >>> guess_ext(fname, sniff_order)
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'hdt'
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)
@@ -596,10 +602,11 @@ class FilePrefix(object):
 
     def line_iterator(self):
         s = self.string_io()
+        s_len = len(s.getvalue())
         for line in s:
             if line.endswith("\n") or line.endswith("\r"):
                 yield line
-            elif s.pos == s.len and not self.truncated:
+            elif s.tell() == s_len and not self.truncated:
                 # At the end, return the last line if it wasn't truncated when reading it in.
                 yield line
 

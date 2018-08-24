@@ -4,11 +4,11 @@ from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
 import collections
-import itertools
 import logging
 from threading import Thread
 
 import six
+import six.moves
 from six.moves.queue import Queue
 
 from galaxy import model
@@ -161,7 +161,7 @@ class ExecutionTracker(object):
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = {}
+        self.implicit_collections = collections.OrderedDict()
 
     @property
     def param_combinations(self):
@@ -411,7 +411,7 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(itertools.izip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
             for dataset_collection_element in dataset_collection_elements.values():
                 assert dataset_collection_element.element_object is None
 
@@ -434,7 +434,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         self.job_callback(job)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(itertools.izip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
             # Two options here - check if the element has been populated or check if the
             # a WorkflowInvocationStepJobAssociation exists. Not sure which is better but
             # for now I have the first so lets check.

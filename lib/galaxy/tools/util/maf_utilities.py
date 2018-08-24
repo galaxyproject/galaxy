@@ -8,7 +8,6 @@ from __future__ import print_function
 import logging
 import os
 import resource
-import string
 import sys
 import tempfile
 from copy import deepcopy
@@ -19,10 +18,14 @@ import bx.interval_index_file
 import bx.intervals
 from six.moves import xrange
 
+try:
+    from string import maketrans
+except ImportError:
+    maketrans = str.maketrans
+
 assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
-
 
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
@@ -138,7 +141,7 @@ class TempFileHandler(object):
 # an object corresponding to a reference layered alignment
 class RegionAlignment(object):
 
-    DNA_COMPLEMENT = string.maketrans("ACGTacgt", "TGCAtgca")
+    DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
     def __init__(self, size, species=[], temp_file_handler=None):
@@ -222,7 +225,7 @@ class GenomicRegionAlignment(RegionAlignment):
 
 class SplicedAlignment(object):
 
-    DNA_COMPLEMENT = string.maketrans("ACGTacgt", "TGCAtgca")
+    DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
     def __init__(self, exon_starts, exon_ends, species=[], temp_file_handler=None):
         if not isinstance(exon_starts, list):

@@ -686,7 +686,10 @@ var ToolPanelView = Backbone.View.extend({
         search_view.render();
         // FIXME: This is a little ugly because it navigates through the parent
         //        element, but good enough until this is all `.vue`
-        self.$el.closest(".unified-panel").find(".unified-panel-controls").append(search_view.$el);
+        self.$el
+            .closest(".unified-panel")
+            .find(".unified-panel-controls")
+            .append(search_view.$el);
 
         // Render panel.
         this.model.get("layout").each(panel_elt => {
@@ -804,7 +807,8 @@ var templates = {
                 placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />
          <a id="search-clear-btn" title="clear search (esc)"> </a>
          <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
-    `),
+    `
+    ),
 
     // the category level container in the tool panel (e.g. 'Get Data', 'Text Manipulation')
     panel_section: _.template(

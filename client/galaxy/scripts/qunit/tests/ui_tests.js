@@ -4,7 +4,6 @@ import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
 import Drilldown from "mvc/ui/ui-drilldown";
 import Slider from "mvc/ui/ui-slider";
-import Thumbnails from "mvc/ui/ui-thumbnails";
 import Tabs from "mvc/ui/ui-tabs";
 
 /* global QUnit */
@@ -61,62 +60,6 @@ QUnit.test("tabs", function(assert) {
     _test();
 });
 
-QUnit.test("thumbnails", function(assert) {
-    var _test = function(options) {
-        assert.ok(thumb.$(".tab-pane").length == options.ntabs, "Two tabs found.");
-        assert.ok(thumb.$(".ui-thumbnails-item").length == options.nitems, "Thumbnail item.");
-        assert.ok(
-            $(thumb.$(".ui-thumbnails-image")[options.index]).attr("src") == options.image_src,
-            "Correct image source"
-        );
-        assert.ok($(thumb.$(".ui-thumbnails-title")[options.index]).html() == options.title, "Correct title with icon");
-        assert.ok(
-            $(thumb.$(".ui-thumbnails-description-text")[options.index]).html() == options.description,
-            "Correct description"
-        );
-    };
-    var thumb = new Thumbnails.View({
-        title_default: "title_default",
-        title_list: "title_list",
-        collection: [
-            {
-                id: "id",
-                regular: true,
-                title: "title",
-                title_icon: "title_icon",
-                image_src: "image_src",
-                description: "description"
-            }
-        ]
-    });
-    $("body").prepend(thumb.$el);
-    _test({
-        index: 0,
-        ntabs: 2,
-        nitems: 2,
-        image_src: "image_src",
-        title: '<span class="fa title_icon"></span>title',
-        description: "description"
-    });
-    thumb.collection.add({
-        id: "id_a",
-        regular: true,
-        title: "title_a",
-        title_icon: "title_icon_a",
-        image_src: "image_src_a",
-        description: "description_a"
-    });
-    this.clock.tick(window.WAIT_FADE);
-    _test({
-        index: 1,
-        ntabs: 2,
-        nitems: 4,
-        image_src: "image_src_a",
-        title: '<span class="fa title_icon_a"></span>title_a',
-        description: "description_a"
-    });
-});
-
 QUnit.test("button-default", function(assert) {
     var button = new Ui.Button({ title: "title" });
     var model = button.model;
@@ -136,6 +79,7 @@ QUnit.test("button-default", function(assert) {
     model.set("wait", false);
     assert.ok(button.$title.html() == model.get("title"), "Shows correct regular title");
 });
+
 QUnit.test("button-default", function(assert) {
     var button = new Ui.Button({ title: "title" });
     var model = button.model;

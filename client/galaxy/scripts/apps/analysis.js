@@ -109,7 +109,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_visualizations: function(action_id) {
-            var activeTab = action_id == "list_published" ? "shared" : "visualization";
+            var activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
