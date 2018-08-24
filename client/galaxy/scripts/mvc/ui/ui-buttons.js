@@ -287,7 +287,7 @@ var ButtonMenu = ButtonDefault.extend({
                 display: options.visible && this.collection.where({ visible: true }).length > 0 ? "block" : "none"
             });
         this.$root
-            .addClass("root button dropdown-toggle")
+            .addClass("root button")
             .attr("data-toggle", "dropdown")
             .tooltip({ title: options.tooltip || "", placement: "bottom" })
             .off("click")

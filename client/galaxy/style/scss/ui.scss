@@ -130,18 +130,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-button-menu {
-    .dropdown-menu {
-        min-width: 50px;
-    }
-    .dropdown-item {
-        text-align: left;
-    }
-    .dropdown-toggle::after {
-        display: none;
-    }
-}
-
 .ui-button-icon-plain {
     @extend .icon-btn;
     border: none !important;
