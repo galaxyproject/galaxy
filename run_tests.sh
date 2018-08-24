@@ -273,6 +273,7 @@ DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.09.0'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
+coverage_arg=""
 xunit_report_file=""
 structured_data_report_file=""
 with_framework_test_tools_arg=""
@@ -368,6 +369,7 @@ do
               api_script="./test/api"
               shift 1
           fi
+          coverage_file="api_coverage.xml"
           ;;
       -selenium|--selenium)
           with_framework_test_tools_arg="-with_framework_test_tools"
@@ -425,6 +427,7 @@ do
           with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="pytest"
           report_file="run_framework_tests.html"
+          coverage_file="framework_coverage.xml"
           framework_test=1;
           shift 1
           ;;
@@ -433,6 +436,7 @@ do
           with_framework_test_tools_arg="-with_main_tools"
           test_script="pytest"
           report_file="run_framework_tests.html"
+          coverage_file="main_tools_coverage.xml"
           framework_test=1;
           shift 1
           ;;
@@ -440,6 +444,7 @@ do
           marker="-m data_manager"
           test_script="pytest"
           report_file="run_data_managers_tests.html"
+          coverage_file="data_managers_coverage.xml"
           data_managers_test=1;
           shift 1
           ;;
@@ -448,6 +453,7 @@ do
           marker="-m tool"
           test_script="pytest"
           report_file="run_migrated_tests.html"
+          coverage_file="migrated_coverage.xml"
           migrated_test=1;
           shift
           ;;
@@ -456,6 +462,7 @@ do
           marker="-m tool"
           test_script="pytest"
           report_file="run_installed_tests.html"
+          coverage_file="installed_coverage.xml"
           installed_test=1;
           shift
           ;;
@@ -515,6 +522,7 @@ do
               unit_extra="$unit_extra lib test/unit"
               shift 1
           fi
+          coverage_file="unit_coverage.xml"
           ;;
       -i|-integration|--integration)
           test_script="pytest"
@@ -525,6 +533,7 @@ do
           else
               integration_extra="./test/integration"
               shift 1
+          coverage_file="integration_coverage.xml"
           fi
           ;;
       --no_cleanup)
@@ -613,7 +622,7 @@ elif [ -n "$api_script" ]; then
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id`
 elif [ -n "$unit_extra" ]; then
-    extra_args="--with-doctest $unit_extra"
+    extra_args="$unit_extra"
 elif [ -n "$integration_extra" ]; then
     extra_args="$integration_extra"
 elif [ -n "$test_target" ] ; then
@@ -651,7 +660,10 @@ if [ "$with_framework_test_tools_arg" ]; then
     export GALAXY_TEST_TOOL_CONF
 fi
 if [ "$test_script" = 'pytest' ]; then
-    python -m "$test_script" -v --html "$report_file" $xunit_args $extra_args "$@"
+    if [ "$coverage_arg" = "--with_coverage" ]; then
+        coverage_arg="--cov-report term --cov-report xml:cov-unit.xml --cov=lib"
+    fi
+    "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
 else
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi
