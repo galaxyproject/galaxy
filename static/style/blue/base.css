@@ -5548,7 +5548,7 @@ button.bg-dark:focus {
 .my-2 {
   margin-top: 0.5rem !important; }
 
-.mr-2,
+.mr-2, .ui-button-icon .button,
 .mx-2 {
   margin-right: 0.5rem !important; }
 
@@ -5556,7 +5556,7 @@ button.bg-dark:focus {
 .my-2 {
   margin-bottom: 0.5rem !important; }
 
-.ml-2,
+.ml-2, .ui-button-icon .button,
 .mx-2 {
   margin-left: 0.5rem !important; }
 
@@ -10363,34 +10363,16 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 
 .ui-button-default {
   float: right; }
-  .ui-button-default .icon {
-    font-size: 1.1em; }
-  .ui-button-default .progress {
-    height: 4px;
-    margin: 0px;
-    margin-top: 2px; }
-    .ui-button-default .progress .progress-bar {
-      background: #4fc54f; }
+  .ui-button-default .progress .progress-bar {
+    background: #4fc54f; }
 
 .ui-button-icon {
   height: auto !important;
   width: auto !important;
   float: right; }
-  .ui-button-icon ul i {
-    width: 1.2em;
-    font-size: 1.2em;
-    margin-right: 1rem;
-    position: relative;
-    top: 1px; }
-  .ui-button-icon .button {
-    margin-right: 1rem;
-    margin-left: 1rem; }
-    .ui-button-icon .button .title {
-      position: relative;
-      font-size: 0.8em;
-      font-weight: normal;
-      top: -1px;
-      word-wrap: break-word; }
+  .ui-button-icon .button .title {
+    font-size: 0.8em;
+    word-wrap: break-word; }
   .ui-button-icon .button.disabled {
     opacity: 0.65; }
 

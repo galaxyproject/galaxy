@@ -58,8 +58,9 @@ var ButtonDefault = Backbone.View.extend({
         } else {
             this.$el.addClass(options.cls);
             this.$icon.addClass(options.icon);
-            this.$title.html(options.title);
-            options.icon && options.title && this.$icon.addClass("mr-1");
+            if (options.title) {
+                this.$title.html(options.title).addClass("ml-1");
+            }
         }
     },
 
@@ -255,7 +256,7 @@ var ButtonMenu = ButtonDefault.extend({
                 pull: "right",
                 icon: null,
                 onclick: null,
-                cls: "ui-button-icon ui-button-menu",
+                cls: "ui-button-icon",
                 tooltip: "",
                 target: "",
                 href: "",
@@ -300,11 +301,10 @@ var ButtonMenu = ButtonDefault.extend({
             .removeClass()
             .addClass("icon fa")
             .addClass(options.icon);
-        this.$title
+        options.title && this.$title
             .removeClass()
-            .addClass("title")
+            .addClass("title ml-1")
             .html(options.title);
-        options.icon && options.title && this.$icon.addClass("mr-1");
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")
@@ -324,7 +324,7 @@ var ButtonMenu = ButtonDefault.extend({
                     })
                     .append(
                         $("<i/>")
-                            .addClass("fa")
+                            .addClass("fa mr-2")
                             .addClass(suboptions.icon)
                             .css("display", suboptions.icon ? "inline-block" : "none")
                     )

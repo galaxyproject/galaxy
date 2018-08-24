@@ -85,13 +85,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 // buttons
 .ui-button-default {
     float: right;
-    .icon {
-        font-size: 1.1em;
-    }
     .progress {
-        height: 4px;
-        margin: 0px;
-        margin-top: 2px;
         .progress-bar {
             @extend .no-transition;
             background: darken($state-success-bg, 30%);
@@ -105,23 +99,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
     height: auto !important;
     width: auto !important;
     float: right;
-    ul {
-        i {
-            width: 1.2em;
-            font-size: 1.2em;
-            margin-right: $ui-margin-horizontal;
-            position: relative;
-            top: 1px;
-        }
-    }
     .button {
-        margin-right: $ui-margin-horizontal;
-        margin-left: $ui-margin-horizontal;
+        @extend .ml-2;
+        @extend .mr-2;
         .title {
-            position: relative;
             font-size: 0.8em;
-            font-weight: normal;
-            top: -1px;
             word-wrap: break-word;
         }
     }
