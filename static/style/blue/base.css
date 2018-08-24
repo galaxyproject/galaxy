@@ -10383,6 +10383,12 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   background: none !important;
   float: right; }
 
+.ui-button-check {
+  cursor: pointer; }
+  .ui-button-check .icon {
+    font-size: 1.2em;
+    width: 1em; }
+
 .tabbable .nav-item {
   cursor: pointer; }
 
@@ -10700,13 +10706,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   .ui-radiobutton label {
     padding: 2px 10px;
     margin: 0px; }
-
-.ui-button-check {
-  cursor: pointer;
-  margin-bottom: 0.375rem; }
-  .ui-button-check .icon {
-    font-size: 1.2em;
-    width: 1.2em; }
 
 .ui-color-picker .ui-color-picker-header {
   cursor: pointer; }

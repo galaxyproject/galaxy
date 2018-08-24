@@ -154,6 +154,7 @@ var ButtonCheck = Backbone.View.extend({
             }).set(options);
         this.setElement(
             $("<div/>")
+                .addClass("mb-2")
                 .append((this.$icon = $("<span/>")))
                 .append((this.$title = $("<span/>")))
         );

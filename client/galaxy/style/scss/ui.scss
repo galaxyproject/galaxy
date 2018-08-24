@@ -118,6 +118,14 @@ $ui-margin-horizontal-large: $margin-v * 2;
     float: right;
 }
 
+.ui-button-check {
+    .icon {
+        font-size: 1.2em;
+        width: 1em;
+    }
+    cursor: pointer;
+}
+
 // tabs
 .tabbable {
     .nav-item {
@@ -544,15 +552,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         padding: 2px 10px;
         margin: 0px;
     }
-}
-
-.ui-button-check {
-    .icon {
-        font-size: 1.2em;
-        width: 1.2em;
-    }
-    cursor: pointer;
-    margin-bottom: $ui-margin-vertical;
 }
 
 .ui-color-picker {
