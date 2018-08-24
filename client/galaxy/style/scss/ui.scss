@@ -379,9 +379,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
 // portlets
 .ui-portlet {
     @extend .card;
+    border: none;
     height: 100%;
     .portlet-header {
         @extend .card-header;
+        background: $gray-200;
         .portlet-title {
             .portlet-title-text.collapsible {
                 cursor: pointer;
@@ -394,9 +396,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
             }
         }
     }
-    .portlet-content {
+    > .portlet-content {
         @extend .card-body;
-        @extend .p-2;
+        @extend .p-0;
     }
     .portlet-backdrop {
         display: none;
@@ -425,14 +427,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
         border-top-left-radius: 0px;
         padding: 5px;
     }
-    .portlet-content {
-        padding-right: 0px !important;
+    > .portlet-content {
+        @extend .pl-2;
+        @extend .pr-0;
     }
-}
-
-.ui-portlet-plain {
-    @extend .ui-portlet;
-    border: none;
 }
 
 // popovers

@@ -163,7 +163,6 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 changeset: changeset
             };
             $.get(api_url, params, data => {
-                data.cls = "ui-portlet-plain";
                 var toolform = new FormView(data);
                 Utils.deepeach(data.inputs, input => {
                     if (input.type) {

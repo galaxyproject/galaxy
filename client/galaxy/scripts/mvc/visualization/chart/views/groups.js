@@ -63,7 +63,6 @@ var GroupView = Backbone.View.extend({
                         self.chart.state("ok", "Metadata initialized...");
                         self.form = new Form({
                             inputs: inputs,
-                            cls: "ui-portlet-plain",
                             onchange: function() {
                                 self.group.set(self.form.data.create());
                                 self.chart.set("modified", true);
