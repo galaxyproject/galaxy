@@ -421,19 +421,33 @@ do
           shift 2
           ;;
       -f|-framework|--framework)
+          marker="-m tool"
+          with_framework_test_tools_arg="-with_framework_test_tools"
+          test_script="pytest"
           report_file="run_framework_tests.html"
           framework_test=1;
           shift 1
           ;;
       -d|-data_managers|--data_managers)
+          marker="-m data_manager"
+          test_script="pytest"
+          report_file="run_data_managers_tests.html"
           data_managers_test=1;
           shift 1
           ;;
       -m|-migrated|--migrated)
+          with_framework_test_tools_arg="-migrated"
+          marker="-m tool"
+          test_script="pytest"
+          report_file="run_migrated_tests.html"
           migrated_test=1;
           shift
           ;;
       -i|-installed|--installed)
+          with_framework_test_tools_arg="-shed"
+          marker="-m tool"
+          test_script="pytest"
+          report_file="run_installed_tests.html"
           installed_test=1;
           shift
           ;;
@@ -578,29 +592,17 @@ fi
 
 setup_python
 
-if [ -n "$migrated_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
-    extra_args="functional.test_toolbox$class -migrated"
-elif [ -n "$installed_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
-    extra_args="functional.test_toolbox$class -installed"
-elif [ -n "$framework_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForTool_$test_id" || class=""
-    extra_args="functional.test_toolbox$class -framework"
+if [ -n "$framework_test" -o -n "$installed_test" -o -n "$migrated_test" -o -n "$data_managers_test" ] ; then
+    [ -n "$test_id" ] && selector="-k $test_id" || selector=""
+    extra_args="test/functional/test_toolbox_pytest.py $selector $marker"
 elif [ -n "$selenium_test" ] ; then
     extra_args="$selenium_script -selenium"
-elif [ -n "$data_managers_test" ] ; then
-    [ -n "$test_id" ] && class=":TestForDataManagerTool_$test_id" || class=""
-    extra_args="functional.test_data_managers$class -data_managers"
 elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
 elif [ -n "$section_id" ]; then
     extra_args=`python tool_list.py $section_id`
-elif [ -n "$test_id" ]; then
-    class=":TestForTool_$test_id"
-    extra_args="functional.test_toolbox$class"
 elif [ -n "$unit_extra" ]; then
     extra_args="--with-doctest $unit_extra"
 elif [ -n "$integration_extra" ]; then
@@ -627,8 +629,14 @@ if [ -n "$structured_data_report_file" ]; then
 else
     structured_data_args=""
 fi
-if [ -n "$with_framework_test_tools_arg" ]; then
-    GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+if [ "$with_framework_test_tools_arg" ]; then
+    if [ "$with_framework_test_tools_arg" == "-with_framework_test_tools" ]; then
+        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+    elif [ "$with_framework_test_tools_arg" == "-migrated" ]; then
+        GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
+    elif [ "$with_framework_test_tools_arg" == "-shed" ]; then
+        GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
+    fi
     export GALAXY_TEST_TOOL_CONF
 fi
 if [ "$test_script" = 'pytest' ]; then
