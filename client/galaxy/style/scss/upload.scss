@@ -199,9 +199,7 @@
                 width: 175px;
             }
             .upload-source {
-                .ui-button-menu {
-                    width: 70px !important;
-                }
+                width: 70px;
             }
         }
     }
@@ -277,7 +275,16 @@
     }
 }
 
+.upload-table {
+    @extend .table;
+    @extend .table-striped;
+    td {
+        padding: 0.5rem;
+    }
+}
+
 .upload-settings {
+    @extend .upload-table;
     position: relative;
     .upload-settings-cover {
         position: absolute;

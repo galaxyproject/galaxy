@@ -1033,22 +1033,22 @@ pre {
   .offset-xl-11 {
     margin-left: 91.66667%; } }
 
-.table, .ui-table-striped {
+.table, .upload-table, .upload-settings {
   width: 100%;
   max-width: 100%;
   margin-bottom: 1rem;
   background-color: transparent; }
-  .table th, .ui-table-striped th,
-  .table td, .ui-table-striped td {
+  .table th, .upload-table th, .upload-settings th,
+  .table td, .upload-table td, .upload-settings td {
     padding: 0.75rem;
     vertical-align: top;
     border-top: 1px solid #bfbfbf; }
-  .table thead th, .ui-table-striped thead th {
+  .table thead th, .upload-table thead th, .upload-settings thead th {
     vertical-align: bottom;
     border-bottom: 2px solid #bfbfbf; }
-  .table tbody + tbody, .ui-table-striped tbody + tbody {
+  .table tbody + tbody, .upload-table tbody + tbody, .upload-settings tbody + tbody {
     border-top: 2px solid #bfbfbf; }
-  .table .table, .ui-table-striped .table, .table .ui-table-striped, .ui-table-striped .ui-table-striped {
+  .table .table, .upload-table .table, .upload-settings .table, .table .upload-table, .upload-table .upload-table, .upload-settings .upload-table, .table .upload-settings, .upload-table .upload-settings, .upload-settings .upload-settings {
     background-color: #fff; }
 
 .table-sm th,
@@ -1070,7 +1070,7 @@ pre {
 .table-borderless tbody + tbody {
   border: 0; }
 
-.table-striped tbody tr:nth-of-type(odd), .ui-table-striped tbody tr:nth-of-type(odd) {
+.table-striped tbody tr:nth-of-type(odd), .upload-table tbody tr:nth-of-type(odd), .upload-settings tbody tr:nth-of-type(odd) {
   background-color: rgba(0, 0, 0, 0.05); }
 
 .table-hover tbody tr:hover {
@@ -1175,12 +1175,12 @@ pre {
   .table-hover .table-active:hover > th {
     background-color: rgba(0, 0, 0, 0.075); }
 
-.table .thead-dark th, .ui-table-striped .thead-dark th {
+.table .thead-dark th, .upload-table .thead-dark th, .upload-settings .thead-dark th {
   color: #fff;
   background-color: #212529;
   border-color: #32383e; }
 
-.table .thead-light th, .ui-table-striped .thead-light th {
+.table .thead-light th, .upload-table .thead-light th, .upload-settings .thead-light th {
   color: #495057;
   background-color: #e9ecef;
   border-color: #bfbfbf; }
@@ -1194,7 +1194,7 @@ pre {
     border-color: #32383e; }
   .table-dark.table-bordered {
     border: 0; }
-  .table-dark.table-striped tbody tr:nth-of-type(odd), .table-dark.ui-table-striped tbody tr:nth-of-type(odd) {
+  .table-dark.table-striped tbody tr:nth-of-type(odd), .table-dark.upload-table tbody tr:nth-of-type(odd), .table-dark.upload-settings tbody tr:nth-of-type(odd) {
     background-color: rgba(255, 255, 255, 0.05); }
   .table-dark.table-hover tbody tr:hover {
     background-color: rgba(255, 255, 255, 0.075); }
@@ -6682,10 +6682,10 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
     display: none; }
   .badge {
     border: 1px solid #000; }
-  .table, .ui-table-striped {
+  .table, .upload-table, .upload-settings {
     border-collapse: collapse !important; }
-    .table td, .ui-table-striped td,
-    .table th, .ui-table-striped th {
+    .table td, .upload-table td, .upload-settings td,
+    .table th, .upload-table th, .upload-settings th {
       background-color: #fff !important; }
   .table-bordered th,
   .table-bordered td {
@@ -6697,7 +6697,7 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
     .table-dark thead th,
     .table-dark tbody + tbody {
       border-color: #bfbfbf; }
-  .table .thead-dark th, .ui-table-striped .thead-dark th {
+  .table .thead-dark th, .upload-table .thead-dark th, .upload-settings .thead-dark th {
     color: inherit;
     border-color: #bfbfbf; } }
 
@@ -10198,8 +10198,8 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .upload-view-composite .upload-box .upload-row .upload-title {
   width: 175px; }
 
-.upload-view-composite .upload-box .upload-row .upload-source .ui-button-menu {
-  width: 70px !important; }
+.upload-view-composite .upload-box .upload-row .upload-source {
+  width: 70px; }
 
 .upload-ftp-base, .upload-ftp, .upload-ftp-full {
   position: relative; }
@@ -10246,6 +10246,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 
 .upload-ftp-full th {
   text-align: center !important; }
+
+.upload-table td, .upload-settings td {
+  padding: 0.5rem; }
 
 .upload-settings {
   position: relative; }
@@ -10406,19 +10409,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 
 .ui-table tbody, .ui-table-plain tbody {
   cursor: pointer; }
-
-.ui-table-striped {
-  width: 100%;
-  margin-bottom: 0px; }
-  .ui-table-striped th {
-    text-align: center;
-    white-space: nowrap;
-    padding: 0.5rem; }
-  .ui-table-striped td {
-    margin: 0px;
-    padding: 0.5rem; }
-    .ui-table-striped td .ui-button-icon {
-      line-height: 1.2em; }
 
 .ui-table-plain {
   table-layout: fixed; }

@@ -167,25 +167,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-table-striped {
-    @extend .table;
-    @extend .table-striped;
-    width: 100%;
-    margin-bottom: 0px;
-    th {
-        text-align: center;
-        white-space: nowrap;
-        padding: 0.5rem;
-    }
-    td {
-        margin: 0px;
-        padding: 0.5rem;
-        .ui-button-icon {
-            line-height: 1.2em;
-        }
-    }
-}
-
 .ui-table-plain {
     @extend .ui-table;
     table-layout: fixed;
