@@ -16,6 +16,7 @@ cat <<EOF
                                     can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
+'${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
@@ -359,7 +360,7 @@ do
           fi
           ;;
       -a|-api|--api)
-          with_framework_test_tools_arg="-with_framework_test_tools"
+          with_framework_test_tools_arg="-with_framework_and_sample_test_tools"
           test_script="pytest"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -372,7 +373,7 @@ do
           coverage_file="api_coverage.xml"
           ;;
       -selenium|--selenium)
-          with_framework_test_tools_arg="-with_framework_test_tools"
+          with_framework_test_tools_arg="-with_framework_and_sample_test_tools"
           test_script="./scripts/functional_tests.py"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
@@ -525,6 +526,7 @@ do
           coverage_file="unit_coverage.xml"
           ;;
       -i|-integration|--integration)
+          with_framework_test_tools_arg="-with_framework_and_sample_test_tools"
           test_script="pytest"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
@@ -649,21 +651,24 @@ else
 fi
 if [ "$with_framework_test_tools_arg" ]; then
     if [ "$with_framework_test_tools_arg" = "-with_framework_test_tools" ]; then
+        GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
+    elif [ "$with_framework_test_tools_arg" = "-with_framework_and_sample_test_tools" ]; then
         GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
     elif [ "$with_framework_test_tools_arg" = "-migrated" ]; then
         GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
     elif [ "$with_framework_test_tools_arg" = "-shed" ]; then
         GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
     elif [ "$with_framework_test_tools_arg" = "-with_main_tools" ]; then
-        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.main"
+        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,config/tool_conf.xml.main"
     fi
+    echo $GALAXY_TEST_TOOL_CONF
     export GALAXY_TEST_TOOL_CONF
 fi
 if [ "$test_script" = 'pytest' ]; then
     if [ "$coverage_arg" = "--with_coverage" ]; then
         coverage_arg="--cov-report term --cov-report xml:cov-unit.xml --cov=lib"
     fi
-    "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
+    GALAXY_TEST_TOOL_CONF=$GALAXY_TEST_TOOL_CONF "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
 else
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi
