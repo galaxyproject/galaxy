@@ -41,22 +41,34 @@ def driver(request):
     return DRIVER
 
 
-def cases():
+def get_cases():
     # We setup a global driver, so that the driver fixture can tear down the driver
     # Ideally `galaxy_driver` or `cases` would be fixtures and clean up after the yield,
     # but that's not compatible with the use use of pytest.mark.parametrize
     global DRIVER
     DRIVER = galaxy_driver()
-    skiplist = get_skiplist()
     tests = DRIVER.build_tests()
+    cases = []
     for test_name, test_class in tests.items():
         if test_name.startswith(TEST_PREFIX):
             test_class.runTest = lambda : None
             test_instance = test_class()
-            if test_instance.tool_id not in skiplist:
-                # TODO: mark this as skip instead of not collecting the test
-                for index in range(test_instance.test_count):
-                    yield (test_name[len(TEST_PREFIX):] + "_test_%d" % (index + 1), test_instance, index)
+            cases.append(test_instance)
+    return cases
+
+
+def cases():
+    skiplist = get_skiplist()
+    for test_instance in get_cases():
+        for index in range(test_instance.test_count):
+            test = (test_instance.tool_id + "_test_%d" % (index + 1), test_instance, index)
+            marks = []
+            marks.append(pytest.mark.skipif(test_instance.tool_id in skiplist, reason="tool in skiplist"))
+            if 'data_manager_' in test_instance.tool_id:
+                marks.append(pytest.mark.data_manager(test))
+            else:
+                marks.append(pytest.mark.tool(test))
+            yield pytest.param(test, marks=marks)
 
 
 def idfn(val):
