@@ -428,6 +428,14 @@ do
           framework_test=1;
           shift 1
           ;;
+      -main|-main_tools|--main_tools)
+          marker="-m tool"
+          with_framework_test_tools_arg="-with_main_tools"
+          test_script="pytest"
+          report_file="run_framework_tests.html"
+          framework_test=1;
+          shift 1
+          ;;
       -d|-data_managers|--data_managers)
           marker="-m data_manager"
           test_script="pytest"
@@ -636,6 +644,8 @@ if [ "$with_framework_test_tools_arg" ]; then
         GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
     elif [ "$with_framework_test_tools_arg" == "-shed" ]; then
         GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
+    elif [ "$with_framework_test_tools_arg" == "-with_main_tools" ]; then
+        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.main"
     fi
     export GALAXY_TEST_TOOL_CONF
 fi
