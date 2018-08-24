@@ -368,102 +368,41 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 .ui-form-section {
-    border-left: solid 3px $form-heading-bg;
+    border-left: solid 3px $side-panel-bg;
     border-radius: $border-radius-large !important;
     padding-left: 10px;
 }
 
 .ui-form-composite {
-    max-width: 900px;
     height: 100%;
     flex-direction: column;
     display: flex;
-    .ui-form-header {
-        @extend h3;
-        margin-top: 0px;
-        .ui-label {
-            width: calc(100% - 200px);
-        }
-    }
     .ui-steps {
         overflow: auto;
-        margin-top: 15px;
-        border: dashed 1px darken($form-heading-bg, 30%);
-        border-radius: $border-radius-base;
-        padding: $ui-margin-horizontal;
-        .ui-portlet-narrow {
-            .portlet-header {
-                padding: 1px 5px 0px 8px;
-            }
-            padding: 0px $ui-margin-horizontal 0px $ui-margin-horizontal;
-            .portlet-content {
-                padding: 0px $ui-margin-horizontal 0px $ui-margin-horizontal;
-            }
-            .ui-table-section,
-            .ui-portlet-repeat .portlet-content {
-                padding-left: $ui-margin-horizontal-large;
-            }
-        }
-    }
-    .ui-message {
-        margin-top: 0px;
-        margin-bottom: 10px;
     }
 }
 
 // portlets
 .ui-portlet {
     @extend .card;
-    position: relative;
-    clear: both;
-    width: auto;
-    height: auto;
+    height: 100%;
     .portlet-header {
         @extend .card-header;
-        overflow: visible;
-        width: 100%;
         .portlet-title {
-            word-wrap: break-word;
-            .portlet-title-text {
-                @extend h4;
-                vertical-align: middle;
-                //line-height: 22px;
-            }
-            .portlet-title-text.no-highlight.collapsible {
+            .portlet-title-text.collapsible {
                 cursor: pointer;
                 text-decoration: underline;
             }
-            .portlet-title-icon {
-                font-size: 1.2em;
-                vertical-align: middle;
-                margin-right: 5px;
-            }
         }
         .portlet-operations {
-            .ui-button-icon {
-                margin-left: $ui-margin-horizontal;
+            > * {
+                @extend .ml-1;
             }
         }
     }
     .portlet-content {
         @extend .card-body;
-        clear: both;
-        .portlet-body {
-            padding: 0px;
-            height: 100%;
-            width: 100%;
-        }
-        .portlet-buttons {
-            margin-top: $ui-margin-vertical-large;
-            margin-bottom: $ui-margin-vertical-large;
-            > .btn {
-                margin-right: 5px;
-            }
-        }
-    }
-    .portlet-content.nopadding,
-    .portlet-body.nopadding {
-        padding: 0px;
+        @extend .p-2;
     }
     .portlet-backdrop {
         display: none;
@@ -478,84 +417,28 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-portlet-repeat {
+.ui-portlet-section {
     @extend .ui-portlet;
+    @extend .mb-2;
     border: none;
-    border-left: solid 3px $form-heading-bg;
+    border-left: solid 3px $gray-200;
     border-radius: $border-radius-large;
-    margin-bottom: $ui-margin-vertical;
     .portlet-header {
-        background: $form-heading-bg;
+        background: $gray-200;
         border-radius: $border-radius-large;
+        border-bottom: solid darken($gray-200, 10%) 1px;
         border-bottom-left-radius: 0px;
         border-top-left-radius: 0px;
-        padding: 0px 2px;
-        .portlet-title-text {
-            vertical-align: middle;
-            line-height: 20px !important;
-        }
+        padding: 5px;
     }
     .portlet-content {
-        padding-right: 0px;
+        padding-right: 0px !important;
     }
-}
-
-.ui-portlet-panel {
-    @extend .ui-portlet-repeat;
-    margin-top: $ui-margin-vertical;
-    border-left: solid 3px $side-panel-bg;
-    .portlet-header {
-        background: $side-panel-bg;
-        border-bottom: solid darken($side-panel-bg, 10%) 1px;
-    }
-}
-
-.ui-portlet-section {
-    @extend .ui-portlet-panel;
-    .portlet-highlight {
-        text-decoration: underline;
-    }
-}
-
-.ui-portlet-narrow {
-    @extend .ui-portlet-limited;
-    border: none;
-    margin-bottom: $ui-margin-vertical-large;
-    .portlet-header {
-        border-radius: $border-radius-base;
-        .portlet-operations {
-            .ui-button-icon {
-                margin-left: 3px;
-            }
-        }
-    }
-    .ui-portlet-repeat {
-        .portlet-header {
-            border-radius: $border-radius-large;
-            border-bottom-left-radius: 0px;
-            border-top-left-radius: 0px;
-        }
-    }
-    .portlet-content {
-        padding: 0px;
-    }
-    .ui-table-section,
-    .ui-portlet-repeat .portlet-content {
-        padding-left: $ui-margin-horizontal;
-    }
-}
-
-.ui-portlet-limited {
-    @extend .ui-portlet;
-    max-width: 900px;
 }
 
 .ui-portlet-plain {
     @extend .ui-portlet;
     border: none;
-    .portlet-content {
-        padding: 0px;
-    }
 }
 
 // popovers

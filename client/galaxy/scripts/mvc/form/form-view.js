@@ -9,7 +9,7 @@ export default Backbone.View.extend({
     initialize: function(options) {
         this.model = new Backbone.Model({
             initial_errors: false,
-            cls: "ui-portlet-limited",
+            cls: "ui-portlet",
             icon: null,
             always_refresh: true,
             status: "warning",
@@ -131,8 +131,8 @@ export default Backbone.View.extend({
             icon: options.icon,
             title: options.title,
             title_id: options.title_id,
-            cls: options.cls,
             operations: !options.hide_operations && options.operations,
+            cls: options.cls,
             buttons: options.buttons,
             collapsible: options.collapsible,
             collapsed: options.collapsed,

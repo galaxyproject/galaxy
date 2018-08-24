@@ -55,7 +55,7 @@ export var View = Backbone.View.extend({
         var portlet = new Portlet.View({
             id: options.id,
             title: _l("placeholder"),
-            cls: options.cls || "ui-portlet-repeat",
+            cls: options.cls || "ui-portlet-section",
             operations: { button_delete: button_delete }
         });
         portlet.append(options.$el);

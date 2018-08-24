@@ -17,7 +17,7 @@ export var View = Backbone.View.extend({
                 scrollable: true,
                 operations: null,
                 collapsible: false,
-                collapsible_button: false,
+                collapsible_button: true,
                 collapsed: false,
                 onchange_title: null
             }).set(options);
@@ -66,7 +66,7 @@ export var View = Backbone.View.extend({
         if (options.icon) {
             this.$title_icon
                 .removeClass()
-                .addClass("portlet-title-icon fa")
+                .addClass("portlet-title-icon fa mr-1")
                 .addClass(options.icon)
                 .show();
         } else {
@@ -104,7 +104,7 @@ export var View = Backbone.View.extend({
 
         // render operations
         this.$operations.empty;
-        if (options.collapsible_button) {
+        if (options.collapsible && options.collapsible_button) {
             this.$operations.append(this.collapsible_button.$el);
         }
         if (options.operations) {
@@ -185,16 +185,14 @@ export var View = Backbone.View.extend({
     /** Collapse portlet */
     collapse: function() {
         this.collapsed = true;
-        this.$content.height("0%");
-        this.$body.hide();
+        this.$content.hide();
         this.collapsible_button.setIcon("fa-eye-slash");
     },
 
     /** Expand portlet */
     expand: function() {
         this.collapsed = false;
-        this.$content.height("100%");
-        this.$body.fadeIn("fast");
+        this.$content.show();
         this.collapsible_button.setIcon("fa-eye");
     },
 
@@ -225,7 +223,7 @@ export var View = Backbone.View.extend({
                 $("<div/>")
                     .addClass("portlet-content")
                     .append($("<div/>").addClass("portlet-body"))
-                    .append($("<div/>").addClass("portlet-buttons"))
+                    .append($("<div/>").addClass("portlet-buttons mt-3"))
             )
             .append($("<div/>").addClass("portlet-backdrop"));
     }
