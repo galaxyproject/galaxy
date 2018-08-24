@@ -10592,11 +10592,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   .ui-form-error .ui-form-error-text {
     padding-left: 1rem; }
 
-.ui-form-section {
-  border-left: solid 3px #f8f9fa;
-  border-radius: 0.3125rem !important;
-  padding-left: 10px; }
-
 .ui-form-composite {
   height: 100%;
   flex-direction: column;
@@ -12235,7 +12230,6 @@ button.toast-close-button {
   z-index: 1000; }
   .charts-client .charts-buttons .ui-button-icon {
     display: block;
-    margin-right: 5px;
     background: white;
     color: #666;
     border-color: white; }
@@ -12305,15 +12299,6 @@ button.toast-close-button {
       .charts-client .charts-right .charts-editor .charts-description .charts-description-text {
         margin-top: 5px;
         word-break: break-word; }
-    .charts-client .charts-right .charts-editor .tab-icon {
-      margin-right: 0px;
-      color: #666;
-      font-size: 1.2em; }
-    .charts-client .charts-right .charts-editor .portlet-content {
-      padding: 0px; }
-    .charts-client .charts-right .charts-editor .ui-table-section,
-    .charts-client .charts-right .charts-editor .ui-portlet-panel .portlet-content {
-      padding-left: 5px; }
 
 .charts-client.charts-fullscreen .charts-buttons {
   position: absolute;

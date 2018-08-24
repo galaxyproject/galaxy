@@ -5,7 +5,6 @@
         z-index: 1000;
         .ui-button-icon {
             display: block;
-            margin-right: 5px;
             background: white;
             color: #666;
             border-color: white;
@@ -89,18 +88,6 @@
                     margin-top: 5px;
                     word-break: break-word;
                 }
-            }
-            .tab-icon {
-                margin-right: 0px;
-                color: #666;
-                font-size: 1.2em;
-            }
-            .portlet-content {
-                padding: 0px;
-            }
-            .ui-table-section,
-            .ui-portlet-panel .portlet-content {
-                padding-left: 5px;
             }
         }
     }

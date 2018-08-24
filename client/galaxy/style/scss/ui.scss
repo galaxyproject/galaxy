@@ -367,12 +367,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-form-section {
-    border-left: solid 3px $side-panel-bg;
-    border-radius: $border-radius-large !important;
-    padding-left: 10px;
-}
-
 .ui-form-composite {
     height: 100%;
     flex-direction: column;

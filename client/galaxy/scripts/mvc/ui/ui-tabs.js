@@ -166,15 +166,16 @@ export var View = Backbone.View.extend({
         options.icon &&
             $href.append(
                 $("<i/>")
-                    .addClass("fa mr-1")
+                    .addClass("fa")
                     .addClass(options.icon)
             );
-        $href.append(
-            $("<span/>")
-                .attr("id", `tab-title-text-${options.id}`)
-                .addClass("tab-title-text")
-                .append(options.title)
-        );
+        options.title &&
+            $href.append(
+                $("<span/>")
+                    .attr("id", `tab-title-text-${options.id}`)
+                    .addClass("tab-title-text ml-1")
+                    .append(options.title)
+            );
         return $tmpl;
     }
 });
