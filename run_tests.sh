@@ -638,13 +638,13 @@ else
     structured_data_args=""
 fi
 if [ "$with_framework_test_tools_arg" ]; then
-    if [ "$with_framework_test_tools_arg" == "-with_framework_test_tools" ]; then
+    if [ "$with_framework_test_tools_arg" = "-with_framework_test_tools" ]; then
         GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-    elif [ "$with_framework_test_tools_arg" == "-migrated" ]; then
+    elif [ "$with_framework_test_tools_arg" = "-migrated" ]; then
         GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
-    elif [ "$with_framework_test_tools_arg" == "-shed" ]; then
+    elif [ "$with_framework_test_tools_arg" = "-shed" ]; then
         GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
-    elif [ "$with_framework_test_tools_arg" == "-with_main_tools" ]; then
+    elif [ "$with_framework_test_tools_arg" = "-with_main_tools" ]; then
         GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.main"
     fi
     export GALAXY_TEST_TOOL_CONF
