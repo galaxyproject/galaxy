@@ -10413,22 +10413,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .ui-thumbnails .ui-thumbnails-item:hover .ui-thumbnails-text {
   text-decoration: underline; }
 
-.ui-table tbody, .ui-table-plain tbody {
-  cursor: pointer; }
-
-.ui-table-plain {
-  table-layout: fixed; }
-  .ui-table-plain tbody {
-    cursor: auto !important; }
-    .ui-table-plain tbody td {
-      padding: 0px !important;
-      border: none !important; }
-  .ui-table-plain .ui-table-section {
-    border-left: solid 3px #ebd9b2;
-    border-radius: 0.3125rem !important;
-    margin-bottom: 0.375rem;
-    padding-left: 10px; }
-
 .ui-form-element, .ui-form-element-disabled {
   margin-top: 0.375rem;
   margin-bottom: 0.375rem;
@@ -12976,24 +12960,24 @@ div.debug {
 .grid-header .title {
   font-weight: bold; }
 
-.grid, .upload-ftp-base .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover, .ui-table, .ui-table-plain {
+.grid, .upload-ftp-base .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover {
   padding-top: 1em;
   border-collapse: collapse;
   width: 100%; }
 
-.grid tbody td, .upload-ftp-base .upload-ftp-row:hover tbody td, .upload-ftp .upload-ftp-row:hover tbody td, .upload-ftp-full .upload-ftp-row:hover tbody td, .ui-table tbody td, .ui-table-plain tbody td {
+.grid tbody td, .upload-ftp-base .upload-ftp-row:hover tbody td, .upload-ftp .upload-ftp-row:hover tbody td, .upload-ftp-full .upload-ftp-row:hover tbody td {
   line-height: 1.5;
   border-top: solid #dddddd 1px;
   border-bottom: solid #dddddd 1px;
   padding: 5px; }
 
-.grid tbody td:empty, .upload-ftp-base .upload-ftp-row:hover tbody td:empty, .upload-ftp .upload-ftp-row:hover tbody td:empty, .upload-ftp-full .upload-ftp-row:hover tbody td:empty, .ui-table tbody td:empty, .ui-table-plain tbody td:empty {
+.grid tbody td:empty, .upload-ftp-base .upload-ftp-row:hover tbody td:empty, .upload-ftp .upload-ftp-row:hover tbody td:empty, .upload-ftp-full .upload-ftp-row:hover tbody td:empty {
   padding: 0; }
 
-.grid thead tr, .upload-ftp-base .upload-ftp-row:hover thead tr, .upload-ftp .upload-ftp-row:hover thead tr, .upload-ftp-full .upload-ftp-row:hover thead tr, .ui-table thead tr, .ui-table-plain thead tr {
+.grid thead tr, .upload-ftp-base .upload-ftp-row:hover thead tr, .upload-ftp .upload-ftp-row:hover thead tr, .upload-ftp-full .upload-ftp-row:hover thead tr {
   height: 2em; }
 
-.grid thead th, .upload-ftp-base .upload-ftp-row:hover thead th, .upload-ftp .upload-ftp-row:hover thead th, .upload-ftp-full .upload-ftp-row:hover thead th, .ui-table thead th, .ui-table-plain thead th {
+.grid thead th, .upload-ftp-base .upload-ftp-row:hover thead th, .upload-ftp .upload-ftp-row:hover thead th, .upload-ftp-full .upload-ftp-row:hover thead th {
   line-height: 1.5;
   background: #ebd9b2;
   color: contrast(#ebd9b2);
@@ -13003,13 +12987,13 @@ div.debug {
   text-align: left;
   white-space: nowrap; }
 
-.grid tfoot td, .upload-ftp-base .upload-ftp-row:hover tfoot td, .upload-ftp .upload-ftp-row:hover tfoot td, .upload-ftp-full .upload-ftp-row:hover tfoot td, .ui-table tfoot td, .ui-table-plain tfoot td {
+.grid tfoot td, .upload-ftp-base .upload-ftp-row:hover tfoot td, .upload-ftp .upload-ftp-row:hover tfoot td, .upload-ftp-full .upload-ftp-row:hover tfoot td {
   background-color: #f8f8f8;
   border-top: solid #dddddd 1px;
   border-bottom: solid #dddddd 1px;
   padding: 5px; }
 
-.grid .current, .upload-ftp-base .upload-ftp-row:hover .current, .upload-ftp .upload-ftp-row:hover .current, .upload-ftp-full .upload-ftp-row:hover .current, .ui-table .current, .ui-table-plain .current, .grid .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .grid .upload-ftp-row:hover, .upload-ftp-base .upload-ftp-row:hover .upload-ftp-row:hover, .ui-table .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .ui-table .upload-ftp-row:hover, .ui-table-plain .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .ui-table-plain .upload-ftp-row:hover, .grid .upload-ftp .upload-ftp-row:hover, .upload-ftp .grid .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover .upload-ftp-row:hover, .ui-table .upload-ftp .upload-ftp-row:hover, .upload-ftp .ui-table .upload-ftp-row:hover, .ui-table-plain .upload-ftp .upload-ftp-row:hover, .upload-ftp .ui-table-plain .upload-ftp-row:hover, .grid .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .grid .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover .upload-ftp-row:hover, .ui-table .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .ui-table .upload-ftp-row:hover, .ui-table-plain .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .ui-table-plain .upload-ftp-row:hover {
+.grid .current, .upload-ftp-base .upload-ftp-row:hover .current, .upload-ftp .upload-ftp-row:hover .current, .upload-ftp-full .upload-ftp-row:hover .current, .grid .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .grid .upload-ftp-row:hover, .upload-ftp-base .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp .upload-ftp-row:hover, .upload-ftp .grid .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .grid .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover .upload-ftp-row:hover {
   background-color: #eeeeff; }
 
 .count-box {

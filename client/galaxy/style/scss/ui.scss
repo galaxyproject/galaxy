@@ -163,38 +163,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-// tables
-.ui-table {
-    @extend .grid;
-    tbody {
-        cursor: pointer;
-        td {
-            // TODO: Fixme -- figure out what this actually pulled in.
-            //@extend .grid.tbody.td;
-        }
-    }
-}
-
-.ui-table-plain {
-    @extend .ui-table;
-    table-layout: fixed;
-
-    tbody {
-        cursor: auto !important;
-        td {
-            padding: 0px !important;
-            border: none !important;
-        }
-    }
-
-    .ui-table-section {
-        border-left: solid 3px $form-heading-bg;
-        border-radius: $border-radius-large !important;
-        margin-bottom: $ui-margin-vertical;
-        padding-left: 10px;
-    }
-}
-
 // table form elements
 .ui-form-element {
     margin-top: $ui-margin-vertical;

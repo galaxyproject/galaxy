@@ -7,15 +7,14 @@ var View = Backbone.View.extend({
             onchange: null,
             ondblclick: null,
             onconfirm: null,
-            cls: "ui-table",
-            selectable: true,
-            cls_tr: ""
+            cls: "grid",
+            selectable: true
         });
         this.setElement(this._template());
         this.$thead = this.$("thead");
         this.$tbody = this.$("tbody");
         this.$tmessage = this.$("tmessage");
-        this.row = this._row();
+        this.row = $("<tr/>");
         this.row_count = 0;
     },
 
@@ -119,14 +118,9 @@ var View = Backbone.View.extend({
             this.row.hide();
             this.row.fadeIn();
         }
-        this.row = this._row();
+        this.row = $("<tr/>");
         this.row_count++;
         this._refresh();
-    },
-
-    /** Helper to create new row */
-    _row: function() {
-        return $(`<tr class="${this.options.cls_tr}"></tr>`);
     },
 
     /** Handles onclick events */
