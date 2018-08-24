@@ -731,6 +731,7 @@ class JobWrapper(HasResourceParameters):
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
+        self.__working_directory = None
 
     @property
     def _job_dataset_path_rewriter(self):
@@ -901,16 +902,35 @@ class JobWrapper(HasResourceParameters):
             job = self.get_job()
         try:
             working_directory = self._create_working_directory(job)
-            self.working_directory = working_directory
+            self.__working_directory = working_directory
             # The tool execution is given a working directory beneath the
             # "job" working directory.
-            self.tool_working_directory = os.path.join(self.working_directory, "working")
             safe_makedirs(self.tool_working_directory)
             log.debug('(%s) Working directory for job is: %s',
                       self.job_id, self.working_directory)
         except ObjectInvalid:
             raise Exception('(%s) Unable to create job working directory',
                             job.id)
+
+    @property
+    def working_directory(self):
+        if self.__working_directory is None:
+            job = self.get_job()
+
+            # object_store_id needs to be set before get_filename can be called, this
+            # will also create the directory on the worker.
+            # It is possible these next two lines are not needed - if a job a cannot be recovered
+            # before enqueue is called (seems likely) - this shouldn't be needed.
+            if job.object_store_id:
+                self._set_object_store_ids(job)
+
+            self.__working_directory = self.app.object_store.get_filename(
+                job, base_dir='job_work', dir_only=True, obj_dir=True)
+        return self.__working_directory
+
+    @property
+    def tool_working_directory(self):
+        return os.path.join(self.working_directory, "working")
 
     def _create_working_directory(self, job):
         self.app.object_store.create(
