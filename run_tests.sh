@@ -277,7 +277,6 @@ report_file="run_functional_tests.html"
 coverage_arg=""
 xunit_report_file=""
 structured_data_report_file=""
-with_framework_test_tools_arg=""
 skip_client_build="--skip-client-build"
 
 if [ "$1" = "--dockerize" ];
@@ -360,7 +359,7 @@ do
           fi
           ;;
       -a|-api|--api)
-          with_framework_test_tools_arg="-with_framework_and_sample_test_tools"
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="pytest"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -373,7 +372,7 @@ do
           coverage_file="api_coverage.xml"
           ;;
       -selenium|--selenium)
-          with_framework_test_tools_arg="-with_framework_and_sample_test_tools"
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="./scripts/functional_tests.py"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
@@ -407,10 +406,6 @@ do
           export GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ERROR
           shift
           ;;
-      -with_framework_test_tools|--with_framework_test_tools)
-          with_framework_test_tools_arg="-with_framework_test_tools"
-          shift
-          ;;
       --external_url)
           GALAXY_TEST_EXTERNAL=$2
           shift 2
@@ -424,8 +419,8 @@ do
           shift 2
           ;;
       -f|-framework|--framework)
+          GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
           marker="-m tool"
-          with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="pytest"
           report_file="run_framework_tests.html"
           coverage_file="framework_coverage.xml"
@@ -433,8 +428,8 @@ do
           shift 1
           ;;
       -main|-main_tools|--main_tools)
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,config/tool_conf.xml.main"
           marker="-m tool"
-          with_framework_test_tools_arg="-with_main_tools"
           test_script="pytest"
           report_file="run_framework_tests.html"
           coverage_file="main_tools_coverage.xml"
@@ -450,7 +445,7 @@ do
           shift 1
           ;;
       -m|-migrated|--migrated)
-          with_framework_test_tools_arg="-migrated"
+          GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
           marker="-m tool"
           test_script="pytest"
           report_file="run_migrated_tests.html"
@@ -459,7 +454,7 @@ do
           shift
           ;;
       -i|-installed|--installed)
-          with_framework_test_tools_arg="-shed"
+          GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
           marker="-m tool"
           test_script="pytest"
           report_file="run_installed_tests.html"
@@ -526,7 +521,7 @@ do
           coverage_file="unit_coverage.xml"
           ;;
       -i|-integration|--integration)
-          with_framework_test_tools_arg="-with_framework_and_sample_test_tools"
+          GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           test_script="pytest"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
@@ -649,26 +644,12 @@ if [ -n "$structured_data_report_file" ]; then
 else
     structured_data_args=""
 fi
-if [ "$with_framework_test_tools_arg" ]; then
-    if [ "$with_framework_test_tools_arg" = "-with_framework_test_tools" ]; then
-        GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
-    elif [ "$with_framework_test_tools_arg" = "-with_framework_and_sample_test_tools" ]; then
-        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-    elif [ "$with_framework_test_tools_arg" = "-migrated" ]; then
-        GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
-    elif [ "$with_framework_test_tools_arg" = "-shed" ]; then
-        GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
-    elif [ "$with_framework_test_tools_arg" = "-with_main_tools" ]; then
-        GALAXY_TEST_TOOL_CONF="config/tool_conf.xml.sample,config/tool_conf.xml.main"
-    fi
-    echo $GALAXY_TEST_TOOL_CONF
-    export GALAXY_TEST_TOOL_CONF
-fi
+export GALAXY_TEST_TOOL_CONF
 if [ "$test_script" = 'pytest' ]; then
     if [ "$coverage_arg" = "--with_coverage" ]; then
         coverage_arg="--cov-report term --cov-report xml:cov-unit.xml --cov=lib"
     fi
-    GALAXY_TEST_TOOL_CONF=$GALAXY_TEST_TOOL_CONF "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
+    "$test_script" -v --html "$report_file" $coverage_arg  $xunit_args $extra_args "$@"
 else
     python $test_script $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
 fi
