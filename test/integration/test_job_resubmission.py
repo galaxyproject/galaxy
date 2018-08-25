@@ -1,4 +1,4 @@
-"""Integration tests for the Pulsar embedded runner."""
+"""Integration tests for the job resubmission."""
 
 import os
 
