@@ -303,6 +303,7 @@ admin:
     display_applications_grid: '#display-applications-grid'
     update_jobs: 'form[name="jobs"]'
     data_managers_title: '#data-managers-title'
+    data_managers_card: '#data-managers-card'
     users_grid: '#users-grid'
     users_grid_create_button: '.manage-table-actions .action-button'
     groups_grid_create_button: '.manage-table-actions .action-button'

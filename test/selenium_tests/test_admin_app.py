@@ -33,9 +33,8 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_manage_jobs")
 
         admin_component.index.local_data.wait_for_and_click()
-        with self.main_panel():
-            title_element = admin_component.data_managers_title.wait_for_visible()
-            assert title_element.text == "Data Manager"
+        title_element = admin_component.data_managers_title.wait_for_visible()
+        assert title_element.text == "Data Manager"
         self.screenshot("admin_local_data")
 
     @selenium_test
@@ -64,3 +63,14 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.index.roles.wait_for_and_click()
         admin_component.roles_grid.wait_for_visible()
         self.screenshot("admin_roles")
+
+    @selenium_test
+    def test_admin_data_manager(self):
+        admin_component = self.components.admin
+        self.admin_login()
+        self.admin_open()
+        admin_component.index.local_data.wait_for_and_click()
+        title_element = admin_component.data_managers_title.wait_for_visible()
+        assert title_element.text == "Data Manager"
+        self.screenshot("admin_local_data")
+        admin_component.data_managers_card.wait_for_visible()

@@ -32,7 +32,7 @@
         </b-row>
       </b-container>
       <b-card-group columns>
-        <b-card title="Data Managers" no-body header="<h4>Data Managers</h4>">
+        <b-card no-body header="<h4>Data Managers</h4>" id="data-managers-card">
           <b-list-group flush>
             <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
               <b-button-group vertical>
