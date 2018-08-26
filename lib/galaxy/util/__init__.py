@@ -21,6 +21,7 @@ import sys
 import tempfile
 import threading
 import time
+import unicodedata
 from datetime import datetime
 from hashlib import md5
 from os.path import relpath
@@ -1005,6 +1006,11 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
         return s.decode(DEFAULT_ENCODING, errors).encode(encoding, errors)
     else:
         return s
+
+
+def strip_control_characters(s):
+    """Strip unicode control characters from a string."""
+    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
 
 
 def object_to_string(obj):
