@@ -1072,7 +1072,8 @@ var FolderToolbarView = Backbone.View.extend({
             $checkedValues.each(function() {
                 var row_id = $(this)
                     .closest("tr")
-                    .data("id");
+                    .data("id")
+                    .toString();
                 if (row_id !== undefined) {
                     if (row_id.substring(0, 1) == "F") {
                         folder_ids.push(row_id);
@@ -1201,7 +1202,8 @@ var FolderToolbarView = Backbone.View.extend({
         this.findCheckedRows().each(function() {
             var row_id = $(this)
                 .closest("tr")
-                .data("id");
+                .data("id")
+                .toString();
             if (row_id.substring(0, 1) == "F") {
                 folder_ids.push(row_id);
             } else {
