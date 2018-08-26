@@ -1010,13 +1010,20 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             elements_data = value.get("elements", [])
             elements = []
             for element_data in elements_data:
-                identifier = element_data["identifier"]
+                # Adapt differences between test_data dict and fetch API description.
+                if "name" not in element_data:
+                    identifier = element_data["identifier"]
+                    element_data["name"] = identifier
                 input_type = element_data.get("type", "raw")
+                content = None
                 if input_type == "File":
                     content = read_test_data(element_data)
                 else:
                     content = element_data["content"]
-                elements.append((identifier, content))
+                if content is not None:
+                    element_data["src"] = "pasted"
+                    element_data["paste_content"] = content
+                elements.append(element_data)
             # TODO: make this collection_type
             collection_type = value["type"]
             new_collection_kwds = {}
