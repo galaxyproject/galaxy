@@ -424,10 +424,10 @@ class DatasetCollectionManager(object):
             decoded_id = int(trans.app.security.decode_id(encoded_id))
             hda = self.hda_manager.get_accessible(decoded_id, trans.user)
             if copy_elements:
-                element = self.hda_manager.copy(hda, history=hda.history, hide_copy=True)
+                element = self.hda_manager.copy(hda, history=trans.history, hide_copy=True)
             else:
                 element = hda
-            if hide_source_items:
+            if hide_source_items and self.hda_manager.get_owned(hda.id, user=trans.user, current_history=trans.history):
                 hda.visible = False
             self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'ldda':
