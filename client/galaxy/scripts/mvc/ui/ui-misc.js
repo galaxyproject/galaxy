@@ -30,12 +30,11 @@ export var Message = Backbone.View.extend({
         this.model.set(options);
     },
     render: function() {
+        var status = this.model.get("status");
         this.$el
             .removeClass()
-            .addClass("ui-message")
+            .addClass(`alert alert-${status}`)
             .addClass(this.model.get("cls"));
-        var status = this.model.get("status");
-        this.$el.addClass("alert").addClass(`alert-${status}`);
         if (this.model.get("message")) {
             this.$el.html(this.messageForDisplay());
             this.$el[this.model.get("fade") ? "fadeIn" : "show"]();

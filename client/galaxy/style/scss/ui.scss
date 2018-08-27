@@ -52,14 +52,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-message {
-    padding: 2px 10px 2px 10px;
-    margin-top: $ui-margin-vertical-large;
-    margin-bottom: 0px;
-    width: 100%;
-    word-wrap: break-word;
-}
-
 .ui-modal {
     display: none;
     overflow: auto;

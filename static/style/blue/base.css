@@ -10342,13 +10342,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   float: right;
   margin-top: 5px; }
 
-.ui-message {
-  padding: 2px 10px 2px 10px;
-  margin-top: 0.75rem;
-  margin-bottom: 0px;
-  width: 100%;
-  word-wrap: break-word; }
-
 .ui-modal {
   display: none;
   overflow: auto; }

@@ -188,7 +188,7 @@ var Base = Backbone.View.extend({
         this.$message
             .show()
             .removeClass()
-            .addClass(`ui-message alert alert-${status}`)
+            .addClass(`alert alert-${status}`)
             .html(text);
     },
 
