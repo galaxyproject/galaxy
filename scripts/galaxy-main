@@ -170,6 +170,8 @@ class GalaxyConfigBuilder(object):
     """
 
     def __init__(self, args=None, **kwds):
+        self.config_file = None
+        self.config_section = None
         self.app_name = kwds.get("app") or (args and args.app) or DEFAULT_CONFIG_SECTION
         config_file = kwds.get("config_file", None) or (args and args.config_file)
         # If given app_conf_path - use that - else we need to ensure we have a
