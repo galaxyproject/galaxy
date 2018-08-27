@@ -148,7 +148,7 @@ var View = Backbone.View.extend({
         portlet.append(new View(this.app, { inputs: input_def.inputs }).$el);
         portlet.append(
             $("<div/>")
-                .addClass("ui-form-info")
+                .addClass("form-text text-muted")
                 .html(input_def.help)
         );
         this.app.on("expand", input_id => {

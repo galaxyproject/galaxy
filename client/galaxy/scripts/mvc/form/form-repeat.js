@@ -96,7 +96,7 @@ export var View = Backbone.View.extend({
         if (_.isEmpty(this.list)) {
             this.$el.append(
                 $("<div/>")
-                    .addClass("ui-form-info")
+                    .addClass("form-text text-muted")
                     .html(this.options.empty_text)
             );
         }

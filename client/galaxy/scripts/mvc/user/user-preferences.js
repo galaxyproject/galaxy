@@ -161,12 +161,12 @@ var View = Backbone.View.extend({
 
     _templateLink: function(options) {
         return `<tr>
-                    <td>
+                    <td class="align-top">
                         <i class="ml-3 mr-3 fa fa-lg ${options.icon}">
                     </td>
                     <td>
                         <a href="javascript:void(0)"><b>${options.title}</b></a>
-                        <div class="ui-form-info">${options.description}</div>
+                        <div class="form-text text-muted">${options.description}</div>
                     </td>
                 </tr>`;
     },

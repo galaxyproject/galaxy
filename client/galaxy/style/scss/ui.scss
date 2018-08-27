@@ -208,9 +208,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         box-shadow: none !important;
         height: auto !important;
     }
-    .workflow-right .right-content {
-        margin-bottom: 10px;
-    }
 }
 
 .ui-form-element-disabled {
@@ -223,26 +220,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-form-separator {
     font-weight: bold;
     font-size: 0.9em;
-}
-
-.ui-form-help {
-    overflow: auto;
-    word-wrap: break-word;
-}
-
-.ui-form-info {
-    @extend .toolParamHelp;
-    clear: both !important;
-    word-wrap: break-word;
-    i {
-        font-size: 1.2em;
-        padding: 2px 5px;
-    }
-    .ui-form-title {
-        clear: both;
-        font-weight: bold;
-        padding-right: $ui-margin-horizontal;
-    }
 }
 
 .ui-form-error {

@@ -10449,8 +10449,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     border-color: transparent !important;
     box-shadow: none !important;
     height: auto !important; }
-  .ui-form-element .workflow-right .right-content, .ui-form-element-disabled .workflow-right .right-content {
-    margin-bottom: 10px; }
 
 .ui-form-element-disabled .ui-form-title {
   font-weight: normal; }
@@ -10458,21 +10456,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .ui-form-separator {
   font-weight: bold;
   font-size: 0.9em; }
-
-.ui-form-help {
-  overflow: auto;
-  word-wrap: break-word; }
-
-.ui-form-info {
-  clear: both !important;
-  word-wrap: break-word; }
-  .ui-form-info i {
-    font-size: 1.2em;
-    padding: 2px 5px; }
-  .ui-form-info .ui-form-title {
-    clear: both;
-    font-weight: bold;
-    padding-right: 1rem; }
 
 .ui-form-error {
   display: none; }
@@ -12693,11 +12676,10 @@ div.form-row-error-message {
   padding: 3px 0; }
 
 .form-row .help,
-.toolParamHelp,
-.ui-form-info {
+.toolParamHelp {
   color: #666; }
   .form-row .help a,
-  .toolParamHelp a, .ui-form-info a {
+  .toolParamHelp a {
     color: #666; }
 
 .form-row.form-actions {
