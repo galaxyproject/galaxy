@@ -33,7 +33,10 @@ from logging.config import fileConfig
 
 from six.moves.configparser import ConfigParser
 
-from galaxy.util import unicodify
+try:
+    from galaxy.util import unicodify
+except ImportError:
+    unicodify = None
 
 try:
     from daemonize import Daemonize
@@ -239,6 +242,10 @@ def main():
     except Exception:
         log.exception("Failed to add Galaxy to sys.path")
         raise
+    global unicodify
+    if unicodify is None:
+        _util = __import__('galaxy.util', globals(), locals(), ['unicodify'])
+        unicodify = _util.unicodify
     GalaxyConfigBuilder.populate_options(arg_parser)
     args = arg_parser.parse_args()
     if args.ini_path and not args.config_file:
