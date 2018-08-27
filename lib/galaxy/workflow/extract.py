@@ -322,6 +322,7 @@ def __cleanup_param_values(inputs, values):
     if 'dbkey' in values:
         del values['dbkey']
     root_values = values
+    root_input_keys = inputs.keys()
 
     # Recursively clean data inputs and dynamic selects
     def cleanup(prefix, inputs, values):
@@ -345,7 +346,7 @@ def __cleanup_param_values(inputs, values):
                 # being pushed into the root. FIXME: MUST REMOVE SOON
                 key = prefix + key + "_"
                 for k in root_values.keys():
-                    if k.startswith(key):
+                    if k not in root_input_keys and k.startswith(key):
                         del root_values[k]
             elif isinstance(input, Repeat):
                 if key in values:
