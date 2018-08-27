@@ -679,6 +679,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sniff_compressed_dynamic_datatypes_default``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable sniffing of compressed datatypes. This can be
+    configured/overridden on a per-datatype basis in the
+    datatypes_conf.xml file. With this option set to False the
+    compressed datatypes will be unpacked before sniffing.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``datatypes_disable_auto``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
