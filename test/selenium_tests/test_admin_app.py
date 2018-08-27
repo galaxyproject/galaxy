@@ -15,8 +15,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.admin_open()
         self.screenshot("admin_landing")
         admin_component.index.datatypes.wait_for_and_click()
-        with self.main_panel():
-            admin_component.datatypes_grid.wait_for_visible()
+        admin_component.datatypes_grid.wait_for_visible()
         self.screenshot("admin_datatypes")
 
         admin_component.index.data_tables.wait_for_and_click()

@@ -1,6 +1,7 @@
 import logging
 import os
-from cgi import FieldStorage
+
+from webob.compat import cgi_FieldStorage
 
 from galaxy.util import Params
 
@@ -84,7 +85,7 @@ class TourGenerator(object):
                             ),
                     }
 
-                    input_file = FieldStorage(headers=headers)
+                    input_file = cgi_FieldStorage(headers=headers)
                     input_file.file = input_file.make_file()
                     input_file.file.write(content)
 

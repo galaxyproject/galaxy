@@ -39,14 +39,13 @@ class TestDataResolver(object):
             self.resolvers = []
 
     def get_filename(self, name):
-        filename = None
         for resolver in self.resolvers or []:
             if not resolver.exists(name):
                 continue
             filename = resolver.path(name)
 
-        if filename:
-            return os.path.abspath(filename)
+            if filename:
+                return os.path.abspath(filename)
 
 
 def build_resolver(uri, environ):

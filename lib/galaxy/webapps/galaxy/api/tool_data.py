@@ -110,7 +110,7 @@ class ToolData(BaseAPIController):
         full_path = os.path.join(base_dir, path)
         if full_path not in field_value.get_files():
             raise exceptions.ObjectNotFound("No such path in data table field.")
-        return open(full_path, "r")
+        return open(full_path, "rb")
 
     def _data_table_field(self, id, value):
         out = self._data_table(id).get_field(value)

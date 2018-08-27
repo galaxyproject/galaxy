@@ -1,9 +1,10 @@
-<tool id="random_lines1" name="Select random lines" version="2.0.1">
+<tool id="random_lines1" name="Select random lines" version="2.0.2">
   <description>from a file</description>
-  <command interpreter="python">random_lines_two_pass.py "${input}" "${out_file1}" "${num_lines}"
-  #if str( $seed_source.seed_source_selector ) == "set_seed":
-      --seed "${seed_source.seed}"
-  #end if
+  <command>
+python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}' '${num_lines}'
+#if str( $seed_source.seed_source_selector ) == "set_seed":
+    --seed '${seed_source.seed}'
+#end if
   </command>
   <inputs>
     <param name="num_lines" size="5" type="integer" value="1" label="Randomly select" help="lines"/>

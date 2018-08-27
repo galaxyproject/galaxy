@@ -55,8 +55,7 @@ var View = Backbone.View.extend({
                                         new Ui.Message({
                                             message: error_message,
                                             status: "danger",
-                                            persistent: true,
-                                            large: true
+                                            persistent: true
                                         }).$el
                                     );
                                 } else {

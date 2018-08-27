@@ -174,9 +174,4 @@
                     tab( "user", "User", None, visible=visible, menu_options=menu_options )
                 %>
             </ul>
-        </div>
-    </div>
-
-    ## end main tag
-    </div>
 </%def>

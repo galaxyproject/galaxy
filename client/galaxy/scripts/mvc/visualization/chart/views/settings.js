@@ -36,7 +36,6 @@ export default Backbone.View.extend({
             });
             this.form = new Form({
                 inputs: inputs,
-                cls: "ui-portlet-plain",
                 onchange: function() {
                     self.chart.settings.set(self.form.data.create());
                     self.chart.trigger("redraw");

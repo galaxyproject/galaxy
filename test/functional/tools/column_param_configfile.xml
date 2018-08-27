@@ -1,0 +1,22 @@
+<tool id="column_param_configfile" name="Column Param into configfile" >
+  <command>
+cat '$inputs' > '$output1'
+  </command>
+  <configfiles>
+    <inputs name="inputs" />
+  </configfiles>
+  <inputs>
+    <param type="data" format="tabular" name="input1" label="Input 1" />
+    <param name="col" type="data_column" data_ref="input1" label="Column to Use" />
+  </inputs>
+  <outputs>
+    <data name="output1" format="data" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="11.tabular" />
+      <param name="col" value="11" />
+      <output name="output1" file="configfile.json"/>
+    </test>
+  </tests>
+</tool>

@@ -29,6 +29,7 @@ class BaseWrapperTestCase(UsesApp):
         job.id = 345
         job.tool_id = TEST_TOOL_ID
         job.user = User()
+        job.object_store_id = "foo"
         self.model_objects = {Job: {345: job}}
         self.app.model.context = MockContext(self.model_objects)
 

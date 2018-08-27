@@ -201,7 +201,9 @@ body {
     flex-direction: column;
 }
 
-#left, #right, .unified-panel {
+#left,
+#right,
+.unified-panel {
     background: $panel-bg-color;
     display: flex;
     flex-direction: column;

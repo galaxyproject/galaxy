@@ -67,7 +67,7 @@ class Binary(data.Data):
         fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
-        return open(dataset.file_name)
+        return open(dataset.file_name, mode='rb')
 
 
 class Ab1(Binary):
@@ -464,15 +464,15 @@ class Bam(BamNative):
 
     # these can't be used directly - may need BamColumn, BamDict (Bam metadata -> column/dict)
     # OR - see genomic_region_dataprovider
-    # @dataproviders.decorators.dataprovider_factory( 'dataset-column', dataproviders.column.ColumnarDataProvider.settings )
-    # def dataset_column_dataprovider( self, dataset, **settings ):
-    #    settings[ 'comment_char' ] = '@'
-    #    return super( Sam, self ).dataset_column_dataprovider( dataset, **settings )
+    # @dataproviders.decorators.dataprovider_factory('dataset-column', dataproviders.column.ColumnarDataProvider.settings)
+    # def dataset_column_dataprovider(self, dataset, **settings):
+    #    settings['comment_char'] = '@'
+    #    return super(Sam, self).dataset_column_dataprovider(dataset, **settings)
 
-    # @dataproviders.decorators.dataprovider_factory( 'dataset-dict', dataproviders.column.DictDataProvider.settings )
-    # def dataset_dict_dataprovider( self, dataset, **settings ):
-    #    settings[ 'comment_char' ] = '@'
-    #    return super( Sam, self ).dataset_dict_dataprovider( dataset, **settings )
+    # @dataproviders.decorators.dataprovider_factory('dataset-dict', dataproviders.column.DictDataProvider.settings)
+    # def dataset_dict_dataprovider(self, dataset, **settings):
+    #    settings['comment_char'] = '@'
+    #    return super(Sam, self).dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory('header', dataproviders.line.RegexLineDataProvider.settings)
     def header_dataprovider(self, dataset, **settings):
@@ -492,9 +492,9 @@ class Bam(BamNative):
         # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
         # TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
         #   or remove altogether...
-        # samtools_source = dataproviders.dataset.SamtoolsDataProvider( dataset )
-        # return dataproviders.dataset.GenomicRegionDataProvider( samtools_source, metadata_source=dataset,
-        #                                                        2, 3, 3, **settings )
+        # samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
+        # return dataproviders.dataset.GenomicRegionDataProvider(samtools_source, metadata_source=dataset,
+        #                                                        2, 3, 3, **settings)
 
         # instead, set manually and use in-class column gen
         settings['indeces'] = [2, 3, 3]
@@ -672,18 +672,18 @@ class BcfUncompressed(Bcf):
     Class describing an uncompressed BCF file
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( '1.bcf_uncompressed' )
-    >>> BcfUncompressed().sniff( fname )
+    >>> fname = get_test_fname('1.bcf_uncompressed')
+    >>> BcfUncompressed().sniff(fname)
     True
-    >>> fname = get_test_fname( '1.bcf' )
-    >>> BcfUncompressed().sniff( fname )
+    >>> fname = get_test_fname('1.bcf')
+    >>> BcfUncompressed().sniff(fname)
     False
     """
     file_ext = "bcf_uncompressed"
 
     def sniff(self, filename):
         try:
-            header = open(filename).read(3)
+            header = open(filename, mode='rb').read(3)
             # The first 3 bytes of any BCF file are 'BCF', and the file is binary.
             if header == b'BCF':
                 return True
@@ -697,11 +697,11 @@ class H5(Binary):
     Class describing an HDF5 file
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.mz5' )
-    >>> H5().sniff( fname )
+    >>> fname = get_test_fname('test.mz5')
+    >>> H5().sniff(fname)
     True
-    >>> fname = get_test_fname( 'interval.interval' )
-    >>> H5().sniff( fname )
+    >>> fname = get_test_fname('interval.interval')
+    >>> H5().sniff(fname)
     False
     """
     file_ext = "h5"
@@ -736,6 +736,49 @@ class H5(Binary):
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Trr(Binary):
+    """
+    Class describing an trr file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('em.trr')
+    >>> Trr().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Trr().sniff(fname)
+    False
+    """
+    file_ext = "trr"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = 1993
+
+    def sniff(self, filename):
+        # The first 4 bytes of any trr file containing 1993
+        try:
+            header = open(filename, 'rb').read(struct.calcsize('>1i'))
+            if struct.unpack('>1i', header)[0] == self._magic_number:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GROMACS trr file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary GROMACS trr file (%s)" % (nice_size(dataset.get_size()))
+
+
 class Biom2(H5):
     """
     Class describing a biom2 file (http://biom-format.org/documentation/biom_format.html)
@@ -756,14 +799,14 @@ class Biom2(H5):
     def sniff(self, filename):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
-        >>> Biom2().sniff( fname )
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+        >>> Biom2().sniff(fname)
         True
-        >>> fname = get_test_fname( 'test.mz5' )
-        >>> Biom2().sniff( fname )
+        >>> fname = get_test_fname('test.mz5')
+        >>> Biom2().sniff(fname)
         False
-        >>> fname = get_test_fname( 'wiggle.wig' )
-        >>> Biom2().sniff( fname )
+        >>> fname = get_test_fname('wiggle.wig')
+        >>> Biom2().sniff(fname)
         False
         """
         if super(Biom2, self).sniff(filename):
@@ -829,17 +872,17 @@ class Cool(H5):
     def sniff(self, filename):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'matrix.cool' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('matrix.cool')
+        >>> Cool().sniff(fname)
         True
-        >>> fname = get_test_fname( 'test.mz5' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('test.mz5')
+        >>> Cool().sniff(fname)
         False
-        >>> fname = get_test_fname( 'wiggle.wig' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('wiggle.wig')
+        >>> Cool().sniff(fname)
         False
-        >>> fname = get_test_fname( 'biom2_sparse_otu_table_hdf5.biom' )
-        >>> Cool().sniff( fname )
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+        >>> Cool().sniff(fname)
         False
         """
 
@@ -1297,11 +1340,11 @@ class IdpDB(SQlite):
     Class describing an IDPicker 3 idpDB (sqlite) database
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.idpDB' )
-    >>> IdpDB().sniff( fname )
+    >>> fname = get_test_fname('test.idpDB')
+    >>> IdpDB().sniff(fname)
     True
-    >>> fname = get_test_fname( 'interval.interval' )
-    >>> IdpDB().sniff( fname )
+    >>> fname = get_test_fname('interval.interval')
+    >>> IdpDB().sniff(fname)
     False
     """
     file_ext = "idpdb"
@@ -1397,7 +1440,7 @@ class ExcelXls(Binary):
 
     def sniff(self, filename):
         mime_type = subprocess.check_output(['file', '--mime-type', filename])
-        return "application/vnd.ms-excel" in mime_type
+        return b"application/vnd.ms-excel" in mime_type
 
     def get_mime(self):
         """Returns the mime type of the datatype"""
@@ -1497,11 +1540,11 @@ class OxliCountGraph(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliCountGraph().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliCountGraph().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_countgraph.oxlicg" )
-    >>> OxliCountGraph().sniff( fname )
+    >>> fname = get_test_fname("oxli_countgraph.oxlicg")
+    >>> OxliCountGraph().sniff(fname)
     True
     """
     file_ext = 'oxlicg'
@@ -1522,11 +1565,11 @@ class OxliNodeGraph(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliNodeGraph().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliNodeGraph().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_nodegraph.oxling" )
-    >>> OxliNodeGraph().sniff( fname )
+    >>> fname = get_test_fname("oxli_nodegraph.oxling")
+    >>> OxliNodeGraph().sniff(fname)
     True
     """
     file_ext = 'oxling'
@@ -1548,11 +1591,11 @@ class OxliTagSet(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliTagSet().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliTagSet().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_tagset.oxlits" )
-    >>> OxliTagSet().sniff( fname )
+    >>> fname = get_test_fname("oxli_tagset.oxlits")
+    >>> OxliTagSet().sniff(fname)
     True
     """
     file_ext = 'oxlits'
@@ -1569,11 +1612,11 @@ class OxliStopTags(OxliBinary):
     "khmer/tests/test-data/goodversion-k32.stoptags"
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliStopTags().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliStopTags().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_stoptags.oxlist" )
-    >>> OxliStopTags().sniff( fname )
+    >>> fname = get_test_fname("oxli_stoptags.oxlist")
+    >>> OxliStopTags().sniff(fname)
     True
     """
     file_ext = 'oxlist'
@@ -1595,11 +1638,11 @@ class OxliSubset(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliSubset().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliSubset().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_subset.oxliss" )
-    >>> OxliSubset().sniff( fname )
+    >>> fname = get_test_fname("oxli_subset.oxliss")
+    >>> OxliSubset().sniff(fname)
     True
     """
     file_ext = 'oxliss'
@@ -1622,11 +1665,11 @@ class OxliGraphLabels(OxliBinary):
     using khmer 2.0
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'sequence.csfasta' )
-    >>> OxliGraphLabels().sniff( fname )
+    >>> fname = get_test_fname('sequence.csfasta')
+    >>> OxliGraphLabels().sniff(fname)
     False
-    >>> fname = get_test_fname( "oxli_graphlabels.oxligl" )
-    >>> OxliGraphLabels().sniff( fname )
+    >>> fname = get_test_fname("oxli_graphlabels.oxligl")
+    >>> OxliGraphLabels().sniff(fname)
     True
     """
     file_ext = 'oxligl'
@@ -1640,11 +1683,11 @@ class PostgresqlArchive(CompressedArchive):
     Class describing a Postgresql database packed into a tar archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'postgresql_fake.tar.bz2' )
-    >>> PostgresqlArchive().sniff( fname )
+    >>> fname = get_test_fname('postgresql_fake.tar.bz2')
+    >>> PostgresqlArchive().sniff(fname)
     True
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> PostgresqlArchive().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> PostgresqlArchive().sniff(fname)
     False
     """
     MetadataElement(name="version", default=None, param=MetadataParameter, desc="PostgreSQL database version",
@@ -1690,8 +1733,8 @@ class Fast5Archive(CompressedArchive):
     Class describing a FAST5 archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> Fast5Archive().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5Archive().sniff(fname)
     True
     """
     MetadataElement(name="fast5_count", default='0', param=MetadataParameter, desc="Read Count",
@@ -1744,14 +1787,14 @@ class Fast5ArchiveGz(Fast5Archive):
     Class describing a gzip-compressed FAST5 archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
-    >>> Fast5ArchiveGz().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> Fast5ArchiveGz().sniff(fname)
     True
-    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
-    >>> Fast5ArchiveGz().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.bz2')
+    >>> Fast5ArchiveGz().sniff(fname)
     False
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> Fast5ArchiveGz().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5ArchiveGz().sniff(fname)
     False
     """
     file_ext = "fast5.tar.gz"
@@ -1767,14 +1810,14 @@ class Fast5ArchiveBz2(Fast5Archive):
     Class describing a bzip2-compressed FAST5 archive
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'test.fast5.tar.bz2' )
-    >>> Fast5ArchiveBz2().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.bz2')
+    >>> Fast5ArchiveBz2().sniff(fname)
     True
-    >>> fname = get_test_fname( 'test.fast5.tar.gz' )
-    >>> Fast5ArchiveBz2().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> Fast5ArchiveBz2().sniff(fname)
     False
-    >>> fname = get_test_fname( 'test.fast5.tar' )
-    >>> Fast5ArchiveBz2().sniff( fname )
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Fast5ArchiveBz2().sniff(fname)
     False
     """
     file_ext = "fast5.tar.bz2"
@@ -1864,19 +1907,144 @@ class NetCDF(Binary):
             return False
 
 
+class Dcd(Binary):
+    """
+    Class describing a dcd file from the CHARMM molecular simulation program
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_glucose_vacuum.dcd')
+    >>> Dcd().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Dcd().sniff(fname)
+    False
+    """
+    file_ext = "dcd"
+    edam_data = "data_3842"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = b'CORD'
+
+    def sniff(self, filename):
+        # Match the keyword 'CORD' at position 4 or 8 - intsize dependent
+        # Not checking for endianness
+        try:
+            with open(filename, 'rb') as header:
+                intsize = 4
+                header.seek(intsize)
+                if header.read(intsize) == self._magic_number:
+                    return True
+                else:
+                    intsize = 8
+                    header.seek(intsize)
+                    if header.read(intsize) == self._magic_number:
+                        return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary CHARMM/NAMD dcd file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary CHARMM/NAMD dcd file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Vel(Binary):
+    """
+    Class describing a velocity file from the CHARMM molecular simulation program
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_charmm.vel')
+    >>> Vel().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Vel().sniff(fname)
+    False
+    """
+    file_ext = "vel"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = b'VELD'
+
+    def sniff(self, filename):
+        # Match the keyword 'VELD' at position 4 or 8 - intsize dependent
+        # Not checking for endianness
+        try:
+            with open(filename, 'rb') as header:
+                intsize = 4
+                header.seek(intsize)
+                if header.read(intsize) == self._magic_number:
+                    return True
+                else:
+                    intsize = 8
+                    header.seek(intsize)
+                    if header.read(intsize) == self._magic_number:
+                        return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary CHARMM velocity file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary CHARMM velocity file (%s)" % (nice_size(dataset.get_size()))
+
+
+class DAA(Binary):
+    """
+    Class describing an DAA (diamond alignment archive) file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('diamond.daa')
+    >>> DAA().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> DAA().sniff(fname)
+    False
+    """
+    file_ext = "daa"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic = binascii.unhexlify("6be33e6d47530e3c")
+
+    def sniff(self, filename):
+        # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
+        with open(filename, 'rb') as f:
+            return f.read(8) == self._magic
+
+
 class DMND(Binary):
     """
     Class describing an DMND file
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname( 'diamond_db.dmnd' )
-    >>> DMND().sniff( fname )
+    >>> fname = get_test_fname('diamond_db.dmnd')
+    >>> DMND().sniff(fname)
     True
-    >>> fname = get_test_fname( 'interval.interval' )
-    >>> DMND().sniff( fname )
+    >>> fname = get_test_fname('interval.interval')
+    >>> DMND().sniff(fname)
     False
     """
     file_ext = "dmnd"
-    edam_format = ""
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
@@ -1884,14 +2052,8 @@ class DMND(Binary):
 
     def sniff(self, filename):
         # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
-
-        try:
-            header = open(filename, 'rb').read(8)
-            if header == self._magic:
-                return True
-            return False
-        except Exception:
-            return False
+        with open(filename, 'rb') as f:
+            return f.read(8) == self._magic
 
 
 class ICM(Binary):

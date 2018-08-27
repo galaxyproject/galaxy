@@ -6,10 +6,17 @@ import json
 import logging
 import os
 
+from six.moves.urllib.error import HTTPError
 from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import Request, urlopen
 
-from galaxy.util import asbool, build_url, url_get
+from galaxy.util import (
+    asbool,
+    build_url,
+    smart_str,
+    unicodify,
+    url_get,
+)
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import common_util
 from tool_shed.util import container_util
@@ -380,11 +387,18 @@ class RepositoryDependencyInstallManager(object):
                     pathspec = ['repository', 'get_required_repo_info_dict']
                     url = build_url(tool_shed_url, pathspec=pathspec)
                     # Fix for handling 307 redirect not being handled nicely by urlopen() when the Request() has data provided
-                    url = _urlopen(url).geturl()
-                    response = _urlopen(url, urlencode(dict(encoded_str=encoded_required_repository_str))).read()
+                    try:
+                        url = _urlopen(url).geturl()
+                    except HTTPError as e:
+                        if e.code == 502:
+                            pass
+                        else:
+                            raise
+                    payload = urlencode(dict(encoded_str=encoded_required_repository_str))
+                    response = _urlopen(url, payload).read()
                     if response:
                         try:
-                            required_repo_info_dict = json.loads(response)
+                            required_repo_info_dict = json.loads(unicodify(response))
                         except Exception as e:
                             log.exception(e)
                             return all_repo_info_dicts
@@ -473,4 +487,6 @@ class RepositoryDependencyInstallManager(object):
 def _urlopen(url, data=None):
     scheme = urlparse(url).scheme
     assert scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
+    if data is not None:
+        data = smart_str(data)
     return urlopen(Request(url, data))

@@ -37,11 +37,11 @@ class WebhooksController(BaseAPIController):
         for key, value in kwd.items():
             params[key] = value
 
-        webhook = (
+        webhook = next(
             webhook
             for webhook in self.app.webhooks_registry.webhooks
             if webhook.id == webhook_id
-        ).next()
+        )
 
         return imp.load_source(webhook.path, webhook.helper).main(
             trans, webhook, params,

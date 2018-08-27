@@ -1,8 +1,8 @@
 from unittest import TestCase
 
-from galaxy.jobs.error_level import StdioErrorLevel
 from galaxy.jobs.output_checker import check_output, DETECTED_JOB_STATE
 from galaxy.model import Job
+from galaxy.tools.parser.error_level import StdioErrorLevel
 from galaxy.tools.parser.interface import ToolStdioRegex
 from galaxy.util.bunch import Bunch
 

@@ -218,6 +218,11 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="display",
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_contents_update_permissions",
+                          "/api/histories/{history_id}/contents/{history_content_id}/permissions",
+                          controller="history_contents",
+                          action="update_permissions",
+                          conditions=dict(method=["PUT"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
@@ -240,6 +245,23 @@ def populate_api_routes(webapp, app):
                               path_prefix='/api/histories/{history_id}/contents/{history_content_id}')
     webapp.mapper.connect('/api/histories/published', action='published', controller="histories", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/histories/shared_with_me', action='shared_with_me', controller="histories")
+
+    webapp.mapper.connect('cloud_storage',
+                          '/api/cloud/storage/',
+                          controller='cloud',
+                          action='index',
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect('cloud_storage_upload',
+                          '/api/cloud/storage/upload',
+                          controller='cloud',
+                          action='upload',
+                          conditions=dict(method=["POST"]))
+    webapp.mapper.connect('cloud_storage_download',
+                          '/api/cloud/storage/download',
+                          controller='cloud',
+                          action='download',
+                          conditions=dict(method=["POST"]))
+
     _add_item_tags_controller(webapp,
                               name_prefix="history_",
                               path_prefix='/api/histories/{history_id}')
@@ -440,6 +462,7 @@ def populate_api_routes(webapp, app):
     # route for creating/getting converted datasets
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None)
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
+    webapp.mapper.connect('/api/datasets/{dataset_id}/permissions', controller='datasets', action='update_permissions', conditions=dict(method=["PUT"]))
 
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
@@ -452,6 +475,13 @@ def populate_api_routes(webapp, app):
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
+            controller='workflows',
+            action='index_invocations',
+            conditions=dict(method=['GET'])
+        )
+        webapp.mapper.connect(
+            'list_invocations',
+            '/api/invocations',
             controller='workflows',
             action='index_invocations',
             conditions=dict(method=['GET'])
@@ -660,11 +690,12 @@ def populate_api_routes(webapp, app):
                           action='get_permissions',
                           conditions=dict(method=["GET"]))
 
+    # POST for legacy reasons, but this should be a PUT.
     webapp.mapper.connect('set_library_permissions',
                           '/api/libraries/{encoded_library_id}/permissions',
                           controller='libraries',
                           action='set_permissions',
-                          conditions=dict(method=["POST"]))
+                          conditions=dict(method=["POST", "PUT"]))
 
     webapp.mapper.connect('show_ld_item',
                           '/api/libraries/datasets/{id}',

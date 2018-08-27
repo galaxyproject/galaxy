@@ -241,6 +241,7 @@
                         </div>
                     </div><!--end right-->
                 %endif
+            </div><!--end columns-->
         </div><!--end everything-->
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

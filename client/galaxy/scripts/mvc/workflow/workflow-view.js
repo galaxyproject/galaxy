@@ -322,6 +322,10 @@ export default Backbone.View.extend({
                     self.workflow.clear_active_node();
                 },
                 "Auto Re-layout": layout_editor,
+                Download: {
+                    url: `${Galaxy.root}api/workflows/${self.options.id}/download?format=json-download`,
+                    action: function() {}
+                },
                 Close: close_editor
             });
         }
@@ -790,9 +794,9 @@ export default Backbone.View.extend({
                 var po = $(this)
                     .offsetParent()
                     .offset();
-
-                var x = d.offsetX - po.left;
-                var y = d.offsetY - po.top;
+                // Find relative offset and scale by zoom
+                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
+                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
                 $(this).css({ left: x, top: y });
                 // Redraw
                 $(this)

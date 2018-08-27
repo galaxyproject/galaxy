@@ -54,7 +54,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
                                      PasswordField, SelectField, TextArea, TextField, WorkflowField,
                                      WorkflowMappingField)
-from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +70,8 @@ MAX_IN_FILTER_LENGTH = 100
 JOB_METRIC_MAX_LENGTH = 1023
 JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
+# Tags that get automatically propagated from inputs to outputs when running jobs.
+AUTO_PROPAGATED_TAGS = ["name", "group"]
 
 
 class NoConverterException(Exception):
@@ -128,6 +129,10 @@ class HasTags(object):
             new_tag_assoc.user = target_user
             self.tags.append(new_tag_assoc)
 
+    @property
+    def auto_propagated_tags(self):
+        return [t for t in self.tags if t.user_tname in AUTO_PROPAGATED_TAGS]
+
 
 class HasName(object):
 
@@ -152,6 +157,32 @@ class UsesCreateAndUpdateTime(object):
     def seconds_since_created(self):
         create_time = self.create_time or galaxy.model.orm.now.now()  # In case not yet flushed
         return (galaxy.model.orm.now.now() - create_time).total_seconds()
+
+
+def cached_id(galaxy_model_object):
+    """Get model object id attribute without a firing a database query.
+
+    Useful to fetching the id of a typical Galaxy model object after a flush,
+    where SA is going to mark the id attribute as unloaded but we know the id
+    is immutable and so we can use the database identity to fetch.
+
+    With Galaxy's default SA initialization - any flush marks all attributes as
+    unloaded - even objects completely unrelated to the flushed changes and
+    even attributes we know to be immutable like id. See test_galaxy_mapping.py
+    for verification of this behavior. This method is a workaround that uses
+    the fact that we know all Galaxy objects use the id attribute as identity
+    and SA internals (_sa_instance_state) to infer the previously loaded ID
+    value. I tried digging into the SA internals extensively and couldn't find
+    a way to get the previously loaded values after a flush to allow a
+    generalization of this for other attributes.
+    """
+    if hasattr(galaxy_model_object, "_sa_instance_state"):
+        identity = galaxy_model_object._sa_instance_state.identity
+        if identity:
+            assert len(identity) == 1
+            return identity[0]
+
+    return galaxy_model_object.id
 
 
 class JobLike(object):
@@ -1428,7 +1459,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             if set_genome:
                 self.genome_build = genome_build
         for dataset in datasets:
-            dataset.history_id = self.id
+            dataset.history_id = cached_id(self)
         return datasets
 
     def add_dataset_collection(self, history_dataset_collection, set_hid=True):
@@ -1452,7 +1483,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         new_history = History(name=name, user=target_user)
         db_session = object_session(self)
         db_session.add(new_history)
-        db_session.flush()
+        db_session.flush([new_history])
 
         # copy history tags and annotations (if copying user is not anonymous)
         if target_user:
@@ -1468,10 +1499,8 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
             hdas = self.active_datasets
         for hda in hdas:
             # Copy HDA.
-            new_hda = hda.copy()
+            new_hda = hda.copy(force_flush=False)
             new_history.add_dataset(new_hda, set_hid=False, quota=applies_to_quota)
-            db_session.add(new_hda)
-            db_session.flush()
 
             if target_user:
                 new_hda.copy_item_annotation(db_session, self.user, hda, target_user, new_hda)
@@ -1493,7 +1522,6 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
                 new_hdca.copy_tags_from(target_user, hdca)
 
         new_history.hid_counter = self.hid_counter
-        db_session.add(new_history)
         db_session.flush()
 
         return new_history
@@ -1524,7 +1552,7 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
 
     def resume_paused_jobs(self):
         job = None
-        for i, job in self.paused_jobs:
+        for job in self.paused_jobs:
             job.resume(flush=False)
         if job is not None:
             # We'll flush once if there was a paused job
@@ -1958,6 +1986,9 @@ class Dataset(StorableObject):
             self.external_extra_files_path = extra_files_path
     extra_files_path = property(get_extra_files_path, set_extra_files_path)
 
+    def extra_files_path_exists(self):
+        return self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+
     def _calculate_size(self):
         if self.external_filename:
             try:
@@ -2152,6 +2183,9 @@ class DatasetInstance(object):
     @property
     def extra_files_path(self):
         return self.dataset.extra_files_path
+
+    def extra_files_path_exists(self):
+        return self.dataset.extra_files_path_exists()
 
     @property
     def datatype(self):
@@ -2574,23 +2608,22 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                                         visible=self.visible,
                                         deleted=self.deleted,
                                         parent_id=parent_id,
-                                        copied_from_history_dataset_association=self)
+                                        copied_from_history_dataset_association=self,
+                                        flush=False)
         # update init non-keywords as well
         hda.purged = self.purged
         hda.copy_tags_to(copy_tags)
-        # This next line seems unneeded. -John
-        hda.set_size()
         object_session(self).add(hda)
         flushed = False
         # May need to set after flushed, as MetadataFiles require dataset.id
         if hda.set_metadata_requires_flush:
-            object_session(self).flush()
+            object_session(self).flush([self])
             flushed = True
         hda.metadata = self.metadata
         # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         if not self.datatype.copy_safe_peek:
             if not flushed:
-                object_session(self).flush()
+                object_session(self).flush([self])
 
             hda.set_peek()
         if force_flush:
@@ -2719,7 +2752,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                     uuid=(lambda uuid: str(uuid) if uuid else None)(hda.dataset.uuid),
                     hid=hda.hid,
                     file_ext=hda.ext,
-                    peek=(lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None)(hda),
+                    peek=unicodify(hda.display_peek()) if hda.peek and hda.peek != 'no peek' else None,
                     model_class=self.__class__.__name__,
                     name=hda.name,
                     deleted=hda.deleted,
@@ -2745,8 +2778,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
 
         if hda.extended_metadata is not None:
             rval['extended_metadata'] = hda.extended_metadata.data
-
-        rval['peek'] = to_unicode(hda.display_peek())
 
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get(name)
@@ -4256,7 +4287,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
         else:
             raise Exception("Unknown output type encountered")
 
-    def to_dict(self, view='collection', value_mapper=None, step_details=False):
+    def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
             steps = []
@@ -4265,7 +4296,19 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
                     v = step.to_dict(view='element')
                 else:
                     v = step.to_dict(view='collection')
-                steps.append(v)
+                if legacy_job_state:
+                    step_jobs = step.jobs
+                    if step_jobs:
+                        for step_job in step_jobs:
+                            v_clone = v.copy()
+                            v_clone["state"] = step_job.state
+                            v_clone["job_id"] = step_job.id
+                            steps.append(v_clone)
+                    else:
+                        v["state"] = None
+                        steps.append(v)
+                else:
+                    steps.append(v)
             rval['steps'] = steps
 
             inputs = {}
@@ -4407,6 +4450,10 @@ class WorkflowInvocationStep(Dictifiable):
         # Following no longer makes sense...
         # rval['state'] = self.job.state if self.job is not None else None
         if view == 'element':
+            jobs = []
+            for job in self.jobs:
+                jobs.append(job.to_dict())
+
             outputs = {}
             for output_assoc in self.output_datasets:
                 name = output_assoc.output_name
@@ -4426,6 +4473,7 @@ class WorkflowInvocationStep(Dictifiable):
 
             rval['outputs'] = outputs
             rval['output_collections'] = output_collections
+            rval['jobs'] = jobs
         return rval
 
 
@@ -5095,7 +5143,7 @@ class VisualizationAnnotationAssociation(object):
     pass
 
 
-class HistoryDatasetCollectionAnnotationAssociation(object):
+class HistoryDatasetCollectionAssociationAnnotationAssociation(object):
     pass
 
 

@@ -7,6 +7,7 @@ import sys
 import tempfile
 
 import bdbag.bdbag_api
+from six.moves import StringIO
 
 from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry
@@ -95,6 +96,7 @@ def _fetch_target(upload_config, target):
         dbkey = item.get("dbkey", "?")
         requested_ext = item.get("ext", "auto")
         info = item.get("info", None)
+        tags = item.get("tags", [])
         object_id = item.get("object_id", None)
         link_data_only = upload_config.link_data_only
         if "link_data_only" in item:
@@ -146,6 +148,8 @@ def _fetch_target(upload_config, target):
             rval["info"] = info
         if object_id is not None:
             rval["object_id"] = object_id
+        if tags:
+            rval["tags"] = tags
         return rval
 
     elements = elements_tree_map(_resolve_src, items)
@@ -207,6 +211,10 @@ def _has_src_to_path(item):
         path = sniff.stream_url_to_file(url)
         if name is None:
             name = url.split("/")[-1]
+    elif src == "pasted":
+        path = sniff.stream_to_file(StringIO(item["paste_content"]))
+        if name is None:
+            name = "Pasted Entry"
     else:
         assert src == "path"
         path = item["path"]

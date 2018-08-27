@@ -190,7 +190,7 @@ proxying to GIE and other visualization plugin static content.
 
 .. code-block:: nginx
 
-    location ~ ^/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
+    location ~ ^/static/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
         alias /path/to/galaxy-dist/config/plugins/$plug_type/$vis_name/static/$static_file;
     }
 

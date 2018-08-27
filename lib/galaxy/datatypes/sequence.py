@@ -756,7 +756,7 @@ class Maf(Alignment):
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
             chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file(dataset=dataset)
-        with open(chrom_file.file_name, 'wb') as chrom_out:
+        with open(chrom_file.file_name, 'w') as chrom_out:
             for spec, chroms in species_chromosomes.items():
                 chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
         dataset.metadata.species_chromosomes = chrom_file
@@ -926,8 +926,9 @@ class Axt(data.Text):
                 if len(hdr) != 9:
                     return False
                 try:
-                    map(int, [hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]])
-                except Exception:
+                    for _ in (hdr[0], hdr[2], hdr[3], hdr[5], hdr[6], hdr[8]):
+                        int(_)
+                except ValueError:
                     return False
                 if hdr[7] not in data.valid_strand:
                     return False

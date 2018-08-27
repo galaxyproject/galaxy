@@ -57,7 +57,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     margin-top: $ui-margin-vertical-large;
     margin-bottom: 0px;
     width: 100%;
-    display: none;
     word-wrap: break-word;
 }
 
@@ -85,13 +84,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 // buttons
 .ui-button-default {
     float: right;
-    .icon {
-        font-size: 1.1em;
-    }
     .progress {
-        height: 4px;
-        margin: 0px;
-        margin-top: 2px;
         .progress-bar {
             @extend .no-transition;
             background: darken($state-success-bg, 30%);
@@ -105,23 +98,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
     height: auto !important;
     width: auto !important;
     float: right;
-    ul {
-        i {
-            width: 1.2em;
-            font-size: 1.2em;
-            margin-right: $ui-margin-horizontal;
-            position: relative;
-            top: 1px;
-        }
-    }
     .button {
-        margin-right: $ui-margin-horizontal;
-        margin-left: $ui-margin-horizontal;
+        @extend .ml-2;
+        @extend .mr-2;
         .title {
-            position: relative;
             font-size: 0.8em;
-            font-weight: normal;
-            top: -1px;
             word-wrap: break-word;
         }
     }
@@ -130,26 +111,19 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-button-menu {
-    .dropdown-menu {
-        min-width: 50px;
-    }
-    .dropdown-item {
-        text-align: left;
-    }
-    .dropdown-toggle::after {
-        display: none;
-    }
-}
-
 .ui-button-icon-plain {
     @extend .icon-btn;
     border: none !important;
     background: none !important;
-    height: inherit !important;
-    width: inherit !important;
-    padding-right: 3px !important;
     float: right;
+}
+
+.ui-button-check {
+    .icon {
+        font-size: 1.2em;
+        width: 1em;
+    }
+    cursor: pointer;
 }
 
 // tabs
@@ -161,112 +135,31 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 // thumbnails
 .ui-thumbnails {
-    margin-bottom: 10px;
-    .ui-thumbnails-grid {
-        .ui-thumbnails-item {
-            padding: 5px;
-            margin: 5px;
-            cursor: pointer;
-            border-radius: 5px;
-            .ui-thumbnails-title {
-                text-align: center;
-                font-size: 0.9em;
-                word-wrap: break-work;
-                font-weight: bold;
-                width: 100px;
-            }
-            .ui-thumbnails-image {
-                padding: 10px;
-                width: 100px;
-                height: 86px;
-            }
-            .ui-thumbnails-icon {
-                width: 100px;
-                height: 86px;
-                font-size: 4em;
-                padding: 20px 26px;
-                color: lighten(#25537b, 10%);
-            }
-            .ui-thumbnails-description-title {
-                font-weight: bold;
-            }
-            .ui-thumbnails-description-text {
-                word-wrap: break-word;
-            }
-        }
-        .ui-thumbnails-item:hover {
-            .ui-thumbnails-title {
-                text-decoration: underline;
-            }
-            .ui-thumbnails-description-title {
-                text-decoration: underline;
-            }
-            .ui-thumbnails-description-text {
-                text-decoration: underline;
-            }
-        }
-        .ui-thumbnail-current-highlight {
-            border-color: #66afe9;
-            background-color: #eeeeff;
-            outline: 0;
-            -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
-            box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(102, 175, 233, 0.6);
-        }
-        .ui-thumbnails-item-float {
-            float: left;
-            height: 140px;
-        }
-    }
-}
-
-// tables
-.ui-table {
-    @extend .grid;
-    tbody {
+    .ui-thumbnails-item {
         cursor: pointer;
-        td {
-            // TODO: Fixme -- figure out what this actually pulled in.
-            //@extend .grid.tbody.td;
+        .ui-thumbnails-image {
+            padding: 10px;
+            width: 100px;
+            height: 86px;
+        }
+        .ui-thumbnails-icon {
+            width: 100px;
+            height: 86px;
+            font-size: 4em;
+            padding: 20px 26px;
+            color: lighten(#25537b, 10%);
+        }
+        .ui-thumbnails-text {
+            word-wrap: break-word;
         }
     }
-}
-
-.ui-table-striped {
-    @extend .table;
-    @extend .table-striped;
-    width: 100%;
-    margin-bottom: 0px;
-    th {
-        text-align: center;
-        white-space: nowrap;
-        padding: 0.5rem;
-    }
-    td {
-        margin: 0px;
-        padding: 0.5rem;
-        .ui-button-icon {
-            line-height: 1.2em;
+    .ui-thumbnails-item:hover {
+        .ui-thumbnails-title {
+            text-decoration: underline;
         }
-    }
-}
-
-.ui-table-plain {
-    @extend .ui-table;
-    table-layout: fixed;
-
-    tbody {
-        cursor: auto !important;
-        td {
-            padding: 0px !important;
-            border: none !important;
+        .ui-thumbnails-text {
+            text-decoration: underline;
         }
-    }
-
-    .ui-table-section {
-        border-left: solid 3px $form-heading-bg;
-        border-radius: $border-radius-large !important;
-        margin-bottom: $ui-margin-vertical;
-        padding-left: 10px;
     }
 }
 
@@ -367,12 +260,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-form-section {
-    border-left: solid 3px $side-panel-bg;
-    border-radius: $border-radius-large !important;
-    padding-left: 10px;
-}
-
 .ui-form-composite {
     height: 100%;
     flex-direction: column;
@@ -385,9 +272,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
 // portlets
 .ui-portlet {
     @extend .card;
+    border: none;
     height: 100%;
     .portlet-header {
         @extend .card-header;
+        background: $gray-200;
         .portlet-title {
             .portlet-title-text.collapsible {
                 cursor: pointer;
@@ -400,9 +289,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
             }
         }
     }
-    .portlet-content {
+    > .portlet-content {
         @extend .card-body;
-        @extend .p-2;
+        @extend .p-0;
     }
     .portlet-backdrop {
         display: none;
@@ -431,14 +320,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
         border-top-left-radius: 0px;
         padding: 5px;
     }
-    .portlet-content {
-        padding-right: 0px !important;
+    > .portlet-content {
+        @extend .pl-2;
+        @extend .pr-0;
     }
-}
-
-.ui-portlet-plain {
-    @extend .ui-portlet;
-    border: none;
 }
 
 // popovers
@@ -635,15 +520,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         padding: 2px 10px;
         margin: 0px;
     }
-}
-
-.ui-button-check {
-    .icon {
-        font-size: 1.2em;
-        width: 1.2em;
-    }
-    cursor: pointer;
-    margin-bottom: $ui-margin-vertical;
 }
 
 .ui-color-picker {

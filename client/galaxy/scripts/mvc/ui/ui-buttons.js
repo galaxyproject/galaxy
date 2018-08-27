@@ -58,8 +58,9 @@ var ButtonDefault = Backbone.View.extend({
         } else {
             this.$el.addClass(options.cls);
             this.$icon.addClass(options.icon);
-            this.$title.html(options.title);
-            options.icon && options.title && this.$icon.addClass("mr-1");
+            if (options.title) {
+                this.$title.html(options.title).addClass("ml-1");
+            }
         }
     },
 
@@ -153,6 +154,7 @@ var ButtonCheck = Backbone.View.extend({
             }).set(options);
         this.setElement(
             $("<div/>")
+                .addClass("mb-2")
                 .append((this.$icon = $("<span/>")))
                 .append((this.$title = $("<span/>")))
         );
@@ -255,7 +257,7 @@ var ButtonMenu = ButtonDefault.extend({
                 pull: "right",
                 icon: null,
                 onclick: null,
-                cls: "ui-button-icon ui-button-menu",
+                cls: "ui-button-icon",
                 tooltip: "",
                 target: "",
                 href: "",
@@ -287,7 +289,7 @@ var ButtonMenu = ButtonDefault.extend({
                 display: options.visible && this.collection.where({ visible: true }).length > 0 ? "block" : "none"
             });
         this.$root
-            .addClass("root button dropdown-toggle")
+            .addClass("root button")
             .attr("data-toggle", "dropdown")
             .tooltip({ title: options.tooltip || "", placement: "bottom" })
             .off("click")
@@ -300,11 +302,10 @@ var ButtonMenu = ButtonDefault.extend({
             .removeClass()
             .addClass("icon fa")
             .addClass(options.icon);
-        this.$title
+        options.title && this.$title
             .removeClass()
-            .addClass("title")
+            .addClass("title ml-1")
             .html(options.title);
-        options.icon && options.title && this.$icon.addClass("mr-1");
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")
@@ -324,7 +325,7 @@ var ButtonMenu = ButtonDefault.extend({
                     })
                     .append(
                         $("<i/>")
-                            .addClass("fa")
+                            .addClass("fa mr-2")
                             .addClass(suboptions.icon)
                             .css("display", suboptions.icon ? "inline-block" : "none")
                     )
