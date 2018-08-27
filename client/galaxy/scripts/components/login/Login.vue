@@ -1,34 +1,35 @@
 <template>
-    <div>
-        <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
-        <b-form @submit.prevent="submit()">
-            <b-card header="Welcome to Galaxy, please log in">
-                <b-form-group label="Username or Email Address">
-                    <b-form-input type="text" v-model="login"/>
-                </b-form-group>
-                <b-form-group label="Password">
-                    <b-form-input type="password" v-model="password"/>
-                    <b-form-text>Forgot password? Click here to <a @click="reset" href="#">reset</a> your password.</b-form-text>
-                </b-form-group>
-                <b-button type="submit">Login</b-button>
-            </b-card>
-        </b-form>
-        <br>
-        <b-form v-if="openid_providers && openid_providers.length > 0" @submit.prevent="submit('openid')">
-            <b-card header="OpenID login">
-                <b-form-group label="Select a provider:">
-                     <b-form-select v-model="provider" :options="openid_providers"/>
-                </b-form-group>
-                <b-button type="submit">Login with OpenID</b-button>
-                <b-form-text>This feature will be deprecated in release 19.05.</b-form-text>
-            </b-card>
-        </b-form>
-        <br>
-        <b-embed v-if="show_welcome_with_login"
-            type="iframe"
-            aspect="16by9"
-            :src="welcome_url"
-        ></b-embed>
+    <div class="container">
+        <div class="row justify-content-md-center">
+            <div class="col col-lg-6">
+                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
+                <b-form @submit.prevent="submit()">
+                    <b-card header="Welcome to Galaxy, please log in">
+                        <b-form-group label="Username or Email Address">
+                            <b-form-input type="text" v-model="login"/>
+                        </b-form-group>
+                        <b-form-group label="Password">
+                            <b-form-input type="password" v-model="password"/>
+                            <b-form-text>Forgot password? Click here to <a @click="reset" href="#">reset</a> your password.</b-form-text>
+                        </b-form-group>
+                        <b-button type="submit">Login</b-button>
+                    </b-card>
+                </b-form>
+                <br>
+                <b-form v-if="openid_providers && openid_providers.length > 0" @submit.prevent="submit('openid')">
+                    <b-card header="OpenID login">
+                        <b-form-group label="Select a provider:">
+                             <b-form-select v-model="provider" :options="openid_providers"/>
+                        </b-form-group>
+                        <b-button type="submit">Login with OpenID</b-button>
+                        <b-form-text>This feature will be deprecated in release 19.05.</b-form-text>
+                    </b-card>
+                </b-form>
+            </div>
+            <div v-if="show_welcome_with_login" class="col">
+                <b-embed type="iframe" :src="welcome_url" aspect="1by1"/>
+            </div>
+        </div>
     </div>
 </template>
 <script>
