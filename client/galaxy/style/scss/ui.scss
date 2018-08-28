@@ -86,6 +86,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 .ui-button-icon-plain {
     @extend .icon-btn;
+    @extend .p-0;
     border: none !important;
     background: none !important;
     float: right;

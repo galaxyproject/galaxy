@@ -485,7 +485,7 @@ export default Backbone.View.extend({
         );
         _.each(this.options.workflows, workflow => {
             if (workflow.id !== self.options.id) {
-                var copy = new Ui.ButtonIcon({
+                var copy = new Ui.Button({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),

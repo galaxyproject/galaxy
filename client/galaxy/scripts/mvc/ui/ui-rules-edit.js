@@ -19,7 +19,7 @@ var View = Backbone.View.extend({
         const view = this;
 
         // create insert new list element button
-        this.browse_button = new Ui.ButtonIcon({
+        this.browse_button = new Ui.Button({
             title: _l("Edit"),
             icon: "fa fa-edit",
             tooltip: _l("Edit Rules"),

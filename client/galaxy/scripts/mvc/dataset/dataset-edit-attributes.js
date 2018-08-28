@@ -118,7 +118,7 @@ var View = Backbone.View.extend({
         var form = new Form({
             title: _l("Edit attributes"),
             operations: {
-                submit_attributes: new Ui.ButtonIcon({
+                submit_attributes: new Ui.Button({
                     tooltip: _l("Save attributes of the dataset."),
                     icon: "fa-floppy-o",
                     title: _l("Save"),
@@ -126,7 +126,7 @@ var View = Backbone.View.extend({
                         self._submit("attributes", form);
                     }
                 }),
-                submit_autodetect: new Ui.ButtonIcon({
+                submit_autodetect: new Ui.Button({
                     tooltip:
                         "This will inspect the dataset and attempt to correct the values of fields if they are not accurate.",
                     icon: "fa-undo",
@@ -146,7 +146,7 @@ var View = Backbone.View.extend({
         var form = new Form({
             title: _l("Convert to new format"),
             operations: {
-                submit_conversion: new Ui.ButtonIcon({
+                submit_conversion: new Ui.Button({
                     tooltip: _l("Convert the datatype to a new format."),
                     title: _l("Convert datatype"),
                     icon: "fa-exchange",
@@ -165,7 +165,7 @@ var View = Backbone.View.extend({
         var form = new Form({
             title: _l("Change datatype"),
             operations: {
-                submit_datatype: new Ui.ButtonIcon({
+                submit_datatype: new Ui.Button({
                     tooltip: _l("Change the datatype to a new type."),
                     title: _l("Change datatype"),
                     icon: "fa-exchange",
@@ -184,7 +184,7 @@ var View = Backbone.View.extend({
         var form = new Form({
             title: _l("Manage dataset permissions"),
             operations: {
-                submit_permission: new Ui.ButtonIcon({
+                submit_permission: new Ui.Button({
                     tooltip: _l("Save permissions."),
                     title: _l("Save permissions"),
                     icon: "fa-floppy-o ",

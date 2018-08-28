@@ -14,7 +14,7 @@ var View = Backbone.View.extend({
         this.options = options;
 
         // create insert new list element button
-        this.browse_button = new Ui.ButtonIcon({
+        this.browse_button = new Ui.Button({
             title: _l("Browse"),
             icon: "fa fa-sign-in",
             tooltip: _l("Browse GenomeSpace"),

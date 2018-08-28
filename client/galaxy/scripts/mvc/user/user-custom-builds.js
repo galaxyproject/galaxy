@@ -52,7 +52,7 @@ var View = Backbone.View.extend({
                 .append(
                     $("<h4/>")
                         .text("Add a Custom Build")
-                        .addClass("mt-1")
+                        .addClass("mt-4")
                 )
                 .append(
                     $("<span/>")
@@ -90,7 +90,7 @@ var View = Backbone.View.extend({
             self.table.add(model.id);
             self.table.add(model.get("count") !== undefined ? model.get("count") : "Processing...");
             self.table.add(
-                new Ui.ButtonIcon({
+                new Ui.Button({
                     icon: "fa-trash-o",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Delete custom build."),

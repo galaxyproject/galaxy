@@ -13,7 +13,7 @@ export var View = Backbone.View.extend({
             max: null,
             min: null
         });
-        this.button_new = new Ui.ButtonIcon({
+        this.button_new = new Ui.Button({
             icon: "fa-plus",
             title: `Insert ${this.options.title}`,
             tooltip: `Add new ${this.options.title} block`,
@@ -42,7 +42,7 @@ export var View = Backbone.View.extend({
             Galaxy.emit.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
             return;
         }
-        var button_delete = new Ui.ButtonIcon({
+        var button_delete = new Ui.Button({
             icon: "fa-trash-o",
             tooltip: _l("Delete this repeat block"),
             cls: "ui-button-icon-plain form-repeat-delete",

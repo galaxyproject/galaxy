@@ -38,7 +38,7 @@ export var View = Backbone.View.extend({
         this.model.get("body") && this.append(this.model.get("body"));
 
         // add icon for collapsible option
-        this.collapsible_button = new Ui.ButtonIcon({
+        this.collapsible_button = new Ui.Button({
             icon: "fa-eye",
             tooltip: "Collapse/Expand",
             cls: "ui-button-icon-plain",

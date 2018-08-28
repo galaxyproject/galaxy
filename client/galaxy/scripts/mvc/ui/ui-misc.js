@@ -254,8 +254,7 @@ export var Upload = Backbone.View.extend({
  * what we need where we need it, allowing for better package optimization.
  */
 
-export let Button = Buttons.ButtonDefault;
-export let ButtonIcon = Buttons.ButtonIcon;
+export let Button = Buttons.Button;
 export let ButtonCheck = Buttons.ButtonCheck;
 export let ButtonMenu = Buttons.ButtonMenu;
 export let ButtonLink = Buttons.ButtonLink;
@@ -265,8 +264,7 @@ export let Radio = Options.Radio;
 export { Select, Slider, Drilldown };
 
 export default {
-    Button: Buttons.ButtonDefault,
-    ButtonIcon: Buttons.ButtonIcon,
+    Button: Buttons.Button,
     ButtonCheck: Buttons.ButtonCheck,
     ButtonMenu: Buttons.ButtonMenu,
     ButtonLink: Buttons.ButtonLink,
