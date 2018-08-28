@@ -3,6 +3,7 @@ from __future__ import print_function
 import copy
 import itertools
 import logging
+from collections import OrderedDict
 
 from galaxy import (
     exceptions,
@@ -10,6 +11,7 @@ from galaxy import (
     util
 )
 from galaxy.util import permutations
+from . import visit_input_values
 
 log = logging.getLogger(__name__)
 
@@ -70,6 +72,28 @@ def expand_workflow_inputs(inputs):
     return params, params_keys
 
 
+def process_key(incoming_key, d):
+    key_parts = incoming_key.split('|')
+    if len(key_parts) == 1:
+        # Regular parameter
+        d[incoming_key] = object()
+    elif key_parts[0].rsplit('_', 1)[-1].isdigit():
+        # Repeat
+        input_name_index = key_parts[0].rsplit('_', 1)
+        input_name, index = input_name_index
+        if input_name not in d:
+            d[input_name] = []
+        subdict = {}
+        d[input_name].append(subdict)
+        process_key("|".join(key_parts[1:]), d=subdict)
+    else:
+        # Section / Conditional
+        input_name = key_parts[0]
+        subdict = {}
+        d[input_name] = subdict
+        process_key("|".join(key_parts[1:]), d=subdict)
+
+
 def expand_meta_parameters(trans, tool, incoming):
     """
     Take in a dictionary of raw incoming parameters and expand to a list
@@ -83,6 +107,25 @@ def expand_meta_parameters(trans, tool, incoming):
             to_remove.append(key)
     for key in to_remove:
         incoming.pop(key)
+
+    # If we're going to multiply input dataset combinations
+    # order matters, so the following reorders incoming
+    # according to tool.inputs (which is ordered).
+    incoming_copy = incoming.copy()
+    nested_dict = {}
+    for incoming_key in incoming_copy:
+        if not incoming_key.startswith('__'):
+            process_key(incoming_key, d=nested_dict)
+
+    reordered_incoming = OrderedDict()
+
+    def visitor(input, value, prefix, prefixed_name, prefixed_label, error, **kwargs):
+        if prefixed_name in incoming_copy:
+            reordered_incoming[prefixed_name] = incoming_copy[prefixed_name]
+            del incoming_copy[prefixed_name]
+
+    visit_input_values(inputs=tool.inputs, input_values=nested_dict, callback=visitor)
+    reordered_incoming.update(incoming_copy)
 
     def classifier(input_key):
         value = incoming[input_key]
@@ -111,7 +154,7 @@ def expand_meta_parameters(trans, tool, incoming):
 
     # Stick an unexpanded version of multirun keys so they can be replaced,
     # by expand_mult_inputs.
-    incoming_template = incoming.copy()
+    incoming_template = reordered_incoming
 
     expanded_incomings = permutations.expand_multi_inputs(incoming_template, classifier)
     if collections_to_match.has_collections():

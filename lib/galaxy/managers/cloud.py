@@ -171,7 +171,7 @@ class CloudManager(sharable.SharableModelManager):
         :param trans:       Galaxy web transaction
 
         :type  history_id:  string
-        :param history_id:  the (encoded) id of history to which the object should be uploaded to.
+        :param history_id:  the (decoded) id of history to which the object should be uploaded to.
 
         :type  provider:    string
         :param provider:    the name of cloud-based resource provided. A list of supported providers is given in
@@ -221,6 +221,8 @@ class CloudManager(sharable.SharableModelManager):
             params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
             incoming = params.__dict__
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
+            if not history:
+                raise ObjectNotFound("History with ID `{}` not found.".format(trans.app.security.encode_id(history_id)))
             output = trans.app.toolbox.get_tool('upload1').handle_input(trans, incoming, history=history)
 
             job_errors = output.get('job_errors', [])

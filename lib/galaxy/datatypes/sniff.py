@@ -82,7 +82,7 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
             except Exception:
                 pass
             if not is_compressed:
-                is_binary = util.is_binary(smart_str(chunk))
+                is_binary = util.is_binary(chunk)
             data_checked = True
         if not is_compressed and not is_binary:
             if not isinstance(chunk, text_type):

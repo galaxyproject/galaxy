@@ -471,6 +471,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
             history_id: this.historyId,
             name: name,
             hide_source_items: hideSourceItems || false,
+            copy_elements: true,
             // should probably be able to just send in a bunch of json here and restruct per class
             // note: element_identifiers is now (incorrectly) an attribute
             element_identifiers: elementIdentifiers

@@ -59,6 +59,18 @@
                                 </select>
                             </label>
                         </rule-component>
+                        <rule-component rule-type="add_column_group_tag_value"
+                                        :display-rule-type="displayRuleType"
+                                        :builder="this">
+                            <label>
+                                {{ l("Value") }}
+                                <input type="text" v-model="addColumnGroupTagValueValue" />
+                            </label>
+                            <label>
+                                {{ l("Default") }}
+                                <input type="text" v-model="addColumnGroupTagValueDefault" />
+                            </label>
+                        </rule-component>
                         <rule-component rule-type="add_column_regex"
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
@@ -286,6 +298,7 @@
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
                                         <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="metadataOptions"/>
+                                        <rule-target-component :builder="this" rule-type="add_column_group_tag_value" v-if="hasTagsMetadata"/>
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
@@ -901,6 +914,8 @@ export default {
             addColumnRegexGroupCount: null,
             addColumnRegexType: "global",
             addColumnMetadataValue: 0,
+            addColumnGroupTagValueValue: "",
+            addColumnGroupTagValueDefault: "",
             addColumnConcatenateTarget0: 0,
             addColumnConcatenateTarget1: 0,
             addColumnRownumStart: 1,
@@ -1182,6 +1197,7 @@ export default {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
                 }
+                metadataOptions["tags"] = _l("Tags");
             } else if (this.elementsType == "ftp") {
                 metadataOptions["path"] = _l("Path");
             } else if (this.elementsType == "library_datasets") {
@@ -1193,6 +1209,10 @@ export default {
                 metadataOptions = null;
             }
             return metadataOptions;
+        },
+        hasTagsMetadata() {
+            // TODO: allow for dataset, library_datasets also - here and just above in metadataOptions.
+            return this.elementsType == "collection_contents";
         },
         collectionType() {
             let identifierColumns = [];
@@ -1621,12 +1641,14 @@ export default {
         creationElementsFromDatasets() {
             const sources = this.hotData["sources"];
             const data = this.hotData["data"];
+            const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
                 (dataIndex, identifier) => {
                     const source = sources[dataIndex];
+                    const res = this._datasetFor(dataIndex, data, mappingAsDict);
                     const src = this.elementsType == "datasets" ? "hda" : "ldda";
-                    return { id: source["id"], name: identifier, src: src };
+                    return { id: source["id"], name: identifier, src: src, tags: res.tags };
                 },
                 identifier => {
                     return { name: identifier, src: "new_collection" };
@@ -1680,9 +1702,9 @@ export default {
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
-                    // TOOD: right thing is probably this: data.push([]);
                     data.push([]);
-                    sources.push({ identifiers: identifiers, dataset: elementObject });
+                    const source = { identifiers: identifiers, dataset: elementObject, tags: elementObject.tags };
+                    sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
                     let elementObj = this.populateElementsFromCollectionDescription(
@@ -1726,7 +1748,7 @@ export default {
                 }
                 res["url"] = url;
                 res["src"] = "url";
-            } else {
+            } else if (mappingAsDict.ftp_path) {
                 const ftpPathColumn = mappingAsDict.ftp_path.columns[0];
                 const ftpPath = data[dataIndex][ftpPathColumn];
                 res["ftp_path"] = ftpPath;

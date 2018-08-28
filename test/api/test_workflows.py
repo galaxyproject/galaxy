@@ -14,7 +14,6 @@ from base import rules_test_data  # noqa: I100
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
-    flakey,
     load_data_dict,
     skip_without_tool,
     wait_on,
@@ -199,8 +198,8 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
         workflow_inputs = workflow_show_resposne.json()["inputs"]
         return workflow_inputs
 
-    def _invocation_details(self, workflow_id, invocation_id):
-        invocation_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
+    def _invocation_details(self, workflow_id, invocation_id, **kwds):
+        invocation_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id), data=kwds)
         self._assert_status_code_is(invocation_details_response, 200)
         invocation_details = invocation_details_response.json()
         return invocation_details
@@ -1876,31 +1875,30 @@ test_data:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
 
-    @flakey
     @skip_without_tool('cat1')
     def test_workflow_rerun_with_use_cached_job(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_run")
         # We launch a workflow
-        with self.dataset_populator.test_history() as history_id:
-            workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id)
+        with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
+            workflow_request, _ = self._setup_workflow_run(workflow, history_id=history_id_one)
             run_workflow_response = self._post("workflows", data=workflow_request).json()
             # We copy the workflow inputs to a new history
             new_workflow_request = workflow_request.copy()
             new_ds_map = json.loads(new_workflow_request['ds_map'])
-            with self.dataset_populator.test_history() as new_history_id:
-                for key, input_values in run_workflow_response['inputs'].items():
-                    copy_payload = {"content": input_values['id'], "source": "hda", "type": "dataset"}
-                    copy_response = self._post("histories/%s/contents" % new_history_id, data=copy_payload).json()
-                    new_ds_map[key]['id'] = copy_response['id']
-                new_workflow_request['ds_map'] = json.dumps(new_ds_map)
-                new_workflow_request['history'] = "hist_id=%s" % new_history_id
-                new_workflow_request['use_cached_job'] = True
-                # We run the workflow again, it should not produce any new outputs
-                new_workflow_response = self._post("workflows", data=new_workflow_request).json()
-                first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
-                second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
-                assert first_wf_output['file_name'] == second_wf_output['file_name'], \
-                    "first output:\n%s\nsecond output:\n%s" % (first_wf_output, second_wf_output)
+            for key, input_values in run_workflow_response['inputs'].items():
+                copy_payload = {"content": input_values['id'], "source": "hda", "type": "dataset"}
+                copy_response = self._post("histories/%s/contents" % history_id_two, data=copy_payload).json()
+                new_ds_map[key]['id'] = copy_response['id']
+            new_workflow_request['ds_map'] = json.dumps(new_ds_map, sort_keys=True)
+            new_workflow_request['history'] = "hist_id=%s" % history_id_two
+            new_workflow_request['use_cached_job'] = True
+            # We run the workflow again, it should not produce any new outputs
+            self.dataset_populator.wait_for_history(history_id_one, assert_ok=True)
+            new_workflow_response = self._post("workflows", data=new_workflow_request).json()
+            first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
+            second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
+            assert first_wf_output['file_name'] == second_wf_output['file_name'], \
+                "first output:\n%s\nsecond output:\n%s" % (first_wf_output, second_wf_output)
 
     @skip_without_tool('cat1')
     def test_nested_workflow_rerun_with_use_cached_job(self):
@@ -2892,11 +2890,18 @@ steps:
         self._assert_has_keys(pja, "action_type", "output_name", "action_arguments")
 
     @skip_without_tool("cat1")
-    def test_only_own_invocations_accessible(self):
+    def test_only_own_invocations_indexed_and_accessible(self):
         workflow_id, usage = self._run_workflow_once_get_invocation("test_usage")
         with self._different_user():
             usage_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, usage["id"]))
             self._assert_status_code_is(usage_details_response, 403)
+
+        invocation_ids = self._all_user_invocation_ids()
+        assert usage["id"] in invocation_ids
+
+        with self._different_user():
+            invocation_ids = self._all_user_invocation_ids()
+            assert usage["id"] not in invocation_ids
 
     @skip_without_tool("cat1")
     def test_invocation_usage(self):
@@ -2904,15 +2909,115 @@ steps:
         invocation_id = usage["id"]
         usage_details = self._invocation_details(workflow_id, invocation_id)
         # Assert some high-level things about the structure of data returned.
-        self._assert_has_keys(usage_details, "inputs", "steps")
+        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id", "history_id")
+
+        # Check invocations for this workflow invocation by history and regardless of history.
+        history_invocations_response = self._get("invocations", {"history_id": usage_details["history_id"]})
+        self._assert_status_code_is(history_invocations_response, 200)
+        assert len(history_invocations_response.json()) == 1
+        assert history_invocations_response.json()[0]["id"] == invocation_id
+
+        # Check history invocations for this workflow invocation.
+        invocation_ids = self._all_user_invocation_ids()
+        assert invocation_id in invocation_ids
+
+        # Wait for the invocation to be fully scheduled, so we have details on all steps.
+        self._wait_for_invocation_state(workflow_id, invocation_id, 'scheduled')
+        usage_details = self._invocation_details(workflow_id, invocation_id)
+
         invocation_steps = usage_details["steps"]
-        for step in invocation_steps:
-            self._assert_has_keys(step, "workflow_step_id", "order_index", "id")
-        an_invocation_step = invocation_steps[0]
-        step_id = an_invocation_step["id"]
-        step_response = self._get("workflows/%s/usage/%s/steps/%s" % (workflow_id, invocation_id, step_id))
-        self._assert_status_code_is(step_response, 200)
-        self._assert_has_keys(step_response.json(), "id", "order_index")
+        invocation_input_step, invocation_tool_step = None, None
+        for invocation_step in invocation_steps:
+            self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
+            order_index = invocation_step["order_index"]
+            assert order_index in [0, 1, 2], order_index
+            if order_index == 0:
+                invocation_input_step = invocation_step
+            elif order_index == 2:
+                invocation_tool_step = invocation_step
+
+        # Tool steps have non-null job_ids (deprecated though they may be)
+        assert invocation_input_step.get("job_id", None) is None
+        job_id = invocation_tool_step.get("job_id", None)
+        assert job_id is not None
+
+        invocation_tool_step_id = invocation_tool_step["id"]
+        invocation_tool_step_response = self._get("workflows/%s/invocations/%s/steps/%s" % (workflow_id, invocation_id, invocation_tool_step_id))
+        self._assert_status_code_is(invocation_tool_step_response, 200)
+        self._assert_has_keys(invocation_tool_step_response.json(), "id", "order_index", "job_id")
+
+        assert invocation_tool_step_response.json()["job_id"] == job_id
+
+    def test_invocation_with_collection_mapping(self):
+        workflow_id, invocation_id = self._run_mapping_workflow()
+
+        usage_details = self._invocation_details(workflow_id, invocation_id)
+        # Assert some high-level things about the structure of data returned.
+        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
+
+        invocation_steps = usage_details["steps"]
+        invocation_input_step, invocation_tool_step = None, None
+        for invocation_step in invocation_steps:
+            self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
+            order_index = invocation_step["order_index"]
+            assert order_index in [0, 1]
+            if invocation_step["order_index"] == 0:
+                assert invocation_input_step is None
+                invocation_input_step = invocation_step
+            else:
+                assert invocation_tool_step is None
+                invocation_tool_step = invocation_step
+
+        # Tool steps have non-null job_ids (deprecated though they may be)
+        assert invocation_input_step.get("job_id", None) is None
+        assert invocation_tool_step.get("job_id", None) is None
+        assert invocation_tool_step["state"] == "scheduled"
+
+        usage_details = self._invocation_details(workflow_id, invocation_id, legacy_job_state="true")
+        # Assert some high-level things about the structure of data returned.
+        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
+
+        invocation_steps = usage_details["steps"]
+        invocation_input_step = None
+        invocation_tool_steps = []
+        for invocation_step in invocation_steps:
+            self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
+            order_index = invocation_step["order_index"]
+            assert order_index in [0, 1]
+            if invocation_step["order_index"] == 0:
+                assert invocation_input_step is None
+                invocation_input_step = invocation_step
+            else:
+                invocation_tool_steps.append(invocation_step)
+
+        assert len(invocation_tool_steps) == 2
+        assert invocation_tool_steps[0]["state"] == "ok"
+
+    def _run_mapping_workflow(self):
+        history_id = self.dataset_populator.new_history()
+        summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - type: collection
+    label: input_c
+steps:
+  - label: cat1
+    tool_id: cat1
+    state:
+       input1:
+         $link: input_c
+test_data:
+  input_c:
+    type: list
+    elements:
+      - identifier: i1
+        content: "0"
+      - identifier: i2
+        content: "1"
+""", history_id=history_id, wait=True, assert_ok=True)
+        workflow_id = summary.workflow_id
+        invocation_id = summary.invocation_id
+        return workflow_id, invocation_id
 
     @skip_without_tool("cat1")
     def test_invocations_accessible_imported_workflow(self):
@@ -3138,6 +3243,12 @@ steps:
                 'tool_inputs',
                 'input_steps',
             )
+
+    def _all_user_invocation_ids(self):
+        all_invocations_for_user = self._get("invocations")
+        self._assert_status_code_is(all_invocations_for_user, 200)
+        invocation_ids = [i["id"] for i in all_invocations_for_user.json()]
+        return invocation_ids
 
 
 RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])

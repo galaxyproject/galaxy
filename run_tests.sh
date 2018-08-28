@@ -10,20 +10,22 @@ cat <<EOF
 '${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
 '${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
 '${0##*/} -list'                    for listing all the tool ids
-'${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory
-'${0##*/} -api_py3 (test_path)'     for running all the test scripts in the ./test/api directory using python 3
+'${0##*/} -api (test_path)'         for running all the test scripts in the ./test/api directory, test_path
+                                    can be pytest selector
+'${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/api directory, test_path
+                                    can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./test/shed_functional/functional directory
 '${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
 '${0##*/} -data_managers -id data_manager_id'    for testing one Data Manager with id 'data_manager_id'
 '${0##*/} -unit'                    for running all unit tests (doctests and tests in test/unit)
-'${0##*/} -unit (test_path)'        for running unit tests on specified test path
+'${0##*/} -unit (test_path)'        for running unit tests on specified test path (use nosetest path)
 '${0##*/} -selenium'                for running all selenium web tests (in test/selenium_tests)
 '${0##*/} -selenium (test_path)'    for running specified selenium web tests (use nosetest path)
 
 This wrapper script largely serves as a point documentation and convenience -
-most tests shipped with Galaxy can be run with nosetests directly.
+most tests shipped with Galaxy can be run with nosetests/pytest/yarn directly.
 
 The main test types are as follows:
 
@@ -47,26 +49,32 @@ The main test types are as follows:
    framework twill to test ToolShed related functionality. These are
    located in test/shed_functional.
 
-Nose tests will allow specific tests to be selected per the documentation at
-https://nose.readthedocs.org/en/latest/usage.html#selecting-tests.  These are
-indicated with the optional parameter (test_path).  A few examples are:
+Python testing is currently a mix of nosetests and pytest, many tests when ran
+outside this script could be executed using either. pytest and Nose use slightly
+different syntaxes for selecting subsets of tests for execution. Nose
+will allow specific tests to be selected per the documentation at
+https://nose.readthedocs.org/en/latest/usage.html#selecting-tests. The comparable
+pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
+
+The spots these selectors can be used is described in the above usage documentation
+as ``test_path``.  A few examples are shown below.
 
 Run all API tests:
     ./run_tests.sh -api
 
 The same test as above can be run using nosetests directly as follows:
-    nosetests test/api
+    pytest test/api
 
-However when using nosetests directly output options defined in this
+However when using pytest directly output options defined in this
 file aren't respected and a new Galaxy instance will be created for each
 TestCase class (this scripts optimizes it so all tests can share a Galaxy
 instance).
 
 Run a full class of API tests:
-    ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase
+    ./run_tests.sh -api test/api/test_tools.py::ToolsTestCase
 
 Run a specific API test:
-    ./run_tests.sh -api test/api/test_tools.py:ToolsTestCase.test_map_over_with_output_format_actions
+    ./run_tests.sh -api test/api/test_tools.py::ToolsTestCase::test_map_over_with_output_format_actions
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
@@ -351,20 +359,8 @@ do
           ;;
       -a|-api|--api)
           with_framework_test_tools_arg="-with_framework_test_tools"
-          test_script="./scripts/functional_tests.py"
-          report_file="./run_api_tests.html"
-          if [ $# -gt 1 ]; then
-              api_script=$2
-              shift 2
-          else
-              api_script="./test/api"
-              shift 1
-          fi
-          ;;
-      -api_py3|--api_py3)
-          with_framework_test_tools_arg="-with_framework_test_tools"
           test_script="pytest"
-          report_file="./run_api_tests_python_3.html"
+          report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
               api_script=$2
               shift 2
@@ -498,19 +494,8 @@ do
           fi
           ;;
       -i|-integration|--integration)
-          report_file="run_integration_tests.html"
-          test_script="./scripts/nosetests.py"
-          if [ $# -gt 1 ]; then
-              integration_extra=$2
-              shift 2
-          else
-              integration_extra='test/integration'
-              shift 1
-          fi
-          ;;
-      -integration_py3|--integration_py3)
           test_script="pytest"
-          report_file="./run_api_tests_python_3.html"
+          report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
               integration_extra=$2
               shift 2

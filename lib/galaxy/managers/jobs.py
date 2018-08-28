@@ -203,7 +203,7 @@ class JobSearch(object):
                     return []
 
         for k, v in wildcard_param_dump.items():
-            wildcard_value = json.dumps(v).replace('"id": "__id_wildcard__"', '"id": %')
+            wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(model.JobParameter)
             conditions.append(and_(
                 model.Job.id == a.job_id,
@@ -239,7 +239,7 @@ class JobSearch(object):
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(and_(
                         a.name == k,
-                        a.value == json.dumps(v)
+                        a.value == json.dumps(v, sort_keys=True)
                     ))
             else:
                 job_parameter_conditions = [model.Job.id == job]

@@ -861,22 +861,34 @@ class Tool(Dictifiable):
 
     def test_data_path(self, filename):
         repository_dir = self._repository_dir
+        test_data = None
         if repository_dir:
-            for root, dirs, files in os.walk(repository_dir):
-                if '.hg' in dirs:
-                    dirs.remove('.hg')
-                if 'test-data' in dirs:
-                    test_data_dir = os.path.join(root, 'test-data')
-                    result = os.path.abspath(os.path.join(test_data_dir, filename))
-                    if not in_directory(result, test_data_dir):
-                        # Don't raise an explicit exception and reveal details about what
-                        # files are or are not on the path, simply return None and let the
-                        # API raise a 404.
-                        return None
-                    else:
-                        return result
+            return self.__walk_test_data(dir=repository_dir, filename=filename)
         else:
-            return self.app.test_data_resolver.get_filename(filename)
+            if self.tool_dir:
+                tool_dir = self.tool_dir
+                if isinstance(self, DataManagerTool):
+                    tool_dir = os.path.dirname(self.tool_dir)
+                test_data = self.__walk_test_data(tool_dir, filename=filename)
+        if not test_data:
+            test_data = self.app.test_data_resolver.get_filename(filename)
+        return test_data
+
+    def __walk_test_data(self, dir, filename):
+        for root, dirs, files in os.walk(dir):
+            if '.hg' in dirs:
+                dirs.remove('.hg')
+            if 'test-data' in dirs:
+                test_data_dir = os.path.join(root, 'test-data')
+                result = os.path.abspath(os.path.join(test_data_dir, filename))
+                if not in_directory(result, test_data_dir):
+                    # Don't raise an explicit exception and reveal details about what
+                    # files are or are not on the path, simply return None and let the
+                    # API raise a 404.
+                    return None
+                else:
+                    if os.path.exists(result):
+                        return result
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
@@ -2431,6 +2443,51 @@ class ZipCollectionTool(DatabaseOperationTool):
         )
 
 
+class BuildListCollectionTool(DatabaseOperationTool):
+    tool_type = 'build_list'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
+        new_elements = odict()
+
+        for i, incoming_repeat in enumerate(incoming["datasets"]):
+            new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
+            new_elements["%d" % i] = new_dataset
+
+        self._add_datasets_to_history(history, itervalues(new_elements))
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class ExtractDatasetCollectionTool(DatabaseOperationTool):
+    tool_type = 'extract_dataset'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
+        has_collection = incoming["input"]
+        if hasattr(has_collection, "element_type"):
+            # It is a DCE
+            collection = has_collection.element_object
+        else:
+            # It is an HDCA
+            collection = has_collection.collection
+
+        collection_type = collection.collection_type
+        assert collection_type in ["list", "paired"]
+        how = incoming["which"]["which_dataset"]
+        if how == "first":
+            extracted = collection.dataset_instances[0]
+        elif how == "by_identifier":
+            extracted = collection[incoming["which"]["identifier"]].element_object
+        elif how == "by_index":
+            extracted = collection[int(incoming["which"]["index"])].element_object
+        else:
+            raise Exception("Invalid tool parameters.")
+        extracted_o = extracted.copy(copy_tags=tags)
+        self._add_datasets_to_history(history, [extracted_o])
+
+        out_data["output"] = extracted_o
+
+
 class MergeCollectionTool(DatabaseOperationTool):
     tool_type = 'merge_collection'
 
@@ -2707,7 +2764,6 @@ class ApplyRulesTool(DatabaseOperationTool):
     tool_type = 'apply_rules'
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        log.info(incoming)
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
@@ -2835,6 +2891,7 @@ tool_types = {}
 for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
+                   BuildListCollectionTool, ExtractDatasetCollectionTool,
                    DataDestinationTool]:
     tool_types[tool_class.tool_type] = tool_class
 

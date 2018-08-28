@@ -356,6 +356,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             'source'              = 'new_collection' (default 'source' if type is
                                     'dataset_collection' - no need to specify this)
             'collection_type'     = For example, "list", "paired", "list:paired".
+            'copy_elements'       = Copy child HDAs when creating new collection,
+                                    defaults to False in the API but is set to True in the UI,
+                                    so that we can modify HDAs with tags when creating collections.
             'name'                = Name of new dataset collection.
             'element_identifiers' = Recursive list structure defining collection.
                                     Each element must have 'src' which can be
@@ -423,7 +426,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __create_hda_from_ldda(self, trans, content, history):
-        hda = None
         ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
@@ -493,11 +495,15 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     :type src: str
                     :param id: identifier
                     :type id: str
+                    :param id: tags
+                    :type id: list
                 :type element: dict
             :type name: list
             :param name: name of the collection
             :type name: str
             :param hide_source_items: whether to mark the original hdas as hidden
+            :type name: bool
+            :param copy_elements: whether to copy HDAs when creating collection
             :type name: bool
         :type  payload: dict
 
@@ -510,21 +516,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         source = kwd.get("source", payload.get("source", "new_collection"))
 
-        def convert_lddas(element_identifiers):
-            for ei in element_identifiers:
-                src = ei.get("src")
-                if src == "ldda":
-                    # Convert lddas to hdas since there is no direct representation of library items in history.
-                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
-                    ei["id"] = trans.security.encode_id(hda.id)
-                    ei["src"] = "hda"
-                elif src == "new_collection" and "element_identifiers" in ei:
-                    convert_lddas(ei["element_identifiers"])
-
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
-            convert_lddas(payload.get("element_identifiers", []))
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
@@ -552,6 +546,59 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                 user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")
+
+    @expose_api
+    def show_roles(self, trans, encoded_dataset_id, **kwd):
+        """
+        Display information about current or available roles for a given dataset permission.
+
+        * GET /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to query
+        :type   encoded_dataset_id:      an encoded id string
+
+        :returns:   either dict of current roles for all permission types
+                    or dict of available roles to choose from (is the same for any permission type)
+        :rtype:     dictionary
+
+        :raises: InsufficientPermissionsException
+        """
+        hda = self.hda_manager.get_owned(self.decode_id(encoded_dataset_id), trans.user, current_history=trans.history, trans=trans)
+        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
+
+    @expose_api
+    def update_permissions(self, trans, history_id, history_content_id, payload=None, **kwd):
+        """
+        Set permissions of the given library dataset to the given role ids.
+
+        * PUT /api/histories/{history_id}/contents/datasets/{encoded_dataset_id}/permissions
+
+        :param  encoded_dataset_id:      the encoded id of the dataset to update permissions of
+        :type   encoded_dataset_id:      an encoded id string
+        :param   payload: dictionary structure containing:
+            :param  action:     (required) describes what action should be performed
+                                available actions: make_private, remove_restrictions, set_permissions
+            :type   action:     string
+            :param  access_ids[]:      list of Role.id defining roles that should have access permission on the dataset
+            :type   access_ids[]:      string or list
+            :param  manage_ids[]:      list of Role.id defining roles that should have manage permission on the dataset
+            :type   manage_ids[]:      string or list
+            :param  modify_ids[]:      list of Role.id defining roles that should have modify permission on the library dataset item
+            :type   modify_ids[]:      string or list
+        :type:      dictionary
+
+        :returns:   dict of current roles for all available permission types
+        :rtype:     dictionary
+
+        :raises: RequestParameterInvalidException, ObjectNotFound, InsufficientPermissionsException, InternalServerError
+                    RequestParameterMissingException
+        """
+        if payload:
+            kwd.update(payload)
+        hda = self.hda_manager.get_owned(self.decode_id(history_content_id), trans.user, current_history=trans.history, trans=trans)
+        assert hda is not None
+        self.hda_manager.update_permissions(trans, hda, **kwd)
+        return self.hda_manager.serialize_dataset_association_roles(trans, hda)
 
     @expose_api_anonymous
     def update(self, trans, history_id, id, payload, **kwd):
@@ -587,7 +634,8 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
     def __update_dataset(self, trans, history_id, id, payload, **kwd):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        if trans.user is None:
+        anonymous_user = not trans.user_is_admin() and trans.user is None
+        if anonymous_user:
             hda = self.hda_manager.by_id(self.decode_id(id))
             if hda.history != trans.history:
                 raise exceptions.AuthenticationRequired('API authentication required for this request')
@@ -602,7 +650,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # logged in user: use full payload, check state if deleting, and make sure the history is theirs
         else:
-            hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+            hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history, trans=trans)
 
             # only check_state if not deleting, otherwise cannot delete uploading files
             check_state = not payload.get('deleted', False)
