@@ -698,6 +698,10 @@ class PageController(BaseUIController, SharableMixin,
                                    email=email,
                                    use_panels=use_panels)
 
+    def _placeholderRenderForSave(self, trans, item_class, item_id):
+        decoded_item_id = self.app.security.decode_id(item_id)
+        return '<div class="embedded-item history placeholder" id="%s-%s"></div>' % (item_class, decoded_item_id)
+
     @web.expose
     @web.require_login()
     def save(self, trans, id, content, annotations):
@@ -707,6 +711,10 @@ class PageController(BaseUIController, SharableMixin,
 
         # Sanitize content
         content = sanitize_html(content)
+        processor = _PageContentProcessor(trans, self._placeholderRenderForSave)
+        processor.feed(content)
+        # Output is string, so convert to unicode for saving.
+        content = unicodify(processor.output(), 'utf-8')
 
         # Add a new revision to the page with the provided content.
         page_revision = model.PageRevision()
@@ -901,12 +909,10 @@ class PageController(BaseUIController, SharableMixin,
     def get_item(self, trans, id):
         return self.get_page(trans, id)
 
-    def _get_embedded_history_html(self, trans, id):
+    def _get_embedded_history_html(self, trans, decoded_id):
         """
         Returns html suitable for embedding in another page.
         """
-        # TODO: should be moved to history controller and/or called via ajax from the template
-        decoded_id = self.decode_id(id)
         # histories embedded in pages are set to importable when embedded, check for access here
         history = self.history_manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
 
@@ -929,11 +935,11 @@ class PageController(BaseUIController, SharableMixin,
                                      content_dicts=contents)
         return filled
 
-    def _get_embedded_visualization_html(self, trans, id):
+    def _get_embedded_visualization_html(self, trans, encoded_id):
         """
         Returns html suitable for embedding visualizations in another page.
         """
-        visualization = self.get_visualization(trans, id, False, True)
+        visualization = self.get_visualization(trans, encoded_id, False, True)
         visualization.annotation = self.get_item_annotation_str(trans.sa_session, visualization.user, visualization)
         if not visualization:
             return None
@@ -955,11 +961,20 @@ class PageController(BaseUIController, SharableMixin,
     def _get_embed_html(self, trans, item_class, item_id):
         """ Returns HTML for embedding an item in a page. """
         item_class = self.get_class(item_class)
+        # Assume if item id is integer and less than 10**15, it's unencoded.
+        try:
+            decoded_id = int(item_id)
+            encoded_id = self.app.security.encode_id(item_id)
+        except ValueError:
+            # It's an encoded id.
+            encoded_id = item_id
+            decoded_id = self.app.security.decode_id(item_id)
+        decoded_id = trans.app.security.decode_id(encoded_id)
+        # These will all first try an unencoded id, then retry with an encoded one.
         if item_class == model.History:
-            return self._get_embedded_history_html(trans, item_id)
+            return self._get_embedded_history_html(trans, decoded_id)
 
         elif item_class == model.HistoryDatasetAssociation:
-            decoded_id = self.decode_id(item_id)
             dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
             dataset = self.hda_manager.error_if_uploading(dataset)
 
@@ -969,14 +984,14 @@ class PageController(BaseUIController, SharableMixin,
                 return trans.fill_template("dataset/embed.mako", item=dataset, item_data=data)
 
         elif item_class == model.StoredWorkflow:
-            workflow = self.get_stored_workflow(trans, item_id, False, True)
+            workflow = self.get_stored_workflow(trans, encoded_id, False, True)
             workflow.annotation = self.get_item_annotation_str(trans.sa_session, workflow.user, workflow)
             if workflow:
                 self.get_stored_workflow_steps(trans, workflow)
                 return trans.fill_template("workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps)
 
         elif item_class == model.Visualization:
-            return self._get_embedded_visualization_html(trans, item_id)
+            return self._get_embedded_visualization_html(trans, encoded_id)
 
         elif item_class == model.Page:
             pass
