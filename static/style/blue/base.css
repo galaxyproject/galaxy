@@ -10780,12 +10780,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   border: 2px solid #c2ebc2;
   background: #e8f8e8 !important; }
 
-.ui-limitloader {
-  padding: 10px;
-  float: left;
-  font-weight: bold;
-  display: none; }
-
 .select2-container .select2-choice,
 .select2-container .select2-choices {
   border: 1px solid #aaa; }
