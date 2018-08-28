@@ -10453,15 +10453,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .ui-form-element-disabled .ui-form-title {
   font-weight: normal; }
 
-.ui-form-separator {
-  font-weight: bold;
-  font-size: 0.9em; }
-
-.ui-form-error {
-  display: none; }
-  .ui-form-error .ui-form-error-text {
-    padding-left: 1rem; }
-
 .ui-form-composite {
   height: 100%;
   flex-direction: column;

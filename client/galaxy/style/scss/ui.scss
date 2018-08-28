@@ -217,18 +217,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-form-separator {
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-.ui-form-error {
-    display: none;
-    .ui-form-error-text {
-        padding-left: $ui-margin-horizontal;
-    }
-}
-
 .ui-form-composite {
     height: 100%;
     flex-direction: column;
