@@ -275,7 +275,7 @@ RadioButton.View = Base.extend({
                 type: "radio",
                 name: this.model.id,
                 value: pair.value
-            })
+            }).hide()
         );
         if (pair.label) {
             $el.append(pair.label);

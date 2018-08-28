@@ -468,17 +468,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-radiobutton {
-    top: -2px;
-    input {
-        display: none;
-    }
-    label {
-        padding: 2px 10px;
-        margin: 0px;
-    }
-}
-
 .ui-color-picker {
     .ui-color-picker-header {
         cursor: pointer;
@@ -560,7 +549,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     position: relative;
     .icon-dropdown {
         position: absolute;
-        top: 7px;
+        top: 10px;
         right: 8px;
         cursor: pointer;
     }
@@ -568,21 +557,13 @@ $ui-margin-horizontal-large: $margin-v * 2;
         display: none;
     }
     select {
-        position: relative;
-        top: 0px;
-        height: 27px;
-        width: 100%;
-        padding-right: 20px;
         @extend .ui-input-basic;
         cursor: pointer;
-        padding-left: 5px;
     }
     .select2-container {
         width: 100%;
         .select2-choice {
-            height: 27px;
             @extend .ui-input-basic;
-            padding-left: 5px;
             .select2-arrow {
                 display: none;
             }
@@ -643,38 +624,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
     background: lighten($state-success-bg, 10%) !important;
 }
 
-// global select2 adjustments
-.select2-container .select2-choice,
-.select2-container .select2-choices {
+// select2 adjustments
+.select2-drop-active,
+.select2-drop-above.select2-drop-active {
     border: 1px solid $input-border;
-}
-.select2-dropdown-open .select2-choice,
-.select2-dropdown-open .select2-choices {
-    border: 1px solid $input-border;
-    border-bottom-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-}
-.select2-dropdown-open.select2-drop-above .select2-choice,
-.select2-dropdown-open.select2-drop-above .select2-choices {
-    border: 1px solid $input-border;
-    border-top-left-radius: 0px;
-    border-top-right-radius: 0px;
-}
-.select2-drop-active {
-    border: 1px solid $input-border;
-    border-radius: $input-border-radius;
-    border-top-left-radius: 0px;
-    border-top-right-radius: 0px;
     .select2-search {
-        padding-top: 5px;
-    }
-}
-.select2-drop.select2-drop-above.select2-drop-active {
-    border: 1px solid $input-border;
-    border-radius: $input-border-radius;
-    border-bottom-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-    .select2-search {
-        padding-top: 0px;
+        @extend .pt-1;
     }
 }

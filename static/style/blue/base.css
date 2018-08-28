@@ -5639,7 +5639,8 @@ button.bg-dark:focus {
 .p-1 {
   padding: 0.25rem !important; }
 
-.pt-1,
+.pt-1, .select2-drop-active .select2-search,
+.select2-drop-above.select2-drop-active .select2-search,
 .py-1 {
   padding-top: 0.25rem !important; }
 
@@ -10650,14 +10651,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   .ui-options .ui-options-list input[type="radio"]:checked + label:before {
     content: "\f192"; }
 
-.ui-radiobutton {
-  top: -2px; }
-  .ui-radiobutton input {
-    display: none; }
-  .ui-radiobutton label {
-    padding: 2px 10px;
-    margin: 0px; }
-
 .ui-color-picker .ui-color-picker-header {
   cursor: pointer; }
 
@@ -10723,26 +10716,17 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   position: relative; }
   .ui-select .icon-dropdown {
     position: absolute;
-    top: 7px;
+    top: 10px;
     right: 8px;
     cursor: pointer; }
   .ui-select .icon-resize {
     display: none; }
   .ui-select select {
-    position: relative;
-    top: 0px;
-    height: 27px;
-    width: 100%;
-    padding-right: 20px;
-    cursor: pointer;
-    padding-left: 5px; }
+    cursor: pointer; }
   .ui-select .select2-container {
     width: 100%; }
-    .ui-select .select2-container .select2-choice {
-      height: 27px;
-      padding-left: 5px; }
-      .ui-select .select2-container .select2-choice .select2-arrow {
-        display: none; }
+    .ui-select .select2-container .select2-choice .select2-arrow {
+      display: none; }
   .ui-select .select2-container-multi .select2-choices {
     padding: 0px; }
 
@@ -10780,37 +10764,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   border: 2px solid #c2ebc2;
   background: #e8f8e8 !important; }
 
-.select2-container .select2-choice,
-.select2-container .select2-choices {
+.select2-drop-active,
+.select2-drop-above.select2-drop-active {
   border: 1px solid #aaa; }
-
-.select2-dropdown-open .select2-choice,
-.select2-dropdown-open .select2-choices {
-  border: 1px solid #aaa;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px; }
-
-.select2-dropdown-open.select2-drop-above .select2-choice,
-.select2-dropdown-open.select2-drop-above .select2-choices {
-  border: 1px solid #aaa;
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px; }
-
-.select2-drop-active {
-  border: 1px solid #aaa;
-  border-radius: 0.25rem;
-  border-top-left-radius: 0px;
-  border-top-right-radius: 0px; }
-  .select2-drop-active .select2-search {
-    padding-top: 5px; }
-
-.select2-drop.select2-drop-above.select2-drop-active {
-  border: 1px solid #aaa;
-  border-radius: 0.25rem;
-  border-bottom-left-radius: 0px;
-  border-bottom-right-radius: 0px; }
-  .select2-drop.select2-drop-above.select2-drop-active .select2-search {
-    padding-top: 0px; }
 
 label {
   font-weight: normal; }
