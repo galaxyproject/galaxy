@@ -222,8 +222,8 @@ export var View = Backbone.View.extend({
             .append(
                 $("<div/>")
                     .addClass("portlet-content")
-                    .append($("<div/>").addClass("portlet-body mt-3"))
-                    .append($("<div/>").addClass("portlet-buttons mt-3"))
+                    .append($("<div/>").addClass("portlet-body"))
+                    .append($("<div/>").addClass("portlet-buttons mt-3 mb-3"))
             )
             .append($("<div/>").addClass("portlet-backdrop"));
     }

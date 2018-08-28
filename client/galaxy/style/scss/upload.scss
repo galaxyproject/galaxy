@@ -199,7 +199,10 @@
                 width: 175px;
             }
             .upload-source {
-                width: 70px;
+                width: 80px;
+                .btn {
+                    padding: 0px 10px;
+                }
             }
         }
     }

@@ -33,7 +33,7 @@ export var Message = Backbone.View.extend({
         var status = this.model.get("status");
         this.$el
             .removeClass()
-            .addClass(`alert alert-${status}`)
+            .addClass(`alert alert-${status} mt-2`)
             .addClass(this.model.get("cls"));
         if (this.model.get("message")) {
             this.$el.html(this.messageForDisplay());

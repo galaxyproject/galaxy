@@ -37,21 +37,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     float: none !important;
 }
 
-.ui-column {
-    .ui-column-left {
-        width: 49%;
-        float: left;
-        .ui-message {
-            margin-top: 5px;
-        }
-    }
-    .ui-column-right {
-        width: 49%;
-        float: right;
-        margin-top: 5px;
-    }
-}
-
 .ui-modal {
     display: none;
     overflow: auto;
