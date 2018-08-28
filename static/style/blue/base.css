@@ -5541,7 +5541,23 @@ button.bg-dark:focus {
 .mx-1 {
   margin-left: 0.25rem !important; }
 
-.m-2 {
+.m-2, .charts-client .charts-right .alert, .charts-client .charts-right .errormessagelarge, .charts-client .charts-right .error-modal .modal-content, .error-modal .charts-client .charts-right .modal-content, .charts-client .charts-right
+.warningmessagelarge, .charts-client .charts-right
+.donemessagelarge, .charts-client .charts-right
+.infomessagelarge, .charts-client .charts-right
+.ui-form-help .error,
+.ui-form-help .charts-client .charts-right .error, .charts-client .charts-right
+.ui-form-help .warning,
+.ui-form-help .charts-client .charts-right .warning, .charts-client .charts-right
+.ui-form-help .note,
+.ui-form-help .charts-client .charts-right .note, .charts-client .charts-right .errormessage, .charts-client .charts-right
+.warningmessage, .charts-client .charts-right
+.donemessage, .charts-client .charts-right
+.infomessage, .charts-client .charts-right
+.errormessagesmall, .charts-client .charts-right
+.warningmessagesmall, .charts-client .charts-right
+.donemessagesmall, .charts-client .charts-right
+.infomessagesmall {
   margin: 0.5rem !important; }
 
 .mt-2,
@@ -12080,9 +12096,6 @@ button.toast-close-button {
   overflow: hidden;
   display: flex;
   flex-direction: column; }
-  .charts-client .charts-right .ui-message {
-    margin: 5px;
-    width: auto; }
   .charts-client .charts-right .charts-editor {
     display: block;
     flex: 1;

@@ -62,9 +62,8 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        .ui-message {
-            margin: 5px;
-            width: auto;
+        .alert {
+            @extend .m-2;
         }
         .charts-editor {
             display: block;
