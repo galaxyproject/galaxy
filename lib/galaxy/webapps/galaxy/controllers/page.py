@@ -970,7 +970,6 @@ class PageController(BaseUIController, SharableMixin,
             encoded_id = item_id
             decoded_id = self.app.security.decode_id(item_id)
         decoded_id = trans.app.security.decode_id(encoded_id)
-        # These will all first try an unencoded id, then retry with an encoded one.
         if item_class == model.History:
             return self._get_embedded_history_html(trans, decoded_id)
 
