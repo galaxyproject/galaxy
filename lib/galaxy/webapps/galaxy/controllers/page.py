@@ -698,10 +698,6 @@ class PageController(BaseUIController, SharableMixin,
                                    email=email,
                                    use_panels=use_panels)
 
-    def _placeholderRenderForSave(self, trans, item_class, item_id):
-        decoded_item_id = self.app.security.decode_id(item_id)
-        return '<div class="embedded-item history placeholder" id="%s-%s"></div>' % (item_class, decoded_item_id)
-
     @web.expose
     @web.require_login()
     def save(self, trans, id, content, annotations):
@@ -711,7 +707,7 @@ class PageController(BaseUIController, SharableMixin,
 
         # Sanitize content
         content = sanitize_html(content)
-        processor = _PageContentProcessor(trans, self._placeholderRenderForSave)
+        processor = _PageContentProcessor(trans, _placeholderRenderForSave)
         processor.feed(content)
         # Output is string, so convert to unicode for saving.
         content = unicodify(processor.output(), 'utf-8')
@@ -994,3 +990,11 @@ class PageController(BaseUIController, SharableMixin,
 
         elif item_class == model.Page:
             pass
+
+
+def _placeholderRenderForSave(trans, item_class, item_id):
+    try:
+        decoded_item_id = int(item_id)
+    except ValueError:
+        decoded_item_id = trans.app.security.decode_id(item_id)
+    return '<div class="embedded-item history placeholder" id="%s-%s"></div>' % (item_class, decoded_item_id)
