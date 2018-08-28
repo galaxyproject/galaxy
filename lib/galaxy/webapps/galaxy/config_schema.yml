@@ -528,7 +528,7 @@ mapping:
 
       sniff_compressed_dynamic_datatypes_default:
         type: bool
-        default: false
+        default: true
         required: false
         desc: |
           Enable sniffing of compressed datatypes. This can be configured/overridden

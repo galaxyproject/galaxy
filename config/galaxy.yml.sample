@@ -408,7 +408,7 @@ galaxy:
   # configured/overridden on a per-datatype basis in the
   # datatypes_conf.xml file. With this option set to False the
   # compressed datatypes will be unpacked before sniffing.
-  #sniff_compressed_dynamic_datatypes_default: false
+  #sniff_compressed_dynamic_datatypes_default: true
 
   # Disable the 'Auto-detect' option for file uploads
   #datatypes_disable_auto: false

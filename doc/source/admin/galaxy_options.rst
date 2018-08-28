@@ -688,7 +688,7 @@
     configured/overridden on a per-datatype basis in the
     datatypes_conf.xml file. With this option set to False the
     compressed datatypes will be unpacked before sniffing.
-:Default: ``false``
+:Default: ``true``
 :Type: bool
 
 
