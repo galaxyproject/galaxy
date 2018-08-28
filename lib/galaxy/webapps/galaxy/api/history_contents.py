@@ -356,6 +356,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             'source'              = 'new_collection' (default 'source' if type is
                                     'dataset_collection' - no need to specify this)
             'collection_type'     = For example, "list", "paired", "list:paired".
+            'copy_elements'       = Copy child HDAs when creating new collection,
+                                    defaults to False in the API but is set to True in the UI,
+                                    so that we can modify HDAs with tags when creating collections.
             'name'                = Name of new dataset collection.
             'element_identifiers' = Recursive list structure defining collection.
                                     Each element must have 'src' which can be
@@ -423,7 +426,6 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             user=trans.user, trans=trans, **self._parse_serialization_params(kwd, 'detailed'))
 
     def __create_hda_from_ldda(self, trans, content, history):
-        hda = None
         ld = self.get_library_dataset(trans, content)
         if type(ld) is not trans.app.model.LibraryDataset:
             raise exceptions.RequestParameterInvalidException(
@@ -493,11 +495,15 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     :type src: str
                     :param id: identifier
                     :type id: str
+                    :param id: tags
+                    :type id: list
                 :type element: dict
             :type name: list
             :param name: name of the collection
             :type name: str
             :param hide_source_items: whether to mark the original hdas as hidden
+            :type name: bool
+            :param copy_elements: whether to copy HDAs when creating collection
             :type name: bool
         :type  payload: dict
 
@@ -510,21 +516,9 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         """
         source = kwd.get("source", payload.get("source", "new_collection"))
 
-        def convert_lddas(element_identifiers):
-            for ei in element_identifiers:
-                src = ei.get("src")
-                if src == "ldda":
-                    # Convert lddas to hdas since there is no direct representation of library items in history.
-                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
-                    ei["id"] = trans.security.encode_id(hda.id)
-                    ei["src"] = "hda"
-                elif src == "new_collection" and "element_identifiers" in ei:
-                    convert_lddas(ei["element_identifiers"])
-
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
-            convert_lddas(payload.get("element_identifiers", []))
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,

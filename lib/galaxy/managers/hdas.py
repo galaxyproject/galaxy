@@ -97,25 +97,13 @@ class HDAManager(datasets.DatasetAssociationManager,
             self.session().flush()
         return hda
 
-    def copy(self, hda, history=None, **kwargs):
+    def copy(self, hda, history=None, hide_copy=False, **kwargs):
         """
-        Copy and return the given HDA.
+        Copy hda, including annotation and tags, add to history and return the given HDA.
         """
-        # TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
-        # return hda.copy()
-        copy = model.HistoryDatasetAssociation(
-            name=hda.name,
-            info=hda.info,
-            blurb=hda.blurb,
-            peek=hda.peek,
-            tool_version=hda.tool_version,
-            extension=hda.extension,
-            dbkey=hda.dbkey,
-            dataset=hda.dataset,
-            visible=hda.visible,
-            deleted=hda.deleted,
-            parent_id=kwargs.get('parent_id', None),
-        )
+        copy = hda.copy(parent_id=kwargs.get('parent_id'), copy_hid=False)
+        if hide_copy:
+            copy.visible = False
         # add_dataset will update the hid to the next avail. in history
         if history:
             history.add_dataset(copy)
@@ -124,24 +112,11 @@ class HDAManager(datasets.DatasetAssociationManager,
         copy.set_size()
 
         original_annotation = self.annotation(hda)
-        self.annotate(copy, original_annotation, user=history.user)
+        self.annotate(copy, original_annotation, user=hda.history.user)
 
-        # TODO: update from kwargs?
-
-        # Need to set after flushed, as MetadataFiles require dataset.id
-        self.session().add(copy)
-        self.session().flush()
-        copy.metadata = hda.metadata
-
-        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        if not hda.datatype.copy_safe_peek:
-            copy.set_peek()
-
-        self.session().flush()
-
-        # these use a second session flush and need to be after the first
+        # these use a session flush
         original_tags = self.get_tags(hda)
-        self.set_tags(copy, original_tags, user=history.user)
+        self.set_tags(copy, original_tags, user=hda.history.user)
 
         return copy
 
