@@ -808,10 +808,10 @@ class OutputCollections(object):
                     for value in elements.values():
                         # Either a HDA (if) or a DatasetCollection or a recursive dict.
                         if getattr(value, "history_content_type", None) == "dataset":
-                            assert value.history is not None
+                            assert value.history is not None or value.history_id is not None
                         elif hasattr(value, "dataset_instances"):
                             for dataset in value.dataset_instances:
-                                assert dataset.history is not None
+                                assert dataset.history is not None or dataset.history_id is not None
                         else:
                             assert value["src"] == "new_collection"
                             check_elements(value["elements"])
