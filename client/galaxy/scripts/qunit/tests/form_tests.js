@@ -62,7 +62,7 @@ QUnit.test("tool-form", function(assert) {
         .parent()
         .click();
     assert.ok(
-        form.$(".ui-message").html() ===
+        form.$(".alert").html() ===
             '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://galaxyproject.org/tools/requirements/">here</a> for more information.</span>',
         "Check requirements message"
     );
