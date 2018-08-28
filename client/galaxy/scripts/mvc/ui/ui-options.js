@@ -37,7 +37,7 @@ var Base = Backbone.View.extend({
             .empty()
             .removeClass()
             .addClass("ui-options")
-            .append((this.$message = $("<div/>")))
+            .append((this.$message = $("<div/>").addClass("mt-2")))
             .append((this.$menu = $("<div/>").addClass("ui-options-menu")))
             .append((this.$options = $(this._template())));
 

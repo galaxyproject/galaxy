@@ -129,18 +129,16 @@ var View = Backbone.View.extend({
                         </div>
                         <div class="ui-list-select col pr-0"/>
                     </div>
-                    <div class="ui-list-message row"/>
+                    <div class="ui-list-message mt-2 row"/>
                     <div class="ui-list-selections mt-2"/>
                 </div>`;
     },
 
     /** Row Template */
     _templateRow: function(options) {
-        return `<div id="${options.id}" class="ui-list-id row mt-1">
-                    <div class="col-1 pl-0">
-                        <button class="ui-list-delete fa fa-trash"/>
-                    </div>
-                    <div class="ui-list-name col">${options.name}</span>
+        return `<div id="${options.id}" class="ui-list-id row mt-2">
+                    <button class="ui-list-delete fa fa-trash mr-3"/>
+                    <div class="ui-list-name">${options.name}</span>
                 </div>`;
     }
 });

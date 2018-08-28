@@ -207,7 +207,7 @@ var ButtonIcon = ButtonDefault.extend({
                 title: "",
                 icon: "",
                 visible: true,
-                cls: "ui-button-icon",
+                cls: "btn btn-secondary float-right",
                 disabled: false
             }).set(options);
         this.setElement(
@@ -257,7 +257,7 @@ var ButtonMenu = ButtonDefault.extend({
                 pull: "right",
                 icon: null,
                 onclick: null,
-                cls: "ui-button-icon",
+                cls: "btn btn-secondary float-right",
                 tooltip: "",
                 target: "",
                 href: "",

@@ -1,16 +1,14 @@
 .charts-client {
     .charts-buttons {
-        float: right;
-        margin: 5px 0px;
+        @extend .float-right;
+        @extend .m-2;
         z-index: 1000;
-        .ui-button-icon {
-            display: block;
+        .btn {
             background: white;
             color: #666;
-            border-color: white;
+            border: none;
             .icon {
-                font-size: 1.2em;
-                line-height: 1.2em;
+                font-size: 1.5em;
             }
             .fa-check-square {
                 color: $state-success-text;
@@ -69,7 +67,7 @@
             display: block;
             flex: 1;
             overflow: auto;
-            padding: 5px 10px 10px 5px;
+            padding: 5px 10px 30px 5px;
             .charts-description {
                 margin-bottom: 20px;
                 .charts-description-image-td {

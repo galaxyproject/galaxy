@@ -17,7 +17,7 @@ export var View = Backbone.View.extend({
             icon: "fa-plus",
             title: `Insert ${this.options.title}`,
             tooltip: `Add new ${this.options.title} block`,
-            cls: "ui-button-icon ui-clear-float form-repeat-add",
+            cls: "btn btn-secondary ui-clear-float form-repeat-add",
             onclick: function() {
                 if (options.onnew) {
                     options.onnew();

@@ -135,7 +135,7 @@ export default Backbone.View.extend({
             .append(
                 $("<div/>")
                     .addClass("ui-form-error")
-                    .append($("<span/>").addClass("fa fa-arrow-down"))
+                    .append($("<span/>").addClass("fa fa-arrow-down mr-1"))
                     .append($("<span/>").addClass("ui-form-error-text"))
             )
             .append(
