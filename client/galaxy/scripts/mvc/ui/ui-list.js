@@ -124,7 +124,7 @@ var View = Backbone.View.extend({
     _template: function(options) {
         return  `<div class="ui-list container">
                     <div class="row">
-                        <div class="col-1 pl-0">
+                        <div class="col-1 pl-0 mb-2">
                             <div class="ui-list-button"/>
                         </div>
                         <div class="ui-list-select col pr-0"/>

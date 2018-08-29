@@ -349,20 +349,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 // input elements
 .ui-input {
-    width: 100%;
-    display: block;
+    @extend .form-control;
+    @extend .pt-1;
+    @extend .pl-2;
     height: $input-height;
-    padding: $padding-base-vertical $ui-margin-horizontal !important;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-    color: $input-color;
-    border: 1px solid $input-border;
-    border-radius: $input-border-radius;
-    @include box-shadow(inset 0 1px 1px rgba(0, 0, 0, 0.075));
-    background-image: none;
-    background: transparent;
-    -webkit-appearance: none;
-    -moz-border-radius: $border-radius-base;
     &[disabled],
     &[readonly],
     fieldset[disabled] & {
@@ -489,24 +479,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     }
 }
 
-.ui-gs-select-file {
-    .ui-gs-filename-textbox {
-        float: right;
-        width: calc(100% - 76px);
-    }
-    .ui-gs-browse-button {
-        float: left;
-        .ui-button-icon {
-            margin-top: 3px;
-            margin-right: 5px;
-        }
-    }
-    .ui-gs-browse-field {
-        height: $input-height;
-        line-height: $line-height-base;
-    }
-}
-
 .ui-select {
     position:relative;
     .icon-dropdown {
@@ -523,6 +495,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
         width: 100%;
         .select2-choice {
             @extend .ui-input;
+            background-image: none;
+            background: transparent;
+            -webkit-appearance: none;
+            -moz-border-radius: $border-radius-base;
             line-height: 1.5rem;
             .select2-arrow {
                 display: none;
