@@ -100,20 +100,6 @@ QUnit.test("button-default", function(assert) {
     assert.ok(button.$title.html() == model.get("title"), "Shows correct regular title");
 });
 
-QUnit.test("button-icon", function(assert) {
-    var button = new Ui.ButtonIcon({ title: "title" });
-    var model = button.model;
-    $("body").prepend(button.$el);
-    assert.ok(button.$title.html() == "title", "Has correct title");
-    model.set("title", "_title");
-    assert.ok(button.$title.html() == "_title", "Has correct new title");
-    assert.ok(!button.$el.attr("disabled"), "Button active");
-    model.set("disabled", true);
-    assert.ok(button.$el.attr("disabled"), "Button disabled");
-    model.set("disabled", false);
-    assert.ok(!button.$el.attr("disabled"), "Button active, again");
-});
-
 QUnit.test("button-check", function(assert) {
     var button = new Ui.ButtonCheck({ title: "title" });
     var model = button.model;
