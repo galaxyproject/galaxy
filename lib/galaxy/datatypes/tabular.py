@@ -1161,3 +1161,47 @@ class ConnectivityTable(Tabular):
         ck_data_body = re.sub('[ ]+', '\t', ck_data_body)
 
         return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
+
+
+@dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
+class Gro(Tabular):
+    file_ext = 'gro'
+
+    def __init__(self, **kwd):
+        """Initialize gro datatype"""
+        super(Gro, self).__init__(**kwd)
+
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset)
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Determines whether the file is a Gro structure file
+
+        To be sniffed as True the last six columns of each line must be convertible to float.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'md.gro' )
+        >>> Gro().sniff( fname )
+        True
+        >>> fname = get_test_fname( '1.sam' )
+        >>> Gro().sniff( fname )
+        False
+        """
+        fh = file_prefix.string_io()
+        count = 0
+
+        lines = fh.read()[:-1].split('\n')[2:-1] # remove two header and one footer lines
+
+        for line in lines:
+            line_pieces = line.split()
+            try:
+                for n in range(-6, 0):
+                    float(line_pieces[n])
+            except ValueError:
+                return False
+        else:
+            return True

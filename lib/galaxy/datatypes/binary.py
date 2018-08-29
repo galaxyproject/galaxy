@@ -741,7 +741,7 @@ class Trr(Binary):
     Class describing an trr file from the GROMACS suite
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('em.trr')
+    >>> fname = get_test_fname('md.trr')
     >>> Trr().sniff(fname)
     True
     >>> fname = get_test_fname('interval.interval')
@@ -776,7 +776,88 @@ class Trr(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary GROMACS trr file (%s)" % (nice_size(dataset.get_size()))
+            return "Binary GROMACS trr trajectory file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Cpt(Binary):
+    """
+    Class describing a checkpoint (.cpt) file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.cpt')
+    >>> Cpt().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Cpt().sniff(fname)
+    False
+    """
+    file_ext = "cpt"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = 171817
+
+    def sniff(self, filename):
+        # The first 4 bytes of any cpt file containing 171817
+        try:
+            header = open(filename, 'rb').read(struct.calcsize('>1i'))
+            if struct.unpack('>1i', header)[0] == self._magic_number:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GROMACS checkpoint file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary GROMACS checkpoint file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Xtc(Binary):
+    """
+    Class describing an xtc file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.xtc')
+    >>> Xtc().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Xtc().sniff(fname)
+    False
+    """
+    file_ext = "xtc"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = 1995
+
+    def sniff(self, filename):
+        # The first 4 bytes of any trr file containing 1995
+        try:
+            header = open(filename, 'rb').read(struct.calcsize('>1i'))
+            if struct.unpack('>1i', header)[0] == self._magic_number:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GROMACS xtc trajectory file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
 
 class Biom2(H5):

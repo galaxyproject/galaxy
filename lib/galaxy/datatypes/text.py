@@ -573,3 +573,37 @@ class IQTree(Text):
         False
         """
         return file_prefix.startswith("IQ-TREE")
+
+class Top(Text):
+    """Class describing an gromacs topology file"""
+    file_ext = "top"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Topology file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def get_mime(self):
+        """Returns the mime type of the datatype"""
+        return 'text/top'
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Detects .top file --> http://manual.gromacs.org/online/top.html
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'complete.bed' )
+        >>> Top().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'topol.top' )
+        >>> Top().sniff( fname )
+        True
+        """
+        headers = iter_headers(file_prefix, '\n')
+        for i, hdr in enumerate(headers):
+            if hdr[0] == '[ atoms ]':
+                return True
+        return False
