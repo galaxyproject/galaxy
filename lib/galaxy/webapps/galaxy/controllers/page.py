@@ -992,9 +992,31 @@ class PageController(BaseUIController, SharableMixin,
             pass
 
 
+PLACEHOLDER_TEMPLATE = '''
+<div class="embedded-item {class_shorthand_lower} placeholder" id="{item_class}-{item_id}">
+    <p class="title">Embedded Galaxy {class_shorthand} - '{item_name}'</p>
+    <p class="content">[Do not edit this block; Galaxy will fill it in with the annotated {class_shorthand} when it is displayed]</p>
+</div>'''
+
+# This is a mapping of the id portion of page contents to the cssclass/shortname.
+PAGE_CLASS_MAPPING = {
+    'History': 'History',
+    'HistoryDatasetAssociation': 'Dataset',
+    'StoredWorkflow': 'Workflow',
+    'Visualization': 'Visualization'
+}
+
+
 def _placeholderRenderForSave(trans, item_class, item_id):
     try:
         decoded_item_id = int(item_id)
     except ValueError:
         decoded_item_id = trans.app.security.decode_id(item_id)
-    return '<div class="embedded-item history placeholder" id="%s-%s"></div>' % (item_class, decoded_item_id)
+    class_shorthand = PAGE_CLASS_MAPPING[item_class]
+    return PLACEHOLDER_TEMPLATE.format(
+        item_class=item_class,
+        class_shorthand=class_shorthand,
+        class_shorthand_lower=class_shorthand.lower(),
+        item_id=decoded_item_id,
+        item_name=''
+    )
