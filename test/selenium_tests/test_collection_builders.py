@@ -19,7 +19,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(2)
+        self.history_panel_wait_for_hid_ok(3)
 
     @selenium_test
     def test_build_list_and_hide_items(self):
@@ -33,7 +33,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
 
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(2)
+        self.history_panel_wait_for_hid_ok(3)
         self.history_panel_refresh_click()
         self.history_panel_wait_for_hid_hidden(1)
 
@@ -111,7 +111,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_rules_list")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
+        self.history_panel_wait_for_hid_ok(3, allowed_force_refreshes=1)
 
     def _wait_for_hid_visible(self, hid):
         self.history_panel_wait_for_hid_visible(hid, allowed_force_refreshes=1)
