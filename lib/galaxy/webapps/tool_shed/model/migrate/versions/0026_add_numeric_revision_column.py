@@ -4,7 +4,7 @@ from __future__ import print_function
 import logging
 import sys
 
-from sqlalchemy import Integer, Column, MetaData, Table
+from sqlalchemy import Column, Integer, MetaData, Table
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)

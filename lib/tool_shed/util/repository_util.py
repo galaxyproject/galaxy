@@ -1,4 +1,3 @@
-import time
 import logging
 import os
 import re
@@ -496,6 +495,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
 
+
 def get_repositories_by_category(app, category_id, installable=False, sort_order='asc', sort_key='name', page=None, per_page=25):
     sa_session = app.model.context.current
     query = sa_session.query(app.model.Repository) \
@@ -521,12 +521,9 @@ def get_repositories_by_category(app, category_id, installable=False, sort_order
         repository_dict = repository.to_dict(value_mapper=default_value_mapper)
         repository_dict['metadata'] = {}
         for changeset, changehash in repository.installable_revisions(app):
-            starttime = time.time()
             encoded_id = app.security.encode_id(repository.id)
             metadata = metadata_util.get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
             repository_dict['metadata']['%s:%s' % (changeset, changehash)] = metadata.to_dict(value_mapper=default_value_mapper)
-            finish = time.time()
-            duration = finish - starttime
         if installable:
             if len(repository.installable_revisions(app)):
                 repositories.append(repository_dict)
