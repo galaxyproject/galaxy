@@ -1824,7 +1824,7 @@ function createListOfPairsCollection(collection, defaultHideSourceItems) {
     return pairedCollectionCreatorModal(elements, {
         historyId: collection.historyId,
         defaultHideSourceItems: defaultHideSourceItems,
-        copyElements: !defaultHideSourceItems,
+        copyElements: !defaultHideSourceItems
     });
 }
 
