@@ -187,6 +187,9 @@ class ToolShedController(BaseAPIController):
 
         :param tool_shed_url: the url of the toolshed to get repositories from
         :param category_id: the category to get repositories from
+        :param sort_key: the field by which the repositories should be sorted
+        :param sort_order: ascending or descending sort
+        :param page: the page number to return
         """
         sort_order = kwd.get('sort_order', 'asc')
         sort_key = kwd.get('sort_key', 'name')
