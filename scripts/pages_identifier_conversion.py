@@ -19,6 +19,7 @@ from galaxy.webapps.galaxy.controllers.page import _PageContentProcessor, _place
 def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-k', '--secret-key', help='Key to convert pages with', default='')
+    parser.add_argument('-d', '--dry-run', help='No changes, just test it.', action='store_true')
     populate_config_args(parser)
     args = parser.parse_args()
     properties = app_properties_from_args(args)
@@ -37,8 +38,16 @@ def main(argv):
         for p in pagerevs:
             processor = _PageContentProcessor(mock_trans, _placeholderRenderForSave)
             processor.feed(p.content)
-            p.content = unicodify(processor.output(), 'utf-8')
-            session.add(p)
+            if not args.dry_run:
+                p.content = unicodify(processor.output(), 'utf-8')
+                session.add(p)
+            else:
+                print("Modifying revision %s.  Original, followed by new content, below." % p.id)
+                print('=' * 80)
+                print(p.content)
+                print('_' * 80)
+                print(unicodify(processor.output(), 'utf-8'))
+                print('=' * 80)
     except Exception:
         logging.exception("Error parsing page, rolling everything back.  Please report this error.")
         session.rollback()
