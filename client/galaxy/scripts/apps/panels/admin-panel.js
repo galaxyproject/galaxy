@@ -81,12 +81,6 @@ var AdminPanel = Backbone.View.extend({
                         title: _l("Forms"),
                         url: "admin/forms",
                         target: "__use_router__"
-                    },
-                    {
-                        title: _l("API keys"),
-                        url: "admin/api_keys",
-                        target: "__use_router__",
-                        id: "admin-link-api-keys"
                     }
                 ]
             },
