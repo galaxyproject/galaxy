@@ -815,7 +815,6 @@ class Cpt(Binary):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-
     def display_peek(self, dataset):
         try:
             return dataset.peek

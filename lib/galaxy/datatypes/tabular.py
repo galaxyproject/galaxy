@@ -1172,7 +1172,6 @@ class Gro(Tabular):
         """Initialize gro datatype"""
         super(Gro, self).__init__(**kwd)
 
-
     def display_peek(self, dataset):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
@@ -1192,9 +1191,7 @@ class Gro(Tabular):
         False
         """
         fh = file_prefix.string_io()
-        count = 0
-
-        lines = fh.read()[:-1].split('\n')[2:-1] # remove two header and one footer lines
+        lines = fh.read()[:-1].split('\n')[2:-1]  # remove two header and one footer lines
 
         for line in lines:
             line_pieces = line.split()
