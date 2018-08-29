@@ -1012,11 +1012,28 @@ def _placeholderRenderForSave(trans, item_class, item_id):
         decoded_item_id = int(item_id)
     except ValueError:
         decoded_item_id = trans.app.security.decode_id(item_id)
+    item_name = ''
+    if item_class == 'History':
+        history = trans.sa_session.query(trans.model.History).get(decoded_item_id)
+        history = managers.base.security_check(trans, history, False, True)
+        item_name = history.name
+    elif item_class == 'HistoryDatasetAssociation':
+        hda = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(decoded_item_id)
+        history = managers.base.security_check(trans, hda , False, True)
+        item_name = hda.name
+    elif item_class == 'StoredWorkflow':
+        wf = trans.sa_session.query(trans.model.StoredWorkflow).get(decoded_item_id)
+        wf = managers.base.security_check(trans, wf, False, True)
+        item_name = wf.name
+    elif item_class == 'Visualization':
+        visualization = trans.sa_session.query(trans.model.Visualization).get(decoded_item_id)
+        visualization = managers.base.security_check(trans, visualization, False, True)
+        item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
     return PLACEHOLDER_TEMPLATE.format(
         item_class=item_class,
         class_shorthand=class_shorthand,
         class_shorthand_lower=class_shorthand.lower(),
         item_id=decoded_item_id,
-        item_name=''
+        item_name=item_name
     )

@@ -32,7 +32,7 @@ def main(argv):
     model = galaxy.config.init_models_from_config(config, object_store=object_store)
     session = model.context.current
     pagerevs = session.query(model.PageRevision).all()
-    mock_trans = Bunch(app=Bunch(security=security_helper), sa_session=session)
+    mock_trans = Bunch(app=Bunch(security=security_helper), model=model, user_is_admin=lambda: True, sa_session=session)
     try:
         for p in pagerevs:
             processor = _PageContentProcessor(mock_trans, _placeholderRenderForSave)
