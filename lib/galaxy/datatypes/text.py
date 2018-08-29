@@ -575,6 +575,7 @@ class IQTree(Text):
         return file_prefix.startswith("IQ-TREE")
 
 
+@build_sniff_from_prefix
 class Top(Text):
     """Class describing an gromacs topology file"""
     file_ext = "top"

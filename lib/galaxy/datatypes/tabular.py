@@ -1191,9 +1191,14 @@ class Gro(Tabular):
         False
         """
         fh = file_prefix.string_io()
-        lines = fh.read()[:-1].split('\n')[2:-1]  # remove two header and one footer lines
+        lines = fh.read()[:-1].split('\n')  # remove two header and one footer lines
 
-        for line in lines:
+        try:
+            int(lines[1])
+        except (ValueError, IndexError):
+            return False
+
+        for line in lines[2:-1]:
             line_pieces = line.split()
             try:
                 for n in range(-6, 0):
