@@ -620,7 +620,11 @@ class PageController(BaseUIController, SharableMixin,
         id = self.decode_id(id)
         page = trans.sa_session.query(model.Page).get(id)
         assert page.user == trans.user
-        return trans.fill_template("page/editor.mako", page=page)
+        content = page.latest_revision.content
+        processor = _PageContentProcessor(trans, _placeholderRenderForEdit)
+        processor.feed(content)
+        content = unicodify(processor.output(), 'utf-8')
+        return trans.fill_template("page/editor.mako", page=page, content=content)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -1007,11 +1011,17 @@ PAGE_CLASS_MAPPING = {
 }
 
 
-def _placeholderRenderForSave(trans, item_class, item_id):
+def _placeholderRenderForEdit(trans, item_class, item_id):
+    return _placeholderRenderForSave(trans, item_class, item_id, encode=True)
+
+
+def _placeholderRenderForSave(trans, item_class, item_id, encode=False):
     try:
         decoded_item_id = int(item_id)
+        encoded_item_id = trans.app.security.encode_id(item_id)
     except ValueError:
         decoded_item_id = trans.app.security.decode_id(item_id)
+        encoded_item_id = item_id
     item_name = ''
     if item_class == 'History':
         history = trans.sa_session.query(trans.model.History).get(decoded_item_id)
@@ -1030,10 +1040,14 @@ def _placeholderRenderForSave(trans, item_class, item_id):
         visualization = managers.base.security_check(trans, visualization, False, True)
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
+    if encode:
+        item_id = encoded_item_id
+    else:
+        item_id = decoded_item_id
     return PLACEHOLDER_TEMPLATE.format(
         item_class=item_class,
         class_shorthand=class_shorthand,
         class_shorthand_lower=class_shorthand.lower(),
-        item_id=decoded_item_id,
+        item_id=item_id,
         item_name=item_name
     )
