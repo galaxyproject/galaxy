@@ -30,19 +30,29 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
                        direction: {owner: 'asc', description: 'asc', name: 'asc'}};
         sorting.class[this.params.sort_key] = (this.params.sort_order == 'desc' ? 'fa-sort-down' : 'fa-sort-up');
         sorting.direction[this.params.sort_key] = (this.params.sort_order == 'asc' ? 'desc' : 'asc');
-        console.log(this.model.models[0]);
         var current_page = this.params.page;
         var previous_page = Math.max(this.params.page - 1, 1);
         var pages = parseInt((this.model.models[0].get('repository_count')) % 25) + 1;
         var next_page = Math.min(parseInt(this.params.page) + 1, pages);
+        var pagination_params = {
+            page: this.params.page,
+            next: next_page,
+            previous: previous_page,
+            pages: pages};
+        if (pages > 5) {
+            var page = parseInt(this.params.page);
+            var page_slice = Array();
+            var slice_start = Math.max(page - 2, 2);
+            var i = slice_start;
+            var slice_end = Math.min(Math.min(page + 2, slice_start + 4), pages);
+            for (i = slice_start; i <= slice_end; i++) {
+                page_slice.push(i);
+            }
+            pagination_params['page_slice'] = page_slice;
+        }
         this.$el.html(
             category_contents_template({
-                page_navigation: page_navigation_template({
-                    page: this.params.page,
-                    next: next_page,
-                    previous: previous_page,
-                    pages: pages
-                }),
+                page_navigation: page_navigation_template(pagination_params),
                 category: this.model.models[0],
                 tool_shed: this.model.tool_shed,
                 queue: toolshed_util.queueLength(),
@@ -109,15 +119,26 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
             '<a data-page="<%= previous %>" class="pagenav-inactive fa fa-step-backward" />',
             '<% } %>',
             '<% if (pages > 5) { %>',
-            '<a data-page="1" class="pagenav fa"><a><%= page %></a>',
+            '<% if (page != 1) { %>',
+            '<a data-page="1" class="pagenav fa"><a>1</a>',
+            '<% if (page != 2) { %>',
             '<a class="fa">&hellip;</a>',
-            '<a class="pagenav fa"><%= page %></a>',
-            '<a class="pagenav fa"><%= page %></a>',
-            '<a class="pagenav fa"><%= page %></a>',
-            '<a class="pagenav fa"><%= page %></a>',
-            '<a class="pagenav fa"><%= page %></a>',
+            '<% } %>',
+            '<% } else { %>',
+            '<a data-page="1" class="pagenav-inactive fa"><a>1</a>',
+            '<% } %>',
+            '<% _.each(page_slice, function(i) { %>',
+            '<% if (i == page) { %>',
+            '<a data-page="<%= i %>" class="fa"><strong><%= i %></strong></a>',
+            '<% } else { %>',
+            '<a data-page="<%= i %>" class="pagenav fa"><%= i %></a>',
+            '<% } %>',
+            '<% }); %>',
+            '<% var last_pages = [pages - 2, pages - 1, pages]; %>',
+            '<% if (last_pages.indexOf(parseInt(page)) == -1) { %>',
             '<a class="fa">&hellip;</a>',
-            '<a data-page="<%= pages %>" class="pagenav fa"><a><%= page %></a>',
+            '<a data-page="<%= pages %>" class="pagenav fa"><%= pages %></a>',
+            '<% } %>',
             '<% } else { %>',
             '<% for (i = 1; i <= pages; i++) { %>',
             '<% if (i == page) { %>',

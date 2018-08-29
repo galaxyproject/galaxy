@@ -229,9 +229,8 @@ def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
     if len(all_metadata_records) > 1:
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[1:]:
-            print(repository_metadata)
-            # sa_session.delete(repository_metadata)
-            # sa_session.flush()
+            sa_session.delete(repository_metadata)
+            sa_session.flush()
         return all_metadata_records[0]
     elif all_metadata_records:
         return all_metadata_records[0]
