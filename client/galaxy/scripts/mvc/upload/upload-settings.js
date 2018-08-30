@@ -23,7 +23,7 @@ export default Backbone.View.extend({
         this.$el.append($("<div/>").addClass("upload-settings-cover"));
         this.$el.append(
             $("<table/>")
-                .addClass("upload-settings-table ui-table-striped")
+                .addClass("upload-settings-table grid")
                 .append("<tbody/>")
         );
         this.$cover = this.$(".upload-settings-cover");

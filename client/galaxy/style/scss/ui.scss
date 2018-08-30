@@ -251,98 +251,14 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 // popovers
-.ui-popover {
+.popover {
     max-width: 700px;
-    display: none;
-    opacity: 1;
-    margin-top: 0.5rem;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1010;
-    display: none;
-    padding: 1px;
-    text-align: left;
-    background-color: #ffffff;
-    background-clip: padding-box;
-    border: 1px solid #ccc;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 0.25rem;
-    -webkit-box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
-    white-space: normal;
-    .popover-close {
-        position: absolute;
-        right: 10px;
-        top: 7px;
-        font-size: 1.2em;
-        cursor: pointer;
-    }
-    .popover-title {
-        margin: 0;
-        padding: 0.5em 1rem;
-        font-size: inherit;
-        font-weight: normal;
-        line-height: 1rem;
-        background-color: #f7f7f7;
-        border-bottom: 1px solid #ebebeb;
-        border-radius: 0.25rem 0.25rem 0 0;
-    }
-    .popover-content {
-        padding: 0.6em 1rem;
-    }
-    .arrow {
-        border-width: 0.68rem;
-    }
-    .arrow::after {
-        border-width: 0.68rem;
-        content: "";
-    }
-    .arrow,
-    .arrow::after {
-        position: absolute;
-        display: block;
-        width: 0;
-        height: 0;
-        border-color: transparent;
-        border-bottom-color: transparent;
-        border-style: solid;
-    }
-    &.bottom {
-        .arrow {
-            left: 50%;
-            margin-left: -0.65rem;
-            border-top-width: 0;
-            border-bottom-color: #999;
-            border-bottom-color: rgba(0, 0, 0, 0.25);
-            top: -0.72rem;
-        }
-
-        .arrow::after {
-            content: " ";
-            top: 0.05rem;
-            margin-left: -0.6rem;
-            border-top-width: 0;
-            border-bottom-color: #ffffff;
-        }
-    }
-    &.top {
-        margin-top: -0.6rem;
-        .arrow {
-            left: 50%;
-            margin-left: -0.65rem;
-            border-width: 0.4rem;
-            border-bottom-width: 0;
-            border-top-color: #999;
-            border-top-color: rgba(0, 0, 0, 0.25);
-            bottom: -0.65rem;
-        }
-        .arrow::after {
-            content: " ";
-            bottom: 0.05rem;
-            margin-left: -0.6rem;
-            border-bottom-width: 0;
-            border-top-color: #ffffff;
+    .popover-header {
+        i {
+            @extend .float-right;
+            @extend .pl-4;
+            font-size: 1.1em;
+            cursor: pointer;
         }
     }
 }
