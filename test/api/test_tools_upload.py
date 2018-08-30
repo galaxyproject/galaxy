@@ -105,6 +105,7 @@ class ToolsUploadTestCase(api.ApiTestCase):
         assert details["file_ext"] == "fastqsanger.gz", details
 
     def test_upload_decompress_off_with_auto_by_default(self):
+        # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         bedgz_path = TestDataResolver().get_filename("4.bed.gz")
         details = self._upload_and_get_details(open(bedgz_path, "rb"), file_type="auto")
         assert details["state"] == "ok"
@@ -125,12 +126,14 @@ class ToolsUploadTestCase(api.ApiTestCase):
         assert details["file_size"] == 161, details
 
     def test_upload_auto_decompress_off(self):
+        # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         bedgz_path = TestDataResolver().get_filename("4.bed.gz")
         details = self._upload_and_get_details(open(bedgz_path, "rb"), file_type="auto", assert_ok=False, auto_decompress=False)
         assert details["file_ext"] == "binary", details
 
     @uses_test_history(require_new=True)
     def test_fetch_compressed_with_auto(self, history_id):
+        # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         # TODO: this should definitely be fixed to allow auto decompression via that API.
         fastqgz_path = TestDataResolver().get_filename("4.bed.gz")
         details = self._upload_and_get_details(open(fastqgz_path, "rb"),
