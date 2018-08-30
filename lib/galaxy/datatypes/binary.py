@@ -752,7 +752,7 @@ class Trr(Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-        self._magic_number = 1993
+        self._magic_number = 1993  # reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
 
     def sniff(self, filename):
         # The first 4 bytes of any trr file containing 1993
@@ -795,7 +795,7 @@ class Cpt(Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-        self._magic_number = 171817
+        self._magic_number = 171817  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
 
     def sniff(self, filename):
         # The first 4 bytes of any cpt file containing 171817
@@ -838,7 +838,7 @@ class Xtc(Binary):
 
     def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-        self._magic_number = 1995
+        self._magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
 
     def sniff(self, filename):
         # The first 4 bytes of any trr file containing 1995
