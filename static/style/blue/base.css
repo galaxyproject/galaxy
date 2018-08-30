@@ -10341,6 +10341,8 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     background: #fff;
     opacity: 0.4;
     cursor: no-drop; }
+  .upload-settings tr {
+    cursor: pointer; }
 
 .upload-footer {
   height: 20px;
@@ -12855,7 +12857,7 @@ div.debug {
   border-bottom: solid #dddddd 1px;
   padding: 5px; }
 
-.grid .current, .upload-ftp-base .upload-ftp-row:hover .current, .upload-ftp .upload-ftp-row:hover .current, .upload-ftp-full .upload-ftp-row:hover .current, .grid .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .grid .upload-ftp-row:hover, .upload-ftp-base .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp .upload-ftp-row:hover, .upload-ftp .grid .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .grid .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover .upload-ftp-row:hover {
+.grid .current, .upload-ftp-base .upload-ftp-row:hover .current, .upload-ftp .upload-ftp-row:hover .current, .upload-ftp-full .upload-ftp-row:hover .current, .grid .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .grid .upload-ftp-row:hover, .upload-ftp-base .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp .upload-ftp-row:hover, .upload-ftp .grid .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .grid .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-settings tr:hover, .upload-settings .grid tr:hover, .upload-ftp-base .upload-ftp-row:hover .upload-settings tr:hover, .upload-settings .upload-ftp-base .upload-ftp-row:hover tr:hover, .upload-ftp .upload-ftp-row:hover .upload-settings tr:hover, .upload-settings .upload-ftp .upload-ftp-row:hover tr:hover, .upload-ftp-full .upload-ftp-row:hover .upload-settings tr:hover, .upload-settings .upload-ftp-full .upload-ftp-row:hover tr:hover {
   background-color: #eeeeff; }
 
 .count-box {

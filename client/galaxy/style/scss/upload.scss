@@ -298,6 +298,12 @@
         opacity: 0.4;
         cursor: no-drop;
     }
+    tr {
+        cursor: pointer;
+    }
+    tr:hover {
+        @extend .current;
+    }
 }
 
 .upload-footer {
