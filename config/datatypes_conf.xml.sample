@@ -732,8 +732,6 @@
     <sniffer type="galaxy.datatypes.binary:Idat"/>
     <sniffer type="galaxy.datatypes.binary:Trr"/>
     <sniffer type="galaxy.datatypes.binary:Dcd"/>
-    <sniffer type="galaxy.datatypes.text:Top"/>
-    <sniffer type="galaxy.datatypes.tabular:Gro"/>
     <sniffer type="galaxy.datatypes.binary:Xtc"/>
     <sniffer type="galaxy.datatypes.binary:Cpt"/>
     <sniffer type="galaxy.datatypes.binary:Vel"/>
