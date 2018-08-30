@@ -1,7 +1,7 @@
 <template>
     <div>
         <div class="page-container share-wf">
-            <h4> 
+            <h4>
               Workflow: {{ workflowItem.name }}
             </h4>
         </div>
@@ -69,7 +69,7 @@
                     <input class="action-button submit-button" value="Make Workflow Accessible via Link" name="make_accessible_via_link" v-on:click="submit" title="Make Workflow Accessible via Link">
                     <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the workflow.</div>
                     <br />
-                    <input class="action-button submit-button" value="Make Workflow Accessible and Publish" name="make_accessible_and_publish" 
+                    <input class="action-button submit-button" value="Make Workflow Accessible and Publish" name="make_accessible_and_publish"
                         v-on:click="submit" title="Make Workflow Accessible and Publish"">
                     <div class="toolParamHelp">
                         Makes the workflow accessible via link (see above) and publishes it to Galaxy's
@@ -116,7 +116,7 @@
                         <network network="facebook" id="facebook" class="social-link"><i class="fa fa-fw fa-facebook"></i> Facebook </network>
                         <network network="googleplus" id="googleplus" class="social-link"><i class="fa fa-fw fa-google-plus"></i> Google+ </network>
                         <network network="linkedin" id="linkedin" class="social-link"><i class="fa fa-fw fa-linkedin"></i> LinkedIn </network>
-                    </div> 
+                    </div>
                 </social-sharing>
             </div>
         </div>
@@ -233,8 +233,7 @@ export default {
             mod_toastr.error(errorMsg);
         },
         updateView: function(response) {
-            response = JSON.parse(response.data);
-            this.workflowItem = response.workflow_item;
+            this.workflowItem = response.data.workflow_item;
             this.workflowUrl = this.workflowItem.url;
             if( this.workflowItem.importable === true ) {
                 this.shareStatus = "accessible via link";
@@ -325,19 +324,19 @@ export default {
     .submit-button {
         width: 32%;
     }
-    
+
     h3 {
         margin-top: 1em;
     }
-    
+
     input.action-button {
         margin-left: 0;
     }
-    
+
     a.action-button {
         margin-top: 0.5%;
     }
-    
+
     .display-url {
         margin: 0.5em 0em 0.5em 0.5em;
         font-weight: bold;
@@ -346,11 +345,11 @@ export default {
     .sharing-section {
         margin-top: 1em;
     }
-    
+
     .share-link {
         cursor: pointer;
     }
-    
+
     .social-link {
         margin-right: 0.5%;
     }

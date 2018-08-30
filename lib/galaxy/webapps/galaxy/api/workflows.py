@@ -438,11 +438,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return ("Workflow '%s' successfully deleted" % stored_workflow.name)
 
     @expose_api
-    @web.json
     def sharing(self, trans, id, **kwargs):
         """
-        GET /api/workflows/share_workflow
-        Returns a selected workflow as a json dictionary.
+        GET /api/workflows/sharing
+        Return a workflow with the given id.
+
         :param  id:      encoded workflow id
         """
         session = trans.sa_session
