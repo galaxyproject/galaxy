@@ -854,7 +854,7 @@ class Eland(Tabular):
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
-            with compression_utils.get_fileobj(dataset.file_name, gzip_only=True) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.file_name, compressed_formats=['gzip']) as dataset_fh:
                 lanes = {}
                 tiles = {}
                 barcodes = {}
