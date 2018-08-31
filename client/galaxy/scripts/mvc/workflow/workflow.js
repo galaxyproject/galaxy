@@ -2,6 +2,7 @@
 import * as mod_toastr from "libs/toastr";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
+import axios from "axios";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -170,9 +171,7 @@ const WorkflowItemView = Backbone.View.extend({
             )}&slug=${this.model.get("slug")}">View</a></li>
                         <li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li>
                         <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
-                        <li><a class="link-confirm-shared-${this.model.id}" href="${
-                Galaxy.root
-            }api/workflows/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
+                        <li><a class="link-confirm-shared-${this.model.id}" href="">Remove myself</a></li>
                     </ul>`;
         }
     }
@@ -281,11 +280,28 @@ const WorkflowListView = Backbone.View.extend({
         workflowItemView.renderTagEditor();
     },
 
+    removeItem: function(id){
+        this.collection.remove(id);
+        $(`.${id}`).closest("tr").remove();
+    },
+
     /** Add confirm box before removing/unsharing workflow */
     confirmDelete: function(workflow) {
         const $el_shared_wf_link = this.$(`.link-confirm-shared-${workflow.id}`);
-        $el_shared_wf_link.click(() =>
-            window.confirm(`Are you sure you want to remove the shared workflow '${workflow.attributes.name}'?`)
+        $el_shared_wf_link.click((e) => {
+            if (window.confirm(`Are you sure you want to remove the shared workflow '${workflow.attributes.name}'?`)){
+                e.preventDefault();
+                axios
+                    .post(`${Galaxy.root}api/workflows/unshare_me?id=${workflow.id}`)
+                    .then(response => {
+                        this.removeItem(workflow.id);
+                        mod_toastr.success(`You removed yourself from the shared workflow.`);
+                    })
+                    .catch(error => {
+                        mod_toastr.error(`Couldn't unshare the workflow.`);
+                    });
+            }
+        }
         );
     },
 
