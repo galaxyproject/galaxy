@@ -16,8 +16,7 @@ from sqlalchemy.orm import joinedload
 from galaxy import (
     exceptions,
     model,
-    util,
-    web
+    util
 )
 from galaxy.managers import (
     histories,
@@ -204,7 +203,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         GET /api/workflows/{encoded_workflow_id}
 
-        Displays information needed to run a workflow from the command line.
+        Display details of a workflow with the given id.
         """
         stored_workflow = self.__get_stored_workflow(trans, id)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
@@ -222,7 +221,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         POST /api/workflows
 
-        Run or create workflows from the api.
+        Run or create workflows.
 
         If installed_repository_file or from_history_id is specified a new
         workflow will be created for this user. Otherwise, workflow_id must be
@@ -395,7 +394,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def workflow_dict(self, trans, workflow_id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}/download
-        Returns a selected workflow as a json dictionary.
+        Return a workflow with the given id as a dictionary.
+
+        :param  format:       optional format for workflow export
+        :type   format:       str
         """
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id)
 
@@ -413,10 +415,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/workflows/{encoded_workflow_id}
-        Deletes a specified workflow
-        Author: rpark
-
-        copied from galaxy.web.controllers.workflows.py (delete)
+        Delete a specified workflow.
         """
         workflow_id = id
 
