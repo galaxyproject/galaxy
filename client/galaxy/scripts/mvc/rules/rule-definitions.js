@@ -204,7 +204,7 @@ const RULES = {
         init: (component, rule) => {
             if (!rule) {
                 component.addColumnGroupTagValueValue = null;
-                component.addColumnGroupTagValueDefault = '';
+                component.addColumnGroupTagValueDefault = "";
             } else {
                 component.addColumnGroupTagValueValue = rule.value;
                 component.addColumnGroupTagValueDefault = rule.default_value;
@@ -224,7 +224,7 @@ const RULES = {
                 let groupTagValue = rule.default_value;
                 for (let index in tags) {
                     const tag = tags[index];
-                    if ( tag.indexOf(groupTagPrefix) == 0 ) {
+                    if (tag.indexOf(groupTagPrefix) == 0) {
                         groupTagValue = tag.substr(groupTagPrefix.length);
                         break;
                     }

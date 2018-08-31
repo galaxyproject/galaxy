@@ -1740,7 +1740,7 @@ export default {
                 if (url.indexOf("://") == -1) {
                     // special case columns containing SRA links. EBI serves these a lot
                     // faster over FTP.
-                    if(url.indexOf("ftp.sra.") !== -1) {
+                    if (url.indexOf("ftp.sra.") !== -1) {
                         url = "ftp://" + url;
                     } else {
                         url = "http://" + url;
