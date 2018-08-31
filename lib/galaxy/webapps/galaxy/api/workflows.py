@@ -409,6 +409,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             trans.response.set_content_type('application/galaxy-archive')
         return ret_dict
 
+    @expose_api
     def delete(self, trans, id, **kwd):
         """
         DELETE /api/workflows/{encoded_workflow_id}
