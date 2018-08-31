@@ -1724,7 +1724,7 @@ galaxy:
 
   # The base module(s) that are searched for modules for toolbox
   # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)
-  # producedures.
+  # functions.
   #toolbox_filter_base_modules: 'galaxy.tools.toolbox.filters,galaxy.tools.filters'
 
   # Galaxy uses AMQP internally for communicating between processes.

@@ -2665,7 +2665,7 @@ mapping:
         required: false
         desc: |
           The base module(s) that are searched for modules for toolbox filtering
-          (https://galaxyproject.org/user-defined-toolbox-filters/) producedures.
+          (https://galaxyproject.org/user-defined-toolbox-filters/) functions.
 
       amqp_internal_connection:
         type: str

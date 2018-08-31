@@ -817,7 +817,7 @@ class JobWrapper(HasResourceParameters):
         return self.sa_session.query(model.Job).get(self.job_id)
 
     def get_id_tag(self):
-        # For compatability with drmaa, which uses job_id right now, and TaskWrapper
+        # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
 
     def get_param_dict(self):

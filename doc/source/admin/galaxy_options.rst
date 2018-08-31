@@ -3589,7 +3589,7 @@
 :Description:
     The base module(s) that are searched for modules for toolbox
     filtering (https://galaxyproject.org/user-defined-toolbox-
-    filters/) producedures.
+    filters/) functions.
 :Default: ``galaxy.tools.toolbox.filters,galaxy.tools.filters``
 :Type: str
 
