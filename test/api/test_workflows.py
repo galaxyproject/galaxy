@@ -276,6 +276,14 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok)
         time.sleep(.5)
 
+    def _assert_is_runtime_input(self, tool_state_value):
+        if not isinstance(tool_state_value, dict):
+            tool_state_value = json.loads(tool_state_value)
+
+        assert isinstance(tool_state_value, dict)
+        assert "__class__" in tool_state_value
+        assert tool_state_value["__class__"] == "RuntimeValue"
+
 
 # Workflow API TODO:
 # - Allow history_id as param to workflow run action. (hist_id)
@@ -574,9 +582,16 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         workflow_id = self.workflow_populator.create_workflow(workflow)
         downloaded_workflow = self._download_workflow(workflow_id)
         assert len(downloaded_workflow["steps"]) == 2
-        runtime_input = downloaded_workflow["steps"]["1"]["inputs"][0]
+        runtime_step = downloaded_workflow["steps"]["1"]
+        for runtime_input in runtime_step["inputs"]:
+            if runtime_input["name"] == "num_lines":
+                break
+
         assert runtime_input["description"].startswith("runtime parameter for tool")
-        assert runtime_input["name"] == "num_lines"
+
+        tool_state = json.loads(runtime_step["tool_state"])
+        assert "num_lines" in tool_state
+        self._assert_is_runtime_input(tool_state["num_lines"])
 
     @skip_without_tool("cat1")
     def test_run_workflow_by_index(self):

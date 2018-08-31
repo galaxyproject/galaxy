@@ -2,6 +2,8 @@ import yaml
 from base import rules_test_data
 from base.populators import load_data_dict
 from base.workflow_fixtures import (
+    WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
@@ -34,6 +36,38 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_click_item_title(hid=2, wait=True)
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
+
+    @selenium_test
+    @managed_history
+    def test_runtime_parameters_simple(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
+        div = self.tool_parameter_div("num_lines")
+        self.screenshot("workflow_run_runtime_parameters_initial")
+        input_element = div.find_element_by_css_selector("input")
+        initial_value = input_element.get_attribute("value")
+        assert initial_value == "1", initial_value
+        input_element.clear()
+        input_element.send_keys("3")
+        self.screenshot("workflow_run_runtime_parameters_modified")
+        self.workflow_run_submit()
+
+        self.history_panel_wait_for_hid_ok(2, allowed_force_refreshes=1)
+        history_id = self.current_history_id()
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=2)
+        assert len(content.split("\n")) == 3, content
+
+    @selenium_test
+    @managed_history
+    def test_subworkflows_simple(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run(WORKFLOW_NESTED_SIMPLE)
+        self.components.workflow_run.subworkflow_step_icon.wait_for_visible()
+        self.screenshot("workflow_run_nested_collapsed")
+        self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
+        self.screenshot("workflow_run_nested_open")
 
     @selenium_test
     def test_execution_with_tool_upgrade(self):

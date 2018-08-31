@@ -1,6 +1,11 @@
 from __future__ import print_function
 
+import json
 import os
+
+from base.workflow_fixtures import (
+    WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
+)
 
 from .test_workflows import BaseWorkflowsApiTestCase
 
@@ -12,8 +17,13 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
     def setUp(self):
         super(WorkflowsFromYamlApiTestCase, self).setUp()
 
+    def _upload_and_download(self, yaml_workflow):
+        workflow_id = self._upload_yaml_workflow(yaml_workflow)
+        workflow = self._get("workflows/%s/download" % workflow_id).json()
+        return workflow
+
     def test_simple_upload(self):
-        workflow_id = self._upload_yaml_workflow("""
+        workflow = self._upload_and_download("""
 class: GalaxyWorkflow
 steps:
   - type: input
@@ -36,7 +46,6 @@ steps:
         seed_source_selector: set_seed
         seed: asdf
 """)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
 
         tool_count = {'random_lines1': 0, 'cat1': 0}
         input_found = False
@@ -156,6 +165,20 @@ test_data:
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
+
+    def test_runtime_inputs(self):
+        workflow = self._upload_and_download(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
+        assert len(workflow["steps"]) == 2
+        runtime_step = workflow["steps"]["1"]
+        for runtime_input in runtime_step["inputs"]:
+            if runtime_input["name"] == "num_lines":
+                break
+
+        assert runtime_input["description"].startswith("runtime parameter for tool")
+
+        tool_state = json.loads(runtime_step["tool_state"])
+        assert "num_lines" in tool_state
+        self._assert_is_runtime_input(tool_state["num_lines"])
 
     def test_subworkflow_simple(self):
         workflow_id = self._upload_yaml_workflow("""
