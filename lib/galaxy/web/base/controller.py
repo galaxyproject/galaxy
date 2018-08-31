@@ -292,7 +292,7 @@ class JSAppLauncher(BaseUIController):
         """
         try:
             serializer = self.config_serializer
-            if self.user_manager.is_admin(trans.user):
+            if self.user_manager.is_admin(trans.user, trans=trans):
                 serializer = self.admin_config_serializer
             return serializer.serialize_to_view(self.app.config, view='all')
         except Exception as exc:

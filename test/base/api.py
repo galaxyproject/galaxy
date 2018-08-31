@@ -21,12 +21,14 @@ from .testcase import FunctionalTestCase
 
 class UsesApiTestCaseMixin:
 
-    def _api_url(self, path, params=None, use_key=None):
+    def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
             params = {}
         url = "%s/api/%s" % (self.url, path)
         if use_key:
             params["key"] = self.galaxy_interactor.api_key
+        if use_admin_key:
+            params["key"] = self.galaxy_interactor.master_api_key
         query = urlencode(params)
         if query:
             url = "%s?%s" % (url, query)

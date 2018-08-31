@@ -37,7 +37,7 @@ def getchrominfo(url, db):
         "position": "",
         "hgta_doTopSubmit": "get info"})
     page = requests.get(URL).text
-    for line in page.split('\n'):
+    for i, line in enumerate(page.splitlines()):
         line = line.rstrip("\r\n")
         if line.startswith("#"):
             continue
@@ -45,7 +45,7 @@ def getchrominfo(url, db):
         if len(fields) > 1 and len(fields[0]) > 0 and int(fields[1]) > 0:
             yield [fields[0], fields[1]]
         else:
-            raise Exception("Problem parsing line '%s'" % line)
+            raise Exception("Problem parsing line %d '%s' in page '%s'" % (i, line, page))
 
 
 if __name__ == "__main__":

@@ -293,7 +293,6 @@ admin:
       quotas: '#admin-link-quotas'
       groups: '#admin-link-groups'
       roles: '#admin-link-roles'
-      api_keys: '#admin-link-api-keys'
       impersonate: '#admin-link-impersonate'
 
   selectors:

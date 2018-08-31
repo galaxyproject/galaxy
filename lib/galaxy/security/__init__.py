@@ -1129,11 +1129,11 @@ class GalaxyRBACAgent(RBACAgent):
 
     def dataset_is_private_to_user(self, trans, dataset):
         """
-        If the LibraryDataset object has exactly one access role and that is
+        If the Dataset object has exactly one access role and that is
         the current user's private role then we consider the dataset private.
         """
         private_role = self.get_private_user_role(trans.user)
-        access_roles = dataset.library_dataset_dataset_association.get_access_roles(trans)
+        access_roles = dataset.get_access_roles(trans)
 
         if len(access_roles) != 1:
             return False

@@ -2592,11 +2592,14 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None, copy_tags=None, force_flush=True):
+    def copy(self, parent_id=None, copy_tags=None, force_flush=True, copy_hid=True):
         """
         Create a copy of this HDA.
         """
-        hda = HistoryDatasetAssociation(hid=self.hid,
+        hid = None
+        if copy_hid:
+            hid = self.hid
+        hda = HistoryDatasetAssociation(hid=hid,
                                         name=self.name,
                                         info=self.info,
                                         blurb=self.blurb,
@@ -4287,7 +4290,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
         else:
             raise Exception("Unknown output type encountered")
 
-    def to_dict(self, view='collection', value_mapper=None, step_details=False):
+    def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
             steps = []
@@ -4296,7 +4299,19 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
                     v = step.to_dict(view='element')
                 else:
                     v = step.to_dict(view='collection')
-                steps.append(v)
+                if legacy_job_state:
+                    step_jobs = step.jobs
+                    if step_jobs:
+                        for step_job in step_jobs:
+                            v_clone = v.copy()
+                            v_clone["state"] = step_job.state
+                            v_clone["job_id"] = step_job.id
+                            steps.append(v_clone)
+                    else:
+                        v["state"] = None
+                        steps.append(v)
+                else:
+                    steps.append(v)
             rval['steps'] = steps
 
             inputs = {}
@@ -4438,6 +4453,10 @@ class WorkflowInvocationStep(Dictifiable):
         # Following no longer makes sense...
         # rval['state'] = self.job.state if self.job is not None else None
         if view == 'element':
+            jobs = []
+            for job in self.jobs:
+                jobs.append(job.to_dict())
+
             outputs = {}
             for output_assoc in self.output_datasets:
                 name = output_assoc.output_name
@@ -4457,6 +4476,7 @@ class WorkflowInvocationStep(Dictifiable):
 
             rval['outputs'] = outputs
             rval['output_collections'] = output_collections
+            rval['jobs'] = jobs
         return rval
 
 
@@ -4790,11 +4810,12 @@ class UserAuthnzToken(UserMixin):
         self.lifetime = lifetime
         self.assoc_type = assoc_type
 
-    def get_id_token(self):
+    def get_id_token(self, strategy):
+        if self.access_token_expired():
+            # Access and ID tokens have same expiration time;
+            # hence, if one is expired, the other is expired too.
+            self.refresh_token(strategy)
         return self.extra_data.get('id_token', None) if self.extra_data is not None else None
-
-    def get_access_token(self):
-        return self.extra_data.get('access_token', None) if self.extra_data is not None else None
 
     def set_extra_data(self, extra_data=None):
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
