@@ -741,16 +741,17 @@ class GmxBinary(Binary):
     Base class for GROMACS binary files - xtc, trr, cpt
     """
 
-    def __init__(self, magic_number, file_ext, **kwd):
+    magic_number = 0  # variables to be overwritten in the child class
+    file_ext = ""
+
+    def __init__(self, **kwd):
         Binary.__init__(self, **kwd)
-        self._magic_number = magic_number
-        self._file_ext = file_ext
 
     def sniff(self, filename):
         # The first 4 bytes of any GROMACS binary file containing the magic number
         try:
             header = open(filename, 'rb').read(struct.calcsize('>1i'))
-            if struct.unpack('>1i', header)[0] == self._magic_number:
+            if struct.unpack('>1i', header)[0] == self.magic_number:
                 return True
             return False
         except Exception:
@@ -758,7 +759,7 @@ class GmxBinary(Binary):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Binary GROMACS %s file" % (self._file_ext)
+            dataset.peek = "Binary GROMACS %s file" % (self.file_ext)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -768,7 +769,7 @@ class GmxBinary(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary GROMACS %s trajectory file (%s)" % (self._file_ext, nice_size(dataset.get_size()))
+            return "Binary GROMACS %s trajectory file (%s)" % (self.file_ext, nice_size(dataset.get_size()))
 
 
 class Trr(GmxBinary):
@@ -783,11 +784,9 @@ class Trr(GmxBinary):
     >>> Trr().sniff(fname)
     False
     """
-    file_ext = "trr"
 
-    def __init__(self, **kwd):
-        # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
-        GmxBinary.__init__(self, magic_number=1993, file_ext="trr", **kwd)
+    file_ext = "trr"
+    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
 
 
 class Cpt(GmxBinary):
@@ -802,11 +801,9 @@ class Cpt(GmxBinary):
     >>> Cpt().sniff(fname)
     False
     """
-    file_ext = "cpt"
 
-    def __init__(self, **kwd):
-        # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
-        GmxBinary.__init__(self, magic_number=171817, file_ext="cpt", **kwd)
+    file_ext = "cpt"
+    magic_number = 171817  # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
 
 
 class Xtc(GmxBinary):
@@ -821,11 +818,9 @@ class Xtc(GmxBinary):
     >>> Xtc().sniff(fname)
     False
     """
-    file_ext = "xtc"
 
-    def __init__(self, **kwd):
-        # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
-        GmxBinary.__init__(self, magic_number=1995, file_ext="xtc", **kwd)
+    file_ext = "xtc"
+    magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
 
 
 class Biom2(H5):
