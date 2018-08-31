@@ -222,8 +222,7 @@ var ButtonMenu = Button.extend({
             $("<div/>").append(
                 (this.$root = $("<div/>")
                     .append((this.$icon = $("<i/>")))
-                    .append((this.$title = $("<span/>"))))
-            )
+                    .append((this.$title = $("<span/>")))))
         );
         this.listenTo(this.model, "change", this.render, this);
         this.listenTo(this.collection, "change add remove reset", this.render, this);
