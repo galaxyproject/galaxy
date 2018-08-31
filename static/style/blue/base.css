@@ -5597,7 +5597,7 @@ button.bg-dark:focus {
 .my-1 {
   margin-bottom: 0.25rem !important; }
 
-.ml-1, .ui-portlet .portlet-header .portlet-operations > *, .ui-portlet-section .portlet-header .portlet-operations > *,
+.ml-1, .ui-portlet .portlet-header .portlet-operations .dropdown button, .ui-portlet-section .portlet-header .portlet-operations .dropdown button,
 .mx-1 {
   margin-left: 0.25rem !important; }
 
@@ -11982,7 +11982,8 @@ button.toast-close-button {
   -ms-flex-item-align: auto; }
 
 .charts-client .charts-buttons {
-  z-index: 1000; }
+  z-index: 1000;
+  width: 150px; }
   .charts-client .charts-buttons .btn, .charts-client .charts-buttons input[type="submit"], .charts-client .charts-buttons
   button, .charts-client .charts-buttons .action-button, .charts-client .charts-buttons .menubutton {
     background: white;

@@ -198,7 +198,7 @@ var ButtonCheck = Backbone.View.extend({
 });
 
 /** This class creates a button with dropdown menu. */
-var ButtonMenu = Button.extend({
+var ButtonMenu = Backbone.View.extend({
     $menu: null,
     initialize: function(options) {
         this.model =
@@ -220,7 +220,7 @@ var ButtonMenu = Button.extend({
         this.collection = new Backbone.Collection();
         this.setElement(
             $("<div/>").append(
-                (this.$root = $("<div/>")
+                (this.$root = $("<button/>")
                     .append((this.$icon = $("<i/>")))
                     .append((this.$title = $("<span/>")))))
         );
@@ -234,13 +234,12 @@ var ButtonMenu = Button.extend({
         this.$el
             .removeClass()
             .addClass("dropdown")
-            .addClass(options.cls)
             .attr("id", options.id)
             .css({
                 display: options.visible && this.collection.where({ visible: true }).length > 0 ? "block" : "none"
             });
         this.$root
-            .addClass("root button")
+            .addClass(options.cls)
             .attr("data-toggle", "dropdown")
             .tooltip({ title: options.tooltip || "", placement: "bottom" })
             .off("click")

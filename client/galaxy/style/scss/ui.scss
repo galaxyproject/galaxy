@@ -208,7 +208,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             }
         }
         .portlet-operations {
-            > * {
+            .dropdown button {
                 @extend .ml-1;
             }
         }
