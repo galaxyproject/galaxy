@@ -736,7 +736,42 @@ class H5(Binary):
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
-class Trr(Binary):
+class GmxBinary(Binary):
+    """
+    Base class for GROMACS binary files - xtc, trr, cpt
+    """
+
+    def __init__(self, magic_number, file_ext, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = magic_number
+        self._file_ext = file_ext
+
+    def sniff(self, filename):
+        # The first 4 bytes of any GROMACS binary file containing the magic number
+        try:
+            header = open(filename, 'rb').read(struct.calcsize('>1i'))
+            if struct.unpack('>1i', header)[0] == self._magic_number:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GROMACS %s file" % (self._file_ext)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary GROMACS %s trajectory file (%s)" % (self._file_ext, nice_size(dataset.get_size()))
+
+
+class Trr(GmxBinary):
     """
     Class describing an trr file from the GROMACS suite
 
@@ -751,35 +786,11 @@ class Trr(Binary):
     file_ext = "trr"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-        self._magic_number = 1993  # reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
-
-    def sniff(self, filename):
-        # The first 4 bytes of any trr file containing 1993
-        try:
-            header = open(filename, 'rb').read(struct.calcsize('>1i'))
-            if struct.unpack('>1i', header)[0] == self._magic_number:
-                return True
-            return False
-        except Exception:
-            return False
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Binary GROMACS trr file"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Binary GROMACS trr trajectory file (%s)" % (nice_size(dataset.get_size()))
+        # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
+        GmxBinary.__init__(self, magic_number=1993, file_ext="trr", **kwd)
 
 
-class Cpt(Binary):
+class Cpt(GmxBinary):
     """
     Class describing a checkpoint (.cpt) file from the GROMACS suite
 
@@ -794,35 +805,11 @@ class Cpt(Binary):
     file_ext = "cpt"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-        self._magic_number = 171817  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
-
-    def sniff(self, filename):
-        # The first 4 bytes of any cpt file containing 171817
-        try:
-            header = open(filename, 'rb').read(struct.calcsize('>1i'))
-            if struct.unpack('>1i', header)[0] == self._magic_number:
-                return True
-            return False
-        except Exception:
-            return False
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Binary GROMACS checkpoint file"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
-
-    def display_peek(self, dataset):
-        try:
-            return dataset.peek
-        except Exception:
-            return "Binary GROMACS checkpoint file (%s)" % (nice_size(dataset.get_size()))
+        # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
+        GmxBinary.__init__(self, magic_number=171817, file_ext="cpt", **kwd)
 
 
-class Xtc(Binary):
+class Xtc(GmxBinary):
     """
     Class describing an xtc file from the GROMACS suite
 
@@ -837,26 +824,8 @@ class Xtc(Binary):
     file_ext = "xtc"
 
     def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-        self._magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
-
-    def sniff(self, filename):
-        # The first 4 bytes of any trr file containing 1995
-        try:
-            header = open(filename, 'rb').read(struct.calcsize('>1i'))
-            if struct.unpack('>1i', header)[0] == self._magic_number:
-                return True
-            return False
-        except Exception:
-            return False
-
-    def set_peek(self, dataset, is_multi_byte=False):
-        if not dataset.dataset.purged:
-            dataset.peek = "Binary GROMACS xtc trajectory file"
-            dataset.blurb = nice_size(dataset.get_size())
-        else:
-            dataset.peek = 'file does not exist'
-            dataset.blurb = 'file purged from disk'
+        # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
+        GmxBinary.__init__(self, magic_number=1995, file_ext="xtc", **kwd)
 
 
 class Biom2(H5):
