@@ -269,6 +269,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .pt-1;
     @extend .pl-2;
     height: $input-height;
+    background: transparent;
     &[disabled],
     &[readonly],
     fieldset[disabled] & {
@@ -406,6 +407,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
     select {
         @extend .ui-input;
         cursor: pointer;
+        -webkit-appearance: none;
+        -moz-border-radius: $border-radius-base;
+
     }
     .select2-container {
         width: 100%;
