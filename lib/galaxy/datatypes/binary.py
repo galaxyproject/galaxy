@@ -744,9 +744,6 @@ class GmxBinary(Binary):
     magic_number = None  # variables to be overwritten in the child class
     file_ext = ""
 
-    def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-
     def sniff(self, filename):
         # The first 4 bytes of any GROMACS binary file containing the magic number
         try:
