@@ -1,7 +1,7 @@
-galaxy\.web\.stack package
+galaxy\.util\.path package
 ==========================
 
-.. automodule:: galaxy.web.stack
+.. automodule:: galaxy.util.path
     :members:
     :undoc-members:
     :show-inheritance:
@@ -9,18 +9,18 @@ galaxy\.web\.stack package
 Submodules
 ----------
 
-galaxy\.web\.stack\.message module
-----------------------------------
+galaxy\.util\.path\.ntpath module
+---------------------------------
 
-.. automodule:: galaxy.web.stack.message
+.. automodule:: galaxy.util.path.ntpath
     :members:
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.stack\.transport module
+galaxy\.util\.path\.posixpath module
 ------------------------------------
 
-.. automodule:: galaxy.web.stack.transport
+.. automodule:: galaxy.util.path.posixpath
     :members:
     :undoc-members:
     :show-inheritance:
