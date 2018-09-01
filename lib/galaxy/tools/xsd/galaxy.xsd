@@ -253,7 +253,7 @@ programs or modules that the tool depends upon are included in this tag set.
 
 When a tool runs, Galaxy attempts to *resolve* these requirements (also called
 dependencies). ``requirement``s are meant to be abstract and resolvable by
-multiple different systems (e.g. [conda](http://conda.pydata.org/docs/), the
+multiple different systems (e.g. [conda](https://conda.io/), the
 [Galaxy Tool Shed dependency management system](https://galaxyproject.org/toolshed/tool-features/#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories),
 or [environment modules](http://modules.sourceforge.net/)).
 
@@ -3617,24 +3617,24 @@ the ``<inputs>`` documentation.
     <xs:attribute name="provided_metadata_style" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-          Style used for tool provided metadata file (i.e.
-          [galaxy.json](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata))
-          - this can be either "legacy" or "default". The default of tools with
-          a profile of 17.09 or newer are "default", and "legacy" for older and
-          tools and tools without a specified profile. A discussion of the
-          differences between the styles can be found at
-          https://github.com/galaxyproject/galaxy/pull/4437.
+Style used for tool provided metadata file (i.e.
+[galaxy.json](https://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata))
+- this can be either "legacy" or "default". The default of tools with a profile
+of 17.09 or newer are "default", and "legacy" for older and tools and tools
+without a specified profile. A discussion of the differences between the styles
+can be found at https://github.com/galaxyproject/galaxy/pull/4437 .
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="provided_metadata_file" type="xs:string" default="galaxy.json">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-          Path relative to tool's working directory to load tool provided
-          metadata from. This metadata can describe dynamic datasets to load,
-          dynamic collection contents, as well as simple metadata (e.g. name, dbkey, etc...) and datatype specific metadata for declared outputs.
-          More information can be found [here](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata). The
-          default is galaxy.json.
+Path relative to tool's working directory to load tool provided metadata from.
+This metadata can describe dynamic datasets to load, dynamic collection
+contents, as well as simple metadata (e.g. name, dbkey, etc...) and
+datatype-specific metadata for declared outputs. More information can be found
+[here](https://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata).
+The default is ``galaxy.json``.
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>

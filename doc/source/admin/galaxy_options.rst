@@ -330,8 +330,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    conda channels to enable by default (http://conda.pydata.org/docs
-    /custom-channels.html)
+    conda channels to enable by default (https://conda.io/docs/user-
+    guide/tasks/manage-channels.html)
 :Default: ``iuc,bioconda,conda-forge,defaults``
 :Type: str
 
@@ -435,13 +435,12 @@
     Set to True to enable monitoring of tools and tool directories
     listed in any tool config file specified in tool_config_file
     option. If changes are found, tools are automatically reloaded.
-    Watchdog ( https://pypi.python.org/pypi/watchdog ) must be
-    installed and available to Galaxy to use this option. Other
-    options include 'auto' which will attempt to watch tools if the
-    watchdog library is available but won't fail to load Galaxy if it
-    is not and 'polling' which will use a less efficient monitoring
-    scheme that may work in wider range of scenarios than the watchdog
-    default.
+    Watchdog ( https://pypi.org/project/watchdog/ ) must be installed
+    and available to Galaxy to use this option. Other options include
+    'auto' which will attempt to watch tools if the watchdog library
+    is available but won't fail to load Galaxy if it is not and
+    'polling' which will use a less efficient monitoring scheme that
+    may work in wider range of scenarios than the watchdog default.
 :Default: ``false``
 :Type: str
 
@@ -487,7 +486,7 @@
     Enable Galaxy to fetch Docker containers registered with quay.io
     generated from tool requirements resolved through conda. These
     containers (when available) have been generated using mulled -
-    https://github.com/mulled. These containers are highly beta and
+    https://github.com/mulled . These containers are highly beta and
     availability will vary by tool. This option will additionally only
     be used for job destinations with Docker enabled.
 :Default: ``false``
@@ -634,7 +633,7 @@
     shed_tool_data_path directories. If changes in tool data table
     files are found, the tool data tables for that data manager are
     automatically reloaded. Watchdog (
-    https://pypi.python.org/pypi/watchdog ) must be installed and
+    https://pypi.org/project/watchdog/ ) must be installed and
     available to Galaxy to use this option. Other options include
     'auto' which will attempt to use the watchdog library if it is
     available but won't fail to load Galaxy if it is not and 'polling'
@@ -1219,7 +1218,7 @@
     Format string used when showing date and time information. The
     string may contain: - the directives used by Python
     time.strftime() function (see
-    https://docs.python.org/2/library/time.html#time.strftime ), -
+    https://docs.python.org/library/time.html#time.strftime ), -
     $locale (complete format string for the server locale), - $iso8601
     (complete format string as specified by ISO 8601 international
     standard).
@@ -1313,7 +1312,7 @@
 
 :Description:
     The URL linked by the "Support" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/support``
+:Default: ``https://galaxyproject.org/support/``
 :Type: str
 
 
@@ -1563,9 +1562,10 @@
 
 :Description:
     For help on configuring the Advanced proxy features, see:
-    http://usegalaxy.org/production  Apache can handle file downloads
-    (Galaxy-to-user) via mod_xsendfile.  Set this to True to inform
-    Galaxy that mod_xsendfile is enabled upstream.
+    https://docs.galaxyproject.org/en/master/admin/production.html
+    Apache can handle file downloads (Galaxy-to-user) via
+    mod_xsendfile.  Set this to True to inform Galaxy that
+    mod_xsendfile is enabled upstream.
 :Default: ``false``
 :Type: bool
 
@@ -1839,8 +1839,8 @@
 
 :Description:
     Verbosity of console log messages.  Acceptable values can be found
-    here: https://docs.python.org/2/library/logging.html#logging-
-    levels A custom debug level of "TRACE" is available for even more
+    here: https://docs.python.org/library/logging.html#logging-levels
+    A custom debug level of "TRACE" is available for even more
     verbosity.
 :Default: ``DEBUG``
 :Type: str
@@ -1991,8 +1991,7 @@
     comma separated list of hostname strings or regular expressions
     beginning and ending with /. E.g.
     mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
-    https://developer.mozilla.org/en-
-    US/docs/Web/HTTP/Access_control_CORS
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 :Default: ``None``
 :Type: str
 
@@ -2478,8 +2477,8 @@
     User authentication can be delegated to an upstream proxy server
     (usually Apache).  The upstream proxy should set a REMOTE_USER
     header in the request. Enabling remote user disables regular
-    logins.  For more information, see:
-    https://galaxyproject.org/admin/config/apache-proxy
+    logins.  For more information, see: https://docs.galaxyproject.org
+    /en/master/admin/special_topics/apache.html
 :Default: ``false``
 :Type: bool
 
@@ -3190,7 +3189,7 @@
     you can separate Galaxy into multiple processes.  There are more
     than one way to do this, and they are explained in detail in the
     documentation:
-    https://galaxyproject.org/admin/config/performance/scaling  By
+    https://docs.galaxyproject.org/en/master/admin/scaling.html  By
     default, Galaxy manages and executes jobs from within a single
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
@@ -3375,7 +3374,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to run the
     job script Galaxy generates for a tool execution.
 :Default: ``sudo -E scripts/drmaa_external_runner.py --assign_all_groups``
@@ -3388,7 +3387,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to kill
     such jobs by Galaxy (e.g. if the user cancels the job).
 :Default: ``sudo -E scripts/drmaa_external_killer.py``
@@ -3401,7 +3400,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used transfer
     permissions back and forth between the Galaxy user and the user
     that is running the job.
@@ -3415,7 +3414,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) Galaxy can extract the user
     name from the email address (actually the local-part before the @)
     or the username which are both stored in the Galaxy data base. The
