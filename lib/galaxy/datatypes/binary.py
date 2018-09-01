@@ -741,7 +741,7 @@ class GmxBinary(Binary):
     Base class for GROMACS binary files - xtc, trr, cpt
     """
 
-    magic_number = 0  # variables to be overwritten in the child class
+    magic_number = None  # variables to be overwritten in the child class
     file_ext = ""
 
     def __init__(self, **kwd):
