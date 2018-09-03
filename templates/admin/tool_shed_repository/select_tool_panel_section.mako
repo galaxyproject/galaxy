@@ -109,7 +109,7 @@
                      <p>This repository defines tool requirements that cannot be installed through the Tool Shed.</p>
                      <p>Please activate Conda dependency resolution, activate Docker dependency resolution, setup Environment Modules
 or manually satisfy the dependencies listed below.</p>
-                     <p>For details see <a target="_blank" href="https://docs.galaxyproject.org/en/latest/admin/dependency_resolvers.html">the dependency resolver documentation.</a></p>
+                     <p>For details see <a target="_blank" href="https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html">the dependency resolver documentation.</a></p>
                 </div>
                 %endif
                 <div class="form-row">

@@ -53,7 +53,7 @@ Python testing is currently a mix of nosetests and pytest, many tests when ran
 outside this script could be executed using either. pytest and Nose use slightly
 different syntaxes for selecting subsets of tests for execution. Nose
 will allow specific tests to be selected per the documentation at
-https://nose.readthedocs.org/en/latest/usage.html#selecting-tests. The comparable
+https://nose.readthedocs.io/en/latest/usage.html#selecting-tests . The comparable
 pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
 
 The spots these selectors can be used is described in the above usage documentation

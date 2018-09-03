@@ -70,7 +70,7 @@ uwsgi:
 tool_shed:
 
   # Verbosity of console log messages.  Acceptable values can be found
-  # here: https://docs.python.org/2/library/logging.html#logging-levels
+  # here: https://docs.python.org/library/logging.html#logging-levels
   #log_level: DEBUG
 
   # By default, the Tool Shed uses a SQLite database at
@@ -97,10 +97,9 @@ tool_shed:
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
   # function (see
-  # https://docs.python.org/2/library/time.html#time.strftime ), -
-  # $locale (complete format string for the server locale), - $iso8601
-  # (complete format string as specified by ISO 8601 international
-  # standard).
+  # https://docs.python.org/library/time.html#time.strftime ), - $locale
+  # (complete format string for the server locale), - $iso8601 (complete
+  # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
   # -- Repository and Tool search Using the script located at
@@ -165,8 +164,8 @@ tool_shed:
   # User authentication can be delegated to an upstream proxy server
   # (usually Apache).  The upstream proxy should set a REMOTE_USER
   # header in the request. Enabling remote user disables regular logins.
-  # For more information, see:
-  # https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
+  # For more information, see: https://galaxyproject.org/admin/config
+  # /apache-external-user-auth/
   #use_remote_user: false
 
   # If use_remote_user is enabled, anyone who can log in to the Galaxy
@@ -244,7 +243,7 @@ tool_shed:
   #smtp_ssl: false
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: 'https://wiki.galaxyproject.org/Support'
+  #support_url: 'https://galaxyproject.org/support/'
 
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu
@@ -297,9 +296,10 @@ tool_shed:
   #enable_beta_gdpr: false
 
   # For help on configuring the Advanced proxy features, see:
-  # http://usegalaxy.org/production  Apache can handle file downloads
-  # (Galaxy-to-user) via mod_xsendfile.  Set this to True to inform
-  # Galaxy that mod_xsendfile is enabled upstream.
+  # https://docs.galaxyproject.org/en/master/admin/production.html
+  # Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.
+  # Set this to True to inform Galaxy that mod_xsendfile is enabled
+  # upstream.
   #apache_xsendfile: false
 
   # The same download handling can be done by nginx using X-Accel-
