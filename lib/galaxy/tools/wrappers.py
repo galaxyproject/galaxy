@@ -329,6 +329,7 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
     """
 
     def __init__(self, job_working_directory, datasets, dataset_paths=[], **kwargs):
+        self._dataset_elements_cache = {}
         if not isinstance(datasets, list):
             datasets = [datasets]
 
@@ -357,6 +358,16 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
             else:
                 dataset_instances.extend(dataset_instance_source.collection.dataset_elements)
         return dataset_instances
+
+    def get_datasets_for_group(self, group):
+        group = text_type(group).lower()
+        if not self._dataset_elements_cache.get(group):
+            wrappers = []
+            for element in self:
+                if any([t for t in element.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                    wrappers.append(element)
+            self._dataset_elements_cache[group] = wrappers
+        return self._dataset_elements_cache[group]
 
     def __str__(self):
         return ','.join(map(str, self))
