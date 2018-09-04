@@ -233,7 +233,7 @@ export default {
             mod_toastr.error(errorMsg);
         },
         updateView: function(response) {
-            this.workflowItem = response.data.workflow_item;
+            this.workflowItem = response.data;
             this.workflowUrl = this.workflowItem.url;
             if( this.workflowItem.importable === true ) {
                 this.shareStatus = "accessible via link";

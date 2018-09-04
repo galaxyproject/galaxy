@@ -441,16 +441,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def sharing(self, trans, id, **kwargs):
         """
         GET /api/workflows/sharing
-        Return a workflow with the given id.
+        Execute given operation on a workflow with the given id.
 
-        :param  id:      encoded workflow id
+        :param  id:     encoded workflow id
+        :type  id:      str
+
         """
         session = trans.sa_session
-        # Get session and workflow.
         stored = self.get_stored_workflow(trans, id)
         session.add(stored)
 
-        # Do operation on workflow.
         if 'make_accessible_via_link' in kwargs:
             self._make_item_accessible(trans.sa_session, stored)
         elif 'make_accessible_and_publish' in kwargs:
@@ -489,17 +489,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow["url"] = url_for(controller="workflow", action='display_by_username_and_slug', username=trans.get_user().username, slug=stored.slug, qualified=True)
         stored_workflow["users_shared_with"] = wf_association
         stored_workflow["slug"] = stored.slug
-        return {"workflow_item": stored_workflow}
+        return stored_workflow
 
     @expose_api
     def unshare_me(self, trans, id):
         """Remove self from a workflow shared with me."""
         stored = self.get_stored_workflow(trans, id, False, True)
         association = trans.sa_session.query(model.StoredWorkflowUserShareAssociation) \
-                             .filter_by(user=trans.user, stored_workflow=stored).one()
+            .filter_by(user=trans.user, stored_workflow=stored).one()
         trans.sa_session.delete(association)
         trans.sa_session.flush()
-        # return trans.response.send_redirect(url_for('/') + 'workflows/list')
         return True
 
     @expose_api
