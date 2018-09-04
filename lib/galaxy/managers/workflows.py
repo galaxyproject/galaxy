@@ -72,6 +72,12 @@ class WorkflowsManager(object):
                                                  subqueryload('latest_workflow').joinedload('steps').joinedload('*')).first()
         if stored_workflow is None:
             raise exceptions.ObjectNotFound("No such workflow found.")
+
+        # Older workflows may be missing slugs, so set them here.
+        if stored_workflow.importable and not stored_workflow.slug:
+            self.create_item_slug(trans.sa_session, stored_workflow)
+            trans.sa_session.flush()
+
         return stored_workflow
 
     def get_stored_accessible_workflow(self, trans, workflow_id):

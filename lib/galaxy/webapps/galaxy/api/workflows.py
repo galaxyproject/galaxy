@@ -448,7 +448,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         """
         session = trans.sa_session
-        stored = self.get_stored_workflow(trans, id)
+        stored = self.__get_stored_accessible_workflow(trans, id)
         session.add(stored)
 
         if 'make_accessible_via_link' in kwargs:
@@ -471,11 +471,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             association = session.query(model.StoredWorkflowUserShareAssociation) \
                                  .filter_by(user=user, stored_workflow=stored).one()
             session.delete(association)
-
-        # Legacy issue: workflows made accessible before recent updates may not have a slug. Create slug for any workflows that need them.
-        if stored.importable and not stored.slug:
-            self._make_item_accessible(trans.sa_session, stored)
         session.flush()
+
         wf_association = list()
         for item in stored.users_shared_with:
             association = dict()
