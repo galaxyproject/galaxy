@@ -472,21 +472,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                                  .filter_by(user=user, stored_workflow=stored).one()
             session.delete(association)
         session.flush()
-
-        wf_association = list()
-        for item in stored.users_shared_with:
-            association = dict()
-            association["user_id"] = trans.security.encode_id(item.user.id)
-            association["user_email"] = item.user.email
-            wf_association.append(association)
-        stored_workflow = stored.to_dict()
-        stored_workflow["id"] = trans.security.encode_id(stored_workflow["id"])
-        stored_workflow["user_name"] = trans.get_user().username
-        stored_workflow["importable"] = stored.importable
-        stored_workflow["url"] = url_for(controller="workflow", action='display_by_username_and_slug', username=trans.get_user().username, slug=stored.slug, qualified=True)
-        stored_workflow["users_shared_with"] = wf_association
-        stored_workflow["slug"] = stored.slug
-        return stored_workflow
+        return self.workflow_manager.workflow_to_dict(trans, stored)
 
     @expose_api
     def unshare_me(self, trans, id):

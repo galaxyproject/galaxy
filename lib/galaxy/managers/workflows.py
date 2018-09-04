@@ -103,6 +103,22 @@ class WorkflowsManager(object):
         self.check_security(trans, workflow, check_ownership=True)
         return workflow
 
+    def workflow_to_dict(self, trans, stored):
+        """ Export the workflow information (but not contents) to a dictionary."""
+        wf_association = list()
+        for item in stored.users_shared_with:
+            association = dict()
+            association["user_id"] = trans.security.encode_id(item.user.id)
+            association["user_email"] = item.user.email
+            wf_association.append(association)
+        workflow_dict = stored.to_dict(value_mapper={'id': trans.security.encode_id})
+        workflow_dict["user_name"] = trans.get_user().username
+        workflow_dict["importable"] = stored.importable
+        workflow_dict["url"] = url_for(controller="workflow", action='display_by_username_and_slug', username=trans.get_user().username, slug=stored.slug, qualified=True)
+        workflow_dict["users_shared_with"] = wf_association
+        workflow_dict["slug"] = stored.slug
+        return workflow_dict
+
     def check_security(self, trans, has_workflow, check_ownership=True, check_accessible=True):
         """ check accessibility or ownership of workflows, storedworkflows, and
         workflowinvocations. Throw an exception or returns True if user has
