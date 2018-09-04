@@ -478,8 +478,6 @@ class DefaultToolAction(object):
                 datasets_to_persist.append(data)
         # Set HID and add to history.
         # This is brand new and certainly empty so don't worry about quota.
-        # TOOL OPTIMIZATION NOTE - from above loop to the job create below 99%+
-        # of execution time happens within in history.add_datasets.
         history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
 
         # Add all the children to their parents
@@ -810,10 +808,10 @@ class OutputCollections(object):
                     for value in elements.values():
                         # Either a HDA (if) or a DatasetCollection or a recursive dict.
                         if getattr(value, "history_content_type", None) == "dataset":
-                            assert value.history is not None
+                            assert value.history is not None or value.history_id is not None
                         elif hasattr(value, "dataset_instances"):
                             for dataset in value.dataset_instances:
-                                assert dataset.history is not None
+                                assert dataset.history is not None or dataset.history_id is not None
                         else:
                             assert value["src"] == "new_collection"
                             check_elements(value["elements"])
