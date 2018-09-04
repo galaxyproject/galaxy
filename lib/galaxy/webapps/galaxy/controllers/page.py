@@ -996,11 +996,7 @@ class PageController(BaseUIController, SharableMixin,
             pass
 
 
-PLACEHOLDER_TEMPLATE = '''
-<div class="embedded-item {class_shorthand_lower} placeholder" id="{item_class}-{item_id}">
-    <p class="title">Embedded Galaxy {class_shorthand} - '{item_name}'</p>
-    <p class="content">[Do not edit this block; Galaxy will fill it in with the annotated {class_shorthand} when it is displayed]</p>
-</div>'''
+PLACEHOLDER_TEMPLATE = '''<div class="embedded-item {class_shorthand_lower} placeholder" id="{item_class}-{item_id}"><p class="title">Embedded Galaxy {class_shorthand} - '{item_name}'</p><p class="content">[Do not edit this block; Galaxy will fill it in with the annotated {class_shorthand} when it is displayed]</p></div>'''
 
 # This is a mapping of the id portion of page contents to the cssclass/shortname.
 PAGE_CLASS_MAPPING = {
