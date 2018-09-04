@@ -69,7 +69,7 @@ svgwrite = "*"
 pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
-python-genomespaceclient = "<1.0"
+python-genomespaceclient = "<2.0"
 social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
 
 [requires]
