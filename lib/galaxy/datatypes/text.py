@@ -420,7 +420,16 @@ class SnpEffDb(Text):
                 if m:
                     snpeff_version = m.groups()[0] + m.groups()[1]
         except Exception:
-            pass
+            try:
+                # In case this was a decompressed file manually uploaded to a user's history
+                with open(path, 'r') as fh:
+                    buf = fh.read(100)
+                    lines = buf.splitlines()
+                    m = re.match('^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
+                    if m:
+                        snpeff_version = m.groups()[0] + m.groups()[1]
+            except Exception:
+                pass
         return snpeff_version
 
     def set_meta(self, dataset, **kwd):
@@ -466,6 +475,11 @@ class SnpEffDb(Text):
                         fh.write("regulations: %s\n" % ','.join(regulations))
             except Exception:
                 pass
+        # If this was a file uploaded manually by the user, get the snpeff version from it instead
+        if os.path.isfile(dataset.file_name):
+            snpeff_version = self.getSnpeffVersionFromFile(dataset.file_name)
+            if snpeff_version:
+                dataset.metadata.snpeff_version = snpeff_version
 
 
 class SnpSiftDbNSFP(Text):
