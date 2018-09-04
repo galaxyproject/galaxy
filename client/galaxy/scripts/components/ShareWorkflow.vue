@@ -22,21 +22,21 @@
                 Share
             </h4>
             <div v-if="workflowItem.importable">
-		This workflow is currently <strong>{{ shareStatus }}</strong>.
-		<div>
-		    Anyone can view and import this workflow by visiting the following URL:
-		    <blockquote>
-		        <a id="item-url" :href="workflowItem.url" target="_top">{{ workflowItem.url }}</a>
-		        <span id="item-url-text" style="display: none">
-		            {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
-		        </span>
-		        <a href="#" id="edit-identifier" title="Edit workflow url"><img src="/static/images/fugue/pencil.png"/></a>
-		    </blockquote>
-		    <div v-if="workflowItem.published">
-		        This workflow is publicly listed and searchable in Galaxy's
-		        <a :href="publishedUrl" target="_top">Published Workflows</a> section.
-		    </div>
-		</div>
+		        This workflow is currently <strong>{{ shareStatus }}</strong>.
+		        <div>
+		            Anyone can view and import this workflow by visiting the following URL:
+        		    <blockquote>
+        		        <a id="item-url" :href="workflowItem.url" target="_top">{{ workflowItem.url }}</a>
+        		        <span id="item-url-text" style="display: none">
+        		            {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
+        		        </span>
+        		        <a href="#" id="edit-identifier" title="Edit workflow url"><img src="/static/images/fugue/pencil.png"/></a>
+        		    </blockquote>
+        		    <div v-if="workflowItem.published">
+        		        This workflow is publicly listed and searchable in Galaxy's
+        		        <a :href="publishedUrl" target="_top">Published Workflows</a> section.
+        		    </div>
+        		</div>
                 <div>
                     <form>
                         <div v-if="!workflowItem.published">
@@ -171,7 +171,6 @@
     </div>
 </template>
 <script>
-
 import Vue from "vue";
 import axios from "axios";
 import async_save_text from "utils/async-save-text";
@@ -202,17 +201,17 @@ export default {
             splitUrl: [],
             lastButOneComp: "",
             lastComp: "",
-            publishedUrl: Galaxy.root + 'workflows/list_published',
-            wfListUrl: Galaxy.root + 'workflows/list',
-            shareWfUrl: Galaxy.root + 'workflow/share?id=' + this.id,
-            createSVGUrl: Galaxy.root + 'workflow/gen_image?id=' + this.id,
-            createMyExperimentUrl: Galaxy.root + 'workflow/export_to_myexp?id=' + this.id,
-            createPublicNameUrl: Galaxy.root + 'workflow/set_public_username?id=' + this.id
-        }
+            publishedUrl: Galaxy.root + "workflows/list_published",
+            wfListUrl: Galaxy.root + "workflows/list",
+            shareWfUrl: Galaxy.root + "workflow/share?id=" + this.id,
+            createSVGUrl: Galaxy.root + "workflow/gen_image?id=" + this.id,
+            createMyExperimentUrl: Galaxy.root + "workflow/export_to_myexp?id=" + this.id,
+            createPublicNameUrl: Galaxy.root + "workflow/set_public_username?id=" + this.id
+        };
     },
     created: function() {
-        let url = Galaxy.root + 'api/workflows/sharing?id=' + this.id
-        if(this.message !== "" && this.status === "error") {
+        let url = Galaxy.root + "api/workflows/sharing?id=" + this.id;
+        if (this.message !== "" && this.status === "error") {
             this.showError(this.message);
         }
         this.ajaxCall(url);
@@ -235,9 +234,9 @@ export default {
         updateView: function(response) {
             this.workflowItem = response.data;
             this.workflowUrl = this.workflowItem.url;
-            if( this.workflowItem.importable === true ) {
+            if (this.workflowItem.importable === true) {
                 this.shareStatus = "accessible via link";
-                if( this.workflowItem.published === true ) {
+                if (this.workflowItem.published === true) {
                     this.shareStatus += " and published";
                 }
                 this.splitUrl = this.workflowUrl.split("/");
@@ -248,36 +247,52 @@ export default {
             }
         },
         registerAsyncCalls: function(id) {
-            $(document).ready( function() {
+            $(document).ready(function() {
                 // Set up slug-editing functionality.
-                let on_start = function( text_elt ) {
+                let on_start = function(text_elt) {
                     // Replace URL with URL text.
-                    $('#item-url').hide();
-                    $('#item-url-text').show();
+                    $("#item-url").hide();
+                    $("#item-url-text").show();
                     // Allow only lowercase alphanumeric and '-' characters in slug.
-                    text_elt.keyup(function(){
-                        text_elt.val($(this).val().replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase());
+                    text_elt.keyup(function() {
+                        text_elt.val(
+                            $(this)
+                                .val()
+                                .replace(/\s+/g, "-")
+                                .replace(/[^a-zA-Z0-9\-]/g, "")
+                                .toLowerCase()
+                        );
                     });
                 };
-                let on_finish = function( text_elt ) {
+                let on_finish = function(text_elt) {
                     // Replace URL text with URL.
-                    $('#item-url-text').hide();
-                    $('#item-url').show();
+                    $("#item-url-text").hide();
+                    $("#item-url").show();
                     // Set URL to new value.
-                    var new_url = $('#item-url-text').text();
-                    var item_url_obj = $('#item-url');
+                    var new_url = $("#item-url-text").text();
+                    var item_url_obj = $("#item-url");
                     item_url_obj.attr("href", new_url);
                     item_url_obj.text(new_url);
                 };
                 let url = Galaxy.root + "workflow/set_slug_async?id=" + id;
-                async_save_text("edit-identifier", "item-identifier", url, "new_slug", null, false, 0, on_start, on_finish);
+                async_save_text(
+                    "edit-identifier",
+                    "item-identifier",
+                    url,
+                    "new_slug",
+                    null,
+                    false,
+                    0,
+                    on_start,
+                    on_finish
+                );
             });
         },
         getUrl: function() {
             return Galaxy.root + "api/workflows/sharing?id=" + this.id;
         },
         submit: function(event) {
-            let url = Galaxy.root + 'api/workflows/sharing',
+            let url = Galaxy.root + "api/workflows/sharing",
                 attr = event.target.name,
                 value = event.target.value;
             $.ajax({
@@ -285,19 +300,19 @@ export default {
                 data: { id: this.id, [attr]: value },
                 method: "GET"
             })
-            .done(response => {
-                window.location = Galaxy.root + 'workflows/sharing?id=' + this.id;
-            })
-            .fail(response => {
-                this.showError(response);
-            });
+                .done(response => {
+                    window.location = Galaxy.root + "workflows/sharing?id=" + this.id;
+                })
+                .fail(response => {
+                    this.showError(response);
+                });
         },
         unshareWorkflow: function(userId) {
-            let url = Galaxy.root + 'api/workflows/sharing?id=' + this.id + '&unshare_user=' + userId;
+            let url = Galaxy.root + "api/workflows/sharing?id=" + this.id + "&unshare_user=" + userId;
             this.ajaxCall(url);
         },
         createUsernameSlugUrl: function() {
-            return this.workflowItem.url + '/json-download';
+            return this.workflowItem.url + "/json-download";
         },
         createWorkflowSVG: function() {
             let url = this.createSVGUrl;
@@ -307,7 +322,9 @@ export default {
                     window.location = url;
                 })
                 .catch(e => {
-                    this.showError('Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools.');
+                    this.showError(
+                        "Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools."
+                    );
                 });
         }
     },
@@ -317,40 +334,40 @@ export default {
 };
 </script>
 <style>
-    .share-wf {
-        margin-top: 1%;
-    }
+.share-wf {
+    margin-top: 1%;
+}
 
-    .submit-button {
-        width: 32%;
-    }
+.submit-button {
+    width: 32%;
+}
 
-    h3 {
-        margin-top: 1em;
-    }
+h3 {
+    margin-top: 1em;
+}
 
-    input.action-button {
-        margin-left: 0;
-    }
+input.action-button {
+    margin-left: 0;
+}
 
-    a.action-button {
-        margin-top: 0.5%;
-    }
+a.action-button {
+    margin-top: 0.5%;
+}
 
-    .display-url {
-        margin: 0.5em 0em 0.5em 0.5em;
-        font-weight: bold;
-    }
+.display-url {
+    margin: 0.5em 0em 0.5em 0.5em;
+    font-weight: bold;
+}
 
-    .sharing-section {
-        margin-top: 1em;
-    }
+.sharing-section {
+    margin-top: 1em;
+}
 
-    .share-link {
-        cursor: pointer;
-    }
+.share-link {
+    cursor: pointer;
+}
 
-    .social-link {
-        margin-right: 0.5%;
-    }
+.social-link {
+    margin-right: 0.5%;
+}
 </style>

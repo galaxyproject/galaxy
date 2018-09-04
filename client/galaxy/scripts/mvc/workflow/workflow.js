@@ -280,16 +280,18 @@ const WorkflowListView = Backbone.View.extend({
         workflowItemView.renderTagEditor();
     },
 
-    removeItem: function(id){
+    removeItem: function(id) {
         this.collection.remove(id);
-        $(`.${id}`).closest("tr").remove();
+        $(`.${id}`)
+            .closest("tr")
+            .remove();
     },
 
     /** Add confirm box before removing/unsharing workflow */
     confirmDelete: function(workflow) {
         const $el_shared_wf_link = this.$(`.link-confirm-shared-${workflow.id}`);
-        $el_shared_wf_link.click((e) => {
-            if (window.confirm(`Are you sure you want to remove the shared workflow '${workflow.attributes.name}'?`)){
+        $el_shared_wf_link.click(e => {
+            if (window.confirm(`Are you sure you want to remove the shared workflow '${workflow.attributes.name}'?`)) {
                 e.preventDefault();
                 axios
                     .post(`${Galaxy.root}api/workflows/unshare_me?id=${workflow.id}`)
@@ -301,8 +303,7 @@ const WorkflowListView = Backbone.View.extend({
                         mod_toastr.error(`Couldn't unshare the workflow.`);
                     });
             }
-        }
-        );
+        });
     },
 
     /** Implement client side workflow search/filtering */
@@ -385,4 +386,3 @@ const WorkflowListView = Backbone.View.extend({
 export default {
     View: WorkflowListView
 };
-
