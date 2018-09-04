@@ -250,6 +250,38 @@ steps:
 """
 
 
+WORKFLOW_NESTED_RUNTIME_PARAMETER = """
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: nested_workflow#workflow_output
+steps:
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: random_lines#out_file1
+      steps:
+        - tool_id: random_lines1
+          label: random_lines
+          runtime_inputs:
+            - num_lines
+          state:
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    label: nested_workflow
+    connect:
+      inner_input: outer_input
+"""
+
+
 WORKFLOW_RUNTIME_PARAMETER_SIMPLE = """
 class: GalaxyWorkflow
 inputs:

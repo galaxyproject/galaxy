@@ -69,7 +69,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
 
     def _new_workflow_progress(self):
         return WorkflowProgress(
-            self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress)
+            self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {}
         )
 
     def _set_previous_progress(self, outputs):
@@ -168,14 +168,15 @@ class WorkflowProgressTestCase(unittest.TestCase):
             (100, {"output": hda}),
             (101, UNSCHEDULED_STEP),
         ])
-        self.invocation.create_subworkflow_invocation_for_step(
+        subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(
             self.invocation.workflow.step_by_index(1)
         )
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
         (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]
-        subworkflow_progress = progress.subworkflow_progress(subworkflow_step)
+        subworkflow_progress = progress.subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
         subworkflow = subworkflow_step.subworkflow
+        assert subworkflow_progress.workflow_invocation == subworkflow_invocation
         assert subworkflow_progress.workflow_invocation.workflow == subworkflow
 
         subworkflow_input_step = subworkflow.step_by_index(0)
@@ -207,7 +208,7 @@ class MockModuleInjector(object):
     def __init__(self, progress):
         self.progress = progress
 
-    def inject(self, step):
+    def inject(self, step, step_args={}):
         step.module = MockModule(self.progress)
 
 

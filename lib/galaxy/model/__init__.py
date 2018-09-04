@@ -4183,7 +4183,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
         subworkflow_invocation = WorkflowInvocation()
-        return self.attach_subworkflow_invocation_for_step(step, subworkflow_invocation)
+        self.attach_subworkflow_invocation_for_step(step, subworkflow_invocation)
+        return subworkflow_invocation
 
     def attach_subworkflow_invocation_for_step(self, step, subworkflow_invocation):
         assert step.type == "subworkflow"
@@ -4502,6 +4503,7 @@ class WorkflowRequestInputParameter(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
+        STEP_PARAMETERS='step',
         META_PARAMETERS='meta',
         RESOURCE_PARAMETERS='resource',
     )

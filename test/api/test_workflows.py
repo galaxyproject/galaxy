@@ -20,6 +20,7 @@ from base.populators import (  # noqa: I100
     WorkflowPopulator
 )
 from base.workflow_fixtures import (  # noqa: I100
+    WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -221,6 +222,7 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
             jobs_descriptions = yaml.safe_load(has_workflow)
 
         test_data = jobs_descriptions.get("test_data", {})
+        parameters = test_data.pop('step_parameters', {})
         inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
         workflow_request = dict(
             history="hist_id=%s" % history_id,
@@ -228,6 +230,9 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
         )
         workflow_request["inputs"] = dumps(label_map)
         workflow_request["inputs_by"] = 'name'
+        if parameters:
+            workflow_request["parameters"] = dumps(parameters)
+            workflow_request["parameters_normalized"] = True
         if has_uploads:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         url = "workflows/%s/usage" % (workflow_id)
@@ -955,6 +960,24 @@ test_data:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
+
+    @skip_without_tool("random_lines1")
+    def test_run_subworkflow_runtime_parameters(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow_run_description = """%s
+
+test_data:
+  step_parameters:
+    '1':
+      '1|num_lines': 2
+  outer_input:
+    value: 1.bed
+    type: File
+""" % WORKFLOW_NESTED_RUNTIME_PARAMETER
+            self._run_jobs(workflow_run_description, history_id=history_id)
+
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert len([x for x in content.split("\n") if x]) == 2
 
     def test_run_subworkflow_auto_labels(self):
             history_id = self.dataset_populator.new_history()
@@ -2675,7 +2698,6 @@ steps:
             inputs = {
                 '0': self._ds_entry(hda),
             }
-            print(inputs)
             uuid2 = uuid_dict[3]
             workflow_request = {}
             workflow_request["replacement_params"] = dumps(dict(replaceme="was replaced"))
