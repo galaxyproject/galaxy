@@ -1006,6 +1006,7 @@ PAGE_CLASS_MAPPING = {
     'Visualization': 'Visualization'
 }
 
+PAGE_MAXRAW = 10**15
 
 def _placeholderRenderForEdit(trans, item_class, item_id):
     return _placeholderRenderForSave(trans, item_class, item_id, encode=True)
@@ -1014,6 +1015,8 @@ def _placeholderRenderForEdit(trans, item_class, item_id):
 def _placeholderRenderForSave(trans, item_class, item_id, encode=False):
     try:
         decoded_item_id = int(item_id)
+        if decoded_item_id >= PAGE_MAXRAW:
+            raise ValueError("Identifier larger than maximum expected raw int, must be already encoded.")
         encoded_item_id = trans.app.security.encode_id(item_id)
     except ValueError:
         decoded_item_id = trans.app.security.decode_id(item_id)
