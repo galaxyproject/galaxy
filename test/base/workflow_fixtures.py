@@ -297,3 +297,25 @@ steps:
         seed_source_selector: set_seed
         seed: asdf
 """
+
+
+WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE = """
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - label: the_pause
+    type: pause
+    connect:
+      input:
+      - input1
+  - tool_id: random_lines1
+    runtime_inputs:
+      - num_lines
+    state:
+      input:
+        $link: the_pause
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""

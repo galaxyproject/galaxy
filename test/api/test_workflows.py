@@ -22,6 +22,7 @@ from base.populators import (  # noqa: I100
 from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION_MAPPING,
@@ -975,6 +976,44 @@ test_data:
     type: File
 """ % WORKFLOW_NESTED_RUNTIME_PARAMETER
             self._run_jobs(workflow_run_description, history_id=history_id)
+
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert len([x for x in content.split("\n") if x]) == 2
+
+    @skip_without_tool("random_lines1")
+    def test_run_runtime_parameters_after_pause(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow_run_description = """%s
+
+test_data:
+  step_parameters:
+    '2':
+      'num_lines': 2
+  input1:
+    value: 1.bed
+    type: File
+""" % WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE
+            job_summary = self._run_jobs(workflow_run_description, history_id=history_id, wait=False)
+            uploaded_workflow_id, invocation_id = job_summary.workflow_id, job_summary.invocation_id
+
+            # Wait for at least one scheduling step.
+            self._wait_for_invocation_non_new(uploaded_workflow_id, invocation_id)
+
+            # Make sure the history didn't enter a failed state in there.
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            # Assert the workflow hasn't finished scheduling, we can be pretty sure we
+            # are at the pause step in this case then.
+            self._assert_invocation_non_terminal(uploaded_workflow_id, invocation_id)
+
+            # Review the paused steps to allow the workflow to continue.
+            self.__review_paused_steps(uploaded_workflow_id, invocation_id, order_index=1, action=True)
+
+            # Wait for the workflow to finish scheduling and ensure both the invocation
+            # and the history are in valid states.
+            invocation_scheduled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, 'scheduled')
+            assert invocation_scheduled, "Workflow state is not scheduled..."
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len([x for x in content.split("\n") if x]) == 2
