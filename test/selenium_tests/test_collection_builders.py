@@ -50,7 +50,7 @@ class CollectionBuildersTestCase(SeleniumTestCase):
         self.collection_builder_set_name("my awesome pair")
         self.screenshot("collection_builder_pair")
         self.collection_builder_create()
-        self.history_panel_wait_for_hid_ok(3)
+        self.history_panel_wait_for_hid_ok(5)
 
     @selenium_test
     def test_build_paired_list_simple(self):
