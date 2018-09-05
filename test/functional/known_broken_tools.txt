@@ -10,3 +10,6 @@ GeneBed_Maf_Fasta2
 hgv_lps
 # Some weird parameter issue
 maf_by_block_number1
+# Requires hg17.len to be present
+bed_to_bigBed
+wig_to_bigWig
