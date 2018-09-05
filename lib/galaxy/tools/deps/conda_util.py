@@ -230,6 +230,7 @@ class CondaContext(installable.InstallableContext):
                 kwds['stdout'] = open(stdout_path, 'w')
                 cmd_string += " > '%s'" % stdout_path
             conda_exec_home = env['HOME'] = tempfile.mkdtemp(prefix='conda_exec_home_')  # We don't want to pollute ~/.conda, which may not even be writable
+            env['PATH'] = "%s:%s" % (os.path.join(self.conda_prefix, 'bin'), os.environ['PATH'])
             log.debug("Executing command: %s", cmd_string)
             return self.shell_exec(cmd, env=env, **kwds)
         except Exception:

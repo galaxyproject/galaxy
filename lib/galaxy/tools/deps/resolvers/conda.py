@@ -44,6 +44,7 @@ DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # (for old R packages)
 DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,conda-forge,defaults"
 CONDA_SOURCE_CMD = """[ "$CONDA_DEFAULT_ENV" = "%s" ] ||
+export PATH="%s/bin":$PATH
 MAX_TRIES=3
 COUNT=0
 while [ $COUNT -lt $MAX_TRIES ]; do
@@ -408,6 +409,7 @@ class MergedCondaDependency(Dependency):
         else:
             return CONDA_SOURCE_CMD % (
                 self.environment_path,
+                self.conda_context.conda_prefix,
                 self.activate,
                 self.environment_path
             )
@@ -477,6 +479,7 @@ class CondaDependency(Dependency):
         else:
             return CONDA_SOURCE_CMD % (
                 self.environment_path,
+                self.conda_context.conda_prefix,
                 self.activate,
                 self.environment_path
             )
