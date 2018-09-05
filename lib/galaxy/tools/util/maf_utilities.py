@@ -5,6 +5,7 @@ Provides wrappers and utilities for working with MAF files and alignments.
 # Dan Blankenberg
 from __future__ import print_function
 
+import functools
 import logging
 import os
 import resource
@@ -655,7 +656,7 @@ def sort_block_components_by_block(block1, block2):
     # orders the components in block1 by the index of the component in block2
     # block1 must be a subset of block2
     # occurs in-place
-    return block1.components.sort(cmp=lambda x, y: block2.components.index(x) - block2.components.index(y))
+    return block1.components.sort(key=functools.cmp_to_key(lambda x, y: block2.components.index(x) - block2.components.index(y)))
 
 
 def get_species_in_maf(maf_filename):
