@@ -11,7 +11,7 @@ bleach==2.1.3
 boltons==18.0.0
 boto==2.46.1
 bunch==1.0.1
-bx-python==0.8.1
+bx-python==0.8.2
 bz2file==0.98; python_version < '3.3'
 certifi==2018.1.18
 cffi==1.11.5
