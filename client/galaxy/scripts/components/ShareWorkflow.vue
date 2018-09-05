@@ -192,7 +192,7 @@ export default {
             required: false
         }
     },
-    data() {
+    data: function() {
         return {
             errormessage: null,
             workflowItem: {},
@@ -333,7 +333,7 @@ export default {
     }
 };
 </script>
-<style>
+<style scoped>
 .share-wf {
     margin-top: 1%;
 }
