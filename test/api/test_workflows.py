@@ -1893,7 +1893,6 @@ test_data:
             new_workflow_request['history'] = "hist_id=%s" % history_id_two
             new_workflow_request['use_cached_job'] = True
             # We run the workflow again, it should not produce any new outputs
-            self.dataset_populator.wait_for_history(history_id_one, assert_ok=True)
             new_workflow_response = self._post("workflows", data=new_workflow_request).json()
             first_wf_output = self._get("datasets/%s" % run_workflow_response['outputs'][0]).json()
             second_wf_output = self._get("datasets/%s" % new_workflow_response['outputs'][0]).json()
@@ -1911,7 +1910,6 @@ test_data:
     type: File
 """ % WORKFLOW_NESTED_SIMPLE
             run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id_one)
-            self.dataset_populator.wait_for_history(history_id_one, assert_ok=True)
             workflow_request = run_jobs_summary.workflow_request
             # We copy the inputs to a new history and re-run the workflow
             inputs = json.loads(workflow_request['inputs'])
