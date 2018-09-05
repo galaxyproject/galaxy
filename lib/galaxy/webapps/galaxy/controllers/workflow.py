@@ -325,7 +325,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.require_login("Share or export Galaxy workflows")
     def sharing(self, trans, id, **kwargs):
         """ Redirect the sharing workflow """
-        return trans.response.send_redirect(url_for('/') + 'workflows/sharing?id=' + id)
+        redirect_url = 'workflows/sharing?id=' + id
+        if kwargs:
+            message = kwargs.get('message', False)
+            if message:
+                status= kwargs.get('status', 'error')
+                redirect_url += '&message=' + message + '&status=' + status
+        return trans.response.send_redirect(url_for('/') + redirect_url)
 
     @web.expose
     @web.require_login("share Galaxy items")
@@ -336,7 +342,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         # to escape.
         message = validate_publicname(trans, username, user)
         if message:
-            return trans.fill_template("/workflow/sharing.mako", item=self.get_item(trans, id), message=message, status="error")
+            return self.sharing(trans, id, message=message, status='error', **kwargs)
         user.username = username
         trans.sa_session.flush()
         return self.sharing(trans, id, **kwargs)
