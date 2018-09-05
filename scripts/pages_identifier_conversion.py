@@ -1,4 +1,5 @@
 import argparse
+import difflib
 import logging
 import os
 import sys
@@ -28,30 +29,28 @@ def main(argv):
     security_helper = SecurityHelper(id_secret=secret)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
-        logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")
+        print("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")
 
     model = galaxy.config.init_models_from_config(config, object_store=object_store)
     session = model.context.current
     pagerevs = session.query(model.PageRevision).all()
     mock_trans = Bunch(app=Bunch(security=security_helper), model=model, user_is_admin=lambda: True, sa_session=session)
-    try:
-        for p in pagerevs:
+    for p in pagerevs:
+        try:
             processor = _PageContentProcessor(mock_trans, _placeholderRenderForSave)
             processor.feed(p.content)
-            if not args.dry_run:
-                p.content = unicodify(processor.output(), 'utf-8')
-                session.add(p)
-            else:
-                print("Modifying revision %s.  Original, followed by new content, below." % p.id)
-                print('=' * 80)
-                print(p.content)
-                print('_' * 80)
-                print(unicodify(processor.output(), 'utf-8'))
-                print('=' * 80)
-    except Exception:
-        logging.exception("Error parsing page, rolling everything back.  Please report this error.")
-        session.rollback()
-        exit(2)
+            newcontent = unicodify(processor.output(), 'utf-8')
+            if p.content != newcontent:
+                if not args.dry_run:
+                    p.content = unicodify(processor.output(), 'utf-8')
+                    session.add(p)
+                    session.commit()
+                else:
+                    print("Modifying revision %s." % p.id)
+                    print(difflib.unified_diff(p.content, newcontent))
+        except Exception:
+            logging.exception("Error parsing page, rolling changes back and skipping revision %s.  Please report this error." % p.id)
+            session.rollback()
     session.flush()
 
 
