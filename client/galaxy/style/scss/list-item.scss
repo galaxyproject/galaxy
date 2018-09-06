@@ -28,9 +28,9 @@ $vertical-gap: 8px;
     }
 
     $spacing-top: 6px;
-    $spacing-right: $margin-v;
+    $spacing-right: $margin-v * 0.5;
     $spacing-bottom: 6px;
-    $spacing-left: $margin-v;
+    $spacing-left: $margin-v * 0.5;
     .padded {
         padding: $spacing-top $spacing-right $spacing-bottom $spacing-left;
     }

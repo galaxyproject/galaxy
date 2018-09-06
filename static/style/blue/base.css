@@ -13285,11 +13285,11 @@ div.permissionContainer {
 .list-item {
   border: 1px solid #bfbfbf; }
   .list-item .padded, .list-item .title-bar {
-    padding: 6px 1.5rem 6px 1.5rem; }
+    padding: 6px 0.75rem 6px 0.75rem; }
   .list-item .warnings:not(:empty) {
     padding-top: 4px; }
   .list-item .warnings [class$="messagesmall"] {
-    margin: 6px 1.5rem 2px 1.5rem;
+    margin: 6px 0.75rem 2px 0.75rem;
     font-size: 90%; }
     .list-item .warnings [class$="messagesmall"]:first-child {
       margin-top: 0px; }
@@ -13304,7 +13304,7 @@ div.permissionContainer {
     width: 32px;
     height: 32px;
     margin: 0px -6px 0px;
-    padding: 8px 0px 2px 0.5rem;
+    padding: 8px 0px 2px -0.25rem;
     font-size: 80%;
     color: #333;
     cursor: pointer;
@@ -13340,12 +13340,12 @@ div.permissionContainer {
         color: inherit; }
   .list-item .primary-actions {
     float: right;
-    margin: 6px 1.5rem 0; }
+    margin: 6px 0.75rem 0; }
     .list-item .primary-actions .icon-btn, .list-item .primary-actions .ui-button-icon-plain {
       margin-left: 2px; }
   .list-item .details {
     display: none;
-    padding: 0px 1.5rem 6px 1.5rem; }
+    padding: 0px 0.75rem 6px 0.75rem; }
     .list-item .details label {
       margin: 0px;
       padding: 0px;
