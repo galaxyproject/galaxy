@@ -33,8 +33,6 @@ from logging.config import fileConfig
 
 from six.moves.configparser import ConfigParser
 
-from galaxy.util import unicodify
-
 try:
     from daemonize import Daemonize
 except ImportError:
@@ -45,13 +43,21 @@ try:
 except ImportError:
     uwsgi = None
 
-REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
-
 log = logging.getLogger(__name__)
 
 real_file = os.path.realpath(__file__)
 GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pardir))
 GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
+try:
+    sys.path.insert(1, GALAXY_LIB_DIR)
+except Exception:
+    log.exception("Failed to add Galaxy to sys.path")
+    raise
+from galaxy.util import unicodify
+from galaxy.web.stack import get_app_kwds
+
+REQUIRES_DAEMONIZE_MESSAGE = "Attempted to use Galaxy in daemon mode, but daemonize is unavailable."
+
 DEFAULT_INI_APP = "main"
 DEFAULT_CONFIG_SECTION = "galaxy"
 DEFAULT_INIS = ["config/galaxy.yml", "config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.yml.sample"]
@@ -167,6 +173,8 @@ class GalaxyConfigBuilder(object):
     """
 
     def __init__(self, args=None, **kwds):
+        self.config_file = None
+        self.config_section = None
         self.app_name = kwds.get("app") or (args and args.app) or DEFAULT_CONFIG_SECTION
         config_file = kwds.get("config_file", None) or (args and args.config_file)
         # If given app_conf_path - use that - else we need to ensure we have a
@@ -201,7 +209,6 @@ class GalaxyConfigBuilder(object):
         return self.config_file.endswith('.ini') or self.config_file.endswith('.ini.sample')
 
     def app_kwds(self):
-        from galaxy.web.stack import get_app_kwds
         kwds = get_app_kwds(self.app_name, app_name=self.app_name)
         if 'config_file' not in kwds:
             kwds['config_file'] = self.config_file
@@ -234,11 +241,6 @@ class GalaxyConfigBuilder(object):
 
 def main():
     arg_parser = ArgumentParser(description=DESCRIPTION)
-    try:
-        sys.path.insert(1, GALAXY_LIB_DIR)
-    except Exception:
-        log.exception("Failed to add Galaxy to sys.path")
-        raise
     GalaxyConfigBuilder.populate_options(arg_parser)
     args = arg_parser.parse_args()
     if args.ini_path and not args.config_file:

@@ -736,29 +736,19 @@ class H5(Binary):
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
-class Trr(Binary):
+class GmxBinary(Binary):
     """
-    Class describing an trr file from the GROMACS suite
-
-    >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('em.trr')
-    >>> Trr().sniff(fname)
-    True
-    >>> fname = get_test_fname('interval.interval')
-    >>> Trr().sniff(fname)
-    False
+    Base class for GROMACS binary files - xtc, trr, cpt
     """
-    file_ext = "trr"
 
-    def __init__(self, **kwd):
-        Binary.__init__(self, **kwd)
-        self._magic_number = 1993
+    magic_number = None  # variables to be overwritten in the child class
+    file_ext = ""
 
     def sniff(self, filename):
-        # The first 4 bytes of any trr file containing 1993
+        # The first 4 bytes of any GROMACS binary file containing the magic number
         try:
             header = open(filename, 'rb').read(struct.calcsize('>1i'))
-            if struct.unpack('>1i', header)[0] == self._magic_number:
+            if struct.unpack('>1i', header)[0] == self.magic_number:
                 return True
             return False
         except Exception:
@@ -766,7 +756,7 @@ class Trr(Binary):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.peek = "Binary GROMACS trr file"
+            dataset.peek = "Binary GROMACS %s file" % (self.file_ext)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = 'file does not exist'
@@ -776,7 +766,58 @@ class Trr(Binary):
         try:
             return dataset.peek
         except Exception:
-            return "Binary GROMACS trr file (%s)" % (nice_size(dataset.get_size()))
+            return "Binary GROMACS %s trajectory file (%s)" % (self.file_ext, nice_size(dataset.get_size()))
+
+
+class Trr(GmxBinary):
+    """
+    Class describing an trr file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.trr')
+    >>> Trr().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Trr().sniff(fname)
+    False
+    """
+
+    file_ext = "trr"
+    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
+
+
+class Cpt(GmxBinary):
+    """
+    Class describing a checkpoint (.cpt) file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.cpt')
+    >>> Cpt().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Cpt().sniff(fname)
+    False
+    """
+
+    file_ext = "cpt"
+    magic_number = 171817  # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
+
+
+class Xtc(GmxBinary):
+    """
+    Class describing an xtc file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.xtc')
+    >>> Xtc().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Xtc().sniff(fname)
+    False
+    """
+
+    file_ext = "xtc"
+    magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
 
 
 class Biom2(H5):

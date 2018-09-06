@@ -1,7 +1,7 @@
 """This module contains an interface and implementation describing Galaxy interactions used by gxformat2.
 
 The interface is :class:`ImporterGalaxyInterface` and the default
-implementation based on `bioblend <http://bioblend.readthedocs.io/>`__
+implementation based on `BioBlend <https://bioblend.readthedocs.io/>`__
 is :class:`BioBlendImporterGalaxyInterface`.
 """
 import abc
