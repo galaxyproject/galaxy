@@ -7,58 +7,46 @@
         </div>
         <ul class="manage-table-actions">
             <li>
-                <a class="action-button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
+                <a class="btn btn-secondary" type="button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
             </li>
             <li>
-                <a class="action-button" v-on:click.prevent="createWorkflowSVG" title="Create image of workflow in SVG format">Create image</a>
+                <a class="btn btn-secondary" type="button" v-on:click.prevent="createWorkflowSVG" title="Create image of workflow in SVG format">Create image</a>
             </li>
             <li>
-                <a class='action-button' title='Back to workflows list' :href="wfListUrl"> Back to workflows list </a>
+                <a class="btn btn-secondary" type="button" title='Back to workflows list' :href="wfListUrl"> Back to workflows list</a>
             </li>
         </ul>
         <hr>
         <div v-if="workflowItem.user_name !== ''">
-            <h4>
-                Share
-            </h4>
+            <h4>Share</h4>
             <div v-if="workflowItem.importable">
 		        This workflow is currently <strong>{{ shareStatus }}</strong>.
-		        <div>
-		            Anyone can view and import this workflow by visiting the following URL:
-        		    <blockquote>
-        		        <a id="item-url" :href="workflowItem.url" target="_top">{{ workflowItem.url }}</a>
-        		        <span id="item-url-text" style="display: none">
-        		            {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
-        		        </span>
-        		        <a href="#" id="edit-identifier" title="Edit workflow url"><img src="/static/images/fugue/pencil.png"/></a>
+                <a href="#" id="edit-identifier" title="Edit workflow url">(edit link)</a>
+                <div>
+                    <blockquote>
+                        <a id="item-url" :href="workflowItem.url" target="_blank">{{ workflowItem.url }}</a>
+                        <span id="item-url-text" style="display: none">
+                            {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
+                        </span>
         		    </blockquote>
         		    <div v-if="workflowItem.published">
         		        This workflow is publicly listed and searchable in Galaxy's
-        		        <a :href="publishedUrl" target="_top">Published Workflows</a> section.
+        		        <a :href="publishedUrl" target="_blank">Published Workflows</a> section.
         		    </div>
         		</div>
                 <div>
                     <form>
                         <div v-if="!workflowItem.published">
-                            <input class="action-button submit-button" value='Disable Access to Workflow Link' name="disable_link_access"
-                                v-on:click="submit" title="Disable Access to Workflow Link">
-                            <div class="toolParamHelp">Disables workflow's link so that it is not accessible.</div>
-                            <br />
-                            <input class="action-button submit-button" value="Publish Workflow" name="publish" v-on:click="submit" title="Publish Workflow">
-                            <div class="toolParamHelp">Publishes the workflow to Galaxy's
-                               <a :href="publishedUrl" target="_top">Published workflow</a> section, where it is publicly listed and searchable.
-                            </div>
-                        <br />
+                            <button class="btn btn-secondary" type="button" name="disable_link_access" v-on:click="submit" title="Disable access to workflow link">Disable access
+                            </button>
+                            <button class="btn btn-secondary" type="button" name="publish" v-on:click="submit" title="Publish workflow and make it searchable">Publish workflow
+                            </button>
                         </div>
                         <div v-else>
-                            <input class="action-button submit-button" value='Unpublish Workflow' name="unpublish" v-on:click="submit" title="Unpublish Workflow">
-                            <div class="toolParamHelp">Removes this workflow from Galaxy's <a :href="publishedUrl" target="_top">Published Workflow</a> section so that it is not publicly listed or searchable.</div>
-                            <br />
-                            <input class="action-button submit-button" value='Disable Access and Unpublish' name="disable_link_access_and_unpublish" v-on:click="submit" title="Disable Access to workflow via Link and Unpublish">
-                            <div class="toolParamHelp">Disables this workflow's link so that it is not accessible and removes it from Galaxy's
-                               <a :href="publishedUrl" target='_top'>Published workflow</a>
-                               section so that it is not publicly listed or searchable.
-                            </div>
+                            <button class="btn btn-secondary" type="button" name="unpublish" v-on:click="submit" title="Unpublish workflow">Unpublish workflow
+                            </button>
+                            <button class="btn btn-secondary" type="button" name="disable_link_access_and_unpublish" v-on:click="submit" title="Disable access to workflow via link and unpublish">Disable access
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -66,42 +54,37 @@
             <div v-else>
                 <p>This workflow is currently restricted so that only you and the users listed below can access it.</p>
                 <form>
-                    <input class="action-button submit-button" value="Make Workflow Accessible via Link" name="make_accessible_via_link" v-on:click="submit" title="Make Workflow Accessible via Link">
-                    <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the workflow.</div>
-                    <br />
-                    <input class="action-button submit-button" value="Make Workflow Accessible and Publish" name="make_accessible_and_publish"
-                        v-on:click="submit" title="Make Workflow Accessible and Publish"">
-                    <div class="toolParamHelp">
-                        Makes the workflow accessible via link (see above) and publishes it to Galaxy's
-                        <a :href="publishedUrl" target='_top'>Published workflow </a> section, where it is publicly listed and searchable.
-                    </div>
+                    <button class="btn btn-secondary" type="button" name="make_accessible_via_link" v-on:click="submit" title="Make Workflow Accessible via Link"> Make Workflow Accessible via Link
+                    </button>
+                    <button class="btn btn-secondary" type="button" name="make_accessible_and_publish" v-on:click="submit" title="Make Workflow Accessible and Publish"">Make Workflow Accessible and Publish
+                    </button>
                 </form>
             </div>
             <div class="sharing-section">
-                <h5>Share workflow with users</h5>
+                <h5>Share with users</h5>
                 <div v-if="workflowItem.users_shared_with && workflowItem.users_shared_with.length > 0">
-                    <p>The following users will see this workflow in their workflow list and will be able to view, import, and run it.</p>
-                    <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+                    <p>Users in the following list will be able to see and import this workflow until they are removed.</p>
+                    <table class="table table-sm table-striped colored">
                         <tr class="header">
                             <th>Email</th>
                             <th></th>
                         </tr>
                         <tr v-for="item in workflowItem.users_shared_with">
                             <td>
-                                <div>{{item.user_email}}</div>
+                                {{item.user_email}}
                             </td>
                             <td>
-                                <div>
-                                     <input class="action-button submit-button" value="Unshare" v-on:click="unshareWorkflow(item.user_id)" title="Unshare workflow with the user">
-                                </div>
+                                 <button class="btn btn-secondary btn-sm" type="button" v-on:click="unshareWorkflow(item.user_id)"
+                                 v-bind:title="'Stop sharing with ' + item.user_email">Remove
+                                 </button>
                             </td>
                         </tr>
                     </table>
-                    <a class="action-button" :href="shareWfUrl" title="Share the workflow with a different user"><span>Share with another user</span></a>
+                    <a class="btn btn-secondary" type="button" :href="shareWfUrl" title="Share the workflow with a different user">Share with another user</a>
                 </div>
                 <div v-else>
                     <p>You have not shared this workflow with any users yet.</p>
-                    <a class="action-button" :href="shareWfUrl"><span>Share with a user</span></a>
+                    <a class="btn btn-secondary" type="button" :href="shareWfUrl">Share with a user</a>
                 </div>
             </div>
             <div v-if="workflowItem.importable" class="sharing-section">
@@ -132,7 +115,7 @@
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input class="action-button" type="submit" name="set_username" value="Set Username"/>
+                    <input type="submit" name="set_username" value="Set Username"/>
                 </div>
            </form>
         </div>
@@ -333,25 +316,19 @@ export default {
     }
 };
 </script>
+
 <style scoped>
+
+form.btn-secondary {
+    margin-top: 1em;
+}
+
 .share-wf {
     margin-top: 1%;
 }
 
-.submit-button {
-    width: 32%;
-}
-
 h3 {
     margin-top: 1em;
-}
-
-input.action-button {
-    margin-left: 0;
-}
-
-a.action-button {
-    margin-top: 0.5%;
 }
 
 .display-url {
@@ -366,8 +343,7 @@ a.action-button {
 .share-link {
     cursor: pointer;
 }
-
-.social-link {
-    margin-right: 0.5%;
+td {
+    vertical-align: middle;
 }
 </style>
