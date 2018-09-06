@@ -1008,6 +1008,7 @@ PAGE_CLASS_MAPPING = {
 
 PAGE_MAXRAW = 10**15
 
+
 def _placeholderRenderForEdit(trans, item_class, item_id):
     return _placeholderRenderForSave(trans, item_class, item_id, encode=True)
 
