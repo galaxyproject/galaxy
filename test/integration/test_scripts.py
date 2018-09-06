@@ -160,6 +160,9 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         # TODO: test creating a smaller database - e.g. tool install database based on fresh
         # config file.
 
+    def test_galaxy_main(self):
+        self._scripts_check_argparse_help("galaxy-main")
+
     def test_runtime_stats(self):
         self._skip_if_not_postgres()
         self._scripts_check_argparse_help("runtime_stats.py")
