@@ -34,7 +34,11 @@ from sqlalchemy import (
     type_coerce,
     types)
 from sqlalchemy.ext import hybrid
-from sqlalchemy.orm import aliased, joinedload, object_session
+from sqlalchemy.orm import (
+    aliased,
+    joinedload,
+    object_session,
+)
 from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
@@ -1110,7 +1114,7 @@ class JobToInputDatasetAssociation(object):
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
-        self.dataset_version = dataset.version if dataset else None
+        self.dataset_version = 0  # We start with version 0 and update once the job is ready
 
 
 class JobToOutputDatasetAssociation(object):
@@ -2568,7 +2572,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         state = inspect(self)
         changes = {}
 
-        for attr in state.attrs:
+        for attr in state.mapper.columns:
+            # We only create a new version if columns of the HDA table have changed, and ignore relationships.
             hist = state.get_history(attr.key, True)
 
             if not hist.has_changes():

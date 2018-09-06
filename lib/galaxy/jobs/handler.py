@@ -457,6 +457,10 @@ class JobHandlerQueue(Monitors):
         if state == JOB_READY:
             # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
             self.increase_running_job_count(job.user_id, job_destination.id)
+            for job_to_input_dataset_association in job.input_datasets:
+                # We record the input dataset version, now that we know the inputs are ready
+                if job_to_input_dataset_association.dataset:
+                    job_to_input_dataset_association.dataset_version = job_to_input_dataset_association.dataset.version
         return state
 
     def __verify_job_ready(self, job, job_wrapper):
