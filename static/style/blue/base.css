@@ -5601,7 +5601,7 @@ button.bg-dark:focus {
 .mx-1 {
   margin-left: 0.25rem !important; }
 
-.m-2, .charts-client .charts-buttons, .charts-client .charts-right .alert, .charts-client .charts-right .errormessagelarge, .charts-client .charts-right .error-modal .modal-content, .error-modal .charts-client .charts-right .modal-content, .charts-client .charts-right
+.m-2, .charts-client .charts-right .alert, .charts-client .charts-right .errormessagelarge, .charts-client .charts-right .error-modal .modal-content, .error-modal .charts-client .charts-right .modal-content, .charts-client .charts-right
 .warningmessagelarge, .charts-client .charts-right
 .donemessagelarge, .charts-client .charts-right
 .infomessagelarge, .charts-client .charts-right
@@ -11978,6 +11978,8 @@ button.toast-close-button {
   -ms-flex-item-align: auto; }
 
 .charts-client .charts-buttons {
+  position: absolute;
+  right: 0px;
   z-index: 1000;
   width: 150px; }
   .charts-client .charts-buttons .btn, .charts-client .charts-buttons input[type="submit"], .charts-client .charts-buttons
@@ -12028,6 +12030,7 @@ button.toast-close-button {
   width: 30%;
   height: 100vh;
   padding-bottom: 32px;
+  padding-top: 32px;
   overflow: hidden;
   display: flex;
   flex-direction: column; }

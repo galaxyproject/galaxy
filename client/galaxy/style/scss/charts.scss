@@ -1,7 +1,8 @@
 .charts-client {
     .charts-buttons {
         @extend .float-right;
-        @extend .m-2;
+        position: absolute;
+        right: 0px;
         z-index: 1000;
         width: 150px;
         .btn {
@@ -58,6 +59,7 @@
         width: 30%;
         height: 100vh;
         padding-bottom: 32px;
+        padding-top: 32px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
