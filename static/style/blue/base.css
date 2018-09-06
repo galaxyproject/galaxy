@@ -5421,7 +5421,7 @@ button.bg-dark:focus {
   .align-self-xl-stretch {
     align-self: stretch !important; } }
 
-.float-left, .ui-select-content .ui-options {
+.float-left, .ui-portlet .portlet-buttons button, .ui-portlet-section .portlet-buttons button, .ui-select-content .ui-options {
   float: left !important; }
 
 .float-right, .popover .popover-header i, .charts-client .charts-buttons, .collection-creator.list-collection-creator .collection-elements-controls .clear-selected, .collection-creator.list-collection-creator .collection-element .discard, .collection-creator.pair-collection-creator .collection-elements-controls .clear-selected {
@@ -5589,7 +5589,7 @@ button.bg-dark:focus {
 .my-1 {
   margin-top: 0.25rem !important; }
 
-.mr-1,
+.mr-1, .ui-portlet .portlet-buttons button, .ui-portlet-section .portlet-buttons button,
 .mx-1 {
   margin-right: 0.25rem !important; }
 
@@ -5597,7 +5597,7 @@ button.bg-dark:focus {
 .my-1 {
   margin-bottom: 0.25rem !important; }
 
-.ml-1, .ui-portlet .portlet-header .portlet-operations .dropdown button, .ui-portlet-section .portlet-header .portlet-operations .dropdown button,
+.ml-1, .ui-portlet .portlet-header .portlet-operations button, .ui-portlet-section .portlet-header .portlet-operations button,
 .mx-1 {
   margin-left: 0.25rem !important; }
 
@@ -10408,10 +10408,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   -ms-transform: rotate(45deg);
   -o-transform: rotate(45deg);
   transform: rotate(45deg); }
-
-.ui-clear-float {
-  clear: both !important;
-  float: none !important; }
 
 .ui-modal {
   display: none;

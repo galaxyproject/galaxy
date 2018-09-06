@@ -186,7 +186,7 @@ var View = Backbone.View.extend({
                     icon: "fa-save",
                     tooltip: _l("Create new Build"),
                     title: _l("Save"),
-                    cls: "btn btn-primary ui-clear-float",
+                    cls: "btn btn-primary",
                     onclick: function() {
                         var data = form.data.create();
                         if (!data.id || !data.name) {

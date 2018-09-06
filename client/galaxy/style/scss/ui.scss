@@ -31,12 +31,6 @@ $ui-margin-horizontal: $margin-h;
 $ui-margin-horizontal-small: $margin-h * 0.5;
 $ui-margin-horizontal-large: $margin-v * 2;
 
-// helpers
-.ui-clear-float {
-    clear: both !important;
-    float: none !important;
-}
-
 .ui-modal {
     display: none;
     overflow: auto;
@@ -207,10 +201,16 @@ $ui-margin-horizontal-large: $margin-v * 2;
                 text-decoration: underline;
             }
         }
-        .portlet-operations {
-            .dropdown button {
+        .portlet-operations  {
+            button {
                 @extend .ml-1;
             }
+        }
+    }
+    .portlet-buttons {
+        button {
+            @extend .float-left;
+            @extend .mr-1;
         }
     }
     > .portlet-content {
