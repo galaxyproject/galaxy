@@ -21,7 +21,7 @@
     padding: 4px 4px 2px 4px; }
   .library_style_container li.folderRow,
   .library_style_container li.datasetRow {
-    border-top: solid 1px spin(#a8afc6, 180); }
+    border-top: solid 1px #bdc6d0; }
   .library_style_container li.folderRow:hover,
   .library_style_container li.datasetRow:hover {
     background-color: #f9f9f9; }

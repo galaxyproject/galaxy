@@ -301,8 +301,8 @@ h1, h2, h3, .upload-view-default .upload-box .upload-helper, .upload-view-compos
 .h1, .h2, .h3, .h4, .h5, .h6 {
   margin-bottom: 0.5rem;
   font-family: inherit;
-  font-weight: 800;
-  line-height: 1.1;
+  font-weight: 500;
+  line-height: 1.2;
   color: inherit; }
 
 h1, .h1 {
@@ -330,22 +330,22 @@ h6, .h6 {
 .display-1 {
   font-size: 6rem;
   font-weight: 300;
-  line-height: 1.1; }
+  line-height: 1.2; }
 
 .display-2 {
   font-size: 5.5rem;
   font-weight: 300;
-  line-height: 1.1; }
+  line-height: 1.2; }
 
 .display-3 {
   font-size: 4.5rem;
   font-weight: 300;
-  line-height: 1.1; }
+  line-height: 1.2; }
 
 .display-4 {
   font-size: 3.5rem;
   font-weight: 300;
-  line-height: 1.1; }
+  line-height: 1.2; }
 
 hr {
   margin-top: 1rem;
@@ -1042,12 +1042,12 @@ pre {
   .table td, .upload-table td {
     padding: 0.75rem;
     vertical-align: top;
-    border-top: 1px solid #bfbfbf; }
+    border-top: 1px solid #dee2e6; }
   .table thead th, .upload-table thead th {
     vertical-align: bottom;
-    border-bottom: 2px solid #bfbfbf; }
+    border-bottom: 2px solid #dee2e6; }
   .table tbody + tbody, .upload-table tbody + tbody {
-    border-top: 2px solid #bfbfbf; }
+    border-top: 2px solid #dee2e6; }
   .table .table, .upload-table .table, .table .upload-table, .upload-table .upload-table {
     background-color: #fff; }
 
@@ -1056,10 +1056,10 @@ pre {
   padding: 0.3rem; }
 
 .table-bordered {
-  border: 1px solid #bfbfbf; }
+  border: 1px solid #dee2e6; }
   .table-bordered th,
   .table-bordered td {
-    border: 1px solid #bfbfbf; }
+    border: 1px solid #dee2e6; }
   .table-bordered thead th,
   .table-bordered thead td {
     border-bottom-width: 2px; }
@@ -1183,7 +1183,7 @@ pre {
 .table .thead-light th, .upload-table .thead-light th {
   color: #495057;
   background-color: #e9ecef;
-  border-color: #bfbfbf; }
+  border-color: #dee2e6; }
 
 .table-dark {
   color: #fff;
@@ -6773,10 +6773,10 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
     .table-dark td,
     .table-dark thead th,
     .table-dark tbody + tbody {
-      border-color: #bfbfbf; }
+      border-color: #dee2e6; }
   .table .thead-dark th, .upload-table .thead-dark th {
     color: inherit;
-    border-color: #bfbfbf; } }
+    border-color: #dee2e6; } }
 
 /*!
  *  Font Awesome 4.7.0 by @davegandy - http://fontawesome.io - @fontawesome
@@ -10025,7 +10025,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     left: 0px;
     opacity: 0.5;
     background: #2c3143;
-    border: 1px solid #738699; }
+    border: 1px solid #dee2e6; }
   .galaxy-frame .frame-menu {
     z-index: 1005;
     position: absolute;
@@ -10041,7 +10041,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     overflow: hidden;
     position: absolute;
     background: #fff;
-    border: 1px solid #738699;
+    border: 1px solid #dee2e6;
     -webkit-box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
     /*
             frame icons
@@ -10158,7 +10158,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   text-align: center;
   overflow: scroll;
   font-size: 0.8rem;
-  line-height: 1.33;
   -moz-border-radius: 0.3125rem;
   border-radius: 0.3125rem;
   border: 1px dashed #bfbfbf;
@@ -10736,7 +10735,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     padding: 4px 4px 2px 4px; }
   .library_style_container li.folderRow,
   .library_style_container li.datasetRow {
-    border-top: solid 1px spin(#a8afc6, 180); }
+    border-top: solid 1px #bdc6d0; }
   .library_style_container li.folderRow:hover,
   .library_style_container li.datasetRow:hover {
     background-color: #f9f9f9; }

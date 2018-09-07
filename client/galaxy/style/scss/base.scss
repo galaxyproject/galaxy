@@ -73,8 +73,8 @@ $black: #000;
 }
 
 body {
-    background: $base-bg;
-    color: $base-text-color;
+    background: $body-bg;
+    color: $text-color;
     margin: 10px;
 
     // For panel layout pages
@@ -984,7 +984,7 @@ table.colored th {
 
 table.colored tr.header {
     background: $table-heading-bg;
-    color: contrast($complement-color-3);
+    color: contrast(spin($base-color-3, 180));
     background-repeat: repeat-x;
     background-position: top;
     border-bottom: solid $table-border-color 1px;

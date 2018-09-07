@@ -1,7 +1,7 @@
 // Additional variables that are not used by bootstrap but are used
 // in Galaxy stylesheets
-$base-bg: $body-bg;
-$base-text-color: $text-color;
+$body-bg: $white;
+$text-color: $gray-900;
 
 // Masthead
 $masthead-height: 3rem;
@@ -21,13 +21,21 @@ $layout_top_padding: 0px;
 $layout-border-color: $gray-900;
 $layout-border: none;
 
+// Borders
+$border-radius-base: 0.1875rem;
+$border-radius-large: 0.3125rem;
+
+// Buttons
+$btn-default-color: #333;
+$btn-default-bg: darken($white, 5%);
+$btn-default-border: $border-default-color;
+
 // Forms
 $form-heading-bg: #ebd9b2;
 $form-border: darken($form-heading-bg, 20%);
 
 // Table
 $table-heading-bg: $panel-bg-color;
-$table-border: $complement-color-3;
 $table-bg-accent: #f9f9f9; // for striping
 $table-border-color: darken($table-heading-bg, 20%);
 
@@ -41,7 +49,7 @@ $state-running-bg: #ffffcc;
 // Navbar
 $navbar-height: 36px; // 2.062500rem;
 $navbar-default-bg: $gray-100; // JT #f8f8f8;
-$navbar-default-border: darken($navbar-default-bg, $border-darken-percent);
+$navbar-default-border: darken($navbar-default-bg, 20%);
 
 // Margins
 $spacer: 1rem; // Not sure why this is not coming from Bootstrap
