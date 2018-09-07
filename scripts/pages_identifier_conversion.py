@@ -44,14 +44,13 @@ def main(argv):
                 if not args.dry_run:
                     p.content = unicodify(processor.output(), 'utf-8')
                     session.add(p)
-                    session.commit()
+                    session.flush()
                 else:
                     print("Modifying revision %s." % p.id)
                     print(difflib.unified_diff(p.content, newcontent))
         except Exception:
             logging.exception("Error parsing page, rolling changes back and skipping revision %s.  Please report this error." % p.id)
             session.rollback()
-    session.flush()
 
 
 if __name__ == '__main__':
