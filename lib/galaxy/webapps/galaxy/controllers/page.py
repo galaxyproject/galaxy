@@ -72,6 +72,9 @@ _cp1252 = {
 }
 
 
+PAGE_MAXRAW = 10**15
+
+
 def format_bool(b):
     if b:
         return "yes"
@@ -964,6 +967,8 @@ class PageController(BaseUIController, SharableMixin,
         # Assume if item id is integer and less than 10**15, it's unencoded.
         try:
             decoded_id = int(item_id)
+            if decoded_id >= PAGE_MAXRAW:
+                raise ValueError("Identifier larger than maximum expected raw int, must be already encoded.")
             encoded_id = self.app.security.encode_id(item_id)
         except ValueError:
             # It's an encoded id.
@@ -1005,8 +1010,6 @@ PAGE_CLASS_MAPPING = {
     'StoredWorkflow': 'Workflow',
     'Visualization': 'Visualization'
 }
-
-PAGE_MAXRAW = 10**15
 
 
 def _placeholderRenderForEdit(trans, item_class, item_id):
