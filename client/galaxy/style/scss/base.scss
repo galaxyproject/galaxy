@@ -1,20 +1,14 @@
 // Bootstrap variables and core framework
 @import "../../../node_modules/bootstrap/scss/_functions.scss";
-@import "galaxy_bootstrap/variables.scss";
+@import "theme/blue.scss";
 @import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+
+// Bootstrap-related style overrides
+@import "overrides.scss";
 
 // Fontawesome configuration.
 $fa-font-path: "../images/fonts";
 @import "../../../node_modules/font-awesome/scss/font-awesome.scss";
-
-// Bootstrap-related style overrides
-@import "galaxy_bootstrap/overrides.scss";
-
-// Galaxy specific variables
-@import "theme/blue.scss";
-
-$white: #fff;
-$black: #000;
 
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
@@ -768,7 +762,7 @@ button {
     padding: 4px;
     font-size: $font-size-base;
     line-height: $line-height-base;
-    color: $gray;
+    color: $gray-700;
     border: 1px solid $input-border;
     padding-left: 14px !important;
     padding-right: 14px;
@@ -1446,7 +1440,7 @@ ul.dropdown-menu {
         font-size: 11px;
         font-weight: bold;
         line-height: $line-height-base;
-        color: $gray-light;
+        color: $gray-500;
         text-transform: uppercase;
     }
 

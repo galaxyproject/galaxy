@@ -1042,12 +1042,12 @@ pre {
   .table td, .upload-table td {
     padding: 0.75rem;
     vertical-align: top;
-    border-top: 1px solid #dee2e6; }
+    border-top: 1px solid #bdc6d0; }
   .table thead th, .upload-table thead th {
     vertical-align: bottom;
-    border-bottom: 2px solid #dee2e6; }
+    border-bottom: 2px solid #bdc6d0; }
   .table tbody + tbody, .upload-table tbody + tbody {
-    border-top: 2px solid #dee2e6; }
+    border-top: 2px solid #bdc6d0; }
   .table .table, .upload-table .table, .table .upload-table, .upload-table .upload-table {
     background-color: #fff; }
 
@@ -1056,10 +1056,10 @@ pre {
   padding: 0.3rem; }
 
 .table-bordered {
-  border: 1px solid #dee2e6; }
+  border: 1px solid #bdc6d0; }
   .table-bordered th,
   .table-bordered td {
-    border: 1px solid #dee2e6; }
+    border: 1px solid #bdc6d0; }
   .table-bordered thead th,
   .table-bordered thead td {
     border-bottom-width: 2px; }
@@ -1183,7 +1183,7 @@ pre {
 .table .thead-light th, .upload-table .thead-light th {
   color: #495057;
   background-color: #e9ecef;
-  border-color: #dee2e6; }
+  border-color: #bdc6d0; }
 
 .table-dark {
   color: #fff;
@@ -6773,10 +6773,72 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
     .table-dark td,
     .table-dark thead th,
     .table-dark tbody + tbody {
-      border-color: #dee2e6; }
+      border-color: #bdc6d0; }
   .table .thead-dark th, .upload-table .thead-dark th {
     color: inherit;
-    border-color: #dee2e6; } }
+    border-color: #bdc6d0; } }
+
+.navbar-fixed-top .navbar-brand {
+  font-family: Verdana;
+  font-weight: bold;
+  font-size: 160%; }
+
+pre {
+  overflow: auto;
+  word-wrap: normal;
+  white-space: pre; }
+
+.btn, input[type="submit"],
+button, .action-button, .menubutton {
+  white-space: normal; }
+
+.btn-secondary, input[type="submit"],
+button, .action-button, .btn-default, .menubutton {
+  border: 1px solid #bfbfbf; }
+
+.dropdown-menu {
+  max-width: auto; }
+  .dropdown-menu .dropdown-item, ul.dropdown-menu li > a {
+    text-decoration: none; }
+
+input[type="checkbox"],
+input[type="radio"] {
+  margin-left: 0.5ex;
+  margin-right: 0.5ex;
+  float: left; }
+
+.badge-tags {
+  background-color: #3189a3;
+  padding: 0.2em 0.6em 0.3em;
+  border-radius: 0.15rem; }
+
+.modal-dialog {
+  width: 690px;
+  max-width: 900px; }
+
+.pagination > .active > a {
+  background-color: #ebd9b2;
+  color: black; }
+  .pagination > .active > a:hover {
+    color: black;
+    background-color: #ebd9b2; }
+
+.modal-body {
+  overflow: auto; }
+
+.nav-tabs {
+  margin-bottom: 15px; }
+
+div.ui-form-help blockquote p {
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit; }
+
+pre.code {
+  white-space: pre-wrap;
+  background: #1d1f21;
+  color: white;
+  padding: 1em; }
 
 /*!
  *  Font Awesome 4.7.0 by @davegandy - http://fontawesome.io - @fontawesome
@@ -9106,93 +9168,6 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
   margin: 0;
   overflow: visible;
   clip: auto; }
-
-.navbar-fixed-top .navbar-brand {
-  font-family: Verdana;
-  font-weight: bold;
-  font-size: 160%; }
-
-pre {
-  overflow: auto;
-  word-wrap: normal;
-  white-space: pre; }
-
-.btn, input[type="submit"],
-button, .action-button, .menubutton {
-  white-space: normal; }
-
-.btn-secondary, input[type="submit"],
-button, .action-button, .btn-default, .menubutton {
-  border: 1px solid #bfbfbf; }
-
-.dropdown-menu {
-  max-width: auto; }
-  .dropdown-menu .dropdown-item, ul.dropdown-menu li > a {
-    text-decoration: none; }
-
-input[type="checkbox"],
-input[type="radio"] {
-  margin-left: 0.5ex;
-  margin-right: 0.5ex;
-  float: left; }
-
-.badge-tags {
-  background-color: #3189a3;
-  padding: 0.2em 0.6em 0.3em;
-  border-radius: 0.15rem; }
-
-.modal-dialog {
-  width: 690px;
-  max-width: 900px; }
-
-.pagination > .active > a {
-  background-color: #ebd9b2;
-  color: black; }
-  .pagination > .active > a:hover {
-    color: black;
-    background-color: #ebd9b2; }
-
-/*
-
-NOTE: these styles do not currently work.
-
-.modal {
-  position: absolute;
-  top: 50px;
-  width: 660px;
-  margin-left: -330px;
-}
-
-.modal:after {
-  content: "";
-  height: 0px;
-  position: relative;
-  top: 50px;
-  display: block;
-  border: solid transparent 1px;
-}
-
-.modal-body {
-  height: auto;
-  max-height: none;
-}
-*/
-.modal-body {
-  overflow: auto; }
-
-.nav-tabs {
-  margin-bottom: 15px; }
-
-div.ui-form-help blockquote p {
-  font-size: inherit;
-  font-weight: inherit;
-  line-height: inherit; }
-
-pre.code {
-  white-space: pre-wrap;
-  background: #1d1f21;
-  color: white;
-  padding: 1em; }
 
 /*
 Version: 3.5.1 Timestamp: Tue Jul 22 18:58:56 EDT 2014

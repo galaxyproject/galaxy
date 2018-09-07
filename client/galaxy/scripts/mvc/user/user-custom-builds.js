@@ -63,7 +63,7 @@ var View = Backbone.View.extend({
                                 .append(this.message.$el)
                                 .append((this.$form = $("<div/>").addClass("mt-1")))
                         )
-                        .append((this.$help = $("<div/>").addClass("col")))
+                        .append((this.$help = $("<div/>").addClass("col m-2")))
                 )
         );
         this.listenTo(this.collection, "add remove reset", () => {

@@ -1,3 +1,98 @@
+// Everything is derived from $base-color
+// Caveat: currently only works for light colored backgrounds, scss provides functions (contrast) that could be used to improve this
+
+// Base color -- Based on the Galaxy masthead color
+$base-color-1: #2c3143;
+$base-color-2: lighten($base-color-1, 25%);
+$base-color-3: lighten($base-color-1, 50%);
+$base-color: $base-color-2;
+
+// Default border bolor, this is between gray-light and gray-lighter -- classic Galaxy border color
+$border-default-color: lighten(black, 75%);
+
+// Grays from Bootstrap 4 _variables.scss
+$white: #fff !default;
+$gray-100: #f8f9fa !default;
+$gray-200: #e9ecef !default;
+$gray-300: #dee2e6 !default;
+$gray-400: #ced4da !default;
+$gray-500: #adb5bd !default;
+$gray-600: #6c757d !default;
+$gray-700: #495057 !default;
+$gray-800: #343a40 !default;
+$gray-900: #212529 !default;
+$black: #000 !default;
+
+// Brand colors
+$brand-primary: #25537b;
+$brand-success: #66CC66;
+$brand-info: #2077B3;
+$brand-warning: #FE7F02;
+$brand-danger: #E31A1E;
+
+// These variables don't actually determine the colors in Bootstrap 4, instead
+// they use a map called $theme-colors, so here we override that
+$theme-colors: ();
+$theme-colors: map-merge(
+    (
+        "primary": $brand-primary,
+        "secondary": $gray-300,
+        "success": $brand-success,
+        "info": $brand-info,
+        "warning": $brand-warning,
+        "danger": $brand-danger,
+        "light": $gray-100,
+        "dark": $gray-800
+    ),
+    $theme-colors
+);
+
+// This is the default but we need to use it here.
+$theme-color-interval: 5% !default;
+
+// Alerts and states
+$alert-bg-level: -12 !default;
+$alert-border-level: -6 !default;
+$alert-color-level: 8 !default;
+
+// These are not Bootstrap styles but are used extensively in Galaxy. This
+// duplicated the way that Bootstrap 4 alerts are derived.
+
+$state-warning-text: theme-color-level("warning", $alert-color-level);
+$state-warning-bg: theme-color-level("warning", $alert-bg-level);
+$state-warning-border: theme-color-level("warning", $alert-border-level);
+
+$state-danger-text: theme-color-level("danger", $alert-color-level);
+$state-danger-bg: theme-color-level("danger", $alert-bg-level);
+$state-danger-border: theme-color-level("danger", $alert-border-level);
+
+$state-info-text: theme-color-level("info", $alert-color-level);
+$state-info-bg: theme-color-level("info", $alert-bg-level);
+$state-info-border: theme-color-level("info", $alert-border-level);
+
+$state-success-text: theme-color-level("success", $alert-color-level);
+$state-success-bg: theme-color-level("success", $alert-bg-level);
+$state-success-border: theme-color-level("success", $alert-border-level);
+
+// Fonts and sizes
+$font-family-sans-serif: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+$font-family-monospace: Monaco, Menlo, Consolas, "Courier New", monospace;
+$font-family-base: $font-family-sans-serif;
+$font-size-base: 0.8rem; // default 1rem
+
+// Header font sizes
+$h1-font-size: $font-size-base * 2; // default 2.5
+$h2-font-size: $font-size-base * 1.75; // default 2
+$h3-font-size: $font-size-base * 1.5; // default 1.75
+$h4-font-size: $font-size-base * 1.25; // default 1.5
+$h5-font-size: $font-size-base; // default 1.25
+$h6-font-size: $font-size-base * 0.85; // default 1
+
+// Increase contrast of dropdown items
+$dropdown-link-hover-color: white;
+$dropdown-link-hover-bg: $brand-primary;
+$dropdown-link-active-color: gold;
+
 // Additional variables that are not used by bootstrap but are used
 // in Galaxy stylesheets
 $body-bg: $white;
@@ -40,7 +135,7 @@ $table-bg-accent: #f9f9f9; // for striping
 $table-border-color: darken($table-heading-bg, 20%);
 
 // Additional state colors
-$state-default-bg: $gray-lighter;
+$state-default-bg: $gray-200;
 $state-default-border: $border-default-color;
 $state-paused-bg: #d9edf7;
 $state-running-border: #aaaa66;
