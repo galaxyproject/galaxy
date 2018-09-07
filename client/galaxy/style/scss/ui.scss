@@ -192,8 +192,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .card;
     border: none;
     height: 100%;
-    .portlet-header {
+    .portlet-header:first-child {
         @extend .card-header;
+        @extend .rounded;
         background: $gray-200;
         .portlet-title {
             .portlet-title-text.collapsible {
@@ -236,12 +237,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     border: none;
     border-left: solid 3px $gray-200;
     border-radius: $border-radius-large;
-    .portlet-header {
+    .portlet-header:first-child {
         background: $gray-200;
-        border-radius: $border-radius-large;
-        border-bottom: solid darken($gray-200, 10%) 1px;
-        border-bottom-left-radius: 0px;
-        border-top-left-radius: 0px;
+        @extend .rounded-0;
+        border-top-right-radius: $border-radius-large !important;
         padding: 5px;
     }
     > .portlet-content {

@@ -3482,14 +3482,14 @@ button:not(:first-child),
 .card-link + .card-link {
   margin-left: 1.25rem; }
 
-.card-header, .ui-portlet .portlet-header, .ui-portlet-section .portlet-header {
+.card-header, .ui-portlet .portlet-header:first-child, .ui-portlet-section .portlet-header:first-child {
   padding: 0.75rem 1.25rem;
   margin-bottom: 0;
   background-color: rgba(0, 0, 0, 0.03);
   border-bottom: 1px solid rgba(0, 0, 0, 0.125); }
   .card-header:first-child, .ui-portlet .portlet-header:first-child, .ui-portlet-section .portlet-header:first-child {
     border-radius: calc(0.25rem - 1px) calc(0.25rem - 1px) 0 0; }
-  .card-header + .list-group .list-group-item:first-child, .ui-portlet .portlet-header + .list-group .list-group-item:first-child, .ui-portlet-section .portlet-header + .list-group .list-group-item:first-child {
+  .card-header + .list-group .list-group-item:first-child, .ui-portlet .portlet-header:first-child + .list-group .list-group-item:first-child, .ui-portlet-section .portlet-header:first-child + .list-group .list-group-item:first-child {
     border-top: 0; }
 
 .card-footer {
@@ -3570,12 +3570,12 @@ button:not(:first-child),
           .card-group > .card:first-child .card-header,
           .card-group > .ui-portlet:first-child .card-header,
           .card-group > .ui-portlet-section:first-child .card-header,
-          .card-group > .card:first-child .ui-portlet .portlet-header, .ui-portlet
-          .card-group > .card:first-child .portlet-header, .card-group > .ui-portlet:first-child .portlet-header, .ui-portlet
-          .card-group > .ui-portlet-section:first-child .portlet-header,
-          .card-group > .card:first-child .ui-portlet-section .portlet-header, .ui-portlet-section
-          .card-group > .card:first-child .portlet-header, .ui-portlet-section
-          .card-group > .ui-portlet:first-child .portlet-header, .card-group > .ui-portlet-section:first-child .portlet-header {
+          .card-group > .card:first-child .ui-portlet .portlet-header:first-child, .ui-portlet
+          .card-group > .card:first-child .portlet-header:first-child, .card-group > .ui-portlet:first-child .portlet-header:first-child, .ui-portlet
+          .card-group > .ui-portlet-section:first-child .portlet-header:first-child,
+          .card-group > .card:first-child .ui-portlet-section .portlet-header:first-child, .ui-portlet-section
+          .card-group > .card:first-child .portlet-header:first-child, .ui-portlet-section
+          .card-group > .ui-portlet:first-child .portlet-header:first-child, .card-group > .ui-portlet-section:first-child .portlet-header:first-child {
             border-top-right-radius: 0; }
           .card-group > .card:first-child .card-img-bottom, .card-group > .ui-portlet:first-child .card-img-bottom, .card-group > .ui-portlet-section:first-child .card-img-bottom,
           .card-group > .card:first-child .card-footer,
@@ -3589,12 +3589,12 @@ button:not(:first-child),
           .card-group > .card:last-child .card-header,
           .card-group > .ui-portlet:last-child .card-header,
           .card-group > .ui-portlet-section:last-child .card-header,
-          .card-group > .card:last-child .ui-portlet .portlet-header, .ui-portlet
-          .card-group > .card:last-child .portlet-header, .card-group > .ui-portlet:last-child .portlet-header, .ui-portlet
-          .card-group > .ui-portlet-section:last-child .portlet-header,
-          .card-group > .card:last-child .ui-portlet-section .portlet-header, .ui-portlet-section
-          .card-group > .card:last-child .portlet-header, .ui-portlet-section
-          .card-group > .ui-portlet:last-child .portlet-header, .card-group > .ui-portlet-section:last-child .portlet-header {
+          .card-group > .card:last-child .ui-portlet .portlet-header:first-child, .ui-portlet
+          .card-group > .card:last-child .portlet-header:first-child, .card-group > .ui-portlet:last-child .portlet-header:first-child, .ui-portlet
+          .card-group > .ui-portlet-section:last-child .portlet-header:first-child,
+          .card-group > .card:last-child .ui-portlet-section .portlet-header:first-child, .ui-portlet-section
+          .card-group > .card:last-child .portlet-header:first-child, .ui-portlet-section
+          .card-group > .ui-portlet:last-child .portlet-header:first-child, .card-group > .ui-portlet-section:last-child .portlet-header:first-child {
             border-top-left-radius: 0; }
           .card-group > .card:last-child .card-img-bottom, .card-group > .ui-portlet:last-child .card-img-bottom, .card-group > .ui-portlet-section:last-child .card-img-bottom,
           .card-group > .card:last-child .card-footer,
@@ -3607,12 +3607,12 @@ button:not(:first-child),
           .card-group > .card:only-child .card-header,
           .card-group > .ui-portlet:only-child .card-header,
           .card-group > .ui-portlet-section:only-child .card-header,
-          .card-group > .card:only-child .ui-portlet .portlet-header, .ui-portlet
-          .card-group > .card:only-child .portlet-header, .card-group > .ui-portlet:only-child .portlet-header, .ui-portlet
-          .card-group > .ui-portlet-section:only-child .portlet-header,
-          .card-group > .card:only-child .ui-portlet-section .portlet-header, .ui-portlet-section
-          .card-group > .card:only-child .portlet-header, .ui-portlet-section
-          .card-group > .ui-portlet:only-child .portlet-header, .card-group > .ui-portlet-section:only-child .portlet-header {
+          .card-group > .card:only-child .ui-portlet .portlet-header:first-child, .ui-portlet
+          .card-group > .card:only-child .portlet-header:first-child, .card-group > .ui-portlet:only-child .portlet-header:first-child, .ui-portlet
+          .card-group > .ui-portlet-section:only-child .portlet-header:first-child,
+          .card-group > .card:only-child .ui-portlet-section .portlet-header:first-child, .ui-portlet-section
+          .card-group > .card:only-child .portlet-header:first-child, .ui-portlet-section
+          .card-group > .ui-portlet:only-child .portlet-header:first-child, .card-group > .ui-portlet-section:only-child .portlet-header:first-child {
             border-top-left-radius: 0.25rem;
             border-top-right-radius: 0.25rem; }
           .card-group > .card:only-child .card-img-bottom, .card-group > .ui-portlet:only-child .card-img-bottom, .card-group > .ui-portlet-section:only-child .card-img-bottom,
@@ -3630,12 +3630,12 @@ button:not(:first-child),
           .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .card-header,
           .card-group > .ui-portlet:not(:first-child):not(:last-child):not(:only-child) .card-header,
           .card-group > .ui-portlet-section:not(:first-child):not(:last-child):not(:only-child) .card-header,
-          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .ui-portlet .portlet-header, .ui-portlet
-          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .portlet-header, .card-group > .ui-portlet:not(:first-child):not(:last-child):not(:only-child) .portlet-header, .ui-portlet
-          .card-group > .ui-portlet-section:not(:first-child):not(:last-child):not(:only-child) .portlet-header,
-          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .ui-portlet-section .portlet-header, .ui-portlet-section
-          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .portlet-header, .ui-portlet-section
-          .card-group > .ui-portlet:not(:first-child):not(:last-child):not(:only-child) .portlet-header, .card-group > .ui-portlet-section:not(:first-child):not(:last-child):not(:only-child) .portlet-header,
+          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .ui-portlet .portlet-header:first-child, .ui-portlet
+          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .portlet-header:first-child, .card-group > .ui-portlet:not(:first-child):not(:last-child):not(:only-child) .portlet-header:first-child, .ui-portlet
+          .card-group > .ui-portlet-section:not(:first-child):not(:last-child):not(:only-child) .portlet-header:first-child,
+          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .ui-portlet-section .portlet-header:first-child, .ui-portlet-section
+          .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .portlet-header:first-child, .ui-portlet-section
+          .card-group > .ui-portlet:not(:first-child):not(:last-child):not(:only-child) .portlet-header:first-child, .card-group > .ui-portlet-section:not(:first-child):not(:last-child):not(:only-child) .portlet-header:first-child,
           .card-group > .card:not(:first-child):not(:last-child):not(:only-child) .card-footer,
           .card-group > .ui-portlet:not(:first-child):not(:last-child):not(:only-child) .card-footer,
           .card-group > .ui-portlet-section:not(:first-child):not(:last-child):not(:only-child) .card-footer {
@@ -4848,7 +4848,7 @@ button.bg-dark:focus {
 .border-white {
   border-color: #fff !important; }
 
-.rounded {
+.rounded, .ui-portlet .portlet-header:first-child, .ui-portlet-section .portlet-header:first-child {
   border-radius: 0.25rem !important; }
 
 .rounded-top {
@@ -4870,7 +4870,7 @@ button.bg-dark:focus {
 .rounded-circle {
   border-radius: 50% !important; }
 
-.rounded-0 {
+.rounded-0, .ui-portlet-section .portlet-header:first-child {
   border-radius: 0 !important; }
 
 .clearfix::after {
@@ -5597,7 +5597,7 @@ button.bg-dark:focus {
 .my-1 {
   margin-bottom: 0.25rem !important; }
 
-.ml-1, .ui-portlet .portlet-header .portlet-operations button, .ui-portlet-section .portlet-header .portlet-operations button,
+.ml-1, .ui-portlet .portlet-header:first-child .portlet-operations button, .ui-portlet-section .portlet-header:first-child .portlet-operations button,
 .mx-1 {
   margin-left: 0.25rem !important; }
 
@@ -10520,9 +10520,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .ui-portlet, .ui-portlet-section {
   border: none;
   height: 100%; }
-  .ui-portlet .portlet-header, .ui-portlet-section .portlet-header {
+  .ui-portlet .portlet-header:first-child, .ui-portlet-section .portlet-header:first-child {
     background: #e9ecef; }
-    .ui-portlet .portlet-header .portlet-title .portlet-title-text.collapsible, .ui-portlet-section .portlet-header .portlet-title .portlet-title-text.collapsible {
+    .ui-portlet .portlet-header:first-child .portlet-title .portlet-title-text.collapsible, .ui-portlet-section .portlet-header:first-child .portlet-title .portlet-title-text.collapsible {
       cursor: pointer;
       text-decoration: underline; }
   .ui-portlet .portlet-backdrop, .ui-portlet-section .portlet-backdrop {
@@ -10540,12 +10540,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   border: none;
   border-left: solid 3px #e9ecef;
   border-radius: 0.3125rem; }
-  .ui-portlet-section .portlet-header {
+  .ui-portlet-section .portlet-header:first-child {
     background: #e9ecef;
-    border-radius: 0.3125rem;
-    border-bottom: solid #cbd3da 1px;
-    border-bottom-left-radius: 0px;
-    border-top-left-radius: 0px;
+    border-top-right-radius: 0.3125rem !important;
     padding: 5px; }
 
 .popover {
