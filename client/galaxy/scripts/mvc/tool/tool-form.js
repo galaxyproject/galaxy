@@ -323,7 +323,7 @@ var View = Backbone.View.extend({
         var index = {};
         for (let i in job_def.inputs) {
             let input = job_def.inputs[i];
-            if ($.isArray(input.values)) {
+            if (input && $.isArray(input.values)) {
                 for (let j of input.values) {
                     if (j.src && !index[j.id]) {
                         inputs.push(j);
