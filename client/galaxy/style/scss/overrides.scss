@@ -11,6 +11,10 @@ pre {
     white-space: pre;
 }
 
+.alert {
+    word-wrap: break-word;
+}
+
 .btn.hover {
     $btn: hover();
 }

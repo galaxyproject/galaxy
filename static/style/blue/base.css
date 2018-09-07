@@ -6788,6 +6788,22 @@ pre {
   word-wrap: normal;
   white-space: pre; }
 
+.alert, .errormessagelarge, .error-modal .modal-content,
+.warningmessagelarge,
+.donemessagelarge,
+.infomessagelarge,
+.ui-form-help .error,
+.ui-form-help .warning,
+.ui-form-help .note, .errormessage,
+.warningmessage,
+.donemessage,
+.infomessage,
+.errormessagesmall,
+.warningmessagesmall,
+.donemessagesmall,
+.infomessagesmall {
+  word-wrap: break-word; }
+
 .btn, input[type="submit"],
 button, .action-button, .menubutton {
   white-space: normal; }
