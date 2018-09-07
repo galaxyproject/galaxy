@@ -138,12 +138,12 @@ sup {
   top: -.5em; }
 
 a {
-  color: #000;
+  color: #25537b;
   text-decoration: none;
   background-color: transparent;
   -webkit-text-decoration-skip: objects; }
   a:hover {
-    color: black;
+    color: #132b40;
     text-decoration: underline; }
 
 a:not([href]):not([tabindex]) {
@@ -2132,10 +2132,10 @@ button, .action-button, .btn-default, .menubutton {
 
 .btn-link {
   font-weight: 400;
-  color: #000;
+  color: #25537b;
   background-color: transparent; }
   .btn-link:hover {
-    color: black;
+    color: #132b40;
     text-decoration: underline;
     background-color: transparent;
     border-color: transparent; }
@@ -3708,12 +3708,12 @@ button:not(:first-child),
   padding: 0.5rem 0.75rem;
   margin-left: -1px;
   line-height: 1.25;
-  color: #000;
+  color: #25537b;
   background-color: #fff;
   border: 1px solid #dee2e6; }
   .page-link:hover {
     z-index: 2;
-    color: black;
+    color: #132b40;
     text-decoration: none;
     background-color: #e9ecef;
     border-color: #dee2e6; }
@@ -14654,7 +14654,7 @@ pre.peek {
   color: grey; }
 
 .search-input .search-clear:hover {
-  color: #000;
+  color: #25537b;
   cursor: pointer; }
 
 .dataset-choice {
