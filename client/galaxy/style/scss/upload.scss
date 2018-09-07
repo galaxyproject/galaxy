@@ -237,7 +237,6 @@
         }
     }
     .upload-ftp-row:hover {
-        @extend .grid;
         @extend .current;
     }
     th {

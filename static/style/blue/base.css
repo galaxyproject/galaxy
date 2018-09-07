@@ -9194,9 +9194,6 @@ pre.code {
   color: white;
   padding: 1em; }
 
-label {
-  font-weight: normal; }
-
 /*
 Version: 3.5.1 Timestamp: Tue Jul 22 18:58:56 EDT 2014
 */
@@ -10149,11 +10146,11 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
     padding: 0px; }
 
 .upload-view-default .highlight, .upload-view-composite .highlight {
-  border-color: #d6b161 !important;
+  border-color: #bdc6d0 !important;
   border-width: 2px !important;
   padding: 9px !important; }
   .upload-view-default .highlight .upload-helper, .upload-view-composite .highlight .upload-helper {
-    color: #d6b161 !important; }
+    color: #bdc6d0 !important; }
 
 .upload-view-default .upload-box, .upload-view-composite .upload-box {
   width: 100%;
@@ -10700,8 +10697,8 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 
 .ui-dragover, .ui-dragover-danger, .ui-dragover-success {
   border-radius: 3px;
-  border: 2px solid #d6b161;
-  background: #f6edda;
+  border: 2px solid #bdc6d0;
+  background: white;
   padding: 2px; }
 
 .ui-dragover-danger {
@@ -10715,9 +10712,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
 .select2-drop-active,
 .select2-drop-above.select2-drop-active {
   border: 1px solid #aaa; }
-
-label {
-  font-weight: normal; }
 
 .library_style_container {
   width: 95%;
@@ -10733,7 +10727,7 @@ label {
     font-size: initial;
     margin-left: 0.6em; }
   .library_style_container .libraryRow {
-    background-color: #ebd9b2; }
+    background-color: #f8f9fa; }
   .library_style_container .datasetHighlighted {
     background-color: #f9f9f9; }
   .library_style_container .libraryItemDeleted-True {
@@ -12781,8 +12775,8 @@ table.tabletip tbody tr:hover td {
   background-color: #eee; }
 
 table.colored {
-  border-top: solid #d6b161 1px;
-  border-bottom: solid #d6b161 1px; }
+  border-top: solid #bdc6d0 1px;
+  border-bottom: solid #bdc6d0 1px; }
 
 table.colored td,
 table.colored th {
@@ -12791,11 +12785,11 @@ table.colored th {
   line-height: 1.5; }
 
 table.colored tr.header {
-  background: #ebd9b2;
+  background: #f8f9fa;
   color: contrast(spin(#a8afc6, 180));
   background-repeat: repeat-x;
   background-position: top;
-  border-bottom: solid #d6b161 1px;
+  border-bottom: solid #bdc6d0 1px;
   font-weight: bold; }
 
 table.colored tr {
@@ -12824,40 +12818,40 @@ div.debug {
 .grid-header .title {
   font-weight: bold; }
 
-.grid, .upload-ftp-base .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover {
+.grid {
   padding-top: 1em;
   border-collapse: collapse;
   width: 100%; }
 
-.grid tbody td, .upload-ftp-base .upload-ftp-row:hover tbody td, .upload-ftp .upload-ftp-row:hover tbody td, .upload-ftp-full .upload-ftp-row:hover tbody td {
+.grid tbody td {
   line-height: 1.5;
   border-top: solid #dddddd 1px;
   border-bottom: solid #dddddd 1px;
   padding: 5px; }
 
-.grid tbody td:empty, .upload-ftp-base .upload-ftp-row:hover tbody td:empty, .upload-ftp .upload-ftp-row:hover tbody td:empty, .upload-ftp-full .upload-ftp-row:hover tbody td:empty {
+.grid tbody td:empty {
   padding: 0; }
 
-.grid thead tr, .upload-ftp-base .upload-ftp-row:hover thead tr, .upload-ftp .upload-ftp-row:hover thead tr, .upload-ftp-full .upload-ftp-row:hover thead tr {
+.grid thead tr {
   height: 2em; }
 
-.grid thead th, .upload-ftp-base .upload-ftp-row:hover thead th, .upload-ftp .upload-ftp-row:hover thead th, .upload-ftp-full .upload-ftp-row:hover thead th {
+.grid thead th {
   line-height: 1.5;
-  background: #ebd9b2;
-  color: contrast(#ebd9b2);
-  border-top: solid #d6b161 1px;
-  border-bottom: solid #d6b161 1px;
+  background: #f8f9fa;
+  color: contrast(#f8f9fa);
+  border-top: solid #bdc6d0 1px;
+  border-bottom: solid #bdc6d0 1px;
   padding: 5px;
   text-align: left;
   white-space: nowrap; }
 
-.grid tfoot td, .upload-ftp-base .upload-ftp-row:hover tfoot td, .upload-ftp .upload-ftp-row:hover tfoot td, .upload-ftp-full .upload-ftp-row:hover tfoot td {
+.grid tfoot td {
   background-color: #f8f8f8;
   border-top: solid #dddddd 1px;
   border-bottom: solid #dddddd 1px;
   padding: 5px; }
 
-.grid .current, .upload-ftp-base .upload-ftp-row:hover .current, .upload-ftp .upload-ftp-row:hover .current, .upload-ftp-full .upload-ftp-row:hover .current, .grid .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .grid .upload-ftp-row:hover, .upload-ftp-base .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp .upload-ftp-row:hover, .upload-ftp .grid .upload-ftp-row:hover, .upload-ftp .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .grid .upload-ftp-row:hover, .upload-ftp-full .upload-ftp-row:hover .upload-ftp-row:hover, .grid .upload-settings tr:hover, .upload-settings .grid tr:hover, .upload-ftp-base .upload-ftp-row:hover .upload-settings tr:hover, .upload-settings .upload-ftp-base .upload-ftp-row:hover tr:hover, .upload-ftp .upload-ftp-row:hover .upload-settings tr:hover, .upload-settings .upload-ftp .upload-ftp-row:hover tr:hover, .upload-ftp-full .upload-ftp-row:hover .upload-settings tr:hover, .upload-settings .upload-ftp-full .upload-ftp-row:hover tr:hover {
+.grid .current, .grid .upload-ftp-base .upload-ftp-row:hover, .upload-ftp-base .grid .upload-ftp-row:hover, .grid .upload-ftp .upload-ftp-row:hover, .upload-ftp .grid .upload-ftp-row:hover, .grid .upload-ftp-full .upload-ftp-row:hover, .upload-ftp-full .grid .upload-ftp-row:hover, .grid .upload-settings tr:hover, .upload-settings .grid tr:hover {
   background-color: #eeeeff; }
 
 .count-box {
