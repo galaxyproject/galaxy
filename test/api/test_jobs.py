@@ -123,6 +123,12 @@ class JobsApiTestCase(api.ApiTestCase):
         job_details = show_jobs_response.json()
         self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time')
 
+        show_jobs_response = self._get("jobs/%s" % job_id, {"full": True})
+        self._assert_status_code_is(show_jobs_response, 200)
+
+        job_details = show_jobs_response.json()
+        self._assert_has_key(job_details, 'id', 'state', 'exit_code', 'update_time', 'create_time', 'stdout', 'stderr', 'job_messages')
+
     @uses_test_history(require_new=True)
     def test_show_security(self, history_id):
         self.__history_with_new_dataset(history_id)

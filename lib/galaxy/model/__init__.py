@@ -230,7 +230,7 @@ class JobLike(object):
         # TODO: Make iterable, concatenate with chain
         return self.text_metrics + self.numeric_metrics
 
-    def set_streams(self, stdout, stderr):
+    def set_streams(self, stdout, stderr, job_messages=None):
         stdout = galaxy.util.unicodify(stdout) or u''
         stderr = galaxy.util.unicodify(stderr) or u''
         if (len(stdout) > galaxy.util.DATABASE_MAX_STRING_SIZE):
@@ -241,6 +241,8 @@ class JobLike(object):
             stderr = galaxy.util.shrink_string_by_size(stderr, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
             log.info("stderr for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
         self.stderr = stderr
+        if job_messages is not None:
+            self.job_messages = job_messages
 
     def log_str(self):
         extra = ""
@@ -606,6 +608,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         self.imported = False
         self.handler = None
         self.exit_code = None
+        self.job_messages = None
         self._init_metrics()
         self.state_history.append(JobStateHistory(self))
 

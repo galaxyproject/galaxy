@@ -134,7 +134,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
         full_output = util.asbool(kwd.get('full', 'false'))
         if full_output:
-            job_dict.update(dict(stderr=job.stderr, stdout=job.stdout))
+            job_dict.update(dict(stderr=job.stderr, stdout=job.stdout, job_messages=job.job_messages))
             if is_admin:
                 if job.user:
                     job_dict['user_email'] = job.user.email
