@@ -93,7 +93,7 @@ pyperclip==1.6.4
 pysam==0.14.1
 python-cinderclient==2.0.1
 python-dateutil==2.7.3
-python-genomespaceclient==0.2
+python-genomespaceclient==1.0.0
 python-glanceclient==2.6.0; python_version != '3.3.*'
 python-keystoneclient==3.10.0; python_version != '3.3.*'
 python-lzo==1.12
