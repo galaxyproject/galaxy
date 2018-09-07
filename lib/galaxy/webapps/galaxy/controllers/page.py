@@ -75,6 +75,20 @@ _cp1252 = {
 PAGE_MAXRAW = 10**15
 
 
+def _get_page_identifiers(item_id, app):
+    # Assume if item id is integer and less than 10**15, it's unencoded.
+    try:
+        decoded_id = int(item_id)
+        if decoded_id >= PAGE_MAXRAW:
+            raise ValueError("Identifier larger than maximum expected raw int, must be already encoded.")
+        encoded_id = app.security.encode_id(item_id)
+    except ValueError:
+        # It's an encoded id.
+        encoded_id = item_id
+        decoded_id = app.security.decode_id(item_id)
+    return (encoded_id, decoded_id)
+
+
 def format_bool(b):
     if b:
         return "yes"
@@ -964,16 +978,7 @@ class PageController(BaseUIController, SharableMixin,
     def _get_embed_html(self, trans, item_class, item_id):
         """ Returns HTML for embedding an item in a page. """
         item_class = self.get_class(item_class)
-        # Assume if item id is integer and less than 10**15, it's unencoded.
-        try:
-            decoded_id = int(item_id)
-            if decoded_id >= PAGE_MAXRAW:
-                raise ValueError("Identifier larger than maximum expected raw int, must be already encoded.")
-            encoded_id = self.app.security.encode_id(item_id)
-        except ValueError:
-            # It's an encoded id.
-            encoded_id = item_id
-            decoded_id = self.app.security.decode_id(item_id)
+        encoded_id, decoded_id = _get_page_identifiers(item_id, trans.app)
         if item_class == model.History:
             return self._get_embedded_history_html(trans, decoded_id)
 
@@ -1016,14 +1021,7 @@ def _placeholderRenderForEdit(trans, item_class, item_id):
 
 
 def _placeholderRenderForSave(trans, item_class, item_id, encode=False):
-    try:
-        decoded_item_id = int(item_id)
-        if decoded_item_id >= PAGE_MAXRAW:
-            raise ValueError("Identifier larger than maximum expected raw int, must be already encoded.")
-        encoded_item_id = trans.app.security.encode_id(item_id)
-    except ValueError:
-        decoded_item_id = trans.app.security.decode_id(item_id)
-        encoded_item_id = item_id
+    encoded_item_id, decoded_item_id = _get_page_identifiers(item_id, trans.app)
     item_name = ''
     if item_class == 'History':
         history = trans.sa_session.query(trans.model.History).get(decoded_item_id)
