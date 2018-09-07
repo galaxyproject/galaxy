@@ -527,6 +527,17 @@ mapping:
           multiple files, the last definition is used (though the first sniffer is used
           so limit sniffer definitions to one file).
 
+      sniff_compressed_dynamic_datatypes_default:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Enable sniffing of compressed datatypes. This can be configured/overridden
+          on a per-datatype basis in the datatypes_conf.xml file.
+          With this option set to False the compressed datatypes will be unpacked
+          before sniffing.
+
+
       datatypes_disable_auto:
         type: bool
         default: false
