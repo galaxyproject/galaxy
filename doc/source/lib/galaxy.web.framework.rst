@@ -33,14 +33,6 @@ galaxy\.web\.framework\.decorators module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.framework\.formbuilder module
-------------------------------------------
-
-.. automodule:: galaxy.web.framework.formbuilder
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.web\.framework\.openid\_manager module
 ----------------------------------------------
 

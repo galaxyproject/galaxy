@@ -99,9 +99,12 @@ tool-data/toolshed.g2.bx.psu.edu/
 tool-data/**/*.fa
 
 # Test output
+.pytest_cache/
+assets/
 test-data-cache
 run_framework_tests.html
 run_functional_tests.html
+run_integration_tests.html
 run_toolshed_tests.html
 run_api_tests.html
 test/tool_shed/tmp/*

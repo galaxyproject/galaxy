@@ -4,6 +4,8 @@ var path = require("path");
 var scriptsBase = path.join(__dirname, "galaxy/scripts");
 var libsBase = path.join(scriptsBase, "libs");
 
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+
 // libraries used on almost every page
 var commonLibs = [
     "polyfills",
@@ -119,8 +121,9 @@ let buildconfig = {
             "window.jQuery": "jquery",
             _: "underscore",
             Backbone: "libs/backbone"
-        })
+        }),
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
+        new VueLoaderPlugin()
     ]
 };
 

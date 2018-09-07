@@ -273,6 +273,14 @@
         </div>
     </div>
 
+    <div class="unified-panel-controls">
+        <div id="tool-search" class="bar">
+            <input id="tool-search-query" class="search-query parent-width" name="query" placeholder="search tools" autocomplete="off" type="text">
+             <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
+             <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
+        </div>
+    </div>
+
     <div class="unified-panel-body" style="overflow: auto;">
         <div class="toolMenuContainer">
             <div class="toolMenu" id="workflow-tool-menu">
@@ -280,16 +288,6 @@
                     from galaxy.workflow.modules import load_module_sections
                     module_sections = load_module_sections( trans )
                 %>
-                %if trans.app.config.message_box_visible:
-                    <div id="tool-search" style="top: 95px;">
-                %else:
-                    <div id="tool-search">
-                %endif
-                    <input type="text" name="query" placeholder="search tools" id="tool-search-query" class="search-query parent-width" />
-                    <a id="search-clear-btn" title="" data-original-title="clear search (esc)"> </a>
-                    <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
-                </div>
-
                 <div class="toolSectionWrapper">
                     ${render_module_section(module_sections['inputs'])}
                 </div>
@@ -358,7 +356,7 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner" style="float: right">
+        <div class="panel-header-buttons" style="float: right">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
         <div class="unified-panel-header-inner" id="workflow-canvas-title">
@@ -369,17 +367,19 @@
         <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
         </div>
+        <div id='workflow-parameters-box' style="display:none; position: absolute; right:0px; border: solid grey 1px; padding: 5px; background: #EEEEEE; z-index: 20000; overflow: auto; max-width: 300px; max-height: 300px;">
+            <div style="margin-bottom:5px;">
+                <b>Workflow Parameters</b>
+            </div>
+            <div id="workflow-parameters-container">
+            </div>
+        </div>
         <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 20000px; bottom: 0px; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE no-repeat url(${h.url_for('/static/images/resizable.png')}); z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; min-width: 50px; min-height: 50px">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
                     <div id="overview-viewport" style="position: absolute; width: 0px; height: 0px; border: solid blue 1px; z-index: 10;"></div>
                 </div>
-            </div>
-        </div>
-        <div id='workflow-parameters-box' style="display:none; position: absolute; /*width: 150px; height: 150px;*/ right: 0px; top: 0px; border-bottom: solid gray 1px; border-left: solid grey 1px; padding: 7px; background: #EEEEEE; z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; /*min-width: 50px; min-height: 50px*/">
-            <div style="margin-bottom:5px;"><b>Workflow Parameters</b></div>
-            <div id="workflow-parameters-container">
             </div>
         </div>
         <div id="close-viewport" style="border-left: 1px solid #999; border-top: 1px solid #999; background: #ddd url(${h.url_for('/static/images/overview_arrows.png')}) 12px 0px; position: absolute; right: 0px; bottom: 0px; width: 12px; height: 12px; z-index: 25000;"></div>

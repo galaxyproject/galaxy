@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -32,6 +33,7 @@ from galaxy.tools.wrappers import (
     SelectToolParameterWrapper,
     ToolParameterValueWrapper,
 )
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -561,19 +563,20 @@ class ToolEvaluator(object):
             return content, True
 
         content_format = content["format"]
+        handle_files = content["handle_files"]
         if content_format != "json":
             template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
             message = template % content_format
             raise Exception(message)
 
-        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict)), False
+        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict, handle_files=handle_files)), False
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True):
         if is_template:
             value = fill_template(content, context=context)
         else:
-            value = content
-        with open(config_filename, "w") as f:
+            value = unicodify(content)
+        with io.open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, 0o644)

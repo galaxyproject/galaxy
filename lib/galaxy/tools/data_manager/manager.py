@@ -326,7 +326,7 @@ class DataManager(object):
             # moving a directory and the target already exists, we move the contents instead
             log.debug('Attempting to add entries for undeclared tables: %s.', ', '.join(data_tables_dict.keys()))
             for ref_file in out_data.values():
-                if os.path.exists(ref_file.extra_files_path):
+                if ref_file.extra_files_path_exists():
                     util.move_merge(ref_file.extra_files_path, self.data_managers.app.config.galaxy_data_manager_data_path)
             path_column_names = ['path']
             for data_table_name, data_table_values in data_tables_dict.items():

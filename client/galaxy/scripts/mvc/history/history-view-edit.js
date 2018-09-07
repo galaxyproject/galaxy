@@ -558,7 +558,7 @@ var HistoryViewEdit = _super.extend(
                 this.warn("error parsing JSON from drop:", data);
             }
 
-            this.trigger("droptarget:drop", ev, data);
+            this.trigger("droptarget:drop", ev, data, this);
             return false;
         },
 

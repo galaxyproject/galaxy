@@ -16,7 +16,6 @@ import os
 import sys
 
 import sphinx_rtd_theme
-
 # Library to make .md to slideshow
 from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
@@ -54,10 +53,11 @@ if not SKIP_SOURCE:
 templates_path = ['_templates']
 
 # Configure default autodoc's action
-autodoc_default_flags = [ 'members', 'undoc-members' ]
+autodoc_default_flags = ['members', 'undoc-members']
 
 # Prevent alphabetical reordering of module members.
 autodoc_member_order = 'bysource'
+
 
 def dont_skip_init(app, what, name, obj, skip, options):
     if name == "__init__":
@@ -66,12 +66,12 @@ def dont_skip_init(app, what, name, obj, skip, options):
 
 
 def setup(app):
-    doc_root = 'https://docs.galaxyproject.org/en/master/'
     app.connect("autodoc-skip-member", dont_skip_init)
     app.add_config_value('recommonmark_config', {
-        "url_resolver": lambda url: doc_root + url,
+        'enable_auto_doc_ref': False,
     }, True)
     app.add_transform(AutoStructify)
+
 
 # The suffix of source filenames.
 source_suffix = ['.rst', '.md']
@@ -84,14 +84,14 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Galaxy Project'
-copyright = str( datetime.datetime.now().year ) + u', Galaxy Committers'
+copyright = str(datetime.datetime.now().year) + u', Galaxy Committers'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
 # built documents.
 #
 # The short X.Y version.
-from galaxy.version import VERSION_MAJOR, VERSION
+from galaxy.version import VERSION, VERSION_MAJOR
 version = VERSION_MAJOR
 # The full version, including alpha/beta/rc tags.
 release = VERSION
@@ -224,14 +224,14 @@ htmlhelp_basename = 'Galaxydoc'
 # -- Options for LaTeX output --------------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -314,6 +314,7 @@ class Mock(object):
             return mockType
         else:
             return Mock()
+
 
 # adding pbs_python, DRMAA_python, markupsafe, and drmaa here had no effect.
 MOCK_MODULES = ['tables', 'decorator']

@@ -153,7 +153,7 @@ def downgrade(migrate_engine):
     __drop_column("element_count", "dataset_collection", metadata)
 
     tables = get_new_tables()
-    for table in reversed(tables.values()):
+    for table in reversed(list(tables.values())):
         __drop(table)
 
 

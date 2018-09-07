@@ -26,8 +26,6 @@ class ServesTemplatesPluginMixin(object):
 
     #: default number of templates to search for plugin template lookup
     DEFAULT_TEMPLATE_COLLECTION_SIZE = 10
-    #: default encoding of plugin templates
-    DEFAULT_TEMPLATE_ENCODING = 'utf-8'
 
     def _set_up_template_plugin(self, template_cache_dir, additional_template_paths=None, **kwargs):
         """
@@ -48,7 +46,7 @@ class ServesTemplatesPluginMixin(object):
         return os.path.join(self.path, 'templates')
 
     def _build_template_lookup(self, template_cache_dir, additional_template_paths=None,
-                               collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE, output_encoding=DEFAULT_TEMPLATE_ENCODING):
+                               collection_size=DEFAULT_TEMPLATE_COLLECTION_SIZE):
         """
         Build a mako template filename lookup for the plugin.
         """
@@ -58,8 +56,7 @@ class ServesTemplatesPluginMixin(object):
         return mako.lookup.TemplateLookup(
             directories=template_lookup_paths,
             module_directory=template_cache_dir,
-            collection_size=collection_size,
-            output_encoding=output_encoding)
+            collection_size=collection_size)
 
 
 class VisualizationPlugin(ServesTemplatesPluginMixin):

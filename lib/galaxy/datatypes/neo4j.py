@@ -92,7 +92,7 @@ class Neo4j(Html):
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % \
                                                             (data.hid,
                                                              download_zip, "zip")
-            return open(download_zip)
+            return open(download_zip, mode='rb')
 
 
 class Neo4jDB(Neo4j, Data):

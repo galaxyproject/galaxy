@@ -17,6 +17,14 @@ galaxy\.visualization\.plugins\.config\_parser module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.visualization\.plugins\.interactive\_environments module
+----------------------------------------------------------------
+
+.. automodule:: galaxy.visualization.plugins.interactive_environments
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.visualization\.plugins\.plugin module
 ---------------------------------------------
 

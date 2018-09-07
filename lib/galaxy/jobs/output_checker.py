@@ -2,8 +2,9 @@ import re
 import traceback
 from logging import getLogger
 
+from galaxy.tools.parser.error_level import StdioErrorLevel
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
-from .error_level import StdioErrorLevel
 
 log = getLogger(__name__)
 
@@ -12,6 +13,8 @@ DETECTED_JOB_STATE = Bunch(
     OUT_OF_MEMORY_ERROR='oom_error',
     GENERIC_ERROR='generic_error',
 )
+
+ERROR_PEAK = 2000
 
 
 def check_output_regex(job, regex, stream, stream_append, max_error_level):
@@ -71,6 +74,10 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
     # messages are added it the order of detection
     stderr_toolmsg = []
     stdout_toolmsg = []
+
+    stdout = unicodify(stdout)
+    stderr = unicodify(stderr)
+
     try:
         # Check exit codes and match regular expressions against stdout and
         # stderr if this tool was configured to do so.
@@ -151,11 +158,14 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
             # log.debug( "Tool did not define exit code or stdio handling; "
             #          + "checking stderr for success" )
             if stderr:
-                peak = stderr[0:250]
-                log.debug("Tool produced standard error failing job - [%s]" % peak)
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
             else:
                 state = DETECTED_JOB_STATE.OK
+
+        if DETECTED_JOB_STATE != DETECTED_JOB_STATE.OK and stderr:
+            if stderr:
+                peak = stderr[0:ERROR_PEAK]
+                log.debug("job failed, standard error is - [%s]" % peak)
 
     # On any exception, return True.
     except Exception:

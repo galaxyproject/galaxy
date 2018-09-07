@@ -94,11 +94,11 @@ class TabularData(data.Text):
             max_peek_size = 1000000  # 1 MB
             if os.stat(dataset.file_name).st_size < max_peek_size:
                 self._clean_and_set_mime_type(trans, dataset.get_mime())
-                return open(dataset.file_name)
+                return open(dataset.file_name, mode='rb')
             else:
                 trans.response.set_content_type("text/html")
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
+                                                  truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
                                                   data=dataset)
         else:
             column_names = 'null'
@@ -854,7 +854,7 @@ class Eland(Tabular):
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
-            with compression_utils.get_fileobj(dataset.file_name, gzip_only=True) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.file_name, compressed_formats=['gzip']) as dataset_fh:
                 lanes = {}
                 tiles = {}
                 barcodes = {}

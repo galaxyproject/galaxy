@@ -174,6 +174,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         def json_encodeify(obj):
             if isinstance(obj, odict):
                 return dict(obj)
+            elif isinstance(obj, map):
+                return list(obj)
             else:
                 return obj
 
@@ -396,6 +398,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             'inputs': {
                 'request_version': request_version,
                 'request_json': request,
+                'file_count': str(len(files_payload))
             },
         }
         create_payload.update(files_payload)

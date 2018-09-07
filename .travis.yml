@@ -10,19 +10,16 @@ env:
   - TOX_ENV=qunit
   - TOX_ENV=py27-first_startup
   - TOX_ENV=py27-lint_docstring_include_list
-  - TOX_ENV=check_python_dependencies
 
 matrix:
   include:
     - env: TOX_ENV=py34-first_startup
       addons:
+        &py3_addons
         apt:
           packages:
             # For psutil, pyyaml, uwsgi...
             - libpython3.4-dev
-            # For python-lzo
-            - liblzo2-dev
-            - zlib1g-dev
     - env: TOX_ENV=validate_test_tools
       addons:
         apt:
@@ -33,9 +30,8 @@ matrix:
         apt:
           packages:
             - ack-grep
-  allow_failures:
-    - env: TOX_ENV=check_python_dependencies
-
+    - env: TOX_ENV=py34-unit
+      addons: *py3_addons
 
 install:
   - set -e

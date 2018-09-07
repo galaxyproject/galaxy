@@ -208,6 +208,27 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         else:
             return False
 
+    @expose_api
+    def resume(self, trans, id, **kwd):
+        """
+        * PUT /api/jobs/{id}/resume
+            Resumes a paused job
+
+        :type   id: string
+        :param  id: Encoded job id
+
+        :rtype:     dictionary
+        :returns:   dictionary containing output dataset associations
+        """
+        job = self.__get_job(trans, id)
+        if not job:
+            raise exceptions.ObjectNotFound("Could not access job with id '%s'" % id)
+        if job.state == job.states.PAUSED:
+            job.resume()
+        else:
+            exceptions.RequestParameterInvalidException("Job with id '%s' is not paused" % (job.tool_id))
+        return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
     @expose_api_anonymous
     def build_for_rerun(self, trans, id, **kwd):
         """

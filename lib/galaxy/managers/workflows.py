@@ -181,22 +181,49 @@ class WorkflowsManager(object):
         trans.sa_session.flush()
         return workflow_invocation_step
 
-    def build_invocations_query(self, trans, decoded_stored_workflow_id):
+    def build_invocations_query(self, trans, stored_workflow_id=None, history_id=None, user_id=None):
         """Get invocations owned by the current user."""
-        stored_workflow = trans.sa_session.query(
-            self.app.model.StoredWorkflow
-        ).get(decoded_stored_workflow_id)
-        if not stored_workflow:
-            raise exceptions.ObjectNotFound()
-        invocations = trans.sa_session.query(
-            model.WorkflowInvocation
-        ).filter_by(
-            workflow_id=stored_workflow.latest_workflow_id
-        )
-        return [inv for inv in invocations if self.check_security(trans,
-                                                                  inv,
-                                                                  check_ownership=True,
-                                                                  check_accessible=False)]
+        sa_session = trans.sa_session
+        invocations_query = sa_session.query(model.WorkflowInvocation)
+        if stored_workflow_id is not None:
+            stored_workflow = sa_session.query(model.StoredWorkflow).get(stored_workflow_id)
+            if not stored_workflow:
+                raise exceptions.ObjectNotFound()
+            invocations_query = invocations_query.join(
+                model.Workflow
+            ).filter(
+                model.Workflow.table.c.stored_workflow_id == stored_workflow_id
+            )
+
+        if user_id is not None:
+            invocations_query = invocations_query.join(
+                model.History
+            ).filter(
+                model.History.table.c.user_id == user_id
+            )
+
+        if history_id is not None:
+            invocations_query = invocations_query.filter(
+                model.WorkflowInvocation.table.c.history_id == history_id
+            )
+
+        return [inv for inv in invocations_query if self.check_security(trans,
+                                                                        inv,
+                                                                        check_ownership=True,
+                                                                        check_accessible=False)]
+
+    def serialize_workflow_invocation(self, invocation, **kwd):
+        app = self.app
+        view = kwd.get("view", "element")
+        step_details = util.string_as_bool(kwd.get('step_details', False))
+        legacy_job_state = util.string_as_bool(kwd.get('legacy_job_state', False))
+        as_dict = invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state)
+        return app.security.encode_all_ids(as_dict, recursive=True)
+
+    def serialize_workflow_invocations(self, invocations, **kwd):
+        if "view" not in kwd:
+            kwd["view"] = "collection"
+        return list(map(lambda i: self.serialize_workflow_invocation(i, **kwd), invocations))
 
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
@@ -393,7 +420,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     errors[step.id] = step_errors
         if missing_tools:
             workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
-            raise exceptions.MessageException('Following tools missing: %s' % missing_tools)
+            raise exceptions.MessageException('Following tools missing: %s' % ', '.join(missing_tools))
         workflow.annotation = self.get_item_annotation_str(trans.sa_session, trans.user, workflow)
         step_order_indices = {}
         for step in workflow.steps:

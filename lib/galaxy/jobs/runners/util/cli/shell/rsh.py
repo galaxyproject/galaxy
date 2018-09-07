@@ -4,6 +4,10 @@ import time
 import paramiko
 from pulsar.managers.util.retry import RetryActionExecutor
 
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
 from .local import LocalShell
 
@@ -86,10 +90,10 @@ class ParamikoShell(object):
 
         stdout, stderr = self.retry_action_executor.execute(retry)
         return_code = stdout.channel.recv_exit_status()
-        return Bunch(stdout=stdout.read(), stderr=stderr.read(), returncode=return_code)
+        return Bunch(stdout=unicodify(stdout.read()), stderr=unicodify(stderr.read()), returncode=return_code)
 
     def _execute(self, cmd, timeout):
-        return self.ssh.exec_command(cmd, timeout=timeout)
+        return self.ssh.exec_command(smart_str(cmd), timeout=timeout)
 
 
 class GlobusSecureShell(SecureShell):

@@ -3,8 +3,9 @@
 from __future__ import absolute_import
 
 import logging
-import sys
 import threading
+
+from galaxy.util import unicodify
 
 try:
     import uwsgi
@@ -75,7 +76,6 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
         need = len(farms)
         if num < need:
             raise RuntimeError('Need %i uWSGI locks but only %i exist(s): Set `locks = %i` in uWSGI configuration' % (need, num, need - 1))
-            sys.exit(1)
         self._locks.extend(['RECV_MSG_FARM_' + x for x in farms])
         # this would be nice, but in my 2.0.15 uWSGI, the uwsgi module has no set_option function, and I don't know if it'd work even if the function existed as documented
         # if len(self.lock_map) > 1:
@@ -111,7 +111,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             self.__lock(lock)
             try:
                 log.debug('Acquired message lock, waiting for new message')
-                msg = uwsgi.farm_get_msg()
+                msg = unicodify(uwsgi.farm_get_msg())
                 log.debug('Received message: %s', msg)
                 if msg == self.SHUTDOWN_MSG:
                     self.running = False

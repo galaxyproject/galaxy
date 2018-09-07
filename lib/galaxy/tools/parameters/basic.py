@@ -3,7 +3,6 @@ Basic tool parameters.
 """
 from __future__ import print_function
 
-import cgi
 import json
 import logging
 import os
@@ -12,6 +11,7 @@ import re
 from xml.etree.ElementTree import XML
 
 from six import string_types
+from webob.compat import cgi_FieldStorage
 
 import galaxy.model
 import galaxy.tools.parser
@@ -94,7 +94,7 @@ class ToolParameter(Dictifiable):
         self.argument = input_source.get("argument")
         self.name = self.__class__.parse_name(input_source)
         self.type = input_source.get("type")
-        self.hidden = input_source.get("hidden", False)
+        self.hidden = input_source.get_bool("hidden", False)
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
         self.is_dynamic = False
@@ -265,8 +265,7 @@ class TextToolParameter(ToolParameter):
     >>> p = TextToolParameter(None, XML('<param name="_name" type="text" value="default" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
     """
 
     def __init__(self, tool, input_source):
@@ -310,10 +309,8 @@ class IntegerToolParameter(TextToolParameter):
     >>> p = IntegerToolParameter(None, XML('<param name="_name" type="integer" value="10" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
-    >>> type(p.from_json("10", trans))
-    <type 'int'>
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'IntegerToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'integer'), ('value', u'10')]
+    >>> assert type(p.from_json("10", trans)) == int
     >>> type(p.from_json("_string", trans))
     Traceback (most recent call last):
         ...
@@ -386,10 +383,8 @@ class FloatToolParameter(TextToolParameter):
     >>> p = FloatToolParameter(None, XML('<param name="_name" type="float" value="3.141592" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
-    >>> type(p.from_json("36.1", trans))
-    <type 'float'>
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('max', None), ('min', None), ('model_class', 'FloatToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'float'), ('value', u'3.141592')]
+    >>> assert type(p.from_json("36.1", trans)) == float
     >>> type(p.from_json("_string", trans))
     Traceback (most recent call last):
         ...
@@ -462,8 +457,7 @@ class BooleanToolParameter(ToolParameter):
     >>> p = BooleanToolParameter(None, XML('<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
     >>> print(p.from_json('true'))
     True
     >>> print(p.to_param_dict_string(True))
@@ -567,7 +561,7 @@ class FileToolParameter(ToolParameter):
                 return value['local_filename']
             except KeyError:
                 return None
-        elif isinstance(value, cgi.FieldStorage):
+        elif isinstance(value, cgi_FieldStorage):
             return value.filename
         raise Exception("FileToolParameter cannot be persisted")
 
@@ -676,8 +670,7 @@ class HiddenToolParameter(ToolParameter):
     >>> p = HiddenToolParameter(None, XML('<param name="_name" type="hidden" value="_value"/>'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'HiddenToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'hidden'), ('value', u'_value')]
     """
 
     def __init__(self, tool, input_source):
@@ -704,8 +697,7 @@ class ColorToolParameter(ToolParameter):
     _name
     >>> print(p.to_param_dict_string("#fdeada"))
     #fdeada
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'ColorToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'color'), ('value', u'#ffffff')]
     >>> p = ColorToolParameter(None, XML('<param name="_name" type="color" value="#ffffff" rgb="True"/>'))
     >>> print(p.to_param_dict_string("#fdeada"))
     (253, 234, 218)
@@ -743,8 +735,7 @@ class BaseURLToolParameter(HiddenToolParameter):
     >>> p = BaseURLToolParameter(None, XML('<param name="_name" type="base_url" value="_value"/>'))
     >>> print(p.name)
     _name
-    >>> sorted(p.to_dict(trans).items())
-    [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('help', ''), ('hidden', True), ('is_dynamic', False), ('label', ''), ('model_class', 'BaseURLToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'base_url'), ('value', u'_value')]
     """
 
     def __init__(self, tool, input_source):
@@ -857,9 +848,9 @@ class SelectToolParameter(ToolParameter):
         else:
             return self.legal_values
 
-    def from_json(self, value, trans, other_values={}):
+    def from_json(self, value, trans, other_values={}, require_legal_value=True):
         legal_values = self.get_legal_values(trans, other_values)
-        if not legal_values and is_runtime_context(trans, other_values):
+        if (not legal_values or not require_legal_value) and is_runtime_context(trans, other_values):
             if self.multiple:
                 # While it is generally allowed that a select value can be '',
                 # we do not allow this to be the case in a dynamically
@@ -879,6 +870,10 @@ class SelectToolParameter(ToolParameter):
                 return None
             raise ValueError("An invalid option was selected for %s, please verify." % (self.name))
         elif not legal_values:
+            if self.optional and self.tool.profile < 18.09:
+                # Covers optional parameters with default values that reference other optional parameters.
+                # These will have a value but no legal_values.
+                return None
             raise ValueError("Parameter %s requires a value, but has no legal values defined." % self.name)
         if isinstance(value, list):
             if not self.multiple:
@@ -897,7 +892,7 @@ class SelectToolParameter(ToolParameter):
                         return []
                     else:
                         raise ValueError("No option was selected for %s but input is not optional." % self.name)
-            if value not in legal_values:
+            if value not in legal_values and require_legal_value:
                 raise ValueError("An invalid option was selected for %s, %r, please verify." % (self.name, value))
             return value
 
@@ -965,7 +960,7 @@ class SelectToolParameter(ToolParameter):
             return []
 
     def to_dict(self, trans, other_values={}):
-        d = super(SelectToolParameter, self).to_dict(trans)
+        d = super(SelectToolParameter, self).to_dict(trans, other_values)
 
         # Get options, value.
         options = self.get_options(trans, other_values)
@@ -1035,6 +1030,99 @@ class GenomeBuildParameter(SelectToolParameter):
             # Hack for unit tests, since we have no tool
             return util.read_dbnames(None)
         return self.tool.app.genome_builds.get_genome_build_names(trans=trans)
+
+
+class SelectTagParameter(SelectToolParameter):
+    """
+    Select set that is composed of a set of tags available for an input.
+    """
+    def __init__(self, tool, input_source):
+        input_source = ensure_input_source(input_source)
+        SelectToolParameter.__init__(self, tool, input_source)
+        self.tool = tool
+        self.tag_key = input_source.get("group", False)
+        self.optional = input_source.get("optional", False)
+        self.multiple = input_source.get("multiple", False)
+        self.accept_default = input_source.get_bool("accept_default", False)
+        if self.accept_default:
+            self.optional = True
+        self.data_ref = input_source.get("data_ref", None)
+        self.ref_input = None
+        # Legacy style default value specification...
+        self.default_value = input_source.get("default_value", None)
+        if self.default_value is None:
+            # Newer style... more in line with other parameters.
+            self.default_value = input_source.get("value", None)
+        self.is_dynamic = True
+
+    def from_json(self, value, trans, other_values={}):
+        if self.multiple:
+            tag_list = []
+            # split on newline and ,
+            if isinstance(value, list) or isinstance(value, string_types):
+                if not isinstance(value, list):
+                    value = value.split('\n')
+                for tag_str in value:
+                    for tag in str(tag_str).split(','):
+                        tag = tag.strip()
+                        if tag:
+                            tag_list.append(tag)
+            value = tag_list
+        else:
+            if not value:
+                value = None
+        # We skip requiring legal values -- this is similar to optional, but allows only subset of datasets to be positive
+        # TODO: May not actually be required for (nested) collection input ?
+        return super(SelectTagParameter, self).from_json(value, trans, other_values, require_legal_value=False)
+
+    def get_tag_list(self, other_values):
+        """
+        Generate a select list containing the tags of the associated dataset (if found).
+        """
+        # Get the value of the associated data reference (a dataset)
+        history_items = other_values.get(self.data_ref, None)
+        # Check if a dataset is selected
+        if not history_items:
+            return []
+        tags = set()
+        for history_item in util.listify(history_items):
+            if hasattr(history_item, 'dataset_instances'):
+                for dataset in history_item.dataset_instances:
+                    for tag in dataset.tags:
+                        if tag.user_tname == 'group':
+                            tags.add(tag.user_value)
+            else:
+                for tag in history_item.tags:
+                    if tag.user_tname == 'group':
+                        tags.add(tag.user_value)
+        return list(tags)
+
+    def get_options(self, trans, other_values):
+        """
+        Show tags
+        """
+        options = []
+        for tag in self.get_tag_list(other_values):
+            options.append(('Tags: ' + tag, tag, False))
+        return options
+
+    def get_initial_value(self, trans, other_values):
+        if self.default_value is not None:
+            return self.default_value
+        return SelectToolParameter.get_initial_value(self, trans, other_values)
+
+    def get_legal_values(self, trans, other_values):
+        if self.data_ref not in other_values:
+            raise ValueError("Value for associated data reference not found (data_ref).")
+        return set(self.get_tag_list(other_values))
+
+    def get_dependencies(self):
+        return [self.data_ref]
+
+    def to_dict(self, trans, other_values={}):
+        d = super(SelectTagParameter, self).to_dict(trans, other_values=other_values)
+        d['data_ref'] = self.data_ref
+        return d
 
 
 class ColumnListParameter(SelectToolParameter):
@@ -1162,7 +1250,8 @@ class ColumnListParameter(SelectToolParameter):
         if self.usecolnames:  # read first row - assume is a header with metadata useful for making good choices
             dataset = other_values.get(self.data_ref, None)
             try:
-                head = open(dataset.get_file_name(), 'r').readline()
+                with open(dataset.get_file_name(), 'r') as f:
+                    head = f.readline()
                 cnames = head.rstrip().split('\t')
                 column_list = [('%d' % (i + 1), 'c%d: %s' % (i + 1, x)) for i, x in enumerate(cnames)]
                 if self.numerical:  # If numerical was requested, filter columns based on metadata
@@ -1529,10 +1618,15 @@ class BaseDataToolParameter(ToolParameter):
                 src = 'dce'
             elif isinstance(value, app.model.HistoryDatasetCollectionAssociation):
                 src = 'hdca'
-            elif hasattr(value, 'id'):
+            elif isinstance(value, app.model.HistoryDatasetAssociation) or hasattr(value, 'id'):
+                # hasattr 'id' fires a query on persistent objects after a flush so better
+                # to do the isinstance check. Not sure we need the hasattr check anymore - it'd be
+                # nice to drop it.
                 src = 'hda'
             if src is not None:
-                return {'id' : app.security.encode_id(value.id) if use_security else value.id, 'src' : src}
+                object_id = galaxy.model.cached_id(value)
+                return {'id' : app.security.encode_id(object_id) if use_security else object_id, 'src' : src}
+
         if value not in [None, '', 'None']:
             if isinstance(value, list) and len(value) > 0:
                 values = [single_to_json(v) for v in value]
@@ -1658,6 +1752,11 @@ class DataToolParameter(BaseDataToolParameter):
                 elif isinstance(single_value, trans.app.model.HistoryDatasetAssociation):
                     rval.append(single_value)
                 else:
+                    if len(str(single_value)) == 16:
+                        # Could never really have an ID this big anyway - postgres doesn't
+                        # support that for integer column types.
+                        log.warning("Encoded ID where unencoded ID expected.")
+                        single_value = trans.security.decode_id(single_value)
                     rval.append(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(single_value))
             if found_hdca:
                 for val in rval:
@@ -2215,6 +2314,7 @@ parameter_types = dict(
     genomebuild=GenomeBuildParameter,
     select=SelectToolParameter,
     color=ColorToolParameter,
+    group_tag=SelectTagParameter,
     data_column=ColumnListParameter,
     hidden=HiddenToolParameter,
     hidden_data=HiddenDataToolParameter,

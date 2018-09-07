@@ -100,4 +100,9 @@
         <columns>value, name, url</columns>
         <file path="tool-data/biom_simple_display.loc" />
     </table>
+    <!-- simple intermine servers -->
+    <table name="intermine_simple_display" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="tool-data/intermine_simple_display.loc" />
+    </table>
 </tables>

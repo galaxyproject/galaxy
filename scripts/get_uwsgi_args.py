@@ -23,7 +23,7 @@ ALIASES = {
     'module': ('mount',),   # mount is not actually an alias for module, but we don't want to set module if mount is set
 }
 DEFAULT_ARGS = {
-    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
+    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'static-safe', 'die-on-term', 'hook-master-start', 'enable-threads'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': (),
@@ -92,6 +92,8 @@ def _get_uwsgi_args(cliargs, kwargs):
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
         'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
                        '/static={here}/static'.format(here=os.getcwd())),
+        'static-safe': ('{here}/config/plugins/visualizations'.format(here=os.getcwd()),
+                        '{here}/config/plugins/interactive_environments'.format(here=os.getcwd())),
         'die-on-term': True,
         'enable-threads': True,
         'hook-master-start': ('unix_signal:2 gracefully_kill_them_all',
