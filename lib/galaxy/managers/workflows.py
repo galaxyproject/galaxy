@@ -444,6 +444,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_model = {
                     'inputs' : [input.to_dict(trans) for input in inputs.values()]
                 }
+            step_model['replacement_parameters'] = step.module.get_replacement_parameters(step)
             step_model['step_type'] = step.type
             step_model['step_label'] = step.label
             step_model['step_name'] = step.module.get_name()

@@ -20,8 +20,10 @@ from base.populators import (  # noqa: I100
     WorkflowPopulator
 )
 from base.workflow_fixtures import (  # noqa: I100
+    WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_RENAME_ON_INPUT,
     WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -224,6 +226,7 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
 
         test_data = jobs_descriptions.get("test_data", {})
         parameters = test_data.pop('step_parameters', {})
+        replacement_parameters = test_data.pop("replacement_parameters", {})
         inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
         workflow_request = dict(
             history="hist_id=%s" % history_id,
@@ -234,6 +237,8 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
         if parameters:
             workflow_request["parameters"] = dumps(parameters)
             workflow_request["parameters_normalized"] = True
+        if replacement_parameters:
+            workflow_request["replacement_params"] = dumps(replacement_parameters)
         if has_uploads:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         url = "workflows/%s/usage" % (workflow_id)
@@ -979,6 +984,23 @@ test_data:
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len([x for x in content.split("\n") if x]) == 2
+
+    @skip_without_tool("cat")
+    def test_run_subworkflow_replacment_parameters(self):
+        with self.dataset_populator.test_history() as history_id:
+            workflow_run_description = """%s
+
+test_data:
+  replacement_parameters:
+    replaceme: moocow
+  outer_input:
+    value: 1.bed
+    type: File
+""" % WORKFLOW_NESTED_REPLACEMENT_PARAMETER
+            self._run_jobs(workflow_run_description, history_id=history_id)
+
+            details = self.dataset_populator.get_history_dataset_details(history_id)
+            assert details["name"] == "moocow suffix"
 
     @skip_without_tool("random_lines1")
     def test_run_runtime_parameters_after_pause(self):
@@ -2247,25 +2269,7 @@ test_data: {}
     @skip_without_tool("cat")
     def test_run_rename_based_on_input(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  - id: input1
-steps:
-  - tool_id: cat
-    label: first_cat
-    state:
-      input1:
-        $link: input1
-    outputs:
-      out_file1:
-        rename: "#{input1 | basename} suffix"
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fasta1
-""", history_id=history_id)
+            self._run_jobs(WORKFLOW_RENAME_ON_INPUT, history_id=history_id)
             content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
             name = content["name"]
             assert name == "fasta1 suffix", name
