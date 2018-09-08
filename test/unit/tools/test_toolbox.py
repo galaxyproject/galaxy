@@ -207,6 +207,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         tool = toolbox.get_tool('test_tool')
         assert tool is not None
         assert tool.version == "1.0"
+        assert tool.tool_errors is None
         # Tool is loaded, now let's break it
         tool_path = tool.config_file
         with open(tool.config_file, 'w') as out:
@@ -215,12 +216,14 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         tool = self.app.toolbox.get_tool("test_tool")
         assert tool is not None
         assert tool.version == "1.0"
+        assert tool.tool_errors == 'Current on-disk tool is not valid'
         # Tool is still loaded, lets restore it with a new version
         self._init_tool(filename="simple_tool.xml", version="2.0")
         time.sleep(1.5)
         tool = self.app.toolbox.get_tool("test_tool")
         assert tool is not None
         assert tool.version == "2.0"
+        assert tool.tool_errors is None
         assert tool_path == tool.config_file
 
     def test_enforce_tool_profile(self):

@@ -753,7 +753,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             except Exception:
                 # If the tool is broken but still exists we can load it from the cache
                 tool = self.load_tool_from_cache(config_file, recover_tool=True)
-                if not tool:
+                if tool:
+                    log.exception("Tool '%s' is not valid:" % config_file)
+                    tool.tool_errors = 'Current on-disk tool is not valid'
+                else:
                     raise
             if tool.tool_shed_repository or not guid:
                 self.add_tool_to_cache(tool, config_file)

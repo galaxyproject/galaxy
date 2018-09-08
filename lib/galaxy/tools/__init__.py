@@ -437,6 +437,7 @@ class Tool(Dictifiable):
         self.populate_tool_shed_info()
         # add tool resource parameters
         self.populate_resource_parameters(tool_source)
+        self.tool_errors = None
         # Parse XML element containing configuration
         try:
             self.parse(tool_source, guid=guid)
@@ -1920,6 +1921,7 @@ class Tool(Dictifiable):
             'versions'      : self.tool_versions,
             'requirements'  : [{'name' : r.name, 'version' : r.version} for r in self.requirements],
             'errors'        : state_errors,
+            'tool_errors'   : self.tool_errors,
             'state_inputs'  : params_to_strings(self.inputs, state_inputs, self.app),
             'job_id'        : trans.security.encode_id(job.id) if job else None,
             'job_remap'     : self._get_job_remap(job),
