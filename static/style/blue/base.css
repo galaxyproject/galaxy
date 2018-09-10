@@ -5617,7 +5617,7 @@ button.bg-dark:focus {
 .errormessagesmall, .charts-client .charts-right
 .warningmessagesmall, .charts-client .charts-right
 .donemessagesmall, .charts-client .charts-right
-.infomessagesmall {
+.infomessagesmall, .unified-panel-header {
   margin: 0.5rem !important; }
 
 .mt-2,
@@ -10196,8 +10196,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
       font-size: 1.2em;
       width: 1.2em;
       float: left;
-      position: relative;
-      top: 2px; }
+      position: relative; }
     .upload-view-default .upload-box .upload-row .upload-text-column, .upload-view-composite .upload-box .upload-row .upload-text-column {
       position: relative; }
       .upload-view-default .upload-box .upload-row .upload-text-column .upload-text, .upload-view-composite .upload-box .upload-row .upload-text-column .upload-text {
@@ -10224,7 +10223,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
         width: 100%;
         padding: 0px;
         margin: 0px;
-        line-height: 1.55em; }
+        line-height: 1.6em; }
         .upload-view-default .upload-box .upload-row .upload-info .progress .progress-bar, .upload-view-composite .upload-box .upload-row .upload-info .progress .progress-bar {
           border-radius: inherit;
           -moz-border-radius: inherit; }
@@ -11962,7 +11961,8 @@ button.toast-close-button {
   position: absolute;
   right: 0px;
   z-index: 1000;
-  width: 150px; }
+  width: 170px;
+  top: 4px; }
   .charts-client .charts-buttons .btn, .charts-client .charts-buttons input[type="submit"], .charts-client .charts-buttons
   button, .charts-client .charts-buttons .action-button, .charts-client .charts-buttons .menubutton {
     background: white;
@@ -11986,7 +11986,8 @@ button.toast-close-button {
     .charts-client .charts-center .charts-viewer .info {
       position: absolute;
       margin: 40px 20px 50px 10px;
-      width: 50%; }
+      width: 50%;
+      word-break: break-word; }
     .charts-client .charts-center .charts-viewer .text {
       position: relative;
       margin-left: 5px;
@@ -12172,11 +12173,6 @@ body {
 .unified-panel-header {
   height: 2.5rem;
   z-index: 1000;
-  text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
-  background: #f8f9fa;
-  border-bottom: none;
-  margin: 0;
-  padding: 0 1.5rem;
   font-size: 1rem;
   font-weight: bold;
   display: flex;
@@ -12279,6 +12275,7 @@ body {
 
 div.unified-panel-body {
   width: 100%;
+  height: 100%;
   padding: 0px;
   flex: 1; }
 
