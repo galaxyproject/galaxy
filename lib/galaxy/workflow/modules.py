@@ -2,6 +2,7 @@
 Modules used in building workflows
 """
 import logging
+import re
 from json import loads
 from xml.etree.ElementTree import (
     Element,
@@ -259,6 +260,11 @@ class WorkflowModule(object):
 
         progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
 
+    def get_replacement_parameters(self, step):
+        """Return a list of replacement parameters."""
+
+        return []
+
 
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
@@ -402,6 +408,16 @@ class SubWorkflowModule(WorkflowModule):
                 visit_input_values(tool.inputs, tool_inputs.inputs, callback)
 
         return inputs
+
+    def get_replacement_parameters(self, step):
+        """Return a list of replacement parameters."""
+        replacement_parameters = set()
+        for subworkflow_step in self.subworkflow.steps:
+            module = subworkflow_step.module
+            for replacement_parameter in module.get_replacement_parameters(subworkflow_step):
+                replacement_parameters.add(replacement_parameter)
+
+        return list(replacement_parameters)
 
 
 class InputProxy(object):
@@ -1087,6 +1103,16 @@ class ToolModule(WorkflowModule):
         else:
             action_arguments = None
         return PostJobAction(value['action_type'], step, output_name, action_arguments)
+
+    def get_replacement_parameters(self, step):
+        """Return a list of replacement parameters."""
+        replacement_parameters = set()
+        for pja in step.post_job_actions:
+            for argument in pja.action_arguments.values():
+                for match in re.findall(r'\$\{(.+?)\}', argument):
+                    replacement_parameters.add(match)
+
+        return list(replacement_parameters)
 
 
 class WorkflowModuleFactory(object):

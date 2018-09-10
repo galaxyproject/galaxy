@@ -2,8 +2,10 @@ import yaml
 from base import rules_test_data
 from base.populators import load_data_dict
 from base.workflow_fixtures import (
+    WORKFLOW_NESTED_REPLACEMENT_PARAMETER,
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_RENAME_ON_REPLACEMENT_PARAM,
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
@@ -79,6 +81,38 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self._assert_has_3_lines_after_run(hid=2)
 
     @selenium_test
+    @managed_history
+    def test_replacement_parameters(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run(WORKFLOW_RENAME_ON_REPLACEMENT_PARAM)
+        self.screenshot("workflow_run_rename_simple_empty")
+        self._set_replacement_parameter("replaceme", "moocow")
+        self.screenshot("workflow_run_rename_simple_input")
+        self.workflow_run_submit()
+        output_hid = 2
+        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        history_id = self.current_history_id()
+        details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
+        assert details["name"] == "moocow suffix", details
+
+    @selenium_test
+    @managed_history
+    def test_replacement_parameters_on_subworkflows(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run(WORKFLOW_NESTED_REPLACEMENT_PARAMETER)
+        self.screenshot("workflow_run_rename_subworkflow_empty")
+        self._set_replacement_parameter("replaceme", "moocow")
+        self.screenshot("workflow_run_rename_subworkflow_input")
+        self.workflow_run_submit()
+        output_hid = 2
+        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        history_id = self.current_history_id()
+        details = self.dataset_populator.get_history_dataset_details(history_id, hid=output_hid)
+        assert details["name"] == "moocow suffix", details
+
+    @selenium_test
     def test_execution_with_tool_upgrade(self):
         name = self.workflow_upload_yaml_with_random_name(WORKFLOW_WITH_OLD_TOOL_VERSION, exact_tools=True)
         self.workflow_run_with_name(name)
@@ -148,3 +182,12 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         assert initial_value == "1", initial_value
         input_element.clear()
         input_element.send_keys("3")
+
+    def _set_replacement_parameter(self, tour_id, value):
+        # for random_lines num_lines parameter as runtime parameter in workflow form.
+        div = self.tool_parameter_div(tour_id)
+        input_element = div.find_element_by_css_selector("input")
+        initial_value = input_element.get_attribute("value")
+        assert initial_value == "", initial_value
+        input_element.clear()
+        input_element.send_keys(value)
