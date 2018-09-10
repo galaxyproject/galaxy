@@ -36,15 +36,13 @@
           <b-list-group flush>
             <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
               <b-button-group vertical>
-                <b-button :href="dataManager['toolUrl']" target="_blank" variant="primary">
-                  <div>
-                    {{ dataManager['name'] }}
-                  </div>
-                  <div>
+                <b-button :href="dataManager['toolUrl']" target="_blank" variant="primary" :id="normalize(dataManager['name'])">
+                  <div>{{ dataManager['name'] }}</div>
+                  <div v-if="dataManager['description']">
                     <i>{{ dataManager['description'] }}</i>
                   </div>
                 </b-button>
-                <b-button :to="{name: 'DataManagerJobs', params: { id: dataManager['id'] }}">
+                <b-button :to="{name: 'DataManagerJobs', params: { id: dataManager['id'] }}" :id="normalize(dataManager['name']) + '-jobs'">
                   Jobs
                 </b-button>
               </b-button-group>
@@ -100,6 +98,11 @@ export default {
         dataTablesFiltered() {
             let dataTablesFiltered = this.dataTables.filter(d => d["name"].match(new RegExp(this.filter, "i")));
             return dataTablesFiltered;
+        }
+    },
+    methods: {
+        normalize(s) {
+            return s.toLowerCase().replace(/ /g, "-");
         }
     },
     created() {

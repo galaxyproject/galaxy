@@ -1,6 +1,6 @@
 <template>
   <div>
-    <b-breadcrumb :items="breadcrumbItems" />
+    <b-breadcrumb :items="breadcrumbItems" id="breadcrumb" />
     <Alert :message="message" :variant="status" />
     <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
     <Alert v-else-if="!jobs.length" message="There are no jobs for this data manager." variant="primary" />
@@ -26,7 +26,7 @@
           </b-col>
         </b-row>
       </b-container>
-      <b-table :fields="tableFields" :items="tableItems" :filter="filter" hover responsive striped>
+      <b-table :fields="tableFields" :items="tableItems" :filter="filter" hover responsive striped id="jobs-table">
         <!-- enables cell formatting for the command line column -->
         <span slot="html" slot-scope="data" v-html="data.value">
         </span>
@@ -35,7 +35,7 @@
             <b-button v-b-tooltip.hover title="Rerun" :href="jobs[row.index]['runUrl']">
               <span class="fa fa-refresh" />
             </b-button>
-            <b-button v-b-tooltip.hover title="View Info" :to="{name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] }}">
+            <b-button v-b-tooltip.hover title="View Info" :to="{name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] }}" :id="'job-' + jobs[row.index]['encId']">
               <span class="fa fa-info-circle" />
             </b-button>
             <b-button v-if="!showCommandLine" @click.stop="row.toggleDetails()" :pressed.sync="row.detailsShowing">

@@ -1,59 +1,59 @@
 <template>
-  <div>
-    <b-breadcrumb :items="breadcrumbItems" />
-    <Alert :message="message" :variant="status" />
-    <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
-    <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-    <b-container v-else>
-      <b-row>
-        <b-col>
-          <b-card header-bg-variant="primary" header-text-variant="white" border-variant="primary" class="mb-3">
-            <template slot="header">
-              <b-container>
-                <b-row align-v="center">
-                  <b-col cols="auto">
-                    <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
-                      <span class="fa fa-refresh" />
-                    </b-button>
-                  </b-col>
-                  <b-col>
-                    <b>{{ dataManager["name"] }}</b>
-                    <i>{{ dataManager['description'] }}</i>
-                  </b-col>
-                </b-row>
-              </b-container>
-            </template>
-            <b-card v-for="(item, i) in tableItems" :key="i" class="mb-4">
-              <template slot="header">
-                <b-table :fields="fields" :items="[item]" caption-top small stacked>
-                  <template slot="table-caption">
-                    <b-container>
-                      <b-row align-v="center">
-                        <b-col cols="auto">
-                          <b-button v-b-tooltip.hover title="View complete info" :href="tableItems[i]['infoUrl']" target="galaxy_main">
-                            <span class="fa fa-info-circle" />
-                          </b-button>
-                        </b-col>
-                        <b-col>
-                          <b>{{ item["name"] }}</b>
-                        </b-col>
-                      </b-row>
-                    </b-container>
-                  </template>
-                </b-table>
-              </template>
-              <b-table v-for="(output, j) in dataManagerOutput[i]" :key="j" :fields="outputFields(output[1])" :items="output[1]" small stacked hover striped>
-                <template slot="table-caption">
-                  Data Table:
-                  <b>{{ output[0] }}</b>
-                </template>
-              </b-table>
-            </b-card>
-          </b-card>
-        </b-col>
-      </b-row>
-    </b-container>
-  </div>
+    <div>
+        <b-breadcrumb :items="breadcrumbItems" />
+        <Alert :message="message" :variant="status" />
+        <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
+        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <b-container v-else>
+            <b-row>
+                <b-col>
+                    <b-card header-bg-variant="primary" header-text-variant="white" border-variant="primary" class="mb-3" id="data-manager-card">
+                        <template slot="header">
+                            <b-container>
+                                <b-row align-v="center">
+                                    <b-col cols="auto">
+                                        <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
+                                            <span class="fa fa-refresh" />
+                                        </b-button>
+                                    </b-col>
+                                    <b-col>
+                                        <b>{{ dataManager["name"] }}</b>
+                                        <i>{{ dataManager['description'] }}</i>
+                                    </b-col>
+                                </b-row>
+                            </b-container>
+                        </template>
+                        <b-card v-for="(item, i) in tableItems" :key="i" class="mb-4" id="data-card">
+                            <template slot="header">
+                                <b-table :fields="fields" :items="[item]" caption-top small stacked>
+                                    <template slot="table-caption">
+                                        <b-container>
+                                            <b-row align-v="center">
+                                                <b-col cols="auto">
+                                                    <b-button v-b-tooltip.hover title="View complete info" :href="tableItems[i]['infoUrl']" target="galaxy_main">
+                                                        <span class="fa fa-info-circle" />
+                                                    </b-button>
+                                                </b-col>
+                                                <b-col>
+                                                    <b>{{ item["name"] }}</b>
+                                                </b-col>
+                                            </b-row>
+                                        </b-container>
+                                    </template>
+                                </b-table>
+                            </template>
+                            <b-table v-for="(output, j) in dataManagerOutput[i]" :key="j" :fields="outputFields(output[1])" :items="output[1]" small stacked hover striped>
+                                <template slot="table-caption">
+                                    Data Table:
+                                    <b>{{ output[0] }}</b>
+                                </template>
+                            </b-table>
+                        </b-card>
+                    </b-card>
+                </b-col>
+            </b-row>
+        </b-container>
+    </div>
 </template>
 
 <script>

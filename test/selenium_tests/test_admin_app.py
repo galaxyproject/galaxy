@@ -69,8 +69,30 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component = self.components.admin
         self.admin_login()
         self.admin_open()
+
         admin_component.index.local_data.wait_for_and_click()
-        title_element = admin_component.data_managers_title.wait_for_visible()
+        title_element = admin_component.dm_title.wait_for_visible()
         assert title_element.text == "Data Manager"
+        admin_component.dm_data_managers_card.wait_for_visible()
         self.screenshot("admin_local_data")
-        admin_component.data_managers_card.wait_for_visible()
+
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self.dataset_populator.run_tool(tool_id="data_manager",
+                                                           inputs={"ignored_value": "test"},
+                                                           history_id=history_id,
+                                                           assert_ok=False)
+            job_id = run_response.json()["jobs"][0]["id"]
+            self.dataset_populator.wait_for_tool_run(history_id=history_id,
+                                                     run_response=run_response,
+                                                     timeout=5,
+                                                     assert_ok=False)
+
+        admin_component.dm_test_data_manager_jobs.wait_for_and_click()
+        admin_component.dm_jobs_breadcrumb.wait_for_visible()
+        admin_component.dm_jobs_table.wait_for_visible()
+        self.screenshot("admin_local_data_jobs")
+
+        admin_component.dm_job(job_id=job_id).wait_for_and_click()
+        admin_component.dm_job_data_manager_card.wait_for_visible()
+        admin_component.dm_job_data_card.wait_for_visible()
+        self.screenshot("admin_local_data_job")
