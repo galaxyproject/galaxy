@@ -20,7 +20,7 @@ ${vcf_source_type.vcf_source} -n '$track_name'
 -g
   </command>
   <inputs>
-    <param name="track_name" type="text" label="Custom Track Name" value="Galaxy Custom Track" size="30" />
+    <param name="track_name" type="text" value="Galaxy Custom Track" label="Custom Track Name" />
     <conditional name="vcf_source_type">
       <param name="vcf_source" type="select" label="VCF Source Source Type">
         <option value="-p" selected="true">Per Population (file)</option>
