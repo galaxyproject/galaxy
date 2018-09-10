@@ -218,6 +218,16 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 
     @expose_api
+    def show_versions(self, trans, workflow_id, **kwds):
+        """
+        GET /api/workflows/{encoded_workflow_id}/versions
+
+        Lists all versions of this workflow.
+        """
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+        return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
+
+    @expose_api
     def create(self, trans, payload, **kwd):
         """
         POST /api/workflows

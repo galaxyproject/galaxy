@@ -127,7 +127,9 @@ export default Backbone.View.extend({
                     self.workflow.name = data.name;
                     self.workflow.has_changes = false;
                     self.workflow.stored = true;
+                    self.workflow.workflow_version = data.version;
                     self.showWorkflowParameters();
+                    self.build_version_select();
                     if (data.errors) {
                         window.show_modal("Saving workflow", body, {
                             Ok: hide_modal
@@ -271,53 +273,106 @@ export default Backbone.View.extend({
         this.ext_to_type = this.datatypes_mapping.ext_to_class_name;
         this.type_to_type = this.datatypes_mapping.class_to_classes;
 
-        // Load workflow definition
-        this._workflowLoadAjax(self.options.id, self.options.version, {
-            success: function(data) {
-                self.reset();
-                self.workflow.from_simple(data, true);
-                self.workflow.has_changes = false;
-                self.workflow.fit_canvas_to_nodes();
-                self.scroll_to_nodes();
-                self.canvas_manager.draw_overview();
-                // Determine if any parameters were 'upgraded' and provide message
-                var upgrade_message = "";
-                _.each(data.steps, (step, step_id) => {
-                    var details = "";
-                    if (step.errors) {
-                        details += `<li>${step.errors}</li>`;
-                    }
-                    _.each(data.upgrade_messages[step_id], m => {
-                        details += `<li>${m}</li>`;
-                    });
-                    if (details) {
-                        upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
-                            self.workflow.nodes[step_id].name
-                        }<ul>${details}</ul></li>`;
-                    }
-                });
-                if (upgrade_message) {
-                    window.show_modal(
-                        "Issues loading this workflow",
-                        `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
-                        { Continue: hide_modal }
-                    );
-                } else {
-                    hide_modal();
-                }
-                self.showWorkflowParameters();
-            },
-            error: function(response) {
-                    window.show_modal("Loading workflow failed.", response.err_msg, { Ok: function( response ){
-            window.onbeforeunload = undefined;
-            window.document.location = workflow_index;
-}})
-            },
-            beforeSubmit: function(data) {
-                show_message("Loading workflow", "progress");
-            }
-        });
+        this.get_workflow_versions = function() {
+            let _workflow_version_dropdown = {};
+            let workflow_versions = JSON.parse(
+                $.ajax({
+                    url: `${Galaxy.root}api/workflows/${self.options.id}/versions`,
+                    async: false,
+                }).responseText
+            );
 
+            for (let i = 0; i < workflow_versions.length; i++) {
+                let current_wf = workflow_versions[i];
+                let version_text = `Version ${current_wf['version']}, ${current_wf['steps']} steps`;
+                let selected = false;
+                if (i == self.workflow.workflow_version) {
+                    version_text = `${version_text} (active)`;
+                    selected = true;
+                };
+                _workflow_version_dropdown[version_text] = {
+                    version: i,
+                    selected: selected,
+                }
+            }
+            return _workflow_version_dropdown
+        }
+
+        this.build_version_select = function() {
+            let versions = this.get_workflow_versions();
+            $("#workflow-version-switch").empty();
+            $.each(versions, function(k, v) {
+                $('#workflow-version-switch').append($('<option></option>').html(k).val(v.version).selected(v.selected));
+            });
+            $("#workflow-version-switch").on('change', function () {
+                $('#workflow-version-switch').unbind('change');
+                if (this.value != self.workflow.workflow_version) {
+                    if (self.workflow && self.workflow.has_changes) {
+                        let r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
+                        if (r == false) {
+                            // We rebuild the version select list, to reset the selected version
+                            self.build_version_select();
+                            return
+                        }
+                    }
+                    self.load_workflow(self.options.id, this.value);
+                }
+            })
+        };
+
+        this.load_workflow = function load_workflow(id, version) {
+            this._workflowLoadAjax(id, version, {
+                success: function(data) {
+                    self.reset();
+                    self.workflow.from_simple(data, true);
+                    self.workflow.has_changes = false;
+                    self.workflow.fit_canvas_to_nodes();
+                    self.scroll_to_nodes();
+                    self.canvas_manager.draw_overview();
+                    // make_popupmenu($("#workflow-versions-switch"), self.get_workflow_versions());
+                    self.build_version_select();
+
+                    // Determine if any parameters were 'upgraded' and provide message
+                    var upgrade_message = "";
+                    _.each(data.steps, (step, step_id) => {
+                        var details = "";
+                        if (step.errors) {
+                            details += `<li>${step.errors}</li>`;
+                        }
+                        _.each(data.upgrade_messages[step_id], m => {
+                            details += `<li>${m}</li>`;
+                        });
+                        if (details) {
+                            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
+                                self.workflow.nodes[step_id].name
+                            }<ul>${details}</ul></li>`;
+                        }
+                    });
+                    if (upgrade_message) {
+                        window.show_modal(
+                            "Issues loading this workflow",
+                            `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
+                            { Continue: hide_modal }
+                        );
+                    } else {
+                        hide_modal();
+                    }
+                    self.showWorkflowParameters();
+                },
+                error: function(response) {
+                        window.show_modal("Loading workflow failed.", response.err_msg, { Ok: function( response ){
+                        window.onbeforeunload = undefined;
+                        window.document.location = workflow_index;
+}})
+                },
+                beforeSubmit: function(data) {
+                    show_message("Loading workflow", "progress");
+                }
+            });
+        }
+
+        // Load workflow definition
+        this.load_workflow(self.options.id, self.options.version)
         if (window.make_popupmenu) {
             make_popupmenu($("#workflow-options-button"), {
                 Save: save_current_workflow,

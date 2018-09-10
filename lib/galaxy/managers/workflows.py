@@ -382,15 +382,20 @@ class WorkflowContentsManager(UsesAnnotations):
         if version is not None:
             version = int(version)
         if style == "editor":
-            return self._workflow_to_dict_editor(trans, stored, version=version)
+            wf_dict = self._workflow_to_dict_editor(trans, stored, version=version)
         elif style == "legacy":
-            return self._workflow_to_dict_instance(stored, legacy=True, version=version)
+            wf_dict = self._workflow_to_dict_instance(stored, legacy=True, version=version)
         elif style == "instance":
-            return self._workflow_to_dict_instance(stored, legacy=False, version=version)
+            wf_dict = self._workflow_to_dict_instance(stored, legacy=False, version=version)
         elif style == "run":
-            return self._workflow_to_dict_run(trans, stored, version=version)
+            wf_dict = self._workflow_to_dict_run(trans, stored, version=version)
         else:
-            return self._workflow_to_dict_export(trans, stored, version=version)
+            wf_dict = self._workflow_to_dict_export(trans, stored, version=version)
+        if version:
+            wf_dict['version'] = version
+        else:
+            wf_dict['version'] = len(stored.workflows) - 1
+        return wf_dict
 
     def _workflow_to_dict_run(self, trans, stored, version=None):
         """

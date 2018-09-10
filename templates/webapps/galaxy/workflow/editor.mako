@@ -14,7 +14,7 @@
         'urls'    : {
             'tool_search'         : h.url_for('/api/tools'),
             'get_datatypes'       : h.url_for('/api/datatypes/mapping'),
-            'load_workflow'       : h.url_for(controller='workflow', action='load_workflow', version=version),
+            'load_workflow'       : h.url_for(controller='workflow', action='load_workflow'),
             'run_workflow'        : h.url_for(controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
             'rename_async'        : h.url_for(controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id)),
             'annotate_async'      : h.url_for(controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id)),
@@ -391,18 +391,6 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             Details
-            <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Switch versions</button>
-            <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="float: right">
-            %for i, workflow in enumerate(stored.workflows):
-                <%
-                if i == version:
-                    version_text = "Version %s (Current)" % i
-                else:
-                    version_text = "Version %d" % i
-                %>
-                <a class="dropdown-item"  onclick=location.href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id( stored.id ), version=i )};">${version_text}</a>
-            %endfor
-            </div>
         </div>
     </div>
     <div class="unified-panel-body workflow-right" style="overflow: auto;">
@@ -415,6 +403,10 @@
                 <label>Name:</label>
                 <span id="workflow-name" class="editable-text" title="Click to rename workflow">${h.to_unicode( stored.name ) | h}</span>
             </div>
+            <div id="workflow-version-area" class="form-row">
+                <label>Version:</label>
+            </div>
+            <select id="workflow-version-switch" href="#">Select version</select>
             ## Workflow tags.
             <%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />
             <div class="form-row">
