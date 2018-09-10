@@ -48,6 +48,7 @@ for env in $ENVS; do
                 -e "s/^funcsigs==\([^;]\+\).*$/funcsigs==\1; python_version < '3.3'/" \
                 -e "s/^futures==\([^;]\+\).*$/futures==\1; python_version == '2.6' or python_version == '2.7'/" \
                 -e "s/^py2-ipaddress==\([^;]\+\).*$/py2-ipaddress==\1; python_version < '3'/" \
+                -e "s/^pyinotify==\([^;]\+\).*$/pyinotify==\1; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'/" \
                 -e "s/^subprocess32==\([^;]\+\).*$/subprocess32==\1; python_version < '3.0'/" \
                 pinned-requirements.txt pinned-dev-requirements.txt
 done
