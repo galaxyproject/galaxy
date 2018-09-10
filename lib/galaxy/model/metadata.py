@@ -167,6 +167,13 @@ class MetadataCollection(object):
                 raise ValueError("json_dict must be either a dictionary or a string, got %s." % (type(json_dict)))
         else:
             raise ValueError("You must provide either a filename or a json_dict")
+
+        # We build a dictionary for metadata name / value pairs
+        # because when we copy MetadatTempfile objects we flush the datasets'
+        # session, but only include the newly created MetadataFile object.
+        # If we were to set the metadata elements in the first for loop we'd
+        # lose all previously set metadata elements
+        metadata_name_value = {}
         for name, spec in self.spec.items():
             if name in JSONified_dict:
                 from_ext_kwds = {}
@@ -174,11 +181,14 @@ class MetadataCollection(object):
                 param = spec.param
                 if isinstance(param, FileParameter):
                     from_ext_kwds['path_rewriter'] = path_rewriter
-                dataset._metadata[name] = param.from_external_value(external_value, dataset, **from_ext_kwds)
+                value = param.from_external_value(external_value, dataset, **from_ext_kwds)
+                metadata_name_value[name] = value
             elif name in dataset._metadata:
                 # if the metadata value is not found in our externally set metadata but it has a value in the 'old'
                 # metadata associated with our dataset, we'll delete it from our dataset's metadata dict
                 del dataset._metadata[name]
+        for name, value in metadata_name_value.items():
+            dataset._metadata[name] = value
         if '__extension__' in JSONified_dict:
             dataset.extension = JSONified_dict['__extension__']
 

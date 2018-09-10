@@ -1028,7 +1028,7 @@ class NavigatesGalaxy(HasDriver):
         tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
 
     def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
         rules_div_element = self.tool_parameter_div("rules")

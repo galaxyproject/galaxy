@@ -59,7 +59,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
         # ... effectively a good fit to have this here, but not semantically
-        if self.user_manager.is_admin(user):
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
         return item.user == user
 

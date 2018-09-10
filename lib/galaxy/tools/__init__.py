@@ -1332,6 +1332,8 @@ class Tool(Dictifiable):
                 log.error(str(exception))
                 raise exceptions.MessageException('Failure executing tool (attempting to rerun invalid job).')
 
+        set_dataset_matcher_factory(request_context, self)
+
         # Fixed set of input parameters may correspond to any number of jobs.
         # Expand these out to individual parameters for given jobs (tool executions).
         expanded_incomings, collection_info = expand_meta_parameters(trans, self, incoming)
@@ -1360,13 +1362,14 @@ class Tool(Dictifiable):
                 # Update state for all inputs on the current page taking new
                 # values from `incoming`.
                 populate_state(request_context, self.inputs, expanded_incoming, params, errors)
-
                 # If the tool provides a `validate_input` hook, call it.
                 validate_input = self.get_hook('validate_input')
                 if validate_input:
                     validate_input(request_context, errors, params, self.inputs)
             all_errors.append(errors)
             all_params.append(params)
+        unset_dataset_matcher_factory(request_context)
+
         log.debug('Validated and populated state for tool request %s' % validation_timer)
         return all_params, all_errors, rerun_remap_job_id, collection_info
 
@@ -1415,7 +1418,7 @@ class Tool(Dictifiable):
                         output_collections=execution_tracker.output_collections,
                         implicit_collections=execution_tracker.implicit_collections)
 
-    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None):
+    def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None, collection_info=None):
         """
         Return a pair with whether execution is successful as well as either
         resulting output data or an error message indicating the problem.
@@ -1429,6 +1432,7 @@ class Tool(Dictifiable):
                 execution_cache=execution_cache,
                 dataset_collection_elements=execution_slice.dataset_collection_elements,
                 completed_job=completed_job,
+                collection_info=collection_info,
             )
         except webob.exc.HTTPFound as e:
             # if it's a webob redirect exception, pass it up the stack
@@ -2443,6 +2447,51 @@ class ZipCollectionTool(DatabaseOperationTool):
         )
 
 
+class BuildListCollectionTool(DatabaseOperationTool):
+    tool_type = 'build_list'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
+        new_elements = odict()
+
+        for i, incoming_repeat in enumerate(incoming["datasets"]):
+            new_dataset = incoming_repeat["input"].copy(copy_tags=tags)
+            new_elements["%d" % i] = new_dataset
+
+        self._add_datasets_to_history(history, itervalues(new_elements))
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements
+        )
+
+
+class ExtractDatasetCollectionTool(DatabaseOperationTool):
+    tool_type = 'extract_dataset'
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, tags=None):
+        has_collection = incoming["input"]
+        if hasattr(has_collection, "element_type"):
+            # It is a DCE
+            collection = has_collection.element_object
+        else:
+            # It is an HDCA
+            collection = has_collection.collection
+
+        collection_type = collection.collection_type
+        assert collection_type in ["list", "paired"]
+        how = incoming["which"]["which_dataset"]
+        if how == "first":
+            extracted = collection.dataset_instances[0]
+        elif how == "by_identifier":
+            extracted = collection[incoming["which"]["identifier"]].element_object
+        elif how == "by_index":
+            extracted = collection[int(incoming["which"]["index"])].element_object
+        else:
+            raise Exception("Invalid tool parameters.")
+        extracted_o = extracted.copy(copy_tags=tags)
+        self._add_datasets_to_history(history, [extracted_o])
+
+        out_data["output"] = extracted_o
+
+
 class MergeCollectionTool(DatabaseOperationTool):
     tool_type = 'merge_collection'
 
@@ -2719,7 +2768,6 @@ class ApplyRulesTool(DatabaseOperationTool):
     tool_type = 'apply_rules'
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
-        log.info(incoming)
         hdca = incoming["input"]
         rule_set = RuleSet(incoming["rules"])
         copied_datasets = []
@@ -2847,6 +2895,7 @@ tool_types = {}
 for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
+                   BuildListCollectionTool, ExtractDatasetCollectionTool,
                    DataDestinationTool]:
     tool_types[tool_class.tool_type] = tool_class
 

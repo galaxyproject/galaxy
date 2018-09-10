@@ -237,6 +237,8 @@ workflow_run:
 
   selectors: 
     input_div: "[step-label='${label}'] .select2-container"
+    # TODO: put step labels in the DOM ideally
+    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap + span"
 
 workflow_editor:
 
@@ -293,7 +295,6 @@ admin:
       quotas: '#admin-link-quotas'
       groups: '#admin-link-groups'
       roles: '#admin-link-roles'
-      api_keys: '#admin-link-api-keys'
       impersonate: '#admin-link-impersonate'
 
   selectors:

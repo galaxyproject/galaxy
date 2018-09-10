@@ -2,6 +2,9 @@ import yaml
 from base import rules_test_data
 from base.populators import load_data_dict
 from base.workflow_fixtures import (
+    WORKFLOW_NESTED_RUNTIME_PARAMETER,
+    WORKFLOW_NESTED_SIMPLE,
+    WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
     WORKFLOW_SIMPLE_CAT_TWICE,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OLD_TOOL_VERSION,
@@ -34,6 +37,46 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.history_panel_click_item_title(hid=2, wait=True)
         self.assert_item_summary_includes(2, "2 sequences")
         self.screenshot("workflow_run_simple_complete")
+
+    @selenium_test
+    @managed_history
+    def test_runtime_parameters_simple(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
+        self.tool_parameter_div("num_lines")
+        self.screenshot("workflow_run_runtime_parameters_initial")
+        self._set_num_lines_to_3("num_lines")
+        self.screenshot("workflow_run_runtime_parameters_modified")
+        self.workflow_run_submit()
+
+        self._assert_has_3_lines_after_run(hid=2)
+
+    @selenium_test
+    @managed_history
+    def test_subworkflows_simple(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run(WORKFLOW_NESTED_SIMPLE)
+        self.components.workflow_run.subworkflow_step_icon.wait_for_visible()
+        self.screenshot("workflow_run_nested_collapsed")
+        self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
+        self.screenshot("workflow_run_nested_open")
+
+    @selenium_test
+    @managed_history
+    def test_subworkflow_runtime_parameters(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run(WORKFLOW_NESTED_RUNTIME_PARAMETER)
+        self.components.workflow_run.subworkflow_step_icon.wait_for_visible()
+        self.screenshot("workflow_run_nested_parameters_collapsed")
+        self.components.workflow_run.subworkflow_step_icon.wait_for_and_click()
+        self.screenshot("workflow_run_nested_parameters_open")
+        self._set_num_lines_to_3("1|num_lines")
+        self.workflow_run_submit()
+
+        self._assert_has_3_lines_after_run(hid=2)
 
     @selenium_test
     def test_execution_with_tool_upgrade(self):
@@ -90,3 +133,18 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
         self.workflow_index_click_option("Run")
+
+    def _assert_has_3_lines_after_run(self, hid):
+        self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
+        history_id = self.current_history_id()
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=hid)
+        assert len([x for x in content.split("\n") if x]) == 3, content
+
+    def _set_num_lines_to_3(self, tour_id):
+        # for random_lines num_lines parameter as runtime parameter in workflow form.
+        div = self.tool_parameter_div(tour_id)
+        input_element = div.find_element_by_css_selector("input")
+        initial_value = input_element.get_attribute("value")
+        assert initial_value == "1", initial_value
+        input_element.clear()
+        input_element.send_keys("3")

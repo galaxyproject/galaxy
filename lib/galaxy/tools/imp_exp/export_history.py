@@ -34,12 +34,12 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
         history_archive = tarfile.open(out_file, tarfile_mode)
 
         # Read datasets attributes from file.
-        with open(datasets_attrs_file, 'rb') as datasets_attr_in:
+        with open(datasets_attrs_file) as datasets_attr_in:
             datasets_attr_str = ''
             buffsize = 1048576
             try:
                 while True:
-                    datasets_attr_str += datasets_attr_in.read(buffsize).decode('utf-8')
+                    datasets_attr_str += datasets_attr_in.read(buffsize)
                     if not datasets_attr_str or len(datasets_attr_str) % buffsize != 0:
                         break
             except OverflowError:

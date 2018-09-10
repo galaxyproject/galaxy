@@ -1,15 +1,11 @@
 import logging
-import os
 import tempfile
 
 from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
-from galaxy.util import (
-    odict,
-    smart_str,
-)
+from galaxy.util import odict
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
 
@@ -321,10 +317,10 @@ class HasDatasets(object):
         return DatasetFilenameWrapper(dataset, **wrapper_kwds)
 
     def paths_as_file(self, sep="\n"):
-        handle, filepath = tempfile.mkstemp(prefix="gx_file_list", dir=self.job_working_directory)
         contents = sep.join(map(str, self))
-        os.write(handle, smart_str(contents))
-        os.close(handle)
+        with tempfile.NamedTemporaryFile(mode='w+', prefix="gx_file_list", dir=self.job_working_directory, delete=False) as fh:
+            fh.write(contents)
+            filepath = fh.name
         return filepath
 
 
@@ -333,6 +329,7 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
     """
 
     def __init__(self, job_working_directory, datasets, dataset_paths=[], **kwargs):
+        self._dataset_elements_cache = {}
         if not isinstance(datasets, list):
             datasets = [datasets]
 
@@ -361,6 +358,16 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
             else:
                 dataset_instances.extend(dataset_instance_source.collection.dataset_elements)
         return dataset_instances
+
+    def get_datasets_for_group(self, group):
+        group = text_type(group).lower()
+        if not self._dataset_elements_cache.get(group):
+            wrappers = []
+            for element in self:
+                if any([t for t in element.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                    wrappers.append(element)
+            self._dataset_elements_cache[group] = wrappers
+        return self._dataset_elements_cache[group]
 
     def __str__(self):
         return ','.join(map(str, self))
@@ -452,7 +459,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def __getattr__(self, key):
         if not self.__input_supplied:
             return None
-        return self.__element_instances[key]
+        try:
+            return self.__element_instances[key]
+        except KeyError:
+            raise AttributeError()
 
     def __iter__(self):
         if not self.__input_supplied:

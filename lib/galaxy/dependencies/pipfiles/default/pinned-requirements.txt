@@ -1,53 +1,54 @@
-amqp==2.2.2
+-i https://wheels.galaxyproject.org/simple
+--extra-index-url https://pypi.python.org/simple
+amqp==2.3.2
 appdirs==1.4.3
 asn1crypto==0.24.0
 babel==2.6.0
 bagit==1.6.4
 bcrypt==3.1.4
-bdbag==1.3.0
-beaker==1.9.1
-bioblend==0.10.0
-bleach==2.1.3
+bdbag==1.4.1
+beaker==1.10.0
+bioblend==0.11.0
+bleach==2.1.4
 boltons==18.0.0
 boto==2.46.1
 bunch==1.0.1
-bx-python==0.8.1
+bx-python==0.8.2
 bz2file==0.98; python_version < '3.3'
-certifi==2018.4.16
+certifi==2018.8.13
 cffi==1.11.5
 chardet==3.0.4
 cheetah3==3.1.0
 cliff==2.13.0; python_version >= '2.6'
 cloudbridge==0.3.3
-cmd2==0.8.8
+cmd2==0.8.9
 contextlib2==0.5.5; python_version < '3.5'
-cryptography==2.2.2
-debtcollector==1.19.0
+cryptography==2.3.1
+debtcollector==1.20.0
 decorator==4.3.0
 deprecation==2.0.5
 dictobj==0.4
 docopt==0.6.2
 docutils==0.14
-dogpile.cache==0.6.6
+dogpile.cache==0.6.7
 enum34==1.1.6; python_version < '3.4'
 fabric3==1.14.post1
 funcsigs==1.0.2; python_version < '3.3'
 functools32==3.2.3.post2; python_version == '2.7'
 future==0.16.0
 futures==3.2.0; python_version == '2.6' or python_version == '2.7'
-galaxy-sequence-utils==1.1.2
-globus-sdk==1.3.0
-h5py==2.6.0
+galaxy-sequence-utils==1.1.3
+h5py==2.8.0
 html5lib==1.0.1
 idna==2.7
 ipaddress==1.0.22; python_version < '3.3'
 iso8601==0.1.12
 jmespath==0.9.3
-jsonpatch==1.23
-jsonpointer==2.0
+jsonpatch==1.23; python_version != '3.3.*'
+jsonpointer==2.0; python_version != '3.3.*'
 jsonschema==2.6.0
-keystoneauth1==3.9.0
-kombu==4.1.0
+keystoneauth1==3.10.0
+kombu==4.2.1
 mako==1.0.7
 markupsafe==1.0
 mercurial==3.7.3; python_version < '3'
@@ -57,53 +58,53 @@ munch==2.3.2
 netaddr==0.7.19
 netifaces==0.10.7
 nose==1.3.7
-numpy==1.14.2
-oauthlib==2.0.7
-openstacksdk==0.14.0
+numpy==1.15.1
+oauthlib==2.1.0
+openstacksdk==0.17.2
 os-client-config==1.31.2
-os-service-types==1.2.0
-osc-lib==1.10.0
-oslo.config==6.3.0
-oslo.i18n==3.20.0
-oslo.serialization==2.27.0
-oslo.utils==3.36.3
+os-service-types==1.3.0
+osc-lib==1.11.1
+oslo.config==6.4.0
+oslo.i18n==3.21.0
+oslo.serialization==2.27.0; python_version != '3.3.*'
+oslo.utils==3.36.4; python_version != '3.3.*'
 packaging==17.1
 paramiko==2.4.1
 parsley==1.3
 paste==2.0.3
 pastedeploy==1.5.2
 pastescript==2.0.2
-pbr==4.1.0
+pbr==4.2.0
 positional==1.2.1
 prettytable==0.7.2
-psutil==5.4.3
+psutil==5.4.7
 pulsar-galaxy-lib==0.8.3
 py2-ipaddress==3.4.1; python_version < '3'
-pyasn1==0.4.3
+pyasn1==0.4.4
 pycparser==2.18
-pycryptodome==3.6.1
-pycryptodomex==3.6.1
+pycryptodome==3.6.6
+pycryptodomex==3.6.6
 pyjwkest==1.4.0
-pyjwt==1.6.1
+pyjwt==1.6.4
 pykwalify==1.6.1
 pynacl==1.2.1
 pyparsing==2.2.0
-pyperclip==1.6.2
+pyperclip==1.6.4
 pysam==0.14.1
 python-cinderclient==2.0.1
 python-dateutil==2.7.3
-python-genomespaceclient==0.2
-python-glanceclient==2.6.0
-python-keystoneclient==3.10.0
-python-lzo==1.11
+python-genomespaceclient==1.0.0
+python-glanceclient==2.6.0; python_version != '3.3.*'
+python-keystoneclient==3.10.0; python_version != '3.3.*'
+python-lzo==1.12
 python-neutronclient==6.1.0
 python-novaclient==7.0.0
 python-openid==2.2.5
 python-swiftclient==3.3.0
 pytz==2018.5
-pyyaml==3.12
+pyyaml==3.13
 repoze.lru==0.7
-requests-oauthlib==0.8.0
+requests-oauthlib==1.0.0
 requests-toolbelt==0.8.0
 requests==2.19.1
 requestsexceptions==1.4.0
@@ -114,21 +115,21 @@ simplejson==3.16.0
 six==1.11.0
 social-auth-core==1.5.0
 sqlalchemy-migrate==0.11.0
-sqlalchemy-utils==0.33.2
-sqlalchemy==1.2.6
+sqlalchemy-utils==0.33.3
+sqlalchemy==1.2.11
 sqlparse==0.2.4
-stevedore==1.28.0
+stevedore==1.29.0
 subprocess32==3.5.2; python_version < '3.0'
 svgwrite==1.1.12
 tempita==0.5.2
 tzlocal==1.5.1
 unicodecsv==0.14.1; python_version < '3.0'
-urllib3==1.23
-uwsgi==2.0.17
+urllib3==1.23; python_version >= '2.6'
+uwsgi==2.0.17.1
 vine==1.1.4
-warlock==1.2.0
+warlock==1.2.0; python_version != '3.3.*'
 wcwidth==0.1.7; sys_platform != 'win32'
 webencodings==0.5.1
-webob==1.8.2
+webob==1.8.2; python_version != '3.2.*'
 whoosh==2.7.4
 wrapt==1.10.11

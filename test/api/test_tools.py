@@ -1,4 +1,5 @@
 # Test tools API.
+import contextlib
 import json
 import os
 
@@ -251,6 +252,37 @@ class ToolsTestCase(api.ApiTestCase):
             zipped_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_collections[0]["hid"])
             assert zipped_hdca["collection_type"] == "paired"
 
+    @skip_without_tool("__ZIP_COLLECTION__")
+    @uses_test_history(require_new=False)
+    def test_collection_operation_dataset_input_permissions(self, history_id):
+        hda1 = dataset_to_param(self.dataset_populator.new_dataset(history_id, content='1\t2\t3'))
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.dataset_populator.make_private(history_id, hda1["id"])
+        inputs = {
+            "input_forward": hda1,
+            "input_reverse": hda1,
+        }
+        with self._different_user_and_history() as other_history_id:
+            response = self._run("__ZIP_COLLECTION__", other_history_id, inputs, assert_ok=False)
+            self._assert_dataset_permission_denied_response(response)
+
+    @skip_without_tool("__UNZIP_COLLECTION__")
+    @uses_test_history(require_new=False)
+    def test_collection_operation_collection_input_permissions(self, history_id):
+        create_response = self.dataset_collection_populator.create_pair_in_history(history_id, direct_upload=True)
+        self._assert_status_code_is(create_response, 200)
+        collection = create_response.json()["outputs"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        collection = self.dataset_populator.get_history_collection_details(history_id, hid=collection["hid"])
+        element_id = collection["elements"][0]["object"]["id"]
+        self.dataset_populator.make_private(history_id, element_id)
+        inputs = {
+            "input": {"src": "hdca", "id": collection["id"]},
+        }
+        with self._different_user_and_history() as other_history_id:
+            response = self._run("__UNZIP_COLLECTION__", other_history_id, inputs, assert_ok=False)
+            self._assert_dataset_permission_denied_response(response)
+
     def test_zip_list_inputs(self):
         with self.dataset_populator.test_history() as history_id:
             hdca1_id = self.dataset_collection_populator.create_list_in_history(history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"]).json()["id"]
@@ -363,6 +395,9 @@ class ToolsTestCase(api.ApiTestCase):
 
     def test_apply_rules_3(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_3)
+
+    def test_apply_rules_4(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
 
     @skip_without_tool("multi_select")
     def test_multi_select_as_list(self):
@@ -495,6 +530,79 @@ class ToolsTestCase(api.ApiTestCase):
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         self.assertEqual(output1_content.strip(), "123")
+
+    @skip_without_tool("cat1")
+    @uses_test_history(require_new=False)
+    def test_guess_derived_permissions(self, history_id):
+
+        def assert_inputs(inputs, can_be_used=True):
+            # Until we make the dataset private, _different_user() can use it:
+            with self._different_user_and_history() as other_history_id:
+                response = self._run("cat1", other_history_id, inputs)
+                if can_be_used:
+                    assert response.status_code == 200
+                else:
+                    self._assert_dataset_permission_denied_response(response)
+
+        new_dataset = self.dataset_populator.new_dataset(history_id, content='Cat1Test')
+        inputs = dict(
+            input1=dataset_to_param(new_dataset),
+        )
+        # Until we make the dataset private, _different_user() can use it:
+        assert_inputs(inputs, can_be_used=True)
+        self.dataset_populator.make_private(history_id, new_dataset["id"])
+        # _different_user can no longer use the input dataset.
+        assert_inputs(inputs, can_be_used=False)
+
+        outputs = self._cat1_outputs(history_id, inputs=inputs)
+        self.assertEquals(len(outputs), 1)
+        output1 = outputs[0]
+
+        inputs_2 = dict(
+            input1=dataset_to_param(output1),
+        )
+        # _different_user cannot use datasets derived from the private input.
+        assert_inputs(inputs_2, can_be_used=False)
+
+    @skip_without_tool("collection_creates_list")
+    @uses_test_history(require_new=False)
+    def test_guess_derived_permissions_collections(self, history_id):
+        def first_element_dataset_id(hdca):
+            # Fetch full and updated details for HDCA
+            print(hdca)
+            full_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=hdca["hid"])
+            elements = full_hdca["elements"]
+            element0 = elements[0]["object"]
+            return element0["id"]
+
+        response = self.dataset_collection_populator.create_list_in_history(history_id, contents=["a\nb\nc\nd", "e\nf\ng\nh"], direct_upload=True)
+        self._assert_status_code_is(response, 200)
+        hdca = response.json()["output_collections"][0]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca["id"]},
+        }
+        public_output_response = self._run("collection_creates_list", history_id, inputs)
+        self._assert_status_code_is(public_output_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        input_element_id = first_element_dataset_id(hdca)
+        self.dataset_populator.make_private(history_id, input_element_id)
+
+        private_output_response = self._run("collection_creates_list", history_id, inputs)
+        self._assert_status_code_is(private_output_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+        public_element_id = first_element_dataset_id(public_output_response.json()["output_collections"][0])
+        private_element_id = first_element_dataset_id(private_output_response.json()["output_collections"][0])
+
+        def _dataset_accessible(dataset_id):
+            contents_response = self._get("histories/%s/contents/%s" % (history_id, dataset_id)).json()
+            return "name" in contents_response
+
+        with self._different_user():
+            assert _dataset_accessible(public_element_id)
+            assert not _dataset_accessible(private_element_id)
 
     @skip_without_tool("validation_default")
     @uses_test_history(require_new=False)
@@ -1807,6 +1915,19 @@ class ToolsTestCase(api.ApiTestCase):
         create_response = self.dataset_collection_populator.create_pair_in_history(history_id, contents=contents, direct_upload=True)
         hdca_id = create_response.json()["outputs"][0]["id"]
         return hdca_id
+
+    def _assert_dataset_permission_denied_response(self, response):
+        # TODO: This should be 403, should just need to throw more specific exception in the
+        # Galaxy code.
+        assert response.status_code != 200
+        # err_message = response.json()["err_msg"]
+        # assert "User does not have permission to use a dataset" in err_message, err_message
+
+    @contextlib.contextmanager
+    def _different_user_and_history(self):
+        with self._different_user():
+            with self.dataset_populator.test_history() as other_history_id:
+                yield other_history_id
 
 
 def dataset_to_param(dataset):

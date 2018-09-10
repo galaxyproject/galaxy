@@ -49,4 +49,12 @@ galaxy\.tools\.cwl\.schema module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.tools\.cwl\.util module
+-------------------------------
+
+.. automodule:: galaxy.tools.cwl.util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

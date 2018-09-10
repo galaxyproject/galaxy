@@ -25,7 +25,7 @@ HTML_CHECK_LINES = 100
 
 def check_html(file_path, chunk=None):
     if chunk is None:
-        temp = open(file_path, "rb")
+        temp = open(file_path)
     elif hasattr(chunk, "splitlines"):
         temp = chunk.splitlines()
     else:

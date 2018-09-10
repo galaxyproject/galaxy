@@ -87,7 +87,7 @@ Additional configuration files and their purposes are:
 .. _standardize and unify configuration formats: https://github.com/galaxyproject/galaxy/issues/5148
 .. _Installing Tools into Galaxy: https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
 .. _Datatypes documentation: https://galaxyproject.org/learn/datatypes/
-.. _Cluster documentation: https://galaxyproject.org/admin/config/performance/cluster/
+.. _Cluster documentation: cluster.html
 .. _Data Preparation documentation: https://galaxyproject.org/admin/data-preparation/
 .. _Data Managers documentation: https://galaxyproject.org/admin/tools/data-managers/
 
@@ -110,8 +110,8 @@ Configuration Basics
 - Run Galaxy with ``sh run.sh``
 - Use a web browser and go to the address you configured in ``galaxy.yml`` (defaults to http://localhost:8080/)
 
-.. _uWSGI YAML configuration file: http://uwsgi-docs.readthedocs.io/en/latest/Configuration.html
-.. _large number of options: http://uwsgi-docs.readthedocs.io/en/latest/Options.html
+.. _uWSGI YAML configuration file: https://uwsgi-docs.readthedocs.io/en/latest/Configuration.html
+.. _large number of options: https://uwsgi-docs.readthedocs.io/en/latest/Options.html
   
 ----------------------------
 Configuration Options

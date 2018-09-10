@@ -11,7 +11,10 @@ import yaml
 from base import integration_util
 from base.populators import DatasetPopulator
 
-from galaxy.util import galaxy_directory
+from galaxy.util import (
+    galaxy_directory,
+    unicodify
+)
 
 
 def skip_unless_module(module):
@@ -157,6 +160,9 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         # TODO: test creating a smaller database - e.g. tool install database based on fresh
         # config file.
 
+    def test_galaxy_main(self):
+        self._scripts_check_argparse_help("galaxy-main")
+
     def test_runtime_stats(self):
         self._skip_if_not_postgres()
         self._scripts_check_argparse_help("runtime_stats.py")
@@ -177,7 +183,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         clean_env = {
             "PATH": os.environ.get("PATH", None),
         }  # Don't let testing environment variables interfere with config.
-        return subprocess.check_output(cmd, cwd=cwd, env=clean_env).decode('utf-8')
+        return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
 
     def write_config_file(self):
         config_dir = self.config_dir

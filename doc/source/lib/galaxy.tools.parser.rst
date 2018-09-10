@@ -17,6 +17,14 @@ galaxy\.tools\.parser\.cwl module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.tools\.parser\.error\_level module
+------------------------------------------
+
+.. automodule:: galaxy.tools.parser.error_level
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.tools\.parser\.factory module
 -------------------------------------
 

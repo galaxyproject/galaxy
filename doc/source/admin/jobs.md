@@ -114,7 +114,7 @@ destination
 ### Macros
 
 The job configuration XML file may contain any number of macro definitions using the same
-XML macro syntax used by [Galaxy tools](http://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements).
+XML macro syntax used by [Galaxy tools](https://planemo.readthedocs.io/en/latest/writing_advanced.html#macros-reusable-elements).
 
 See [Pull Request #362](https://github.com/galaxyproject/galaxy/pull/362) for implementation details and the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) for examples.
 

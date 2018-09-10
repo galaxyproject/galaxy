@@ -45,6 +45,7 @@ class MatchingCollections(object):
         self.unlinked_structures = []
         self.collections = {}
         self.subcollection_types = {}
+        self.action_tuples = {}
 
     def __attempt_add_to_linked_match(self, input_name, hdca, collection_type_description, subcollection_type):
         structure = get_structure(hdca, collection_type_description, leaf_subcollection_type=subcollection_type)
@@ -75,6 +76,15 @@ class MatchingCollections(object):
             linked_structure = leaf
         effective_structure = effective_structure.multiply(linked_structure)
         return None if effective_structure.is_leaf else effective_structure
+
+    def map_over_action_tuples(self, input_name):
+        if input_name not in self.action_tuples:
+            collection_instance = self.collections[input_name]
+            self.action_tuples[input_name] = collection_instance.collection.dataset_action_tuples
+        return self.action_tuples[input_name]
+
+    def is_mapped_over(self, input_name):
+        return input_name in self.collections
 
     @staticmethod
     def for_collections(collections_to_match, collection_type_descriptions):

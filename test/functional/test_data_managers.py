@@ -37,7 +37,7 @@ def build_tests(tmp_dir=None, testing_shed_tools=False, master_api_key=None, use
                  master_api_key=master_api_key,
                  user_api_key=user_api_key,
                  name_prefix="TestForDataManagerTool_",
-                 baselass=DataManagerToolTestCase,
+                 baseclass=DataManagerToolTestCase,
                  user_email=user_email,
                  create_admin=create_admin,
                  G=G,

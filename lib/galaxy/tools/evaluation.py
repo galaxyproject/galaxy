@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -32,7 +33,7 @@ from galaxy.tools.wrappers import (
     SelectToolParameterWrapper,
     ToolParameterValueWrapper,
 )
-from galaxy.util import smart_str
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.object_wrapper import wrap_with_safe_string
@@ -574,9 +575,9 @@ class ToolEvaluator(object):
         if is_template:
             value = fill_template(content, context=context)
         else:
-            value = content
-        with open(config_filename, "wb") as f:
-            f.write(smart_str(value))
+            value = unicodify(content)
+        with io.open(config_filename, "w", encoding='utf-8') as f:
+            f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, 0o644)
 

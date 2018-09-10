@@ -31,6 +31,7 @@ from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
+    is_runtime_value,
     parameter_types,
     RuntimeValue,
     SelectToolParameter,
@@ -380,6 +381,40 @@ class SubWorkflowModule(WorkflowModule):
         state = DefaultToolState()
         state.inputs = dict()
         return state
+
+    def get_runtime_inputs(self, connections=None):
+        inputs = {}
+        for step in self.subworkflow.steps:
+            if step.type == "tool":
+                tool = step.module.tool
+                tool_inputs = step.module.state
+
+                def callback(input, prefixed_name, prefixed_label, value=None, **kwds):
+                    # All data parameters are represented as runtime values, skip them
+                    # here.
+                    if input.type in ['data', 'data_collection']:
+                        return
+
+                    if is_runtime_value(value):
+                        input_name = "%d|%s" % (step.order_index, prefixed_name)
+                        inputs[input_name] = InputProxy(input, input_name)
+
+                visit_input_values(tool.inputs, tool_inputs.inputs, callback)
+
+        return inputs
+
+
+class InputProxy(object):
+    """Provide InputParameter-interfaces over inputs but renamed for workflow context."""
+
+    def __init__(self, input, prefixed_name):
+        self.input = input
+        self.prefixed_name = prefixed_name
+
+    def to_dict(self, *args, **kwds):
+        as_dict = self.input.to_dict(*args, **kwds)
+        as_dict["name"] = self.prefixed_name
+        return as_dict
 
 
 class InputModule(WorkflowModule):
@@ -1175,16 +1210,23 @@ class WorkflowModuleInjector(object):
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets(connections=step.input_connections, steps=steps)
+
+        # Populate subworkflow components
+        if step.type == "subworkflow":
+            subworkflow_param_map = step_args or {}
+            unjsonified_subworkflow_param_map = {}
+            for key, value in subworkflow_param_map.items():
+                unjsonified_subworkflow_param_map[int(key)] = value
+
+            subworkflow = step.subworkflow
+            populate_module_and_state(self.trans, subworkflow, param_map=unjsonified_subworkflow_param_map)
+
         state, step_errors = module.compute_runtime_state(self.trans, step_args)
         step.state = state
 
         # Fix any missing parameters
         step.upgrade_messages = module.check_and_update_state()
 
-        # Populate subworkflow components
-        if step.type == "subworkflow":
-            subworkflow = step.subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map={})
         return step_errors
 
 
