@@ -394,7 +394,13 @@
             <button class="btn btn-secondary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Switch versions</button>
             <div class="dropdown-menu" aria-labelledby="dropdownMenuButton" style="float: right">
             %for i, workflow in enumerate(stored.workflows):
-                <a class="dropdown-item"  onclick=location.href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id( stored.id ), version=i )};">Version ${i}</a>
+                <%
+                if i == version:
+                    version_text = "Version %s (Current)" % i
+                else:
+                    version_text = "Version %d" % i
+                %>
+                <a class="dropdown-item"  onclick=location.href="${h.url_for( controller='workflow', action='editor', id=trans.security.encode_id( stored.id ), version=i )};">${version_text}</a>
             %endfor
             </div>
         </div>
