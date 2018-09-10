@@ -14,6 +14,7 @@ class Workflow {
         this.has_changes = false;
         this.active_form_has_changes = false;
         this.workflowOutputLabels = {};
+        this.workflow_version = 0;
     }
     canLabelOutputWith(label) {
         if (label) {
@@ -215,6 +216,7 @@ class Workflow {
         var max_id = offset;
         // First pass, nodes
         var using_workflow_outputs = false;
+        wf.workflow_version = data.version;
         $.each(data.steps, (id, step) => {
             var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let

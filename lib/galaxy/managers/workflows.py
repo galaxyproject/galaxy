@@ -368,7 +368,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         return workflow, missing_tool_tups
 
-    def workflow_to_dict(self, trans, stored, style="export"):
+    def workflow_to_dict(self, trans, stored, style="export", version=None):
         """ Export the workflow contents to a dictionary ready for JSON-ification and to be
         sent out via API for instance. There are three styles of export allowed 'export', 'instance', and
         'editor'. The Galaxy team will do its best to preserve the backward compatibility of the
@@ -377,22 +377,31 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
+        if version == '':
+            version = None
+        if version is not None:
+            version = int(version)
         if style == "editor":
-            return self._workflow_to_dict_editor(trans, stored)
+            wf_dict = self._workflow_to_dict_editor(trans, stored, version=version)
         elif style == "legacy":
-            return self._workflow_to_dict_instance(stored, legacy=True)
+            wf_dict = self._workflow_to_dict_instance(stored, legacy=True, version=version)
         elif style == "instance":
-            return self._workflow_to_dict_instance(stored, legacy=False)
+            wf_dict = self._workflow_to_dict_instance(stored, legacy=False, version=version)
         elif style == "run":
-            return self._workflow_to_dict_run(trans, stored)
+            wf_dict = self._workflow_to_dict_run(trans, stored, version=version)
         else:
-            return self._workflow_to_dict_export(trans, stored)
+            wf_dict = self._workflow_to_dict_export(trans, stored, version=version)
+        if version:
+            wf_dict['version'] = version
+        else:
+            wf_dict['version'] = len(stored.workflows) - 1
+        return wf_dict
 
-    def _workflow_to_dict_run(self, trans, stored):
+    def _workflow_to_dict_run(self, trans, stored, version=None):
         """
         Builds workflow dictionary used by run workflow form
         """
-        workflow = stored.latest_workflow
+        workflow = stored.get_internal_version(version)
         if len(workflow.steps) == 0:
             raise exceptions.MessageException('Workflow cannot be run because it does not have any steps.')
         if attach_ordered_steps(workflow, workflow.steps):
@@ -476,8 +485,8 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
-    def _workflow_to_dict_editor(self, trans, stored):
-        workflow = stored.latest_workflow
+    def _workflow_to_dict_editor(self, trans, stored, version=None):
+        workflow = stored.get_internal_version(version)
         # Pack workflow data into a dictionary and return
         data = {}
         data['name'] = workflow.name
@@ -584,12 +593,12 @@ class WorkflowContentsManager(UsesAnnotations):
             data['steps'][step.order_index] = step_dict
         return data
 
-    def _workflow_to_dict_export(self, trans, stored=None, workflow=None):
+    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, version=None):
         """ Export the workflow contents to a dictionary ready for JSON-ification and export.
         """
         if workflow is None:
             assert stored is not None
-            workflow = stored.latest_workflow
+            workflow = stored.get_internal_version(version)
 
         annotation_str = ""
         tag_str = ""
@@ -755,11 +764,11 @@ class WorkflowContentsManager(UsesAnnotations):
             data['steps'][step.order_index] = step_dict
         return data
 
-    def _workflow_to_dict_instance(self, stored, legacy=True):
+    def _workflow_to_dict_instance(self, stored, legacy=True, version=None):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view='element', value_mapper={'id': encode})
-        workflow = stored.latest_workflow
+        workflow = stored.get_internal_version(version)
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
         inputs = {}
