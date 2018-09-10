@@ -26,7 +26,7 @@ bioblend==0.11.0
 bleach==2.1.4
 boltons==18.0.1
 boto3==1.7.84
-boto==2.46.1
+boto==2.49.0
 botocore==1.10.84
 bunch==1.0.1
 bx-python==0.8.2
@@ -103,7 +103,7 @@ pyasn1==0.4.4
 pycparser==2.18
 pycryptodome==3.6.6
 pycryptodomex==3.6.6
-pyinotify==0.9.6; sys_platform != 'sunos5'
+pyinotify==0.9.6; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'
 pyjwkest==1.4.0
 pyjwt==1.6.4
 pykwalify==1.6.1

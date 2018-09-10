@@ -59,7 +59,7 @@ pykwalify = "*"
 "Cheetah3" = "*"
 requests = "*"
 bioblend = "*"
-boto = "<=2.46.1"  # Pin version here to help pipenv satisfy the same pin coming from cloudbridge-0.3.3 (required by python-genomespaceclient 0.2)
+boto = "*"
 kombu = "*"
 psutil = "*"
 pulsar-galaxy-lib = "*"
