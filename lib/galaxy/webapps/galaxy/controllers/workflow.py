@@ -329,7 +329,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         if kwargs:
             message = kwargs.get('message', False)
             if message:
-                status= kwargs.get('status', 'error')
+                status = kwargs.get('status', 'error')
                 redirect_url += '&message=' + message + '&status=' + status
         return trans.response.send_redirect(url_for('/') + redirect_url)
 
@@ -451,10 +451,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.require_login("use Galaxy workflows")
     def gen_image(self, trans, id):
         stored = self.get_stored_workflow(trans, id, check_ownership=True)
-        svg = self._workflow_to_svg_canvas(trans, stored)
+        svg = None
+        try:
+            svg = self._workflow_to_svg_canvas(trans, stored)
+        except Exception:
+            return self.message_exception(trans, 'Unable to convert the workflow to svg. Please check it for missing tools.')
+        svg_export = STANDALONE_SVG_TEMPLATE % svg.tostring()
+        sname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in stored.name)[0:150]
+        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.svg"' % (sname)
         trans.response.set_content_type("image/svg+xml")
-        s = STANDALONE_SVG_TEMPLATE % svg.tostring()
-        return s.encode('utf-8')
+        return svg_export
 
     @web.expose
     @web.require_login("use Galaxy workflows")

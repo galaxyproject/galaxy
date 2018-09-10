@@ -1,34 +1,31 @@
 <template>
     <div>
         <div class="page-container share-wf">
-            <h4>
+            <h2>
               Workflow: {{ workflowItem.name }}
-            </h4>
+            </h2>
         </div>
         <ul class="manage-table-actions">
-            <li>
-                <a class="btn btn-secondary" type="button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
-            </li>
-            <li>
-                <a class="btn btn-secondary" type="button" v-on:click.prevent="createWorkflowSVG" title="Create image of workflow in SVG format">Create image</a>
-            </li>
             <li>
                 <a class="btn btn-secondary" type="button" title='Back to workflows list' :href="wfListUrl"> Back to workflows list</a>
             </li>
         </ul>
         <hr>
         <div v-if="workflowItem.user_name !== ''">
-            <h4>Share</h4>
+            <h3>Share</h3>
             <div v-if="workflowItem.importable">
-		        This workflow is currently <strong>{{ shareStatus }}</strong>.
-                <a href="#" id="edit-identifier" title="Edit workflow url">(edit link)</a>
+                This workflow is currently <strong>{{ shareStatus }}</strong>.
+                <a v-bind:href="'https://twitter.com/intent/tweet?text=Link%20to%20my%20Galaxy%20workflow: ' + workflowItem.url + '%20%23sciworkflows' " title="Share the workflow on Twitter" target="_blank">Share in tweet</a>
+                <div class="url-section">
+                    <a class="lead" id="item-url" :href="workflowItem.url" target="_blank">{{ workflowItem.url }}</a>
+                    <span id="item-url-text" style="display: none">
+                        {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
+                    </span>
+                    <a class="btn btn-secondary btn-sm" type="button" href="#" id="edit-identifier" title="Edit workflow url"><span class="fa fa-pencil"></span></a>
+                    <span id="save-hint" style="display: none"><i>hit ENTER to save</i></span>
+                </div>
                 <div>
-                    <blockquote>
-                        <a id="item-url" :href="workflowItem.url" target="_blank">{{ workflowItem.url }}</a>
-                        <span id="item-url-text" style="display: none">
-                            {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
-                        </span>
-        		    </blockquote>
+
         		    <div v-if="workflowItem.published">
         		        This workflow is publicly listed and searchable in Galaxy's
         		        <a :href="publishedUrl" target="_blank">Published Workflows</a> section.
@@ -61,7 +58,7 @@
                 </form>
             </div>
             <div class="sharing-section">
-                <h5>Share with users</h5>
+                <h4>Share with users</h4>
                 <div v-if="workflowItem.users_shared_with && workflowItem.users_shared_with.length > 0">
                     <p>Users in the following list will be able to see and import this workflow until they are removed.</p>
                     <table class="table table-sm table-striped colored">
@@ -124,16 +121,17 @@
             <h4>Export</h4>
             <div class="sharing-section">
                 <div v-if="workflowItem.importable">
-                    Use this URL to import the workflow directly into another Galaxy server:
-                    <div class="display-url">
+                    Use this URL to import the workflow directly into another Galaxy server
+                    <div class="display-url lead">
                         {{ workflowItem.url }}/json
                     </div>
-                   (Copy this URL into the box titled 'Workflow URL' in the Import Workflow page.)
                 </div>
                 <div v-else>
                     This workflow must be accessible. Please use the option above to "Make Workflow Accessible and Publish" before receiving a URL for importing to another Galaxy.</a>
                 </div>
             </div>
+            <a class="btn btn-secondary" type="button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
+            <a class="btn btn-secondary" type="button" :href="createSVGUrl" title="Download image of workflow in SVG format">Download as image</a>
             <div class="sharing-section">
                 <span>Export to the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
                 <form :action="createMyExperimentUrl" method="POST">
@@ -235,6 +233,8 @@ export default {
                 let on_start = function(text_elt) {
                     // Replace URL with URL text.
                     $("#item-url").hide();
+                    $("#edit-identifier").hide();
+                    $("#save-hint").show();
                     $("#item-url-text").show();
                     // Allow only lowercase alphanumeric and '-' characters in slug.
                     text_elt.keyup(function() {
@@ -250,6 +250,8 @@ export default {
                 let on_finish = function(text_elt) {
                     // Replace URL text with URL.
                     $("#item-url-text").hide();
+                    $("#save-hint").hide();
+                    $("#edit-identifier").show();
                     $("#item-url").show();
                     // Set URL to new value.
                     var new_url = $("#item-url-text").text();
@@ -296,19 +298,6 @@ export default {
         },
         createUsernameSlugUrl: function() {
             return this.workflowItem.url + "/json-download";
-        },
-        createWorkflowSVG: function() {
-            let url = this.createSVGUrl;
-            axios
-                .get(url)
-                .then(response => {
-                    window.location = url;
-                })
-                .catch(e => {
-                    this.showError(
-                        "Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools."
-                    );
-                });
         }
     },
     updated: function() {
@@ -345,5 +334,12 @@ h3 {
 }
 td {
     vertical-align: middle;
+}
+.lead {
+    margin-right: 1em;
+}
+.url-section {
+    margin-bottom: 1em;
+
 }
 </style>
