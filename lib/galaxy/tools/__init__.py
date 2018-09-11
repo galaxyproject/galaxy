@@ -2481,14 +2481,15 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
         assert collection_type in ["list", "paired"]
         how = incoming["which"]["which_dataset"]
         if how == "first":
-            extracted = collection.dataset_instances[0]
+            extracted_element = collection.first_dataset_element
         elif how == "by_identifier":
-            extracted = collection[incoming["which"]["identifier"]].element_object
+            extracted_element = collection[incoming["which"]["identifier"]]
         elif how == "by_index":
-            extracted = collection[int(incoming["which"]["index"])].element_object
+            extracted_element = collection[int(incoming["which"]["index"])]
         else:
             raise Exception("Invalid tool parameters.")
-        extracted_o = extracted.copy(copy_tags=tags)
+        extracted = extracted_element.element_object
+        extracted_o = extracted.copy(copy_tags=tags, new_name=extracted_element.element_identifier)
         self._add_datasets_to_history(history, [extracted_o])
 
         out_data["output"] = extracted_o
