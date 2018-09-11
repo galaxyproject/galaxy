@@ -9,7 +9,7 @@ certifi==2018.8.24
 chardet==3.0.4
 commonmark==0.5.4
 docutils==0.14
-funcsigs==1.0.2; python_version == '2.6'
+funcsigs==1.0.2; python_version < '3.3'
 idna==2.7
 imagesize==1.1.0; python_version != '3.3.*'
 jinja2==2.10
