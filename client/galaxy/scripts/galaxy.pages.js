@@ -443,10 +443,11 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                     if ($("#make-importable:checked").val() != null) make_importable = true;
 
                     grid.$("input[name=id]:checked").each(function() {
+                        var elt = $(this);
                         // Get item ID and name.
-                        var item_id = $(this).val();
+                        var item_id = elt.val();
                         // Use ':first' because there are many labels in table; the first one is the item name.
-                        var item_name = $(`label[for='${item_id}']:first`).text();
+                        var item_name = elt.closest('td').next('td').find('label').text();
 
                         if (make_importable) make_item_importable(item_info.controller, item_id, item_info.singular);
 

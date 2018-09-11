@@ -248,3 +248,138 @@ steps:
         - input2:
             $link: nested_workflow#workflow_output
 """
+
+
+WORKFLOW_NESTED_RUNTIME_PARAMETER = """
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: nested_workflow#workflow_output
+steps:
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: random_lines#out_file1
+      steps:
+        - tool_id: random_lines1
+          label: random_lines
+          runtime_inputs:
+            - num_lines
+          state:
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    label: nested_workflow
+    connect:
+      inner_input: outer_input
+"""
+
+
+WORKFLOW_RUNTIME_PARAMETER_SIMPLE = """
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: random_lines1
+    runtime_inputs:
+      - num_lines
+    state:
+      input:
+        $link: input1
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+
+WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE = """
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - label: the_pause
+    type: pause
+    connect:
+      input:
+      - input1
+  - tool_id: random_lines1
+    runtime_inputs:
+      - num_lines
+    state:
+      input:
+        $link: the_pause
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+"""
+
+WORKFLOW_RENAME_ON_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        rename: "#{input1 | basename} suffix"
+test_data:
+  input1:
+    value: 1.fasta
+    type: File
+    name: fasta1
+"""
+
+WORKFLOW_RENAME_ON_REPLACEMENT_PARAM = """
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: cat
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+    outputs:
+      out_file1:
+        rename: "${replaceme} suffix"
+"""
+
+WORKFLOW_NESTED_REPLACEMENT_PARAMETER = """
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+outputs:
+  - id: outer_output
+    source: nested_workflow#workflow_output
+steps:
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+      outputs:
+        - id: workflow_output
+          source: first_cat#out_file1
+      steps:
+        - tool_id: cat
+          label: first_cat
+          state:
+            input1:
+              $link: inner_input
+          outputs:
+            out_file1:
+              rename: "${replaceme} suffix"
+    label: nested_workflow
+    connect:
+      inner_input: outer_input
+"""

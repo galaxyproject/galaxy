@@ -113,6 +113,7 @@ class SelectField(BaseField):
         d['data'] = []
         for value in self.selectlist:
             d['data'].append({'label': value, 'value': value})
+        d['options'] = [{'label': t[0], 'value': t[1]} for t in self.options]
         return d
 
 

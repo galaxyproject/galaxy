@@ -127,21 +127,24 @@ var View = Backbone.View.extend({
         // identify and configure workflow parameters
         var wp_count = 0;
         this.wp_inputs = {};
+
+        function _ensureWorkflowParameter(wp_name) {
+            return self.wp_inputs[wp_name] = self.wp_inputs[wp_name] || {
+                label: wp_name,
+                name: wp_name,
+                type: "text",
+                color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
+                style: "ui-form-wp-source",
+                links: []
+            };
+        }
+
         function _handleWorkflowParameter(value, callback) {
             var re = /\$\{(.+?)\}/g;
             var match;
             while ((match = re.exec(String(value)))) {
                 var wp_name = match[1];
-                callback(
-                    (self.wp_inputs[wp_name] = self.wp_inputs[wp_name] || {
-                        label: wp_name,
-                        name: wp_name,
-                        type: "text",
-                        color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
-                        style: "ui-form-wp-source",
-                        links: []
-                    })
-                );
+                callback(_ensureWorkflowParameter(wp_name));
             }
         }
         _.each(this.steps, (step, i) => {
@@ -154,10 +157,8 @@ var View = Backbone.View.extend({
                     input.style = "ui-form-wp-target";
                 });
             });
-            _.each(step.post_job_actions, pja => {
-                _.each(pja.action_arguments, arg => {
-                    _handleWorkflowParameter(arg, () => {});
-                });
+            _.each(step.replacement_parameters, wp_name => {
+                _ensureWorkflowParameter(wp_name);
             });
         });
 

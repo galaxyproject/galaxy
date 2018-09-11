@@ -510,7 +510,7 @@ do
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
           test_script="pytest"
-          unit_extra='--doctest-modules --ignore lib/galaxy/webapps/tool_shed/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/util/jstree.py'
+          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/galaxy/webapps/tool_shed/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/galaxy/webapps/tool_shed/model/migrate --ignore lib/galaxy/util/jstree.py'
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
               shift 2

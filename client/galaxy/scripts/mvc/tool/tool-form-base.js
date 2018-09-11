@@ -86,6 +86,12 @@ export default FormBase.extend({
                     .append(this._footer())
             );
         }
+        options.tool_errors &&
+            this.message.update({
+                status: 'danger',
+                message: options.tool_errors,
+                persistent: true
+            });
         this.show_message &&
             this.message.update({
                 status: "success",

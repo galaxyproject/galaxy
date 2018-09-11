@@ -34,7 +34,11 @@ from sqlalchemy import (
     type_coerce,
     types)
 from sqlalchemy.ext import hybrid
-from sqlalchemy.orm import aliased, joinedload, object_session
+from sqlalchemy.orm import (
+    aliased,
+    joinedload,
+    object_session,
+)
 from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
@@ -1110,7 +1114,7 @@ class JobToInputDatasetAssociation(object):
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
-        self.dataset_version = dataset.version if dataset else None
+        self.dataset_version = 0  # We start with version 0 and update once the job is ready
 
 
 class JobToOutputDatasetAssociation(object):
@@ -2568,7 +2572,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         state = inspect(self)
         changes = {}
 
-        for attr in state.attrs:
+        for attr in state.mapper.columns:
+            # We only create a new version if columns of the HDA table have changed, and ignore relationships.
             hist = state.get_history(attr.key, True)
 
             if not hist.has_changes():
@@ -3365,6 +3370,44 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
         return top_level_populated
 
     @property
+    def dataset_action_tuples(self):
+        if not hasattr(self, '_dataset_action_tuples'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+            dataset_permission = alias(DatasetPermissions.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            depth_collection_type = self.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_from = select_from.outerjoin(dataset_permission, dataset.c.id == dataset_permission.c.dataset_id)
+
+            select_stmt = select([dataset_permission.c.action, dataset_permission.c.role_id]).select_from(select_from).where(dc.c.id == self.id).distinct()
+
+            _dataset_action_tuples = []
+            for _dataset_action_tuple in db_session.execute(select_stmt).fetchall():
+                if _dataset_action_tuple[0] is None:
+                    continue
+                _dataset_action_tuples.append(_dataset_action_tuple)
+
+            self._dataset_action_tuples = _dataset_action_tuples
+
+        return self._dataset_action_tuples
+
+    @property
     def waiting_for_elements(self):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:
@@ -3863,6 +3906,13 @@ class StoredWorkflow(HasTags, Dictifiable):
         self.latest_workflow_id = None
         self.workflows = []
 
+    def get_internal_version(self, version):
+        if version is None:
+            return self.latest_workflow
+        if len(self.workflows) <= version:
+            raise Exception("Version does not exist")
+        return list(reversed(self.workflows))[version]
+
     def copy_tags_from(self, target_user, source_workflow):
         # Override to only copy owner tags.
         for src_swta in source_workflow.owner_tags:
@@ -4183,7 +4233,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
         subworkflow_invocation = WorkflowInvocation()
-        return self.attach_subworkflow_invocation_for_step(step, subworkflow_invocation)
+        self.attach_subworkflow_invocation_for_step(step, subworkflow_invocation)
+        return subworkflow_invocation
 
     def attach_subworkflow_invocation_for_step(self, step, subworkflow_invocation):
         assert step.type == "subworkflow"
@@ -4502,6 +4553,7 @@ class WorkflowRequestInputParameter(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
+        STEP_PARAMETERS='step',
         META_PARAMETERS='meta',
         RESOURCE_PARAMETERS='resource',
     )

@@ -200,6 +200,32 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
         assert tool.version == "3.0"
 
+    def test_tool_reload_for_broken_tool(self):
+        self._init_tool(filename="simple_tool.xml", version="1.0")
+        self._add_config("""<toolbox><tool file="simple_tool.xml"/></toolbox>""")
+        toolbox = self.toolbox
+        tool = toolbox.get_tool('test_tool')
+        assert tool is not None
+        assert tool.version == "1.0"
+        assert tool.tool_errors is None
+        # Tool is loaded, now let's break it
+        tool_path = tool.config_file
+        with open(tool.config_file, 'w') as out:
+            out.write('certainly not a valid tool')
+        time.sleep(1.5)
+        tool = self.app.toolbox.get_tool("test_tool")
+        assert tool is not None
+        assert tool.version == "1.0"
+        assert tool.tool_errors == 'Current on-disk tool is not valid'
+        # Tool is still loaded, lets restore it with a new version
+        self._init_tool(filename="simple_tool.xml", version="2.0")
+        time.sleep(1.5)
+        tool = self.app.toolbox.get_tool("test_tool")
+        assert tool is not None
+        assert tool.version == "2.0"
+        assert tool.tool_errors is None
+        assert tool_path == tool.config_file
+
     def test_enforce_tool_profile(self):
         self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
         self._init_tool(filename="new_tool.xml", version="2.0", profile="27.01", tool_id="test_new_tool_profile")

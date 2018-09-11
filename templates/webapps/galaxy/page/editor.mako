@@ -55,7 +55,7 @@
     </div>
 
     <div class="unified-panel-body">
-        <textarea name="page_content">${util.unicodify( page.latest_revision.content )}</textarea>
+        <textarea name="page_content">${ content }</textarea>
     </div>
 
 </%def>

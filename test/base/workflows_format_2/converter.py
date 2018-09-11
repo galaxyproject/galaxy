@@ -290,6 +290,10 @@ def transform_subworkflow(context, step):
     _populate_tool_state(step, tool_state)
 
 
+def _runtime_value():
+    return {"__class__": "RuntimeValue"}
+
+
 def transform_tool(context, step):
     if "tool_id" not in step:
         raise Exception("Tool steps must define a tool_id.")
@@ -323,7 +327,7 @@ def transform_tool(context, step):
             # value dedicated to this purpose (e.g. a ficitious
             # {"__class__": "ConnectedValue"}) that could be further
             # validated by Galaxy.
-            return {"__class__": "RuntimeValue"}
+            return _runtime_value()
         if isinstance(value, dict):
             new_values = {}
             for k, v in value.items():
@@ -345,13 +349,16 @@ def transform_tool(context, step):
         else:
             return value
 
-    if "state" in step:
-        step_state = step["state"]
+    runtime_inputs = step.get("runtime_inputs", [])
+
+    if "state" in step or runtime_inputs:
+        step_state = step.pop("state", {})
         step_state = replace_links(step_state)
 
         for key, value in step_state.items():
             tool_state[key] = json.dumps(value)
-        del step["state"]
+        for runtime_input in runtime_inputs:
+            tool_state[runtime_input] = json.dumps(_runtime_value())
 
     # Fill in input connections
     _populate_input_connections(context, step, connect)
