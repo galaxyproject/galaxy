@@ -218,6 +218,11 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="display",
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_contents_update_permissions",
+                          "/api/histories/{history_id}/contents/{history_content_id}/permissions",
+                          controller="history_contents",
+                          action="update_permissions",
+                          conditions=dict(method=["PUT"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
@@ -444,6 +449,11 @@ def populate_api_routes(webapp, app):
                           controller='workflows',
                           action='workflow_dict',
                           conditions=dict(method=['GET']))
+    webapp.mapper.connect('show_versions',
+                          '/api/workflows/{workflow_id}/versions',
+                          controller='workflows',
+                          action='show_versions',
+                          conditions=dict(method=['GET']))
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect('workflow_dict',
                           '/api/workflows/download/{workflow_id}',
@@ -460,6 +470,7 @@ def populate_api_routes(webapp, app):
     # route for creating/getting converted datasets
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None)
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
+    webapp.mapper.connect('/api/datasets/{dataset_id}/permissions', controller='datasets', action='update_permissions', conditions=dict(method=["PUT"]))
 
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
@@ -472,6 +483,13 @@ def populate_api_routes(webapp, app):
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
+            controller='workflows',
+            action='index_invocations',
+            conditions=dict(method=['GET'])
+        )
+        webapp.mapper.connect(
+            'list_invocations',
+            '/api/invocations',
             controller='workflows',
             action='index_invocations',
             conditions=dict(method=['GET'])
@@ -680,11 +698,12 @@ def populate_api_routes(webapp, app):
                           action='get_permissions',
                           conditions=dict(method=["GET"]))
 
+    # POST for legacy reasons, but this should be a PUT.
     webapp.mapper.connect('set_library_permissions',
                           '/api/libraries/{encoded_library_id}/permissions',
                           controller='libraries',
                           action='set_permissions',
-                          conditions=dict(method=["POST"]))
+                          conditions=dict(method=["POST", "PUT"]))
 
     webapp.mapper.connect('show_ld_item',
                           '/api/libraries/datasets/{id}',

@@ -58,12 +58,20 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
 
     def setUp(self):
         self.test_data_resolver = TestDataResolver()
+        self._configure_interactor()
+
+    def _configure_interactor(self):
         # Setup attributes needed for API testing...
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host
         port = server_wrapper.port
         self.url = "http://%s:%s" % (host, port)
         self._setup_interactor()
+
+    def restart(self, handle_reconfig=None):
+        self._test_driver.restart(config_object=self.__class__, handle_config=handle_reconfig)
+        self._configure_app()
+        self._configure_interactor()
 
     @property
     def _app(self):

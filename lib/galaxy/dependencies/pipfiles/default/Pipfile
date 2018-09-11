@@ -1,9 +1,29 @@
 [[source]]
+url = "https://wheels.galaxyproject.org/simple"
+verify_ssl = true
+name = "galaxy"
+
+[[source]]
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+lxml = "!=4.2.2"
+mock = "*"
+nodeenv = "*"
+NoseHTML = "*"
+pygithub3 = {version = "*", markers = "python_version < '3'"}
+pytest = "*"
+pytest-html = "*"
+pytest-pythonpath = "*"
+recommonmark = "*"
+selenium = "*"
+Sphinx = "<1.7"  # Docs do not build with sphinx 1.7 for some reason, can't find issue.
+sphinx_rtd_theme = "*"
+testfixtures = "*"
+twill = {version = "==0.9.1", markers = "python_version < '3'"}
+watchdog = "*"
 
 [packages]
 numpy = "*"
@@ -49,7 +69,7 @@ svgwrite = "*"
 pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
-python-genomespaceclient = "<1.0"
+python-genomespaceclient = "<2.0"
 social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
 
 [requires]

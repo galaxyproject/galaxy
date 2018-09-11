@@ -1028,7 +1028,7 @@ class NavigatesGalaxy(HasDriver):
         tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
 
     def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
         rules_div_element = self.tool_parameter_div("rules")
@@ -1286,7 +1286,8 @@ class NavigatesGalaxy(HasDriver):
             self.run_tour_step(step, i, tour_callback)
 
     def tour_wait_for_clickable_element(self, selector):
-        wait = self.wait()
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        wait = self.wait(timeout=timeout)
         timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become clickable" % selector)
         element = wait.until(
             sizzle.sizzle_selector_clickable(selector),
@@ -1295,7 +1296,8 @@ class NavigatesGalaxy(HasDriver):
         return element
 
     def tour_wait_for_element_present(self, selector):
-        wait = self.wait()
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        wait = self.wait(timeout=timeout)
         timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become present" % selector)
         element = wait.until(
             sizzle.sizzle_presence_of_selector(selector),

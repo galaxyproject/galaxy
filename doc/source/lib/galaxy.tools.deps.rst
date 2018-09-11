@@ -106,6 +106,14 @@ galaxy\.tools\.deps\.requirements module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.tools\.deps\.singularity\_util module
+---------------------------------------------
+
+.. automodule:: galaxy.tools.deps.singularity_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.tools\.deps\.views module
 ---------------------------------
 

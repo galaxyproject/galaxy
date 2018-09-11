@@ -748,26 +748,43 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if use_cached:
             tool = self.load_tool_from_cache(config_file)
         if not tool or guid and guid != tool.guid:
-            tool = self.create_tool(config_file=config_file, repository_id=repository_id, guid=guid, **kwds)
+            try:
+                tool = self.create_tool(config_file=config_file, repository_id=repository_id, guid=guid, **kwds)
+            except Exception:
+                # If the tool is broken but still exists we can load it from the cache
+                tool = self.load_tool_from_cache(config_file, recover_tool=True)
+                if tool:
+                    log.exception("Tool '%s' is not valid:" % config_file)
+                    tool.tool_errors = 'Current on-disk tool is not valid'
+                else:
+                    raise
             if tool.tool_shed_repository or not guid:
                 self.add_tool_to_cache(tool, config_file)
+            self.watch_tool(tool)
+        return tool
+
+    def watch_tool(self, tool):
         if not tool.id.startswith("__"):
             # do not monitor special tools written to tmp directory - no reason
             # to monitor such a large directory.
             if self._tool_watcher:
-                self._tool_watcher.watch_file(config_file, tool.id)
+                self._tool_watcher.watch_file(tool.config_file, tool.id)
             if self._tool_config_watcher:
                 [self._tool_config_watcher.watch_file(macro_path) for macro_path in tool._macro_paths]
-        return tool
 
     def add_tool_to_cache(self, tool, config_file):
         tool_cache = getattr(self.app, 'tool_cache', None)
         if tool_cache:
             self.app.tool_cache.cache_tool(config_file, tool)
 
-    def load_tool_from_cache(self, config_file):
+    def load_tool_from_cache(self, config_file, recover_tool=False):
         tool_cache = getattr(self.app, 'tool_cache', None)
-        tool = tool_cache and tool_cache.get_tool(config_file)
+        tool = None
+        if tool_cache:
+            if recover_tool:
+                tool = tool_cache.get_removed_tool(config_file)
+            else:
+                tool = tool_cache.get_tool(config_file)
         return tool
 
     def load_hidden_lib_tool(self, path):

@@ -80,7 +80,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         params = dict(repository_ids=str(','.join(repo_ids)), changeset_revisions=str(','.join(changesets)))
         pathspec = ['repository', 'get_repository_information']
         raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        return json.loads(raw_text)
+        return json.loads(util.unicodify(raw_text))
 
     def __get_value_mapper(self, trans, tool_shed_repository):
         value_mapper = {'id': trans.security.encode_id(tool_shed_repository.id),

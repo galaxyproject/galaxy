@@ -167,7 +167,7 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
-    def upload(self, trans, history_id, provider, bucket, objects, authz_id, input_args=None):
+    def upload(self, trans, history_id, provider, bucket_name, objects, authz_id, input_args=None):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
@@ -180,14 +180,14 @@ class CloudManager(sharable.SharableModelManager):
         :param trans:       Galaxy web transaction
 
         :type  history_id:  string
-        :param history_id:  the (encoded) id of history to which the object should be uploaded to.
+        :param history_id:  the (decoded) id of history to which the object should be uploaded to.
 
         :type  provider:    string
         :param provider:    the name of cloud-based resource provided. A list of supported providers is given in
                             `SUPPORTED_PROVIDERS` variable.
 
-        :type  bucket:      string
-        :param bucket:      the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
+        :type  bucket_name: string
+        :param bucket_name: the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
 
         :type  objects:     list of string
         :param objects:     the name of objects to be uploaded.
@@ -216,16 +216,16 @@ class CloudManager(sharable.SharableModelManager):
             raise e
         connection = self._configure_provider(provider, credentials)
         try:
-            bucket_obj = connection.storage.buckets.get(bucket)
-            if bucket_obj is None:
-                raise RequestParameterInvalidException("The bucket `{}` not found.".format(bucket))
+            bucket = connection.storage.buckets.get(bucket_name)
+            if bucket is None:
+                raise RequestParameterInvalidException("The bucket `{}` not found.".format(bucket_name))
         except Exception as e:
-            raise ItemAccessibilityException("Could not get the bucket `{}`: {}".format(bucket, str(e)))
+            raise ItemAccessibilityException("Could not get the bucket `{}`: {}".format(bucket_name, str(e)))
 
         datasets = []
         for obj in objects:
             try:
-                key = bucket_obj.objects.get(obj)
+                key = bucket.objects.objects.get(obj)
             except Exception as e:
                 raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
             if key is None:
@@ -234,6 +234,8 @@ class CloudManager(sharable.SharableModelManager):
             params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
             incoming = params.__dict__
             history = trans.sa_session.query(trans.app.model.History).get(history_id)
+            if not history:
+                raise ObjectNotFound("History with ID `{}` not found.".format(trans.app.security.encode_id(history_id)))
             output = trans.app.toolbox.get_tool('upload1').handle_input(trans, incoming, history=history)
 
             job_errors = output.get('job_errors', [])
@@ -246,7 +248,7 @@ class CloudManager(sharable.SharableModelManager):
 
         return datasets
 
-    def download(self, trans, history_id, provider, bucket, credentials, dataset_ids=None, overwrite_existing=False):
+    def download(self, trans, history_id, provider, bucket_name, credentials, dataset_ids=None, overwrite_existing=False):
         """
         Implements the logic of downloading dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
@@ -261,8 +263,8 @@ class CloudManager(sharable.SharableModelManager):
         :param provider:            the name of cloud-based resource provided. A list of supported providers
                                     is given in `SUPPORTED_PROVIDERS` variable.
 
-        :type  bucket:              string
-        :param bucket:              the name of a bucket to which data should be downloaded (e.g., a bucket
+        :type  bucket_name:         string
+        :param bucket_name:         the name of a bucket to which data should be downloaded (e.g., a bucket
                                     name on AWS S3).
 
         :type  credentials:         dict
@@ -289,18 +291,18 @@ class CloudManager(sharable.SharableModelManager):
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
         connection = self._configure_provider(provider, credentials)
 
-        bucket_obj = connection.object_store.get(bucket)
-        if bucket_obj is None:
-            raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
+        bucket = connection.storage.buckets.get(bucket_name)
+        if bucket is None:
+            raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket_name))
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         downloaded = []
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
-                if overwrite_existing is False and bucket_obj.get(object_label) is not None:
+                if overwrite_existing is False and bucket.objects.get(object_label) is not None:
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-                created_obj = bucket_obj.create_object(object_label)
+                created_obj = bucket.objects.create(object_label)
                 created_obj.upload_from_file(hda.dataset.get_file_name())
                 downloaded.append(object_label)
         return downloaded

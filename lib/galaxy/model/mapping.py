@@ -2246,7 +2246,8 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
     workflows=relation(model.Workflow,
         backref='stored_workflow',
         cascade="all, delete-orphan",
-        primaryjoin=(model.StoredWorkflow.table.c.id == model.Workflow.table.c.stored_workflow_id)),
+        primaryjoin=(model.StoredWorkflow.table.c.id == model.Workflow.table.c.stored_workflow_id),
+        order_by=-model.Workflow.id),
     latest_workflow=relation(model.Workflow,
         post_update=True,
         primaryjoin=(model.StoredWorkflow.table.c.latest_workflow_id == model.Workflow.table.c.id),
@@ -2563,10 +2564,10 @@ def db_next_hid(self, n=1):
     trans = conn.begin()
     try:
         if "postgres" not in session.bind.dialect.name:
-            next_hid = select([table.c.hid_counter], table.c.id == self.id, for_update=True).scalar()
+            next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self), for_update=True).scalar()
             table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
         else:
-            stmt = table.update().where(table.c.id == self.id).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
+            stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
             next_hid = conn.execute(stmt).scalar() - n
         trans.commit()
         return next_hid

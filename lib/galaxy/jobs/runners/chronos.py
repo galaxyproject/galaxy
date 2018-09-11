@@ -12,6 +12,12 @@ CHRONOS_IMPORT_MSG = ('The Python \'chronos\' package is required to use '
 
 try:
     import chronos
+    chronos_exceptions = (
+        chronos.ChronosAPIError,
+        chronos.UnauthorizedError,
+        chronos.MissingFieldError,
+        chronos.OneOfViolationError,
+    )
 except ImportError as e:
     chronos = None
     CHRONOS_IMPORT_MSG.format(msg=str(e))
@@ -28,12 +34,6 @@ class ChronosRunnerException(Exception):
 def handle_exception_call(func):
     # Catch chronos exceptions. The latest version of chronos-python does
     # support a hierarchy over the exceptions.
-    chronos_exceptions = (
-        chronos.ChronosAPIError,
-        chronos.UnauthorizedError,
-        chronos.MissingFieldError,
-        chronos.OneOfViolationError,
-    )
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):

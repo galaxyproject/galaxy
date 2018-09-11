@@ -10,25 +10,25 @@
     self.active_view="workflow"
     self.overlay_visible=True
     self.editor_config = {
-        'id'      : trans.security.encode_id( stored.id ),
+        'id'      : trans.security.encode_id(stored.id),
         'urls'    : {
-            'tool_search'         : h.url_for( '/api/tools' ),
-            'get_datatypes'       : h.url_for( '/api/datatypes/mapping' ),
-            'load_workflow'       : h.url_for( controller='workflow', action='load_workflow' ),
-            'run_workflow'        : h.url_for( controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
-            'rename_async'        : h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) ),
-            'annotate_async'      : h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) ),
-            'get_new_module_info' : h.url_for( controller='workflow', action='get_new_module_info' ),
-            'workflow_index'      : h.url_for( '/workflows/list' ),
-            'save_workflow'       : h.url_for( controller='workflow', action='save_workflow' ),
-            'workflow_save_as'    : h.url_for( controller='workflow', action='save_workflow_as')
+            'tool_search'         : h.url_for('/api/tools'),
+            'get_datatypes'       : h.url_for('/api/datatypes/mapping'),
+            'load_workflow'       : h.url_for(controller='workflow', action='load_workflow'),
+            'run_workflow'        : h.url_for(controller='root', action='index', workflow_id=trans.security.encode_id(stored.id)),
+            'rename_async'        : h.url_for(controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id)),
+            'annotate_async'      : h.url_for(controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id)),
+            'get_new_module_info' : h.url_for(controller='workflow', action='get_new_module_info'),
+            'workflow_index'      : h.url_for('/workflows/list'),
+            'save_workflow'       : h.url_for(controller='workflow', action='save_workflow'),
+            'workflow_save_as'    : h.url_for(controller='workflow', action='save_workflow_as')
         },
         'workflows' : [{
-            'id'                  : trans.security.encode_id( workflow.id ),
-            'latest_id'           : trans.security.encode_id( workflow.latest_workflow.id ),
-            'step_count'          : len( workflow.latest_workflow.steps ),
-            'name'                : h.to_unicode( workflow.name )
-        } for workflow in workflows ]
+            'id'                  : trans.security.encode_id(workflow.id),
+            'latest_id'           : trans.security.encode_id(workflow.latest_workflow.id),
+            'step_count'          : len(workflow.latest_workflow.steps),
+            'name'                : h.to_unicode(workflow.name)
+        } for workflow in workflows]
     }
 %>
 </%def>
@@ -403,6 +403,10 @@
                 <label>Name:</label>
                 <span id="workflow-name" class="editable-text" title="Click to rename workflow">${h.to_unicode( stored.name ) | h}</span>
             </div>
+            <div id="workflow-version-area" class="form-row">
+                <label>Version:</label>
+            </div>
+            <select id="workflow-version-switch" href="#">Select version</select>
             ## Workflow tags.
             <%namespace file="/tagging_common.mako" import="render_individual_tagging_element" />
             <div class="form-row">

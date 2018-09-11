@@ -12,9 +12,7 @@ Subpackages
 .. toctree::
 
     galaxy.jobs.actions
-    galaxy.jobs.deferred
     galaxy.jobs.metrics
-    galaxy.jobs.rules
     galaxy.jobs.runners
     galaxy.jobs.splitters
 
@@ -41,14 +39,6 @@ galaxy\.jobs\.dynamic\_tool\_destination module
 -----------------------------------------------
 
 .. automodule:: galaxy.jobs.dynamic_tool_destination
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.jobs\.error\_level module
----------------------------------
-
-.. automodule:: galaxy.jobs.error_level
     :members:
     :undoc-members:
     :show-inheritance:

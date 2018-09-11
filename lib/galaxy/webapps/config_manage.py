@@ -465,7 +465,7 @@ def _build_uwsgi_schema(args, app_desc):
         last_line = line
     schema = {
         "type": "map",
-        "desc": "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html",
+        "desc": "uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html",
         "mapping": options
     }
     path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)

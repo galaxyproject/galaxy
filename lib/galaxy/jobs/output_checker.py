@@ -3,6 +3,7 @@ import traceback
 from logging import getLogger
 
 from galaxy.tools.parser.error_level import StdioErrorLevel
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 
 log = getLogger(__name__)
@@ -12,6 +13,9 @@ DETECTED_JOB_STATE = Bunch(
     OUT_OF_MEMORY_ERROR='oom_error',
     GENERIC_ERROR='generic_error',
 )
+
+
+ERROR_PEAK = 2000
 
 
 def check_output(tool, stdout, stderr, tool_exit_code, job):
@@ -29,6 +33,9 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
     # By default, the tool succeeded. This covers the case where the code
     # has a bug but the tool was ok, and it lets a workflow continue.
     state = DETECTED_JOB_STATE.OK
+
+    stdout = unicodify(stdout)
+    stderr = unicodify(stderr)
 
     try:
         # Check exit codes and match regular expressions against stdout and
@@ -126,11 +133,14 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
             # log.debug( "Tool did not define exit code or stdio handling; "
             #          + "checking stderr for success" )
             if stderr:
-                peak = stderr[0:250]
-                log.debug("Tool produced standard error failing job - [%s]" % peak)
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
             else:
                 state = DETECTED_JOB_STATE.OK
+
+        if DETECTED_JOB_STATE != DETECTED_JOB_STATE.OK and stderr:
+            if stderr:
+                peak = stderr[0:ERROR_PEAK]
+                log.debug("job failed, standard error is - [%s]" % peak)
 
     # On any exception, return True.
     except Exception:

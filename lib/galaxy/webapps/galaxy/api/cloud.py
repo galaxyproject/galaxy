@@ -129,7 +129,7 @@ class CloudController(BaseAPIController):
         datasets = self.cloud_manager.upload(trans=trans,
                                              history_id=history_id,
                                              provider=provider,
-                                             bucket=bucket,
+                                             bucket_name=bucket,
                                              objects=objects,
                                              authz_id=authz_id,
                                              input_args=payload.get("input_args", None))
@@ -216,7 +216,7 @@ class CloudController(BaseAPIController):
         uploaded = self.cloud_manager.download(trans=trans,
                                                history_id=history_id,
                                                provider=provider,
-                                               bucket=bucket,
+                                               bucket_name=bucket,
                                                credentials=credentials,
                                                dataset_ids=dataset_ids,
                                                overwrite_existing=payload.get("overwrite_existing", False))

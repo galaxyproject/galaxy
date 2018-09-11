@@ -20,6 +20,7 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
     folders,
+    lddas,
     library_datasets,
     roles
 )
@@ -43,6 +44,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)
         self.ld_manager = library_datasets.LibraryDatasetsManager(app)
+        self.ldda_manager = lddas.LDDAManager(app)
 
     @expose_api_anonymous
     def show(self, trans, id, **kwd):
@@ -153,18 +155,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        dataset = library_dataset.library_dataset_dataset_association.dataset
-
-        # Omit duplicated roles by converting to set
-        access_roles = set(dataset.get_access_roles(trans))
-        modify_roles = set(trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
-        manage_roles = set(dataset.get_manage_permissions_roles(trans))
-
-        access_dataset_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in access_roles]
-        manage_dataset_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
-        modify_item_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
-
-        return dict(access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list)
+        return self.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -241,12 +232,12 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             if not trans.app.security_agent.dataset_is_public(dataset):
                 raise exceptions.InternalServerError('An error occured while making dataset public.')
         elif action == 'make_private':
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
                 dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role)
                 trans.sa_session.add(dp)
                 trans.sa_session.flush()
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
         elif action == 'set_permissions':
