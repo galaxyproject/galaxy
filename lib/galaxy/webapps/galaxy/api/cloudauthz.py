@@ -13,17 +13,15 @@ import logging
 from galaxy.exceptions import (
     ActionInputError,
     InternalServerError,
-    ItemAccessibilityException,
     MalformedId,
-    ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException
 )
 from galaxy.managers import cloudauthzs
-from galaxy.web.base.controller import BaseAPIController
 from galaxy.web import (
     _future_expose_api as expose_api
 )
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
 
