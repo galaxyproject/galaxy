@@ -28,6 +28,7 @@
     </head>
 
     <body scroll="no" class="full-content">
+
         ${ js_disabled_warning() }
 
         ## js libraries and bundled js app
@@ -36,30 +37,15 @@
             'bundled/libs.chunk',
             'bundled/' + js_app_name + '.bundled'
         )}
+
         <script type="text/javascript">
-            /*
-            window.jQuery = window.jquery = window.$;
-            define( 'jquery', [], function(){ return window.$; })
-            require.config({
-                baseUrl: "${h.url_for('/static/scripts') }",
-                shim: {
-                    "libs/underscore": {
-                        exports: "_"
-                    },
-                    "libs/backbone": {
-                        deps: [ 'jquery', 'libs/underscore' ],
-                        exports: "Backbone"
-                    }
-                },
-                // cache busting using time server was restarted
-                urlArgs: 'v=${app.server_starttime}',
-            });
-            */
+            console.log("Initialization Function", "${js_app_entry_fn}");
             ${js_app_entry_fn}(
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }
             );
         </script>
+
     </body>
 </html>
 

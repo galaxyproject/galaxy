@@ -47,18 +47,15 @@ let buildconfig = {
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
-        // path: path.resolve(__dirname, "dist"),
+        // path: path.resolve(__dirname, "dist"), // test location
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
     },
     resolve: {
         modules: [scriptsBase, "node_modules"],
-        // alias: {
-        //     // TODO: correct our imports and remove these rules
-        //     // Backbone looks for these in the same root directory
-        //     // jquery: path.join(libsBase, "jquery/jquery"),
-        //     // underscore: path.join(libsBase, "underscore.js")
-        // }
+        alias: {
+            vue: 'vue/dist/vue.js'
+        }
     },
     optimization: {
         splitChunks: {
