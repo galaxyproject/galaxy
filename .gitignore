@@ -130,6 +130,7 @@ sprite-*.scss
 static/maps
 static/plugins
 static/scripts
+static/style
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
@@ -149,3 +150,4 @@ doc/source/dev/schema.rst
 *.rej
 *~
 .idea
+.vscode

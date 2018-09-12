@@ -1,12 +1,12 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import BASE_MVC from "mvc/base-mvc";
 import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
 
-/* global $ */
 
 // TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
@@ -144,17 +144,17 @@ GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {
         // load any logging namespaces from localStorage if we can
         try {
             loggerOptions.consoleNamespaceWhitelist = localStorage.getItem(NAMESPACE_KEY).split(",");
-        } catch (storageErr) {}
+        } catch (storageErr) { }
         try {
             loggerOptions.consoleFlattenMessages = localStorage.getItem(FLATTEN_LOG_MESSAGES_KEY) == "true";
-        } catch (storageErr) {}
+        } catch (storageErr) { }
         console.log(loggerOptions.consoleFlattenMessages);
     }
 
     self.logger = new metricsLogger.MetricsLogger(loggerOptions);
     self.emit = {};
     ["log", "debug", "info", "warn", "error", "metric"].map(i => {
-        self.emit[i] = function(data) {
+        self.emit[i] = function (data) {
             self.logger.emit(i, arguments[0], Array.prototype.slice.call(arguments, 1));
         };
     });
@@ -228,7 +228,7 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
         var data = options.data;
         try {
             data = JSON.parse(data);
-        } catch (err) {}
+        } catch (err) { }
 
         self.lastAjax = {
             url: location.href.slice(0, -1) + options.url,

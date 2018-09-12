@@ -1,5 +1,5 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
@@ -13,7 +13,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         _logNamespace: logNamespace,
 
         /** API location for this resource */
-        urlRoot: function() {
+        urlRoot: function () {
             return `${Galaxy.root}api/users`;
         },
 
@@ -34,22 +34,22 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         /** Set up and bind events
          *  @param {Object} data Initial model data.
          */
-        initialize: function(data) {
+        initialize: function (data) {
             this.log("User.initialize:", data);
 
-            this.on("loaded", function(model, resp) {
+            this.on("loaded", function (model, resp) {
                 this.log(`${this} has loaded:`, model, resp);
             });
-            this.on("change", function(model, data) {
+            this.on("change", function (model, data) {
                 this.log(`${this} has changed:`, model, data.changes);
             });
         },
 
-        isAnonymous: function() {
+        isAnonymous: function () {
             return !this.get("email");
         },
 
-        isAdmin: function() {
+        isAdmin: function () {
             return this.get("is_admin");
         },
 
@@ -60,7 +60,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
          *  @param {Object} options hash to pass to Backbone.Model.fetch. Can contain success, error fns.
          *  @fires loaded when the model has been loaded from the API, passing the newModel and AJAX response.
          */
-        loadFromApi: function(idOrCurrent, options) {
+        loadFromApi: function (idOrCurrent, options) {
             idOrCurrent = idOrCurrent || User.CURRENT_ID_STR;
 
             options = options || {};
@@ -84,7 +84,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 
         /** Clears all data from the sessionStorage.
          */
-        clearSessionStorage: function() {
+        clearSessionStorage: function () {
             for (var key in sessionStorage) {
                 //TODO: store these under the user key so we don't have to do this
                 // currently only history
@@ -97,7 +97,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
         },
 
         /** string representation */
-        toString: function() {
+        toString: function () {
             var userInfo = [this.get("username")];
             if (this.get("id")) {
                 userInfo.unshift(this.get("id"));
@@ -121,7 +121,7 @@ User.getCurrentUserFromApi = options => {
 // (stub) collection for users (shouldn't be common unless admin UI)
 var UserCollection = Backbone.Collection.extend(baseMVC.LoggableMixin).extend({
     model: User,
-    urlRoot: function() {
+    urlRoot: function () {
         return `${Galaxy.root}api/users`;
     }
     //logger  : console,

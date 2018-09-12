@@ -1,5 +1,5 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 import util_mod from "viz/trackster/util";
 
 /* global $ */
@@ -9,7 +9,7 @@ import util_mod from "viz/trackster/util";
  * A configuration setting. Currently key is used as id.
  */
 var ConfigSetting = Backbone.Model.extend({
-    initialize: function(options) {
+    initialize: function (options) {
         // Use key as id for now.
         var key = this.get("key");
         this.set("id", key);
@@ -124,7 +124,7 @@ var ConfigSetting = Backbone.Model.extend({
      * Cast and set value. This should be instead of
      *  setting.set('value', new_value)
      */
-    set_value: function(value, options) {
+    set_value: function (value, options) {
         var type = this.get("type");
 
         if (type === "float") {
@@ -149,7 +149,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
          * Save settings as a dictionary of key-value pairs.
          * This function is needed for backwards compatibility.
          */
-        to_key_value_dict: function() {
+        to_key_value_dict: function () {
             var rval = {};
             this.each(setting => {
                 rval[setting.get("key")] = setting.get("value");
@@ -161,7 +161,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         /**
          * Returns value for a given key. Returns undefined if there is no setting with the specified key.
          */
-        get_value: function(key) {
+        get_value: function (key) {
             var s = this.get(key);
             if (s) {
                 return s.get("value");
@@ -173,7 +173,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         /**
          * Set value for a setting.
          */
-        set_value: function(key, value, options) {
+        set_value: function (key, value, options) {
             var s = this.get(key);
             if (s) {
                 return s.set_value(value, options);
@@ -185,7 +185,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
         /**
          * Set default value for a setting.
          */
-        set_default_value: function(key, default_value) {
+        set_default_value: function (key, default_value) {
             var s = this.get(key);
             if (s) {
                 return s.set("default_value", default_value);
@@ -199,7 +199,7 @@ var ConfigSettingCollection = Backbone.Collection.extend(
          * Utility function that creates a ConfigSettingsCollection from a set of models
          * and a saved_values dictionary.
          */
-        from_models_and_saved_values: function(models, saved_values) {
+        from_models_and_saved_values: function (models, saved_values) {
             // If there are saved values, copy models and update with saved values.
             if (saved_values) {
                 models = _.map(models, m => _.extend({}, m, { value: saved_values[m.key] }));
@@ -219,7 +219,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     /**
      * Renders form for editing configuration settings.
      */
-    render: function() {
+    render: function () {
         var container = this.$el;
 
         this.collection.each((param, index) => {
@@ -253,7 +253,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                     $('<input type="text"/>')
                         .attr("id", id)
                         .val(value)
-                        .click(function() {
+                        .click(function () {
                             $(this).select();
                         })
                 );
@@ -278,7 +278,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                     .val(value)
                     .css("float", "left")
                     .appendTo(container_div)
-                    .click(function(e) {
+                    .click(function (e) {
                         // Hide other pickers.
                         $(".tooltip").removeClass("in");
 
@@ -362,7 +362,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     /**
      * Render view in modal.
      */
-    render_in_modal: function(title) {
+    render_in_modal: function (title) {
         // Set up handlers for cancel, ok button and for handling esc key.
         var self = this;
 
@@ -407,7 +407,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     /**
      * Update settings with new values entered via form.
      */
-    update_from_form: function() {
+    update_from_form: function () {
         var self = this;
         this.collection.each((setting, index) => {
             if (!setting.get("hidden")) {

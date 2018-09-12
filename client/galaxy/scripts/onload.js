@@ -4,10 +4,10 @@
 // HACK: add these to global scope until we stop asking for them there...
 // Via webpack: these are required here automatically by the provider plugin
 // Via script tag: these are redundant (identities) since they're already global
-window["jQuery"] = jQuery; // a weird form to prevent webpack from sub'ing 'window.jQuery' in the provider plugin
-window.$ = jQuery;
-window._ = _;
-window.Backbone = Backbone;
+// window["jQuery"] = jQuery; // a weird form to prevent webpack from sub'ing 'window.jQuery' in the provider plugin
+// window.$ = jQuery;
+// window._ = _;
+// window.Backbone = Backbone;
 // console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
@@ -60,7 +60,7 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
 
     select_elts = select_elts || $("select");
 
-    select_elts.each(function() {
+    select_elts.each(function () {
         var select_elt = $(this).not("[multiple]");
         // Make sure that options is within range.
         var num_options = select_elt.find("option").length;
@@ -87,7 +87,7 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
 function init_refresh_on_change() {
     $("select[refresh_on_change='true']")
         .off("change")
-        .change(function() {
+        .change(function () {
             var select_field = $(this);
             var select_val = select_field.val();
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
@@ -109,7 +109,7 @@ function init_refresh_on_change() {
     // checkboxes refresh on change
     $(":checkbox[refresh_on_change='true']")
         .off("click")
-        .click(function() {
+        .click(function () {
             var select_field = $(this);
             var select_val = select_field.val();
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
@@ -130,7 +130,7 @@ function init_refresh_on_change() {
     // Links with confirmation
     $("a[confirm]")
         .off("click")
-        .click(function() {
+        .click(function () {
             return confirm($(this).attr("confirm"));
         });
 }
@@ -158,7 +158,7 @@ $(document).ready(() => {
 
     // If galaxy_main frame does not exist and link targets galaxy_main,
     // add use_panels=True and set target to self.
-    $("a").click(function() {
+    $("a").click(function () {
         var anchor = $(this);
         var galaxy_main_exists = window.parent.frames && window.parent.frames.galaxy_main;
         if (anchor.attr("target") == "galaxy_main" && !galaxy_main_exists) {
@@ -183,7 +183,7 @@ $(document).ready(() => {
                 // Load all webhooks with the type 'onload'
                 Webhooks.load({
                     type: "onload",
-                    callback: function(webhooks) {
+                    callback: function (webhooks) {
                         webhooks.each(model => {
                             var webhook = model.toJSON();
                             if (webhook.activate && webhook.script) {

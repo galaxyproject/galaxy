@@ -1,9 +1,10 @@
 /**
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
+import $ from "jquery";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
 import IconButton from "mvc/ui/icon-button";
@@ -12,7 +13,7 @@ import GridView from "mvc/grid/grid-view";
 import Utils from "utils/utils";
 import "libs/jquery/jquery.event.drag";
 import "libs/jquery/jquery.event.hover";
-import "libs/jquery/jquery.mousewheel";
+import "jquery-mousewheel";
 import "libs/jquery/jquery-ui";
 import "libs/jquery/select2";
 import "libs/farbtastic";
@@ -562,7 +563,7 @@ class TracksterUIView extends Backbone.View {
         // close selection/finalize template
         html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${
             Galaxy.root
-        }custom_builds" target="_top">Add a Custom Build</a></div></form>`;
+            }custom_builds" target="_top">Add a Custom Build</a></div></form>`;
 
         // return
         return html;

@@ -12,15 +12,17 @@
     "use strict";
     /*globals window, clearTimeout */
 
+    console.log("Polfills are running");
+
     // ------------------------------------------------------------------ polyfills
     // console protection needed in some versions of IE (at this point (IE>=9), shouldn't be needed)
     window.console = window.console || {
-        log: function() {},
-        debug: function() {},
-        info: function() {},
-        warn: function() {},
-        error: function() {},
-        assert: function() {}
+        log: function () { },
+        debug: function () { },
+        info: function () { },
+        warn: function () { },
+        error: function () { },
+        assert: function () { }
     };
 
     // phantomjs: does not have the native extend fn assign
@@ -54,16 +56,16 @@
     var features = [
         {
             name: "canvas",
-            compatible: function() {
+            compatible: function () {
                 return window.CanvasRenderingContext2D;
             }
         },
         {
             name: "sessionStorage",
-            compatible: function() {
+            compatible: function () {
                 try {
                     return window.sessionStorage.length >= 0;
-                } catch (err) {}
+                } catch (err) { }
                 return false;
             }
         }
