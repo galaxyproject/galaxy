@@ -9,7 +9,7 @@ History
 18.5.15.dev0
 ---------------------
 
-    
+* More tweaks to CWL tool loading to support newer versions of cwltool.
 
 ---------------------
 18.5.14 (2018-09-12)
