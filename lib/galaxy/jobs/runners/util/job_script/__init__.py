@@ -77,7 +77,7 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     >>> script.startswith('#!/bin/bash\\n\\n#PBS -test\\n')
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', slots_statement='GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"')
-    >>> script.find('GALAXY_SLOTS="$SLURM_JOB_NUM_NODES"\\nexport GALAXY_SLOTS\\n') > 0
+    >>> script.find('unset GALAXY_SLOTS_CONFIGURED\\nfi\\nexport GALAXY_SLOTS\\n') > 0
     True
     >>> script = job_script(working_directory='wd', command='uptime', exit_code_path='ec', memory_statement='GALAXY_MEMORY_MB="32768"')
     >>> script.find('GALAXY_MEMORY_MB="32768"\\n') > 0
