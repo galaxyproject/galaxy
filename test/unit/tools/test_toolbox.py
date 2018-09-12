@@ -298,6 +298,21 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert test_tool.repository_owner is None
         assert test_tool.installed_changeset_revision is None
 
+    def test_tool_shed_request_version(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
+        assert test_tool.version == '0.1'
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.2")
+        assert test_tool.version == '0.2'
+
+        # there is no version 3, return newest version
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="3")
+        assert test_tool.version == '0.2'
+
     def test_load_file_in_section(self):
         self._init_tool_in_section()
 
