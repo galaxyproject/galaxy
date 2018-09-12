@@ -9,7 +9,9 @@ History
 18.5.14.dev0
 ---------------------
 
-    
+* Improved tool linting and reporting thanks to @natefoo and @nsoranzo.
+* Add support for newer cwltool thanks to @nsoranzo.
+* Improved mulled building thanks to @pcm32.
 
 ---------------------
 18.5.13 (2018-05-23)
