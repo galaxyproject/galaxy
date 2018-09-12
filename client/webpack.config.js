@@ -130,7 +130,6 @@ let buildconfig = {
             _: "underscore",
             Backbone: "backbone"
         }),
-        // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
         new VueLoaderPlugin()
     ]
 };
