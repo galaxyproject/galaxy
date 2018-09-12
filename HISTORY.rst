@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.14.dev0
+18.5.14 (2018-09-12)
 ---------------------
 
 * Improved tool linting and reporting thanks to @natefoo and @nsoranzo.
