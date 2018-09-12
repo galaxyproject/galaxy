@@ -233,6 +233,8 @@ class Configuration(object):
         self.tour_config_dir = resolve_path(kwargs.get("tour_config_dir", "config/plugins/tours"), self.root)
         self.webhooks_dirs = resolve_path(kwargs.get("webhooks_dir", "config/plugins/webhooks"), self.root)
 
+        self.dynamic_post_processing_actions = listify(kwargs.get("dynamic_post_processing_actions", []), do_strip=True)
+
         self.expose_user_name = kwargs.get("expose_user_name", False)
         self.expose_user_email = kwargs.get("expose_user_email", False)
 

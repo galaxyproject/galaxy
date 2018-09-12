@@ -194,8 +194,10 @@ function _visit(head, head_list, output_id, options) {
 /** Builds sub section with step actions/annotation */
 function _makeSection(output_id, options) {
     var extensions = [];
+    var dynamicActionOptions = [];
     var input_terminal_names = [];
     var datatypes = options.datatypes;
+    var dynamicActions = options.dynamicActions;
     var node = options.node;
     var workflow = options.workflow;
 
@@ -218,6 +220,13 @@ function _makeSection(output_id, options) {
         0: "Leave unchanged",
         1: "__empty__"
     });
+
+    dynamicActionOptions = dynamicActions.map(a => ({ 0: a.name, 1: a.value }));
+    dynamicActionOptions.unshift({
+        0: "None",
+        1: "__empty__"
+    });
+
     var output;
     var input_config = {
         title: `Configure Output: '${output_id}'`,
@@ -319,6 +328,21 @@ function _makeSection(output_id, options) {
                     }
                 ],
                 help: "This action will set column assignments in the output dataset. Blank fields are ignored."
+            },
+            {
+                title: _l("Advanced Actions"),
+                type: "section",
+                flat: true,
+                inputs: [{
+                    action: "DynamicAction",
+                    pja_arg: "process",
+                    label: "Dynamic Action",
+                    type: "select",
+                    value: "__empty__",
+                    ignore: "__empty__",
+                    options: dynamicActionOptions,
+                    help: "This will execute a post processing function."
+                }]
             }
         ]
     };

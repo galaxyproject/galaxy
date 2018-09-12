@@ -2678,6 +2678,14 @@ mapping:
           The base module(s) that are searched for modules for toolbox filtering
           (https://galaxyproject.org/user-defined-toolbox-filters/) functions.
 
+      dynamic_post_processing_actions:
+        type: str
+        default: examples:notification_control
+        required: false
+        desc: |
+          Post processing actions can be defined dynamically by creating a python class
+          in lib/galaxy/jobs/actions/dynamic/.
+
       amqp_internal_connection:
         type: str
         default: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE

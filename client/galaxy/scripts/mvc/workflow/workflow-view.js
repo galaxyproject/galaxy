@@ -261,6 +261,14 @@ export default Backbone.View.extend({
             }).responseText
         );
 
+        // get available dynamic actions for post job action options
+        this.dynamicActions = JSON.parse(
+            $.ajax({
+                url: `${Galaxy.root}api/dynamic_actions`,
+                async: false
+            }).responseText
+        );
+
         // get datatype mapping options
         this.datatypes_mapping = JSON.parse(
             $.ajax({
@@ -769,6 +777,7 @@ export default Backbone.View.extend({
             content.node = node;
             content.workflow = this.workflow;
             content.datatypes = this.datatypes;
+            content.dynamicActions = this.dynamicActions;
             content.icon = WorkflowIcons[node.type];
             content.cls = "ui-portlet-narrow";
             if (node) {

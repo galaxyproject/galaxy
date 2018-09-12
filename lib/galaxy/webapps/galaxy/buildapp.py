@@ -531,6 +531,14 @@ def populate_api_routes(webapp, app):
             action='invoke',
             conditions=dict(method=['POST'])
         )
+
+        webapp.mapper.connect(
+            'dynamic_actions_list',
+            '/api/dynamic_actions',
+            controller='dynamic_actions',
+            action='index',
+            conditions=dict(method=['GET'])
+        )
     # ============================
     # ===== AUTHENTICATE API =====
     # ============================

@@ -1733,6 +1733,10 @@ galaxy:
   # functions.
   #toolbox_filter_base_modules: 'galaxy.tools.toolbox.filters,galaxy.tools.filters'
 
+  # Post processing actions can be defined dynamically by creating a
+  # python class in lib/galaxy/jobs/actions/dynamic/.
+  #dynamic_post_processing_actions: 'examples:notification_control'
+
   # Galaxy uses AMQP internally for communicating between processes.
   # For example, when reloading the toolbox or locking job execution,
   # the process that handled that particular request will tell all
