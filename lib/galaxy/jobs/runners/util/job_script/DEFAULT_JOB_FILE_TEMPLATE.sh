@@ -26,7 +26,7 @@ _galaxy_setup_environment() {
 
 $integrity_injection
 $slots_statement
-export GALAXY_SLOTS
+$memory_statement
 GALAXY_VIRTUAL_ENV="$galaxy_virtual_env"
 _GALAXY_VIRTUAL_ENV="$galaxy_virtual_env"
 PRESERVE_GALAXY_ENVIRONMENT="$preserve_python_environment"
@@ -34,7 +34,6 @@ GALAXY_LIB="$galaxy_lib"
 _galaxy_setup_environment "$PRESERVE_GALAXY_ENVIRONMENT"
 GALAXY_PYTHON=`command -v python`
 cd $working_directory
-$memory_statement
 $instrument_pre_commands
 $command
 echo $? > $exit_code_path

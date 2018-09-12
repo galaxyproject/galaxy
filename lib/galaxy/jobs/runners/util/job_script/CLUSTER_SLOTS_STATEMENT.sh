@@ -27,3 +27,4 @@ else
     GALAXY_SLOTS="1"
     unset GALAXY_SLOTS_CONFIGURED
 fi
+export GALAXY_SLOTS
