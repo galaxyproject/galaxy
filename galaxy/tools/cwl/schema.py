@@ -7,6 +7,7 @@ from six.moves.urllib.parse import urldefrag
 from .cwltool_deps import (
     ensure_cwltool_available,
     load_tool,
+    LoadingContext,
     schema_salad,
     workflow,
 )
@@ -66,15 +67,26 @@ class SchemaLoader(object):
                 raw_process_reference = self.raw_process_reference(kwds["path"])
             process_definition = self.process_definition(raw_process_reference)
 
-        make_tool = kwds.get("make_tool", default_make_tool)
-        tool = load_tool.make_tool(
-            process_definition.document_loader,
-            process_definition.avsc_names,
-            process_definition.metadata,
-            process_definition.raw_process_reference.uri,
-            make_tool,
-            {"strict": self._strict},
-        )
+        args = {"strict": self._strict}
+        if LoadingContext is not None:
+            loading_context = LoadingContext(args)
+            tool = load_tool.make_tool(
+                process_definition.document_loader,
+                process_definition.avsc_names,
+                process_definition.metadata,
+                process_definition.raw_process_reference.uri,
+                loading_context,
+            )
+        else:
+            make_tool = kwds.get("make_tool", default_make_tool)
+            tool = load_tool.make_tool(
+                process_definition.document_loader,
+                process_definition.avsc_names,
+                process_definition.metadata,
+                process_definition.raw_process_reference.uri,
+                make_tool,
+                args
+            )
         return tool
 
 
