@@ -1,7 +1,7 @@
 import logging
 from json import dumps
 
-from six.moves.urllib.parse import unquote_plus
+from six.moves.urllib.parse import unquote
 
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
@@ -512,7 +512,9 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     # -- Helper methods --
     #
     def _get_tool(self, id, tool_version=None, user=None):
-        id = unquote_plus(id)
+        id = unquote(id)
+        if tool_version:
+            tool_version = unquote(tool_version)
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool:
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % id)
