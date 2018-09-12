@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.5.15.dev0
+18.5.15 (2018-09-12)
 ---------------------
 
 * More tweaks to CWL tool loading to support newer versions of cwltool.
