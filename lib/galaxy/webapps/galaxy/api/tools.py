@@ -94,10 +94,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
                 io_details   - if true, parameters and inputs are returned
                 link_details - if true, hyperlink to the tool is returned
+                version      - if provided return this tool version
         """
         io_details = util.string_as_bool(kwd.get('io_details', False))
         link_details = util.string_as_bool(kwd.get('link_details', False))
-        tool = self._get_tool(id, user=trans.user)
+        version = kwd.get('version')
+        tool = self._get_tool(id, user=trans.user, tool_version=version)
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
