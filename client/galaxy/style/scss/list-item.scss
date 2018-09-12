@@ -61,11 +61,9 @@ $vertical-gap: 8px;
         float: left;
         // always initially hidden and zero width
         display: none;
-        width: 32px;
+        width: 15px;
         height: 32px;
-        //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-        margin: 0px 0px - ($spacing-bottom) 0px;
-        padding: ($spacing-top + 2) 0px 2px ($spacing-left - 1);
+        margin: 9px;
         font-size: 80%;
         color: $btn-default-color;
         cursor: pointer;

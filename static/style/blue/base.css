@@ -13279,10 +13279,9 @@ div.permissionContainer {
   .list-item .selector {
     float: left;
     display: none;
-    width: 32px;
+    width: 15px;
     height: 32px;
-    margin: 0px -6px 0px;
-    padding: 8px 0px 2px -0.25rem;
+    margin: 9px;
     font-size: 80%;
     color: #333;
     cursor: pointer;
