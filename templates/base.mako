@@ -59,7 +59,7 @@
 
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
+        'bundled/libs.chunk',
         'libs/require',
         'bundled/extended.bundled'
     )}
@@ -71,7 +71,7 @@
         window.Galaxy.root = '${h.url_for( "/" )}';
         window.Galaxy.config = {};
 
-
+        /*
         // configure require for base
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
@@ -94,6 +94,7 @@
             // cache busting using time server was restarted
             urlArgs: 'v=${app.server_starttime}'
         });
+        */
     </script>
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:

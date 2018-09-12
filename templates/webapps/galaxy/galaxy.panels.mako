@@ -71,13 +71,14 @@
     ## load jscript libraries
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
+        'bundled/libs.chunk',
         'bundled/extended.bundled',
-        'libs/d3',
+        ## 'libs/d3',
         'libs/require',
     )}
 
     <script type="text/javascript">
+        /*
         // configure require
         // due to our using both script tags and require, we need to access the same jq in both for plugin retention
         window.jQuery = window.jquery = window.$;
@@ -107,15 +108,16 @@
             error   : function(){},
             assert  : function(){}
         };
+        */
 
         // extra configuration global
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
         window.galaxy_config = galaxy_config;
     </script>
 
-    ${h.js(
-        'libs/jquery/jquery-ui'
-    )}
+    ## ${h.js(
+    ##     'libs/jquery/jquery-ui'
+    ## )}
 
 </%def>
 

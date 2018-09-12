@@ -32,7 +32,7 @@
 
         ## js libraries and bundled js app
         ${ h.js(
-            ## 'libs/require',
+            'libs/require',
             'bundled/libs.chunk',
             'bundled/' + js_app_name + '.bundled'
         )}
