@@ -2,6 +2,12 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
+import Backbone from "backbone";
+import * as _ from "underscore";
+
+/* global Galaxy */
+/* global $ */
+
 /** Dataset edit attributes view */
 var View = Backbone.View.extend({
     initialize: function() {
@@ -57,12 +63,23 @@ var View = Backbone.View.extend({
             <p>An error occured while running the tool <b>${job.tool_id}</b>.</p>
             <p>Tool execution generated the following messages:</p>
             <pre class="code">${_.escape(job.stderr)}</pre>
-            <h2>Report This Error</h2>
+
+            <h3>Troubleshoot This Error</h3>
             <p>
-                Usually the local Galaxy administrators regularly review errors that occur on the server
-                However, if you would like to provide additional information (such as what you were trying
-                to do when the error occurred) and a contact e-mail address, we will be better able to
-                investigate your problem and get back to you.
+                There are a number of help resources to self diagnose and
+                correct problems.
+                Start here: <a
+                href="https://galaxyproject.org/support/tool-error/"
+                target="_blank"> My job ended with an error. What can I do?</a>
+            </p>
+
+            <h3>Report This Error</h2>
+            <p>
+                Usually the local Galaxy administrators regularly review errors
+                that occur on the server However, if you would like to provide
+                additional information (such as what you were trying to do when
+                the error occurred) and a contact e-mail address, we will be
+                better able to investigate your problem and get back to you.
             </p>`);
         this.$el.append(this._getBugFormTemplate(dataset, job));
     },
