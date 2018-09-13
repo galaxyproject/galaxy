@@ -2,7 +2,7 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
-import Backbone from "backbone";
+import * as Backbone from "backbone";
 import * as _ from "underscore";
 
 /* global Galaxy */
