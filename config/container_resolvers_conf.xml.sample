@@ -19,17 +19,18 @@
        -->
 
   <!-- <mulled /> -->
-  <!-- mulled: resolves container URI through bioconda -> mulled automatic
-       mapping. Doesn't require docker or singularity, and should be the method
-       of choice if mulled resolution is required and the container execution is
-       handled by a container orchestration instead of docker directly. It will
-       also work with direct docker engine tool executions. -->
+  <!-- mulled: only resolves container URI through bioconda -> mulled automatic
+       mapping. Should be the method of choice if mulled resolution is required
+       but the container execution is handled by a container orchestration 
+       instead of docker directly (ie. Galaxy has no access to a docker client 
+       binary). It works of course with direct docker engine tool executions.
+       -->
 
   <!-- <build_mulled /> -->
   <!-- build_mulled: builds a docker container locally for one or more bioconda
-       packages listed on the tools definition. -->
+       packages listed in the tools definition. -->
        
   <!-- <build_mulled_singularity /> -->
   <!-- build_mulled_singularity: builds a singularity container locally for one
-       or more bioconda packages listed on the tools definition. -->
+       or more package requirements listed as part of the tool's definition. -->
 </containers_resolvers>
