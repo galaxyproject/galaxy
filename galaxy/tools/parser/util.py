@@ -1,3 +1,4 @@
+from .error_level import StdioErrorLevel
 from .interface import ToolStdioExitCode
 from .interface import ToolStdioRegex
 
@@ -58,10 +59,8 @@ def _error_regex(match):
 
 
 def _set_oom(obj):
-    from galaxy.jobs.error_level import StdioErrorLevel
     obj.error_level = StdioErrorLevel.FATAL_OOM
 
 
 def _set_fatal(obj):
-    from galaxy.jobs.error_level import StdioErrorLevel
     obj.error_level = StdioErrorLevel.FATAL

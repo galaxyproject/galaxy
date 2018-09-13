@@ -18,6 +18,7 @@ except ImportError:
 import yaml
 from six import string_types
 
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.facts import get_facts
 from galaxy.util.path import has_ext
@@ -205,8 +206,10 @@ class UWSGIApplicationStack(MessageApplicationStack):
     @staticmethod
     def _socket_opt_to_str(opt, val):
         try:
+            opt = unicodify(opt)
+            val = unicodify(val)
             if val.startswith('='):
-                val = uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])]
+                val = unicodify(uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])])
             proto = opt if opt != 'socket' else 'uwsgi'
             if proto == 'uwsgi' and ':' not in val:
                 return 'uwsgi://' + val
@@ -296,8 +299,9 @@ class UWSGIApplicationStack(MessageApplicationStack):
         if self._farms_dict is None:
             self._farms_dict = {}
             farms = uwsgi.opt.get('farm', [])
-            farms = [farms] if isinstance(farms, string_types) else farms
+            farms = farms if isinstance(farms, list) else [farms]
             for farm in farms:
+                farm = unicodify(farm)
                 name, mules = farm.split(':', 1)
                 self._farms_dict[name] = [int(m) for m in mules.split(',')]
         return self._farms_dict

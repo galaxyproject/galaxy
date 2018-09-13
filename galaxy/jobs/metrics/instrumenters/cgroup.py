@@ -4,8 +4,8 @@ import numbers
 from collections import namedtuple
 
 from galaxy.util import asbool, nice_size
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+from . import InstrumentPlugin
+from .. import formatting
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +54,12 @@ class CgroupPlugin(InstrumentPlugin):
 
     def __init__(self, **kwargs):
         self.verbose = asbool(kwargs.get("verbose", False))
+        params_str = kwargs.get("params", None)
+        if params_str:
+            params = [v.strip() for v in params_str.split(",")]
+        else:
+            params = TITLES.keys()
+        self.params = params
 
     def post_execute_instrument(self, job_directory):
         commands = []
@@ -92,7 +98,7 @@ class CgroupPlugin(InstrumentPlugin):
         return metrics
 
     def __add_metric(self, metrics, metric):
-        if metric and (metric.subkey in TITLES or self.verbose):
+        if metric and (metric.subkey in self.params or self.verbose):
             metrics[metric.subkey] = metric.value
 
     def __read_key_value(self, line, prev_metric):
