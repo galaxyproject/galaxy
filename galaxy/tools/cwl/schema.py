@@ -68,7 +68,9 @@ class SchemaLoader(object):
             process_definition = self.process_definition(raw_process_reference)
 
         args = {"strict": self._strict}
+        make_tool = kwds.get("make_tool", default_make_tool)
         if LoadingContext is not None:
+            args["construct_tool_object"] = make_tool
             loading_context = LoadingContext(args)
             tool = load_tool.make_tool(
                 process_definition.document_loader,
@@ -78,7 +80,6 @@ class SchemaLoader(object):
                 loading_context,
             )
         else:
-            make_tool = kwds.get("make_tool", default_make_tool)
             tool = load_tool.make_tool(
                 process_definition.document_loader,
                 process_definition.avsc_names,
