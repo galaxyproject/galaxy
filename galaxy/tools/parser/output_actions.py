@@ -243,7 +243,10 @@ class FromParamToolOutputActionOption(ToolOutputActionOption):
                 # if this is an HDCA for instance let reverse.ext grab
                 # the reverse element and then continue for loop to grab
                 # dataset extension
-                value = value.collection[attr_name].element_object
+                try:
+                    value = value.collection[attr_name].element_object
+                except KeyError:
+                    value = value.child_collection[attr_name].element_object
             elif hasattr(value, "collection") and value in COLLECTION_ATTRIBUTES:
                 value = getattr(value.collection, attr_name)
             else:

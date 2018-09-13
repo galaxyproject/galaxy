@@ -84,19 +84,19 @@ class DockerVolume(ContainerVolume):
         if not as_str:
             raise ValueError("Failed to parse Docker volume from %s" % as_str)
         parts = as_str.split(":", 2)
-        kwds = dict(path=parts[0])
+        kwds = dict(host_path=parts[0])
         if len(parts) == 1:
             # auto-generated volume
-            kwds["host_path"] = kwds.pop("path")
+            kwds["path"] = kwds["host_path"]
         elif len(parts) == 2:
             # /host_path:mode is not (or is no longer?) valid Docker volume syntax
             if parts[1] in DockerVolume.valid_modes:
                 kwds["mode"] = parts[1]
-                kwds["host_path"] = kwds["path"]
+                kwds["path"] = kwds["host_path"]
             else:
-                kwds["host_path"] = parts[1]
+                kwds["path"] = parts[1]
         elif len(parts) == 3:
-            kwds["host_path"] = parts[1]
+            kwds["path"] = parts[1]
             kwds["mode"] = parts[2]
         return cls(**kwds)
 
@@ -176,9 +176,7 @@ class DockerContainer(Container):
 class DockerService(Container):
 
     def __init__(self, interface, id, name=None, image=None, inspect=None):
-        self._interface = interface
-        self._id = id
-        self._name = name
+        super(DockerService, self).__init__(interface, id, name=name)
         self._image = image
         self._inspect = inspect
         self._env = {}
@@ -278,11 +276,14 @@ class DockerService(Container):
     @property
     def env(self):
         if not self._env:
-            for env_str in self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Env']:
-                try:
-                    self._env.update([env_str.split('=', 1)])
-                except ValueError:
-                    self._env[env_str] = None
+            try:
+                for env_str in self.inspect['Spec']['TaskTemplate']['ContainerSpec']['Env']:
+                    try:
+                        self._env.update([env_str.split('=', 1)])
+                    except ValueError:
+                        self._env[env_str] = None
+            except KeyError as exc:
+                log.debug('Cannot retrieve container environment: KeyError: %s', str(exc))
         return self._env
 
     @property
