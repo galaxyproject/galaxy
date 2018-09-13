@@ -976,8 +976,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             assert tool is not None
             tool_lineage = tool.lineage
         if tool_lineage is not None:
-            lineage_tool_versions = reversed(tool_lineage.get_versions())
-            for lineage_tool_version in lineage_tool_versions:
+            for lineage_tool_version in reversed(tool_lineage.get_versions()):
                 lineage_tool = self._tool_from_lineage_version(lineage_tool_version)
                 if lineage_tool:
                     lineage_id = lineage_tool.id

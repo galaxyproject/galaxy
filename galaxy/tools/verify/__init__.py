@@ -190,6 +190,7 @@ def files_diff(file1, file2, attributes=None):
             else:
                 raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):
+            local_file.sort()
             history_data.sort()
         allowed_diff_count = int(attributes.get('lines_diff', 0))
         diff = list(difflib.unified_diff(local_file, history_data, "local_file", "history_data"))

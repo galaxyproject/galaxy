@@ -13,7 +13,10 @@ import six
 from six.moves import shlex_quote
 
 from galaxy.tools.deps.commands import CommandLineException
-from galaxy.util import unicodify
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 from . import (
     commands,
     installable
@@ -417,7 +420,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
     """
     h = hashlib.new('sha256')
     for conda_package in conda_packages:
-        h.update(conda_package.install_environment)
+        h.update(smart_str(conda_package.install_environment))
     return h.hexdigest()
 
 
