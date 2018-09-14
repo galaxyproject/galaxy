@@ -9,7 +9,7 @@ import os
 
 import requests
 from markupsafe import escape
-from six.moves.urllib.parse import unquote_plus
+from six.moves.urllib.parse import unquote
 from sqlalchemy import desc, false, or_, true
 from sqlalchemy.orm import joinedload
 
@@ -546,7 +546,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     # -- Helper methods --
     #
     def _get_tool(self, id, tool_version=None, user=None):
-        id = unquote_plus(id)
+        id = unquote(id)
+        if tool_version:
+            tool_version = unquote(tool_version)
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool or not tool.allow_user_access(user):
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
