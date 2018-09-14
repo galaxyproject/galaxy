@@ -54,7 +54,7 @@ debug
 ensure_channels
     conda channels to enable by default. See
     http://conda.pydata.org/docs/custom-channels.html for more
-    information about channels. This defaults to ``iuc,bioconda,conda-forge,defaults,r``.
+    information about channels. This defaults to ``iuc,conda-forge,bioconda,defaults``.
     This order should be consistent with the `Bioconda prescribed order <https://github.com/bioconda/bioconda-recipes/blob/master/config.yml>`__
     if it includes ``bioconda``.
 

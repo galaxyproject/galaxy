@@ -40,8 +40,9 @@ from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
 DEFAULT_CHANNEL = "bioconda"
-DEFAULT_EXTRA_CHANNELS = ["conda-forge"]
-DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
+DEFAULT_EXTRA_CHANNELS = []
+DEFAULT_DEPENDENT_CHANNEL = ["conda-forge"]
+DEFAULT_CHANNELS = [DEFAULT_DEPENDENT_CHANNEL] + [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = '/source/'
