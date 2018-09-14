@@ -73,7 +73,7 @@ var View = Backbone.View.extend({
                 target="_blank"> My job ended with an error. What can I do?</a>
             </p>
 
-            <h3>Report This Error</h2>
+            <h3>Report This Error</h3>
             <p>
                 Usually the local Galaxy administrators regularly review errors
                 that occur on the server However, if you would like to provide
