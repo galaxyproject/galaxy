@@ -6,10 +6,12 @@ History
 .. to_doc
 
 ---------------------
-18.5.16.dev0
+18.9.0.dev0
 ---------------------
 
-    
+* Update Conda channel order (thanks to @bgruening).
+* Bring in the latest Galaxy changes and add Galaxy XSD to the project.
+* Various cwltool fixes (thanks to @nsoranzo).
 
 ---------------------
 18.5.15 (2018-09-12)
