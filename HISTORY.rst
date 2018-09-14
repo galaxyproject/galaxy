@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.9.0.dev0
+18.9.0 (2018-09-14)
 ---------------------
 
 * Update Conda channel order (thanks to @bgruening).
