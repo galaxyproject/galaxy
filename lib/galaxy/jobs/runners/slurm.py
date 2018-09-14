@@ -207,10 +207,9 @@ class SlurmJobRunner(DRMAAJobRunner):
 def _remove_spurious_top_lines(rfh, ajs, maxlines=2):
     bad = []
     putback = None
-    i = 0
-    while i < maxlines:
+    for i in range(maxlines):
         line = rfh.readline()
-        log.debug('#### checking line: %s', line)
+        log.trace('checking line: %s', line)
         for pattern in SLURM_TOP_WARNING_RES:
             if pattern.match(line):
                 bad.append(line)
@@ -223,10 +222,9 @@ def _remove_spurious_top_lines(rfh, ajs, maxlines=2):
             # no match on this line, stop looking
             break
         # check next line
-        i += 1
     if bad:
         with tempfile.NamedTemporaryFile('w', delete=False) as wfh:
-            if putback:
+            if putback is not None:
                 wfh.write(putback)
             shutil.copyfileobj(rfh, wfh)
             wf_name = wfh.name
