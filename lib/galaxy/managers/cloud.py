@@ -42,7 +42,7 @@ class CloudManager(sharable.SharableModelManager):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
     @staticmethod
-    def _configure_provider(provider, credentials):
+    def _configure_provider(provider, user, credentials):
         """
         Given a provider name and required credentials, it configures and returns a cloudbridge
         connection to the provider.
@@ -133,11 +133,22 @@ class CloudManager(sharable.SharableModelManager):
             raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
                                                    "providers: {}.".format(provider, SUPPORTED_PROVIDERS))
 
-        try:
-            if connection.authenticate():
-                return connection
-        except ProviderConnectionException as e:
-            raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
+        # The authorization-assertion mechanism of Cloudbridge assumes a user has an elevated privileges,
+        # such as Admin-level access to all resources (see https://github.com/CloudVE/cloudbridge/issues/135).
+        # As a result, a user who wants to authorize Galaxy to read/write an Amazon S3 bucket, need to
+        # also authorize Galaxy with full permission to Amazon EC2 (because Cloudbridge leverages EC2-specific
+        # operation to assert credentials). While the EC2 authorization is not required by Galaxy to
+        # read/write a S3 bucket, it can cause this exception.
+        #
+        # Until Cloudbridge implements an authorization-specific credentials assertion, we are not asserting
+        # the authorization/validity of the credentials, in order to avoid asking users to grant Galaxy with an
+        # elevated, yet unnecessary, privileges.
+        #
+        # Note, if user's credentials are invalid/expired to perform the authorized action, that can cause
+        # exceptions which we capture separately in related read/write attempts.
+        log.debug("Attempting to access cloud-based resources for user with ID `{}` while they may not have "
+                  "full/admin authorization for all `{}` resources.".format(user.id, provider))
+        return connection
 
     @staticmethod
     def _get_inputs(obj, key, input_args):
@@ -211,7 +222,7 @@ class CloudManager(sharable.SharableModelManager):
             input_args = {}
 
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, authz_id)
-        connection = self._configure_provider(provider, credentials)
+        connection = self._configure_provider(provider, trans.user, credentials)
         try:
             bucket = connection.storage.buckets.get(bucket_name)
             if bucket is None:
@@ -286,7 +297,7 @@ class CloudManager(sharable.SharableModelManager):
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
-        connection = self._configure_provider(provider, credentials)
+        connection = self._configure_provider(provider, trans.user, credentials)
 
         bucket = connection.storage.buckets.get(bucket_name)
         if bucket is None:
