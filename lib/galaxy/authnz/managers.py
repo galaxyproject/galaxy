@@ -2,6 +2,7 @@
 import copy
 import importlib
 import logging
+import requests
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
@@ -126,7 +127,18 @@ class AuthnzManager(object):
             success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
             strategy = Strategy(trans, Storage, backend.config)
             on_the_fly_config(trans)
-            config['id_token'] = cloudauthz.authn.get_id_token(strategy)
+            try:
+                config['id_token'] = cloudauthz.authn.get_id_token(strategy)
+            except requests.exceptions.HTTPError as e:
+                msg = "Sign-out from Galaxy and remove its access from `{}`, then log back in using `{}` " \
+                      "account.".format(self._unify_provider_name(cloudauthz.authn.provider),cloudauthz.authn.uid)
+                log.debug("Failed to get/refresh ID token for user with ID `{}` for assuming authz_id `{}`. "
+                          "User may not have a refresh token. If the problem persists, set the `prompt` key to "
+                          "`consent` in `oidc_backends_config.xml`, then restart Galaxy and ask user to: {}"
+                          "Error Message: `{}`".format(trans.user.id, cloudauthz.id, msg, e.response.text))
+                raise exceptions.AuthenticationFailed(
+                    err_msg="An error occurred getting your ID token. {}. If the problem persists, please "
+                            "contact Galaxy admin.".format(msg))
         return config
 
     @staticmethod
