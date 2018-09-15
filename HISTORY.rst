@@ -9,7 +9,7 @@ History
 18.9.1.dev0
 ---------------------
 
-    
+* More work improving channel handling for mulled containers.
 
 ---------------------
 18.9.0 (2018-09-14)
