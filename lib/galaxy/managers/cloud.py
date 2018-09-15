@@ -222,7 +222,7 @@ class CloudManager(sharable.SharableModelManager):
         datasets = []
         for obj in objects:
             try:
-                key = bucket.objects.objects.get(obj)
+                key = bucket.objects.get(obj)
             except Exception as e:
                 raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
             if key is None:
