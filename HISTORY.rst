@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.9.1.dev0
+18.9.1 (2018-09-15)
 ---------------------
 
 * More work improving channel handling for mulled containers.
