@@ -322,7 +322,7 @@ class CloudManager(sharable.SharableModelManager):
                     created_obj.upload_from_file(hda.dataset.get_file_name())
                     downloaded.append(object_label)
                 except Exception as e:
-                    log.exception("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
-                                  "{}".format(e.message))
+                    log.debug("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
+                              "{}".format(e.message))
                     failed.append(object_label)
         return downloaded, failed
