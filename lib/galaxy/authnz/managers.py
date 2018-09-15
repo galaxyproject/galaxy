@@ -7,6 +7,9 @@ import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
 from cloudauthz import CloudAuthz
+from cloudauthz.exceptions import (
+    CloudAuthzBaseException
+)
 
 from galaxy import exceptions
 from galaxy import model
@@ -253,5 +256,10 @@ class AuthnzManager(object):
         """
         cloudauthz = self.try_get_authz_config(trans, authz_id)
         config = self._extend_cloudauthz_config(trans, cloudauthz)
-        ca = CloudAuthz()
-        return ca.authorize(cloudauthz.provider, config)
+        try:
+            ca = CloudAuthz()
+            return ca.authorize(cloudauthz.provider, config)
+        except CloudAuthzBaseException as e:
+            log.exception(e.message)
+            raise exceptions.AuthenticationFailed(e.message)
+
