@@ -170,8 +170,8 @@ class CloudController(BaseAPIController):
         :param kwargs:
 
         :rtype:  dictionary
-        :return: Information about the downloaded datasets, including downloaded_dataset_labels
-                 and destination bucket name.
+        :return: Information about the downloaded and failed datasets, including downloaded_dataset_labels
+                 failed_dataset_labels, and destination bucket name.
         """
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
@@ -213,12 +213,13 @@ class CloudController(BaseAPIController):
                 raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
                                        "{}".format(invalid_dataset_ids))
 
-        uploaded = self.cloud_manager.download(trans=trans,
-                                               history_id=history_id,
-                                               provider=provider,
-                                               bucket_name=bucket,
-                                               credentials=credentials,
-                                               dataset_ids=dataset_ids,
-                                               overwrite_existing=payload.get("overwrite_existing", False))
-        return {'downloaded_dataset_labels': uploaded,
+        downloaded, failed = self.cloud_manager.download(trans=trans,
+                                                         history_id=history_id,
+                                                         provider=provider,
+                                                         bucket_name=bucket,
+                                                         credentials=credentials,
+                                                         dataset_ids=dataset_ids,
+                                                         overwrite_existing=payload.get("overwrite_existing", False))
+        return {'downloaded_dataset_labels': downloaded,
+                'failed_dataset_labels': failed,
                 'bucket_name': bucket}

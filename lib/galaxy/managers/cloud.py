@@ -297,8 +297,9 @@ class CloudManager(sharable.SharableModelManager):
                                     "False", Galaxy appends datetime to the dataset name to prevent
                                     overwriting the existing object.
 
-        :rtype:                     list
-        :return:                    A list of labels for the objects that were uploaded.
+        :rtype:                     tuple
+        :return:                    A tuple of two lists of labels of the objects that were successfully and
+                                    unsuccessfully downloaded to cloud..
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -310,6 +311,7 @@ class CloudManager(sharable.SharableModelManager):
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         downloaded = []
+        failed = []
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
@@ -322,4 +324,5 @@ class CloudManager(sharable.SharableModelManager):
                 except Exception as e:
                     log.exception("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
                                   "{}".format(e.message))
-        return downloaded
+                    failed.append(object_label)
+        return downloaded, failed
