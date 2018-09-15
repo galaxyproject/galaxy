@@ -316,6 +316,10 @@ class CloudManager(sharable.SharableModelManager):
                 if overwrite_existing is False and bucket.objects.get(object_label) is not None:
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
                 created_obj = bucket.objects.create(object_label)
-                created_obj.upload_from_file(hda.dataset.get_file_name())
-                downloaded.append(object_label)
+                try:
+                    created_obj.upload_from_file(hda.dataset.get_file_name())
+                    downloaded.append(object_label)
+                except Exception as e:
+                    log.exception("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
+                                  "{}".format(e.message))
         return downloaded
