@@ -2,10 +2,10 @@
 import copy
 import importlib
 import logging
-import requests
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
+import requests
 from cloudauthz import CloudAuthz
 from cloudauthz.exceptions import (
     CloudAuthzBaseException
@@ -134,7 +134,7 @@ class AuthnzManager(object):
                 config['id_token'] = cloudauthz.authn.get_id_token(strategy)
             except requests.exceptions.HTTPError as e:
                 msg = "Sign-out from Galaxy and remove its access from `{}`, then log back in using `{}` " \
-                      "account.".format(self._unify_provider_name(cloudauthz.authn.provider),cloudauthz.authn.uid)
+                      "account.".format(self._unify_provider_name(cloudauthz.authn.provider), cloudauthz.authn.uid)
                 log.debug("Failed to get/refresh ID token for user with ID `{}` for assuming authz_id `{}`. "
                           "User may not have a refresh token. If the problem persists, set the `prompt` key to "
                           "`consent` in `oidc_backends_config.xml`, then restart Galaxy and ask user to: {}"
@@ -262,4 +262,3 @@ class AuthnzManager(object):
         except CloudAuthzBaseException as e:
             log.exception(e.message)
             raise exceptions.AuthenticationFailed(e.message)
-
