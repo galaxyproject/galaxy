@@ -62,7 +62,7 @@ This also demonstrates how you can build a container locally and on-the-fly.
 
 .. code-block:: bash
 
-   $ conda index /home/bag/miniconda2/conda-bld/linux-64/
+   $ conda index /home/bag/miniconda3/conda-bld/linux-64/
 
 
 3) build a container for your local package
@@ -70,7 +70,7 @@ This also demonstrates how you can build a container locally and on-the-fly.
 .. code-block:: bash
 
    $ mulled-build build-and-test 'samtools=3.0--0' \
-      --extra-channel file://home/bag/miniconda2/conda-bld/ --test 'samtools --help'
+      -c iuc,conda-forge,bioconda,file://home/bag/miniconda3/conda-bld/ --test 'samtools --help'
 
 The ``--0`` indicates the build version of the conda package. It is recommended to specify this number otherwise
 you will override already existing images. For Python Conda packages this extension might look like this ``--py35_1``.

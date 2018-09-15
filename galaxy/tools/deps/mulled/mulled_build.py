@@ -39,10 +39,7 @@ from .util import (
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
-DEFAULT_CHANNEL = "bioconda"
-DEFAULT_EXTRA_CHANNELS = []
-DEFAULT_DEPENDENT_CHANNEL = ["conda-forge"]
-DEFAULT_CHANNELS = [DEFAULT_DEPENDENT_CHANNEL] + [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
+DEFAULT_CHANNELS = "conda-forge,bioconda"
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = '/source/'
@@ -325,10 +322,8 @@ def add_build_arguments(parser):
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
                         help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
-    parser.add_argument('-c', '--channel', dest='channel', default=DEFAULT_CHANNEL,
-                        help='Target conda channel')
-    parser.add_argument('--extra-channels', dest='extra_channels', default=",".join(DEFAULT_EXTRA_CHANNELS),
-                        help='Dependent conda channels.')
+    parser.add_argument('-c', '--channels', dest='channels', default=DEFAULT_CHANNELS,
+                        help='Comma separated list of target conda channels.')
     parser.add_argument('--conda-version', dest="conda_version", default=None,
                         help="Change to specified version of Conda before installing packages.")
     parser.add_argument('--oauth-token', dest="oauth_token", default=None,
@@ -377,11 +372,8 @@ def args_to_mull_targets_kwds(args):
     if hasattr(args, "test_files"):
         if args.test_files:
             kwds["test_files"] = args.test_files.split(",")
-    if hasattr(args, "channel"):
-        channels = [args.channel]
-        if hasattr(args, "extra_channels"):
-            channels += args.extra_channels.split(",")
-        kwds["channels"] = channels
+    if hasattr(args, "channels"):
+        kwds["channels"] = args.channels.split(',')
     if hasattr(args, "command"):
         kwds["command"] = args.command
     if hasattr(args, "repository_template"):
