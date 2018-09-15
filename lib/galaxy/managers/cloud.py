@@ -237,7 +237,12 @@ class CloudManager(sharable.SharableModelManager):
             except Exception as e:
                 raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
             if key is None:
-                raise ObjectNotFound("Could not get the object `{}`.".format(obj))
+                log.exception(
+                    "Could not get object `{}` for user `{}`. Object may not exist, or the provided credentials are "
+                    "invalid or not authorized to read the bucket/object.".format(obj, trans.user.id))
+                raise ObjectNotFound(
+                    "Could not get the object `{}`. Please check if the object exists, and credentials are valid and "
+                    "authorized to read the bucket and object. ".format(obj))
 
             params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
             incoming = params.__dict__
