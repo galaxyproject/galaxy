@@ -322,7 +322,7 @@ def add_build_arguments(parser):
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
                         help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
-    parser.add_argument('-c', '--channel', dest='channels', default=DEFAULT_CHANNELS,
+    parser.add_argument('-c', '--channels', dest='channels', default=DEFAULT_CHANNELS,
                         help='Comma separated list of target conda channels.')
     parser.add_argument('--conda-version', dest="conda_version", default=None,
                         help="Change to specified version of Conda before installing packages.")
@@ -373,7 +373,6 @@ def args_to_mull_targets_kwds(args):
         if args.test_files:
             kwds["test_files"] = args.test_files.split(",")
     if hasattr(args, "channels"):
-        print(args.channels)
         kwds["channels"] = args.channels.split(',')
     if hasattr(args, "command"):
         kwds["command"] = args.command
