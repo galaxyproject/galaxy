@@ -86,7 +86,7 @@ def get_pkg_names(args):
 def add_channel_arguments(parser):
     """Add arguments only used if running mulled over a whole conda channel."""
     parser.add_argument('--repo-data', dest='repo_data', required=True,
-                        help='Published repository data. Defaults to [channel_name]-repodata.json. If you want to build all containers for bioconda, this parameter needs to be set to "bioconda"')
+                        help='Published repository data. If you want to build all containers for bioconda, this parameter needs to be set to "bioconda"')
     parser.add_argument('--diff-hours', dest='diff_hours', default="25",
                         help='If finding all recently changed recipes, use this number of hours.')
     parser.add_argument('--recipes-dir', dest="recipes_dir", default="./bioconda-recipes")
