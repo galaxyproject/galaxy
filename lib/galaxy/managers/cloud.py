@@ -13,6 +13,7 @@ from galaxy.exceptions import (
     RequestParameterMissingException
 )
 from galaxy.managers import sharable
+from galaxy.util import Params
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
