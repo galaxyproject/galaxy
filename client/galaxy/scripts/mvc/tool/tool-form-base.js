@@ -88,7 +88,7 @@ export default FormBase.extend({
         }
         options.tool_errors &&
             this.message.update({
-                status: 'danger',
+                status: "danger",
                 message: options.tool_errors,
                 persistent: true
             });

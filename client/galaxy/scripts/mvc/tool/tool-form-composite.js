@@ -129,14 +129,14 @@ var View = Backbone.View.extend({
         this.wp_inputs = {};
 
         function _ensureWorkflowParameter(wp_name) {
-            return self.wp_inputs[wp_name] = self.wp_inputs[wp_name] || {
+            return (self.wp_inputs[wp_name] = self.wp_inputs[wp_name] || {
                 label: wp_name,
                 name: wp_name,
                 type: "text",
                 color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
                 style: "ui-form-wp-source",
                 links: []
-            };
+            });
         }
 
         function _handleWorkflowParameter(value, callback) {

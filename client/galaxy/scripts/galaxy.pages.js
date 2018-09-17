@@ -447,7 +447,11 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                         // Get item ID and name.
                         var item_id = elt.val();
                         // Use ':first' because there are many labels in table; the first one is the item name.
-                        var item_name = elt.closest('td').next('td').find('label').text();
+                        var item_name = elt
+                            .closest("td")
+                            .next("td")
+                            .find("label")
+                            .text();
 
                         if (make_importable) make_item_importable(item_info.controller, item_id, item_info.singular);
 
