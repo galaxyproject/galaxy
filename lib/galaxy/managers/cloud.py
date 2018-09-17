@@ -6,7 +6,6 @@ import datetime
 import logging
 
 from galaxy.exceptions import (
-    AuthenticationFailed,
     ItemAccessibilityException,
     MessageException,
     ObjectNotFound,
@@ -18,7 +17,6 @@ from galaxy.util import Params
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
-    from cloudbridge.cloud.interfaces.exceptions import ProviderConnectionException
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
