@@ -27,9 +27,7 @@ class DataManager(BaseUIController):
                                                     key=lambda data_manager: data_manager[1].name):
             data_managers.append({'toolUrl': web.url_for(controller='root',
                                                          tool_id=data_manager.tool.id),
-                                  'jobsUrl': web.url_for(controller='data_manager',
-                                                         action='manage_data_manager',
-                                                         id=data_manager_id),
+                                  'id': data_manager_id,
                                   'name': data_manager.name,
                                   'description': data_manager.description.lower()})
         data_tables = []
@@ -48,18 +46,41 @@ class DataManager(BaseUIController):
                 'status': status}
 
     @web.expose
-    def manage_data_manager(self, trans, **kwd):
+    @web.json
+    def jobs_list(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
-        message = escape(kwd.get('message', ''))
-        status = escape(kwd.get('status', 'info'))
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
         data_manager_id = kwd.get('id', None)
         data_manager = trans.app.data_managers.get_manager(data_manager_id)
         if data_manager is None:
             return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid Data Manager (%s) was requested" % data_manager_id, status="error"))
-        jobs = list(reversed([assoc.job for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id)]))
-        return trans.fill_template("data_manager/manage_data_manager.mako", data_manager=data_manager, jobs=jobs, view_only=not_is_admin, message=message, status=status)
+        jobs = []
+        for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id):
+            j = assoc.job
+            jobs.append({
+                'id': j.id,
+                'encId': trans.security.encode_id(j.id),
+                'runUrl': web.url_for(controller="tool_runner", action="rerun", job_id=trans.security.encode_id(j.id)),
+                'infoUrl': web.url_for(controller="data_manager", action="view_job", id=trans.security.encode_id(j.id)),
+                'user': j.history.user.email if j.history and j.history.user else "anonymous",
+                'updateTime': j.update_time.isoformat(),
+                'state': j.state,
+                'commandLine': j.command_line,
+                'jobRunnerName': j.job_runner_name,
+                'jobRunnerExternalId': j.job_runner_external_id
+            })
+        jobs.reverse()
+        return {'dataManager': {'name': data_manager.name,
+                                'description': data_manager.description.lower(),
+                                'toolUrl': web.url_for(controller='root',
+                                                       tool_id=data_manager.tool.id)},
+                'jobs': jobs,
+                'viewOnly': not_is_admin,
+                'message': message,
+                'status': status}
 
     @web.expose
     def view_job(self, trans, **kwd):

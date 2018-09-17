@@ -306,6 +306,8 @@ admin:
     dm_title: '#data-managers-title'
     dm_data_managers_card: '#data-managers-card'
     dm_jobs_button: '#${data_manager}-jobs'
+    dm_jobs_breadcrumb: '#breadcrumb'
+    dm_jobs_table: '#jobs-table'
     users_grid: '#users-grid'
     users_grid_create_button: '.manage-table-actions .action-button'
     groups_grid_create_button: '.manage-table-actions .action-button'

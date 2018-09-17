@@ -75,3 +75,19 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.dm_data_managers_card.wait_for_visible()
         admin_component.dm_jobs_button(data_manager="test-data-manager").wait_for_visible()
         self.screenshot("admin_data_manager")
+
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self.dataset_populator.run_tool(tool_id="data_manager",
+                                                           inputs={"ignored_value": "test"},
+                                                           history_id=history_id,
+                                                           assert_ok=False)
+            job_id = run_response.json()["jobs"][0]["id"]
+            self.dataset_populator.wait_for_tool_run(history_id=history_id,
+                                                     run_response=run_response,
+                                                     timeout=5,
+                                                     assert_ok=False)
+
+        admin_component.dm_jobs_button(data_manager="test-data-manager").wait_for_and_click()
+        admin_component.dm_jobs_breadcrumb.wait_for_visible()
+        admin_component.dm_jobs_table.wait_for_visible()
+        self.screenshot("admin_data_manager_jobs")
