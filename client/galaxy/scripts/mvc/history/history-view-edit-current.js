@@ -389,7 +389,15 @@ var CurrentHistoryView = _super.extend(
                 },
                 // when the center panel is given a new view, clear the current indicator
                 "center-panel:load": function(view) {
-                    this._setCurrentContentById();
+                    try {
+                        let hdaId = view.model.attributes.dataset_id || null;
+                        if (hdaId === null) {
+                            throw('Invalid id');
+                        }
+                        this._setCurrentContentById(`dataset-${hdaId}`);
+                    } catch (e){
+                        this._setCurrentContentById();
+                    }
                 }
             });
         },
