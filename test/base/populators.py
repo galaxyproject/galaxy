@@ -140,7 +140,7 @@ def _raise_skip_if(check):
 
 # Deprecated mixin, use dataset populator instead.
 # TODO: Rework existing tests to target DatasetPopulator in a setup method instead.
-class TestsDatasets:
+class TestsDatasets(object):
 
     def _new_dataset(self, history_id, content='TestData123', **kwds):
         return DatasetPopulator(self.galaxy_interactor).new_dataset(history_id, content=content, **kwds)
@@ -1087,7 +1087,7 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
         raise TimeoutAssertionError("%s Current response containing state [%s]." % (str(e), response.json()))
 
 
-class GiPostGetMixin:
+class GiPostGetMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
     def _get(self, route, data={}):

@@ -20,7 +20,7 @@ from galaxy.util import stringify_dictionary_keys
 from galaxy.util.bunch import Bunch
 
 
-class OffsetList:
+class OffsetList(object):
     def __init__(self, filesize=0, fmt=None):
         self.file = tempfile.NamedTemporaryFile('w+b')
         if fmt:
@@ -146,7 +146,7 @@ class SortedOffsets(OffsetList):
 
 
 # indexed set of offsets, index is built on demand
-class OffsetIndex:
+class OffsetIndex(object):
     def __init__(self, filename, column, split=None, index_depth=3):
         self.filename = filename
         self.file = open(filename, 'r')
@@ -239,7 +239,7 @@ class OffsetIndex:
                 first_char = identifier[0]
 
 
-class BufferedIndex:
+class BufferedIndex(object):
     def __init__(self, filename, column, split=None, buffer=1000000, index_depth=3):
         self.index = OffsetIndex(filename, column, split, index_depth)
         self.buffered_offsets = {}

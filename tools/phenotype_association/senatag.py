@@ -37,7 +37,7 @@ debug_flag = False
 
 
 @total_ordering
-class node:
+class node(object):
     def __init__(self, name):
         self.name = name
         self.edges = []
@@ -65,7 +65,7 @@ class node:
         return self.name
 
 
-class graph:
+class graph(object):
     def __init__(self):
         self.nodes = {}
 
