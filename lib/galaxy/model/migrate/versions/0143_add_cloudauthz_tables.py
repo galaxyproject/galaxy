@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, MetaData, String, Table, TEXT
 
 from galaxy.model.custom_types import JSONType
 
@@ -21,7 +21,8 @@ cloudauthz = Table(
     Column('authn_id', Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True),
     Column('tokens', JSONType),
     Column('last_update', DateTime),
-    Column('last_activity', DateTime))
+    Column('last_activity', DateTime),
+    Column('description', TEXT))
 
 
 def upgrade(migrate_engine):

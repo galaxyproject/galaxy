@@ -142,7 +142,8 @@ model.CloudAuthz.table = Table(
     Column('authn_id', Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True),
     Column('tokens', JSONType),
     Column('last_update', DateTime),
-    Column('last_activity', DateTime))
+    Column('last_activity', DateTime),
+    Column('description', TEXT))
 
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,

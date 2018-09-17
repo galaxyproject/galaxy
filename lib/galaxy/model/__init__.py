@@ -4951,7 +4951,7 @@ class UserAuthnzToken(UserMixin):
 
 
 class CloudAuthz(object):
-    def __init__(self, user_id, provider, config, authn_id):
+    def __init__(self, user_id, provider, config, authn_id, description=""):
         self.user_id = user_id
         self.provider = provider
         self.config = config
@@ -4959,6 +4959,7 @@ class CloudAuthz(object):
         self.tokens = None
         self.last_update = datetime.now()
         self.last_activity = datetime.now()
+        self.description = description
 
     def __eq__(self, other):
         if not isinstance(other, CloudAuthz):
