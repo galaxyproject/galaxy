@@ -135,6 +135,7 @@
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="true"/>
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="loom" type="galaxy.datatypes.binary:Loom" description="An HDF5-based Loom File" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mz5" type="galaxy.datatypes.binary:H5" subclass="true" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="hivtrace" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="cool" type="galaxy.datatypes.binary:Cool" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -503,7 +504,6 @@
     <datatype extension="cel" type="galaxy.datatypes.binary:Cel" display_in_upload="true"/>
     <datatype extension="rdata" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
     <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" description="Stored RDS from a SingleCellObject" subclass="true" />
-    <datatype extension="rdata.seurat" type="galaxy.datatypes.binary:RData" description="Stored RDS from a Seurat Object" subclass="true" />
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxling" type="galaxy.datatypes.binary:OxliNodeGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxlits" type="galaxy.datatypes.binary:OxliTagSet" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -716,6 +716,7 @@
     <sniffer type="galaxy.datatypes.binary:GAFASQLite"/>
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
+    <sniffer type="galaxy.datatypes.binary:Loom"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
