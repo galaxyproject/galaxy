@@ -39,7 +39,7 @@ class CloudManager(sharable.SharableModelManager):
         super(CloudManager, self).__init__(app, *args, **kwargs)
 
     @staticmethod
-    def _configure_provider(provider, user, credentials):
+    def _configure_provider(provider, credentials):
         """
         Given a provider name and required credentials, it configures and returns a cloudbridge
         connection to the provider.
@@ -217,7 +217,7 @@ class CloudManager(sharable.SharableModelManager):
             input_args = {}
 
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, authz_id)
-        connection = self._configure_provider(provider, trans.user, credentials)
+        connection = self._configure_provider(provider, credentials)
         try:
             bucket = connection.storage.buckets.get(bucket_name)
             if bucket is None:
@@ -298,7 +298,7 @@ class CloudManager(sharable.SharableModelManager):
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
-        connection = self._configure_provider(provider, trans.user, credentials)
+        connection = self._configure_provider(provider, credentials)
 
         bucket = connection.storage.buckets.get(bucket_name)
         if bucket is None:
