@@ -711,7 +711,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def __watch_directory(self, directory, elems, integrated_elems, load_panel_dict, recursive, force_watch=False):
 
-        def quick_load(tool_file, async=True):
+        def quick_load(tool_file, async_load=True):
             try:
                 tool = self.load_tool(tool_file)
                 self.__add_tool(tool, load_panel_dict, elems)
@@ -719,7 +719,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 key = 'tool_%s' % str(tool.id)
                 integrated_elems[key] = tool
 
-                if async:
+                if async_load:
                     self._load_tool_panel()
                     self._save_integrated_tool_panel()
                 return tool.id
@@ -736,7 +736,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if os.path.isdir(child_path) and recursive:
                 self.__watch_directory(child_path, elems, integrated_elems, load_panel_dict, recursive)
             elif self._looks_like_a_tool(child_path):
-                quick_load(child_path, async=False)
+                quick_load(child_path, async_load=False)
                 tool_loaded = True
         if (tool_loaded or force_watch) and self._tool_watcher:
             self._tool_watcher.watch_directory(directory, quick_load)

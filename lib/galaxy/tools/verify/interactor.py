@@ -265,7 +265,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, tool_id, async=True):
+    def stage_data_async(self, test_data, history_id, tool_id):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
