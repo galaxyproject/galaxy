@@ -81,6 +81,7 @@ class CloudAuthzController(BaseAPIController):
             *   status:     HTTP response code
             *   message:    A message complementary to the response code.
         """
+        msg_template = "Rejected user `" + str(trans.user.id) + "`'s request to create cloudauthz config because of {}."
         if not isinstance(payload, dict):
             raise ActionInputError('Invalid payload data type. The payload is expected to be a dictionary, but '
                                    'received data of type `{}`.'.format(str(type(payload))))
@@ -99,15 +100,18 @@ class CloudAuthzController(BaseAPIController):
             missing_arguments.append('authn_id')
 
         if len(missing_arguments) > 0:
+            log.debug(msg_template.format("missing required config {}".format(missing_arguments)))
             raise RequestParameterMissingException('The following required arguments are missing in the payload: '
                                                    '{}'.format(missing_arguments))
 
         if not isinstance(config, dict):
+            log.debug(msg_template.format("invalid config type `{}`, expect `dict`".format(type(config))))
             raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
                                                    'but received `{}`.'.format(type(config)))
         try:
             authn_id = self.decode_id(authn_id)
         except Exception:
+            log.debug(msg_template.format("cannot decode authn_id `" + str(authn_id) + "`"))
             raise MalformedId('Invalid `authn_id`!')
 
         try:
@@ -119,6 +123,8 @@ class CloudAuthzController(BaseAPIController):
         # exact same key/value should not exist.
         for ca in trans.user.cloudauthzs:
             if ca.equals(trans.user.id, provider, authn_id, config):
+                log.debug("Rejected user `{}`'s request to create cloud authorization because a similar config "
+                          "already exists.".format(trans.user.id))
                 raise ActionInputError("A similar cloud authorization configuration is already defined.")
 
         try:
@@ -134,6 +140,6 @@ class CloudAuthzController(BaseAPIController):
             return view
 
         except Exception as e:
-            msg = 'An unexpected error has occurred while responding to the create request of the cloudauthz API.' + str(e)
-            log.exception(msg)
-            raise InternalServerError(msg)
+            log.exception(msg_template.format(e.message))
+            raise InternalServerError('An unexpected error has occurred while responding to the create request of the '
+                                      'cloudauthz API.' + str(e))
