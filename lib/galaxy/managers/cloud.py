@@ -13,7 +13,6 @@ from galaxy.exceptions import (
     RequestParameterMissingException
 )
 from galaxy.managers import sharable
-from galaxy.util import Params
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
@@ -144,8 +143,6 @@ class CloudManager(sharable.SharableModelManager):
         #
         # Note, if user's credentials are invalid/expired to perform the authorized action, that can cause
         # exceptions which we capture separately in related read/write attempts.
-        log.debug("Attempting to access cloud-based resources for user with ID `{}` while they may not have "
-                  "full/admin authorization for all `{}` resources.".format(user.id, provider))
         return connection
 
     @staticmethod
