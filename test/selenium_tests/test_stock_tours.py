@@ -30,11 +30,11 @@ class TestStockToursTestCase(SeleniumTestCase):
     #        sleep_on_steps=sleep_on_steps,
     #    )
 
-    @selenium_test
-    def test_core_scratchbook(self):
-        self.run_tour(
-            os.path.join(STOCK_TOURS_DIRECTORY, "core.scratchbook.yaml"),
-        )
+    # @selenium_test
+    # def test_core_scratchbook(self):
+    #    self.run_tour(
+    #        os.path.join(STOCK_TOURS_DIRECTORY, "core.scratchbook.yaml"),
+    #    )
 
     @selenium_test
     def test_core_history(self):
