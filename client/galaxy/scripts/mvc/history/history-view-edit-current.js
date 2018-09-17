@@ -1,7 +1,10 @@
-import HISTORY_MODEL from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import * as _ from "underscore";
+
+/* global Galaxy */
+/* global $ */
 
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
@@ -443,7 +446,7 @@ var CurrentHistoryView = _super.extend(
         /** unhide any hidden datasets */
         unhideHidden: function() {
             var self = this;
-            if (confirm(_l("Really unhide all hidden datasets?"))) {
+            if (window.confirm(_l("Really unhide all hidden datasets?"))) {
                 // get all hidden, regardless of deleted/purged
                 return self.model.contents
                     ._filterAndUpdate({ visible: false, deleted: "", purged: "" }, { visible: true })
@@ -454,13 +457,13 @@ var CurrentHistoryView = _super.extend(
                         }
                     });
             }
-            return jQuery.when();
+            return $.when();
         },
 
         /** delete any hidden datasets */
         deleteHidden: function() {
             var self = this;
-            if (confirm(_l("Really delete all hidden datasets?"))) {
+            if (window.confirm(_l("Really delete all hidden datasets?"))) {
                 return self.model.contents._filterAndUpdate(
                     // get all hidden, regardless of deleted/purged
                     { visible: false, deleted: "", purged: "" },
@@ -468,7 +471,7 @@ var CurrentHistoryView = _super.extend(
                     { deleted: true, visible: true }
                 );
             }
-            return jQuery.when();
+            return $.when();
         },
 
         /** Return a string rep of the history */
