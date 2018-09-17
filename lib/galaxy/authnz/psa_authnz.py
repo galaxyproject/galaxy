@@ -230,7 +230,7 @@ class Strategy(BaseStrategy):
         return self.backend.continue_pipeline(*args, **kwargs)
 
 
-class Storage:
+class Storage(object):
     user = UserAuthnzToken
     nonce = PSANonce
     association = PSAAssociation

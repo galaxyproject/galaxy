@@ -1180,7 +1180,7 @@ def read_ssaha_data(ssahadata_fh):
 #
 ##########################################################################
 
-class Fasta:
+class Fasta(object):
     def __init__(self, name, sequence):
         self.name = name
         self.sequence = sequence

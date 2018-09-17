@@ -431,7 +431,7 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesHistoryItemAssertions:
+class UsesHistoryItemAssertions(object):
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -508,7 +508,7 @@ def get_remote_driver():
     )
 
 
-class SeleniumSessionGetPostMixin:
+class SeleniumSessionGetPostMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
     def _get(self, route, data={}):
