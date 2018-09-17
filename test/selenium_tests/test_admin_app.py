@@ -91,3 +91,8 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.dm_jobs_breadcrumb.wait_for_visible()
         admin_component.dm_jobs_table.wait_for_visible()
         self.screenshot("admin_data_manager_jobs")
+
+        admin_component.dm_job(job_id=job_id).wait_for_and_click()
+        admin_component.dm_job_data_manager_card.wait_for_visible()
+        admin_component.dm_job_data_card.wait_for_visible()
+        self.screenshot("admin_data_manager_job")

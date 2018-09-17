@@ -35,7 +35,7 @@
             <b-button v-b-tooltip.hover title="Rerun" :href="jobs[row.index]['runUrl']">
               <span class="fa fa-refresh" />
             </b-button>
-            <b-button v-b-tooltip.hover title="View Info" :href="jobs[row.index]['infoUrl']" target="galaxy_main" :id="'job-' + jobs[row.index]['encId']">
+            <b-button v-b-tooltip.hover title="View Info" :to="{name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] }}" :id="'job-' + jobs[row.index]['encId']">
               <span class="fa fa-info-circle" />
             </b-button>
             <b-button v-if="!showCommandLine" @click.stop="row.toggleDetails()" :pressed.sync="row.detailsShowing">
