@@ -67,13 +67,14 @@ class CloudAuthzController(BaseAPIController):
 
         :type payload: dict
         :param payload: A dictionary structure containing the following keys:
-            *   provider:   the cloud-based resource provider to which this configuration belongs to.
-            *   config:     a dictionary containing all the configuration required to request temporary credentials
-                            from the provider.
-            *   authn_id:   the (encoded) ID of a third-party authentication of a user. To have this ID, user must
-                            have logged-in to this Galaxy server using third-party identity (e.g., Google), or has
-                            associated his/her Galaxy account with a third-party OIDC-based identity. See this page:
-                            https://galaxyproject.org/admin/authentication/
+            *   provider:       the cloud-based resource provider to which this configuration belongs to.
+            *   config:         a dictionary containing all the configuration required to request temporary credentials
+                                from the provider.
+            *   authn_id:       the (encoded) ID of a third-party authentication of a user. To have this ID, user must
+                                have logged-in to this Galaxy server using third-party identity (e.g., Google), or has
+                                associated his/her Galaxy account with a third-party OIDC-based identity. See this page:
+                                https://galaxyproject.org/admin/authentication/
+            *   description:    [Optional] a brief description for this configuration.
         :param kwargs: empty dict
 
         :rtype: dict
@@ -104,6 +105,8 @@ class CloudAuthzController(BaseAPIController):
             raise RequestParameterMissingException('The following required arguments are missing in the payload: '
                                                    '{}'.format(missing_arguments))
 
+        description = payload.get("description", "")
+
         if not isinstance(config, dict):
             log.debug(msg_template.format("invalid config type `{}`, expect `dict`".format(type(config))))
             raise RequestParameterInvalidException('Invalid type for the required `config` variable; expect `dict` '
@@ -132,7 +135,8 @@ class CloudAuthzController(BaseAPIController):
                 user_id=trans.user.id,
                 provider=provider,
                 config=config,
-                authn_id=authn_id
+                authn_id=authn_id,
+                description=description
             )
             view = self.cloudauthz_serializer.serialize_to_view(new_cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, 'summary'))
             log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
