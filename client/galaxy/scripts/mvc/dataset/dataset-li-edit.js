@@ -266,14 +266,16 @@ var DatasetListItemEdit = _super.extend(
 
             if (visualizations.length >= 1) {
                 var url = Galaxy.root + "visualizations?dataset_id=" + this.model.get("id");
-                return $("<a/>")
-                    .addClass("visualization-link icon-btn")
-                    .attr("href", url)
-                    .append($("<span/>").addClass("fa fa-bar-chart-o"))
-                    .on("click", function(e) {
+                return faIconButton({
+                    title: _l("Visualize this data"),
+                    href: url,
+                    classes: "visualization-link",
+                    faIcon: "fa-bar-chart-o",
+                    onclick: function(e) {
                         Galaxy.frame.add({ url: url, title: "Visualization" });
                         e.preventDefault();
-                    });
+                    }
+                });
             }
         },
 
