@@ -749,7 +749,7 @@ class Loom(H5):
     False
     """
     file_ext = "loom"
-    edam_format = "format_3590" #TODO: this is base HDF5 format, Loom specific does not exist in EDAM
+    edam_format = "format_3590"
 
     MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
     MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
