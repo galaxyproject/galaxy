@@ -15,13 +15,37 @@ log = logging.getLogger(__name__)
 class DataManager(BaseUIController):
 
     @web.expose
-    def index(self, trans, **kwd):
+    @web.json
+    def data_managers_list(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin()
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
-        message = escape(kwd.get('message', ''))
-        status = escape(kwd.get('status', 'info'))
-        return trans.fill_template("data_manager/index.mako", data_managers=trans.app.data_managers, tool_data_tables=trans.app.tool_data_tables, view_only=not_is_admin, message=message, status=status)
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
+        data_managers = []
+        for data_manager_id, data_manager in sorted(trans.app.data_managers.data_managers.iteritems(),
+                                                    key=lambda data_manager: data_manager[1].name):
+            data_managers.append({'toolUrl': web.url_for(controller='root',
+                                                         tool_id=data_manager.tool.id),
+                                  'jobsUrl': web.url_for(controller='data_manager',
+                                                         action='manage_data_manager',
+                                                         id=data_manager_id),
+                                  'name': data_manager.name,
+                                  'description': data_manager.description.lower()})
+        data_tables = []
+        managed_table_names = trans.app.data_managers.managed_data_tables.keys()
+        for table_name in sorted(trans.app.tool_data_tables.get_tables().keys()):
+            data_tables.append({'url': web.url_for(controller='data_manager',
+                                                   action='manage_data_table',
+                                                   table_name=table_name),
+                                'name': table_name,
+                                'managed': True if table_name in managed_table_names else False})
+
+        return {'dataManagers': data_managers,
+                'dataTables': data_tables,
+                'viewOnly': not_is_admin,
+                'message': message,
+                'status': status}
 
     @web.expose
     def manage_data_manager(self, trans, **kwd):
