@@ -6,6 +6,7 @@ import logging
 import re
 import tempfile
 
+from bleach import clean
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
@@ -25,7 +26,6 @@ from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
-HTML_CLEANER = re.compile("<[^<]+?>")
 
 
 class ToolBoxSearch(object):
@@ -107,7 +107,7 @@ class ToolBoxSearch(object):
         if index_help and tool.help:
             try:
                 raw_html = tool.help.render(host_url="", static_path="")
-                cleantext = re.sub(HTML_CLEANER, '', raw_html).replace('\n', ' ')
+                cleantext = clean(raw_html, tags=[''], strip=True).replace('\n', ' ')
                 add_doc_kwds['help'] = to_unicode(cleantext)
             except Exception:
                 # Don't fail to build index just because a help message
