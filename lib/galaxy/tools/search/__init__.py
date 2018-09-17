@@ -107,7 +107,7 @@ class ToolBoxSearch(object):
         if index_help and tool.help:
             try:
                 raw_html = tool.help.render(host_url="", static_path="")
-                cleantext = re.sub(HTML_CLEANER, '', raw_html).replace('\n', '')
+                cleantext = re.sub(HTML_CLEANER, '', raw_html).replace('\n', ' ')
                 add_doc_kwds['help'] = to_unicode(cleantext)
             except Exception:
                 # Don't fail to build index just because a help message
