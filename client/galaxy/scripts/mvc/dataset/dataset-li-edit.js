@@ -5,6 +5,10 @@ import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import * as _ from "underscore";
+
+/* global Galaxy */
+/* global $ */
 
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
@@ -393,7 +397,7 @@ var DatasetListItemEdit = _super.extend(
 
         /** listener for item purge (in the messages section) */
         _clickPurgeLink: function(ev) {
-            if (confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
+            if (window.confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
                 this.model.purge();
             }
             return false;
