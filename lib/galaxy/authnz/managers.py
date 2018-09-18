@@ -245,9 +245,9 @@ class AuthnzManager(object):
         :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans:       Galaxy web transaction
 
-        :type  authz_id:    int
-        :param authz_id:    The ID of a CloudAuthz configuration to be used for
-                            getting temporary credentials.
+        :type  cloudauthz:  CloudAuthz
+        :param cloudauthz:  an instance of CloudAuthz to be used for getting temporary
+                            credentials.
 
         :rtype:             dict
         :return:            a dictionary containing credentials to access a cloud-based
