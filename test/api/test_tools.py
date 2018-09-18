@@ -119,6 +119,27 @@ class ToolsTestCase(api.ApiTestCase):
             assert output_details["file_ext"] == "bed"
 
     @skip_without_tool("test_data_source")
+    def test_data_source_sniff_fastqsanger(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id="test_data_source",
+                inputs={
+                    "URL": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fastqsanger.gz",
+                    "URL_method": "get",
+                },
+                history_id=history_id,
+            )
+            create_response = self._post("tools", data=payload)
+            self._assert_status_code_is(create_response, 200)
+            create_object = create_response.json()
+            self._assert_has_keys(create_object, "outputs")
+            assert len(create_object["outputs"]) == 1
+            output = create_object["outputs"][0]
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+            output_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
+            assert output_details["file_ext"] == "fastqsanger.gz", output_details
+
+    @skip_without_tool("test_data_source")
     def test_data_sources_block_file_parameters(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.run_tool_payload(
