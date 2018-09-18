@@ -438,6 +438,14 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         var other = connector.handle1;
         if (!other) {
             return;
+        } else {
+            let node = this.node;
+            _.each(node.output_terminals, function(output_terminal) {
+                if (output_terminal.attributes.collection_type_source) {
+                    output_terminal.attributes.collection_type = other.attributes.collection_type;
+                    output_terminal.update(output_terminal.attributes);
+                    }
+            })
         }
 
         var effectiveMapOver = this._effectiveMapOver(other);

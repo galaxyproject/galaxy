@@ -330,36 +330,29 @@ class SubWorkflowModule(WorkflowModule):
     def get_data_outputs(self):
         outputs = []
         if hasattr(self.subworkflow, 'workflow_outputs'):
-            for workflow_output in self.subworkflow.workflow_outputs:
-                if workflow_output.workflow_step.type in {'data_input', 'data_collection_input'}:
-                    # It is just confusing to display the input data as output data in subworkflows
-                    continue
-                output_step = workflow_output.workflow_step
-                label = workflow_output.label
-                target_output_name = workflow_output.output_name
-                if not label:
-                    label = "%s:%s" % (output_step.order_index, target_output_name)
-                output_module = module_factory.from_workflow_step(self.trans, output_step)
-                data_outputs = output_module.get_data_outputs()
-                target_output = {}
-                for data_output in data_outputs:
-                    if data_output["name"] == target_output_name:
-                        target_output = data_output
-                output = dict(
-                    name=label,
-                    label=label,
-                    extensions=target_output.get('extensions', ['input']),
-                )
-                if target_output.get("collection"):
-                    output["collection"] = True
-                    output["collection_type"] = target_output["collection_type"]
-                    # TODO: collection_type_source should be set here to be more precise/correct -
-                    # but it can't be passed through as is since it would reference something
-                    # the editor can't see. Since we fix input collection types to workflows
-                    # the more correct thing to do would be to walk the subworkflow and
-                    # determine the effective collection type if collection_type_source
-                    # is set.
-                outputs.append(output)
+            from galaxy.managers.workflows import WorkflowContentsManager
+            workflow_contents_manager = WorkflowContentsManager(self.trans.app)
+            subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(trans=self.trans,
+                                                                                  stored=self.subworkflow.stored_workflow,
+                                                                                  workflow=self.subworkflow,
+                                                                                  tooltip=False)
+            for order_index in sorted(subworkflow_dict['steps']):
+                step = subworkflow_dict['steps'][order_index]
+                data_outputs = subworkflow_dict['steps'][order_index]['data_outputs']
+                for workflow_output in step['workflow_outputs']:
+                    label = workflow_output['label']
+                    if not label:
+                        label = "%s:%s" % (order_index, workflow_output['output_name'])
+                    for data_output in data_outputs:
+                        if data_output['name'] == workflow_output['output_name']:
+                            data_output['label'] = label
+                            data_output['name'] = label
+                            # That's the right data_output
+                            break
+                    else:
+                        # This hopefully can't happen, but let's be clear
+                        raise Exception("Workflow output '%s' defined, but not listed among data outputs" % workflow_output['output_name'])
+                    outputs.append(data_output)
         return outputs
 
     def get_content_id(self):

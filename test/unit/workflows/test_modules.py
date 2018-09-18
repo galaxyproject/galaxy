@@ -215,6 +215,8 @@ def test_subworkflow_new_outputs():
 
 def __new_subworkflow_module():
     trans = MockTrans()
+    mock_tool = __mock_tool(id="cat1", version="1.0")
+    trans.app.toolbox.tools["cat1"] = mock_tool
     workflow = yaml_to_model(TEST_WORKFLOW_YAML)
     stored_workflow = trans.save_workflow(workflow)
     workflow_id = trans.app.security.encode_id(stored_workflow.id)
@@ -273,8 +275,19 @@ def __mock_tool(
     tool = bunch.Bunch(
         id=id,
         version=version,
+        name=id,
         inputs={},
+        outputs={'out_file1': bunch.Bunch(collection=None,
+                                          format='input',
+                                          format_source=None,
+                                          change_format=[])},
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
+        to_json=_to_json
     )
+
     return tool
+
+
+def _to_json(*args, **kwargs):
+    return "{}"
