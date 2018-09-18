@@ -247,7 +247,7 @@ class CloudManager(sharable.SharableModelManager):
             job_errors = output.get('job_errors', [])
             if job_errors:
                 raise ValueError('Following error occurred while uploading the given object(s) from {}: {}'.format(
-                    provider, job_errors))
+                    cloudauthz.provider, job_errors))
             else:
                 for d in output['out_data']:
                     datasets.append(d[1].dataset)
