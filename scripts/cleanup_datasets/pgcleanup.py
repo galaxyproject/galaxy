@@ -393,6 +393,46 @@ class Cleanup(object):
             self._log('Marked userless History deleted: %s' % tup[0])
         self._close_logfile()
 
+    def purge_error_hdas(self):
+        """
+        Mark purged all HistoryDatasetAssociations whose dataset_id is state = 'error' that are older than the specified
+        number of days.
+        """
+        log.info('Marking purged all error state HistoryDatasetAssociations older than %i days' % self.args.days)
+
+        sql = """
+              WITH purged_hda_ids
+                AS (     UPDATE history_dataset_association
+                            SET purged = true{update_time_sql}
+                           FROM dataset
+                          WHERE history_dataset_association.dataset_id = dataset.id
+                                AND dataset.state = 'error'
+                                AND history_dataset_association.update_time < (NOW() - interval '%(days)s days')
+                      RETURNING history_dataset_association.id as id,
+                                history_dataset_association.history_id as history_id),
+                   hda_events
+                AS (INSERT INTO cleanup_event_hda_association
+                                (create_time, cleanup_event_id, hda_id)
+                         SELECT NOW(), %(event_id)s, id
+                           FROM purged_hda_ids)
+            SELECT purged_hda_ids.id,
+                   history.user_id
+              FROM purged_hda_ids
+                   LEFT OUTER JOIN history
+                                   ON purged_hda_ids.history_id = history.id
+          ORDER BY purged_hda_ids.id
+        """
+
+        cur = self._update(sql, {})
+        self._flush()
+
+        self._open_logfile()
+        for tup in cur:
+            self._log('Marked HistoryDatasetAssociations purged: %s' % tup[0])
+            if tup[1] is not None and tup[1] not in self.disk_accounting_user_ids:
+                self.disk_accounting_user_ids.append(int(tup[1]))
+        self._close_logfile()
+
     def purge_deleted_hdas(self):
         """
         Mark purged all HistoryDatasetAssociations currently marked deleted that are older than the specified number of days.
