@@ -2,11 +2,9 @@ from __future__ import print_function
 
 import json
 import time
-from collections import namedtuple
 from json import dumps
 from uuid import uuid4
 
-import yaml
 from requests import delete, put
 
 from base import api  # noqa: I100,I202
@@ -14,7 +12,6 @@ from base import rules_test_data  # noqa: I100
 from base.populators import (  # noqa: I100
     DatasetCollectionPopulator,
     DatasetPopulator,
-    load_data_dict,
     skip_without_tool,
     wait_on,
     WorkflowPopulator
@@ -31,7 +28,6 @@ from base.workflow_fixtures import (  # noqa: I100
     WORKFLOW_WITH_RULES_1,
 )
 from galaxy.exceptions import error_codes  # noqa: I201
-from galaxy.tools.verify.test_data import TestDataResolver
 
 
 SIMPLE_NESTED_WORKFLOW_YAML = """
@@ -208,59 +204,11 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs(self, has_workflow, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True):
-        def read_test_data(test_dict):
-            test_data_resolver = TestDataResolver()
-            filename = test_data_resolver.get_filename(test_dict["value"])
-            content = open(filename, "r").read()
-            return content
-
+    def _run_jobs(self, has_workflow, history_id=None, **kwds):
         if history_id is None:
             history_id = self.history_id
-        workflow_id = self._upload_yaml_workflow(
-            has_workflow, source_type=source_type
-        )
-        if jobs_descriptions is None:
-            assert source_type != "path"
-            jobs_descriptions = yaml.safe_load(has_workflow)
 
-        test_data = jobs_descriptions.get("test_data", {})
-        parameters = test_data.pop('step_parameters', {})
-        replacement_parameters = test_data.pop("replacement_parameters", {})
-        inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
-        workflow_request = dict(
-            history="hist_id=%s" % history_id,
-            workflow_id=workflow_id,
-        )
-        workflow_request["inputs"] = dumps(label_map)
-        workflow_request["inputs_by"] = 'name'
-        if parameters:
-            workflow_request["parameters"] = dumps(parameters)
-            workflow_request["parameters_normalized"] = True
-        if replacement_parameters:
-            workflow_request["replacement_params"] = dumps(replacement_parameters)
-        if has_uploads:
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        url = "workflows/%s/usage" % (workflow_id)
-        invocation_response = self._post(url, data=workflow_request)
-        self._assert_status_code_is(invocation_response, expected_response)
-        invocation = invocation_response.json()
-        invocation_id = invocation.get('id')
-        if invocation_id:
-            # Wait for workflow to become fully scheduled and then for all jobs
-            # complete.
-            if wait:
-                self.workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
-            jobs = self._history_jobs(history_id)
-            return RunJobsSummary(
-                history_id=history_id,
-                workflow_id=workflow_id,
-                invocation_id=invocation_id,
-                inputs=inputs,
-                jobs=jobs,
-                invocation=invocation,
-                workflow_request=workflow_request
-            )
+        return self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
 
     def _history_jobs(self, history_id):
         return self._get("jobs", {"history_id": history_id, "order_by": "create_time"}).json()
@@ -3386,6 +3334,3 @@ test_data:
         self._assert_status_code_is(all_invocations_for_user, 200)
         invocation_ids = [i["id"] for i in all_invocations_for_user.json()]
         return invocation_ids
-
-
-RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])
