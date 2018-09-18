@@ -131,6 +131,7 @@ var Terminal = Backbone.Model.extend({
         if (this.node) {
             this.node.markChanged();
             this.resetMappingIfNeeded();
+            this.resetCollectionTypeSource();
         }
     },
     redraw: function() {
@@ -174,6 +175,18 @@ var Terminal = Backbone.Model.extend({
     },
     resetMapping: function() {
         this.terminalMapping.disableMapOver();
+    },
+
+    resetCollectionTypeSource: function() {
+        let node = this.node;
+        _.each(node.output_terminals, function(output_terminal) {
+            let type_source = output_terminal.attributes.collection_type_source;
+            if (type_source) {
+                output_terminal.attributes.collection_type = null;
+                output_terminal.collectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
+                output_terminal.update(output_terminal.attributes);
+            }
+        });
     },
 
     resetMappingIfNeeded: function() {} // Subclasses should override this...
