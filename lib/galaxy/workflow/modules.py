@@ -77,7 +77,7 @@ class WorkflowModule(object):
     @classmethod
     def from_dict(Class, trans, d, **kwds):
         module = Class(trans, **kwds)
-        module.recover_state(d.get("tool_state"))
+        module.recover_state(d.get("tool_state"), **kwds)
         module.label = d.get("label")
         return module
 
@@ -847,6 +847,18 @@ class ToolModule(WorkflowModule):
         return ActionBox.handle_incoming(incoming)
 
     # ---- Run time ---------------------------------------------------------
+
+    def recover_state(self, state, **kwds):
+        """ Recover state `dict` from simple dictionary describing configuration
+        state (potentially from persisted step state).
+
+        Sub-classes should supply a `default_state` method which contains the
+        initial state `dict` with key, value pairs for all available attributes.
+        """
+        super(ToolModule, self).recover_state(state, **kwds)
+        if kwds.get("fill_defaults", False) and self.tool:
+            self.compute_runtime_state(self.trans, step_updates=None)
+            self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
 
     def get_runtime_state(self):
         state = DefaultToolState()

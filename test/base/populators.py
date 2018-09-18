@@ -570,7 +570,7 @@ class BaseWorkflowPopulator(object):
         if inputs:
             request["inputs"] = json.dumps(inputs)
             request["inputs_by"] = 'step_index'
-        invocation_response = self.invoke_workflow_raw(request)
+        invocation_response = self.invoke_workflow_raw(workflow_id, request)
         if assert_ok:
             api_asserts.assert_status_code_is(invocation_response, 200)
             invocation_id = invocation_response.json()["id"]

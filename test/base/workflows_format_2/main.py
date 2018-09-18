@@ -35,7 +35,10 @@ def convert_and_import_workflow(has_workflow, **kwds):
         workflow["name"] = name
     publish = kwds.get("publish", False)
     exact_tools = kwds.get("exact_tools", False)
-    import_kwds = {}
+    fill_defaults = kwds.get("fill_defaults", True)
+    import_kwds = {
+        "fill_defaults": fill_defaults
+    }
     if publish:
         import_kwds["publish"] = True
     if exact_tools:
