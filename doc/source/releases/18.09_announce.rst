@@ -1,0 +1,43 @@
+
+===========================================================
+September 2018 Galaxy Release (v 18.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Feature1**
+  Feature description.
+
+**Feature2**
+  Feature description.
+
+**Feature3**
+  Feature description.
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_18.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_18.09 && git pull --ff-only origin release_18.09
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 18.09.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst
