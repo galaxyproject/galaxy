@@ -47,7 +47,7 @@ export default class Data {
                         "files_0|space_to_tab": options.space_to_tab ? "Yes" : null,
                         "files_0|to_posix_lines": options.to_posix_lines ? "Yes" : null,
                         "files_0|dbkey": options.genome || null,
-                        "files_0|file_type": options.extension || null,
+                        "files_0|file_type": options.extension || "auto",
                         "files_0|url_paste": options.url_paste
                     })
                 }
