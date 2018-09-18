@@ -2599,7 +2599,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None, copy_tags=None, force_flush=True, copy_hid=True):
+    def copy(self, parent_id=None, copy_tags=None, force_flush=True, copy_hid=True, new_name=None):
         """
         Create a copy of this HDA.
         """
@@ -2607,7 +2607,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if copy_hid:
             hid = self.hid
         hda = HistoryDatasetAssociation(hid=hid,
-                                        name=self.name,
+                                        name=new_name or self.name,
                                         info=self.info,
                                         blurb=self.blurb,
                                         peek=self.peek,
@@ -3450,6 +3450,17 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
             else:
                 elements.append(element)
         return elements
+
+    @property
+    def first_dataset_element(self):
+        for element in self.elements:
+            if element.is_collection:
+                first_element = element.child_collection.first_dataset_element
+                if first_element:
+                    return first_element
+            else:
+                return element
+        return None
 
     @property
     def state(self):

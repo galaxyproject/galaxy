@@ -576,10 +576,10 @@
     <datatype extension="pdbqt" type="galaxy.datatypes.molecules:PDBQT" display_in_upload="true"/>
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true"/>
     <datatype extension="dcd" type="galaxy.datatypes.binary:Dcd" display_in_upload="true"/>
-    <datatype extension="top" type="galaxy.datatypes.text:Top" display_in_upload="true"/>
+    <datatype extension="top" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xtc" type="galaxy.datatypes.binary:Xtc" display_in_upload="true"/>
     <datatype extension="cpt" type="galaxy.datatypes.binary:Cpt" display_in_upload="true"/>
-    <datatype extension="gro" type="galaxy.datatypes.tabular:Gro" display_in_upload="true"/>
+    <datatype extension="gro" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
     <datatype extension="vel" type="galaxy.datatypes.binary:Vel" display_in_upload="true"/>
     <datatype extension="grd" type="galaxy.datatypes.molecules:grd" display_in_upload="true"/>
     <datatype extension="grd.tgz" type="galaxy.datatypes.molecules:grdtgz" display_in_upload="true"/>

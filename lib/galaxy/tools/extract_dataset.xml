@@ -50,7 +50,9 @@ This tool will create new history datasets from your collection but your quota u
           <element name="bar" value="simple_line_alternative.txt" />
         </collection>
       </param>
-      <output name="output" file="simple_line.txt" />
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="foo" />
+      </output>
     </test>
     <test>
       <conditional name="which">
@@ -63,7 +65,9 @@ This tool will create new history datasets from your collection but your quota u
           <element name="bar" value="simple_line_alternative.txt" />
         </collection>
       </param>
-      <output name="output" file="simple_line_alternative.txt" />
+      <output name="output" file="simple_line_alternative.txt">
+        <metadata name="name" value="bar" />
+      </output>
     </test>
     <test>
       <conditional name="which">
@@ -76,7 +80,9 @@ This tool will create new history datasets from your collection but your quota u
           <element name="bar" value="simple_line_alternative.txt" />
         </collection>
       </param>
-      <output name="output" file="simple_line_alternative.txt" />
+      <output name="output" file="simple_line_alternative.txt">
+        <metadata name="name" value="bar" />
+      </output>
     </test>
   </tests>
 </tool>
