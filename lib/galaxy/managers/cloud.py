@@ -174,7 +174,7 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
-    def upload(self, trans, history_id, provider, bucket_name, objects, authz_id, input_args=None):
+    def upload(self, trans, history_id, bucket_name, objects, authz_id, input_args=None):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
@@ -188,10 +188,6 @@ class CloudManager(sharable.SharableModelManager):
 
         :type  history_id:  string
         :param history_id:  the (decoded) id of history to which the object should be uploaded to.
-
-        :type  provider:    string
-        :param provider:    the name of cloud-based resource provided. A list of supported providers is given in
-                            `SUPPORTED_PROVIDERS` variable.
 
         :type  bucket_name: string
         :param bucket_name: the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
@@ -217,8 +213,9 @@ class CloudManager(sharable.SharableModelManager):
         if input_args is None:
             input_args = {}
 
+        authz = trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, authz_id)
-        connection = self._configure_provider(provider, credentials)
+        connection = self._configure_provider(authz.provider, credentials)
         try:
             bucket = connection.storage.buckets.get(bucket_name)
             if bucket is None:

@@ -50,7 +50,6 @@ class CloudController(BaseAPIController):
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
             *   history_id:    the (encoded) id of history to which the object should be uploaded to.
-            *   provider:      the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
             *   bucket:        the name of a bucket from which data should be uploaded from (e.g., a bucket name on AWS S3).
             *   objects:       a list of the names of objects to be uploaded.
             *   credentials:   a dictionary containing all the credentials required to authenticated to the
@@ -93,10 +92,6 @@ class CloudController(BaseAPIController):
         if encoded_history_id is None:
             missing_arguments.append("history_id")
 
-        provider = payload.get("provider", None)
-        if provider is None:
-            missing_arguments.append("provider")
-
         bucket = payload.get("bucket", None)
         if bucket is None:
             missing_arguments.append("bucket")
@@ -128,7 +123,6 @@ class CloudController(BaseAPIController):
 
         datasets = self.cloud_manager.upload(trans=trans,
                                              history_id=history_id,
-                                             provider=provider,
                                              bucket_name=bucket,
                                              objects=objects,
                                              authz_id=authz_id,
