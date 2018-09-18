@@ -736,6 +736,97 @@ class H5(Binary):
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
 
 
+class Loom(H5):
+    """
+    Class describing a Loom file: http://loompy.org/
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.loom')
+    >>> Loom().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> Loom().sniff(fname)
+    False
+    """
+    file_ext = "loom"
+    edam_format = "format_3590"
+
+    MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
+    MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
+    MetadataElement(name="url", default="", desc="url", readonly=True, visible=True, no_value="")
+    MetadataElement(name="doi", default="", desc="doi", readonly=True, visible=True, no_value="")
+    MetadataElement(name="loom_spec_version", default="", desc="loom_spec_version", readonly=True, visible=True, no_value="")
+    MetadataElement(name="creation_date", default=None, desc="creation_date", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
+    MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="row_attrs_names", desc="row_attrs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="col_attrs_count", default=0, desc="col_attrs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="col_attrs_names", desc="col_attrs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="col_graphs_count", default=0, desc="col_graphs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="col_graphs_names", desc="col_graphs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="row_graphs_count", default=0, desc="row_graphs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="row_graphs_names", desc="row_graphs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+
+    def sniff(self, filename):
+        if super(Loom, self).sniff(filename):
+            try:
+                with h5py.File(filename) as loom_file:
+                    return bool(loom_file.attrs.get('LOOM_SPEC_VERSION', False))
+            except Exception:
+                return False
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary Loom file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary Loom file (%s)" % (nice_size(dataset.get_size()))
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(Loom, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with h5py.File(dataset.file_name) as loom_file:
+                dataset.metadata.title = loom_file.attrs.get('title', None)
+                dataset.metadata.description = loom_file.attrs.get('description', None)
+                dataset.metadata.url = loom_file.attrs.get('url', None)
+                dataset.metadata.doi = loom_file.attrs.get('doi', None)
+                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION', None)
+                dataset.creation_date = loom_file.attrs.get('creation_date', None)
+                dataset.metadata.shape = tuple(loom_file['matrix'].shape)
+
+                tmp = list(loom_file['layers'].keys())
+                dataset.metadata.layers_count = len(tmp)
+                dataset.metadata.layers_names = tmp
+
+                tmp = list(loom_file['row_attrs'].keys())
+                dataset.metadata.row_attrs_count = len(tmp)
+                dataset.metadata.row_attrs_names = tmp
+
+                tmp = list(loom_file['col_attrs'].keys())
+                dataset.metadata.col_attrs_count = len(tmp)
+                dataset.metadata.col_attrs_names = tmp
+
+                tmp = list(loom_file['col_graphs'].keys())
+                dataset.metadata.col_graphs_count = len(tmp)
+                dataset.metadata.col_graphs_names = tmp
+
+                tmp = list(loom_file['row_graphs'].keys())
+                dataset.metadata.row_graphs_count = len(tmp)
+                dataset.metadata.row_graphs_names = tmp
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+
 class GmxBinary(Binary):
     """
     Base class for GROMACS binary files - xtc, trr, cpt
