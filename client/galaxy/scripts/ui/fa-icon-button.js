@@ -1,4 +1,5 @@
 import jQuery from "jquery";
+import * as _ from "underscore";
 ("use_strict");
 
 var $ = jQuery;
@@ -42,7 +43,11 @@ var faIconButton = options => {
     ].join("");
     var $button = $(html).tooltip(options.tooltipConfig);
     if (_.isFunction(options.onclick)) {
-        $button.click(options.onclick);
+        let wrapped = _.wrap(options.onclick, function(func) {
+            $button.tooltip("hide");
+            func.apply(this, arguments);
+        });
+        $button.click(wrapped);
     }
     return $button;
 };
