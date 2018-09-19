@@ -271,12 +271,11 @@ var DatasetListItemEdit = _super.extend(
                     href: url,
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
-                    onclick: (ev) => {
+                    onclick: ev => {
                         if (Galaxy.frame && Galaxy.frame.active) {
                             ev.preventDefault();
                             Galaxy.frame.add({ url: url, title: "Visualization" });
-                        }
-                        else if (Galaxy.router) {
+                        } else if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("visualizations", {
                                 dataset_id: this.model.get("id")
@@ -285,20 +284,6 @@ var DatasetListItemEdit = _super.extend(
                     }
                 });
             }
-        },
-
-        /** add scratchbook functionality to visualization links */
-        _addScratchBookFn: function($links) {
-            $links.click(ev => {
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.add({
-                        title: _l("Visualization"),
-                        url: $(this).attr("href")
-                    });
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                }
-            });
         },
 
         //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
