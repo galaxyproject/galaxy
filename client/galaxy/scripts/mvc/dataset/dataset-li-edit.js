@@ -100,8 +100,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-times",
                 classes: "delete-btn",
                 onclick: function() {
-                    // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find(".icon-btn.delete-btn").trigger("mouseout");
+                    self.$el.find(".icon-btn.delete-btn").tooltip('dispose');
                     self.model["delete"]();
                 }
             });
