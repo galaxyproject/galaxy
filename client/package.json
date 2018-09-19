@@ -20,6 +20,7 @@
     "bootstrap-tour": "https://github.com/sorich87/bootstrap-tour.git#6a1028fb562f9aa68c451f0901f8cfeb43cad140",
     "bootstrap-vue": "^2.0.0-rc.11",
     "d3": "3",
+    "decode-uri-component": "^0.2.0",
     "font-awesome": "^4.7.0",
     "gulp-sass": "^4.0.1",
     "handsontable": "^2.0.0",
