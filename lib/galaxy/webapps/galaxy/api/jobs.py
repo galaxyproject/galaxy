@@ -320,7 +320,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 jobs.append(job)
         return [self.encode_all_ids(trans, single_job.to_dict('element'), True) for single_job in jobs]
 
-    @expose_api
+    @expose_api_anonymous
     def error(self, trans, id, **kwd):
         """
         error( trans, id )
@@ -343,10 +343,17 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         # Get job
         job = self.__get_job(trans, id)
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        email = kwd.get('email')
+        if not email and not trans.anonymous:
+            email = trans.user.email
         messages = trans.app.error_reports.default_error_plugin.submit_report(
-            dataset, job, tool, user_submission=True, user=trans.user,
-            email=kwd.get('email', trans.user.email),
-            message=kwd.get('message', None)
+            dataset=dataset,
+            job=job,
+            tool=tool,
+            user_submission=True,
+            user=trans.user,
+            email=email,
+            message=kwd.get('message')
         )
 
         return {'messages': messages}
