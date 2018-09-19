@@ -45,6 +45,7 @@ var faIconButton = options => {
     if (_.isFunction(options.onclick)) {
         let wrapped = _.wrap(options.onclick, function(func) {
             $button.tooltip("hide");
+            $button.blur();
             func.apply(this, arguments);
         });
         $button.click(wrapped);
