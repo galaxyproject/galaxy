@@ -271,9 +271,17 @@ var DatasetListItemEdit = _super.extend(
                     href: url,
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
-                    onclick: function(e) {
-                        Galaxy.frame.add({ url: url, title: "Visualization" });
-                        e.preventDefault();
+                    onclick: (ev) => {
+                        if (Galaxy.frame && Galaxy.frame.active) {
+                            ev.preventDefault();
+                            Galaxy.frame.add({ url: url, title: "Visualization" });
+                        }
+                        else if (Galaxy.router) {
+                            ev.preventDefault();
+                            Galaxy.router.push("visualizations", {
+                                dataset_id: this.model.get("id")
+                            });
+                        }
                     }
                 });
             }
