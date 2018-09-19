@@ -573,6 +573,65 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
                 'label',
             )
 
+    @skip_without_tool('collection_type_source')
+    def test_export_editor_collection_type_source(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - label: text_input1
+    type: input_collection
+    collection_type: "list:paired"
+  - tool_id: collection_type_source
+    state:
+      input_collect:
+        $link: text_input1
+test_data:
+  text_input1:
+    type: "list:paired"
+""")
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        steps = downloaded_workflow['steps']
+        assert len(steps) == 2
+        assert steps['1']['data_outputs'][0]['collection_type'] == 'list:paired'
+
+    @skip_without_tool('collection_type_source')
+    def test_export_editor_subworkflow_collection_type_source(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  - id: outer_input
+steps:
+  - run:
+      class: GalaxyWorkflow
+      inputs:
+        - id: inner_input
+          type: data_collection
+          collection_type: "list:paired"
+      outputs:
+        - id: workflow_output
+          source: collection_type_source#list_output
+      steps:
+        - label: text_input1
+          type: input_collection
+          collection_type: "list:paired"
+        - tool_id: collection_type_source
+          label: collection_type_source
+          state:
+            input_collect:
+              $link: inner_input
+    label: inner_workflow
+    connect:
+      inner_input: outer_input
+test_data:
+  outer_input:
+    type: "list:paired"
+    """)
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        steps = downloaded_workflow['steps']
+        assert len(steps) == 2
+        assert steps['1']['type'] == 'subworkflow'
+        assert steps['1']['data_outputs'][0]['collection_type'] == 'list:paired'
+
     def test_import_missing_tool(self):
         workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
         workflow_id = self.workflow_populator.create_workflow(workflow)
