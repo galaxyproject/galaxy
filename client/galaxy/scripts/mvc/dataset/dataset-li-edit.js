@@ -265,7 +265,8 @@ var DatasetListItemEdit = _super.extend(
             }
 
             if (visualizations.length >= 1) {
-                var url = Galaxy.root + "visualizations?dataset_id=" + this.model.get("id");
+                let dsid = this.model.get("id");
+                let url = Galaxy.root + "visualizations?dataset_id=" + dsid;
                 return faIconButton({
                     title: _l("Visualize this data"),
                     href: url,
@@ -280,6 +281,7 @@ var DatasetListItemEdit = _super.extend(
                             Galaxy.router.push("visualizations", {
                                 dataset_id: this.model.get("id")
                             });
+                            Galaxy.trigger("activate-hda", dsid);
                         }
                     }
                 });

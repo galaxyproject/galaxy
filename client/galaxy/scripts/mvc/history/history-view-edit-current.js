@@ -398,7 +398,10 @@ var CurrentHistoryView = _super.extend(
                     } catch (e){
                         this._setCurrentContentById();
                     }
-                }
+                 },
+                 "activate-hda": function(hdaId) {
+                     this._setCurrentContentById(`dataset-${hdaId}`);
+                 }
             });
         },
 
