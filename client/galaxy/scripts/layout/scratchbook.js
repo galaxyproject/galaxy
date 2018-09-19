@@ -12,28 +12,28 @@ import _l from "utils/localization";
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         options = options || {};
         this.frames = new Frames.View({ visible: false });
         this.setElement(this.frames.$el);
+        this.active = false;
         this.buttonActive = options.collection.add({
             id: "enable-scratchbook",
             icon: "fa-th",
             tooltip: _l("Enable/Disable Scratchbook"),
-            onclick: function() {
-                self.active = !self.active;
-                self.buttonActive.set({
-                    toggle: self.active,
-                    show_note: self.active,
-                    note_cls: self.active && "fa fa-check"
+            onclick: () => {
+                this.active = !this.active;
+                this.buttonActive.set({
+                    toggle: this.active,
+                    show_note: this.active,
+                    note_cls: this.active && "fa fa-check"
                 });
-                if (!self.active) {
-                    self.frames.hide();
+                if (!this.active) {
+                    this.frames.hide();
                 }
             },
-            onbeforeunload: function() {
-                if (self.frames.length() > 0) {
-                    return `You opened ${self.frames.length()} frame(s) which will be lost.`;
+            onbeforeunload: () => {
+                if (this.frames.length() > 0) {
+                    return `You opened ${this.frames.length()} frame(s) which will be lost.`;
                 }
             }
         });
@@ -43,28 +43,28 @@ export default Backbone.View.extend({
             tooltip: _l("Show/Hide Scratchbook"),
             show_note: true,
             visible: false,
-            onclick: function(e) {
-                if (self.frames.visible) {
-                    self.frames.hide();
+            onclick: (e) => {
+                if (this.frames.visible) {
+                    this.frames.hide();
                 } else {
-                    self.frames.show();
+                    this.frames.show();
                 }
             }
         });
         this.frames
-            .on("add remove", function() {
-                if (this.visible && this.length() === 0) {
-                    this.hide();
+            .on("add remove", () => {
+                if (this.frames.visible && this.frames.length() === 0) {
+                    this.frames.hide();
                 }
-                self.buttonLoad.set({
-                    note: this.length(),
-                    visible: this.length() > 0
+                this.buttonLoad.set({
+                    note: this.frames.length(),
+                    visible: this.frames.length() > 0
                 });
             })
-            .on("show hide ", function() {
-                self.buttonLoad.set({
-                    toggle: this.visible,
-                    icon: (this.visible && "fa-eye") || "fa-eye-slash"
+            .on("show hide ", () => {
+                this.buttonLoad.set({
+                    toggle: this.frames.visible,
+                    icon: (this.frames.visible && "fa-eye") || "fa-eye-slash"
                 });
             });
         this.history_cache = {};
