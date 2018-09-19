@@ -113,7 +113,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if user is None:
             # Anonymous session or master_api_key used, if master_api_key is detected
             # return True.
-            log.info("in is_admin.... %s" % trans)
             rval = bool(trans and trans.user_is_admin())
             return rval
         return bool(admin_emails and user.email in admin_emails)
