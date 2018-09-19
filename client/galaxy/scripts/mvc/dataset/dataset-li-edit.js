@@ -279,7 +279,7 @@ var DatasetListItemEdit = _super.extend(
                         } else if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("visualizations", {
-                                dataset_id: this.model.get("id")
+                                dataset_id: dsid
                             });
                             Galaxy.trigger("activate-hda", dsid);
                         }
