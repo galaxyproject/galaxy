@@ -966,6 +966,7 @@ mapping:
   static-map: {desc: ' map mountpoint to static directory (or file)', type: any}
   static-map2: {desc: ' like static-map but completely appending the requested resource
       to the docroot', type: any}
+  static-map3: {desc: ' like static-map but only mapping favicon to bare root', type: any}
   static-skip-ext: {desc: ' skip specified extension from staticfile checks', type: any}
   static-index: {desc: ' search for specified file if a directory is requested', type: any}
   static-safe: {desc: ' skip security checks if the file is under the specified path',
