@@ -392,16 +392,16 @@ var CurrentHistoryView = _super.extend(
                     try {
                         let hdaId = view.model.attributes.dataset_id || null;
                         if (hdaId === null) {
-                            throw('Invalid id');
+                            throw "Invalid id";
                         }
                         this._setCurrentContentById(`dataset-${hdaId}`);
-                    } catch (e){
+                    } catch (e) {
                         this._setCurrentContentById();
                     }
-                 },
-                 "activate-hda": function(hdaId) {
-                     this._setCurrentContentById(`dataset-${hdaId}`);
-                 }
+                },
+                "activate-hda": function(hdaId) {
+                    this._setCurrentContentById(`dataset-${hdaId}`);
+                }
             });
         },
 

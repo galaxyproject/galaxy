@@ -43,7 +43,7 @@ export default Backbone.View.extend({
             tooltip: _l("Show/Hide Scratchbook"),
             show_note: true,
             visible: false,
-            onclick: (e) => {
+            onclick: e => {
                 if (this.frames.visible) {
                     this.frames.hide();
                 } else {
