@@ -440,8 +440,7 @@ class ToolsTestCase(api.ApiTestCase):
             self.assertEqual(output1_content.strip(), "Version " + version)
 
     @skip_without_tool("multiple_versions")
-    @uses_test_history(require_new=False)
-    def test_show_with_wrong_tool_version_in_tool_id(self, history_id):
+    def test_show_with_wrong_tool_version_in_tool_id(self):
         tool_info = self._show_valid_tool("multiple_versions", tool_version="0.01")
         # Return last version
         assert tool_info['version'] == "0.2"
