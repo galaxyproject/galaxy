@@ -910,6 +910,12 @@ def populate_api_routes(webapp, app):
                           action='install',
                           conditions=dict(method=['POST']))
 
+    webapp.mapper.connect('check_for_updates',
+                          '/api/tool_shed_repositories/check_for_updates',
+                          controller='tool_shed_repositories',
+                          action='check_for_updates',
+                          conditions=dict(method=['GET']))
+
     webapp.mapper.connect('tool_shed_repository',
                           '/api/tool_shed_repositories',
                           controller='tool_shed_repositories',
