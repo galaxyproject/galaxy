@@ -4,7 +4,7 @@ import os
 import time
 from operator import itemgetter
 
-from requests import put
+import requests
 
 from base import api  # noqa: I100,I202
 from base.api_asserts import assert_status_code_is_ok  # noqa: I100
@@ -141,6 +141,35 @@ class JobsApiTestCase(api.ApiTestCase):
         show_jobs_response = self._get("jobs/%s" % job_id, admin=True)
         self._assert_has_keys(show_jobs_response.json(), "command_line", "external_id")
 
+    @skip_without_tool('detect_errors_aggressive')
+    def test_report_error(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.run_tool_payload(
+                tool_id='detect_errors_aggressive',
+                inputs={'error_bool': 'true'},
+                history_id=history_id,
+            )
+            run_response = self._post("tools", data=payload).json()
+            job_id = run_response['jobs'][0]["id"]
+            dataset_id = run_response['outputs'][0]['id']
+            response = self._post('jobs/%s/error' % job_id,
+                                  data={'dataset_id': dataset_id})
+            assert response.status_code == 200
+
+    @skip_without_tool('detect_errors_aggressive')
+    def test_report_error_anon(self):
+        # Need to get a cookie and use that for anonymous tool runs
+        cookies = requests.get(self.galaxy_interactor.api_url.rsplit('/api', 1)[0]).cookies
+        payload = json.dumps({"tool_id": "detect_errors_aggressive",
+                              "inputs": {"error_bool": "true"}})
+        run_response = requests.post("%s/tools" % self.galaxy_interactor.api_url, data=payload, cookies=cookies).json()
+        job_id = run_response['jobs'][0]["id"]
+        dataset_id = run_response['outputs'][0]['id']
+        response = requests.post('%s/jobs/%s/error' % (self.galaxy_interactor.api_url, job_id),
+                                 params={'email': 'someone@domain.com', 'dataset_id': dataset_id},
+                                 cookies=cookies)
+        assert response.status_code == 200
+
     @uses_test_history(require_new=True)
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
@@ -275,7 +304,7 @@ class JobsApiTestCase(api.ApiTestCase):
 
     def _raw_update_history_item(self, history_id, item_id, data):
         update_url = self._api_url("histories/%s/contents/%s" % (history_id, item_id), use_key=True)
-        update_response = put(update_url, json=data)
+        update_response = requests.put(update_url, json=data)
         assert_status_code_is_ok(update_response)
         return update_response
 
