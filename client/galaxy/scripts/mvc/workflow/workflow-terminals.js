@@ -456,7 +456,11 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
             _.each(node.output_terminals, function(output_terminal) {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     if (other.isMappedOver()) {
-                        output_terminal.attributes.collection_type = other.terminalMapping.mapOver.collectionType;
+                        if (other.isCollection) {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.append(other.collectionType).collectionType;
+                        } else {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.collectionType;
+                        }
                     } else {
                         output_terminal.attributes.collection_type = other.attributes.collection_type;
                     }
