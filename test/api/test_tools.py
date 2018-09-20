@@ -163,8 +163,11 @@ class ToolsTestCase(api.ApiTestCase):
             assert output_details["state"] == "error", output_details
             assert "has not sent back a URL parameter" in output_details["misc_info"], output_details
 
-    def _show_valid_tool(self, tool_id):
-        tool_show_response = self._get("tools/%s" % tool_id, data=dict(io_details=True))
+    def _show_valid_tool(self, tool_id, tool_version=None):
+        data = dict(io_details=True)
+        if tool_version:
+            data['tool_version'] = tool_version
+        tool_show_response = self._get("tools/%s" % tool_id, data=data)
         self._assert_status_code_is(tool_show_response, 200)
         tool_info = tool_show_response.json()
         self._assert_has_keys(tool_info, "inputs", "outputs", "panel_section_id")
@@ -536,6 +539,12 @@ class ToolsTestCase(api.ApiTestCase):
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
             self.assertEqual(output1_content.strip(), "Version " + version)
+
+    @skip_without_tool("multiple_versions")
+    def test_show_with_wrong_tool_version_in_tool_id(self):
+        tool_info = self._show_valid_tool("multiple_versions", tool_version="0.01")
+        # Return last version
+        assert tool_info['version'] == "0.2"
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)

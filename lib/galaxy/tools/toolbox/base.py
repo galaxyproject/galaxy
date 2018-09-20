@@ -446,6 +446,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 for tool in self._tools_by_id.values():
                     if tool.old_id == tool_id:
                         rval.append(tool)
+                # if we don't have a lineage_map for this tool we need to sort by version,
+                # so that the last tool in rval is the newest tool.
+                rval.sort(key=lambda t: t.version)
             if rval:
                 if get_all_versions:
                     return rval
@@ -455,8 +458,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         for tool in rval:
                             if tool.version == tool_version:
                                 return tool
-                    # No tool matches by version, simply return the first available tool found
-                    return rval[0]
+                    # No tool matches by version, simply return the newest matching tool
+                    return rval[-1]
             # We now likely have a Toolshed guid passed in, but no supporting database entries
             # If the tool exists by exact id and is loaded then provide exact match within a list
             if tool_id in self._tools_by_id:
