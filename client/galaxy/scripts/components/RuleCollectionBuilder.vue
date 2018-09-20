@@ -890,7 +890,6 @@ export default {
             titleColumMenu: _l("Rules that generate new columns"),
             titleRemoveMapping: _l("Remove column definition assignment"),
             titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
-            titleAddColumnDefinition: _l("Assign a new piece of metadata as being derived from a column of the table"),
             titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
             namePlaceholder: _l("Enter a name for your new collection"),
             activeRuleIndex: null,
