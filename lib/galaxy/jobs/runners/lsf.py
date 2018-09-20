@@ -217,7 +217,7 @@ class LSFJobRunner(AsynchronousJobRunner):
         if job_id is None:
             self.put(job_wrapper)
             return
-        cjs = CondorJobState(job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory)
+        cjs = LSFJobState(job_wrapper=job_wrapper, files_dir=self.app.config.cluster_files_directory)
         cjs.job_id = str(job_id)
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
