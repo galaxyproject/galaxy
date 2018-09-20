@@ -131,7 +131,7 @@ var Terminal = Backbone.Model.extend({
             this.node.markChanged();
             this.resetMappingIfNeeded();
             if (!connector.dragging) {
-                this.resetCollectionTypeSource();
+                connector.handle2.resetCollectionTypeSource();
             }
         }
     },
