@@ -212,19 +212,38 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         tool_path = tool.config_file
         with open(tool.config_file, 'w') as out:
             out.write('certainly not a valid tool')
-        time.sleep(1.5)
-        tool = self.app.toolbox.get_tool("test_tool")
-        assert tool is not None
-        assert tool.version == "1.0"
-        assert tool.tool_errors == 'Current on-disk tool is not valid'
+
+        def check_tool_errors():
+            tool = self.app.toolbox.get_tool("test_tool")
+            assert tool is not None
+            assert tool.version == "1.0"
+            assert tool.tool_errors == 'Current on-disk tool is not valid'
+
+        self._try_until_no_errors(check_tool_errors)
+
         # Tool is still loaded, lets restore it with a new version
         self._init_tool(filename="simple_tool.xml", version="2.0")
-        time.sleep(1.5)
-        tool = self.app.toolbox.get_tool("test_tool")
-        assert tool is not None
-        assert tool.version == "2.0"
-        assert tool.tool_errors is None
-        assert tool_path == tool.config_file
+
+        def check_no_tool_errors():
+            tool = self.app.toolbox.get_tool("test_tool")
+            assert tool is not None
+            assert tool.version == "2.0"
+            assert tool.tool_errors is None
+            assert tool_path == tool.config_file, "config file"
+
+        self._try_until_no_errors(check_no_tool_errors)
+
+    def _try_until_no_errors(self, f):
+        e = None
+        for i in range(30):
+            try:
+                f()
+                return
+            except AssertionError as error:
+                e = error
+                time.sleep(.25)
+
+        raise e
 
     def test_enforce_tool_profile(self):
         self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
