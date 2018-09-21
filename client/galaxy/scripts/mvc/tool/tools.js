@@ -531,7 +531,7 @@ var ToolLinkView = BaseView.extend({
                 e.preventDefault();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
-                    version: self.model.get("version")
+                    tool_version: self.model.get("version")
                 });
             });
         }
@@ -740,65 +740,6 @@ var ToolPanelView = Backbone.View.extend({
     }
 });
 
-/**
- * View for working with a tool: setting parameters and inputs and executing the tool.
- */
-var ToolFormView = Backbone.View.extend({
-    className: "toolForm",
-
-    render: function() {
-        this.$el.children().remove();
-        this.$el.append(templates.tool_form(this.model.toJSON()));
-    }
-});
-
-/**
- * Integrated tool menu + tool execution.
- */
-var IntegratedToolMenuAndView = Backbone.View.extend({
-    className: "toolMenuAndView",
-
-    initialize: function() {
-        this.tool_panel_view = new ToolPanelView({
-            collection: this.collection
-        });
-        this.tool_form_view = new ToolFormView();
-    },
-
-    render: function() {
-        // Render and append tool panel.
-        this.tool_panel_view.render();
-        this.tool_panel_view.$el.css("float", "left");
-        this.$el.append(this.tool_panel_view.$el);
-
-        // Append tool form view.
-        this.tool_form_view.$el.hide();
-        this.$el.append(this.tool_form_view.$el);
-
-        // On tool link click, show tool.
-        var self = this;
-        this.tool_panel_view.on("tool_link_click", (e, tool) => {
-            // Prevents click from activating link:
-            e.preventDefault();
-            // Show tool that was clicked on:
-            self.show_tool(tool);
-        });
-    },
-
-    /**
-     * Fetch and display tool.
-     */
-    show_tool: function(tool) {
-        var self = this;
-        tool.fetch().done(() => {
-            self.tool_form_view.model = tool;
-            self.tool_form_view.render();
-            self.tool_form_view.$el.show();
-            $("#left").width("650px");
-        });
-    }
-});
-
 // TODO: move into relevant views
 var templates = {
     // the search bar at the top of the tool panel
@@ -839,37 +780,6 @@ var templates = {
             " <%- description %>",
             "</a>"
         ].join("")
-    ),
-
-    // the tool form for entering tool parameters, viewing help and executing the tool
-    // loaded when a tool link is clicked in the tool panel
-    tool_form: _.template(
-        [
-            '<div class="toolFormTitle"><%- tool.name %> (version <%- tool.version %>)</div>',
-            '<div class="toolFormBody">',
-            "<% _.each( tool.inputs, function( input ){ %>",
-            '<div class="form-row">',
-            '<label for="<%- input.name %>"><%- input.label %>:</label>',
-            '<div class="form-row-input">',
-            "<%= input.html %>",
-            "</div>",
-            '<div class="toolParamHelp" style="clear: both;">',
-            "<%- input.help %>",
-            "</div>",
-            '<div style="clear: both;"></div>',
-            "</div>",
-            "<% }); %>",
-            "</div>",
-            '<div class="form-row form-actions">',
-            '<input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute" />',
-            "</div>",
-            '<div class="toolHelp">',
-            '<div class="toolHelpBody"><% tool.help %></div>',
-            "</div>"
-            // TODO: we need scoping here because 'help' is the dom for the help menu in the masthead
-            // which implies a leaky variable that I can't find
-        ].join(""),
-        { variable: "tool" }
     )
 };
 
@@ -882,6 +792,5 @@ export default {
     ToolCollection: ToolCollection,
     ToolSearch: ToolSearch,
     ToolPanel: ToolPanel,
-    ToolPanelView: ToolPanelView,
-    ToolFormView: ToolFormView
+    ToolPanelView: ToolPanelView
 };
