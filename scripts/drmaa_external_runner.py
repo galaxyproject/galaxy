@@ -33,12 +33,6 @@ def load_job_template(jt, data):
             setattr(jt, attr, data[attr])
 
 
-def load_job_template(jt, data):
-    for attr in DRMAA_jobTemplate_attributes:
-        if attr in data:
-            setattr(jt, attr, data[attr])
-
-
 def valid_numeric_userid(userid):
     try:
         uid = int(userid)
