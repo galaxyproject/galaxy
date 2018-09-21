@@ -21,6 +21,7 @@ LSF_OPTIONS = dict(
    queue="-q",
    cores="-n",
    memory="-M", # memory in kb, change unit.
+   working_dir="-cwd"
 )
 
 PROBLEM_RUNNING_LSF_SUBMIT = \
@@ -64,6 +65,7 @@ def build_submit_description(executable, output, error, user_log, query_params):
     all_query_params.update(query_params)
 
     submit_description = []
+    submit_description.append('#!/bin/bash')
     for key, value in all_query_params.items():
         if key in LSF_OPTIONS.keys():
             submit_description.append('#BSUB %s %s' % (LSF_OPTIONS[key], value))

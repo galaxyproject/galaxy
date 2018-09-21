@@ -3,6 +3,7 @@ Job control via the LSF.
 """
 import logging
 import os
+import stat
 
 from galaxy import model
 from galaxy.jobs.runners import (
@@ -86,7 +87,7 @@ class LSFJobRunner(AsynchronousJobRunner):
         cluster_directory = self.app.config.cluster_files_directory
         ljs.user_log = os.path.join(cluster_directory, 'galaxy_%s.lsf.log' % galaxy_id_tag)
         ljs.register_cleanup_file_attribute('user_log')
-        submit_file = os.path.join(cluster_directory, 'galaxy_%s.lsf.desc' % galaxy_id_tag)
+        submit_file = os.path.join(cluster_directory, 'galaxy_%s.lsf.sh' % galaxy_id_tag)
         executable = ljs.job_file
 
         build_submit_params = dict(
@@ -94,6 +95,7 @@ class LSFJobRunner(AsynchronousJobRunner):
             output=ljs.output_file,
             error=ljs.error_file,
             user_log=ljs.user_log,
+            working_dir=os.path.abspath(job_wrapper.working_directory),
             query_params=query_params,
         )
 
@@ -101,7 +103,7 @@ class LSFJobRunner(AsynchronousJobRunner):
         script = self.get_job_file(
             job_wrapper,
             exit_code_path=ljs.exit_code_file,
-            slots_statement=galaxy_slots_statement,
+            slots_statement=galaxy_slots_statement
         )
         try:
             self.write_executable_script(executable, script)
@@ -113,6 +115,8 @@ class LSFJobRunner(AsynchronousJobRunner):
         cleanup_job = job_wrapper.cleanup_job
         try:
             open(submit_file, "w").write(submit_file_contents)
+            st = os.stat(submit_file)
+            os.chmod(submit_file, st.st_mode | stat.S_IEXEC)
         except Exception:
             if cleanup_job == "always":
                 ljs.cleanup()
@@ -165,9 +169,9 @@ class LSFJobRunner(AsynchronousJobRunner):
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
             try:
-                if os.stat(cjs.user_log).st_size == cjs.user_log_size:
-                    new_watched.append(cjs)
-                    continue
+                #if os.stat(cjs.user_log).st_size == cjs.user_log_size:
+                #    new_watched.append(cjs)
+                #    continue
                 job_running, job_complete, job_failed = lsf_bjob(job_id)
                 cjs.user_log_size = os.stat(cjs.user_log).st_size
             except Exception:
