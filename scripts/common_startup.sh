@@ -241,7 +241,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
 
     # Build client
-    if ! make client; then
+    if ! make client-production-maps; then
         echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
         exit 1
     fi
