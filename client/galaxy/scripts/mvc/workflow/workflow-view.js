@@ -554,7 +554,7 @@ export default Backbone.View.extend({
         );
         _.each(this.options.workflows, workflow => {
             if (workflow.id !== self.options.id) {
-                var copy = new Ui.ButtonIcon({
+                var copy = new Ui.Button({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
@@ -777,7 +777,7 @@ export default Backbone.View.extend({
             content.workflow = this.workflow;
             content.datatypes = this.datatypes;
             content.icon = WorkflowIcons[node.type];
-            content.cls = "ui-portlet-narrow";
+            content.cls = "ui-portlet-section";
             if (node) {
                 var form_type = node.type == "tool" ? "Tool" : "Default";
                 $el.append(new FormWrappers[form_type](content).form.$el);

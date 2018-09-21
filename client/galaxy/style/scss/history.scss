@@ -3,7 +3,7 @@
     @extend .flex-vertical-container;
 
     > .controls {
-        margin: 8px 8px 1px;
+        margin: $margin-h $margin-v;
         padding: 0px;
         flex: 0 0 auto;
 
@@ -374,25 +374,6 @@
 
 // ---------------------------------------------------------------------------- analyze data page - right panel
 #right.history-right-panel {
-    background-color: $panel-bg-color;
-    .unified-panel-header {
-        .unified-panel-header-inner {
-            .panel-header-buttons {
-                .panel-header-button {
-                    display: inline-block;
-                    height: $icon-btn-size;
-                    width: $icon-btn-size;
-                    text-align: center;
-                    line-height: $icon-btn-size - 3;
-                    font-size: 1.2em;
-                    padding: 0px;
-                    &:not(:last-child) {
-                        margin-right: 2px;
-                    }
-                }
-            }
-        }
-    }
     .unified-panel-body {
         display: -webkit-flex;
         .middle {

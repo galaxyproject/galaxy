@@ -27,11 +27,11 @@ export default Backbone.View.extend({
                             <img class="charts-description-image"/>
                         </td>
                         <td>
-                            <div class="charts-description-title ui-form-info"/>
+                            <div class="charts-description-title"/>
                         </td>
                     </tr>
                     </table>
-                    <div class="charts-description-text ui-form-info"/>
+                    <div class="charts-description-text"/>
                 </div>`;
     }
 });

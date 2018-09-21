@@ -82,7 +82,7 @@ export default FormBase.extend({
         if (!this.model.get("collapsible")) {
             this.$el.append(
                 $("<div/>")
-                    .addClass("ui-margin-top-large")
+                    .addClass("mt-2")
                     .append(this._footer())
             );
         }
@@ -258,7 +258,8 @@ export default FormBase.extend({
     /** Templates */
     _templateHelp: function(options) {
         var $tmpl = $("<div/>")
-            .addClass("ui-form-help")
+            .addClass("form-help")
+            .addClass("form-text")
             .append(options.help);
         $tmpl.find("a").attr("target", "_blank");
         $tmpl.find("img").each(function() {

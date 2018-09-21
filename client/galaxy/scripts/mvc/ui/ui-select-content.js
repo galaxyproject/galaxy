@@ -145,7 +145,7 @@ var View = Backbone.View.extend({
             ]
         });
         var $batch_div = $("<div/>")
-            .addClass("ui-form-info")
+            .addClass("form-text text-muted")
             .append($("<i/>").addClass("fa fa-sitemap"))
             .append(
                 $("<span/>").html(

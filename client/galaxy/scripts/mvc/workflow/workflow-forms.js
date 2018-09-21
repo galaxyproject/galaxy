@@ -42,7 +42,7 @@ var Tool = Backbone.View.extend({
                 text_disable: "Set at Runtime",
                 narrow: true,
                 initial_errors: true,
-                cls: "ui-portlet-narrow",
+                cls: "ui-portlet-section",
                 initialmodel: function(process, form) {
                     self._customize(form);
                     process.resolve();

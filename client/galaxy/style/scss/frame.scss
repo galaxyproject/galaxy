@@ -1,4 +1,5 @@
-$frame-default-border: darken($gray-lighter, $border-darken-percent);
+$frame-zindex: 1000;
+$frame-default-border: $gray-300;
 
 .galaxy-frame {
     .corner {
@@ -11,7 +12,7 @@ $frame-default-border: darken($gray-lighter, $border-darken-percent);
     }
 
     .frame-background {
-        z-index: $zindex-navbar;
+        z-index: $frame-zindex;
         position: absolute;
         top: 0px;
         left: 0px;
@@ -23,7 +24,7 @@ $frame-default-border: darken($gray-lighter, $border-darken-percent);
     }
 
     .frame-shadow {
-        z-index: $zindex-navbar + 1;
+        z-index: $frame-zindex + 1;
         position: absolute;
         display: none;
         top: 0px;
@@ -37,7 +38,7 @@ $frame-default-border: darken($gray-lighter, $border-darken-percent);
         panel menu button
     */
     .frame-menu {
-        z-index: $zindex-navbar + 5;
+        z-index: $frame-zindex + 5;
         position: absolute;
         cursor: pointer;
         color: gold;
@@ -57,7 +58,7 @@ $frame-default-border: darken($gray-lighter, $border-darken-percent);
     */
 
     .frame {
-        z-index: $zindex-navbar + 2;
+        z-index: $frame-zindex + 2;
         overflow: hidden;
         position: absolute;
         background: $white;

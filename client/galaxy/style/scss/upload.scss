@@ -29,7 +29,7 @@
     }
     .panel-header-button {
         position: absolute;
-        width: 31px;
+        width: 31px !important;
         text-align: center;
         font-size: 1.2em;
         padding: 0px;
@@ -51,7 +51,6 @@
         text-align: center;
         overflow: scroll;
         font-size: $font-size-base;
-        line-height: $line-height-large;
         -moz-border-radius: $border-radius-large;
         border-radius: $border-radius-large;
         border: 1px dashed $btn-default-border;
@@ -113,7 +112,6 @@
                 width: 1.2em;
                 float: left;
                 position: relative;
-                top: 2px;
             }
             .upload-text-column {
                 position: relative;
@@ -146,7 +144,7 @@
                     width: 100%;
                     padding: 0px;
                     margin: 0px;
-                    line-height: 1.55em;
+                    line-height: 1.6em;
                     .progress-bar {
                         border-radius: inherit;
                         -moz-border-radius: inherit;
@@ -179,10 +177,13 @@
         }
     }
     .upload-icon {
-        @extend .ui-icon;
+        font-size: 1.2em;
+        width: 1.2em;
     }
     .upload-icon-button {
-        @extend .ui-icon-button;
+        font-size: 1.2em;
+        width: 1.2em;
+        cursor: pointer;
         position: relative;
         top: 1px;
     }
@@ -196,8 +197,9 @@
                 width: 175px;
             }
             .upload-source {
-                .ui-button-menu {
-                    width: 70px !important;
+                width: 80px;
+                .btn {
+                    padding: 0px 10px;
                 }
             }
         }
@@ -233,7 +235,6 @@
         }
     }
     .upload-ftp-row:hover {
-        @extend .grid;
         @extend .current;
     }
     th {
@@ -274,6 +275,14 @@
     }
 }
 
+.upload-table {
+    @extend .table;
+    @extend .table-striped;
+    td {
+        padding: 0.5rem;
+    }
+}
+
 .upload-settings {
     position: relative;
     .upload-settings-cover {
@@ -285,6 +294,12 @@
         background: $white;
         opacity: 0.4;
         cursor: no-drop;
+    }
+    tr {
+        cursor: pointer;
+    }
+    tr:hover {
+        @extend .current;
     }
 }
 
