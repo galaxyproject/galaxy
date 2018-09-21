@@ -65,7 +65,8 @@ def build_submit_description(executable, output, error, user_log, query_params):
 
     submit_description = []
     for key, value in all_query_params.items():
-        submit_description.append('#NSUB %s %s' % (LSF_OPTIONS[key], value))
+        if key in LSF_OPTIONS.keys():
+            submit_description.append('#BSUB %s %s' % (LSF_OPTIONS[key], value))
     submit_description.append('#BSUB -o ' + output)
     submit_description.append('#BSUB -e ' + error)
     #submit_description.append('log = ' + user_log)
