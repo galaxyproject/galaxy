@@ -41,11 +41,8 @@ for inspection of live javascript to facilitate debugging, use:
 
     make client-production-maps
 
-Important Note: The development branch of Galaxy does not include client script
-artifacts, and these should not be committed.  When issuing a PR to a stable
-branch, please run "make client-production-maps", and include those artifacts.
-Or, if you'd rather, include only the /client source changes and build
-artifacts can be added by maintainers on merge.
+Important Note: The Galaxy repository does not include client script artifacts,
+and these should not be committed.
 
 
 Automatic Rebuilding (Watch Mode)
