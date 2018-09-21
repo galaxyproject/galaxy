@@ -457,7 +457,9 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     if (other.isMappedOver()) {
                         if (other.isCollection) {
-                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.append(other.collectionType).collectionType;
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.append(
+                                other.collectionType
+                            ).collectionType;
                         } else {
                             output_terminal.attributes.collection_type = other.terminalMapping.mapOver.collectionType;
                         }
@@ -465,8 +467,8 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                         output_terminal.attributes.collection_type = other.attributes.collection_type;
                     }
                     output_terminal.update(output_terminal.attributes);
-                    }
-            })
+                }
+            });
         }
 
         var effectiveMapOver = this._effectiveMapOver(other);
