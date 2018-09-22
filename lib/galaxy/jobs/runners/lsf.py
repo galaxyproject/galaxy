@@ -174,7 +174,7 @@ class LSFJobRunner(AsynchronousJobRunner):
                 #    new_watched.append(cjs)
                 #    continue
                 job_running, job_complete, job_failed = lsf_bjob(job_id)
-                cjs.user_log_size = os.stat(cjs.user_log).st_size
+                #cjs.user_log_size = os.stat(cjs.user_log).st_size
             except Exception:
                 # so we don't kill the monitor thread
                 log.exception("(%s/%s) Unable to check job status" % (galaxy_id_tag, job_id))
