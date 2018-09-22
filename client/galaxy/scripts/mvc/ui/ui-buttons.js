@@ -59,7 +59,10 @@ var Button = Backbone.View.extend({
             this.$el.addClass(options.cls);
             this.$icon.addClass(options.icon);
             if (options.title) {
-                this.$title.html(options.title).addClass("ml-1");
+                this.$title.html(options.title);
+                if (options.icon) {
+                    this.$icon.addClass("mr-1");
+                }
             }
         }
     },
