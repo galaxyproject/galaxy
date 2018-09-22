@@ -5421,7 +5421,7 @@ button.bg-dark:focus {
   .align-self-xl-stretch {
     align-self: stretch !important; } }
 
-.float-left, .ui-portlet .portlet-buttons button, .ui-portlet-section .portlet-buttons button, .ui-select-content .ui-options {
+.float-left, .upload-view-default .upload-box .upload-row .upload-mode, .upload-view-composite .upload-box .upload-row .upload-mode, .ui-portlet .portlet-buttons button, .ui-portlet-section .portlet-buttons button, .ui-select-content .ui-options {
   float: left !important; }
 
 .float-right, .popover .popover-header i, .charts-client .charts-buttons, .collection-creator.list-collection-creator .collection-elements-controls .clear-selected, .collection-creator.list-collection-creator .collection-element .discard, .collection-creator.pair-collection-creator .collection-elements-controls .clear-selected {
@@ -10143,6 +10143,16 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   .upload-view-default .highlight .upload-helper, .upload-view-composite .highlight .upload-helper {
     color: #bdc6d0 !important; }
 
+.upload-view-default .upload-icon, .upload-view-composite .upload-icon, .upload-view-default .upload-icon-button, .upload-view-composite .upload-icon-button, .upload-view-default .upload-box .upload-row .upload-mode, .upload-view-composite .upload-box .upload-row .upload-mode {
+  font-size: 1.2em;
+  width: 1.2em;
+  position: relative;
+  top: 1px;
+  cursor: default; }
+
+.upload-view-default .upload-icon-button, .upload-view-composite .upload-icon-button {
+  cursor: pointer; }
+
 .upload-view-default .upload-box, .upload-view-composite .upload-box {
   width: 100%;
   height: 310px;
@@ -10192,11 +10202,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
       width: 150px;
       min-width: 150px;
       font-size: 0.7rem; }
-    .upload-view-default .upload-box .upload-row .upload-mode, .upload-view-composite .upload-box .upload-row .upload-mode {
-      font-size: 1.2em;
-      width: 1.2em;
-      float: left;
-      position: relative; }
     .upload-view-default .upload-box .upload-row .upload-text-column, .upload-view-composite .upload-box .upload-row .upload-text-column {
       position: relative; }
       .upload-view-default .upload-box .upload-row .upload-text-column .upload-text, .upload-view-composite .upload-box .upload-row .upload-text-column .upload-text {
@@ -10246,17 +10251,6 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   padding-top: 30px; }
   .upload-view-default .upload-buttons button, .upload-view-composite .upload-buttons button {
     margin-left: 5px; }
-
-.upload-view-default .upload-icon, .upload-view-composite .upload-icon {
-  font-size: 1.2em;
-  width: 1.2em; }
-
-.upload-view-default .upload-icon-button, .upload-view-composite .upload-icon-button {
-  font-size: 1.2em;
-  width: 1.2em;
-  cursor: pointer;
-  position: relative;
-  top: 1px; }
 
 .upload-view-composite .upload-box .upload-row .upload-title {
   width: 175px; }
