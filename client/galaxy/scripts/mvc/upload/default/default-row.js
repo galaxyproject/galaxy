@@ -287,7 +287,8 @@ export default Backbone.View.extend({
                         <div class="upload-size"/>
                     </td>
                     <td>
-                        <div class="upload-extension" style="float: left;"/>&nbsp;&nbsp<div class="upload-extension-info upload-icon-button fa fa-search"/>
+                        <div class="upload-extension float-left mr-1"/>
+                        <div class="upload-extension-info upload-icon-button fa fa-search"/>
                     </td>
                     <td>
                         <div class="upload-genome"/>
