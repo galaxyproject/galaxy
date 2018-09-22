@@ -90,12 +90,13 @@ class LSFJobRunner(AsynchronousJobRunner):
         submit_file = os.path.join(cluster_directory, 'galaxy_%s.lsf.sh' % galaxy_id_tag)
         executable = ljs.job_file
 
+        query_params.update({'working_dir': os.path.abspath(job_wrapper.working_directory)})
+
         build_submit_params = dict(
             executable=executable,
             output=ljs.output_file,
             error=ljs.error_file,
             user_log=ljs.user_log,
-            working_dir=os.path.abspath(job_wrapper.working_directory),
             query_params=query_params,
         )
 

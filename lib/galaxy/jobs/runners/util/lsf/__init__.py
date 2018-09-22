@@ -20,7 +20,7 @@ DEFAULT_QUERY_CLASSAD = dict(
 LSF_OPTIONS = dict(
    queue="-q",
    cores="-n",
-   memory="-M", # memory in kb, change unit.
+   memory="-M",  # memory in kb, change unit.
    working_dir="-cwd"
 )
 
@@ -69,7 +69,7 @@ def build_submit_description(executable, output, error, user_log, query_params):
     for key, value in all_query_params.items():
         if key in LSF_OPTIONS.keys():
             submit_description.append('#BSUB %s %s' % (LSF_OPTIONS[key], value))
-    submit_description.append('#BSUB -o ' + user_log)
+    submit_description.append('#BSUB -o ' + output)
     submit_description.append('#BSUB -e ' + error)
     #submit_description.append('log = ' + user_log)
     #submit_description.append('queue')
