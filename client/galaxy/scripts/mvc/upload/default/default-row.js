@@ -220,6 +220,7 @@ export default Backbone.View.extend({
         this.model.set("enabled", status == "init");
         var enabled = this.model.get("enabled");
         this.$text_content.attr("disabled", !enabled);
+        this.$title.attr("disabled", !enabled);
         if (enabled) {
             this.select_genome.enable();
             this.select_extension.enable();

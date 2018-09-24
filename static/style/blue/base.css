@@ -10185,7 +10185,8 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
       width: 130px;
       word-wrap: break-word;
       font-size: 0.7rem;
-      float: left; }
+      float: left;
+      background: inherit; }
     .upload-view-default .upload-box .upload-row .upload-title-extended, .upload-view-composite .upload-box .upload-row .upload-title-extended {
       width: 380px;
       word-wrap: break-word;
