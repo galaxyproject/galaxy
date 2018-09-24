@@ -45,7 +45,7 @@ var faIconButton = options => {
     if (_.isFunction(options.onclick)) {
         let wrapped = _.wrap(options.onclick, function(func) {
             $button.tooltip("hide");
-            $button.blur();
+            $button.parent().attr('tabindex', -1).focus();
             func.apply(this, arguments);
         });
         $button.click(wrapped);
