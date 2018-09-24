@@ -338,6 +338,8 @@ Enhancements
 * Add graph dot datatype and enable it in visualisations
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 6760`_
+* Remove upgrade cruft related to datatypes.
+  `Pull Request 6761`_
 
 .. small_enhancement
 
@@ -1066,4 +1068,5 @@ Fixes
 .. _Pull Request 6749: https://github.com/galaxyproject/galaxy/pull/6749
 .. _Pull Request 6750: https://github.com/galaxyproject/galaxy/pull/6750
 .. _Pull Request 6760: https://github.com/galaxyproject/galaxy/pull/6760
+.. _Pull Request 6761: https://github.com/galaxyproject/galaxy/pull/6761
 
