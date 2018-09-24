@@ -45,6 +45,17 @@
             color: $table-border-color !important;
         }
     }
+    .upload-icon {
+        font-size: 1.2em;
+        width: 1.2em;
+        position: relative;
+        top: 1px;
+        cursor: default;
+    }
+    .upload-icon-button {
+        @extend .upload-icon;
+        cursor: pointer;
+    }
     .upload-box {
         width: 100%;
         height: 310px;
@@ -108,10 +119,9 @@
                 font-size: $font-size-sm;
             }
             .upload-mode {
-                font-size: 1.2em;
-                width: 1.2em;
-                float: left;
-                position: relative;
+                @extend .upload-icon;
+                @extend .float-left;
+
             }
             .upload-text-column {
                 position: relative;
@@ -161,7 +171,6 @@
     }
     .upload-rule-option {
         padding-top: 20px;
-
         .upload-rule-option-title {
             font-weight: bold;
             padding-bottom: 5px;
@@ -175,17 +184,6 @@
         button {
             margin-left: 5px;
         }
-    }
-    .upload-icon {
-        font-size: 1.2em;
-        width: 1.2em;
-    }
-    .upload-icon-button {
-        font-size: 1.2em;
-        width: 1.2em;
-        cursor: pointer;
-        position: relative;
-        top: 1px;
     }
 }
 

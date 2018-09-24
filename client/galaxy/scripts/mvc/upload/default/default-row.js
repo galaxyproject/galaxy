@@ -270,10 +270,44 @@ export default Backbone.View.extend({
 
     /** View template */
     _template: function(options) {
-        return `<tr id="upload-row-${
-            options.id
-        }" class="upload-row"><td><div class="upload-text-column"><div class="upload-mode"/><input class="upload-title"/><div class="upload-text"><div class="upload-text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div><textarea class="upload-text-content form-control"/></div></div></td><td><div class="upload-size"/></td><td><div class="upload-extension" style="float: left;"/>&nbsp;&nbsp<div class="upload-extension-info upload-icon-button fa fa-search"/></td><td><div class="upload-genome"/></td><td><div class="upload-settings upload-icon-button fa fa-gear"/></td><td><div class="upload-info"><div class="upload-info-text"/><div class="upload-info-progress progress"><div class="upload-progress-bar progress-bar progress-bar-success"/><div class="upload-percentage">0%</div></div></div></td><td><div class="upload-symbol ${
-            this.status_classes.init
-        }"/></td></tr>`;
+        return `<tr id="upload-row-${options.id}" class="upload-row">
+                    <td>
+                        <div class="upload-text-column">
+                            <div class="upload-mode"/>
+                            <input class="upload-title ml-2 border rounded"/>
+                            <div class="upload-text">
+                                <div class="upload-text-info">
+                                    You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.
+                                </div>
+                                <textarea class="upload-text-content form-control"/>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="upload-size"/>
+                    </td>
+                    <td>
+                        <div class="upload-extension float-left mr-1"/>
+                        <div class="upload-extension-info upload-icon-button fa fa-search"/>
+                    </td>
+                    <td>
+                        <div class="upload-genome"/>
+                    </td>
+                    <td>
+                        <div class="upload-settings upload-icon-button fa fa-gear"/>
+                    </td>
+                    <td>
+                        <div class="upload-info">
+                            <div class="upload-info-text"/>
+                            <div class="upload-info-progress progress">
+                                <div class="upload-progress-bar progress-bar progress-bar-success"/>
+                                <div class="upload-percentage">0%</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="upload-symbol ${this.status_classes.init}"/>
+                    </td>
+                </tr>`;
     }
 });
