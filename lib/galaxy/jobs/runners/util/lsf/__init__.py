@@ -118,12 +118,13 @@ def lsf_bjob(external_id):
     """
     Checks LSF job state through bjobs for external id (LSF job id)
     """
-    check_job = Popen(('bjobs', '-o', 'stat', '-noheader',external_id), stdout=PIPE, stderr=STDOUT)
+    check_job = Popen(('bjobs', '-o', 'stat', '-noheader', external_id), stdout=PIPE, stderr=STDOUT)
     status, _ = check_job.communicate()
+    status = status.rstrip()
 
-    running = status is "RUN"
-    complete = status is "DONE"
-    failed = status is "EXIT"
+    running = status == "RUN"
+    complete = status == "DONE"
+    failed = status == "EXIT"
     if "is not found" in status:
         raise Exception("Job %s not found in LSF" % external_id)
     return running, failed, complete
