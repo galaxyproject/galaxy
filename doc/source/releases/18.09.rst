@@ -335,6 +335,9 @@ Enhancements
   `Pull Request 6711`_
 * Undo auto-propagation of group tags.
   `Pull Request 6750`_
+* Add graph dot datatype and enable it in visualisations
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 6760`_
 
 .. small_enhancement
 
@@ -1062,4 +1065,5 @@ Fixes
 .. _Pull Request 6748: https://github.com/galaxyproject/galaxy/pull/6748
 .. _Pull Request 6749: https://github.com/galaxyproject/galaxy/pull/6749
 .. _Pull Request 6750: https://github.com/galaxyproject/galaxy/pull/6750
+.. _Pull Request 6760: https://github.com/galaxyproject/galaxy/pull/6760
 
