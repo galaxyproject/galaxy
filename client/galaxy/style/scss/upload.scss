@@ -96,6 +96,7 @@
                 word-wrap: break-word;
                 font-size: $font-size-sm;
                 float: left;
+                background: inherit;
             }
             /* Add back in lenght of extension, genome, and settings. */
             .upload-title-extended {
