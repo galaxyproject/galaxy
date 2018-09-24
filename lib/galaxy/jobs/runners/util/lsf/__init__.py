@@ -84,7 +84,11 @@ def lsf_submit(submit_file):
     """
     external_id = None
     try:
-        submit = Popen(('bsub', submit_file), stdout=PIPE, stderr=STDOUT)
+        # for bsub to read options written on submit file as #BSUB option the
+        # file needs to be redirected as bsub <submit_file instead of giving
+        # it as an argument.
+        with open(submit_file) as sf:
+            submit = Popen('bsub', stdin=sf, stdout=PIPE, stderr=STDOUT)
         message, _ = submit.communicate()
         if submit.returncode == 0:
             external_id = parse_external_id(message, type='lsf')
