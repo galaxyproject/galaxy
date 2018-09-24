@@ -295,6 +295,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
+    webapp.mapper.connect('/api/cloud/authz/', action='index', controller='cloudauthz')
+    webapp.mapper.connect('/api/cloud/authz/create', action='create', controller='cloudauthz')
+
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',
                           controller='histories',
