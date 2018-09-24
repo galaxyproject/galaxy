@@ -42,6 +42,8 @@ Enhancements
 * Expose workflow versions
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6683`_
+* Add Loom datatype and remove rdata.seurat
+  `Pull Request 6723`_
 
 .. enhancement
 
@@ -331,6 +333,8 @@ Enhancements
   `Pull Request 6681`_
 * Add self help to error reporting interface
   `Pull Request 6711`_
+* Undo auto-propagation of group tags.
+  `Pull Request 6750`_
 
 .. small_enhancement
 
@@ -724,10 +728,29 @@ Fixes
   `Pull Request 6705`_
 * unquote the tool_version in the tools API
   `Pull Request 6707`_
+* Fix active highlight
+  `Pull Request 6725`_
 * Badge default fix
   `Pull Request 6726`_
 * remove html tags and newlines from the help text
   `Pull Request 6728`_
+* Fix missing tests for data source sniffing.
+  `Pull Request 6733`_
+* Decode tool id and version in the client, not in the API
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6737`_
+* Fix and test anonymous error reports
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6742`_
+* fix favicon.ico for uwsgi deployments
+  `Pull Request 6743`_
+* dispose of dataset tooltip when the delete is being called
+  `Pull Request 6744`_
+* Fix page editor height for flex panels.
+  `Pull Request 6747`_
+* Use mapped-over collectionType when inferring collectionType through …
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6749`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1023,7 +1046,20 @@ Fixes
 .. _Pull Request 6705: https://github.com/galaxyproject/galaxy/pull/6705
 .. _Pull Request 6707: https://github.com/galaxyproject/galaxy/pull/6707
 .. _Pull Request 6711: https://github.com/galaxyproject/galaxy/pull/6711
+.. _Pull Request 6723: https://github.com/galaxyproject/galaxy/pull/6723
+.. _Pull Request 6725: https://github.com/galaxyproject/galaxy/pull/6725
 .. _Pull Request 6726: https://github.com/galaxyproject/galaxy/pull/6726
 .. _Pull Request 6728: https://github.com/galaxyproject/galaxy/pull/6728
 .. _Pull Request 6730: https://github.com/galaxyproject/galaxy/pull/6730
+.. _Pull Request 6733: https://github.com/galaxyproject/galaxy/pull/6733
+.. _Pull Request 6737: https://github.com/galaxyproject/galaxy/pull/6737
+.. _Pull Request 6739: https://github.com/galaxyproject/galaxy/pull/6739
+.. _Pull Request 6741: https://github.com/galaxyproject/galaxy/pull/6741
+.. _Pull Request 6742: https://github.com/galaxyproject/galaxy/pull/6742
+.. _Pull Request 6743: https://github.com/galaxyproject/galaxy/pull/6743
+.. _Pull Request 6744: https://github.com/galaxyproject/galaxy/pull/6744
+.. _Pull Request 6747: https://github.com/galaxyproject/galaxy/pull/6747
+.. _Pull Request 6748: https://github.com/galaxyproject/galaxy/pull/6748
+.. _Pull Request 6749: https://github.com/galaxyproject/galaxy/pull/6749
+.. _Pull Request 6750: https://github.com/galaxyproject/galaxy/pull/6750
 
