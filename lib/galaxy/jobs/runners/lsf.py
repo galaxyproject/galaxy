@@ -115,9 +115,8 @@ class LSFJobRunner(AsynchronousJobRunner):
 
         cleanup_job = job_wrapper.cleanup_job
         try:
-            open(submit_file, "w").write(submit_file_contents)
-            st = os.stat(submit_file)
-            os.chmod(submit_file, st.st_mode | stat.S_IEXEC)
+            with open(submit_file, "w") as sub:
+                sub.write(submit_file_contents)
         except Exception:
             if cleanup_job == "always":
                 ljs.cleanup()
@@ -145,8 +144,6 @@ class LSFJobRunner(AsynchronousJobRunner):
                 ljs.cleanup()
             job_wrapper.fail("LSF bsub failed", exception=True)
             return
-
-        os.unlink(submit_file)
 
         log.info("(%s) queued as %s" % (galaxy_id_tag, external_job_id))
 
@@ -195,6 +192,8 @@ class LSFJobRunner(AsynchronousJobRunner):
                     if external_metadata:
                         self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
                     log.debug("(%s/%s) job has completed" % (galaxy_id_tag, job_id))
+                    # TODO add deletion of submit file here
+                    # os.unlink()
                     self.work_queue.put((self.finish_job, cjs))
                 continue
             if job_failed:
@@ -227,7 +226,7 @@ class LSFJobRunner(AsynchronousJobRunner):
         cjs.command_line = job.get_command_line()
         cjs.job_wrapper = job_wrapper
         cjs.job_destination = job_wrapper.job_destination
-        cjs.user_log = os.path.join(self.app.config.cluster_files_directory, 'galaxy_%s.condor.log' % galaxy_id_tag)
+        cjs.user_log = os.path.join(self.app.config.cluster_files_directory, 'galaxy_%s.lsf.log' % galaxy_id_tag)
         cjs.register_cleanup_file_attribute('user_log')
         if job.state == model.Job.states.RUNNING:
             log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.id, job.job_runner_external_id))
