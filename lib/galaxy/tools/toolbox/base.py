@@ -328,7 +328,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                             panel_dict.append_tool(tool)
                             log_msg = "Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version)
         if not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids:
-            log.debug(log_msg)
+            if len(log_msg) > 0:
+                log.debug(log_msg)
 
     def _load_tool_panel(self):
         execution_timer = ExecutionTimer()
