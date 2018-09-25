@@ -9,6 +9,14 @@ galaxy\.jobs\.metrics\.instrumenters package
 Submodules
 ----------
 
+galaxy\.jobs\.metrics\.instrumenters\.cgroup module
+---------------------------------------------------
+
+.. automodule:: galaxy.jobs.metrics.instrumenters.cgroup
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.jobs\.metrics\.instrumenters\.collectl module
 -----------------------------------------------------
 
@@ -37,6 +45,14 @@ galaxy\.jobs\.metrics\.instrumenters\.env module
 ------------------------------------------------
 
 .. automodule:: galaxy.jobs.metrics.instrumenters.env
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.jobs\.metrics\.instrumenters\.hostname module
+-----------------------------------------------------
+
+.. automodule:: galaxy.jobs.metrics.instrumenters.hostname
     :members:
     :undoc-members:
     :show-inheritance:

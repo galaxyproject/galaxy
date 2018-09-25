@@ -756,7 +756,7 @@ class Maf(Alignment):
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
             chrom_file = dataset.metadata.spec['species_chromosomes'].param.new_file(dataset=dataset)
-        with open(chrom_file.file_name, 'wb') as chrom_out:
+        with open(chrom_file.file_name, 'w') as chrom_out:
             for spec, chroms in species_chromosomes.items():
                 chrom_out.write("%s\t%s\n" % (spec, "\t".join(chroms)))
         dataset.metadata.species_chromosomes = chrom_file

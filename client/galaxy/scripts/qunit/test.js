@@ -16,6 +16,5 @@ import hc from "qunit/tests/history_contents_model_tests";
 import hda from "qunit/tests/hda_base_tests";
 import modal from "qunit/tests/modal_tests";
 import page from "qunit/tests/page_tests";
-import popover from "qunit/tests/popover_tests";
 import utils from "qunit/tests/utils_tests";
 import ui from "qunit/tests/ui_tests";

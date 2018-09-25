@@ -211,7 +211,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
     def publish_current_history(self):
         self.click_history_option('Share or Publish')
-        self.wait_for_and_click_selector('#make_accessible_and_publish')
+        self.components.histories.sharing.make_accessible_and_publish.wait_for_and_click()
         self.wait_for_selector_clickable('#disable_link_access_and_unpublish')
 
     def navigate_to_published_histories_page(self):

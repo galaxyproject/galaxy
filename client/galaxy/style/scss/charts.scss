@@ -1,17 +1,17 @@
 .charts-client {
     .charts-buttons {
-        float: right;
-        margin: 5px 0px;
+        @extend .float-right;
+        position: absolute;
+        right: 0px;
         z-index: 1000;
-        .ui-button-icon {
-            display: block;
-            margin-right: 5px;
+        width: 170px;
+        top: 4px;
+        .btn {
             background: white;
             color: #666;
-            border-color: white;
+            border: none;
             .icon {
-                font-size: 1.2em;
-                line-height: 1.2em;
+                font-size: 1.5em;
             }
             .fa-check-square {
                 color: $state-success-text;
@@ -30,6 +30,7 @@
                 position: absolute;
                 margin: 40px 20px 50px 10px;
                 width: 50%;
+                word-break: break-word;
             }
             .text {
                 position: relative;
@@ -60,18 +61,18 @@
         width: 30%;
         height: 100vh;
         padding-bottom: 32px;
+        padding-top: 32px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        .ui-message {
-            margin: 5px;
-            width: auto;
+        .alert {
+            @extend .m-2;
         }
         .charts-editor {
             display: block;
             flex: 1;
             overflow: auto;
-            padding: 5px 10px 10px 5px;
+            padding: 5px 10px 30px 5px;
             .charts-description {
                 margin-bottom: 20px;
                 .charts-description-image-td {
@@ -89,18 +90,6 @@
                     margin-top: 5px;
                     word-break: break-word;
                 }
-            }
-            .tab-icon {
-                margin-right: 0px;
-                color: #666;
-                font-size: 1.2em;
-            }
-            .portlet-content {
-                padding: 0px;
-            }
-            .ui-table-section,
-            .ui-portlet-panel .portlet-content {
-                padding-left: 5px;
             }
         }
     }

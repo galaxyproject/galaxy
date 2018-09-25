@@ -64,7 +64,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_resource_params__']
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -80,7 +80,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
                 tool,
                 trans,
                 params,
-                history
+                history,
+                execution_cache=execution_cache,
+                collection_info=collection_info,
             )
 
     execution_tracker.ensure_implicit_collections_populated(history, mapping_params.param_template)
@@ -161,7 +163,7 @@ class ExecutionTracker(object):
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = {}
+        self.implicit_collections = collections.OrderedDict()
 
     @property
     def param_combinations(self):

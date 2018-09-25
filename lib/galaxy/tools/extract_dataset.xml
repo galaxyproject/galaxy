@@ -1,0 +1,88 @@
+<tool id="__EXTRACT_DATASET__"
+      name="Extract Dataset"
+      version="1.0.0"
+      tool_type="extract_element">
+  <description>from a list</description>
+  <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
+  <action module="galaxy.tools.actions.model_operations"
+          class="ModelOperationToolAction"/>
+  <inputs>
+    <param type="data_collection" collection_type="list,paired" name="input" label="Input List" />
+    <conditional name="which">
+      <param name="which_dataset" type="select" label="How should a dataset be selected?">
+        <option value="first">The first dataset</option>
+        <option value="by_identifier">Select by element identifier</option>
+        <option value="by_index">Select by index</option>
+      </param>      
+      <when value="first" />
+      <when value="by_identifier">
+        <param name="identifier" label="Element identifier:" type="text">
+          <sanitizer invalid_char="">
+              <valid initial="string.ascii_letters,string.digits">
+                  <add value="_" />
+                  <add value="-" />
+                  <add value="#" />
+              </valid>
+          </sanitizer>
+        </param>
+      </when>
+      <when value="by_index">
+        <param name="index" label="Element index:" type="integer" value="0" help="Starting from 0.">
+        </param>
+      </when>
+    </conditional>
+  </inputs>
+  <outputs>
+    <data name="output" label="${on_string} (extracted element)" />
+  </outputs>
+  <help><![CDATA[
+
+.. class:: infomark
+
+This tool will create new history datasets from your collection but your quota usage will not increase.
+
+  ]]></help>
+  <tests>
+    <test>
+      <param name="input">
+        <collection type="list">
+          <element name="foo" value="simple_line.txt" />
+          <element name="bar" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line.txt">
+        <metadata name="name" value="foo" />
+      </output>
+    </test>
+    <test>
+      <conditional name="which">
+        <param name="which_dataset" value="by_identifier" />
+        <param name="identifier" value="bar" />
+      </conditional>
+      <param name="input">
+        <collection type="list">
+          <element name="foo" value="simple_line.txt" />
+          <element name="bar" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line_alternative.txt">
+        <metadata name="name" value="bar" />
+      </output>
+    </test>
+    <test>
+      <conditional name="which">
+        <param name="which_dataset" value="by_index" />
+        <param name="index" value="1" />
+      </conditional>
+      <param name="input">
+        <collection type="list">
+          <element name="foo" value="simple_line.txt" />
+          <element name="bar" value="simple_line_alternative.txt" />
+        </collection>
+      </param>
+      <output name="output" file="simple_line_alternative.txt">
+        <metadata name="name" value="bar" />
+      </output>
+    </test>
+  </tests>
+</tool>

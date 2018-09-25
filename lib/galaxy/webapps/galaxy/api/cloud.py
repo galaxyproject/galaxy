@@ -50,7 +50,6 @@ class CloudController(BaseAPIController):
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
             *   history_id:    the (encoded) id of history to which the object should be uploaded to.
-            *   provider:      the name of a cloud-based resource provided (e.g., `aws`, `azure`, or `openstack`).
             *   bucket:        the name of a bucket from which data should be uploaded from (e.g., a bucket name on AWS S3).
             *   objects:       a list of the names of objects to be uploaded.
             *   credentials:   a dictionary containing all the credentials required to authenticated to the
@@ -93,10 +92,6 @@ class CloudController(BaseAPIController):
         if encoded_history_id is None:
             missing_arguments.append("history_id")
 
-        provider = payload.get("provider", None)
-        if provider is None:
-            missing_arguments.append("provider")
-
         bucket = payload.get("bucket", None)
         if bucket is None:
             missing_arguments.append("bucket")
@@ -105,9 +100,9 @@ class CloudController(BaseAPIController):
         if objects is None:
             missing_arguments.append("objects")
 
-        credentials = payload.get("credentials", None)
-        if credentials is None:
-            missing_arguments.append("credentials")
+        encoded_authz_id = payload.get("authz_id", None)
+        if encoded_authz_id is None:
+            missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
             raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
@@ -117,16 +112,20 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
+        try:
+            authz_id = self.decode_id(encoded_authz_id)
+        except exceptions.MalformedId as e:
+            raise ActionInputError('Invalid authz ID. {}'.format(e))
+
         if not isinstance(objects, list):
             raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
                 type(objects)))
 
         datasets = self.cloud_manager.upload(trans=trans,
                                              history_id=history_id,
-                                             provider=provider,
-                                             bucket=bucket,
+                                             bucket_name=bucket,
                                              objects=objects,
-                                             credentials=credentials,
+                                             authz_id=authz_id,
                                              input_args=payload.get("input_args", None))
         rtv = []
         for dataset in datasets:

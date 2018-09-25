@@ -131,6 +131,8 @@
   <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_cat_group_tag.xml" />
+  <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="cheetah_problem_unbound_var.xml" />
@@ -193,5 +195,7 @@
   <tool file="${model_tools_path}/filter_from_file.xml" />
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
   <tool file="${model_tools_path}/apply_rules.xml" />
+  <tool file="${model_tools_path}/build_list.xml" />
+  <tool file="${model_tools_path}/extract_dataset.xml" />
 
 </toolbox>

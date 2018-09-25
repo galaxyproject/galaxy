@@ -11,10 +11,11 @@ import time
 import types
 
 import routes
+import six
 import webob.compat
 import webob.exc
+import webob.exc as httpexceptions  # noqa: F401
 # We will use some very basic HTTP/wsgi utilities from the paste library
-from paste import httpexceptions
 from paste.request import get_cookies
 from paste.response import HeaderDict
 from six.moves.http_cookies import SimpleCookie
@@ -150,7 +151,7 @@ class WebApplication(object):
         controller_name = map_match.pop('controller', None)
         controller = controllers.get(controller_name, None)
         if controller is None:
-            raise httpexceptions.HTTPNotFound("No controller for " + path_info)
+            raise webob.exc.HTTPNotFound("No controller for " + path_info)
         # Resolve action method on controller
         # This is the easiest way to make the controller/action accessible for
         # url_for invocations.  Specifically, grids.
@@ -159,18 +160,18 @@ class WebApplication(object):
         if method is None and not use_default:
             # Skip default, we do this, for example, when we want to fail
             # through to another mapper.
-            raise httpexceptions.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound("No action for " + path_info)
         if method is None:
             # no matching method, we try for a default
             method = getattr(controller, 'default', None)
         if method is None:
-            raise httpexceptions.HTTPNotFound("No action for " + path_info)
+            raise webob.exc.HTTPNotFound("No action for " + path_info)
         # Is the method exposed
         if not getattr(method, 'exposed', False):
-            raise httpexceptions.HTTPNotFound("Action not exposed for " + path_info)
+            raise webob.exc.HTTPNotFound("Action not exposed for " + path_info)
         # Is the method callable
         if not callable(method):
-            raise httpexceptions.HTTPNotFound("Action not callable for " + path_info)
+            raise webob.exc.HTTPNotFound("Action not callable for " + path_info)
         return (controller_name, controller, action, method)
 
     def handle_request(self, environ, start_response, body_renderer=None):
@@ -187,7 +188,7 @@ class WebApplication(object):
             environ['is_api_request'] = False
             controllers = self.controllers
         if map_match is None:
-            raise httpexceptions.HTTPNotFound("No route for " + path_info)
+            raise webob.exc.HTTPNotFound("No route for " + path_info)
         self.trace(path_info=path_info, map_match=map_match)
         # Setup routes
         rc = routes.request_config()
@@ -203,7 +204,7 @@ class WebApplication(object):
             # We don't use default methods if there's a clientside match for this route.
             use_default = client_match is None
             controller_name, controller, action, method = self._resolve_map_match(map_match, path_info, controllers, use_default=use_default)
-        except httpexceptions.HTTPNotFound:
+        except webob.exc.HTTPNotFound:
             # Failed, let's check client routes
             if not environ['is_api_request'] and client_match is not None:
                 controller_name, controller, action, method = self._resolve_map_match(client_match, path_info, controllers)
@@ -333,14 +334,21 @@ def _make_file(self, binary=None):
     # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
     # but for performance reasons it's way better to use Paste's tempfile than to
     # create a new one and copy.
-    return tempfile.NamedTemporaryFile()
+    if six.PY2:
+        return tempfile.NamedTemporaryFile()
+    if self._binary_file or self.length >= 0:
+        return tempfile.NamedTemporaryFile("wb+")
+    else:
+        return tempfile.NamedTemporaryFile("w+", encoding=self.encoding, newline='\n')
 
 
 def _read_lines(self):
     # Always make a new file
     self.file = self.make_file()
-    # Adapt `self.__file = None` to Python name mangling of class-private attributes
-    setattr(self, '_' + self.__class__.__name__ + '__file', None)
+    # Adapt `self.__file = None` to Python name mangling of class-private attributes.
+    # We need to patch the original FieldStorage class attribute, not the cgi_FieldStorage
+    # class.
+    setattr(self, '_FieldStorage__file', None)
     if self.outerboundary:
         self.read_lines_to_outerboundary()
     else:
@@ -361,7 +369,7 @@ class Request(webob.Request):
         Create a new request wrapping the WSGI environment `environ`
         """
         #  self.environ = environ
-        webob.Request.__init__(self, environ, charset='utf-8', decode_param_names=False)
+        webob.Request.__init__(self, environ, charset='utf-8')
     # Properties that are computed and cached on first use
 
     @lazy_property
@@ -442,8 +450,8 @@ class Response(object):
         Send an HTTP redirect response to (target `url`)
         """
         if "\n" in url or "\r" in url:
-            raise httpexceptions.HTTPInternalServerError("Invalid redirect URL encountered.")
-        raise httpexceptions.HTTPFound(url.encode('utf-8'), headers=self.wsgi_headeritems())
+            raise webob.exc.HTTPInternalServerError("Invalid redirect URL encountered.")
+        raise webob.exc.HTTPFound(location=url)
 
     def wsgi_headeritems(self):
         """

@@ -9,22 +9,6 @@ galaxy\.datatypes\.converters package
 Submodules
 ----------
 
-galaxy\.datatypes\.converters\.bcf\_bgzip\_to\_bcf\_converter module
---------------------------------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.bcf_bgzip_to_bcf_converter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-galaxy\.datatypes\.converters\.bcf\_to\_bcf\_bgzip\_converter module
---------------------------------------------------------------------
-
-.. automodule:: galaxy.datatypes.converters.bcf_to_bcf_bgzip_converter
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.datatypes\.converters\.bed\_to\_gff\_converter module
 -------------------------------------------------------------
 
@@ -45,6 +29,14 @@ galaxy\.datatypes\.converters\.bgzip module
 -------------------------------------------
 
 .. automodule:: galaxy.datatypes.converters.bgzip
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.converters\.cram\_to\_bam module
+---------------------------------------------------
+
+.. automodule:: galaxy.datatypes.converters.cram_to_bam
     :members:
     :undoc-members:
     :show-inheritance:

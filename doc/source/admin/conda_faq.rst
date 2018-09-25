@@ -9,7 +9,7 @@ Conda for Tool Dependencies
   <https://docs.galaxyproject.org/en/release_17.09/admin/conda_faq.html>`__ of this
   document will be more directly relatable.
 
-Galaxy tools (also called wrappers) have tradionally used Tool Shed package
+Galaxy tools (also called wrappers) have traditionally used Tool Shed package
 recipes to install their dependencies. These were too tightly tied to Galaxy
 and to the Tool Shed and so have been replaced with Conda as the package
 management solution of choice for newer best practice tools. The
@@ -98,20 +98,20 @@ See `galaxy.yml.sample`_ for the complete list.
 2. How do Conda dependencies work? Where do things get installed?
 *****************************************************************
 
-In contrast to the TS dependency system, which was used exclusively by Galaxy,
+In contrast to the Tool Shed dependency system, which was used exclusively by Galaxy,
 Conda is a pre-existing, independent project. With Conda, it is possible for an
 admin to install and manage packages without touching Galaxy at all. Galaxy can
 handle these dependencies for you, but admins are not required to use Galaxy for
 dependency management.
 
-There are a few new config options in the ``galaxy.yml`` file (see Table 1 or
+There are a few config options in the ``galaxy.yml`` file (see Table 1 or
 `galaxy.yml.sample`_ for more information), but by default Galaxy will install
 Conda (the package manager) and the required packages in the
 ``<tool_dependency_dir>/_conda/`` directory. In this directory, Galaxy will
 create an ``envs`` folder with all of the environments managed by Galaxy. Each
 environment contains a ``lib``, ``bin``, ``share``, and ``include``
-subdirectory, depending on the tool, and is sufficient to get a Galaxy tool up
-and running. Galaxy simply sources this folder via Conda and makes everything
+subdirectories, depending on the tool, which are sufficient to get a Galaxy tool
+running. Galaxy simply sources this folder via Conda and makes everything
 available before the tool is executed on your system.
 
 To summarize, there are four ways to manage Conda dependencies for use
@@ -176,7 +176,7 @@ install new tools there, even if ``conda_auto_install`` is disabled.
 
 During a tool installation, the Galaxy admin has control over which systems will be used to
 install the tool requirements. The default settings will trigger installation
-of both TS and Conda packages (if Conda is present), thus depending on the
+of both Tool Shed and Conda packages (if Conda is present), thus depending on the
 dependency resolvers configuration with regards to what will actually be used during
 the tool execution.
 
@@ -184,8 +184,8 @@ To check if Galaxy has created a Trinity environment, have a look at folders und
 ``<tool_dependency_dir>/_conda/envs/`` (or ``<conda_prefix>/envs`` if you have changed ``conda_prefix`` in your ``galaxy.yml`` file).
 
 We recommend to use Conda on a tool-per-tool basis, by unchecking the checkbox
-for TS dependencies during the tool installation, and for tools where there
-are no available TS dependencies.
+for Tool Shed dependencies during the tool installation, and for tools where there
+are no available Tool Shed dependencies.
 
 
 5. Can I mix traditional Galaxy packages and Conda packages?
@@ -218,7 +218,7 @@ The Galaxy log will show which dependency resolution system is used
 to satisfy each tool dependency and you can specify priorities using the
 ``dependency_resolvers_conf.xml`` file (see question 5 above). Starting from Galaxy
 release 16.07, you can see which dependency will be used (“resolved”) in the
-Admin panel.
+Admin panel (under Tool Management → Manage dependencies).
 
 
 7. How do I go about specifying Conda dependencies for a tool? All the docs still seem to recommend (or exclusively discuss) the ``tool_dependencies.xml`` method.
@@ -322,7 +322,7 @@ characters long.
 14. What can I do about this LOCKERROR error?
 ***********************************************
 
-This question addresses work arounds for Conda if something like the following
+This question addresses workaround for Conda if something like the following
 message appears in your logs:
 
 .. code-block:: bash
@@ -336,7 +336,7 @@ First, you may wish to enable cached dependencies. This can be done by setting
 ``use_cached_dependency_manager`` to ``true`` in ``galaxy.yml``. Without this
 option, many jobs will create a per-job Conda environment with just the
 dependencies needed for that job installed.
-This will be placed on the filesystem containg the job working directory. This
+This will be placed on the filesystem containing the job working directory. This
 is an expensive operation and Conda doesn't always link environments correctly
 across filesystems. Enabling this dependency caching will create a cache
 directory for each required combination of requirements inside the directory
@@ -404,13 +404,13 @@ you let Galaxy install Conda prior to the release of 17.01 you probably have ver
 The command can obviously be adapted to install any version of Conda.
 
 
-.. _Conda documentation: http://conda.pydata.org/docs/building/build.html
-.. _Conda quick-start: http://conda.pydata.org/docs/get-started.html
+.. _Conda documentation: https://conda.io/docs/
+.. _Conda quick-start: https://conda.io/docs/user-guide/getting-started.html
 .. _ansible role: https://github.com/galaxyproject/ansible-galaxy-tools
 .. _BioBlend: https://github.com/galaxyproject/bioblend
 .. _resolver docs: https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
-.. _Conda channels: http://conda.pydata.org/docs/custom-channels.html
-.. _create a Conda package: http://conda.pydata.org/docs/building/recipe.html#conda-recipe-files-overview
+.. _Conda channels: https://conda.io/docs/user-guide/tasks/manage-channels.html
+.. _create a Conda package: https://conda.io/docs/user-guide/tasks/build-packages/recipe.html
 .. _submit: https://bioconda.github.io/#step-4-join-the-team
 .. _BioConda: https://bioconda.github.io
 .. _contact with the IUC: https://gitter.im/galaxy-iuc/iuc

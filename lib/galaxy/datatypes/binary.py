@@ -67,7 +67,7 @@ class Binary(data.Data):
         fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
         trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
-        return open(dataset.file_name)
+        return open(dataset.file_name, mode='rb')
 
 
 class Ab1(Binary):
@@ -734,6 +734,181 @@ class H5(Binary):
             return dataset.peek
         except Exception:
             return "Binary HDF5 file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Loom(H5):
+    """
+    Class describing a Loom file: http://loompy.org/
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test.loom')
+    >>> Loom().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.mz5')
+    >>> Loom().sniff(fname)
+    False
+    """
+    file_ext = "loom"
+    edam_format = "format_3590"
+
+    MetadataElement(name="title", default="", desc="title", readonly=True, visible=True, no_value="")
+    MetadataElement(name="description", default="", desc="description", readonly=True, visible=True, no_value="")
+    MetadataElement(name="url", default="", desc="url", readonly=True, visible=True, no_value="")
+    MetadataElement(name="doi", default="", desc="doi", readonly=True, visible=True, no_value="")
+    MetadataElement(name="loom_spec_version", default="", desc="loom_spec_version", readonly=True, visible=True, no_value="")
+    MetadataElement(name="creation_date", default=None, desc="creation_date", readonly=True, visible=True, no_value=None)
+    MetadataElement(name="shape", default=(), desc="shape", param=metadata.ListParameter, readonly=True, visible=True, no_value=())
+    MetadataElement(name="layers_count", default=0, desc="layers_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="layers_names", desc="layers_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="row_attrs_count", default=0, desc="row_attrs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="row_attrs_names", desc="row_attrs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="col_attrs_count", default=0, desc="col_attrs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="col_attrs_names", desc="col_attrs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="col_graphs_count", default=0, desc="col_graphs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="col_graphs_names", desc="col_graphs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+    MetadataElement(name="row_graphs_count", default=0, desc="row_graphs_count", readonly=True, visible=True, no_value=0)
+    MetadataElement(name="row_graphs_names", desc="row_graphs_names", default=[], param=metadata.SelectParameter, multiple=True, readonly=True, no_value=None)
+
+    def sniff(self, filename):
+        if super(Loom, self).sniff(filename):
+            try:
+                with h5py.File(filename) as loom_file:
+                    return bool(loom_file.attrs.get('LOOM_SPEC_VERSION', False))
+            except Exception:
+                return False
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary Loom file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary Loom file (%s)" % (nice_size(dataset.get_size()))
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(Loom, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with h5py.File(dataset.file_name) as loom_file:
+                dataset.metadata.title = loom_file.attrs.get('title', None)
+                dataset.metadata.description = loom_file.attrs.get('description', None)
+                dataset.metadata.url = loom_file.attrs.get('url', None)
+                dataset.metadata.doi = loom_file.attrs.get('doi', None)
+                dataset.metadata.loom_spec_version = loom_file.attrs.get('LOOM_SPEC_VERSION', None)
+                dataset.creation_date = loom_file.attrs.get('creation_date', None)
+                dataset.metadata.shape = tuple(loom_file['matrix'].shape)
+
+                tmp = list(loom_file['layers'].keys())
+                dataset.metadata.layers_count = len(tmp)
+                dataset.metadata.layers_names = tmp
+
+                tmp = list(loom_file['row_attrs'].keys())
+                dataset.metadata.row_attrs_count = len(tmp)
+                dataset.metadata.row_attrs_names = tmp
+
+                tmp = list(loom_file['col_attrs'].keys())
+                dataset.metadata.col_attrs_count = len(tmp)
+                dataset.metadata.col_attrs_names = tmp
+
+                tmp = list(loom_file['col_graphs'].keys())
+                dataset.metadata.col_graphs_count = len(tmp)
+                dataset.metadata.col_graphs_names = tmp
+
+                tmp = list(loom_file['row_graphs'].keys())
+                dataset.metadata.row_graphs_count = len(tmp)
+                dataset.metadata.row_graphs_names = tmp
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+
+class GmxBinary(Binary):
+    """
+    Base class for GROMACS binary files - xtc, trr, cpt
+    """
+
+    magic_number = None  # variables to be overwritten in the child class
+    file_ext = ""
+
+    def sniff(self, filename):
+        # The first 4 bytes of any GROMACS binary file containing the magic number
+        try:
+            header = open(filename, 'rb').read(struct.calcsize('>1i'))
+            if struct.unpack('>1i', header)[0] == self.magic_number:
+                return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary GROMACS %s file" % (self.file_ext)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary GROMACS %s trajectory file (%s)" % (self.file_ext, nice_size(dataset.get_size()))
+
+
+class Trr(GmxBinary):
+    """
+    Class describing an trr file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.trr')
+    >>> Trr().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Trr().sniff(fname)
+    False
+    """
+
+    file_ext = "trr"
+    magic_number = 1993  # magic number reference: https://github.com/gromacs/gromacs/blob/1c6639f0636d2ffc3d665686756d77227c8ae6d1/src/gromacs/fileio/trrio.cpp
+
+
+class Cpt(GmxBinary):
+    """
+    Class describing a checkpoint (.cpt) file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.cpt')
+    >>> Cpt().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Cpt().sniff(fname)
+    False
+    """
+
+    file_ext = "cpt"
+    magic_number = 171817  # magic number reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/checkpoint.cpp
+
+
+class Xtc(GmxBinary):
+    """
+    Class describing an xtc file from the GROMACS suite
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('md.xtc')
+    >>> Xtc().sniff(fname)
+    True
+    >>> fname = get_test_fname('md.trr')
+    >>> Xtc().sniff(fname)
+    False
+    """
+
+    file_ext = "xtc"
+    magic_number = 1995  # reference: https://github.com/gromacs/gromacs/blob/cec211b2c835ba6e8ea849fb1bf67d7fc19693a4/src/gromacs/fileio/xtcio.cpp
 
 
 class Biom2(H5):
@@ -1862,6 +2037,109 @@ class NetCDF(Binary):
             return False
         except Exception:
             return False
+
+
+class Dcd(Binary):
+    """
+    Class describing a dcd file from the CHARMM molecular simulation program
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_glucose_vacuum.dcd')
+    >>> Dcd().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Dcd().sniff(fname)
+    False
+    """
+    file_ext = "dcd"
+    edam_data = "data_3842"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = b'CORD'
+
+    def sniff(self, filename):
+        # Match the keyword 'CORD' at position 4 or 8 - intsize dependent
+        # Not checking for endianness
+        try:
+            with open(filename, 'rb') as header:
+                intsize = 4
+                header.seek(intsize)
+                if header.read(intsize) == self._magic_number:
+                    return True
+                else:
+                    intsize = 8
+                    header.seek(intsize)
+                    if header.read(intsize) == self._magic_number:
+                        return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary CHARMM/NAMD dcd file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary CHARMM/NAMD dcd file (%s)" % (nice_size(dataset.get_size()))
+
+
+class Vel(Binary):
+    """
+    Class describing a velocity file from the CHARMM molecular simulation program
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('test_charmm.vel')
+    >>> Vel().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> Vel().sniff(fname)
+    False
+    """
+    file_ext = "vel"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic_number = b'VELD'
+
+    def sniff(self, filename):
+        # Match the keyword 'VELD' at position 4 or 8 - intsize dependent
+        # Not checking for endianness
+        try:
+            with open(filename, 'rb') as header:
+                intsize = 4
+                header.seek(intsize)
+                if header.read(intsize) == self._magic_number:
+                    return True
+                else:
+                    intsize = 8
+                    header.seek(intsize)
+                    if header.read(intsize) == self._magic_number:
+                        return True
+            return False
+        except Exception:
+            return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "Binary CHARMM velocity file"
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "Binary CHARMM velocity file (%s)" % (nice_size(dataset.get_size()))
 
 
 class DAA(Binary):

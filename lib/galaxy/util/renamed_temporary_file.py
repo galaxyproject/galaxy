@@ -10,6 +10,11 @@ class RenamedTemporaryFile(object):
     path on exit.
     """
     def __init__(self, final_path, **kwargs):
+        """
+        >>> dir = tempfile.mkdtemp()
+        >>> with RenamedTemporaryFile(os.path.join(dir, 'test.txt'), mode="w") as out:
+        ...     _ = out.write('bla')
+        """
         tmpfile_dir = kwargs.pop('dir', None)
 
         # Put temporary file in the same directory as the location for the
@@ -18,7 +23,7 @@ class RenamedTemporaryFile(object):
         if tmpfile_dir is None:
             tmpfile_dir = os.path.dirname(final_path)
 
-        self.tmpfile = tempfile.NamedTemporaryFile(dir=tmpfile_dir, **kwargs)
+        self.tmpfile = tempfile.NamedTemporaryFile(dir=tmpfile_dir, delete=False, **kwargs)
         self.final_path = final_path
 
     def __getattr__(self, attr):
@@ -33,7 +38,7 @@ class RenamedTemporaryFile(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if exc_type is None:
-            self.tmpfile.delete = False
+            self.tmpfile.flush()
             result = self.tmpfile.__exit__(exc_type, exc_val, exc_tb)
             os.rename(self.tmpfile.name, self.final_path)
         else:

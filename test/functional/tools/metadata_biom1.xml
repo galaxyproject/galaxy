@@ -22,7 +22,7 @@ table_columns: ${input_biom1.metadata.table_columns}</configfile>
     <tests>
       <test>
         <param name="input_biom1" value="input_taxonomy.biom1" ftype="biom1" />
-        <output name="output_of_input_metadata" ftype="txt" file="biom1_metadata_test.txt"/>
+        <output name="output_of_input_metadata" ftype="txt" file="biom1_metadata_test.txt" lines_diff="4"/>
       </test>
     </tests>
 </tool>

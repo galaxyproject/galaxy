@@ -1,4 +1,5 @@
 import os
+import shutil
 import tarfile
 from shutil import rmtree
 from tempfile import mkdtemp
@@ -6,6 +7,7 @@ from tempfile import mkdtemp
 from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.tools.imp_exp import JobImportHistoryArchiveWrapper, unpack_tar_gz_archive
+from galaxy.tools.imp_exp.export_history import create_archive
 from ..unittest_utils.galaxy_mock import MockApp
 
 
@@ -30,6 +32,29 @@ def _run_jihaw_cleanup(history_archive, msg):
         assert data != 'insecure', msg
     except MalformedContents:
         pass
+
+
+def test_create_archive():
+    tempdir = mkdtemp()
+    dataset = os.path.join(tempdir, 'dataset_1.dat')
+    history_attrs_file = os.path.join(tempdir, 'history_attrs_file.txt')
+    datasets_attrs_file = os.path.join(tempdir, 'dataset_attrs_file.txt')
+    jobs_attrs_file = os.path.join(tempdir, 'jobs_attrs_file.txt')
+    out_file = os.path.join(tempdir, 'out.tar.gz')
+    with open(dataset, 'w') as out:
+        out.write('Hello\n')
+    with open(history_attrs_file, 'w') as out:
+        out.write(HISTORY_ATTRS)
+    with open(datasets_attrs_file, 'w') as out:
+        out.write(DATASETS_ATTRS.format(file_name=dataset))
+    with open(jobs_attrs_file, 'w') as out:
+        out.write(JOBS_ATTRS)
+    try:
+        create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out_file, gzip=True)
+        with tarfile.open(out_file) as t:
+            assert t.getnames() == ['datasets/Pasted_Entry_1.txt', 'history_attrs.txt', 'datasets_attrs.txt', 'jobs_attrs.txt']
+    finally:
+        shutil.rmtree(tempdir)
 
 
 def test_history_import_symlink():

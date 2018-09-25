@@ -2,6 +2,7 @@
 Modules used in building workflows
 """
 import logging
+import re
 from json import loads
 from xml.etree.ElementTree import (
     Element,
@@ -31,6 +32,7 @@ from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
     DataCollectionToolParameter,
     DataToolParameter,
+    is_runtime_value,
     parameter_types,
     RuntimeValue,
     SelectToolParameter,
@@ -258,6 +260,11 @@ class WorkflowModule(object):
 
         progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
 
+    def get_replacement_parameters(self, step):
+        """Return a list of replacement parameters."""
+
+        return []
+
 
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
@@ -323,36 +330,29 @@ class SubWorkflowModule(WorkflowModule):
     def get_data_outputs(self):
         outputs = []
         if hasattr(self.subworkflow, 'workflow_outputs'):
-            for workflow_output in self.subworkflow.workflow_outputs:
-                if workflow_output.workflow_step.type in {'data_input', 'data_collection_input'}:
-                    # It is just confusing to display the input data as output data in subworkflows
-                    continue
-                output_step = workflow_output.workflow_step
-                label = workflow_output.label
-                target_output_name = workflow_output.output_name
-                if not label:
-                    label = "%s:%s" % (output_step.order_index, target_output_name)
-                output_module = module_factory.from_workflow_step(self.trans, output_step)
-                data_outputs = output_module.get_data_outputs()
-                target_output = {}
-                for data_output in data_outputs:
-                    if data_output["name"] == target_output_name:
-                        target_output = data_output
-                output = dict(
-                    name=label,
-                    label=label,
-                    extensions=target_output.get('extensions', ['input']),
-                )
-                if target_output.get("collection"):
-                    output["collection"] = True
-                    output["collection_type"] = target_output["collection_type"]
-                    # TODO: collection_type_source should be set here to be more precise/correct -
-                    # but it can't be passed through as is since it would reference something
-                    # the editor can't see. Since we fix input collection types to workflows
-                    # the more correct thing to do would be to walk the subworkflow and
-                    # determine the effective collection type if collection_type_source
-                    # is set.
-                outputs.append(output)
+            from galaxy.managers.workflows import WorkflowContentsManager
+            workflow_contents_manager = WorkflowContentsManager(self.trans.app)
+            subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(trans=self.trans,
+                                                                                  stored=self.subworkflow.stored_workflow,
+                                                                                  workflow=self.subworkflow,
+                                                                                  tooltip=False)
+            for order_index in sorted(subworkflow_dict['steps']):
+                step = subworkflow_dict['steps'][order_index]
+                data_outputs = subworkflow_dict['steps'][order_index]['data_outputs']
+                for workflow_output in step['workflow_outputs']:
+                    label = workflow_output['label']
+                    if not label:
+                        label = "%s:%s" % (order_index, workflow_output['output_name'])
+                    for data_output in data_outputs:
+                        if data_output['name'] == workflow_output['output_name']:
+                            data_output['label'] = label
+                            data_output['name'] = label
+                            # That's the right data_output
+                            break
+                    else:
+                        # This hopefully can't happen, but let's be clear
+                        raise Exception("Workflow output '%s' defined, but not listed among data outputs" % workflow_output['output_name'])
+                    outputs.append(data_output)
         return outputs
 
     def get_content_id(self):
@@ -370,7 +370,7 @@ class SubWorkflowModule(WorkflowModule):
         subworkflow_progress = subworkflow_invoker.progress
         outputs = {}
         for workflow_output in subworkflow.workflow_outputs:
-            workflow_output_label = workflow_output.label or "%s:%s" % (step.order_index, workflow_output.output_name)
+            workflow_output_label = workflow_output.label or "%s:%s" % (workflow_output.workflow_step.order_index, workflow_output.output_name)
             replacement = subworkflow_progress.get_replacement_workflow_output(workflow_output)
             outputs[workflow_output_label] = replacement
         progress.set_step_outputs(invocation_step, outputs)
@@ -380,6 +380,50 @@ class SubWorkflowModule(WorkflowModule):
         state = DefaultToolState()
         state.inputs = dict()
         return state
+
+    def get_runtime_inputs(self, connections=None):
+        inputs = {}
+        for step in self.subworkflow.steps:
+            if step.type == "tool":
+                tool = step.module.tool
+                tool_inputs = step.module.state
+
+                def callback(input, prefixed_name, prefixed_label, value=None, **kwds):
+                    # All data parameters are represented as runtime values, skip them
+                    # here.
+                    if input.type in ['data', 'data_collection']:
+                        return
+
+                    if is_runtime_value(value):
+                        input_name = "%d|%s" % (step.order_index, prefixed_name)
+                        inputs[input_name] = InputProxy(input, input_name)
+
+                visit_input_values(tool.inputs, tool_inputs.inputs, callback)
+
+        return inputs
+
+    def get_replacement_parameters(self, step):
+        """Return a list of replacement parameters."""
+        replacement_parameters = set()
+        for subworkflow_step in self.subworkflow.steps:
+            module = subworkflow_step.module
+            for replacement_parameter in module.get_replacement_parameters(subworkflow_step):
+                replacement_parameters.add(replacement_parameter)
+
+        return list(replacement_parameters)
+
+
+class InputProxy(object):
+    """Provide InputParameter-interfaces over inputs but renamed for workflow context."""
+
+    def __init__(self, input, prefixed_name):
+        self.input = input
+        self.prefixed_name = prefixed_name
+
+    def to_dict(self, *args, **kwds):
+        as_dict = self.input.to_dict(*args, **kwds)
+        as_dict["name"] = self.prefixed_name
+        return as_dict
 
 
 class InputModule(WorkflowModule):
@@ -1053,6 +1097,16 @@ class ToolModule(WorkflowModule):
             action_arguments = None
         return PostJobAction(value['action_type'], step, output_name, action_arguments)
 
+    def get_replacement_parameters(self, step):
+        """Return a list of replacement parameters."""
+        replacement_parameters = set()
+        for pja in step.post_job_actions:
+            for argument in pja.action_arguments.values():
+                for match in re.findall(r'\$\{(.+?)\}', argument):
+                    replacement_parameters.add(match)
+
+        return list(replacement_parameters)
+
 
 class WorkflowModuleFactory(object):
 
@@ -1175,16 +1229,23 @@ class WorkflowModuleInjector(object):
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
         module.add_dummy_datasets(connections=step.input_connections, steps=steps)
+
+        # Populate subworkflow components
+        if step.type == "subworkflow":
+            subworkflow_param_map = step_args or {}
+            unjsonified_subworkflow_param_map = {}
+            for key, value in subworkflow_param_map.items():
+                unjsonified_subworkflow_param_map[int(key)] = value
+
+            subworkflow = step.subworkflow
+            populate_module_and_state(self.trans, subworkflow, param_map=unjsonified_subworkflow_param_map)
+
         state, step_errors = module.compute_runtime_state(self.trans, step_args)
         step.state = state
 
         # Fix any missing parameters
         step.upgrade_messages = module.check_and_update_state()
 
-        # Populate subworkflow components
-        if step.type == "subworkflow":
-            subworkflow = step.subworkflow
-            populate_module_and_state(self.trans, subworkflow, param_map={})
         return step_errors
 
 

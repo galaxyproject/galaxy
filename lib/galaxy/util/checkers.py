@@ -4,7 +4,7 @@ import sys
 import tarfile
 import zipfile
 
-from six import StringIO
+from six import BytesIO
 from six.moves import filter
 
 from galaxy import util
@@ -25,7 +25,7 @@ HTML_CHECK_LINES = 100
 
 def check_html(file_path, chunk=None):
     if chunk is None:
-        temp = open(file_path, "U")
+        temp = open(file_path)
     elif hasattr(chunk, "splitlines"):
         temp = chunk.splitlines()
     else:
@@ -39,6 +39,7 @@ def check_html(file_path, chunk=None):
     # TODO: Potentially reading huge lines into string here, this should be
     # reworked.
     for line in temp:
+        line = util.unicodify(line)
         lineno += 1
         matches = regexp1.search(line) or regexp2.search(line) or regexp3.search(line) or regexp4.search(line) or regexp5.search(line)
         if matches:
@@ -55,9 +56,9 @@ def check_html(file_path, chunk=None):
 def check_binary(name, file_path=True):
     # Handles files if file_path is True or text if file_path is False
     if file_path:
-        temp = open(name, "U")
+        temp = open(name, "rb")
     else:
-        temp = StringIO(name)
+        temp = BytesIO(name)
     try:
         return util.is_binary(temp.read(1024))
     finally:

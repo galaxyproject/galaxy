@@ -55,8 +55,7 @@ var View = Backbone.View.extend({
                                         new Ui.Message({
                                             message: error_message,
                                             status: "danger",
-                                            persistent: true,
-                                            large: true
+                                            persistent: true
                                         }).$el
                                     );
                                 } else {
@@ -121,8 +120,8 @@ var View = Backbone.View.extend({
             icon: "fa-check",
             tooltip: `Execute: ${options.name} (${options.version})`,
             title: _l("Execute"),
-            cls: "btn btn-primary ui-clear-float",
-            wait_cls: "btn btn-info ui-clear-float",
+            cls: "btn btn-primary",
+            wait_cls: "btn btn-info",
             onclick: function() {
                 execute_button.wait();
                 form.portlet.disable();
@@ -323,7 +322,7 @@ var View = Backbone.View.extend({
         var index = {};
         for (let i in job_def.inputs) {
             let input = job_def.inputs[i];
-            if ($.isArray(input.values)) {
+            if (input && $.isArray(input.values)) {
                 for (let j of input.values) {
                     if (j.src && !index[j.id]) {
                         inputs.push(j);

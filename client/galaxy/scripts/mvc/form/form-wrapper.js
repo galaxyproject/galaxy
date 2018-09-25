@@ -35,7 +35,7 @@ var View = Backbone.View.extend({
                             tooltip: options.submit_tooltip,
                             title: options.submit_title || "Save",
                             icon: options.submit_icon || "fa-save",
-                            cls: "btn btn-primary ui-clear-float",
+                            cls: "btn btn-primary",
                             onclick: function() {
                                 self._submit(form);
                             }

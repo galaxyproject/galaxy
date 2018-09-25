@@ -37,7 +37,7 @@ var Base = Backbone.View.extend({
             .empty()
             .removeClass()
             .addClass("ui-options")
-            .append((this.$message = $("<div/>")))
+            .append((this.$message = $("<div/>").addClass("mt-2")))
             .append((this.$menu = $("<div/>").addClass("ui-options-menu")))
             .append((this.$options = $(this._template())));
 
@@ -188,7 +188,7 @@ var Base = Backbone.View.extend({
         this.$message
             .show()
             .removeClass()
-            .addClass(`ui-message alert alert-${status}`)
+            .addClass(`alert alert-${status}`)
             .html(text);
     },
 
@@ -275,7 +275,7 @@ RadioButton.View = Base.extend({
                 type: "radio",
                 name: this.model.id,
                 value: pair.value
-            })
+            }).hide()
         );
         if (pair.label) {
             $el.append(pair.label);

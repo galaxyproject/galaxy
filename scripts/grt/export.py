@@ -48,7 +48,7 @@ def kw_metrics(job):
     }
 
 
-class Sanitization:
+class Sanitization(object):
 
     def __init__(self, sanitization_config, model, sa_session):
         self.sanitization_config = sanitization_config

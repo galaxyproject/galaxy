@@ -327,7 +327,7 @@ def collect_dynamic_outputs(
             collection_builder = collections_service.collection_builder_for(
                 collection
             )
-            dataset_collectors = map(dataset_collector, output_collection_def.dataset_collector_descriptions)
+            dataset_collectors = [dataset_collector(description) for description in output_collection_def.dataset_collector_descriptions]
             output_name = output_collection_def.name
             filenames = job_context.find_files(output_name, collection, dataset_collectors)
             job_context.populate_collection_elements(
@@ -549,7 +549,9 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
     new_outdata_name = None
     primary_datasets = {}
     for output_index, (name, outdata) in enumerate(output.items()):
-        dataset_collectors = map(dataset_collector, tool.outputs[name].dataset_collector_descriptions) if name in tool.outputs else [DEFAULT_DATASET_COLLECTOR]
+        dataset_collectors = [DEFAULT_DATASET_COLLECTOR]
+        if name in tool.outputs:
+            dataset_collectors = [dataset_collector(description) for description in tool.outputs[name].dataset_collector_descriptions]
         filenames = odict.odict()
         if 'new_file_path' in app.config.collect_outputs_from:
             if DEFAULT_DATASET_COLLECTOR in dataset_collectors:
@@ -672,7 +674,7 @@ DiscoveredFile = namedtuple('DiscoveredFile', ['path', 'collector', 'match'])
 
 
 def discover_files(output_name, tool_provided_metadata, extra_file_collectors, job_working_directory, matchable):
-    extra_file_collectors = list(extra_file_collectors)
+    extra_file_collectors = extra_file_collectors
     if extra_file_collectors and extra_file_collectors[0].discover_via == "tool_provided_metadata":
         # just load entries from tool provided metadata...
         assert len(extra_file_collectors) == 1

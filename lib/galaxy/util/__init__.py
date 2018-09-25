@@ -21,6 +21,7 @@ import sys
 import tempfile
 import threading
 import time
+import unicodedata
 from datetime import datetime
 from hashlib import md5
 from os.path import relpath
@@ -65,7 +66,7 @@ DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 gzip_magic = b'\x1f\x8b'
 bz2_magic = b'BZh'
 DEFAULT_ENCODING = os.environ.get('GALAXY_DEFAULT_ENCODING', 'utf-8')
-NULL_CHAR = '\000'
+NULL_CHAR = b'\x00'
 BINARY_CHARS = [NULL_CHAR]
 FILENAME_VALID_CHARS = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
 
@@ -88,20 +89,19 @@ def remove_protocol_from_url(url):
     return new_url.rstrip('/')
 
 
-def is_binary(value, binary_chars=None):
+def is_binary(value):
     """
     File is binary if it contains a null-byte by default (e.g. behavior of grep, etc.).
     This may fail for utf-16 files, but so would ASCII encoding.
     >>> is_binary( string.printable )
     False
-    >>> is_binary( '\\xce\\x94' )
+    >>> is_binary( b'\\xce\\x94' )
     False
-    >>> is_binary( '\\000' )
+    >>> is_binary( b'\\x00' )
     True
     """
-    if binary_chars is None:
-        binary_chars = BINARY_CHARS
-    for binary_char in binary_chars:
+    value = smart_str(value)
+    for binary_char in BINARY_CHARS:
         if binary_char in value:
             return True
     return False
@@ -331,8 +331,15 @@ def get_file_size(value, default=None):
                 return default
 
 
-def shrink_stream_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
-    rval = ''
+def shrink_stream_by_size(value, size, join_by=b"..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
+    """
+    Shrinks bytes read from `value` to `size`.
+
+    `value` needs to implement tell/seek, so files need to be opened in binary mode.
+    Returns unicode text with invalid characters replaced.
+    """
+    rval = b''
+    join_by = smart_str(join_by)
     if get_file_size(value) > size:
         start = value.tell()
         len_join_by = len(join_by)
@@ -363,7 +370,7 @@ def shrink_stream_by_size(value, size, join_by="..", left_larger=True, beginning
             if not data:
                 break
             rval += data
-    return rval
+    return unicodify(rval)
 
 
 def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False):
@@ -931,9 +938,9 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + '0' * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
+def unicodify(value, encoding=DEFAULT_ENCODING, error='replace'):
     u"""
-    Returns a unicode string or None.
+    Returns a Unicode string or None.
 
     >>> assert unicodify(None) is None
     >>> assert unicodify('simple string') == u'simple string'
@@ -960,8 +967,9 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
         if not isinstance(value, text_type):
             value = text_type(value, encoding, error)
     except Exception:
-        log.exception("value %s could not be coerced to unicode", value)
-        return default
+        msg = "Value '%s' could not be coerced to Unicode" % value
+        log.exception(msg)
+        raise Exception(msg)
     return value
 
 
@@ -998,6 +1006,11 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
         return s.decode(DEFAULT_ENCODING, errors).encode(encoding, errors)
     else:
         return s
+
+
+def strip_control_characters(s):
+    """Strip unicode control characters from a string."""
+    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
 
 
 def object_to_string(obj):

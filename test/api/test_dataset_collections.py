@@ -3,7 +3,7 @@ import tarfile
 
 from base import api
 from base.populators import DatasetCollectionPopulator, DatasetPopulator
-from six import StringIO
+from six import BytesIO
 
 
 class DatasetCollectionApiTestCase(api.ApiTestCase):
@@ -98,7 +98,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_dce) == 3, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
@@ -113,7 +113,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         hdca_id = dataset_collection['id']
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=hdca_id)
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         collection_name = dataset_collection['name']
@@ -129,7 +129,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         pair = returned_dce[0]
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 2, "Expected 2 elements in [%s]" % namelist
         pair_collection_name = pair['element_identifier']
@@ -143,7 +143,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
 
@@ -154,13 +154,13 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert len(returned_dce) == 1, dataset_collection
         create_response = self._download_dataset_collection(history_id=self.history_id, hdca_id=dataset_collection['id'])
         self._assert_status_code_is(create_response, 200)
-        tar_contents = tarfile.open(fileobj=StringIO(create_response.content))
+        tar_contents = tarfile.open(fileobj=BytesIO(create_response.content))
         namelist = tar_contents.getnames()
         assert len(namelist) == 3, "Expected 3 elements in [%s]" % namelist
 
     def test_hda_security(self):
         element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
-
+        self.dataset_populator.make_private(self.history_id, element_identifiers[0]["id"])
         with self._different_user():
             history_id = self.dataset_populator.new_history()
             payload = dict(
@@ -169,11 +169,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
                 element_identifiers=json.dumps(element_identifiers),
                 collection_type="paired",
             )
-
-            self._post("dataset_collections", payload)
-            # TODO: re-enable once there is a way to restrict access
-            # to this dataset via the API.
-            # self._assert_status_code_is( create_response, 403 )
+            create_response = self._post("dataset_collections", payload)
+            self._assert_status_code_is(create_response, 403)
 
     def test_enforces_unique_names(self):
         element_identifiers = self.dataset_collection_populator.list_identifiers(self.history_id)

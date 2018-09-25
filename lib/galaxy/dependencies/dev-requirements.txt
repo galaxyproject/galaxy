@@ -1,1 +1,1 @@
-pipfiles/develop/pinned-requirements.txt
+pipfiles/default/pinned-dev-requirements.txt

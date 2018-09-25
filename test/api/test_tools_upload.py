@@ -9,6 +9,7 @@ from base.constants import (
 from base.populators import (
     DatasetPopulator,
     skip_without_datatype,
+    uses_test_history,
 )
 
 from galaxy.tools.verify.test_data import TestDataResolver
@@ -79,26 +80,32 @@ class ToolsUploadTestCase(api.ApiTestCase):
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
         self.assertEquals(result_content, ONE_TO_SIX_WITH_TABS)
 
-    def test_fetch_compressed_requires_explicit_type(self):
+    def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
         details = self._upload_and_get_details(open(fastqgz_path, "rb"), api="fetch", ext="fastqsanger.gz")
         assert details["state"] == "ok"
         assert details["file_ext"] == "fastqsanger.gz"
 
-    def test_fetch_compressed_with_auto_binary(self):
-        # UNSTABLE_FLAG: this might decompress automatically or fallback to fastqsanger.gz or gz datatype in the future.
+    def test_fetch_compressed_default(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
         details = self._upload_and_get_details(open(fastqgz_path, "rb"), api="fetch", assert_ok=False)
         assert details["state"] == "ok"
-        assert details["file_ext"] == "binary", details
+        assert details["file_ext"] == "fastqsanger.gz", details
 
-    def test_fetch_compressed_auto_decompress_target(self):
+    @uses_test_history(require_new=True)
+    def test_fetch_compressed_auto_decompress_target(self, history_id):
+        # TODO: this should definitely be fixed to allow auto decompression via that API.
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
-        details = self._upload_and_get_details(open(fastqgz_path, "rb"), api="fetch", assert_ok=False, auto_decompress=True)
+        details = self._upload_and_get_details(open(fastqgz_path, "rb"),
+                                               api="fetch",
+                                               history_id=history_id,
+                                               assert_ok=False,
+                                               auto_decompress=True)
         assert details["state"] == "ok"
-        assert details["file_ext"] == "fastqsanger", details
+        assert details["file_ext"] == "fastqsanger.gz", details
 
-    def test_upload_decompresses_auto_by_default(self):
+    def test_upload_decompress_off_with_auto_by_default(self):
+        # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         bedgz_path = TestDataResolver().get_filename("4.bed.gz")
         details = self._upload_and_get_details(open(bedgz_path, "rb"), file_type="auto")
         assert details["state"] == "ok"
@@ -119,15 +126,21 @@ class ToolsUploadTestCase(api.ApiTestCase):
         assert details["file_size"] == 161, details
 
     def test_upload_auto_decompress_off(self):
-        # UNSTABLE_FLAG: This might default to a gz or bed.gz datatype in the future.
+        # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         bedgz_path = TestDataResolver().get_filename("4.bed.gz")
         details = self._upload_and_get_details(open(bedgz_path, "rb"), file_type="auto", assert_ok=False, auto_decompress=False)
         assert details["file_ext"] == "binary", details
 
-    def test_fetch_compressed_with_auto(self):
-        # UNSTABLE_FLAG and TODO: this should definitely be fixed to allow auto decompression via that API.
+    @uses_test_history(require_new=True)
+    def test_fetch_compressed_with_auto(self, history_id):
+        # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
+        # TODO: this should definitely be fixed to allow auto decompression via that API.
         fastqgz_path = TestDataResolver().get_filename("4.bed.gz")
-        details = self._upload_and_get_details(open(fastqgz_path, "rb"), api="fetch", auto_decompress=True, assert_ok=False)
+        details = self._upload_and_get_details(open(fastqgz_path, "rb"),
+                                               api="fetch",
+                                               history_id=history_id,
+                                               auto_decompress=True,
+                                               assert_ok=False)
         assert details["state"] == "ok"
         assert details["file_ext"] == "bed"
 
@@ -454,9 +467,9 @@ class ToolsUploadTestCase(api.ApiTestCase):
         assert_ok = upload_kwds.get("assert_ok", True)
         return self.dataset_populator.get_history_dataset_details(history_id, dataset=new_dataset, assert_ok=assert_ok)
 
-    def _upload(self, content, api="upload1", **upload_kwds):
+    def _upload(self, content, api="upload1", history_id=None, **upload_kwds):
         assert_ok = upload_kwds.get("assert_ok", True)
-        history_id = self.dataset_populator.new_history()
+        history_id = history_id or self.dataset_populator.new_history()
         if api == "upload1":
             new_dataset = self.dataset_populator.new_dataset(history_id, content=content, **upload_kwds)
         else:

@@ -75,11 +75,50 @@ class AddColumnMetadataRuleDefinition(BaseRuleDefinition):
 
     def apply(self, rule, data, sources):
         rule_value = rule["value"]
-        identifier_index = int(rule_value[len("identifier"):])
+        if rule_value.startswith("identifier"):
+            identifier_index = int(rule_value[len("identifier"):])
+
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
+
+        elif rule_value == "tags":
+
+            def sorted_tags(index):
+                tags = sorted(sources[index]["tags"])
+                return [",".join(tags)]
+
+            new_rows = []
+            for index, row in enumerate(data):
+                new_rows.append(row + sorted_tags(index))
+
+        return new_rows, sources
+
+
+class AddColumnGroupTagValueRuleDefinition(BaseRuleDefinition):
+    rule_type = "add_column_group_tag_value"
+
+    def validate_rule(self, rule):
+        _ensure_rule_contains_keys(rule, {"value": six.string_types})
+
+    def apply(self, rule, data, sources):
+        rule_value = rule["value"]
+        tag_prefix = "group:%s:" % rule_value
 
         new_rows = []
         for index, row in enumerate(data):
-            new_rows.append(row + [sources[index]["identifiers"][identifier_index]])
+            group_tag_value = None
+            source = sources[index]
+            tags = source["tags"]
+            for tag in sorted(tags):
+                if tag.startswith(tag_prefix):
+                    group_tag_value = tag[len(tag_prefix):]
+                    break
+
+            if group_tag_value is None:
+                group_tag_value = rule.get("default_value", "")
+
+            new_rows.append(row + [group_tag_value])
 
         return new_rows, sources
 
@@ -296,7 +335,8 @@ class AddFilterEmptyRuleDefinition(BaseRuleDefinition):
         target_column = rule["target_column"]
 
         def _filter(index):
-            return not invert if len(data[target_column]) == 0 else invert
+            non_empty = len(data[index][target_column]) != 0
+            return not invert if non_empty else invert
 
         return _filter_index(_filter, data), _filter_index(_filter, sources)
 
@@ -524,6 +564,7 @@ class RuleSet(object):
 
 RULES_DEFINITION_CLASSES = [
     AddColumnMetadataRuleDefinition,
+    AddColumnGroupTagValueRuleDefinition,
     AddColumnConcatenateRuleDefinition,
     AddColumnBasenameRuleDefinition,
     AddColumnRegexRuleDefinition,

@@ -9,7 +9,6 @@ import os
 
 import requests
 from markupsafe import escape
-from six.moves.urllib.parse import unquote_plus
 from sqlalchemy import desc, false, or_, true
 from sqlalchemy.orm import joinedload
 
@@ -214,7 +213,18 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             style = "legacy"
         else:
             style = "instance"
-        return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style)
+        version = kwd.get('version')
+        return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
+
+    @expose_api
+    def show_versions(self, trans, workflow_id, **kwds):
+        """
+        GET /api/workflows/{encoded_workflow_id}/versions
+
+        Lists all versions of this workflow.
+        """
+        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id)
+        return [{'version': i, 'update_time': str(w.update_time), 'steps': len(w.steps)} for i, w in enumerate(reversed(stored_workflow.workflows))]
 
     @expose_api
     def create(self, trans, payload, **kwd):
@@ -386,7 +396,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         # Newer version of this API just returns the invocation as a dict, to
         # facilitate migration - produce the newer style response and blend in
         # the older information.
-        invocation_response = self.__encode_invocation(trans, invocation, step_details=kwd.get('step_details', False))
+        invocation_response = self.__encode_invocation(invocation, **kwd)
         invocation_response.update(rval)
         return invocation_response
 
@@ -400,7 +410,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
         style = kwd.get("style", "export")
         download_format = kwd.get('format')
-        ret_dict = self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style)
+        version = kwd.get('version')
+        ret_dict = self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
         if download_format == 'json-download':
             sname = stored_workflow.name
             sname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in sname)[0:150]
@@ -545,13 +556,6 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     #
     # -- Helper methods --
     #
-    def _get_tool(self, id, tool_version=None, user=None):
-        id = unquote_plus(id)
-        tool = self.app.toolbox.get_tool(id, tool_version)
-        if not tool or not tool.allow_user_access(user):
-            raise exceptions.ObjectNotFound("Could not find tool with id '%s'" % id)
-        return tool
-
     def __api_import_from_archive(self, trans, archive_data, source=None):
         try:
             data = json.loads(archive_data)
@@ -692,23 +696,53 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return invocations[0]
 
     @expose_api
-    def index_invocations(self, trans, workflow_id, **kwd):
+    def index_invocations(self, trans, workflow_id=None, **kwd):
         """
         GET /api/workflows/{workflow_id}/invocations
+        GET /api/invocations
 
-        Get the list of the workflow invocations
+        Get the list of a user's workflow invocations. If workflow_id is supplied
+        (either via URL or query parameter) it should be an encoded StoredWorkflow id
+        and returned invocations will be restricted to that workflow. history_id (an encoded
+        History id) can be used to further restrict the query. If neither a workflow_id or
+        history_id is supplied, all the current user's workflow invocations will be indexed
+        (as determined by the invocation being executed on one of the user's histories).
 
-        :param  workflow_id:      the workflow id (required)
+        :param  workflow_id:      an encoded stored workflow id to restrict query to
         :type   workflow_id:      str
+
+        :param  history_id:       an encoded history id to restrict query to
+        :type   history_id:       str
+
+        :param  view:             level of detail to return per invocation 'element' or 'collection'.
+        :type   view:             str
+
+        :param  step_details:     If 'view' is 'element', also include details on individual steps.
+        :type   step_details:     bool
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
-        stored_workflow = self.__get_stored_workflow(trans, workflow_id)
-        results = self.workflow_manager.build_invocations_query(trans, stored_workflow.id)
-        out = []
-        for r in results:
-            out.append(self.__encode_invocation(trans, r, view="collection"))
-        return out
+        if workflow_id is not None:
+            stored_workflow_id = self.__get_stored_workflow(trans, workflow_id).id
+        else:
+            stored_workflow_id = None
+
+        encoded_history_id = kwd.get("history_id", None)
+        if encoded_history_id:
+            history = self.history_manager.get_accessible(self.decode_id(encoded_history_id), trans.user, current_history=trans.history)
+            history_id = history.id
+        else:
+            history_id = None
+
+        if stored_workflow_id is None and encoded_history_id is None:
+            user_id = trans.user.id
+        else:
+            user_id = None
+
+        invocations = self.workflow_manager.build_invocations_query(
+            trans, stored_workflow_id=stored_workflow_id, history_id=history_id, user_id=user_id
+        )
+        return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
 
     @expose_api
     def show_invocation(self, trans, workflow_id, invocation_id, **kwd):
@@ -722,12 +756,28 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  invocation_id:      the invocation id (required)
         :type   invocation_id:      str
 
+        :param  step_details:       fetch details about individual invocation steps
+                                    and populate a steps attribute in the resulting
+                                    dictionary. Defaults to false.
+        :type   step_details:       bool
+
+        :param  legacy_job_state:   If step_details is true, and this is set to true
+                                    populate the invocation step state with the job state
+                                    instead of the invocation step state. This will also
+                                    produce one step per job in mapping jobs to mimic the
+                                    older behavior with respect to collections. Partially
+                                    scheduled steps may provide incomplete information
+                                    and the listed steps outputs are the mapped over
+                                    step outputs but the individual job outputs
+                                    when this is set - at least for now.
+        :type   legacy_job_state:   bool
+
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
         if workflow_invocation:
-            return self.__encode_invocation(trans, workflow_invocation, step_details=kwd.get('step_details', False))
+            return self.__encode_invocation(workflow_invocation, **kwd)
         return None
 
     @expose_api
@@ -746,7 +796,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.cancel_invocation(trans, decoded_workflow_invocation_id)
-        return self.__encode_invocation(trans, workflow_invocation)
+        return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
     def invocation_step(self, trans, workflow_id, invocation_id, step_id, **kwd):
@@ -817,9 +867,5 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __get_stored_workflow(self, trans, workflow_id):
         return self.workflow_manager.get_stored_workflow(trans, workflow_id)
 
-    def __encode_invocation(self, trans, invocation, view="element", step_details=False):
-        return self.encode_all_ids(
-            trans,
-            invocation.to_dict(view, step_details=step_details),
-            True
-        )
+    def __encode_invocation(self, invocation, **kwd):
+        return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)

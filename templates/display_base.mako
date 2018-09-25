@@ -48,8 +48,8 @@
     <style type="text/css">
         .page-body {
             padding: 10px;
-            ## float: left;
-            ## width: 65%;
+            height: 100%;
+            overflow: auto;
         }
         .page-meta {
             float: right;
@@ -116,38 +116,11 @@
         href_to_user_items = h.url_for( controller='/' + modern_route, action='list_published', xxx=item.user.username)
         href_to_user_items = href_to_user_items.replace( 'xxx', 'f-username')
     %>
-
-    <div class="unified-panel-header" unselectable="on" style="overflow: hidden">
-        <div class="unified-panel-header-inner">
-            <div style="float: right">
-                ${self.render_item_links( item )}
-            </div>
-            %if item.published:
-                    <a href="${href_to_all_items}">Published ${item_plural}</a> |
-                    <a href="${href_to_user_items}">${item.user.username}</a>
-            %elif item.importable:
-                Accessible ${get_class_display_name( item.__class__ )}
-            %elif item.users_shared_with:
-                Shared ${get_class_display_name( item.__class__ )}
-            %else:
-                Private ${get_class_display_name( item.__class__ )}
-            %endif
-            | ${get_item_name( item ) | h}
+    <div class="page-body">
+        <div>
+            ${self.render_item_header( item )}
         </div>
-    </div>
-
-    <div class="unified-panel-body">
-        <div style="overflow: auto; height: 100%;">
-            <div class="page-body">
-                <div>
-                    ${self.render_item_header( item )}
-                </div>
-
-                ${self.render_item( item, item_data )}
-            </div>
-
-
-        </div>
+        ${self.render_item( item, item_data )}
     </div>
 </%def>
 
@@ -165,13 +138,13 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             About this ${get_class_display_name( item.__class__ )}
+            ${self.render_item_links( item )}
         </div>
     </div>
 
     <div class="unified-panel-body">
         <div style="overflow: auto; height: 100%;">
             <div style="padding: 10px;">
-
                 <div style="float: right;"><img src="https://secure.gravatar.com/avatar/${h.md5(item.user.email)}?d=identicon"></div>
 
                 <h4>Author</h4>

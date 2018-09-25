@@ -137,8 +137,8 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("tool_form_citations_formatted")
 
         self.components.tool_form.show_bibtex.wait_for_and_click()
-        textarea = self.components.tool_form.bibtex_area.wait_for_visible()
-        assert "Galaxy: A platform for interactive" in textarea.get_attribute("value")
+        bibtex_area = self.components.tool_form.bibtex_area.wait_for_visible()
+        assert "Galaxy: A platform for interactive" in bibtex_area.text
         self.screenshot("tool_form_citations_bibtex")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
@@ -177,6 +177,11 @@ class LoggedInToolFormTestCase(SeleniumTestCase):
     def test_run_apply_rules_3(self):
         self._apply_rules_and_check(rules_test_data.EXAMPLE_3)
         self.screenshot("tool_apply_rules_example_3_final")
+
+    @selenium_test
+    def test_run_apply_rules_4(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
+        self.screenshot("tool_apply_rules_example_4_final")
 
     @selenium_test
     @managed_history

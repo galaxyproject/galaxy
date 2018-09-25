@@ -1,8 +1,6 @@
 import logging
 from json import dumps
 
-from six.moves.urllib.parse import unquote_plus
-
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
@@ -94,10 +92,12 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
                 io_details   - if true, parameters and inputs are returned
                 link_details - if true, hyperlink to the tool is returned
+                tool_version - if provided return this tool version
         """
         io_details = util.string_as_bool(kwd.get('io_details', False))
         link_details = util.string_as_bool(kwd.get('link_details', False))
-        tool = self._get_tool(id, user=trans.user)
+        tool_version = kwd.get('tool_version')
+        tool = self._get_tool(id, user=trans.user, tool_version=tool_version)
         return tool.to_dict(trans, io_details=io_details, link_details=link_details)
 
     @expose_api_anonymous
@@ -174,6 +174,8 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         def json_encodeify(obj):
             if isinstance(obj, odict):
                 return dict(obj)
+            elif isinstance(obj, map):
+                return list(obj)
             else:
                 return obj
 
@@ -513,7 +515,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     # -- Helper methods --
     #
     def _get_tool(self, id, tool_version=None, user=None):
-        id = unquote_plus(id)
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool:
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % id)

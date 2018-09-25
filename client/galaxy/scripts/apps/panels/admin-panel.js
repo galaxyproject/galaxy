@@ -1,4 +1,10 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
+
 import _l from "utils/localization";
+
+/* global Galaxy */
+/* global $ */
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -7,8 +13,6 @@ var AdminPanel = Backbone.View.extend({
         this.root = options.root;
         this.config = options.config;
         this.settings = options.settings;
-        this.message = options.message;
-        this.status = options.status;
         this.model = new Backbone.Model({
             title: `Galaxy version ${Galaxy.config.version_major}`
         });
@@ -77,12 +81,6 @@ var AdminPanel = Backbone.View.extend({
                         title: _l("Forms"),
                         url: "admin/forms",
                         target: "__use_router__"
-                    },
-                    {
-                        title: _l("API keys"),
-                        url: "admin/api_keys",
-                        target: "__use_router__",
-                        id: "admin-link-api-keys"
                     }
                 ]
             },
@@ -147,7 +145,7 @@ var AdminPanel = Backbone.View.extend({
         this.$el.empty();
         this.categories.each(category => {
             var $section = $(self._templateSection(category.attributes));
-            var $entries = $section.find(".ui-side-section-body");
+            var $entries = $section.find(".toolSectionBody");
             _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
                     var $link = $("<a/>")
@@ -166,29 +164,24 @@ var AdminPanel = Backbone.View.extend({
                     }
                     $entries.append(
                         $("<div/>")
-                            .addClass("ui-side-section-body-title")
+                            .addClass("toolTitle")
                             .append($link)
                     );
                 }
             });
             self.$el.append($section);
         });
-        this.page
-            .$("#galaxy_main")
-            .prop("src", `${this.root}admin/center?message=${this.message}&status=${this.status}`);
     },
 
     _templateSection: function(options) {
-        return [
-            "<div>",
-            `<div class="ui-side-section-title">${_l(options.title)}</div>`,
-            '<div class="ui-side-section-body"/>',
-            "</div>"
-        ].join("");
+        return `<div class="toolSectionWrapper">
+                    <div class="toolSectionTitle">${_l(options.title)}</div>
+                    <div class="toolSectionBody"/>
+                </div>`;
     },
 
     _template: function() {
-        return '<div class="ui-side-panel"/>';
+        return '<div class="toolMenuContainer"/>';
     },
 
     toString: function() {

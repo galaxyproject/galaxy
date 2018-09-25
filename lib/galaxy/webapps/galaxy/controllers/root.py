@@ -7,11 +7,11 @@ import logging
 import os
 
 import requests
-from paste.httpexceptions import (
+from webob.compat import cgi_FieldStorage
+from webob.exc import (
     HTTPBadGateway,
     HTTPNotFound
 )
-from webob.compat import cgi_FieldStorage
 
 from galaxy import (
     managers,
