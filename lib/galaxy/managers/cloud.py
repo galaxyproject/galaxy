@@ -277,7 +277,7 @@ class CloudManager(sharable.SharableModelManager):
 
         return datasets
 
-    def download(self, trans, history_id, provider, bucket_name, authz_id, dataset_ids=None, overwrite_existing=False):
+    def download(self, trans, history_id, bucket_name, authz_id, dataset_ids=None, overwrite_existing=False):
         """
         Implements the logic of downloading dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
@@ -287,10 +287,6 @@ class CloudManager(sharable.SharableModelManager):
 
         :type  history_id:          string
         :param history_id:          the (encoded) id of history from which the object should be downloaded.
-
-        :type  provider:            string
-        :param provider:            the name of cloud-based resource provided. A list of supported providers
-                                    is given in `SUPPORTED_PROVIDERS` variable.
 
         :type  bucket_name:         string
         :param bucket_name:         the name of a bucket to which data should be downloaded (e.g., a bucket
@@ -322,7 +318,7 @@ class CloudManager(sharable.SharableModelManager):
 
         cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, cloudauthz)
-        connection = self._configure_provider(provider, credentials)
+        connection = self._configure_provider(cloudauthz.provider, credentials)
 
         bucket = connection.storage.buckets.get(bucket_name)
         if bucket is None:
@@ -342,8 +338,8 @@ class CloudManager(sharable.SharableModelManager):
                 with open(credentials_file, "w") as f:
                     f.write(json.dumps(credentials))
                 connection = credentials
-                connection["provider"] = provider
-                connection["__current_case__"] = SUPPORTED_PROVIDERS[provider]
+                connection["provider"] = cloudauthz.provider
+                connection["__current_case__"] = SUPPORTED_PROVIDERS[cloudauthz.provider]
                 object_label = hda.name.replace(" ", "_")
                 args = {
                     "connection": connection,

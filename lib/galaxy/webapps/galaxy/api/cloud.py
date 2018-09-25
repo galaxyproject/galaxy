@@ -146,7 +146,6 @@ class CloudController(BaseAPIController):
         :type  payload: dictionary
         :param payload: A dictionary structure containing the following keys:
             *   history_id              the (encoded) id of history from which the object should be downloaed.
-            *   provider:               the name of a cloud-based resource provider (e.g., `aws`, `azure`, or `openstack`).
             *   bucket:                 the name of a bucket to which data should be downloaded (e.g., a bucket name on AWS S3).
             *   authz_id:               the encoded ID of CloudAuthz to be used for authorizing access to the resource
                                         provider. You may get a list of the defined authorizations via
@@ -173,10 +172,6 @@ class CloudController(BaseAPIController):
         encoded_history_id = payload.get("history_id", None)
         if encoded_history_id is None:
             missing_arguments.append("history_id")
-
-        provider = payload.get("provider", None)
-        if provider is None:
-            missing_arguments.append("provider")
 
         bucket = payload.get("bucket", None)
         if bucket is None:
@@ -216,7 +211,6 @@ class CloudController(BaseAPIController):
 
         downloaded = self.cloud_manager.download(trans=trans,
                                                  history_id=history_id,
-                                                 provider=provider,
                                                  bucket=bucket,
                                                  authz_id=authz_id,
                                                  dataset_ids=dataset_ids,
