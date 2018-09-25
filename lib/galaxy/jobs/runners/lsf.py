@@ -72,7 +72,7 @@ class LSFJobRunner(AsynchronousJobRunner):
                 # HTCondor needs the image as 'docker_image'
                 query_params.update({'docker_image': container.container_id})
 
-        galaxy_slots = query_params.get('request_cpus', None)
+        galaxy_slots = query_params.get('cores', None)
         if galaxy_slots:
             galaxy_slots_statement = 'GALAXY_SLOTS="%s"; export GALAXY_SLOTS_CONFIGURED="1"' % galaxy_slots
         else:
@@ -167,6 +167,8 @@ class LSFJobRunner(AsynchronousJobRunner):
             job_id = cjs.job_id
             galaxy_id_tag = cjs.job_wrapper.get_id_tag()
             try:
+                # TODO have a way of buffering requests to LSF, so that
+                # it doesn't get flooded.
                 #if os.stat(cjs.user_log).st_size == cjs.user_log_size:
                 #    new_watched.append(cjs)
                 #    continue

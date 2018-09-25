@@ -68,6 +68,9 @@ def build_submit_description(executable, output, error, user_log, query_params):
     submit_description.append('#!/bin/bash')
     for key, value in all_query_params.items():
         if key in LSF_OPTIONS.keys():
+            if key == "memory":
+                # memory requires this additional reservation.
+                submit_description.append('#BSUB -R "rusage[mem=%s]"' % value)
             submit_description.append('#BSUB %s %s' % (LSF_OPTIONS[key], value))
     submit_description.append('#BSUB -o ' + output)
     submit_description.append('#BSUB -e ' + error)
