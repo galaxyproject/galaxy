@@ -194,6 +194,11 @@ class CloudController(BaseAPIController):
         except exceptions.MalformedId as e:
             raise ActionInputError('Invalid history ID. {}'.format(e))
 
+        try:
+            authz_id = self.decode_id(encoded_authz_id)
+        except exceptions.MalformedId as e:
+            raise ActionInputError('Invalid authz ID. {}'.format(e))
+
         encoded_dataset_ids = payload.get("dataset_ids", None)
         if encoded_dataset_ids is None:
             dataset_ids = None
@@ -213,7 +218,7 @@ class CloudController(BaseAPIController):
                                                  history_id=history_id,
                                                  provider=provider,
                                                  bucket=bucket,
-                                                 authz_id=encoded_authz_id,
+                                                 authz_id=authz_id,
                                                  dataset_ids=dataset_ids,
                                                  overwrite_existing=payload.get("overwrite_existing", False))
         return {'downloaded_dataset': downloaded,
