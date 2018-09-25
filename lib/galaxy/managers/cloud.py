@@ -277,7 +277,7 @@ class CloudManager(sharable.SharableModelManager):
 
         return datasets
 
-    def download(self, trans, history_id, provider, bucket_name, credentials, dataset_ids=None, overwrite_existing=False):
+    def download(self, trans, history_id, provider, bucket_name, authz_id, dataset_ids=None, overwrite_existing=False):
         """
         Implements the logic of downloading dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
@@ -296,10 +296,10 @@ class CloudManager(sharable.SharableModelManager):
         :param bucket_name:         the name of a bucket to which data should be downloaded (e.g., a bucket
                                     name on AWS S3).
 
-        :type  credentials:         dict
-        :param credentials:         a dictionary containing all the credentials required to authenticated
-                                    to the specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
-                                    "access_key": YOUR_AWS_ACCESS_TOKEN}).
+        :type  authz_id:            int
+        :param authz_id:            the ID of CloudAuthz to be used for authorizing access to the resource provider.
+                                    You may get a list of the defined authorizations via `/api/cloud/authz`. Also,
+                                    you can use `/api/cloud/authz/create` to define a new authorization.
 
         :type  dataset_ids:         set
         :param dataset_ids:         [Optional] The list of (decoded) dataset ID(s) belonging to the given
@@ -319,6 +319,9 @@ class CloudManager(sharable.SharableModelManager):
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
+
+        cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
+        credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, cloudauthz)
         connection = self._configure_provider(provider, credentials)
 
         bucket = connection.storage.buckets.get(bucket_name)

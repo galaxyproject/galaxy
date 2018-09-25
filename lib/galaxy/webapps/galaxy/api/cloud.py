@@ -213,7 +213,7 @@ class CloudController(BaseAPIController):
                                                  history_id=history_id,
                                                  provider=provider,
                                                  bucket=bucket,
-                                                 credentials=credentials,
+                                                 authz_id=encoded_authz_id,
                                                  dataset_ids=dataset_ids,
                                                  overwrite_existing=payload.get("overwrite_existing", False))
         return {'downloaded_dataset': downloaded,
