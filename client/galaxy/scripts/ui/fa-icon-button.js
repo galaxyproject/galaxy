@@ -42,9 +42,12 @@ var faIconButton = options => {
     ].join("");
     var $button = $(html).tooltip(options.tooltipConfig);
     if (_.isFunction(options.onclick)) {
-        $button.click(function(ev){
+        $button.click(function(ev) {
             $button.tooltip("hide");
-            $button.parent().attr('tabindex', -1).focus();
+            $button
+                .parent()
+                .attr("tabindex", -1)
+                .focus();
             options.onclick.apply(this, arguments);
         });
     }
