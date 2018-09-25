@@ -44,6 +44,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
+from galaxy.util.template import fill_template
 from tool_shed.util import common_util
 
 log = logging.getLogger(__name__)
@@ -793,6 +794,14 @@ class ToolModule(WorkflowModule):
                         format = when_elem.get('format', None)
                         if format and format not in formats:
                             formats.append(format)
+                if tool_output.label:
+                    try:
+                        params = make_dict_copy(self.state.inputs)
+                        params['on_string'] = 'input dataset(s)'
+                        params['tool'] = self.tool
+                        extra_kwds['label'] = fill_template(tool_output.label, context=params)
+                    except Exception:
+                        pass
                 data_outputs.append(
                     dict(
                         name=name,

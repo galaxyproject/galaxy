@@ -40,7 +40,7 @@ var DataOutputView = Backbone.View.extend({
         this.nodeView = options.nodeView;
 
         var output = this.output;
-        var label = output.name;
+        var label = output.label || output.name;
         var node = this.nodeView.node;
 
         var isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
