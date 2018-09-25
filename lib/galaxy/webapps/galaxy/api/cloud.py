@@ -148,9 +148,10 @@ class CloudController(BaseAPIController):
             *   history_id              the (encoded) id of history from which the object should be downloaed.
             *   provider:               the name of a cloud-based resource provider (e.g., `aws`, `azure`, or `openstack`).
             *   bucket:                 the name of a bucket to which data should be downloaded (e.g., a bucket name on AWS S3).
-            *   credentials:            a dictionary containing all the credentials required to authenticated to the
-                                        specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
-                                        "access_key": YOUR_AWS_ACCESS_TOKEN}).
+            *   authz_id:               the encoded ID of CloudAuthz to be used for authorizing access to the resource
+                                        provider. You may get a list of the defined authorizations via
+                                        `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a
+                                        new authorization.
             *   dataset_ids:            [Optional; default: None]
                                         A list of encoded dataset IDs belonging to the specified history
                                         that should be downloaded to the given bucket. If not provided, Galaxy downloads
@@ -181,9 +182,9 @@ class CloudController(BaseAPIController):
         if bucket is None:
             missing_arguments.append("bucket")
 
-        credentials = payload.get("credentials", None)
-        if credentials is None:
-            missing_arguments.append("credentials")
+        encoded_authz_id = payload.get("authz_id", None)
+        if encoded_authz_id is None:
+            missing_arguments.append("authz_id")
 
         if len(missing_arguments) > 0:
             raise ActionInputError("The following required arguments are missing in the payload: {}".format(missing_arguments))
