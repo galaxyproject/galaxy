@@ -401,11 +401,17 @@ class JobHandlerQueue(Monitors):
             pause_message = ", ".join(jobs_to_pause[job_id])
             pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.pause(job=job, message=pause_message)
+            try:
+                job_wrapper.pause(job=job, message=pause_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to pause job.", job_id)
         for job_id in sorted(jobs_to_fail):
             fail_message = ", ".join(jobs_to_fail[job_id])
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.fail(fail_message)
+            try:
+                job_wrapper.fail(fail_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to fail job.", job_id)
         jobs_to_ignore.update(jobs_to_pause)
         jobs_to_ignore.update(jobs_to_fail)
         return [j for j in jobs if j.id not in jobs_to_ignore]
