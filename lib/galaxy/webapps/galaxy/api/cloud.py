@@ -211,7 +211,7 @@ class CloudController(BaseAPIController):
 
         downloaded = self.cloud_manager.download(trans=trans,
                                                  history_id=history_id,
-                                                 bucket=bucket,
+                                                 bucket_name=bucket,
                                                  authz_id=authz_id,
                                                  dataset_ids=dataset_ids,
                                                  overwrite_existing=payload.get("overwrite_existing", False))
