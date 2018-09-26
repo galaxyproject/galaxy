@@ -5,6 +5,11 @@ import logging
 import uuid
 from collections import namedtuple
 
+from gxformat2 import (
+    from_galaxy_native,
+    ImporterGalaxyInterface,
+    python_to_workflow,
+)
 from six import string_types
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
@@ -38,8 +43,6 @@ from galaxy.workflow.modules import (
 )
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
-from gxformat2.interface import ImporterGalaxyInterface
-from gxformat2.converter import python_to_workflow
 from .base import decode_id
 
 log = logging.getLogger(__name__)
@@ -401,6 +404,12 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
+
+        def to_format_2(wf_dict, **kwds):
+            if not trans.app.config.enable_beta_workflow_format:
+                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
+            return from_galaxy_native(wf_dict, None, **kwds)
+
         if version == '':
             version = None
         if version is not None:
@@ -414,6 +423,12 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_instance(stored, workflow=workflow, legacy=False)
         elif style == "run":
             wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow)
+        elif style == "format2":
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = to_format_2(wf_dict)
+        elif style == "format2_wrapped_yaml":
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = to_format_2(wf_dict, json_wrapper=True)
         else:
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         if version:

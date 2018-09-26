@@ -547,10 +547,17 @@ class BaseWorkflowPopulator(object):
         return upload_response
 
     def upload_yaml_workflow(self, has_yaml, **kwds):
-        client_convert = kwds.pop("client_convert", True)
+        round_trip_conversion = kwds.get("round_trip_format_conversion", False)
+        client_convert = kwds.pop("client_convert", not round_trip_conversion)
         kwds["convert"] = client_convert
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow["id"]
+        workflow_id = workflow["id"]
+        if round_trip_conversion:
+            workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
+            round_trip_converted_content = workflow_yaml_wrapped["yaml_content"]
+            workflow_id = self.upload_yaml_workflow(round_trip_converted_content, client_convert=False, round_trip_conversion=False)
+
+        return workflow_id
 
     def wait_for_invocation(self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT):
         url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
@@ -580,7 +587,15 @@ class BaseWorkflowPopulator(object):
         else:
             return invocation_response
 
-    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True):
+    def download_workflow(self, workflow_id, style=None):
+        params = {}
+        if style is not None:
+            params["style"] = style
+        response = self._get("workflows/%s/download" % workflow_id, data=params)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
 
@@ -590,7 +605,10 @@ class BaseWorkflowPopulator(object):
             content = open(filename, "r").read()
             return content
 
-        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type)
+        if client_convert is None:
+            client_convert = not round_trip_format_conversion
+
+        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type, client_convert=client_convert, round_trip_format_conversion=round_trip_format_conversion)
 
         if test_data is None:
             if jobs_descriptions is None:
@@ -637,6 +655,13 @@ class BaseWorkflowPopulator(object):
                 invocation=invocation,
                 workflow_request=workflow_request
             )
+
+    def dump_workflow(self, workflow_id, style=None):
+        raw_workflow = self.download_workflow(workflow_id, style=style)
+        if style == "format2_wrapped_yaml":
+            print(raw_workflow["yaml_content"])
+        else:
+            print(json.dumps(raw_workflow, sort_keys=True, indent=2))
 
 
 RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])

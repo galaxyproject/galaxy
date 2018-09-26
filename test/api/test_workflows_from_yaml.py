@@ -23,9 +23,11 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
         super(WorkflowsFromYamlApiTestCase, self).setUp()
 
     def _upload_and_download(self, yaml_workflow, **kwds):
+        style = None
+        if "style" in kwds:
+            style = kwds.pop("style")
         workflow_id = self._upload_yaml_workflow(yaml_workflow, **kwds)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
-        return workflow
+        return self.workflow_populator.download_workflow(workflow_id, style=style)
 
     def test_simple_upload(self):
         workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False)
@@ -46,6 +48,9 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
         assert input_found
         assert tool_count['random_lines1'] == 1
         assert tool_count['cat1'] == 2
+
+        workflow_as_format2 = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False, style="format2")
+        assert workflow_as_format2["doc"].startswith("Simple workflow that")
 
 # FIXME:  This test fails on some machines due to (we're guessing) yaml.safe_loading
 # order being not guaranteed and inconsistent across platforms.  The workflow
@@ -86,15 +91,16 @@ input1: "hello world"
 
     def test_inputs_to_steps(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs(WORKFLOW_SIMPLE_CAT_TWICE, test_data={"input1": "hello world"}, history_id=history_id)
+        self._run_jobs(WORKFLOW_SIMPLE_CAT_TWICE, test_data={"input1": "hello world"}, history_id=history_id, round_trip_format_conversion=True)
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(contents1.strip(), "hello world\nhello world")
 
     def test_outputs(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS)
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS, round_trip_format_conversion=True)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
+        workflow = self.workflow_populator.download_workflow(workflow_id, style="format2")
 
     def test_runtime_inputs(self):
         workflow = self._upload_and_download(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
@@ -136,13 +142,8 @@ steps:
     label: nested_workflow
     in:
       inner_input: first_cat/out_file1
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
-""")
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
+""", client_convert=False)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
         by_label = self._steps_by_label(workflow)
         if "nested_workflow" not in by_label:
             template = "Workflow [%s] does not contain label 'nested_workflow'."
@@ -193,7 +194,7 @@ steps:
     in:
       input1: the_pause
 """)
-        print(self._get("workflows/%s/download" % workflow_id).json())
+        self.workflow_populator.dump_workflow(workflow_id)
 
     def test_implicit_connections(self):
         workflow_id = self._upload_yaml_workflow("""
@@ -224,8 +225,7 @@ steps:
       input1:
         $link: test_input
 """)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
-        print(workflow)
+        self.workflow_populator.dump_workflow(workflow_id)
 
     @uses_test_history()
     def test_conditional_ints(self, history_id):
@@ -239,7 +239,7 @@ steps:
         use: true
       files:
         attach_files: false
-""", test_data={}, history_id=history_id)
+""", test_data={}, history_id=history_id, round_trip_format_conversion=True)
         content = self.dataset_populator.get_history_dataset_content(history_id)
         assert "no file specified" in content
         assert "7 7 4" in content
@@ -255,7 +255,7 @@ steps:
         p3v: 5
       files:
         attach_files: false
-""", test_data={}, history_id=history_id)
+""", test_data={}, history_id=history_id, round_trip_format_conversion=True)
         content = self.dataset_populator.get_history_dataset_content(history_id)
         assert "no file specified" in content
         assert "7 7 5" in content

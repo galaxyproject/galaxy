@@ -995,14 +995,12 @@ test_data:
 
     def test_run_subworkflow_auto_labels(self):
             history_id = self.dataset_populator.new_history()
-            workflow_run_description = """%s
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
-""" % NESTED_WORKFLOW_AUTO_LABELS
-            job_summary = self._run_jobs(workflow_run_description, history_id=history_id)
+            test_data = """
+outer_input:
+  value: 1.bed
+  type: File
+"""
+            job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
             assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
@@ -1022,21 +1020,17 @@ inputs:
 steps:
   - label: first_cat
     tool_id: cat1
-    state:
-      input1:
-        $link: test_input_1
+    in:
+      input1: test_input_1
   - label: zip_it
     tool_id: "__ZIP_COLLECTION__"
-    state:
-      input_forward:
-        $link: first_cat#out_file1
-      input_reverse:
-        $link: test_input_2
+    in:
+      input_forward: first_cat/out_file1
+      input_reverse: test_input_2
   - label: concat_pair
     tool_id: collection_paired_test
-    state:
-      f1:
-        $link: zip_it#output
+    in:
+      f1: zip_it/output
 """)
             hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
             hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t20.0\nsamp2\t40.0\n")
@@ -1066,8 +1060,7 @@ steps:
       input:
         $link: nested#list_output
       join_identifier: '-'
-test_data: {}
-""", history_id=history_id)
+""", test_data={}, history_id=history_id)
             details = self.dataset_populator.get_history_collection_details(history_id, hid=14)
             assert details['collection_type'] == "list"
             elements = details["elements"]
@@ -1078,7 +1071,7 @@ test_data: {}
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
         with self.dataset_populator.test_history() as history_id:
-            self._run_jobs(WORKFLOW_WITH_RULES_1, history_id=history_id, wait=True, assert_ok=True)
+            self._run_jobs(WORKFLOW_WITH_RULES_1, history_id=history_id, wait=True, assert_ok=True, round_trip_format_conversion=True)
             output_content = self.dataset_populator.get_history_collection_details(history_id, hid=6)
             rules_test_data.check_example_2(output_content, self.dataset_populator)
 
@@ -1106,14 +1099,14 @@ steps:
     state:
       input1:
         $link: filtered_collection
-test_data:
-  input_c:
-    type: list
-    elements:
-      - identifier: i1
-        content: "0"
-      - identifier: i2
-        content: "1"
+""", test_data="""
+input_c:
+  type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
 """, history_id=history_id, wait=True, assert_ok=False)
             jobs = summary.jobs
 
@@ -1189,7 +1182,7 @@ input1:
     - identifier: el1
       value: 1.fastq
       type: File
-""", history_id=history_id)
+""", history_id=history_id, round_trip_format_conversion=True)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
             invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
@@ -1378,7 +1371,7 @@ test_data:
   outer_input:
     value: 1.bed
     type: File
-""", history_id=history_id, wait=True)
+""", history_id=history_id, wait=True, round_trip_format_conversion=True)
             self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
             # self.assertEqual("chr16\t142908\t143003\tCCDS10397.1_cds_0_0_chr16_142909_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
@@ -1440,7 +1433,7 @@ steps:
 outer_input:
   value: 1.bed
   type: File
-""", history_id=history_id, wait=True)
+""", history_id=history_id, wait=True, round_trip_format_conversion=True)
             self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("cat_list")
@@ -1492,7 +1485,7 @@ steps:
 outer_input:
   value: 1.bed
   type: File
-""", history_id=history_id, wait=True)
+""", history_id=history_id, wait=True, round_trip_format_conversion=True)
             self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("empty_list")
@@ -1585,7 +1578,7 @@ steps:
 input1:
   value: 1.bed
   type: File
-""", history_id=history_id, wait=True)
+""", history_id=history_id, wait=True, round_trip_format_conversion=True)
             self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
 
     @skip_without_tool("cat")
@@ -1791,7 +1784,7 @@ steps:
     input1: the_pause
 - label: third_cat
   tool_id: random_lines1
-  connect:
+  in:
     $step: second_cat
   state:
     num_lines: 1
@@ -1800,7 +1793,7 @@ steps:
     seed_source:
       seed_source_selector: set_seed
       seed: asdf
-""", test_data={"test_input": "hello world"}, history_id=history_id, wait=False)
+""", test_data={"test_input": "hello world"}, history_id=history_id, wait=False, round_trip_format_conversion=True)
             history_id = run_summary.history_id
             workflow_id = run_summary.workflow_id
             invocation_id = run_summary.invocation_id
@@ -1833,7 +1826,7 @@ steps:
 text_input:
   value: "abd"
   type: raw
-""", history_id=history_id, wait=True)
+""", history_id=history_id, wait=True, round_trip_format_conversion=True)
             time.sleep(10)
             self.workflow_populator.wait_for_invocation(run_summary.workflow_id, run_summary.invocation_id)
             jobs = self._history_jobs(history_id)
@@ -2458,7 +2451,7 @@ input1:
   value: 1.fasta
   type: File
   name: fasta1
-""", history_id=history_id)
+""", history_id=history_id, round_trip_format_conversion=True)
 
             details0 = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
             tags = details0["tags"]
@@ -2493,7 +2486,7 @@ input1:
   value: 1.fasta
   type: File
   name: fasta1
-""", history_id=history_id)
+""", history_id=history_id, round_trip_format_conversion=True)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
 
             assert details1["history_content_type"] == "dataset_collection"
@@ -2525,7 +2518,7 @@ input1:
     - identifier: el1
       value: 1.fastq
       type: File
-""", history_id=history_id)
+""", history_id=history_id, round_trip_format_conversion=True)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
 
             assert details1["history_content_type"] == "dataset_collection"
@@ -2560,7 +2553,7 @@ input1:
   value: 1.fasta
   type: File
   name: fasta1
-""", history_id=history_id)
+""", history_id=history_id, round_trip_format_conversion=True)
             details_dataset_with_tag = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
 
             assert details_dataset_with_tag["history_content_type"] == "dataset", details_dataset_with_tag
@@ -2622,7 +2615,7 @@ steps:
     tool_id: cat1
     in:
       input1: the_pause
-""")
+""", round_trip_format_conversion=True)
         downloaded_workflow = self._download_workflow(workflow_id)
         uuid_dict = dict((int(index), step["uuid"]) for index, step in downloaded_workflow["steps"].items())
         with self.dataset_populator.test_history() as history_id:
