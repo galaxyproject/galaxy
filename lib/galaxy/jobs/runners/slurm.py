@@ -204,7 +204,7 @@ class SlurmJobRunner(DRMAAJobRunner):
         return False
 
 
-def _remove_spurious_top_lines(rfh, ajs, maxlines=2):
+def _remove_spurious_top_lines(rfh, ajs, maxlines=3):
     bad = []
     putback = None
     for i in range(maxlines):

@@ -2627,11 +2627,8 @@ test_data:
 
             details1 = self.dataset_populator.get_history_dataset_details(history_id, hid=3, wait=True, assert_ok=True)
             tags = details1["tags"]
-            assert len(tags) == 3, details1
+            assert len(tags) == 1, details1
             assert "name:treated1fb" in tags, tags
-            assert "group:condition:treated" in tags, tags
-            assert "group:type:single-read" in tags, tags
-            assert "machine:illumina" not in tags, tags
 
     @skip_without_tool("collection_creates_pair")
     def test_run_add_tag_on_collection_output(self):

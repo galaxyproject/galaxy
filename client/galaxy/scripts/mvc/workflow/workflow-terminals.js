@@ -131,7 +131,7 @@ var Terminal = Backbone.Model.extend({
             this.node.markChanged();
             this.resetMappingIfNeeded();
             if (!connector.dragging) {
-                this.resetCollectionTypeSource();
+                connector.handle2.resetCollectionTypeSource();
             }
         }
     },
@@ -455,7 +455,17 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
             let node = this.node;
             _.each(node.output_terminals, function(output_terminal) {
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
-                    output_terminal.attributes.collection_type = other.attributes.collection_type;
+                    if (other.isMappedOver()) {
+                        if (other.isCollection) {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.append(
+                                other.collectionType
+                            ).collectionType;
+                        } else {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.collectionType;
+                        }
+                    } else {
+                        output_terminal.attributes.collection_type = other.attributes.collection_type;
+                    }
                     output_terminal.update(output_terminal.attributes);
                 }
             });
