@@ -130,4 +130,4 @@ def lsf_bjob(external_id):
     failed = status == "EXIT"
     if "is not found" in status:
         raise Exception("Job %s not found in LSF" % external_id)
-    return running, failed, complete
+    return running, complete, failed
