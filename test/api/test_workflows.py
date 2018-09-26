@@ -193,8 +193,8 @@ class BaseWorkflowsApiTestCase(api.ApiTestCase):
         workflow_inputs = workflow_show_resposne.json()["inputs"]
         return workflow_inputs
 
-    def _invocation_details(self, workflow_id, invocation_id):
-        invocation_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id))
+    def _invocation_details(self, workflow_id, invocation_id, **kwds):
+        invocation_details_response = self._get("workflows/%s/usage/%s" % (workflow_id, invocation_id), data=kwds)
         self._assert_status_code_is(invocation_details_response, 200)
         invocation_details = invocation_details_response.json()
         return invocation_details
@@ -2868,15 +2868,108 @@ steps:
         invocation_id = usage["id"]
         usage_details = self._invocation_details(workflow_id, invocation_id)
         # Assert some high-level things about the structure of data returned.
-        self._assert_has_keys(usage_details, "inputs", "steps")
+        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
+
+        # stored_workflow vs workflow thing makes following state false.
+        # assert usage_details["workflow_id"] == workflow_id
+
+        # Wait for the invocation to be fully scheduled, so we have details on all steps.
+        self._wait_for_invocation_state(workflow_id, invocation_id, 'scheduled')
+        usage_details = self._invocation_details(workflow_id, invocation_id)
+
         invocation_steps = usage_details["steps"]
-        for step in invocation_steps:
-            self._assert_has_keys(step, "workflow_step_id", "order_index", "id")
-        an_invocation_step = invocation_steps[0]
-        step_id = an_invocation_step["id"]
-        step_response = self._get("workflows/%s/usage/%s/steps/%s" % (workflow_id, invocation_id, step_id))
-        self._assert_status_code_is(step_response, 200)
-        self._assert_has_keys(step_response.json(), "id", "order_index")
+        invocation_input_step, invocation_tool_step = None, None
+        for invocation_step in invocation_steps:
+            self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
+            order_index = invocation_step["order_index"]
+            assert order_index in [0, 1, 2], order_index
+            if order_index == 0:
+                invocation_input_step = invocation_step
+            elif order_index == 2:
+                invocation_tool_step = invocation_step
+
+        # Tool steps have non-null job_ids (deprecated though they may be)
+        assert invocation_input_step.get("job_id", None) is None
+        job_id = invocation_tool_step.get("job_id", None)
+        assert job_id is not None
+
+        invocation_tool_step_id = invocation_tool_step["id"]
+        invocation_tool_step_response = self._get("workflows/%s/invocations/%s/steps/%s" % (workflow_id, invocation_id, invocation_tool_step_id))
+        self._assert_status_code_is(invocation_tool_step_response, 200)
+        self._assert_has_keys(invocation_tool_step_response.json(), "id", "order_index", "job_id")
+
+        assert invocation_tool_step_response.json()["job_id"] == job_id
+
+    def test_invocation_with_collection_mapping(self):
+        workflow_id, invocation_id = self._run_mapping_workflow()
+
+        usage_details = self._invocation_details(workflow_id, invocation_id)
+        # Assert some high-level things about the structure of data returned.
+        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
+
+        invocation_steps = usage_details["steps"]
+        invocation_input_step, invocation_tool_step = None, None
+        for invocation_step in invocation_steps:
+            self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
+            order_index = invocation_step["order_index"]
+            assert order_index in [0, 1]
+            if invocation_step["order_index"] == 0:
+                assert invocation_input_step is None
+                invocation_input_step = invocation_step
+            else:
+                assert invocation_tool_step is None
+                invocation_tool_step = invocation_step
+
+        # Tool steps have non-null job_ids (deprecated though they may be)
+        assert invocation_input_step.get("job_id", None) is None
+        assert invocation_tool_step.get("job_id", None) is None
+        assert invocation_tool_step["state"] == "scheduled"
+
+        usage_details = self._invocation_details(workflow_id, invocation_id, legacy_job_state="true")
+        # Assert some high-level things about the structure of data returned.
+        self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
+
+        invocation_steps = usage_details["steps"]
+        invocation_input_step = None
+        invocation_tool_steps = []
+        for invocation_step in invocation_steps:
+            self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
+            order_index = invocation_step["order_index"]
+            assert order_index in [0, 1]
+            if invocation_step["order_index"] == 0:
+                assert invocation_input_step is None
+                invocation_input_step = invocation_step
+            else:
+                invocation_tool_steps.append(invocation_step)
+
+        assert len(invocation_tool_steps) == 2
+        assert invocation_tool_steps[0]["state"] == "ok"
+
+    def _run_mapping_workflow(self):
+        history_id = self.dataset_populator.new_history()
+        summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  - type: collection
+    label: input_c
+steps:
+  - label: cat1
+    tool_id: cat1
+    state:
+       input1:
+         $link: input_c
+test_data:
+  input_c:
+    type: list
+    elements:
+      - identifier: i1
+        content: "0"
+      - identifier: i2
+        content: "1"
+""", history_id=history_id, wait=True, assert_ok=True)
+        workflow_id = summary.workflow_id
+        invocation_id = summary.invocation_id
+        return workflow_id, invocation_id
 
     @skip_without_tool("cat1")
     def test_invocations_accessible_imported_workflow(self):

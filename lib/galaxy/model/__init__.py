@@ -4185,7 +4185,7 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
         else:
             raise Exception("Unknown output type encountered")
 
-    def to_dict(self, view='collection', value_mapper=None, step_details=False):
+    def to_dict(self, view='collection', value_mapper=None, step_details=False, legacy_job_state=False):
         rval = super(WorkflowInvocation, self).to_dict(view=view, value_mapper=value_mapper)
         if view == 'element':
             steps = []
@@ -4194,7 +4194,19 @@ class WorkflowInvocation(object, UsesCreateAndUpdateTime, Dictifiable):
                     v = step.to_dict(view='element')
                 else:
                     v = step.to_dict(view='collection')
-                steps.append(v)
+                if legacy_job_state:
+                    step_jobs = step.jobs
+                    if step_jobs:
+                        for step_job in step_jobs:
+                            v_clone = v.copy()
+                            v_clone["state"] = step_job.state
+                            v_clone["job_id"] = step_job.id
+                            steps.append(v_clone)
+                    else:
+                        v["state"] = None
+                        steps.append(v)
+                else:
+                    steps.append(v)
             rval['steps'] = steps
 
             inputs = {}
@@ -4326,6 +4338,10 @@ class WorkflowInvocationStep(object, Dictifiable):
         # Following no longer makes sense...
         # rval['state'] = self.job.state if self.job is not None else None
         if view == 'element':
+            jobs = []
+            for job in self.jobs:
+                jobs.append(job.to_dict())
+
             outputs = {}
             for output_assoc in self.output_datasets:
                 name = output_assoc.output_name
@@ -4345,6 +4361,7 @@ class WorkflowInvocationStep(object, Dictifiable):
 
             rval['outputs'] = outputs
             rval['output_collections'] = output_collections
+            rval['jobs'] = jobs
         return rval
 
 
