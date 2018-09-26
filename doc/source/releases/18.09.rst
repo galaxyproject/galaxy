@@ -335,6 +335,8 @@ Enhancements
   `Pull Request 6711`_
 * Undo auto-propagation of group tags.
   `Pull Request 6750`_
+* Client build startup changes
+  `Pull Request 6753`_
 * Add graph dot datatype and enable it in visualisations
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 6760`_
@@ -767,6 +769,9 @@ Fixes
   `Pull Request 6766`_
 * backport of: Resilience of success message handling
   `Pull Request 6768`_
+* Use UserRoleAssociation to get private roles
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6771`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1078,10 +1083,12 @@ Fixes
 .. _Pull Request 6748: https://github.com/galaxyproject/galaxy/pull/6748
 .. _Pull Request 6749: https://github.com/galaxyproject/galaxy/pull/6749
 .. _Pull Request 6750: https://github.com/galaxyproject/galaxy/pull/6750
+.. _Pull Request 6753: https://github.com/galaxyproject/galaxy/pull/6753
 .. _Pull Request 6755: https://github.com/galaxyproject/galaxy/pull/6755
 .. _Pull Request 6760: https://github.com/galaxyproject/galaxy/pull/6760
 .. _Pull Request 6761: https://github.com/galaxyproject/galaxy/pull/6761
 .. _Pull Request 6765: https://github.com/galaxyproject/galaxy/pull/6765
 .. _Pull Request 6766: https://github.com/galaxyproject/galaxy/pull/6766
 .. _Pull Request 6768: https://github.com/galaxyproject/galaxy/pull/6768
+.. _Pull Request 6771: https://github.com/galaxyproject/galaxy/pull/6771
 
