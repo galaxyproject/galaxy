@@ -195,13 +195,17 @@ function _makeRenameHelp(name_labels) {
     let help_section = `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid input variables are:`;
     let li = `
         <ul>
-            ${name_labels.map(name_label => `<li><strong>${name_label.name.replace(/\|/g, ".")}</strong>
-                                                         ${name_label.label ? `(${name_label.label})` : ''}
-                                             </li>`).join("")}
+            ${name_labels
+                .map(
+                    name_label => `<li><strong>${name_label.name.replace(/\|/g, ".")}</strong>
+                                                         ${name_label.label ? `(${name_label.label})` : ""}
+                                             </li>`
+                )
+                .join("")}
         </ul>
     `;
     help_section += li;
-    return help_section
+    return help_section;
 }
 
 /** Builds sub section with step actions/annotation */
@@ -216,7 +220,7 @@ function _makeSection(output_id, label, options) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
     for (var key in node.input_terminals) {
-        name_label_map.push({name: node.input_terminals[key].name, label: node.input_terminals[key].label});
+        name_label_map.push({ name: node.input_terminals[key].name, label: node.input_terminals[key].label });
     }
     var rename_help = _makeRenameHelp(name_label_map);
     extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
@@ -254,7 +258,7 @@ function _makeSection(output_id, label, options) {
                 type: "text",
                 value: "",
                 ignore: "",
-                help: rename_help,
+                help: rename_help
             },
             {
                 action: "ChangeDatatypeAction",

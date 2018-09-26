@@ -115,7 +115,7 @@ var View = Backbone.View.extend({
     _template: function() {
         return `<div class="ui-select-library">
                     <div class="library-select mb-2"/>
-                </div>`
+                </div>`;
     }
 });
 

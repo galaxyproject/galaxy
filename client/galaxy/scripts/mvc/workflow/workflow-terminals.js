@@ -457,8 +457,8 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
                 if (output_terminal.attributes.collection_type_source && !connector.dragging) {
                     output_terminal.attributes.collection_type = other.attributes.collection_type;
                     output_terminal.update(output_terminal.attributes);
-                    }
-            })
+                }
+            });
         }
 
         var effectiveMapOver = this._effectiveMapOver(other);
