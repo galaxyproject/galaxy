@@ -70,6 +70,9 @@ def build_submit_description(executable, output, error, query_params):
             submit_description.append('#BSUB %s %s' % (LSF_OPTIONS[key], value))
     submit_description.append('#BSUB -o ' + output)
     submit_description.append('#BSUB -e ' + error)
+    # We write a line in case the executable doesn't produce anything on stdout.
+    # This will allow
+    submit_description.append('echo "Starting LSF Job..." >> ' + output)
     submit_description.append(executable)
     return '\n'.join(submit_description)
 

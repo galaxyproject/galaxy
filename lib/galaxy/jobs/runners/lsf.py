@@ -32,8 +32,7 @@ class LSFJobState(AsynchronousJobState):
         """
         super(LSFJobState, self).__init__(**kwargs)
         self.failed = False
-        self.user_log = None
-        self.user_log_size = 0
+        self.output_file_size = 0
 
 
 class LSFJobRunner(AsynchronousJobRunner):
@@ -163,48 +162,50 @@ class LSFJobRunner(AsynchronousJobRunner):
         with state changes.
         """
         new_watched = []
-        for cjs in self.watched:
-            job_id = cjs.job_id
-            galaxy_id_tag = cjs.job_wrapper.get_id_tag()
+        for ljs in self.watched:
+            job_id = ljs.job_id
+            galaxy_id_tag = ljs.job_wrapper.get_id_tag()
             try:
-                # TODO have a way of buffering requests to LSF, so that
-                # it doesn't get flooded.
-                #if os.stat(cjs.user_log).st_size == cjs.user_log_size:
-                #    new_watched.append(cjs)
-                #    continue
+                # Buffer calls to lsf_bjob by looking into the state of the
+                # output file (to which both the process and LSF write)
+                if os.stat(ljs.output_file).st_size == ljs.output_file_size:
+                    new_watched.append(ljs)
+                    continue
                 job_running, job_complete, job_failed = lsf_bjob(job_id)
-                #cjs.user_log_size = os.stat(cjs.user_log).st_size
+                if job_running:
+                    ljs.output_file_size = os.stat(ljs.output_file).st_size
             except Exception:
                 # so we don't kill the monitor thread
                 log.exception("(%s/%s) Unable to check job status" % (galaxy_id_tag, job_id))
                 log.warning("(%s/%s) job will now be errored" % (galaxy_id_tag, job_id))
-                cjs.fail_message = "Cluster could not complete job"
-                self.work_queue.put((self.fail_job, cjs))
+                ljs.fail_message = "Cluster could not complete job"
+                self.work_queue.put((self.fail_job, ljs))
                 continue
-            if job_running and not cjs.running:
+            if job_running and not ljs.running:
                 log.debug("(%s/%s) job is now running" % (galaxy_id_tag, job_id))
-                cjs.job_wrapper.change_state(model.Job.states.RUNNING)
-            if not job_running and cjs.running:
+                ljs.job_wrapper.change_state(model.Job.states.RUNNING)
+            if not job_running and ljs.running:
                 log.debug("(%s/%s) job has stopped running" % (galaxy_id_tag, job_id))
                 # Will switching from RUNNING to QUEUED confuse Galaxy?
                 # cjs.job_wrapper.change_state( model.Job.states.QUEUED )
             if job_complete:
-                if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
-                    external_metadata = not asbool(cjs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
+                # TODO add data from `bjobs -o "cpu_used mem swap delimiter='^'" <job-id>`
+                if ljs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    external_metadata = not asbool(ljs.job_wrapper.job_destination.params.get("embed_metadata_in_job", True))
                     if external_metadata:
-                        self._handle_metadata_externally(cjs.job_wrapper, resolve_requirements=True)
+                        self._handle_metadata_externally(ljs.job_wrapper, resolve_requirements=True)
                     log.debug("(%s/%s) job has completed" % (galaxy_id_tag, job_id))
                     # TODO add deletion of submit file here
                     # os.unlink()
-                    self.work_queue.put((self.finish_job, cjs))
+                    self.work_queue.put((self.finish_job, ljs))
                 continue
             if job_failed:
                 log.debug("(%s/%s) job failed" % (galaxy_id_tag, job_id))
-                cjs.failed = True
-                self.work_queue.put((self.finish_job, cjs))
+                ljs.failed = True
+                self.work_queue.put((self.finish_job, ljs))
                 continue
-            cjs.running = job_running
-            new_watched.append(cjs)
+            ljs.running = job_running
+            new_watched.append(ljs)
         # Replace the watch list with the updated version
         self.watched = new_watched
 
