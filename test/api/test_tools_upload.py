@@ -240,6 +240,22 @@ class ToolsUploadTestCase(api.ApiTestCase):
             datasets = run_response.json()["outputs"]
             assert datasets[0].get("genome_build") == "hg19", datasets[0]
 
+    @uses_test_history(require_new=False)
+    def test_fetch_bam_file(self, history_id):
+        bam_path = TestDataResolver().get_filename("1.bam")
+        details = self._upload_and_get_details(open(bam_path, "rb"),
+                                               api="fetch",
+                                               history_id=history_id,
+                                               assert_ok=False)
+        assert details["state"] == "ok"
+        assert details["file_ext"] == "bam", details
+
+    def test_upload_bam_file(self):
+        bam_path = TestDataResolver().get_filename("1.bam")
+        details = self._upload_and_get_details(open(bam_path, "rb"), file_type="auto")
+        assert details["state"] == "ok"
+        assert details["file_ext"] == "bam", details
+
     def test_fetch_metadata(self):
         table = ONE_TO_SIX_WITH_SPACES
         details = self._upload_and_get_details(table, api='fetch', dbkey="hg19", info="cool upload", tags=["name:data", "group:type:paired-end"])
