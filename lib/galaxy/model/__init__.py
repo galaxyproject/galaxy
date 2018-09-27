@@ -2174,6 +2174,8 @@ class DatasetInstance(object):
     state = property(get_dataset_state, set_dataset_state)
 
     def get_file_name(self):
+        if self.dataset.purged:
+            return ""
         return self.dataset.get_file_name()
 
     def set_file_name(self, filename):
