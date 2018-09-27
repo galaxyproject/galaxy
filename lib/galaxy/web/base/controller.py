@@ -1399,18 +1399,25 @@ class SharableMixin(object):
 
     @web.expose_api
     def sharing(self, trans, id, payload=None, **kwd):
+        skipped = False
         class_name = self.manager.model_class.__name__
         item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
         if payload and payload.get("action"):
             action = payload.get("action")
             if action == "make_accessible_via_link":
                 self._make_item_accessible(trans.sa_session, item)
+                if item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
             elif action == "make_accessible_and_publish":
                 self._make_item_accessible(trans.sa_session, item)
+                if item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
                 item.published = True
             elif action == "publish":
                 if item.importable:
                     item.published = True
+                    if item.has_possible_members and payload.get("make_members_public", False):
+                        shared, skipped = self._make_members_public(trans, item)
                 else:
                     raise exceptions.MessageException("%s not importable." % class_name)
             elif action == "disable_link_access":
@@ -1435,7 +1442,28 @@ class SharableMixin(object):
         item_dict = self.serializer.serialize_to_view(item,
             user=trans.user, trans=trans, default_view="sharing")
         item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        if skipped:
+            item_dict["skipped"] = True
         return item_dict
+
+    def _make_members_public(self, trans, item):
+        """ Make the non-purged datasets in history public
+        Performs pemissions check.
+        """
+        # TODO eventually we should handle more classes than just History
+        skipped = False
+        for hda in item.activatable_datasets:
+            dataset = hda.dataset
+            if not trans.app.security_agent.dataset_is_public(dataset):
+                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
+                    try:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                    except Exception:
+                        log.warning("Unable to make dataset with id: %s public.".format(dataset.id)
+                        skipped = True
+                else:
+                    skipped = True
+        return item, skipped
 
     # -- Abstract methods. --
 
