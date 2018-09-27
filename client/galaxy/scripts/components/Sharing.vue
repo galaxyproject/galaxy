@@ -1,7 +1,7 @@
 <template>
     <div v-if="ready">
         <h2>Share or Publish {{model_class}} `{{item.title}}`</h2>
-        <b-alert variant="danger" :show="err_msg">
+        <b-alert :show="show_danger" variant="danger" dismissible>
             {{ err_msg }}
         </b-alert>
         </br>
@@ -141,7 +141,10 @@ export default {
             return `${Galaxy.root}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
         },
         has_possible_members(){
-            return ["history"].indexOf(this.model_class_lc) > -1;;
+            return ["history"].indexOf(this.model_class_lc) > -1;
+        },
+        show_danger(){
+            return this.err_msg !== null;
         }
     },
     data() {
@@ -159,7 +162,7 @@ export default {
                 users_shared_with: []
             },
             share_fields: ["email", { key: "id", label: "" }],
-            make_members_public: false,
+            make_members_public: false
         };
     },
     created: function() {
@@ -203,6 +206,9 @@ export default {
                 .post(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`, data)
                 .then(response => {
                     Object.assign(this.item, response.data);
+                    if (response.data.skipped){
+                       this.err_msg = "Some of the items within this object were not published due to an error.";
+                    }
                 })
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
