@@ -50,15 +50,12 @@ def build_submit_description(executable, output, error, query_params):
     >>> submit_args = dict(executable='/path/to/script', output='o', error='e')
     >>> submit_args['query_params'] = dict()
     >>> default_description = build_submit_description(**submit_args)
-    >>> assert 'executable = /path/to/script' in default_description
-    >>> assert 'output = o' in default_description
-    >>> assert 'error = e' in default_description
-    >>> assert 'universe = vanilla' in default_description
-    >>> assert 'universe = standard' not in default_description
-    >>> submit_args['query_params'] = dict(universe='standard')
+    >>> assert '/path/to/script' in default_description
+    >>> assert '#BSUB -o o' in default_description
+    >>> assert '#BSUB -e e' in default_description
+    >>> submit_args['query_params'] = dict(memory = 10)
     >>> std_description = build_submit_description(**submit_args)
-    >>> assert 'universe = vanilla' not in std_description
-    >>> assert 'universe = standard' in std_description
+    >>> assert '#BSUB -R "rusage[mem=10]"' in std_description
     """
     all_query_params = DEFAULT_QUERY_CLASSAD.copy()
     all_query_params.update(query_params)
