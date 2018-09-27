@@ -163,6 +163,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
     - [ ] Set the ``release_${version}`` branch in GitHub [settings](https://github.com/galaxyproject/galaxy/settings/branches) as protected.
 
+- [ ] **Issue Review Timeline Notes**
+    - [ ] Ensure any security fixes will be ready prior to ${freeze_date} + 1 week, to allow time for notification prior to release.
+    - [ ] Ensure ownership of outstanding bugfixes and track progress during freeze.
+
 - [ ] **Deploy and Test Release**
 
     - [ ] Update test.galaxyproject.org to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
