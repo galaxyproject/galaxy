@@ -869,9 +869,5 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __get_stored_workflow(self, trans, workflow_id):
         return self.workflow_manager.get_stored_workflow(trans, workflow_id)
 
-    def __encode_invocation(self, trans, invocation, view="element", step_details=False, legacy_job_state=False):
-        return self.encode_all_ids(
-            trans,
-            invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state),
-            True
-        )
+    def __encode_invocation(self, invocation, **kwd):
+        return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)
