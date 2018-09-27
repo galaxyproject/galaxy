@@ -169,7 +169,7 @@ class MetadataCollection(object):
             raise ValueError("You must provide either a filename or a json_dict")
 
         # We build a dictionary for metadata name / value pairs
-        # because when we copy MetadatTempfile objects we flush the datasets'
+        # because when we copy MetadataTempFile objects we flush the datasets'
         # session, but only include the newly created MetadataFile object.
         # If we were to set the metadata elements in the first for loop we'd
         # lose all previously set metadata elements
@@ -573,7 +573,7 @@ class FileParameter(MetadataParameter):
         if object_session(dataset):
             mf = galaxy.model.MetadataFile(name=self.spec.name, dataset=dataset, **kwds)
             object_session(dataset).add(mf)
-            object_session(dataset).flush([mf])  # flush to assign id
+            object_session(dataset).flush([dataset, mf])  # flush to assign id
             return mf
         else:
             # we need to make a tmp file that is accessable to the head node,
