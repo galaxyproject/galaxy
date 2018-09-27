@@ -779,7 +779,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if workflow_invocation:
             step_details = util.string_as_bool(kwd.get('step_details', 'False'))
             legacy_job_state = util.string_as_bool(kwd.get('legacy_job_state', 'False'))
-            return self.__encode_invocation(trans, workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state)
+            return self.__encode_invocation(workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state)
         return None
 
     @expose_api
