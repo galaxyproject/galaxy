@@ -63,7 +63,6 @@ class LSF(BaseJobExec):
     def get_status(self, job_ids=None):
         return "bjobs -o \"id stat delimiter='^'\" -noheader"  # check this
 
-
     def get_single_status(self, job_id):
         return "bjobs -o stat -noheader " + job_id
 
