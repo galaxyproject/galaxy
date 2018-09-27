@@ -34,6 +34,7 @@ except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
 
+from boltons.iterutils import remap
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
 from six.moves.urllib import (
@@ -1011,6 +1012,19 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
     return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
+
+
+def strip_control_characters_nested(item):
+    """Recursively strips control characters from lists, dicts, tuples."""
+
+    def visit(path, key, value):
+        if isinstance(key, string_types):
+            key = strip_control_characters(key)
+        if isinstance(value, string_types):
+            value = strip_control_characters(value)
+        return key, value
+
+    return remap(item, visit)
 
 
 def object_to_string(obj):

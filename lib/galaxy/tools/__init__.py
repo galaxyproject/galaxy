@@ -2490,6 +2490,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
             raise Exception("Invalid tool parameters.")
         extracted = extracted_element.element_object
         extracted_o = extracted.copy(copy_tags=tags, new_name=extracted_element.element_identifier)
+        extracted_o.visible = True
         self._add_datasets_to_history(history, [extracted_o])
 
         out_data["output"] = extracted_o
