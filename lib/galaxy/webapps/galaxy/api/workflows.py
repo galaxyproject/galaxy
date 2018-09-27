@@ -779,7 +779,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if workflow_invocation:
             step_details = util.string_as_bool(kwd.get('step_details', 'False'))
             legacy_job_state = util.string_as_bool(kwd.get('legacy_job_state', 'False'))
-            return self.__encode_invocation(trans, workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state)
+            return self.__encode_invocation(workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state)
         return None
 
     @expose_api
@@ -869,9 +869,5 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __get_stored_workflow(self, trans, workflow_id):
         return self.workflow_manager.get_stored_workflow(trans, workflow_id)
 
-    def __encode_invocation(self, trans, invocation, view="element", step_details=False, legacy_job_state=False):
-        return self.encode_all_ids(
-            trans,
-            invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state),
-            True
-        )
+    def __encode_invocation(self, invocation, **kwd):
+        return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)
