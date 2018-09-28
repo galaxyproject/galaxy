@@ -258,9 +258,8 @@ steps:
         $link: test_input
   - label: the_pause
     type: pause
-    connect:
-      input:
-      - first_cat#out_file1
+    in:
+      input: first_cat#out_file1
   - label: second_cat
     tool_id: cat1
     state:

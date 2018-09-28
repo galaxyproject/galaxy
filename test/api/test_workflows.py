@@ -40,9 +40,8 @@ outputs:
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: outer_input
+    in:
+      input1: outer_input
   - run:
       class: GalaxyWorkflow
       inputs:
@@ -61,8 +60,8 @@ steps:
               seed_source_selector: set_seed
               seed: asdf
     label: nested_workflow
-    connect:
-      inner_input: first_cat#out_file1
+    in:
+      inner_input: first_cat/out_file1
   - tool_id: cat1
     label: second_cat
     state:
@@ -83,9 +82,8 @@ outputs:
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: outer_input
+    in:
+      input1: outer_input
   - run:
       class: GalaxyWorkflow
       inputs:
@@ -102,8 +100,8 @@ steps:
               seed_source_selector: set_seed
               seed: asdf
     label: nested_workflow
-    connect:
-      inner_input: first_cat#out_file1
+    in:
+      inner_input: first_cat/out_file1
   - tool_id: cat1
     label: second_cat
     state:
