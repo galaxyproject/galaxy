@@ -1533,6 +1533,10 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         return new_history
 
     @property
+    def has_possible_members(self):
+        return True
+
+    @property
     def activatable_datasets(self):
         # This needs to be a list
         return [hda for hda in self.datasets if not hda.dataset.deleted]
