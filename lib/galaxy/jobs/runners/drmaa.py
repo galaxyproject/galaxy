@@ -210,7 +210,13 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             log.debug('(%s) submitting with credentials: %s [uid: %s]' % (galaxy_id_tag, pwent[0], pwent[2]))
             filename = self.store_jobtemplate(job_wrapper, jt)
             self.userid = pwent[2]
-            external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2]).strip()
+            try:
+                external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2]).strip()
+            except:
+                fail_msg = "(%s) could not queue job" % galaxy_id_tag
+                job_wrapper.fail(fail_msg)
+                return
+
         log.info("(%s) queued as %s" % (galaxy_id_tag, external_job_id))
 
         # store runner information for tracking if Galaxy restarts
