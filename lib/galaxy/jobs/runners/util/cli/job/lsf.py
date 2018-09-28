@@ -82,7 +82,8 @@ class LSF(BaseJobExec):
 
     def parse_single_status(self, status, job_id):
         if "is not found" in status:
-            raise Exception("Job %s not found in LSF" % job_id)
+            # Job not found in LSF, most probably finished and forgotten.
+            return job_states.OK
         return self._get_job_state(status)
 
     def _get_job_state(self, state):
