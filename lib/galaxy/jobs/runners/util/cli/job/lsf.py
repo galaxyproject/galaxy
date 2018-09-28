@@ -65,7 +65,7 @@ class LSF(BaseJobExec):
         return 'bstop %s' % job_id
 
     def get_status(self, job_ids=None):
-        return "bjobs -o \"id stat delimiter='^'\" -noheader"  # check this
+        return "bjobs -a -o \"id stat\" -noheader"  # check this
 
     def get_single_status(self, job_id):
         return "bjobs -o stat -noheader " + job_id
@@ -73,8 +73,8 @@ class LSF(BaseJobExec):
     def parse_status(self, status, job_ids):
         # Get status for each job, skipping header.
         rval = {}
-        for line in status.splitlines()[1:]:
-            id, state = line.split('^')
+        for line in status.splitlines():
+            id, state = line.split()
             if id in job_ids:
                 # map job states to Galaxy job states.
                 rval[id] = self._get_job_state(state)
