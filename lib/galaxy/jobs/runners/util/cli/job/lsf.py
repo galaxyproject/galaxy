@@ -55,7 +55,11 @@ class LSF(BaseJobExec):
         return dict(headers=template_scriptargs)
 
     def submit(self, script_file):
-        return 'bsub <%s' % script_file
+        # bsub returns Job <9147983> is submitted to default queue <research-rh7>.
+        # This should be really handled outside with something like
+        # parse_external. Currently CLI runner expect this to just send it in the last position
+        # of the string.
+        return "bsub <%s | awk '{ print $2}' | sed 's/[<>]//g'" % script_file
 
     def delete(self, job_id):
         return 'bstop %s' % job_id
