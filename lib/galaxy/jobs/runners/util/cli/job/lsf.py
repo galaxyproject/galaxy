@@ -15,7 +15,7 @@ from ..job import BaseJobExec
 log = getLogger(__name__)
 
 argmap = {
-    'memory': '-M',
+    'memory': '-M',  # There is code in job_script_kwargs relying on this name's setting
     'cores': '-n',
     'queue': '-q',
     'working_dir': '-cwd'
@@ -39,11 +39,11 @@ class LSF(BaseJobExec):
             if k == 'plugin':
                 continue
             try:
-                if not k.startswith('-'):
-                    k = argmap[k]
                 if k == 'memory':
                     # Memory requires both -m and -R rusage[mem=v] request
                     scriptargs['-R'] = "\"rusage[mem=%s]\"" % v
+                if not k.startswith('-'):
+                    k = argmap[k]
                 scriptargs[k] = v
             except Exception:
                 log.warning('Unrecognized long argument passed to LSF CLI plugin: %s' % k)
