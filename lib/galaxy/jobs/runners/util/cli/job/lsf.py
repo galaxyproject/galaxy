@@ -100,8 +100,8 @@ class LSF(BaseJobExec):
                 'USUSP': job_states.ERROR,
                 'SSUSP': job_states.ERROR,
                 'UNKWN': job_states.ERROR,
-                'WAIT' : job_states.QUEUED,
-                'ZOMBI' : job_states.ERROR
+                'WAIT': job_states.QUEUED,
+                'ZOMBI': job_states.ERROR
             }.get(state)
         except KeyError:
             raise KeyError("Failed to map LSF status code [%s] to job state." % state)
