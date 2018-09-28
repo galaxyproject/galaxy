@@ -259,12 +259,11 @@ steps:
   - label: the_pause
     type: pause
     in:
-      input: first_cat#out_file1
+      input: first_cat/out_file1
   - label: second_cat
     tool_id: cat1
-    state:
-      input1:
-        $link: the_pause
+    in:
+      input1: the_pause
 """)
         print(self._get("workflows/%s/download" % workflow_id).json())
 

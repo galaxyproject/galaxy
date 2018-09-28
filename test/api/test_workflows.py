@@ -523,17 +523,14 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
     def test_export_editor_collection_type_source(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
-steps:
-  - label: text_input1
-    type: input_collection
+inputs:
+  - id: text_input1
+    type: collection
     collection_type: "list:paired"
+steps:
   - tool_id: collection_type_source
-    state:
-      input_collect:
-        $link: text_input1
-test_data:
-  text_input1:
-    type: "list:paired"
+    in:
+      input_collect: text_input1
 """)
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         steps = downloaded_workflow['steps']
@@ -551,7 +548,7 @@ steps:
       class: GalaxyWorkflow
       inputs:
         - id: inner_input
-          type: data_collection
+          type: collection
           collection_type: "list:paired"
       outputs:
         - id: workflow_output
@@ -562,16 +559,12 @@ steps:
           collection_type: "list:paired"
         - tool_id: collection_type_source
           label: collection_type_source
-          state:
-            input_collect:
-              $link: inner_input
+          in:
+            input_collect: inner_input
     label: inner_workflow
-    connect:
+    in:
       inner_input: outer_input
-test_data:
-  outer_input:
-    type: "list:paired"
-    """)
+""")
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         steps = downloaded_workflow['steps']
         assert len(steps) == 2
@@ -752,19 +745,19 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             job_summary = self._run_jobs("""
 class: GalaxyWorkflow
+inputs:
+  - id: input_datasets
+    type: collection
 steps:
-  - label: input_datasets
-    type: input_collection
   - label: fail_identifier_1
     tool_id: fail_identifier
     state:
-      input1:
-        $link: input_datasets
       failbool: true
+    in:
+      input1: input_datasets
   - tool_id: identifier_collection
-    state:
-      input1:
-        $link: fail_identifier_1#out_file1
+    in:
+      input1: fail_identifier_1/out_file1
 test_data:
   input_datasets:
     type: list
