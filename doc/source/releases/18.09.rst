@@ -780,6 +780,9 @@ Fixes
 * Strip all control characters from rules
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6785`_
+* Fix bam upload resulting in 'auto' datatype
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6789`_
 * allow making all datasets within history public, when sharing
   `Pull Request 6793`_
 
@@ -1104,5 +1107,6 @@ Fixes
 .. _Pull Request 6780: https://github.com/galaxyproject/galaxy/pull/6780
 .. _Pull Request 6782: https://github.com/galaxyproject/galaxy/pull/6782
 .. _Pull Request 6785: https://github.com/galaxyproject/galaxy/pull/6785
+.. _Pull Request 6789: https://github.com/galaxyproject/galaxy/pull/6789
 .. _Pull Request 6793: https://github.com/galaxyproject/galaxy/pull/6793
 
