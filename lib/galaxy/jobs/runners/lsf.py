@@ -88,7 +88,6 @@ class LSFJobRunner(AsynchronousJobRunner):
             executable=executable,
             output=ljs.output_file,
             error=ljs.error_file,
-            user_log=ljs.user_log,
             query_params=query_params,
         )
 
