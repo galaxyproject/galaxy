@@ -266,20 +266,6 @@ class RootController( controller.JSAppLauncher, UsesAnnotations ):
         else:
             return "No data with id=%d" % id
 
-    @web.expose
-    def peek(self, trans, id=None):
-        """Returns a 'peek' at the data.
-        """
-        # TODO: unused?
-        # TODO: unencoded id
-        data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
-        if data:
-            yield "<html><body><pre>"
-            yield data.peek
-            yield "</pre></body></html>"
-        else:
-            yield "No data with id=%d" % id
-
     # ---- History management -----------------------------------------------
     @web.expose
     def history_delete( self, trans, id ):
