@@ -772,6 +772,16 @@ Fixes
 * Use UserRoleAssociation to get private roles
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6771`_
+* All extracted datasets should be visible
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6780`_
+* Fix __encode_invocation signature
+  `Pull Request 6782`_
+* Strip all control characters from rules
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6785`_
+* allow making all datasets within history public, when sharing
+  `Pull Request 6793`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1091,4 +1101,8 @@ Fixes
 .. _Pull Request 6766: https://github.com/galaxyproject/galaxy/pull/6766
 .. _Pull Request 6768: https://github.com/galaxyproject/galaxy/pull/6768
 .. _Pull Request 6771: https://github.com/galaxyproject/galaxy/pull/6771
+.. _Pull Request 6780: https://github.com/galaxyproject/galaxy/pull/6780
+.. _Pull Request 6782: https://github.com/galaxyproject/galaxy/pull/6782
+.. _Pull Request 6785: https://github.com/galaxyproject/galaxy/pull/6785
+.. _Pull Request 6793: https://github.com/galaxyproject/galaxy/pull/6793
 
