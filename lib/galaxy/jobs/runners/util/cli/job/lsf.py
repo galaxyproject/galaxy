@@ -84,6 +84,7 @@ class LSF(BaseJobExec):
     def _get_job_state(self, state):
         # based on:
         # https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.3/lsf_admin/job_state_lsf.html
+        # https://www.ibm.com/support/knowledgecenter/en/SSETD4_9.1.2/lsf_command_ref/bjobs.1.html
         try:
             return {
                 'EXIT': job_states.ERROR,
@@ -92,7 +93,10 @@ class LSF(BaseJobExec):
                 'DONE': job_states.OK,
                 'PSUSP': job_states.ERROR,
                 'USUSP': job_states.ERROR,
-                'SSUSP': job_states.ERROR
+                'SSUSP': job_states.ERROR,
+                'UNKWN': job_states.ERROR,
+                'WAIT' : job_states.QUEUED,
+                'ZOMBI' : job_states.ERROR
             }.get(state)
         except KeyError:
             raise KeyError("Failed to map LSF status code [%s] to job state." % state)
