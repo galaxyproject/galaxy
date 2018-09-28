@@ -62,7 +62,7 @@ class LSF(BaseJobExec):
         return "bsub <%s | awk '{ print $2}' | sed 's/[<>]//g'" % script_file
 
     def delete(self, job_id):
-        return 'bstop %s' % job_id
+        return 'bkill %s' % job_id
 
     def get_status(self, job_ids=None):
         return "bjobs -a -o \"id stat\" -noheader"  # check this
