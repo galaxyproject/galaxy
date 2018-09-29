@@ -493,8 +493,15 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
             new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
-            if new_workflow_name:
-                stored_workflow.name = sanitize_html(new_workflow_name)
+            if new_workflow_name and new_workflow_name != stored_workflow.name:
+                sanitized_name = sanitize_html(new_workflow_name)
+                workflow = stored_workflow.latest_workflow.copy()
+                workflow.stored_workflow = stored_workflow
+                workflow.name = sanitized_name
+                stored_workflow.name = sanitized_name
+                stored_workflow.latest_workflow = workflow
+                trans.sa_session.add(workflow, stored_workflow)
+                trans.sa_session.flush()
 
             if 'annotation' in workflow_dict:
                 newAnnotation = sanitize_html(workflow_dict['annotation'])
