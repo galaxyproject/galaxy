@@ -74,10 +74,10 @@ class LSF(BaseJobExec):
         # Get status for each job, skipping header.
         rval = {}
         for line in status.splitlines():
-            id, state = line.split()
-            if id in job_ids:
+            job_id, state = line.split()
+            if job_id in job_ids:
                 # map job states to Galaxy job states.
-                rval[id] = self._get_job_state(state)
+                rval[job_id] = self._get_job_state(state)
         return rval
 
     def parse_single_status(self, status, job_id):
