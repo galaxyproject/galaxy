@@ -34,7 +34,10 @@ except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
 
-from boltons.iterutils import remap
+from boltons.iterutils import (
+    default_enter,
+    remap,
+)
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
 from six.moves.urllib import (
@@ -566,6 +569,32 @@ def sanitize_for_filename(text, default=None):
             return sanitize_for_filename(str(unique_id()))
         return default
     return out
+
+
+def find_instance_nested(item, instances, match_key=None):
+    """
+    Recursively find instances from lists, dicts, tuples.
+
+    `instances` should be a tuple of valid instances
+    If match_key is given the key must match for an instance to be added to the list of found instances.
+    """
+
+    matches = []
+
+    def visit(path, key, value):
+        if isinstance(value, instances):
+            if match_key is None or match_key == key:
+                matches.append(value)
+        return key, value
+
+    def enter(path, key, value):
+        if isinstance(value, instances):
+            return None, False
+        return default_enter(path, key, value)
+
+    remap(item, visit, reraise_visit=False, enter=enter)
+
+    return matches
 
 
 def mask_password_from_url(url):

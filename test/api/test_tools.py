@@ -1185,6 +1185,51 @@ class ToolsTestCase(api.ApiTestCase):
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         self.assertEquals(output1_content.strip(), "forward\nreverse")
 
+    @skip_without_tool("identifier_in_conditional")
+    @uses_test_history(require_new=False)
+    def test_identifier_map_over_multiple_input_in_conditional(self, history_id):
+        hdca_id = self.__build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond|input1": {'src': 'hdca', 'id': hdca_id},
+        }
+        create_response = self._run("identifier_in_conditional", history_id, inputs)
+        self._assert_status_code_is(create_response, 200)
+        create = create_response.json()
+        outputs = create['outputs']
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEquals(len(jobs), 1)
+        self.assertEquals(len(outputs), 1)
+        self.assertEquals(len(implicit_collections), 0)
+        output1 = outputs[0]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+        self.assertEquals(output1_content.strip(), "forward\nreverse")
+
+    @skip_without_tool("identifier_in_conditional")
+    @uses_test_history(require_new=False)
+    def test_identifier_map_over_input_in_conditional(self, history_id):
+        hdca_id = self.__build_pair(history_id, ["123", "456"])
+        inputs = {
+            "outer_cond|input1": {'batch': True, 'values': [{'src': 'hdca', 'id': hdca_id}]},
+            "outer_cond|multi_input": False,
+
+        }
+        create_response = self._run("identifier_in_conditional", history_id, inputs)
+        self._assert_status_code_is(create_response, 200)
+        create = create_response.json()
+        outputs = create['outputs']
+        jobs = create['jobs']
+        implicit_collections = create['implicit_collections']
+        self.assertEquals(len(jobs), 2)
+        self.assertEquals(len(outputs), 2)
+        self.assertEquals(len(implicit_collections), 1)
+        output1 = outputs[0]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+        self.assertEquals(output1_content.strip(), "forward")
+        output2 = outputs[1]
+        output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
+        self.assertEquals(output2_content.strip(), "reverse")
+
     @skip_without_tool("identifier_multiple_in_conditional")
     @uses_test_history(require_new=False)
     def test_identifier_multiple_reduce_in_conditional(self, history_id):
