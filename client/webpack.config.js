@@ -1,6 +1,7 @@
+/* eslint-env node */
 const webpack = require("webpack");
 const path = require("path");
-const VueLoaderPlugin = require('vue-loader/lib/plugin');
+const VueLoaderPlugin = require("vue-loader/lib/plugin");
 
 const scriptsBase = path.join(__dirname, "galaxy/scripts");
 const libsBase = path.join(scriptsBase, "libs");
@@ -54,7 +55,9 @@ let buildconfig = {
     resolve: {
         modules: [scriptsBase, "node_modules"],
         alias: {
-            vue: 'vue/dist/vue.js'
+            vue: "vue/dist/vue.js",
+            jquery$: path.resolve(__dirname, "galaxy/scripts/jquery-custom.js"),
+            jqueryVendor$: path.resolve(__dirname, "node_modules/jquery/dist/jquery.js")
         }
     },
     optimization: {
@@ -70,6 +73,10 @@ let buildconfig = {
     },
     module: {
         rules: [
+            {
+                test: /select2/,
+                use: "imports-loader?jQuery=jqueryVendor"
+            },
             {
                 test: /\.vue$/,
                 loader: "vue-loader",
@@ -99,10 +106,7 @@ let buildconfig = {
             },
             {
                 test: /\.css$/,
-                use: [
-                    'style-loader',
-                    'css-loader'
-                ]
+                use: ["style-loader", "css-loader"]
             },
             {
                 test: /\.vue$/,
@@ -126,7 +130,6 @@ let buildconfig = {
         new webpack.ProvidePlugin({
             $: "jquery",
             jQuery: "jquery",
-            // "window.jQuery": "jquery",
             _: "underscore",
             Backbone: "backbone"
         }),
