@@ -129,12 +129,9 @@ inputs:
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: input1
-      queries:
-        - input2:
-            $link: input1
+    connect:
+      input1: input1
+      queries_0|input2: input1
 
 test_data:
   input1: "hello world"

@@ -78,7 +78,8 @@ class WorkflowModule(object):
     @classmethod
     def from_dict(Class, trans, d, **kwds):
         module = Class(trans, **kwds)
-        module.recover_state(d.get("tool_state"), **kwds)
+        input_connections = d.get("input_connections", {})
+        module.recover_state(d.get("tool_state"), input_connections=input_connections, **kwds)
         module.label = d.get("label")
         return module
 
@@ -867,7 +868,66 @@ class ToolModule(WorkflowModule):
         super(ToolModule, self).recover_state(state, **kwds)
         if kwds.get("fill_defaults", False) and self.tool:
             self.compute_runtime_state(self.trans, step_updates=None)
+            self.augment_tool_state_for_input_connections(**kwds)
             self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
+
+    def augment_tool_state_for_input_connections(self, **kwds):
+        """Update tool state to accommodate specified input connections.
+
+        Top-level and conditional inputs will automatically get populated with connected
+        data outputs at runtime, but if there are not enough repeat instances in the tool
+        state - the runtime replacement code will never visit the input elements it needs
+        to in order to connect the data parameters to the tool state. This code then
+        populates the required repeat instances in the tool state in order for these
+        instances to be visited and inputs properly connected at runtime. I believe
+        this should be run before check_and_update_param_values in recover_state so non-data
+        parameters are properly populated with default values. The need to populate
+        defaults is why this is done here instead of at runtime - but this might also
+        be needed at runtime at some point (for workflows installed before their corresponding
+        tools?).
+
+        See the test case test_inputs_to_steps for an example of a workflow test
+        case that exercises this code.
+        """
+
+        # Ensure any repeats defined only by input_connections are populated.
+        input_connections = kwds.get("input_connections", {})
+        expected_replacement_keys = input_connections.keys()
+
+        def augment(expected_replacement_key, inputs, inputs_state):
+            if "|" not in expected_replacement_key:
+                return
+
+            prefix, rest = expected_replacement_key.split("|", 1)
+            if "_" not in prefix:
+                return
+
+            repeat_name, index = prefix.rsplit("_", 1)
+            if not index.isdigit():
+                return
+
+            index = int(index)
+            repeat = self.tool.inputs[repeat_name]
+            if repeat.type != "repeat":
+                return
+
+            if repeat_name not in inputs_states:
+                inputs_states[repeat_name] = []
+
+            repeat_values = inputs_states[repeat_name]
+            repeat_instance_state = None
+            while index >= len(repeat_values):
+                repeat_instance_state = {"__index__": len(repeat_values)}
+                repeat_values.append(repeat_instance_state)
+
+            if repeat_instance_state:
+                # TODO: untest branch - no test case for nested repeats yet...
+                augment(rest, repeat.inputs, repeat_instance_state)
+
+        for expected_replacement_key in expected_replacement_keys:
+            inputs_states = self.state.inputs
+            inputs = self.tool.inputs
+            augment(expected_replacement_key, inputs, inputs_states)
 
     def get_runtime_state(self):
         state = DefaultToolState()
