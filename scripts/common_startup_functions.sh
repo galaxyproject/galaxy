@@ -157,6 +157,10 @@ find_server() {
         fi
         server_args="$server_args $uwsgi_args"
         pid_log_paster_args=""
+    elif [ "$APP_WEBSERVER" = "gunicorn" ];
+    then
+        export GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:8080"}
+        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\""
     else
         run_server="python"
         server_args="./scripts/paster.py serve \"$server_config\" $paster_args"

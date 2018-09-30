@@ -41,6 +41,7 @@ bleach = "*"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
 boltons = "*"
+gunicorn = "*"
 Paste = "*"
 docutils = "*"
 Routes = "*"
