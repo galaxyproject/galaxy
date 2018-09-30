@@ -13,7 +13,8 @@ from routes import url_for
 
 from galaxy.util import (
     hash_util,
-    unicodify
+    smart_str,
+    unicodify,
 )
 from galaxy.util.json import safe_dumps as dumps  # noqa: F401
 from .tags import (
@@ -104,7 +105,7 @@ def md5(s):
     Return hex encoded md5 hash of string s
     """
     m = hash_util.md5()
-    m.update(s)
+    m.update(smart_str(s))
     return m.hexdigest()
 
 

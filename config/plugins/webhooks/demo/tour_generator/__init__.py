@@ -76,7 +76,7 @@ class TourGenerator(object):
                 upload_tool = self._trans.app.toolbox.get_tool('upload1')
                 filename = os.path.basename(input_path)
 
-                with open(input_path, 'r') as f:
+                with open(input_path, 'rb') as f:
                     content = f.read()
                     headers = {
                         'content-disposition':
