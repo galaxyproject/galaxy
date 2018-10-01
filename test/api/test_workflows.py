@@ -30,48 +30,6 @@ from base.workflow_fixtures import (  # noqa: I100
 from galaxy.exceptions import error_codes  # noqa: I201
 
 
-SIMPLE_NESTED_WORKFLOW_YAML = """
-class: GalaxyWorkflow
-inputs:
-  - id: outer_input
-outputs:
-  - id: outer_output
-    source: second_cat#out_file1
-steps:
-  - tool_id: cat1
-    label: first_cat
-    in:
-      input1: outer_input
-  - run:
-      class: GalaxyWorkflow
-      inputs:
-        - id: inner_input
-      outputs:
-        - id: workflow_output
-          source: random_lines#out_file1
-      steps:
-        - tool_id: random_lines1
-          label: random_lines
-          state:
-            num_lines: 1
-            input:
-              $link: inner_input
-            seed_source:
-              seed_source_selector: set_seed
-              seed: asdf
-    label: nested_workflow
-    in:
-      inner_input: first_cat/out_file1
-  - tool_id: cat1
-    label: second_cat
-    state:
-      input1:
-        $link: nested_workflow#workflow_output
-      queries:
-        - input2:
-            $link: nested_workflow#workflow_output
-"""
-
 NESTED_WORKFLOW_AUTO_LABELS = """
 class: GalaxyWorkflow
 inputs:
