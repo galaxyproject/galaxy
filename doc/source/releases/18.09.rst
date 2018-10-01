@@ -786,6 +786,8 @@ Fixes
 * Fix bam upload resulting in 'auto' datatype
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6789`_
+* Flex-related style fixes
+  `Pull Request 6791`_
 * allow making all datasets within history public, when sharing
   `Pull Request 6793`_
 * Drop unused peek method
@@ -1119,8 +1121,10 @@ Fixes
 .. _Pull Request 6782: https://github.com/galaxyproject/galaxy/pull/6782
 .. _Pull Request 6785: https://github.com/galaxyproject/galaxy/pull/6785
 .. _Pull Request 6789: https://github.com/galaxyproject/galaxy/pull/6789
+.. _Pull Request 6791: https://github.com/galaxyproject/galaxy/pull/6791
 .. _Pull Request 6793: https://github.com/galaxyproject/galaxy/pull/6793
 .. _Pull Request 6796: https://github.com/galaxyproject/galaxy/pull/6796
 .. _Pull Request 6798: https://github.com/galaxyproject/galaxy/pull/6798
 .. _Pull Request 6799: https://github.com/galaxyproject/galaxy/pull/6799
 .. _Pull Request 6803: https://github.com/galaxyproject/galaxy/pull/6803
+
