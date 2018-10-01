@@ -12179,7 +12179,6 @@ body {
     color: #555; }
   .unified-panel-header .unified-panel-header-inner {
     width: 100%;
-    display: flex;
     align-items: center;
     justify-content: space-between; }
   .unified-panel-header .panel-header-buttons {

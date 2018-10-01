@@ -51,7 +51,7 @@
         </div>
     </div>
 
-    <div class="unified-panel-body h-100">
+    <div class="unified-panel-body">
         <textarea name="page_content">${ content }</textarea>
     </div>
 

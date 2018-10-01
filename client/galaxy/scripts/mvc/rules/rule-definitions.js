@@ -346,7 +346,7 @@ const RULES = {
         },
         save: (component, rule) => {
             rule.target_column = component.addColumnSubstrTarget;
-            rule.length = component.addColumnSubstrLength;
+            rule.length = parseInt(component.addColumnSubstrLength);
             rule.substr_type = component.addColumnSubstrType;
         },
         apply: (rule, data, sources, columns) => {

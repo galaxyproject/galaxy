@@ -26,7 +26,7 @@
         if upgrade_messages is None:
             upgrade_messages = {}
     %>
-    %for input_index, input in enumerate( input_params.itervalues() ):
+    %for input_index, input in enumerate( input_params.values() ):
         %if input.name in param_values:
             %if input.type == "repeat":
                 %for i in range( len(param_values[input.name]) ):
