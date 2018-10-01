@@ -9,6 +9,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+gunicorn = "*"
 lxml = "!=4.2.2"
 mock = "*"
 NoseHTML = "*"
@@ -41,7 +42,6 @@ bleach = "*"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
 boltons = "*"
-gunicorn = "*"
 Paste = "*"
 docutils = "*"
 Routes = "*"
