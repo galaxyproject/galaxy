@@ -12597,7 +12597,6 @@ body {
     font-size: 1.2em; }
   .unified-panel-header .unified-panel-header-inner {
     width: 100%;
-    display: flex;
     align-items: center;
     justify-content: space-between; }
   .unified-panel-header .panel-header-buttons {
@@ -12683,6 +12682,7 @@ body {
 
 div.unified-panel-body {
   width: 100%;
+  height: 100%;
   padding: 0px;
   flex: 1; }
 

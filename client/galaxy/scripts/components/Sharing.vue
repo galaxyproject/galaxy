@@ -140,10 +140,10 @@ export default {
         slug_url() {
             return `${Galaxy.root}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
         },
-        has_possible_members(){
+        has_possible_members() {
             return ["history"].indexOf(this.model_class_lc) > -1;
         },
-        show_danger(){
+        show_danger() {
             return this.err_msg !== null;
         }
     },
@@ -196,18 +196,18 @@ export default {
         },
         setSharing: function(action, user_id) {
             let data = {
-                    action: action,
-                    user_id: user_id
-                }
-            if (this.has_possible_members){
+                action: action,
+                user_id: user_id
+            };
+            if (this.has_possible_members) {
                 data.make_members_public = this.make_members_public;
             }
             axios
                 .post(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`, data)
                 .then(response => {
                     Object.assign(this.item, response.data);
-                    if (response.data.skipped){
-                       this.err_msg = "Some of the items within this object were not published due to an error.";
+                    if (response.data.skipped) {
+                        this.err_msg = "Some of the items within this object were not published due to an error.";
                     }
                 })
                 .catch(error => (this.err_msg = error.response.data.err_msg));
@@ -256,7 +256,7 @@ export default {
 };
 </script>
 <style>
-.chkk{
+.chkk {
     display: inline-block;
 }
 </style>
