@@ -6,6 +6,10 @@ import os
 from base.populators import uses_test_history
 from base.workflow_fixtures import (
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
+    WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES,
+    WORKFLOW_SIMPLE_CAT_TWICE,
+    WORKFLOW_WITH_OUTPUT_ACTIONS,
+    WORKFLOW_WITH_OUTPUTS
 )
 
 from .test_workflows import BaseWorkflowsApiTestCase
@@ -24,29 +28,7 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
         return workflow
 
     def test_simple_upload(self):
-        workflow = self._upload_and_download("""
-class: GalaxyWorkflow
-steps:
-  - type: input
-    label: the_input
-  - tool_id: cat1
-    state:
-      input1:
-        $link: 0
-  - tool_id: cat1
-    state:
-      input1:
-        $link: 1#out_file1
-  - tool_id: random_lines1
-    label: random_line_label
-    state:
-      num_lines: 10
-      input:
-        $link: 2#out_file1
-      seed_source:
-        seed_source_selector: set_seed
-        seed: asdf
-""")
+        workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
 
         tool_count = {'random_lines1': 0, 'cat1': 0}
         input_found = False
@@ -92,26 +74,8 @@ steps:
 
     def test_simple_output_actions(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs("""
-class: GalaxyWorkflow
-steps:
-  - type: input
-    label: input1
-  - tool_id: cat1
-    label: first_cat
-    state:
-      input1:
-        $link: 0
-    outputs:
-       out_file1:
-         hide: true
-         rename: "the new value"
-  - tool_id: cat1
-    state:
-      input1:
-        $link: first_cat#out_file1
-test_data:
-  input1: "hello world"
+        self._run_jobs(WORKFLOW_WITH_OUTPUT_ACTIONS, test_data="""
+input1: "hello world"
 """, history_id=history_id)
 
         details1 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
@@ -122,44 +86,12 @@ test_data:
 
     def test_inputs_to_steps(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs("""
-class: GalaxyWorkflow
-inputs:
-  - id: input1
-steps:
-  - tool_id: cat1
-    label: first_cat
-    connect:
-      input1: input1
-      queries_0|input2: input1
-
-test_data:
-  input1: "hello world"
-""", history_id=history_id)
+        self._run_jobs(WORKFLOW_SIMPLE_CAT_TWICE, test_data={"input1": "hello world"}, history_id=history_id)
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEquals(contents1.strip(), "hello world\nhello world")
 
     def test_outputs(self):
-        workflow_id = self._upload_yaml_workflow("""
-class: GalaxyWorkflow
-inputs:
-  - id: input1
-outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
-steps:
-  - tool_id: cat1
-    label: first_cat
-    state:
-      input1:
-        $link: input1
-      queries:
-        - input2:
-            $link: input1
-
-test_data:
-  input1: "hello world"
-""")
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
@@ -186,9 +118,8 @@ inputs:
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: outer_input
+    in:
+      input1: outer_input
   - run:
       class: GalaxyWorkflow
       inputs:
@@ -203,8 +134,8 @@ steps:
               seed_source_selector: set_seed
               seed: asdf
     label: nested_workflow
-    connect:
-      inner_input: first_cat#out_file1
+    in:
+      inner_input: first_cat/out_file1
 
 test_data:
   outer_input:

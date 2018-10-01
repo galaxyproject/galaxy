@@ -1,4 +1,28 @@
 
+
+WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
+class: GalaxyWorkflow
+inputs:
+  - id: the_input
+steps:
+  - tool_id: cat1
+    in:
+      input1: the_input
+  - tool_id: cat1
+    in:
+      input1: 1/out_file1
+  - tool_id: random_lines1
+    label: random_line_label
+    state:
+      num_lines: 10
+      seed_source:
+        seed_source_selector: set_seed
+        seed: asdf
+    in:
+      input: 2/out_file1
+"""
+
+
 WORKFLOW_SIMPLE_CAT_TWICE = """
 class: GalaxyWorkflow
 inputs:
@@ -6,12 +30,9 @@ inputs:
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
-      queries:
-        - input2:
-            $link: input1
+    in:
+      input1: input1
+      queries_0|input2: input1
 """
 
 
@@ -46,13 +67,11 @@ steps:
     type: input
   - label: split_up
     tool_id: collection_creates_pair
-    state:
-      input1:
-        $link: text_input
+    in:
+      input1: text_input
   - tool_id: collection_paired_test
-    state:
-      f1:
-        $link: split_up#paired_output
+    in:
+      f1: split_up/paired_output
 test_data:
   text_input: |
     a
@@ -83,9 +102,8 @@ steps:
       input1:
         $link: cat_inputs#out_file1
   - tool_id: cat_list
-    state:
-      input1:
-        $link: split_up#split_output
+    in:
+      input1: split_up/split_output
 test_data:
   text_input1: |
     samp1\t10.0
@@ -99,15 +117,14 @@ test_data:
 WORKFLOW_SIMPLE_MAPPING = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
     label: cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
 """
 
 
@@ -192,9 +209,8 @@ steps:
             columns: [0, 1]
   - tool_id: collection_creates_list
     label: copy_list
-    state:
-      input1:
-        $link: apply#output
+    in:
+      input1: apply/output
 test_data:
   input_c:
     type: list
@@ -216,9 +232,8 @@ outputs:
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: outer_input
+    in:
+      input1: outer_input
   - run:
       class: GalaxyWorkflow
       inputs:
@@ -237,8 +252,8 @@ steps:
               seed_source_selector: set_seed
               seed: asdf
     label: nested_workflow
-    connect:
-      inner_input: first_cat#out_file1
+    in:
+      inner_input: first_cat/out_file1
   - tool_id: cat1
     label: second_cat
     state:
@@ -277,8 +292,27 @@ steps:
               seed_source_selector: set_seed
               seed: asdf
     label: nested_workflow
-    connect:
+    in:
       inner_input: outer_input
+"""
+
+
+WORKFLOW_WITH_OUTPUT_ACTIONS = """
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    outputs:
+       out_file1:
+         hide: true
+         rename: "the new value"
+    in:
+      input1: input1
+  - tool_id: cat1
+    in:
+      input1: first_cat/out_file1
 """
 
 
@@ -306,9 +340,8 @@ inputs:
 steps:
   - label: the_pause
     type: pause
-    connect:
-      input:
-      - input1
+    in:
+      input: input1
   - tool_id: random_lines1
     runtime_inputs:
       - num_lines
@@ -373,13 +406,30 @@ steps:
       steps:
         - tool_id: cat
           label: first_cat
-          state:
-            input1:
-              $link: inner_input
+          in:
+            input1: inner_input
           outputs:
             out_file1:
               rename: "${replaceme} suffix"
     label: nested_workflow
-    connect:
+    in:
       inner_input: outer_input
+"""
+
+WORKFLOW_WITH_OUTPUTS = """
+class: GalaxyWorkflow
+inputs:
+  - id: input1
+outputs:
+  - id: wf_output_1
+    source: first_cat#out_file1
+steps:
+  - tool_id: cat1
+    label: first_cat
+    state:
+      input1:
+        $link: input1
+      queries:
+        - input2:
+            $link: input1
 """
