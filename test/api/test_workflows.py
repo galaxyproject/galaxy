@@ -77,8 +77,8 @@ class: GalaxyWorkflow
 inputs:
   - id: outer_input
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -993,7 +993,7 @@ outer_input:
   value: 1.bed
   type: File
 """
-            self._run_jobs(WORKFLOW_NESTED_REPLACEMENT_PARAMETER, test_data=test_data, history_id=history_id, round_trip_format_conversion=True)
+            self._run_jobs(WORKFLOW_NESTED_REPLACEMENT_PARAMETER, test_data=test_data, history_id=history_id)
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
 
@@ -1188,8 +1188,8 @@ class: GalaxyWorkflow
 inputs:
   - id: input1
 outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -1217,8 +1217,8 @@ inputs:
     type: data_collection_input
     collection_type: list
 outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   - tool_id: cat
     label: first_cat
@@ -1257,8 +1257,8 @@ class: GalaxyWorkflow
 inputs:
   - id: input1
 outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   - tool_id: cat
     label: first_cat
@@ -1299,8 +1299,8 @@ class: GalaxyWorkflow
 inputs:
   - id: text_input
 outputs:
-  - id: wf_output_1
-    source: split_up#paired_output
+  wf_output_1:
+    outputSource: split_up/paired_output
 steps:
   - label: split_up
     tool_id: collection_creates_pair
@@ -1381,8 +1381,8 @@ class: GalaxyWorkflow
 inputs:
   - id: outer_input
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -1393,8 +1393,8 @@ steps:
       inputs:
         - id: inner_input
       outputs:
-        - id: workflow_output
-          source: random_lines#out_file1
+        workflow_output:
+          outputSource: random_lines/out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -1439,8 +1439,8 @@ class: GalaxyWorkflow
 inputs:
   - id: outer_input
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -1451,8 +1451,8 @@ steps:
       inputs:
         - id: inner_input
       outputs:
-        - id: workflow_output
-          source: inner_cat#out_file1
+        workflow_output:
+          outputSource: inner_cat/out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -1496,8 +1496,8 @@ class: GalaxyWorkflow
 inputs:
   - id: outer_input
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -1508,8 +1508,8 @@ steps:
       inputs:
         - id: inner_input
       outputs:
-        - id: workflow_output
-          source: split#output
+        workflow_output:
+          outputSource: split/output
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -1548,8 +1548,8 @@ class: GalaxyWorkflow
 inputs:
   - id: input1
 outputs:
-  - id: count_list
-    source: count_list#out_file1
+  count_list:
+    outputSource: count_list/out_file1
 steps:
   - tool_id: empty_list
     label: empty_list
@@ -1604,8 +1604,8 @@ class: GalaxyWorkflow
 inputs:
   - id: input1
 outputs:
-  - id: count_multi_file
-    source: count_multi_file#out_file1
+  count_multi_file:
+    outputSource: count_multi_file/out_file1
 steps:
   - tool_id: empty_list
     label: empty_list
@@ -2092,8 +2092,8 @@ outer_input:
 class: GalaxyWorkflow
 inputs: []
 outputs:
-  - id: wf_output_1
-    source: output_filter#out_1
+  wf_output_1:
+    outputSource: output_filter/out_1
 steps:
   - tool_id: output_filter
     label: output_filter
@@ -2711,8 +2711,8 @@ class: GalaxyWorkflow
 inputs:
   - id: input1
 outputs:
-  - id: wf_output_1
-    source: third_cat#out_file1
+  wf_output_1:
+    outputSource: third_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat

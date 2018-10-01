@@ -227,8 +227,8 @@ class: GalaxyWorkflow
 inputs:
   - id: outer_input
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -239,8 +239,8 @@ steps:
       inputs:
         - id: inner_input
       outputs:
-        - id: workflow_output
-          source: random_lines#out_file1
+        workflow_output:
+          outputSource: random_lines/out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -270,16 +270,16 @@ class: GalaxyWorkflow
 inputs:
   - id: outer_input
 outputs:
-  - id: outer_output
-    source: nested_workflow#workflow_output
+  outer_output:
+    outputSource: nested_workflow/workflow_output
 steps:
   - run:
       class: GalaxyWorkflow
       inputs:
         - id: inner_input
       outputs:
-        - id: workflow_output
-          source: random_lines#out_file1
+        workflow_output:
+          outputSource: random_lines#out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -393,16 +393,16 @@ class: GalaxyWorkflow
 inputs:
   - id: outer_input
 outputs:
-  - id: outer_output
-    source: nested_workflow#workflow_output
+  outer_output:
+    outputSource: nested_workflow/workflow_output
 steps:
   - run:
       class: GalaxyWorkflow
       inputs:
         - id: inner_input
       outputs:
-        - id: workflow_output
-          source: first_cat#out_file1
+        workflow_output:
+          outputSource: first_cat/out_file1
       steps:
         - tool_id: cat
           label: first_cat
@@ -421,8 +421,8 @@ class: GalaxyWorkflow
 inputs:
   - id: input1
 outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
