@@ -547,6 +547,8 @@ class BaseWorkflowPopulator(object):
         return upload_response
 
     def upload_yaml_workflow(self, has_yaml, **kwds):
+        client_convert = kwds.pop("client_convert", True)
+        kwds["convert"] = client_convert
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
         return workflow["id"]
 

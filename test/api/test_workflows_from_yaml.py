@@ -22,13 +22,13 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
     def setUp(self):
         super(WorkflowsFromYamlApiTestCase, self).setUp()
 
-    def _upload_and_download(self, yaml_workflow):
-        workflow_id = self._upload_yaml_workflow(yaml_workflow)
+    def _upload_and_download(self, yaml_workflow, **kwds):
+        workflow_id = self._upload_yaml_workflow(yaml_workflow, **kwds)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         return workflow
 
     def test_simple_upload(self):
-        workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False)
 
         tool_count = {'random_lines1': 0, 'cat1': 0}
         input_found = False

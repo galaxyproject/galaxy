@@ -38,6 +38,8 @@ from galaxy.workflow.modules import (
 )
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import attach_ordered_steps
+from gxformat2.interface import ImporterGalaxyInterface
+from gxformat2.converter import python_to_workflow
 from .base import decode_id
 
 log = logging.getLogger(__name__)
@@ -234,6 +236,25 @@ class WorkflowContentsManager(UsesAnnotations):
     def __init__(self, app):
         self.app = app
         self._resource_mapper_function = get_resource_mapper_function(app)
+
+    def normalize_workflow_format(self, as_dict):
+        """Process incoming workflow descriptions for consumption by other methods.
+
+        Currently this mostly means converting format 2 workflows into standard Galaxy
+        workflow JSON for consumption for the rest of this module. In the future we will
+        want to be a lot more percise about this - preserve the original description along
+        side the data model and apply updates in a way that largely preserves YAML structure
+        so workflows can be extracted.
+        """
+        workflow_class = as_dict.get("class", None)
+        if workflow_class == "GalaxyWorkflow":
+            if not self.app.config.enable_beta_workflow_format:
+                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
+
+            # Format 2 Galaxy workflow.
+            galaxy_interface = Format2ConverterGalaxyInterface()
+            as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None)
+        return as_dict
 
     def build_workflow_from_dict(
         self,
@@ -1023,3 +1044,9 @@ class MissingToolsException(exceptions.MessageException):
     def __init__(self, workflow, errors):
         self.workflow = workflow
         self.errors = errors
+
+
+class Format2ConverterGalaxyInterface(ImporterGalaxyInterface):
+
+    def import_workflow(self, workflow, **kwds):
+        raise NotImplementedError("Direct format 2 import of nested workflows is not yet implemented, use bioblend client.")
