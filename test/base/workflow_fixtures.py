@@ -26,7 +26,7 @@ steps:
 WORKFLOW_SIMPLE_CAT_TWICE = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat
     label: first_cat
@@ -39,7 +39,7 @@ steps:
 WORKFLOW_WITH_OLD_TOOL_VERSION = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: multiple_versions
     tool_version: "0.0.1"
@@ -51,7 +51,7 @@ steps:
 WORKFLOW_WITH_INVALID_STATE = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: multiple_versions
     tool_version: "0.0.1"
@@ -62,9 +62,9 @@ steps:
 
 WORKFLOW_WITH_OUTPUT_COLLECTION = """
 class: GalaxyWorkflow
+inputs:
+  text_input: data
 steps:
-  - label: text_input
-    type: input
   - label: split_up
     tool_id: collection_creates_pair
     in:
@@ -150,8 +150,7 @@ steps:
 WORKFLOW_WITH_RULES_1 = """
 class: GalaxyWorkflow
 inputs:
-  - type: collection
-    label: input_c
+  input_c: collection
 steps:
   - label: apply
     tool_id: __APPLY_RULES__
@@ -190,8 +189,7 @@ test_data:
 WORKFLOW_WITH_RULES_2 = """
 class: GalaxyWorkflow
 inputs:
-  - type: collection
-    label: input_c
+  input_c: collection
 steps:
   - label: apply
     tool_id: __APPLY_RULES__
@@ -225,7 +223,7 @@ test_data:
 WORKFLOW_NESTED_SIMPLE = """
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
   outer_output:
     outputSource: second_cat/out_file1
@@ -237,7 +235,7 @@ steps:
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
         workflow_output:
           outputSource: random_lines/out_file1
@@ -268,7 +266,7 @@ steps:
 WORKFLOW_NESTED_RUNTIME_PARAMETER = """
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
   outer_output:
     outputSource: nested_workflow/workflow_output
@@ -276,7 +274,7 @@ steps:
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
         workflow_output:
           outputSource: random_lines#out_file1
@@ -300,7 +298,7 @@ steps:
 WORKFLOW_WITH_OUTPUT_ACTIONS = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat1
     label: first_cat
@@ -319,7 +317,7 @@ steps:
 WORKFLOW_RUNTIME_PARAMETER_SIMPLE = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: random_lines1
     runtime_inputs:
@@ -336,7 +334,7 @@ steps:
 WORKFLOW_RUNTIME_PARAMETER_AFTER_PAUSE = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - label: the_pause
     type: pause
@@ -356,7 +354,7 @@ steps:
 WORKFLOW_RENAME_ON_INPUT = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat
     label: first_cat
@@ -376,7 +374,7 @@ test_data:
 WORKFLOW_RENAME_ON_REPLACEMENT_PARAM = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat
     label: first_cat
@@ -391,7 +389,7 @@ steps:
 WORKFLOW_NESTED_REPLACEMENT_PARAMETER = """
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
   outer_output:
     outputSource: nested_workflow/workflow_output
@@ -399,7 +397,7 @@ steps:
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
         workflow_output:
           outputSource: first_cat/out_file1
@@ -419,7 +417,7 @@ steps:
 WORKFLOW_WITH_OUTPUTS = """
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
   wf_output_1:
     outputSource: first_cat/out_file1

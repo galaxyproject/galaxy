@@ -114,7 +114,7 @@ input1: "hello world"
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 steps:
   - tool_id: cat1
     label: first_cat
@@ -123,7 +123,7 @@ steps:
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       steps:
         - tool_id: random_lines1
           state:

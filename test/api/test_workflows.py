@@ -33,7 +33,7 @@ from galaxy.exceptions import error_codes  # noqa: I201
 NESTED_WORKFLOW_AUTO_LABELS = """
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
   outer_output:
     outputSource: second_cat/out_file1
@@ -1016,11 +1016,10 @@ test_data:
         with self.dataset_populator.test_history() as history_id:
             workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
+inputs:
+  test_input_1: data
+  test_input_2: data
 steps:
-  - label: test_input_1
-    type: input
-  - label: test_input_2
-    type: input
   - label: first_cat
     tool_id: cat1
     state:
@@ -1088,8 +1087,8 @@ test_data: {}
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - type: collection
-    label: input_c
+  input_c: collection
+
 steps:
   - label: mixed_collection
     tool_id: exit_code_from_file
@@ -1144,7 +1143,7 @@ test_data:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
   wf_output_1:
     outputSource: first_cat/out_file1
@@ -1171,7 +1170,7 @@ steps:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1:
     type: data_collection_input
     collection_type: list
 outputs:
@@ -1213,7 +1212,7 @@ input1:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
   wf_output_1:
     outputSource: first_cat/out_file1
@@ -1255,7 +1254,7 @@ input1:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: text_input
+  text_input: data
 outputs:
   wf_output_1:
     outputSource: split_up/paired_output
@@ -1337,7 +1336,7 @@ outer_input:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
   outer_output:
     outputSource: second_cat/out_file1
@@ -1349,7 +1348,7 @@ steps:
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
         workflow_output:
           outputSource: random_lines/out_file1
@@ -1395,7 +1394,7 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
   outer_output:
     outputSource: second_cat/out_file1
@@ -1407,7 +1406,7 @@ steps:
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
         workflow_output:
           outputSource: inner_cat/out_file1
@@ -1452,7 +1451,7 @@ outer_input:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
   outer_output:
     outputSource: second_cat/out_file1
@@ -1464,7 +1463,7 @@ steps:
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
         workflow_output:
           outputSource: split/output
@@ -1504,7 +1503,7 @@ outer_input:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
   count_list:
     outputSource: count_list/out_file1
@@ -1538,9 +1537,9 @@ input1:
         with self.dataset_populator.test_history() as history_id:
             jobs_summary = self._run_jobs("""
 class: GalaxyWorkflow
+inputs:
+  text_input1: collection
 steps:
-  - label: text_input1
-    type: input_collection
   - tool_id: collection_type_source_map_over
     in:
       input_collect: text_input1
@@ -1560,7 +1559,7 @@ text_input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
   count_multi_file:
     outputSource: count_multi_file/out_file1
@@ -1735,8 +1734,8 @@ input1:
             workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
@@ -1775,9 +1774,9 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             run_summary = self._run_jobs("""
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-- label: test_input
-  type: input
 - label: first_cat
   tool_id: cat1
   in:
@@ -1823,8 +1822,7 @@ steps:
             run_summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - label: text_input
-    type: text
+  text_input: text
 steps:
 - tool_id: validation_repeat
   state:
@@ -1846,8 +1844,7 @@ text_input:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - label: text_input
-    type: text
+  text_input: text
 steps:
 - tool_id: validation_repeat
   state:
@@ -1865,10 +1862,8 @@ text_input:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - label: data_input
-    type: data
-  - label: text_input
-    type: text
+  data_input: data
+  text_input: text
 steps:
 - label: randomlines
   tool_id: random_lines1
@@ -2071,8 +2066,8 @@ steps:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
@@ -2106,8 +2101,8 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
@@ -2137,7 +2132,7 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: collection_creates_pair
     in:
@@ -2193,7 +2188,7 @@ steps:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: fail_identifier
     label: first_fail
@@ -2240,7 +2235,7 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat
     label: first_cat
@@ -2265,8 +2260,8 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-  - id: input2
+  input1: data
+  input2: data
 steps:
   - tool_id: cat
     label: first_cat
@@ -2299,8 +2294,8 @@ input2:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: fasta_input
-  - id: fastq_input
+  fasta_input: data
+  fastq_input: data
 steps:
   - tool_id: mapper2
     state:
@@ -2337,8 +2332,8 @@ fastq_input:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: fasta_input
-  - id: fastq_inputs
+  fasta_input: data
+  fastq_inputs: data
 steps:
   - tool_id: mapper2
     state:
@@ -2380,7 +2375,7 @@ fastq_inputs:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: collection_creates_pair
     state:
@@ -2412,9 +2407,8 @@ inputs:
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         hide: true
@@ -2442,7 +2436,7 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - label: first_cat
     tool_id: cat
@@ -2485,7 +2479,7 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: collection_creates_pair
     in:
@@ -2511,8 +2505,8 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
@@ -2544,7 +2538,7 @@ input1:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat
     label: first_cat
@@ -2614,7 +2608,7 @@ input1:
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
-  - id: test_input
+  test_input: data
 steps:
   - label: first_cat
     tool_id: cat1
@@ -2667,7 +2661,7 @@ steps:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
   wf_output_1:
     outputSource: third_cat/out_file1
@@ -2969,8 +2963,7 @@ steps:
         summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - type: collection
-    label: input_c
+  input_c: collection
 steps:
   - label: cat1
     tool_id: cat1
