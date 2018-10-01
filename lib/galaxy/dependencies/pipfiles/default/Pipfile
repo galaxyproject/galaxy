@@ -9,6 +9,7 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+gunicorn = "*"
 lxml = "!=4.2.2"
 mock = "*"
 NoseHTML = "*"
