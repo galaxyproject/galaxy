@@ -2,10 +2,14 @@
 
 WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES = """
 class: GalaxyWorkflow
+doc: |
+  Simple workflow that no-op cats a file and then selects 10 random lines.
 inputs:
   - id: the_input
+    doc: input doc
 steps:
   - tool_id: cat1
+    doc: cat doc
     in:
       input1: the_input
   - tool_id: cat1

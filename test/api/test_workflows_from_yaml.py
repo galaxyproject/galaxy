@@ -32,6 +32,8 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
     def test_simple_upload(self):
         workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False)
 
+        assert workflow["annotation"].startswith("Simple workflow that ")
+
         tool_count = {'random_lines1': 0, 'cat1': 0}
         input_found = False
         for step in workflow['steps'].values():
@@ -51,6 +53,7 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
 
         workflow_as_format2 = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False, style="format2")
         assert workflow_as_format2["doc"].startswith("Simple workflow that")
+
 
 # FIXME:  This test fails on some machines due to (we're guessing) yaml.safe_loading
 # order being not guaranteed and inconsistent across platforms.  The workflow
