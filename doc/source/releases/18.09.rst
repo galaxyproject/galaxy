@@ -339,6 +339,9 @@ Enhancements
   `Pull Request 6760`_
 * Remove upgrade cruft related to datatypes.
   `Pull Request 6761`_
+* Allow starting Galaxy under gunicorn when using galaxy.ini
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6805`_
 
 .. small_enhancement
 
@@ -431,6 +434,8 @@ Enhancements
 * Fix remaining selenium py3 errors
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6803`_
+* Drop gulp plugin staging task from default tasks
+  `Pull Request 6808`_
 
 
 Fixes
@@ -753,6 +758,8 @@ Fixes
   `Pull Request 6743`_
 * dispose of dataset tooltip when the delete is being called
   `Pull Request 6744`_
+* Generic tooltip hide for onclick faIconButtons
+  `Pull Request 6745`_
 * Fix page editor height for flex panels.
   `Pull Request 6747`_
 * Use mapped-over collectionType when inferring collectionType through …
@@ -797,6 +804,11 @@ Fixes
   `Pull Request 6798`_
 * Provide a useful exception message for object store exceptions
   `Pull Request 6799`_
+* Cast rule.length to int when parsing rules
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6802`_
+* Don't delete referenced Datasets when purging users
+  `Pull Request 6809`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1104,6 +1116,7 @@ Fixes
 .. _Pull Request 6742: https://github.com/galaxyproject/galaxy/pull/6742
 .. _Pull Request 6743: https://github.com/galaxyproject/galaxy/pull/6743
 .. _Pull Request 6744: https://github.com/galaxyproject/galaxy/pull/6744
+.. _Pull Request 6745: https://github.com/galaxyproject/galaxy/pull/6745
 .. _Pull Request 6747: https://github.com/galaxyproject/galaxy/pull/6747
 .. _Pull Request 6748: https://github.com/galaxyproject/galaxy/pull/6748
 .. _Pull Request 6749: https://github.com/galaxyproject/galaxy/pull/6749
@@ -1126,5 +1139,9 @@ Fixes
 .. _Pull Request 6796: https://github.com/galaxyproject/galaxy/pull/6796
 .. _Pull Request 6798: https://github.com/galaxyproject/galaxy/pull/6798
 .. _Pull Request 6799: https://github.com/galaxyproject/galaxy/pull/6799
+.. _Pull Request 6802: https://github.com/galaxyproject/galaxy/pull/6802
 .. _Pull Request 6803: https://github.com/galaxyproject/galaxy/pull/6803
+.. _Pull Request 6805: https://github.com/galaxyproject/galaxy/pull/6805
+.. _Pull Request 6808: https://github.com/galaxyproject/galaxy/pull/6808
+.. _Pull Request 6809: https://github.com/galaxyproject/galaxy/pull/6809
 
