@@ -8,14 +8,24 @@ September 2018 Galaxy Release (v 18.09)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+**OpenID Connect Support**
+  Galaxy now supports using OpenID Connect for user login, relying on trusted
+  identity providers to manage authentication.  This is intended to replace the
+  old (and mostly deprecated, on the web) OpenID 2.0 logins.  Read more at
+  https://galaxyproject.org/admin/authentication/
 
-**Feature2**
-  Feature description.
+    `https://github.com/galaxyproject/galaxy/pull/4474`
 
-**Feature3**
-  Feature description.
+**Extensive Workflow Enhancements**
+  Workflows got a lot of love this time around, with new runtime parameters for
+  subworkflows, exposed workflow versions, and zoom capability in the editor, to
+  name a few.  There were also a number of usability enhancements including
+  better labeling, links, overhauled workflow import interfaces, and many more.
+
+  (link up PRs)
+
+**Python3 Beta Support**
+  @nsoranzo py3 text
 
 Get Galaxy
 ==========
@@ -33,6 +43,14 @@ To update an existing Galaxy repository run:
       $ git fetch origin && git checkout release_18.09 && git pull --ff-only origin release_18.09
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Security
+========
+(TODO: Add notes)
+
+Breaking Changes
+================
+(TODO: Deprecation search -- I know of at least one)
 
 Release Notes
 ===========================================================
