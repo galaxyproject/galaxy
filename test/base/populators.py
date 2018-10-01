@@ -589,12 +589,17 @@ class BaseWorkflowPopulator(object):
             return content
 
         workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type)
-        if jobs_descriptions is None:
-            assert source_type != "path"
-            jobs_descriptions = yaml.safe_load(has_workflow)
 
         if test_data is None:
+            if jobs_descriptions is None:
+                assert source_type != "path"
+                jobs_descriptions = yaml.safe_load(has_workflow)
+
             test_data = jobs_descriptions.get("test_data", {})
+
+        if not isinstance(test_data, dict):
+            test_data = yaml.safe_load(test_data)
+
         parameters = test_data.pop('step_parameters', {})
         replacement_parameters = test_data.pop("replacement_parameters", {})
         inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
