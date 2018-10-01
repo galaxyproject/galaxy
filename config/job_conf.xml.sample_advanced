@@ -21,6 +21,7 @@
         </plugin>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
         <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
+        <plugin id="lsf" type="runner" load="galaxy.jobs.runners.lsf:LSFJobRunner" />
         <plugin id="slurm" type="runner" load="galaxy.jobs.runners.slurm:SlurmJobRunner" />
         <plugin id="dynamic" type="runner">
             <!-- The dynamic runner is not a real job running plugin and is

@@ -5,6 +5,7 @@ EXTERNAL_ID_TYPE_ANY = None
 EXTERNAL_ID_PATTERNS = [
     ('condor', r'submitted to cluster (\d+)\.'),
     ('slurm', r'Submitted batch job (\w+)'),
+    ('lsf', r'Job <(\d+)> is submitted to default queue .*\.'),
     ('torque', r'(.+)'),  # Default 'pattern' assumed by Galaxy code circa August 2013.
 ]
 
