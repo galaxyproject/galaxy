@@ -8,7 +8,6 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
     ##      global 'bootstrapped' var
     ##      named require module 'bootstrapped-data'
     <script type="text/javascript">
-        console.log("bootstrapped-data defined here...");
         //TODO: global...
         %for key in kwargs:
             ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (

@@ -53,7 +53,6 @@
 
 <%def name="javascripts()">
     <script>
-        console.log("setting yet more globals in galaxy.panels.mako");
         window.Galaxy = window.Galaxy || {};
         window.Galaxy.root = '${h.url_for( "/" )}';
     </script>

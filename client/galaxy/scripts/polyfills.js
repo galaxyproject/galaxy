@@ -12,18 +12,18 @@
     "use strict";
     /*globals window, clearTimeout */
 
-    console.log("Polfills are running");
-
     // ------------------------------------------------------------------ polyfills
     // console protection needed in some versions of IE (at this point (IE>=9), shouldn't be needed)
     window.console = window.console || {
-        log: function () { },
-        debug: function () { },
-        info: function () { },
-        warn: function () { },
-        error: function () { },
-        assert: function () { }
+        log: function() {},
+        debug: function() {},
+        info: function() {},
+        warn: function() {},
+        error: function() {},
+        assert: function() {}
     };
+
+    console.log("Polyfills are running");
 
     // phantomjs: does not have the native extend fn assign
     Object.assign = Object.assign || _.extend;
@@ -56,16 +56,16 @@
     var features = [
         {
             name: "canvas",
-            compatible: function () {
+            compatible: function() {
                 return window.CanvasRenderingContext2D;
             }
         },
         {
             name: "sessionStorage",
-            compatible: function () {
+            compatible: function() {
                 try {
                     return window.sessionStorage.length >= 0;
-                } catch (err) { }
+                } catch (err) {}
                 return false;
             }
         }
@@ -74,7 +74,7 @@
     var incompatibilities = features.filter(feature => !feature.compatible()).map(feature => feature.name);
 
     // if there are needed features missing, follow the index link to the static incompat warning
-    if (!!incompatibilities.length) {
+    if (incompatibilities.length) {
         var root = document.querySelectorAll('link[rel="index"]').item(0);
         if (root) {
             window.location = `${root.href}static/incompatible-browser.html`;
