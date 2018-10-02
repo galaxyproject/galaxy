@@ -1,13 +1,10 @@
+/* global Backbone, $, _, Galaxy */
+
 /** Masthead Collection **/
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
-import _l from "utils/localization";
 import Utils from "utils/utils";
-
-/* global Galaxy */
-/* global $ */
 
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({

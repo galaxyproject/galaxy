@@ -1,6 +1,4 @@
-import $ from "jquery";
-import "bootstrap";
-import * as _ from "underscore";
+/* global Galaxy, $, _ */
 import GalaxyApp from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
@@ -29,8 +27,6 @@ import DatasetEditAttributes from "mvc/dataset/dataset-edit-attributes";
 import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import Vue from "vue";
-
-/* global Galaxy */
 
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead

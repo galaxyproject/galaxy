@@ -55,9 +55,7 @@ let buildconfig = {
     resolve: {
         modules: [scriptsBase, "node_modules"],
         alias: {
-            vue: "vue/dist/vue.js",
-            jquery$: path.resolve(__dirname, "galaxy/scripts/jquery-custom.js"),
-            jqueryVendor$: path.resolve(__dirname, "node_modules/jquery/dist/jquery.js")
+            vue: "vue/dist/vue.js"
         }
     },
     optimization: {
@@ -73,24 +71,6 @@ let buildconfig = {
     },
     module: {
         rules: [
-            // Manual shimming for standard, horrible, jquery plugins
-            {
-                test: /jquery\.(migrate|autocomplete|event\.hover|event\.drag|form|rating|dynatree)/,
-                use: "imports-loader?jQuery=jqueryVendor"
-            },
-            {
-                test: /(select2|jstorage|farbtastic)/,
-                use: "imports-loader?jQuery=jqueryVendor"
-            },
-            {
-                test: /jquery-ui\.js/,
-                use: "imports-loader?jQuery=jqueryVendor"
-            },
-            // Even MORE special handling!
-            {
-                test: /jquery\.mousewheel/,
-                use: "imports-loader?define=>false,jQuery=jqueryVendor"
-            },
             {
                 test: /\.vue$/,
                 loader: "vue-loader",

@@ -1,8 +1,6 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+/* global Galaxy */
+
 import _l from "utils/localization";
-import jQuery from "jquery";
-var $ = jQuery;
 import GalaxyApp from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
@@ -14,8 +12,6 @@ import Page from "layout/page";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import Vue from "vue";
-
-/* global Galaxy */
 
 window.app = function app(options, bootstrapped) {
     window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
