@@ -73,9 +73,23 @@ let buildconfig = {
     },
     module: {
         rules: [
+            // Manual shimming for standard, horrible, jquery plugins
             {
-                test: /select2/,
+                test: /jquery\.(migrate|autocomplete|event\.hover|event\.drag|form|rating|dynatree)/,
                 use: "imports-loader?jQuery=jqueryVendor"
+            },
+            {
+                test: /(select2|jstorage|farbtastic)/,
+                use: "imports-loader?jQuery=jqueryVendor"
+            },
+            {
+                test: /jquery-ui\.js/,
+                use: "imports-loader?jQuery=jqueryVendor"
+            },
+            // Even MORE special handling!
+            {
+                test: /jquery\.mousewheel/,
+                use: "imports-loader?define=>false,jQuery=jqueryVendor"
             },
             {
                 test: /\.vue$/,
@@ -101,6 +115,19 @@ let buildconfig = {
                     {
                         loader: "expose-loader",
                         options: "$"
+                    }
+                ]
+            },
+            {
+                test: require.resolve("underscore"),
+                use: [
+                    {
+                        loader: "expose-loader",
+                        options: "_"
+                    },
+                    {
+                        loader: "expose-loader",
+                        options: "underscore"
                     }
                 ]
             },

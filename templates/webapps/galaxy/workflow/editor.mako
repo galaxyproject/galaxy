@@ -37,21 +37,12 @@
 
     ${parent.javascripts()}
 
-    ${h.js(
-        ## "libs/jquery/jquery.event.drag",
-        ## "libs/jquery/jquery.event.drop",
-        ## "libs/jquery/jquery.event.hover",
-        ## "libs/jquery/jquery.form",
-        ## "libs/jquery/jstorage",
-        ## "libs/jquery/jquery.autocomplete",
-        "bundled/extended.bundled"
-    )}
-
     <script type='text/javascript'>
         $( function() {
             window.bundleEntries.workflow(${h.dumps(self.editor_config)});
         });
     </script>
+
 </%def>
 
 <%def name="stylesheets()">
