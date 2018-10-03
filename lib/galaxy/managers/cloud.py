@@ -236,7 +236,7 @@ class CloudManager(sharable.SharableModelManager):
         if input_args is None:
             input_args = {}
 
-        cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
+        cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, cloudauthz)
         connection = self.configure_provider(cloudauthz.provider, credentials)
         try:
@@ -316,7 +316,7 @@ class CloudManager(sharable.SharableModelManager):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
+        cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, cloudauthz)
         connection = self.configure_provider(cloudauthz.provider, credentials)
 

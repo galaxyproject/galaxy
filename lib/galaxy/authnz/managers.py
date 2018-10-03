@@ -159,7 +159,7 @@ class AuthnzManager(object):
             raise exceptions.ItemAccessibilityException(msg)
 
     @staticmethod
-    def try_get_authz_config(trans, authz_id):
+    def try_get_authz_config(sa_session, user_id, authz_id):
         """
         It returns a cloudauthz config (see model.CloudAuthz) with the
         given ID; and raise an exception if either a config with given
@@ -176,12 +176,12 @@ class AuthnzManager(object):
         :rtype :            model.CloudAuthz
         :return:            a cloudauthz configuration.
         """
-        qres = trans.sa_session.query(model.CloudAuthz).get(authz_id)
+        qres = sa_session.query(model.CloudAuthz).get(authz_id)
         if qres is None:
             raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
-        if trans.user.id != qres.user_id:
+        if user_id != qres.user_id:
             msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
-                  "ID:`{}`.".format(qres.id, trans.user.id)
+                  "ID:`{}`.".format(qres.id, user_id)
             log.warn(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
