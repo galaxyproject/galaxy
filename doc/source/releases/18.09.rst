@@ -11,9 +11,7 @@ Enhancements
 
 .. feature
 
-* Allow selecting subset of collection by group tag
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 5457`_
+
 * Copy data from a cloud-based storage to a Galaxy history
   (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 5835`_
@@ -225,12 +223,6 @@ Enhancements
 * small improvement to the too xsd docs regarding discovered_datasets
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 6490`_
-* Implement ``group:`` tags (toward multi-factor analysis with group tagging)
-  `Pull Request 6491`_
-* Allow setting tags on targets & contents in data fetch API.
-  `Pull Request 6499`_
-* Integrate tagging into the rule builder.
-  `Pull Request 6500`_
 * Cache chrom_info generation when mapping over collections.
   `Pull Request 6515`_
 * More optimized HID generation - in one commit instead of two.
@@ -254,8 +246,6 @@ Enhancements
   `Pull Request 6539`_
 * Test case for nested collection input to flatten in a workflow.
   `Pull Request 6541`_
-* Allow Consuming Tags in the Apply Rules Tool
-  `Pull Request 6545`_
 * Integration test for the interaction of nested object stores and jobs.
   `Pull Request 6546`_
 * Configure object store for datasets in job handler instead of web thread.
@@ -264,10 +254,6 @@ Enhancements
   `Pull Request 6552`_
 * Unified dataset permission API.
   `Pull Request 6568`_
-* Add tagging rule to history level rule builder, copy HDAs when building
-  collection
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 6572`_
 * Add API endpoint to fetch a history's workflow invocations.
   `Pull Request 6580`_
 * Improve robustness of tour Selenium test.
@@ -314,9 +300,6 @@ Enhancements
 * Add Seurat datatype: rdata.seurat
   (thanks to `@mblue9 <https://github.com/mblue9>`__).
   `Pull Request 6648`_
-* Allow group tag selection also for multiple="true" inputs
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 6661`_
 * Various link and documentation fixes
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6662`_
@@ -330,8 +313,6 @@ Enhancements
   `Pull Request 6681`_
 * Add self help to error reporting interface
   `Pull Request 6711`_
-* Undo auto-propagation of group tags.
-  `Pull Request 6750`_
 * Client build startup changes
   `Pull Request 6753`_
 * Add graph dot datatype and enable it in visualisations

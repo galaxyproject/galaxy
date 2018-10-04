@@ -8,14 +8,6 @@ September 2018 Galaxy Release (v 18.09)
 Highlights
 ===========================================================
 
-**OpenID Connect Support**
-  Galaxy now supports using OpenID Connect for user login, relying on trusted
-  identity providers to manage authentication.  This is intended to replace the
-  old (and mostly deprecated, on the web) OpenID 2.0 logins.  Read more at
-  https://galaxyproject.org/admin/authentication/
-
-    `https://github.com/galaxyproject/galaxy/pull/4474`
-
 **Extensive Workflow Enhancements**
   Workflows got a lot of love this time around, with new runtime parameters for
   subworkflows, exposed workflow versions, and zoom capability in the editor, to
@@ -23,6 +15,19 @@ Highlights
   better labeling, links, overhauled workflow import interfaces, and many more.
 
   (link up PRs)
+
+**Group Tags**
+  Galaxy now contains powerful new features for multiple factor analysis of collections
+  of datasets. The concept of group tags has been added to Galaxy. These are a special
+  class of tags that describe key-value pairs that can be attached to the contents of a
+  collection during upload or using collection operation tools. These tags can describe
+  multiple sets of variables for the contents of a collection. Once set, these tags can
+  be consumed intelligently by tools that need to divide collections into multiple
+  overlapping factors or sets of datasets. A special thanks to `@mvdbeek <https://github.com/mvdbeek>`__ for devising and implementing this approach.
+
+  `Pull Request 5457`_, `Pull Request 6491`_, `Pull Request 6661`_,
+  `Pull Request 6750`_, `Pull Request 6499`_, `Pull Request 6500`_,
+  `Pull Request 6572`_, `Pull Request 6545`_
 
 **Python 3 Beta Support**
   After almost 3 years of work and more than 100 pull requests, we are proud
@@ -51,7 +56,13 @@ See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for a
 
 Security
 ========
-(TODO: Add notes)
+
+Unauthorized File System Operations via New Upload API
+------------------------------------------------------
+
+Tracked as GX-2018-0006. Servers running Galaxy 18.05 should be updated as soon as possible.
+See `the public announcement for full details
+<http://announce.list.galaxyproject.org/GX-2018-0006-Unauthorized-File-System-Operations-via-New-Upload-API-td4639432.html>`__.
 
 Breaking Changes
 ================
