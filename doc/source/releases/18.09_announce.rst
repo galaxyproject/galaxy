@@ -8,13 +8,8 @@ September 2018 Galaxy Release (v 18.09)
 Highlights
 ===========================================================
 
-**OpenID Connect Support**
-  Galaxy now supports using OpenID Connect for user login, relying on trusted
-  identity providers to manage authentication.  This is intended to replace the
-  old (and mostly deprecated, on the web) OpenID 2.0 logins.  Read more at
-  https://galaxyproject.org/admin/authentication/
-
-    `https://github.com/galaxyproject/galaxy/pull/4474`
+**Group Tag Support**
+  Forthcoming text.
 
 **Extensive Workflow Enhancements**
   Workflows got a lot of love this time around, with new runtime parameters for
@@ -53,9 +48,15 @@ Security
 ========
 (TODO: Add notes)
 
-Breaking Changes
-================
-(TODO: Deprecation search -- I know of at least one)
+Deprecation Notice
+==================
+
+With 19.01, all Galaxy users will be forced to have a username.  This
+requirement has been enforced on user creation for years, though we've never
+taken steps to coerce users created in the past who did not have one.  The
+19.01 release will come with a migration script that will coerce this in the
+database, which will allow us to have consistent handling of this field.
+
 
 Release Notes
 ===========================================================
