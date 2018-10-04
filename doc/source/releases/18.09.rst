@@ -809,6 +809,8 @@ Fixes
   `Pull Request 6802`_
 * Don't delete referenced Datasets when purging users
   `Pull Request 6809`_
+* do not rule out numbers that are accessed with shift modifier
+  `Pull Request 6810`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1144,4 +1146,5 @@ Fixes
 .. _Pull Request 6805: https://github.com/galaxyproject/galaxy/pull/6805
 .. _Pull Request 6808: https://github.com/galaxyproject/galaxy/pull/6808
 .. _Pull Request 6809: https://github.com/galaxyproject/galaxy/pull/6809
+.. _Pull Request 6810: https://github.com/galaxyproject/galaxy/pull/6810
 
