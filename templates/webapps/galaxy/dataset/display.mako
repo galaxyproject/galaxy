@@ -5,7 +5,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("bundled/extended.bundled")}
+    ## ${h.js("bundled/extended.bundled")}
 
     ## If data is chunkable, use JavaScript for display.
     %if item.datatype.CHUNKABLE:

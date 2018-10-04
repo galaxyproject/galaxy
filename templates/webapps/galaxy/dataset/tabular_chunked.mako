@@ -5,7 +5,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("bundled/extended.bundled")}
+    ## ${h.js("bundled/extended.bundled")}
 
     <script type="text/javascript">
         $(function(){

@@ -1,38 +1,43 @@
+/* esling-env node */
 /* global Galaxy, $ */
 import "bootstrap";
-import GalaxyApp from "galaxy";
+export { GalaxyApp } from "galaxy";
 import WorkflowView from "mvc/workflow/workflow-view";
-import Trackster from "viz/trackster";
+import { Trackster } from "viz/trackster";
+export { default as Trackster } from "viz/trackster";
 import Circster from "viz/circster";
-import Phyloviz from "viz/phyloviz";
-import Sweepster from "viz/sweepster";
+export { PhylovizView as phyloviz } from "viz/phyloviz";
+export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 import GalaxyLibrary from "galaxy.library";
 import AdminToolshed from "admin.toolshed";
 import Masthead from "layout/masthead";
 import user from "mvc/user/user-model";
 import Modal from "mvc/ui/ui-modal";
-import pagesEditorOnload from "galaxy.pages";
-import Data from "mvc/dataset/data";
-import History from "mvc/history/history-model";
-import HistoryContents from "mvc/history/history-contents";
+export { default as pages } from "galaxy.pages";
+export { createTabularDatasetChunkedView } from "mvc/dataset/data";
+export { History } from "mvc/history/history-model";
+export { HistoryContents } from "mvc/history/history-contents";
 import MultiPanel from "mvc/history/multi-panel";
-import HistoryView from "mvc/history/history-view";
-import HistoryViewAnnotated from "mvc/history/history-view-annotated";
-import HistoryCopyDialog from "mvc/history/copy-dialog";
-import HDAListItemEdit from "mvc/history/hda-li-edit";
-import HDAModel from "mvc/history/hda-model";
+export { historyEntry as history } from "mvc/history/history-view";
+export { default as HistoryViewAnnotated } from "mvc/history/history-view-annotated";
+export { default as HistoryCopyDialog } from "mvc/history/copy-dialog";
+export { default as HDAListItemEdit } from "mvc/history/hda-li-edit";
+export { default as HDAModel } from "mvc/history/hda-model";
 import addLogging from "utils/add-logging";
-import LegacyGridView from "legacy/grid/grid-view";
-import * as run_stats from "reports/run_stats";
-import ToolshedGroups from "toolshed/toolshed.groups";
+export { default as LegacyGridView } from "legacy/grid/grid-view";
+export { default as run_stats } from "reports/run_stats";
+export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 
+export { chart, chartUtilities } from "./chart";
+
+// TODO: update this when galaxy singleton code is merged
 if (window.Galaxy && window.Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
     //here; remove when imports are all fixed.
     addLogging(window.Galaxy, "GalaxyApp");
 }
 
-export function mastheadEntry(options) {
+export function masthead(options) {
     if (!Galaxy.user) {
         Galaxy.user = new user.User(options.user_json);
     }
@@ -43,27 +48,27 @@ export function mastheadEntry(options) {
     }
 }
 
-export function adminToolshedEntry(options) {
+export function adminToolshed(options) {
     new AdminToolshed.GalaxyApp(options);
 }
 
-export function tracksterEntry(options) {
+export function trackster(options) {
     new Trackster.GalaxyApp(options);
 }
 
-export function circsterEntry(options) {
+export function circster(options) {
     new Circster.GalaxyApp(options);
 }
 
-export function workflowEntry(options) {
+export function workflow(options) {
     new WorkflowView(options);
 }
 
-export function libraryEntry(options) {
+export function library(options) {
     new GalaxyLibrary.GalaxyApp(options);
 }
 
-export function multiHistoryEntry(options) {
+export function multiHistory(options) {
     let histories = new History.HistoryCollection([], {
         includeDeleted: options.includingDeleted,
         order: options.order,
@@ -81,32 +86,3 @@ export function multiHistoryEntry(options) {
         multipanel.render(0);
     });
 }
-
-export const bundleEntries = {
-    library: libraryEntry,
-    masthead: mastheadEntry,
-    workflow: workflowEntry,
-    trackster: tracksterEntry,
-    circster: circsterEntry,
-    adminToolshed: adminToolshedEntry,
-    pages: pagesEditorOnload,
-    phyloviz: Phyloviz.PhylovizView,
-    createTabularDatasetChunkedView: Data.createTabularDatasetChunkedView,
-    multiHistory: multiHistoryEntry,
-    history: HistoryView.historyEntry,
-    History: History.History,
-    HistoryContents: HistoryContents.HistoryContents,
-    SweepsterVisualization: Sweepster.SweepsterVisualization,
-    SweepsterVisualizationView: Sweepster.SweepsterVisualizationView,
-    HistoryCopyDialog,
-    HistoryViewAnnotated,
-    Trackster,
-    HDAListItemEdit,
-    HDAModel,
-    GalaxyApp,
-    LegacyGridView,
-    run_stats,
-    ToolshedGroups
-};
-
-window.bundleEntries = bundleEntries;

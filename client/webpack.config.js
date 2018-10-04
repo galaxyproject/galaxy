@@ -40,11 +40,9 @@ const libsBase = path.join(scriptsBase, "libs");
 
 let buildconfig = {
     entry: {
-        login: ["polyfills", "onload", "./galaxy/scripts/apps/login.js"],
-        analysis: ["polyfills", "onload", "./galaxy/scripts/apps/analysis.js"],
-        admin: ["polyfills", "onload", "./galaxy/scripts/apps/admin.js"],
-        chart: ["polyfills", "onload", "./galaxy/scripts/apps/chart.js"],
-        extended: ["polyfills", "onload", "./galaxy/scripts/apps/extended.js"]
+        login: ["onload", "./galaxy/scripts/apps/login.js"],
+        analysis: ["onload", "./galaxy/scripts/apps/analysis.js"],
+        admin: ["onload", "./galaxy/scripts/apps/admin.js"]
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
@@ -63,7 +61,7 @@ let buildconfig = {
             cacheGroups: {
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(libs|ui|utils)\/)/,
+                    test: /(node_modules|galaxy\/scripts\/(?!apps))/,
                     chunks: "initial"
                 }
             }
@@ -108,6 +106,19 @@ let buildconfig = {
                     {
                         loader: "expose-loader",
                         options: "underscore"
+                    }
+                ]
+            },
+            // Alternative to setting window.bundleEntries
+            // Just import "extended" in any endpoint that needs
+            // access to these globals, or even-better, make
+            // more endpoints and skip the global altogether
+            {
+                test: /apps\/extended/,
+                use: [
+                    {
+                        loader: "expose-loader",
+                        options: "bundleEntries"
                     }
                 ]
             },

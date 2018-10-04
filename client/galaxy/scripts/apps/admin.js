@@ -1,7 +1,7 @@
 /* global Galaxy */
 
 import _l from "utils/localization";
-import GalaxyApp from "galaxy";
+import { GalaxyApp } from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
@@ -14,7 +14,7 @@ import DataTypes from "components/admin/DataTypes.vue";
 import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
 
     /** Routes */

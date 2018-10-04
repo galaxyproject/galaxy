@@ -1,5 +1,7 @@
 /* global $, _, Galaxy */
 
+import "polyfills";
+
 // Jquery and all its horrible plugins
 import "jquery-migrate";
 import "libs/jquery/jquery.autocomplete";
@@ -19,6 +21,9 @@ import "jquery.complexify";
 // Bootstrap overwrites .tooltip() method, so load it after jquery-ui
 import "bootstrap";
 import "bootstrap-tour";
+
+// window.bundleEntries
+import "apps/extended";
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
 import Panel from "layout/panel";

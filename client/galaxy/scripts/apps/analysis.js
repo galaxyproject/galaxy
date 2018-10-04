@@ -1,5 +1,5 @@
 /* global Galaxy, $, _ */
-import GalaxyApp from "galaxy";
+import { GalaxyApp } from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
 import HistoryPanel from "./panels/history-panel";
@@ -40,7 +40,7 @@ import Vue from "vue";
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp(options, bootstrapped);
     Galaxy.debug("analysis app");
 
     /** Routes */

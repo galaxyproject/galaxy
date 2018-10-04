@@ -3,37 +3,28 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 </%def>
 
 ## ============================================================================
-<%def name="bootstrap( **kwargs )">
-    ## 1) Bootstap all kwargs to json, assigning to:
-    ##      global 'bootstrapped' var
-    ##      named require module 'bootstrapped-data'
+
+<%def name="load( app=None, **kwargs )">
     <script type="text/javascript">
-        //TODO: global...
+
+        var bootstrapped = {};
         %for key in kwargs:
-            ( window.bootstrapped = window.bootstrapped || {} )[ '${key}' ] = (
+            bootstrapped[ '${key}' ] = (
                 ${ render_json( kwargs[ key ] ) }
             );
         %endfor
-        define( 'bootstrapped-data', function(){
-            return window.bootstrapped;
-        });
-    </script>
-</%def>
 
-<%def name="load( app=None, **kwargs )">
-    ## 1) bootstrap kwargs (as above), 2) build Galaxy global var, 3) load 'app' by AMD (optional)
-    ${ self.bootstrap( **kwargs ) }
-    <script type="text/javascript">
-        window.Galaxy = new window.bundleEntries.GalaxyApp.GalaxyApp({
+        window.Galaxy = new window.top.bundleEntries.GalaxyApp({
             root               : '${h.url_for( "/" )}',
             config             : ${ render_json( get_config_dict() )},
             user               : ${ render_json( get_user_dict() )},
             session_csrf_token : '${ trans.session_csrf_token }'
-        }, window.bootstrapped );
+        }, bootstrapped );
 
         %if app:
             require([ '${app}' ]);
         %endif
+        
     </script>
 </%def>
 
