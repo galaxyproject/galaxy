@@ -64,9 +64,15 @@ Tracked as GX-2018-0006. Servers running Galaxy 18.05 should be updated as soon 
 See `the public announcement for full details
 <http://announce.list.galaxyproject.org/GX-2018-0006-Unauthorized-File-System-Operations-via-New-Upload-API-td4639432.html>`__.
 
-Breaking Changes
-================
-(TODO: Deprecation search -- I know of at least one)
+Deprecation Notice
+==================
+
+With 19.01, all Galaxy users will be forced to have a username.  This
+requirement has been enforced on user creation for years, though we've never
+taken steps to coerce users created in the past who did not have one.  The
+19.01 release will come with a migration script that will coerce this in the
+database, which will allow us to have consistent handling of this field.
+
 
 Release Notes
 ===========================================================
