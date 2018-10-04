@@ -39,7 +39,7 @@
         )}
 
         <script type="text/javascript">
-            console.log("Initialization Function", "${js_app_entry_fn}");
+            console.debug("Initializing javascript application:", "${js_app_entry_fn}");
             ${js_app_entry_fn}(
                 ${ h.dumps( options ) },
                 ${ h.dumps( bootstrapped ) }

@@ -23,7 +23,7 @@
         assert: function() {}
     };
 
-    console.log("Polyfills are running");
+    console.debug("Polyfills are running");
 
     // phantomjs: does not have the native extend fn assign
     Object.assign = Object.assign || _.extend;
