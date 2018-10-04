@@ -14,7 +14,11 @@ Highlights
   name a few.  There were also a number of usability enhancements including
   better labeling, links, overhauled workflow import interfaces, and many more.
 
-  (link up PRs)
+  `Pull Request 6664`_, `Pull Request 6683`_, `Pull Request 6142`_,
+  `Pull Request 6240`_, `Pull Request 6290`_, `Pull Request 6428`_,
+  `Pull Request 6441`_, `Pull Request 6580`_, `Pull Request 6596`_,
+  `Pull Request 6678`_, `Pull Request 6076`_, `Pull Request 6274`_,
+  `Pull Request 6570`_, `Pull Request 6680`_, `Pull Request 6774`_
 
 **Group Tags**
   Galaxy now contains powerful new features for multiple factor analysis of collections
