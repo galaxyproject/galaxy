@@ -24,8 +24,13 @@ Highlights
 
   (link up PRs)
 
-**Python3 Beta Support**
-  @nsoranzo py3 text
+**Python 3 Beta Support**
+  After almost 3 years of work and more than 100 pull requests, we are proud
+  to announce the Beta-stage support for running Galaxy under Python 3.
+  Lint, unit, API, framework, integration and Selenium tests all pass, time
+  for you to give it a try and report any bug you find!
+
+    `https://github.com/galaxyproject/galaxy/issues/1715`
 
 Get Galaxy
 ==========
