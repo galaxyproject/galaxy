@@ -427,13 +427,13 @@ const RULES = {
                 component.addFilterCountWhich = "first";
                 component.addFilterCountInvert = false;
             } else {
-                component.addFilterCountN = rule.count;
+                component.addFilterCountN = parseInt(rule.count);
                 component.addFilterCountWhich = rule.which;
                 component.addFilterCountInvert = rule.inverse;
             }
         },
         save: (component, rule) => {
-            rule.count = component.addFilterCountN;
+            rule.count = parseInt(component.addFilterCountN);
             rule.which = component.addFilterCountWhich;
             rule.invert = component.addFilterCountInvert;
         },
