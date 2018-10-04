@@ -1,4 +1,3 @@
-/* esling-env node */
 /* global Galaxy, $ */
 import "bootstrap";
 export { GalaxyApp } from "galaxy";
