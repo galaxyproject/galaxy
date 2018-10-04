@@ -620,11 +620,11 @@ class PQR(GenericMolFile):
           6: Residue_number
               An integer which provides the residue index.
           7: X 8: Y 9: Z
-              3 floats which provide the atomic coordinates (in Å)
+              3 floats which provide the atomic coordinates (in Ã…)
           10: Charge
               A float which provides the atomic charge (in electrons).
           11: Radius
-              A float which provides the atomic radius (in Å).
+              A float which provides the atomic radius (in Ã…).
         """
         pat = '(ATOM|HETATM)\s+' +\
               '(\d+)\s+' +\
@@ -643,10 +643,10 @@ class PQR(GenericMolFile):
         Try to guess if the file is a PQR file.
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('5e5z.pqr')
-        >>> PDB().sniff(fname)
+        >>> PQR().sniff(fname)
         True
         >>> fname = get_test_fname('drugbank_drugs.cml')
-        >>> PDB().sniff(fname)
+        >>> PQR().sniff(fname)
         False
         """
         prog = self.get_matcher()
