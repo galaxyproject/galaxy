@@ -40,6 +40,8 @@ except ImportError:
 from six import iteritems, string_types
 from six.moves import filter, map, zip
 
+import galaxy.util
+
 WALK_MAX_DIRS = 10000
 
 log = logging.getLogger(__name__)
@@ -376,6 +378,7 @@ def __ext_strip_sep(ext):
 
 
 def __splitext_no_sep(path):
+    path = galaxy.util.unicodify(path)
     return (path.rsplit(extsep, 1) + [''])[0:2]
 
 

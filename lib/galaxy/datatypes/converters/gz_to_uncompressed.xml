@@ -1,6 +1,6 @@
 <tool id="CONVERTER_gz_to_uncompressed" name="Convert compressed file to uncompressed." version="1.0.0" hidden="true" profile="17.09">
   <command><![CDATA[
-  	cp '$ext_config' 'galaxy.json' && gzip -dcf '$input1' > '$output1'
+    cp '$ext_config' 'galaxy.json' && gzip -dcf '$input1' > '$output1'
   ]]></command>
   <configfiles>
       <configfile name="ext_config">{"output1": {
@@ -12,7 +12,7 @@
       <param format="data" name="input1" type="data" label="Choose compressed file"/>
   </inputs>
   <outputs>
-  	  <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
+      <!-- auto doesn't sniff - it defers to galaxy.json in this context. -->
       <data name="output1" format="auto"/>
   </outputs>
   <help>

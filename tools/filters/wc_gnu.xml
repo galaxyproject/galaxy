@@ -4,11 +4,11 @@
         #set $word_to_arg = { 'characters':'m', 'words':'w', 'lines':'l' }
         #set $arg_order = [ 'lines', 'words', 'characters' ]
         #if not isinstance( $options.value, list ):
-            #set $args = [ $options.value ]
+            #set global $args = [ $options.value ]
         #else:
-            #set $args = $options.value
+            #set global $args = $options.value
         #end if
-        #if $include_header.value:
+        #if $include_header.value
             echo "#${ "\t".join( [ i for i in $arg_order if i in $args ] ) }" &gt; $out_file1
             &amp;&amp;
         #end if

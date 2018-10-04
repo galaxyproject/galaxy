@@ -17,4 +17,12 @@ galaxy\.web\.framework\.helpers\.grids module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.web\.framework\.helpers\.tags module
+--------------------------------------------
+
+.. automodule:: galaxy.web.framework.helpers.tags
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 

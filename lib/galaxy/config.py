@@ -235,6 +235,7 @@ class Configuration(object):
 
         self.expose_user_name = kwargs.get("expose_user_name", False)
         self.expose_user_email = kwargs.get("expose_user_email", False)
+
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
@@ -373,6 +374,9 @@ class Configuration(object):
         self.enable_beta_ts_api_install = string_as_bool(kwargs.get('enable_beta_ts_api_install', 'True'))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
+        # Set this to go back to setting the object store in the tool request instead of
+        # in the job handler.
+        self.legacy_eager_objectstore_initialization = string_as_bool(kwargs.get('legacy_eager_objectstore_initialization', 'False'))
         # These workflow modules should not be considered part of Galaxy's
         # public API yet - the module state definitions may change and
         # workflows built using these modules may not function in the
@@ -462,10 +466,11 @@ class Configuration(object):
         # allow_path_paste value.
         self.allow_library_path_paste = string_as_bool(kwargs.get('allow_library_path_paste', self.allow_path_paste))
         self.disable_library_comptypes = kwargs.get('disable_library_comptypes', '').lower().split(',')
-        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", False))
+        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", True))
         self.check_upload_content = string_as_bool(kwargs.get('check_upload_content', True))
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')
+        self.watch_job_rules = kwargs.get('watch_job_rules', 'false')
         # On can mildly speed up Galaxy startup time by disabling index of help,
         # not needed on production systems but useful if running many functional tests.
         self.index_tool_help = string_as_bool(kwargs.get("index_tool_help", True))
@@ -682,6 +687,63 @@ class Configuration(object):
 
         self.containers_conf = parse_containers_config(self.containers_config_file)
 
+        # Compliance/Policy variables
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_ip_address = False
+        self.redact_username_in_logs = False
+        self.redact_email_in_job_name = False
+        self.redact_user_details_in_bugreport = False
+        self.redact_user_address_during_deletion = False
+        # GDPR compliance mode changes values on a number of variables. Other
+        # policies could change (non)overlapping subsets of these variables.
+        self.enable_beta_gdpr = string_as_bool(kwargs.get("enable_beta_gdpr", False))
+        if self.enable_beta_gdpr:
+            self.expose_user_name = False
+            self.expose_user_email = False
+
+            self.redact_username_during_deletion = True
+            self.redact_email_during_deletion = True
+            self.redact_ip_address = True
+            self.redact_username_in_logs = True
+            self.redact_email_in_job_name = True
+            self.redact_user_details_in_bugreport = True
+            self.redact_user_address_during_deletion = True
+            self.allow_user_deletion = True
+
+            LOGGING_CONFIG_DEFAULT['formatters']['brief'] = {
+                'format': '%(asctime)s %(levelname)-8s %(name)-15s %(message)s'
+            }
+            LOGGING_CONFIG_DEFAULT['handlers']['compliance_log'] = {
+                'class': 'logging.handlers.RotatingFileHandler',
+                'formatter': 'brief',
+                'filename': 'compliance.log',
+                'backupCount': 0,
+            }
+            LOGGING_CONFIG_DEFAULT['loggers']['COMPLIANCE'] = {
+                'handlers': ['compliance_log'],
+                'level': 'DEBUG',
+                'qualname': 'COMPLIANCE'
+            }
+
+        log_destination = kwargs.get("log_destination", None)
+        if log_destination == "stdout":
+            LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
+                'class': 'logging.StreamHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'stream': 'ext://sys.stdout',
+                'filters': ['stack']
+            }
+        elif log_destination:
+            LOGGING_CONFIG_DEFAULT['handlers']['console'] = {
+                'class': 'logging.FileHandler',
+                'formatter': 'stack',
+                'level': 'DEBUG',
+                'filename': kwargs['log_destination'],
+                'filters': ['stack']
+            }
+
     @property
     def sentry_dsn_public(self):
         """
@@ -808,7 +870,8 @@ class Configuration(object):
             port = None
         return port
 
-    def _parse_allowed_origin_hostnames(self, kwargs):
+    @staticmethod
+    def _parse_allowed_origin_hostnames(kwargs):
         """
         Parse a CSV list of strings/regexp of hostnames that should be allowed
         to use CORS and will be sent the Access-Control-Allow-Origin header.
@@ -821,7 +884,7 @@ class Configuration(object):
             # a string enclosed in fwd slashes will be parsed as a regexp: e.g. /<some val>/
             if string[0] == '/' and string[-1] == '/':
                 string = string[1:-1]
-                return re.compile(string, flags=(re.UNICODE | re.LOCALE))
+                return re.compile(string, flags=(re.UNICODE))
             return string
 
         return [parse(v) for v in allowed_origin_hostnames if v]

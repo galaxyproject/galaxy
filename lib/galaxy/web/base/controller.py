@@ -4,13 +4,13 @@ Contains functionality needed in every web interface
 import logging
 import re
 
-from paste.httpexceptions import (
+from six import string_types
+from sqlalchemy import true
+from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
     HTTPNotImplemented
 )
-from six import string_types
-from sqlalchemy import true
 
 from galaxy import (
     exceptions,
@@ -35,7 +35,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -293,7 +292,7 @@ class JSAppLauncher(BaseUIController):
         """
         try:
             serializer = self.config_serializer
-            if self.user_manager.is_admin(trans.user):
+            if self.user_manager.is_admin(trans.user, trans=trans):
                 serializer = self.admin_config_serializer
             return serializer.serialize_to_view(self.app.config, view='all')
         except Exception as exc:
@@ -395,7 +394,8 @@ class ExportsHistoryMixin(object):
             trans.response.set_content_type('application/x-tar')
         disposition = 'attachment; filename="%s"' % jeha.export_name
         trans.response.headers["Content-Disposition"] = disposition
-        return open(trans.app.object_store.get_filename(jeha.dataset))
+        archive = trans.app.object_store.get_filename(jeha.dataset)
+        return open(archive, mode='rb')
 
     def queue_history_export(self, trans, history, gzip=True, include_hidden=False, include_deleted=False):
         # Convert options to booleans.
@@ -954,17 +954,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             def pack_track(track_dict):
                 dataset_id = track_dict['dataset_id']
                 hda_ldda = track_dict.get('hda_ldda', 'hda')
-                if hda_ldda == 'ldda':
-                    # HACK: need to encode library dataset ID because get_hda_or_ldda
-                    # only works for encoded datasets.
-                    dataset_id = trans.security.encode_id(dataset_id)
+                dataset_id = trans.security.encode_id(dataset_id)
                 dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
-
                 try:
                     prefs = track_dict['prefs']
                 except KeyError:
                     prefs = {}
-
                 track_data_provider = trans.app.data_provider_registry.get_data_provider(trans,
                                                                                          original_dataset=dataset,
                                                                                          source='data')
@@ -1216,7 +1211,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         module_injector = WorkflowModuleInjector(trans)
         for step in stored_workflow.latest_workflow.steps:
             try:
-                module_injector.inject(step)
+                module_injector.inject(step, exact_tools=False)
             except exceptions.ToolMissingException:
                 pass
 
@@ -1340,25 +1335,14 @@ class UsesFormDefinitionsMixin(object):
 class SharableMixin(object):
     """ Mixin for a controller that manages an item that can be shared. """
 
+    manager = None
+    serializer = None
+
     # -- Implemented methods. --
 
     def _is_valid_slug(self, slug):
         """ Returns true if slug is valid. """
         return _is_valid_slug(slug)
-
-    @web.expose
-    @web.require_login("share Galaxy items")
-    def set_public_username(self, trans, id, username, **kwargs):
-        """ Set user's public username and delegate to sharing() """
-        user = trans.get_user()
-        # message from validate_publicname does not contain input, no need
-        # to escape.
-        message = validate_publicname(trans, username, user)
-        if message:
-            return trans.fill_template('/sharing_base.mako', item=self.get_item(trans, id), message=message, status='error')
-        user.username = username
-        trans.sa_session.flush()
-        return self.sharing(trans, id, **kwargs)
 
     @web.expose
     @web.require_login("modify Galaxy items")
@@ -1413,13 +1397,76 @@ class SharableMixin(object):
         item.slug = new_slug
         return item.slug == cur_slug
 
-    # -- Abstract methods. --
+    @web.expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        skipped = False
+        class_name = self.manager.model_class.__name__
+        item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
+        if payload and payload.get("action"):
+            action = payload.get("action")
+            if action == "make_accessible_via_link":
+                self._make_item_accessible(trans.sa_session, item)
+                if item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
+            elif action == "make_accessible_and_publish":
+                self._make_item_accessible(trans.sa_session, item)
+                if item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
+                item.published = True
+            elif action == "publish":
+                if item.importable:
+                    item.published = True
+                    if item.has_possible_members and payload.get("make_members_public", False):
+                        shared, skipped = self._make_members_public(trans, item)
+                else:
+                    raise exceptions.MessageException("%s not importable." % class_name)
+            elif action == "disable_link_access":
+                item.importable = False
+            elif action == "unpublish":
+                item.published = False
+            elif action == "disable_link_access_and_unpublish":
+                item.importable = item.published = False
+            elif action == "unshare_user":
+                user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
+                class_name_lc = class_name.lower()
+                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
+                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
+                if not usas:
+                    raise exceptions.MessageException("%s was not shared with user." % class_name)
+                for usa in usas:
+                    trans.sa_session.delete(usa)
+            trans.sa_session.add(item)
+            trans.sa_session.flush()
+        if item.importable and not item.slug:
+            self._make_item_accessible(trans.sa_session, item)
+        item_dict = self.serializer.serialize_to_view(item,
+            user=trans.user, trans=trans, default_view="sharing")
+        item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        if skipped:
+            item_dict["skipped"] = True
+        return item_dict
 
-    @web.expose
-    @web.require_login("share Galaxy items")
-    def sharing(self, trans, id, **kwargs):
-        """ Handle item sharing. """
-        raise NotImplementedError()
+    def _make_members_public(self, trans, item):
+        """ Make the non-purged datasets in history public
+        Performs pemissions check.
+        """
+        # TODO eventually we should handle more classes than just History
+        skipped = False
+        for hda in item.activatable_datasets:
+            dataset = hda.dataset
+            if not trans.app.security_agent.dataset_is_public(dataset):
+                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
+                    try:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                    except Exception:
+                        log.warning("Unable to make dataset with id: %s public.").format(dataset.id)
+                        skipped = True
+                else:
+                    log.warning("User without permissions tried to make dataset with id: %s public.").format(dataset.id)
+                    skipped = True
+        return item, skipped
+
+    # -- Abstract methods. --
 
     @web.expose
     @web.require_login("share Galaxy items")

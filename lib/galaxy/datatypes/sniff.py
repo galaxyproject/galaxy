@@ -18,7 +18,10 @@ from six.moves import filter
 from six.moves.urllib.request import urlopen
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.util import (
+    compression_utils,
+    smart_str
+)
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,
@@ -70,14 +73,14 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
             break
         if not data_checked:
             # See if we're uploading a compressed file
-            if zipfile.is_zipfile(filename):
-                is_compressed = True
-            else:
-                try:
-                    if text_type(chunk[:2]) == text_type(util.gzip_magic):
-                        is_compressed = True
-                except Exception:
-                    pass
+            try:
+                # Convert chunk to a bytestring if it is not already.
+                # Check if the first 2 bytes of the chunk are equal to the
+                # gzip magic number.
+                if smart_str(chunk)[:2] == util.gzip_magic:
+                    is_compressed = True
+            except Exception:
+                pass
             if not is_compressed:
                 is_binary = util.is_binary(chunk)
             data_checked = True
@@ -105,7 +108,8 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write("1 2\\r3 4")
     >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -133,7 +137,8 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
     Transforms in place a 'sep' separated file to a tab separated one
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\n3 4\\n")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write("1 2\\n3 4\\n")
     >>> sep2tabs(fname)
     (2, None)
     >>> open(fname).read()
@@ -170,7 +175,8 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     so that files do not need to be read twice
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write("1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -287,13 +293,12 @@ def guess_ext(fname, sniff_order, is_binary=False):
     Returns an extension that can be used in the datatype factory to
     generate a data for the 'fname' file
 
-    >>> from galaxy.datatypes import registry
-    >>> from galaxy.util.bunch import Bunch
-    >>> sample_conf = os.path.join(util.galaxy_directory(), "config", "datatypes_conf.xml.sample")
-    >>> config = Bunch(sniff_compressed_dynamic_datatypes_default=True)
-    >>> datatypes_registry = registry.Registry(config)
-    >>> datatypes_registry.load_datatypes(root_dir=util.galaxy_directory(), config=sample_conf)
+    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
+    >>> datatypes_registry = example_datatype_registry_for_sample()
     >>> sniff_order = datatypes_registry.sniff_order
+    >>> fname = get_test_fname('empty.txt')
+    >>> guess_ext(fname, sniff_order)
+    'txt'
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
     'blastxml'
@@ -414,7 +419,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'dmnd'
     >>> fname = get_test_fname('1.xls')
-    >>> guess_ext(fname, sniff_order)
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'excel.xls'
     >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
     >>> guess_ext(fname, sniff_order)
@@ -449,6 +454,9 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.xmfa')
     >>> guess_ext(fname, sniff_order)
     'xmfa'
+    >>> fname = get_test_fname('test.blib')
+    >>> guess_ext(fname, sniff_order)
+    'blib'
     >>> fname = get_test_fname('test.phylip')
     >>> guess_ext(fname, sniff_order)
     'phylip'
@@ -459,11 +467,17 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'ttl'
     >>> fname = get_test_fname('1.hdt')
-    >>> guess_ext(fname, sniff_order)
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'hdt'
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)
     'phyloxml'
+    >>> fname = get_test_fname('1.tiff')
+    >>> guess_ext(fname, sniff_order)
+    'tiff'
+    >>> fname = get_test_fname('1.fastqsanger.gz')
+    >>> guess_ext(fname, sniff_order)  # See test_datatype_registry for more compressed type tests.
+    'fastqsanger.gz'
     """
     file_prefix = FilePrefix(fname)
     file_ext = run_sniffers_raw(file_prefix, sniff_order, is_binary)
@@ -588,10 +602,11 @@ class FilePrefix(object):
 
     def line_iterator(self):
         s = self.string_io()
+        s_len = len(s.getvalue())
         for line in s:
             if line.endswith("\n") or line.endswith("\r"):
                 yield line
-            elif s.pos == s.len and not self.truncated:
+            elif s.tell() == s_len and not self.truncated:
                 # At the end, return the last line if it wasn't truncated when reading it in.
                 yield line
 
@@ -605,13 +620,19 @@ class FilePrefix(object):
 
 
 def build_sniff_from_prefix(klass):
+    # Build and attach a sniff function to this class (klass) from the sniff_prefix function
+    # expected to be defined for the class.
     def auto_sniff(self, filename):
         file_prefix = FilePrefix(filename)
         datatype_compressed = getattr(self, "compressed", False)
         if file_prefix.compressed_format and not datatype_compressed:
             return False
-        if datatype_compressed and not file_prefix.compressed_format:
-            return False
+        if datatype_compressed:
+            if not file_prefix.compressed_format:
+                # This not a compressed file we are looking but the type expects it to be
+                # must return False.
+                return False
+
         if hasattr(self, "compressed_format"):
             if self.compressed_format != file_prefix.compressed_format:
                 return False
@@ -696,12 +717,17 @@ def handle_compressed_file(
             # Replace the compressed file with the uncompressed file
             shutil.move(uncompressed, filename)
             uncompressed = filename
-    elif not is_compressed:
+    elif not is_compressed or not check_content:
         is_valid = True
     return is_valid, ext, uncompressed, compressed_type
 
 
-def handle_uploaded_dataset_file(
+def handle_uploaded_dataset_file(*args, **kwds):
+    """Legacy wrapper about handle_uploaded_dataset_file_internal for tools using it."""
+    return handle_uploaded_dataset_file_internal(*args, **kwds)[0]
+
+
+def handle_uploaded_dataset_file_internal(
         filename,
         datatypes_registry,
         ext='auto',
@@ -734,7 +760,7 @@ def handle_uploaded_dataset_file(
         # This needs to be checked again after decompression
         is_binary = check_binary(converted_path)
 
-        if not is_binary and convert_to_posix_lines:
+        if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
             if convert_spaces_to_tabs:
                 convert_fxn = convert_newlines_sep2tabs

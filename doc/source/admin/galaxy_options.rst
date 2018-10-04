@@ -330,8 +330,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    conda channels to enable by default (http://conda.pydata.org/docs
-    /custom-channels.html)
+    conda channels to enable by default (https://conda.io/docs/user-
+    guide/tasks/manage-channels.html)
 :Default: ``iuc,bioconda,conda-forge,defaults``
 :Type: str
 
@@ -435,15 +435,47 @@
     Set to True to enable monitoring of tools and tool directories
     listed in any tool config file specified in tool_config_file
     option. If changes are found, tools are automatically reloaded.
-    Watchdog ( https://pypi.python.org/pypi/watchdog ) must be
-    installed and available to Galaxy to use this option. Other
-    options include 'auto' which will attempt to watch tools if the
-    watchdog library is available but won't fail to load Galaxy if it
-    is not and 'polling' which will use a less efficient monitoring
-    scheme that may work in wider range of scenarios than the watchdog
-    default.
+    Watchdog ( https://pypi.org/project/watchdog/ ) must be installed
+    and available to Galaxy to use this option. Other options include
+    'auto' which will attempt to watch tools if the watchdog library
+    is available but won't fail to load Galaxy if it is not and
+    'polling' which will use a less efficient monitoring scheme that
+    may work in wider range of scenarios than the watchdog default.
 :Default: ``false``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``watch_job_rules``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Set to True to enable monitoring of dynamic job rules. If changes
+    are found, rules are automatically reloaded. Takes the same values
+    as the 'watch_tools' option.
+:Default: ``false``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``legacy_eager_objectstore_initialization``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    As of 18.09, Galaxy defaults to setting up the object store
+    configuration for output datasets during the job queue step in job
+    handlers. This should generally provide for more robust job
+    submission, more configurability, and a better user experience but
+    may in some cases slightly slow down the job handler job setup
+    process. On the off chance that an admin would like to or need to
+    optimize job handlers at the expense of user experience and web
+    handling this option will remain for some time by setting this
+    option to true. This behavior however should be considered
+    deprecated and this option will likely be removed in future
+    versions of Galaxy. For more information see
+    https://github.com/galaxyproject/galaxy/issues/6513.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -454,7 +486,7 @@
     Enable Galaxy to fetch Docker containers registered with quay.io
     generated from tool requirements resolved through conda. These
     containers (when available) have been generated using mulled -
-    https://github.com/mulled. These containers are highly beta and
+    https://github.com/mulled . These containers are highly beta and
     availability will vary by tool. This option will additionally only
     be used for job destinations with Docker enabled.
 :Default: ``false``
@@ -601,7 +633,7 @@
     shed_tool_data_path directories. If changes in tool data table
     files are found, the tool data tables for that data manager are
     automatically reloaded. Watchdog (
-    https://pypi.python.org/pypi/watchdog ) must be installed and
+    https://pypi.org/project/watchdog/ ) must be installed and
     available to Galaxy to use this option. Other options include
     'auto' which will attempt to use the watchdog library if it is
     available but won't fail to load Galaxy if it is not and 'polling'
@@ -644,6 +676,19 @@
     definitions to one file).
 :Default: ``config/datatypes_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sniff_compressed_dynamic_datatypes_default``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable sniffing of compressed datatypes. This can be
+    configured/overridden on a per-datatype basis in the
+    datatypes_conf.xml file. With this option set to False the
+    compressed datatypes will be unpacked before sniffing.
+:Default: ``true``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -834,8 +879,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``file``
 :Type: str
@@ -847,8 +892,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/data``
 :Type: str
@@ -860,8 +905,8 @@
 
 :Description:
     Citation related caching.  Tool citations information maybe
-    fetched from external sources such as http://dx.doi.org/ by Galaxy
-    - the following parameters can be used to control the caching used
+    fetched from external sources such as https://doi.org/ by Galaxy -
+    the following parameters can be used to control the caching used
     to store this information.
 :Default: ``database/citations/lock``
 :Type: str
@@ -1186,7 +1231,7 @@
     Format string used when showing date and time information. The
     string may contain: - the directives used by Python
     time.strftime() function (see
-    https://docs.python.org/2/library/time.html#time.strftime ), -
+    https://docs.python.org/library/time.html#time.strftime ), -
     $locale (complete format string for the server locale), - $iso8601
     (complete format string as specified by ISO 8601 international
     standard).
@@ -1280,7 +1325,7 @@
 
 :Description:
     The URL linked by the "Support" link in the "Help" menu.
-:Default: ``https://galaxyproject.org/support``
+:Default: ``https://galaxyproject.org/support/``
 :Type: str
 
 
@@ -1530,9 +1575,10 @@
 
 :Description:
     For help on configuring the Advanced proxy features, see:
-    http://usegalaxy.org/production  Apache can handle file downloads
-    (Galaxy-to-user) via mod_xsendfile.  Set this to True to inform
-    Galaxy that mod_xsendfile is enabled upstream.
+    https://docs.galaxyproject.org/en/master/admin/production.html
+    Apache can handle file downloads (Galaxy-to-user) via
+    mod_xsendfile.  Set this to True to inform Galaxy that
+    mod_xsendfile is enabled upstream.
 :Default: ``false``
 :Type: bool
 
@@ -1806,8 +1852,8 @@
 
 :Description:
     Verbosity of console log messages.  Acceptable values can be found
-    here: https://docs.python.org/2/library/logging.html#logging-
-    levels A custom debug level of "TRACE" is available for even more
+    here: https://docs.python.org/library/logging.html#logging-levels
+    A custom debug level of "TRACE" is available for even more
     verbosity.
 :Default: ``DEBUG``
 :Type: str
@@ -1958,8 +2004,7 @@
     comma separated list of hostname strings or regular expressions
     beginning and ending with /. E.g.
     mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
-    https://developer.mozilla.org/en-
-    US/docs/Web/HTTP/Access_control_CORS
+    https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 :Default: ``None``
 :Type: str
 
@@ -2428,10 +2473,11 @@
     Galaxy encodes various internal values when these values will be
     output in some format (for example, in a URL or cookie).  You
     should set a key to be used by the algorithm that encodes and
-    decodes these values.  It can be any string up to 448 bits long.
-    One simple way to generate a value for this is with the shell
-    command:   python -c 'from __future__ import print_function;
-    import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+    decodes these values. It can be any string with a length between 5
+    and 56 bytes. One simple way to generate a value for this is with
+    the shell command:   python -c 'from __future__ import
+    print_function; import time; print(time.time())' | md5sum | cut -f
+    1 -d ' '
 :Default: ``USING THE DEFAULT IS NOT SECURE!``
 :Type: str
 
@@ -2444,8 +2490,8 @@
     User authentication can be delegated to an upstream proxy server
     (usually Apache).  The upstream proxy should set a REMOTE_USER
     header in the request. Enabling remote user disables regular
-    logins.  For more information, see:
-    https://galaxyproject.org/admin/config/apache-proxy
+    logins.  For more information, see: https://docs.galaxyproject.org
+    /en/master/admin/special_topics/apache.html
 :Default: ``false``
 :Type: bool
 
@@ -2645,7 +2691,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If enable_beta_gdpr is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2661,7 +2708,8 @@
     have the correct user show up. This makes less sense on large
     public Galaxy instances where that data shouldn't be exposed.  For
     semi-public Galaxies, it may make sense to expose just the
-    username and not email, or vice versa.
+    username and not email, or vice versa.  If enable_beta_gdpr is set
+    to True, then this option will be overridden and set to False.
 :Default: ``false``
 :Type: bool
 
@@ -2681,6 +2729,26 @@
     10.10.10.10,10.0.1.0/24,fd00::/8
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``enable_beta_gdpr``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables GDPR Compliance mode. This makes several changes to the
+    way Galaxy logs and exposes data externally such as removing
+    emails and usernames from logs and bug reports. It also causes the
+    delete user admin action to permanently redact their username and
+    password, but not to delete data associated with the account as
+    this is not currently easily implementable.  You are responsible
+    for removing personal data from backups.  This forces
+    expose_user_email and expose_user_name to be false, and forces
+    user_deletion to be true to support the right to erasure.  Please
+    read the GDPR section under the special topics area of the admin
+    documentation.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3134,7 +3202,7 @@
     you can separate Galaxy into multiple processes.  There are more
     than one way to do this, and they are explained in detail in the
     documentation:
-    https://galaxyproject.org/admin/config/performance/scaling  By
+    https://docs.galaxyproject.org/en/master/admin/scaling.html  By
     default, Galaxy manages and executes jobs from within a single
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
@@ -3319,7 +3387,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to run the
     job script Galaxy generates for a tool execution.
 :Default: ``sudo -E scripts/drmaa_external_runner.py --assign_all_groups``
@@ -3332,7 +3400,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used to kill
     such jobs by Galaxy (e.g. if the user cancels the job).
 :Default: ``sudo -E scripts/drmaa_external_killer.py``
@@ -3345,7 +3413,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) this script is used transfer
     permissions back and forth between the Galaxy user and the user
     that is running the job.
@@ -3359,7 +3427,7 @@
 
 :Description:
     When running DRMAA jobs as the Galaxy user
-    (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+    (https://docs.galaxyproject.org/en/master/admin/cluster.html
     #submitting-jobs-as-the-real-user) Galaxy can extract the user
     name from the email address (actually the local-part before the @)
     or the username which are both stored in the Galaxy data base. The
@@ -3534,7 +3602,7 @@
 :Description:
     The base module(s) that are searched for modules for toolbox
     filtering (https://galaxyproject.org/user-defined-toolbox-
-    filters/) producedures.
+    filters/) functions.
 :Default: ``galaxy.tools.toolbox.filters,galaxy.tools.filters``
 :Type: str
 

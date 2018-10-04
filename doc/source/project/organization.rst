@@ -3,7 +3,7 @@ Galaxy Core Governance
 ==================================
 
 This document informally outlines the organizational structure governing the
-Galaxy core code base hosted at https://github.com/galaxyproject/galaxy. This
+Galaxy core code base hosted at https://github.com/galaxyproject/galaxy . This
 governance extends to code-related activities of this repository such as
 releases and packaging. This governance does not include infrastructure such
 as Galaxy's Trello board, the Galaxy mailing lists, etc... or other Galaxy-
@@ -54,7 +54,7 @@ Members
 - Aysam Guerler (@guerler)
 - Jennifer Hillman Jackson (@jennaj)
 - Anton Nekrutenko (@nekrut)
-- Eric Rasche (@erasche)
+- Helena Rasche (@erasche)
 - Nicola Soranzo (@nsoranzo)
 - James Taylor (@jxtx)
 - Marius van den Beek (@mvdbeek)
@@ -120,9 +120,18 @@ Everyone is encouraged to express opinions and issue non-binding votes on pull
 requests, but only members of the *committers* group may issue binding votes
 on pull requests.
 
-Votes on pull requests should take the form of
-`+1, 0, -1, and fractions <http://www.apache.org/foundation/voting.html>`_
-as outlined by the Apache Foundation.
+Votes on pull requests should take the form of +1, 0, -1, and fractions as
+outlined by the `Apache Software Foundation voting rules`_. The following are
+equivalent to a +1 vote:
+
+- a `thumbs up reaction <https://blog.github.com/2016-03-10-add-reactions-to-pull-requests-issues-and-comments/>`__
+  on the pull request description;
+- approving the pull request when submitting a
+  `review <https://help.github.com/articles/reviewing-proposed-changes-in-a-pull-request/>`__.
+
+The latter is the preferred method because it is integrated in GitHub, it allows
+tracking the moment when the review was submitted, and it sends a notification
+to subscribers.
 
 Pull requests modifying freezed and tagged release branches should be restricted
 to bug fixes. Pull requests modifying tagged release branches require at least 2
@@ -167,8 +176,8 @@ least a few days to give everyone the opportunity to weigh in.
 Vetoes
 ------
 
-A note on vetoes (*-1* votes) taken verbatim from the
-`Apache Foundation <http://www.apache.org/foundation/voting.html>`_:
+A note on vetoes (*-1* votes), taken verbatim from the
+`Apache Software Foundation voting rules`_:
 
   "A code-modification proposal may be stopped dead in its tracks by a *-1* vote
   by a qualified voter. This constitutes a veto, and it cannot be overruled nor
@@ -214,8 +223,8 @@ Issues (bugs, feature requests, etc.) should be reported at ISSUE_REPORT_, and
 handling of issues follows the procedures described in ISSUES_.
 
 
-.. _LICENSE: https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt
 .. _CODE_OF_CONDUCT: https://github.com/galaxyproject/galaxy/blob/dev/CODE_OF_CONDUCT.md
 .. _SECURITY_POLICY: https://github.com/galaxyproject/galaxy/blob/dev/SECURITY_POLICY.md
+.. _Apache Software Foundation voting rules: https://www.apache.org/foundation/voting.html
 .. _ISSUES: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
 .. _ISSUE_REPORT: https://github.com/galaxyproject/galaxy/issues/

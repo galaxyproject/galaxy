@@ -25,14 +25,6 @@ galaxy\.tools\.toolbox\.base module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.tools\.toolbox\.cache module
-------------------------------------
-
-.. automodule:: galaxy.tools.toolbox.cache
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.tools\.toolbox\.integrated\_panel module
 ------------------------------------------------
 

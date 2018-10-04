@@ -85,6 +85,12 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '/static=static',
         'type': 'str',
     }),
+    ('static-map.3', {
+        'key': 'static-map',
+        'desc': """Mapping to serve the favicon.""",
+        'default': '/favicon.ico=static/favicon.ico',
+        'type': 'str',
+    }),
     ('master', {
         'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
         'default': False,
@@ -465,7 +471,7 @@ def _build_uwsgi_schema(args, app_desc):
         last_line = line
     schema = {
         "type": "map",
-        "desc": "uwsgi definition, see http://uwsgi-docs.readthedocs.io/en/latest/Options.html",
+        "desc": "uwsgi definition, see https://uwsgi-docs.readthedocs.io/en/latest/Options.html",
         "mapping": options
     }
     path = os.path.join(args.galaxy_root, UWSGI_SCHEMA_PATH)

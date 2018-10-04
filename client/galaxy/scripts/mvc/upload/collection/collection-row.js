@@ -32,7 +32,7 @@ export default Backbone.View.extend({
         this.$percentage = this.$(".upload-percentage");
 
         // append popup to settings icon
-        this.settings = new Popover.View({
+        this.settings = new Popover({
             title: _l("Upload configuration"),
             container: this.$(".upload-settings"),
             placement: "bottom"
@@ -128,11 +128,11 @@ export default Backbone.View.extend({
         var enabled = this.model.get("enabled");
         this.$text_content.attr("disabled", !enabled);
         if (status == "success") {
-            this.$el.addClass("success");
+            this.$el.addClass("table-success");
             this.$percentage.html("100%");
         }
         if (status == "error") {
-            this.$el.addClass("danger");
+            this.$el.addClass("table-danger");
             this.$info_progress.hide();
         }
     },
@@ -151,13 +151,7 @@ export default Backbone.View.extend({
 
     /** Attach file info popup */
     _showSettings: function() {
-        if (!this.settings.visible) {
-            this.settings.empty();
-            this.settings.append(new UploadSettings(this).$el);
-            this.settings.show();
-        } else {
-            this.settings.hide();
-        }
+        this.settings.show(new UploadSettings(this).$el);
     },
 
     /** View template */

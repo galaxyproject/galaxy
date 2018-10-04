@@ -80,9 +80,9 @@ class DatasetMatcherFactory(object):
 
     def dataset_collection_matcher(self, dataset_matcher):
         if self._can_process_summary:
-            return SummaryDatasetCollectionMatcher(self, dataset_matcher)
+            return SummaryDatasetCollectionMatcher(self, self._trans, dataset_matcher)
         else:
-            return DatasetCollectionMatcher(dataset_matcher)
+            return DatasetCollectionMatcher(self._trans, dataset_matcher)
 
 
 class DatasetMatcher(object):
@@ -99,13 +99,14 @@ class DatasetMatcher(object):
         self.trans = trans
         self.param = param
         self.tool = param.tool
-        filter_value = None
+        filter_values = set()
         if param.options and other_values:
             try:
-                filter_value = param.options.get_options(trans, other_values)[0][0]
+                for v in param.options.get_options(trans, other_values):
+                    filter_values.add(v[0])
             except IndexError:
                 pass  # no valid options
-        self.filter_value = filter_value
+        self.filter_values = filter_values
 
     def valid_hda_match(self, hda, check_implicit_conversions=True):
         """ Return False of this parameter can not be matched to the supplied
@@ -152,7 +153,7 @@ class DatasetMatcher(object):
         applicable).
         """
         param = self.param
-        return param.options and param.get_options_filter_attribute(hda) != self.filter_value
+        return param.options and param.get_options_filter_attribute(hda) not in self.filter_values
 
 
 class HdaDirectMatch(object):
@@ -183,16 +184,29 @@ class HdaImplicitMatch(object):
         return True
 
 
+class HdcaDirectMatch(object):
+    implicit_conversion = False
+
+    def __init__(self):
+        pass
+
+
+class HdcaImplicitMatch(object):
+    implicit_conversion = True
+
+    def __init__(self):
+        pass
+
+
 class SummaryDatasetCollectionMatcher(object):
 
-    def __init__(self, dataset_matcher_factory, dataset_matcher):
+    def __init__(self, dataset_matcher_factory, trans, dataset_matcher):
         self.dataset_matcher_factory = dataset_matcher_factory
+        self._trans = trans
         self.dataset_matcher = dataset_matcher
 
-    def hdca_match(self, history_dataset_collection_association, reduction=False):
+    def hdca_match(self, history_dataset_collection_association):
         dataset_collection = history_dataset_collection_association.collection
-        if reduction and dataset_collection.collection_type.find(":") > 0:
-            return False
 
         if not dataset_collection.populated_optimized:
             return False
@@ -203,17 +217,26 @@ class SummaryDatasetCollectionMatcher(object):
                 return False
 
         formats = self.dataset_matcher.param.formats
+        uses_implicit_conversion = False
         for extension in extensions:
-            if not self.dataset_matcher_factory.matches_any_format(extension, formats):
-                return False
+            if self.dataset_matcher_factory.matches_any_format(extension, formats):
+                continue
 
-        return True
+            datatypes_registry = self._trans.app.datatypes_registry
+            converted_ext, _ = datatypes_registry.find_conversion_destination_for_dataset_by_extensions(extension, formats)
+            if not converted_ext:
+                return False
+            else:
+                uses_implicit_conversion = True
+
+        return HdcaImplicitMatch() if uses_implicit_conversion else HdcaDirectMatch()
 
 
 class DatasetCollectionMatcher(object):
 
-    def __init__(self, dataset_matcher):
+    def __init__(self, trans, dataset_matcher):
         self.dataset_matcher = dataset_matcher
+        self._trans = trans
 
     def __valid_element(self, element):
         # Simplify things for now and assume these are hdas and not implicit
@@ -230,14 +253,11 @@ class DatasetCollectionMatcher(object):
         if not hda:
             return False
         hda_match = self.dataset_matcher.hda_match(hda, ensure_visible=False)
-        return hda_match and not hda_match.implicit_conversion
+        return hda_match
 
-    def hdca_match(self, history_dataset_collection_association, reduction=False):
+    def hdca_match(self, history_dataset_collection_association):
         dataset_collection = history_dataset_collection_association.collection
-        if reduction and dataset_collection.collection_type.find(":") > 0:
-            return False
-        else:
-            return self.dataset_collection_match(dataset_collection)
+        return self.dataset_collection_match(dataset_collection)
 
     def dataset_collection_match(self, dataset_collection):
         # If dataset collection not yet populated, cannot determine if it
@@ -246,11 +266,16 @@ class DatasetCollectionMatcher(object):
             return False
 
         valid = True
+        uses_implicit_conversion = False
         for element in dataset_collection.elements:
-            if not self.__valid_element(element):
+            match_element = self.__valid_element(element)
+            if not match_element:
                 valid = False
                 break
-        return valid
+            elif match_element.implicit_conversion:
+                uses_implicit_conversion = True
+
+        return valid and (HdcaImplicitMatch() if uses_implicit_conversion else HdcaDirectMatch())
 
 
-__all__ = ('DatasetMatcher', 'DatasetCollectionMatcher')
+__all__ = ('get_dataset_matcher_factory', 'set_dataset_matcher_factory', 'unset_dataset_matcher_factory')

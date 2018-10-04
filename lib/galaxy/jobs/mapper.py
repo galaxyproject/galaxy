@@ -224,6 +224,7 @@ class JobRunnerMapper(object):
             job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
         else:
             job_destination = raw_job_destination
+        log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
         self.cached_job_destination = job_destination
 
     def get_job_destination(self, params):

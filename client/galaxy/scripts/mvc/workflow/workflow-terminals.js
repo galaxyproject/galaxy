@@ -1,6 +1,5 @@
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
-import * as Toastr from "libs/toastr";
 
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
@@ -39,7 +38,7 @@ var ANY_COLLECTION_TYPE_DESCRIPTION = {
         return "AnyCollectionType[]";
     },
     append: function() {
-        throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
+        return ANY_COLLECTION_TYPE_DESCRIPTION;
     },
     equal: function(other) {
         return other === this;
@@ -131,6 +130,9 @@ var Terminal = Backbone.Model.extend({
         if (this.node) {
             this.node.markChanged();
             this.resetMappingIfNeeded();
+            if (!connector.dragging) {
+                connector.handle2.resetCollectionTypeSource();
+            }
         }
     },
     redraw: function() {
@@ -174,6 +176,17 @@ var Terminal = Backbone.Model.extend({
     },
     resetMapping: function() {
         this.terminalMapping.disableMapOver();
+    },
+
+    resetCollectionTypeSource: function() {
+        let node = this.node;
+        _.each(node.output_terminals, function(output_terminal) {
+            let type_source = output_terminal.attributes.collection_type_source;
+            if (type_source && output_terminal.attributes.collection_type) {
+                output_terminal.attributes.collection_type = null;
+                output_terminal.update(output_terminal.attributes);
+            }
+        });
     },
 
     resetMappingIfNeeded: function() {} // Subclasses should override this...
@@ -438,6 +451,24 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
         var other = connector.handle1;
         if (!other) {
             return;
+        } else {
+            let node = this.node;
+            _.each(node.output_terminals, function(output_terminal) {
+                if (output_terminal.attributes.collection_type_source && !connector.dragging) {
+                    if (other.isMappedOver()) {
+                        if (other.isCollection) {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.append(
+                                other.collectionType
+                            ).collectionType;
+                        } else {
+                            output_terminal.attributes.collection_type = other.terminalMapping.mapOver.collectionType;
+                        }
+                    } else {
+                        output_terminal.attributes.collection_type = other.attributes.collection_type;
+                    }
+                    output_terminal.update(output_terminal.attributes);
+                }
+            });
         }
 
         var effectiveMapOver = this._effectiveMapOver(other);
@@ -523,14 +554,15 @@ var OutputCollectionTerminal = Terminal.extend({
             newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
         }
 
-        if (newCollectionType.collectionType != this.collectionType.collectionType) {
-            _.each(this.connectors, connector => {
-                // TODO: consider checking if connection valid before removing...
-                Toastr.warning("Destroying a connection because collection type has changed.");
-                connector.destroy();
+        let oldCollectionType = this.collectionType;
+        this.collectionType = newCollectionType;
+        // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
+        var connectors = this.connectors.slice(0);
+        if (newCollectionType.collectionType != oldCollectionType.collectionType) {
+            _.each(connectors, connector => {
+                connector.destroyIfInvalid(true);
             });
         }
-        this.collectionType = newCollectionType;
     }
 });
 

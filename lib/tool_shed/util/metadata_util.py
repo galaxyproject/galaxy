@@ -50,10 +50,7 @@ def get_current_repository_metadata_for_changeset_revision(app, repository, chan
         return repository_metadata
     # The installable changeset_revision may have been changed because it was "moved ahead"
     # in the repository changelog.
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
-    updated_changeset_revision = get_next_downloadable_changeset_revision(repository,
-                                                                          repo,
-                                                                          after_changeset_revision=changeset_revision)
+    updated_changeset_revision = get_next_downloadable_changeset_revision(app, repository, after_changeset_revision=changeset_revision)
     if updated_changeset_revision and updated_changeset_revision != changeset_revision:
         repository_metadata = get_repository_metadata_by_changeset_revision(app,
                                                                             encoded_repository_id,
@@ -67,8 +64,7 @@ def get_dependencies_for_metadata_revision(app, metadata):
     dependencies = []
     for shed, name, owner, changeset, prior, _ in metadata['repository_dependencies']:
         required_repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(app, name, owner)
-        repo = hg_util.get_repo_for_repository(app, repository=required_repository, repo_path=None, create=False)
-        updated_changeset = get_next_downloadable_changeset_revision(required_repository, repo, changeset)
+        updated_changeset = get_next_downloadable_changeset_revision(app, required_repository, changeset)
         if updated_changeset is None:
             continue
         metadata_entry = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(required_repository.id), updated_changeset)
@@ -76,27 +72,25 @@ def get_dependencies_for_metadata_revision(app, metadata):
     return dependencies
 
 
-def get_latest_changeset_revision(app, repository, repo):
+def get_latest_changeset_revision(app, repository):
     repository_tip = repository.tip(app)
     repository_metadata = get_repository_metadata_by_changeset_revision(app,
                                                                         app.security.encode_id(repository.id),
                                                                         repository_tip)
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = [revision[1] for revision in get_metadata_revisions(repository, repo)]
+    changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
     if changeset_revisions:
         return changeset_revisions[-1]
     return hg_util.INITIAL_CHANGELOG_HASH
 
 
-def get_latest_downloadable_changeset_revision(app, repository, repo=None):
-    if repo is None:
-        repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+def get_latest_downloadable_changeset_revision(app, repository):
     repository_tip = repository.tip(app)
     repository_metadata = get_repository_metadata_by_changeset_revision(app, app.security.encode_id(repository.id), repository_tip)
     if repository_metadata and repository_metadata.downloadable:
         return repository_tip
-    changeset_revisions = [revision[1] for revision in get_metadata_revisions(repository, repo)]
+    changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
     if changeset_revisions:
         return changeset_revisions[-1]
     return hg_util.INITIAL_CHANGELOG_HASH
@@ -106,37 +100,16 @@ def get_latest_repository_metadata(app, decoded_repository_id, downloadable=Fals
     """Get last metadata defined for a specified repository from the database."""
     sa_session = app.model.context.current
     repository = sa_session.query(app.model.Repository).get(decoded_repository_id)
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
     if downloadable:
-        changeset_revision = get_latest_downloadable_changeset_revision(app, repository, repo)
+        changeset_revision = get_latest_downloadable_changeset_revision(app, repository)
     else:
-        changeset_revision = get_latest_changeset_revision(app, repository, repo)
+        changeset_revision = get_latest_changeset_revision(app, repository)
     return get_repository_metadata_by_changeset_revision(app,
                                                          app.security.encode_id(repository.id),
                                                          changeset_revision)
 
 
-def get_metadata_by_id(app, metadata_id):
-    sa_session = app.model.context.current
-    return sa_session.query(app.model.RepositoryMetadata).filter(app.model.RepositoryMetadata.table.c.id == metadata_id).one()
-
-
-def get_metadata_changeset_revisions(repository, repo):
-    """
-    Return an unordered list of changeset_revisions and changeset numbers that are defined as installable.
-    """
-    changeset_tups = []
-    for repository_metadata in repository.downloadable_revisions:
-        ctx = hg_util.get_changectx_for_changeset(repo, repository_metadata.changeset_revision)
-        if ctx:
-            rev = ctx.rev()
-        else:
-            rev = -1
-        changeset_tups.append((rev, repository_metadata.changeset_revision))
-    return sorted(changeset_tups)
-
-
-def get_metadata_revisions(repository, repo, sort_revisions=True, reverse=False, downloadable=True):
+def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, downloadable=True):
     """
     Return a list of changesets for the provided repository.
     """
@@ -144,12 +117,12 @@ def get_metadata_revisions(repository, repo, sort_revisions=True, reverse=False,
         metadata_revisions = repository.downloadable_revisions
     else:
         metadata_revisions = repository.metadata_revisions
+    repo_path = repository.repo_path(app)
     changeset_tups = []
     for repository_metadata in metadata_revisions:
-        ctx = hg_util.get_changectx_for_changeset(repo, repository_metadata.changeset_revision)
-        if ctx:
-            rev = '%04d' % ctx.rev()
-        else:
+        try:
+            rev = hg_util.changeset2rev(repo_path, repository_metadata.changeset_revision)
+        except Exception:
             rev = -1
         changeset_tups.append((rev, repository_metadata.changeset_revision))
     if sort_revisions:
@@ -157,36 +130,37 @@ def get_metadata_revisions(repository, repo, sort_revisions=True, reverse=False,
     return changeset_tups
 
 
-def get_next_downloadable_changeset_revision(repository, repo, after_changeset_revision):
+def get_next_downloadable_changeset_revision(app, repository, after_changeset_revision):
     """
     Return the installable changeset_revision in the repository changelog after the changeset to which
     after_changeset_revision refers.  If there isn't one, return None. If there is only one installable
     changeset, and that matches the requested revision, return it.
     """
-    changeset_revisions = [revision[1] for revision in get_metadata_revisions(repository, repo)]
+    changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
     if len(changeset_revisions) == 1:
         changeset_revision = changeset_revisions[0]
         if changeset_revision == after_changeset_revision:
             return after_changeset_revision
     found_after_changeset_revision = False
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     for changeset in repo.changelog:
         changeset_revision = str(repo.changectx(changeset))
         if found_after_changeset_revision:
             if changeset_revision in changeset_revisions:
                 return changeset_revision
-        elif not found_after_changeset_revision and changeset_revision == after_changeset_revision:
+        elif changeset_revision == after_changeset_revision:
             # We've found the changeset in the changelog for which we need to get the next downloadable changeset.
             found_after_changeset_revision = True
     return None
 
 
-def get_previous_metadata_changeset_revision(repository, repo, before_changeset_revision, downloadable=True):
+def get_previous_metadata_changeset_revision(app, repository, before_changeset_revision, downloadable=True):
     """
     Return the changeset_revision in the repository changelog that has associated metadata prior to
     the changeset to which before_changeset_revision refers.  If there isn't one, return the hash value
     of an empty repository changelog, hg_util.INITIAL_CHANGELOG_HASH.
     """
-    changeset_revisions = [revision[1] for revision in get_metadata_revisions(repository, repo)]
+    changeset_revisions = [revision[1] for revision in get_metadata_revisions(app, repository)]
     if len(changeset_revisions) == 1:
         changeset_revision = changeset_revisions[0]
         if changeset_revision == before_changeset_revision:
@@ -202,12 +176,6 @@ def get_previous_metadata_changeset_revision(repository, repo, before_changeset_
                 return hg_util.INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = changeset_revision
-
-
-def get_repository_dependencies(app, metadata_id):
-    '''Return a list of RepositoryDependency objects that specify the provided repository metadata record as the parent.'''
-    sa_session = app.model.context.current
-    return sa_session.query(app.model.RepositoryDependency).filter(app.model.RepositoryDependency.table.c.parent_metadata_id == metadata_id).all()
 
 
 def get_repository_dependency_tups_from_repository_metadata(app, repository_metadata, deprecated_only=False):
@@ -306,11 +274,11 @@ def get_updated_changeset_revisions(app, name, owner, changeset_revision):
     revision for the repository defined by the received name and owner.
     """
     repository = tool_shed.util.repository_util.get_repository_by_name_and_owner(app, name, owner)
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
     # Get the upper bound changeset revision.
-    upper_bound_changeset_revision = get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+    upper_bound_changeset_revision = get_next_downloadable_changeset_revision(app, repository, changeset_revision)
     # Build the list of changeset revision hashes defining each available update up to, but excluding
     # upper_bound_changeset_revision.
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     changeset_hashes = []
     for changeset in hg_util.reversed_lower_upper_bounded_changelog(repo, changeset_revision, upper_bound_changeset_revision):
         # Make sure to exclude upper_bound_changeset_revision.

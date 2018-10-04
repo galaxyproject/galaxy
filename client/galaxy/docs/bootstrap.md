@@ -135,8 +135,8 @@ Disabled
 
 ```
 <div>
-  <span class="badge badge-default">Default</span>
   <span class="badge badge-primary">Primary</span>
+  <span class="badge badge-secondary">Secondary</span>
   <span class="badge badge-success">Success</span>
   <span class="badge badge-warning">Warning</span>
   <span class="badge badge-danger">Danger</span>

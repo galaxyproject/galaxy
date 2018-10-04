@@ -177,11 +177,11 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
     def test_requirements(self):
         requirements, containers = self._tool_source.parse_requirements_and_containers()
         assert requirements[0].type == "package"
-        assert containers[0].identifier == "mycool/bwa"
+        assert list(containers)[0].identifier == "mycool/bwa"
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
-        assert len(outputs) == 1
+        assert len(outputs) == 1, outputs
         assert len(output_collections) == 0
 
     def test_stdio(self):
@@ -339,7 +339,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         page_sources = input_pages.page_sources
         assert len(page_sources) == 1
         page_source = page_sources[0]
-        input_sources = page_source.parse_input_sources()
+        input_sources = list(page_source.parse_input_sources())
         assert len(input_sources) == 2
 
     def test_tests(self):
@@ -439,6 +439,16 @@ class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
         outputs, output_collections = self._tool_source.parse_outputs(object())
         assert len(outputs) == 1
         assert len(output_collections) == 1
+
+
+class BuildListToolLoaderTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "lib/galaxy/tools/build_list.xml")
+    source_contents = None
+
+    def test_tool_type(self):
+        tool_module = self._tool_source.parse_tool_module()
+        assert tool_module[0] == "galaxy.tools"
+        assert tool_module[1] == "BuildListCollectionTool"
 
 
 class SpecialToolLoaderTestCase(BaseLoaderTestCase):

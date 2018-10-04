@@ -1113,7 +1113,7 @@ var listCollectionCreatorModal = function _listCollectionCreatorModal(elements, 
  */
 function createListCollection(contents, defaultHideSourceItems) {
     const elements = contents.toJSON();
-
+    const copyElements = !defaultHideSourceItems;
     const promise = listCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function(elements, name, hideSourceItems) {
@@ -1123,7 +1123,7 @@ function createListCollection(contents, defaultHideSourceItems) {
                 //TODO: this allows for list:list even if the filter above does not - reconcile
                 src: element.history_content_type === "dataset" ? "hda" : "hdca"
             }));
-            return contents.createHDCA(elements, "list", name, hideSourceItems);
+            return contents.createHDCA(elements, "list", name, hideSourceItems, copyElements);
         }
     });
 
@@ -1133,11 +1133,16 @@ function createListCollection(contents, defaultHideSourceItems) {
 function createCollectionViaRules(selection, defaultHideSourceItems) {
     let elements, elementsType, importType;
     const selectionType = selection.selectionType;
+    const copyElements = !defaultHideSourceItems;
     if (!selectionType) {
         // Have HDAs from the history panel.
         elements = selection.toJSON();
         elementsType = "datasets";
         importType = "collections";
+    } else if (selection.elements) {
+        elementsType = selection.selectionType;
+        importType = selection.dataType || "collections";
+        elements = selection.elements;
     } else {
         const hasNonWhitespaceChars = RegExp(/[^\s]/);
         // Have pasted data, data from a history dataset, or FTP list.
@@ -1163,7 +1168,7 @@ function createCollectionViaRules(selection, defaultHideSourceItems) {
         ftpUploadSite: selection.ftpUploadSite,
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function(elements, collectionType, name, hideSourceItems) {
-            return selection.createHDCA(elements, collectionType, name, hideSourceItems);
+            return selection.createHDCA(elements, collectionType, name, hideSourceItems, copyElements);
         }
     });
     return promise;

@@ -8,7 +8,6 @@ from json import dumps
 from boltons.iterutils import remap
 
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
 from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
@@ -204,7 +203,7 @@ def params_to_strings(params, param_values, app, nested=False):
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app)
-        rval[key] = value if nested else str(dumps(value))
+        rval[key] = value if nested else str(dumps(value, sort_keys=True))
     return rval
 
 
@@ -218,7 +217,7 @@ def params_from_strings(params, param_values, app, ignore_errors=False):
     rval = dict()
     param_values = param_values or {}
     for key, value in param_values.items():
-        value = json_fix(safe_loads(value))
+        value = safe_loads(value)
         if key in params:
             value = params[key].value_from_basic(value, app, ignore_errors)
         rval[key] = value

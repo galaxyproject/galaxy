@@ -8,6 +8,7 @@ export default Backbone.View.extend({
     initialize: function(app) {
         this.app = app;
         this.options = app.options;
+        this.ftpFiles = [];
         this.ftpUploadSite = app.currentFtp();
         this.setElement(this._template());
         this.btnBuild = new Ui.Button({
@@ -100,6 +101,7 @@ export default Backbone.View.extend({
         } else if (selectionType == "ftp") {
             UploadUtils.getRemoteFiles(ftp_files => {
                 this._setPreview(ftp_files.map(file => file["path"]).join("\n"));
+                this.ftpFiles = ftp_files;
             });
         }
         this._updateScreen();
@@ -137,13 +139,15 @@ export default Backbone.View.extend({
 
     _buildSelection: function(content) {
         const selectionType = this.selectionType;
-        const selection = { content: content };
+        const selection = {};
         if (selectionType == "dataset" || selectionType == "paste") {
             selection.selectionType = "raw";
+            selection.content = content;
         } else if (selectionType == "ftp") {
             selection.selectionType = "ftp";
+            selection.elements = this.ftpFiles;
+            selection.ftpUploadSite = this.ftpUploadSite;
         }
-        selection.ftpUploadSite = this.ftpUploadSite;
         selection.dataType = this.dataType;
         Galaxy.currHistoryPanel.buildCollection("rules", selection, true);
         this.app.modal.hide();

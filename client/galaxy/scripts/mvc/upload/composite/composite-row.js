@@ -91,14 +91,14 @@ export default Backbone.View.extend({
         });
 
         // add ftp file viewer
-        this.ftp = new Popover.View({
-            title: "Choose FTP file:",
-            container: this.$source.find(".ui-button-menu"),
+        this.ftp = new Popover({
+            title: "Select a file",
+            container: this.$source.find(".dropdown"),
             placement: "right"
         });
 
         // append popup to settings icon
-        this.settings = new Popover.View({
+        this.settings = new Popover({
             title: _l("Upload configuration"),
             container: this.$settings,
             placement: "bottom"
@@ -223,18 +223,18 @@ export default Backbone.View.extend({
         this.$status.removeClass().addClass(this.status_classes[status]);
         this.model.set("enabled", status != "running");
         this.$text_content.attr("disabled", !this.model.get("enabled"));
-        this.$el.removeClass("success danger warning");
+        this.$el.removeClass("table-success table-danger table-warning");
         if (status == "running" || status == "ready") {
             this.model.set("percentage", 0);
         }
         this.$source.find(".button")[status == "running" ? "addClass" : "removeClass"]("disabled");
         if (status == "success") {
-            this.$el.addClass("success");
+            this.$el.addClass("table-success");
             this.model.set("percentage", 100);
             this.$percentage.html("100%");
         }
         if (status == "error") {
-            this.$el.addClass("danger");
+            this.$el.addClass("table-danger");
             this.model.set("percentage", 0);
             this.$info_progress.hide();
             this.$info_text.show();
@@ -256,41 +256,29 @@ export default Backbone.View.extend({
 
     /** Show/hide ftp popup */
     _showFtp: function() {
-        if (!this.ftp.visible) {
-            var self = this;
-            this.ftp.empty();
-            this.ftp.append(
-                new UploadFtp({
-                    ftp_upload_site: this.app.ftp_upload_site,
-                    onchange: function(ftp_file) {
-                        self.ftp.hide();
-                        if (self.model.get("status") != "running" && ftp_file) {
-                            self.model.reset({
-                                file_mode: "ftp",
-                                file_name: ftp_file.path,
-                                file_size: ftp_file.size,
-                                file_path: ftp_file.path
-                            });
-                            self._refreshReady();
-                        }
+        var self = this;
+        this.ftp.show(
+            new UploadFtp({
+                ftp_upload_site: this.app.ftp_upload_site,
+                onchange: function(ftp_file) {
+                    self.ftp.hide();
+                    if (self.model.get("status") != "running" && ftp_file) {
+                        self.model.reset({
+                            file_mode: "ftp",
+                            file_name: ftp_file.path,
+                            file_size: ftp_file.size,
+                            file_path: ftp_file.path
+                        });
+                        self._refreshReady();
                     }
-                }).$el
-            );
-            this.ftp.show();
-        } else {
-            this.ftp.hide();
-        }
+                }
+            }).$el
+        );
     },
 
     /** Show/hide settings popup */
     _showSettings: function() {
-        if (!this.settings.visible) {
-            this.settings.empty();
-            this.settings.append(new UploadSettings(this).$el);
-            this.settings.show();
-        } else {
-            this.settings.hide();
-        }
+        this.settings.show(new UploadSettings(this).$el);
     },
 
     /** Template */

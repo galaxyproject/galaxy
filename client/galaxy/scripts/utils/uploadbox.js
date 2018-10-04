@@ -157,7 +157,7 @@
                 },
                 progress: e => {
                     if (e.lengthComputable) {
-                        cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
+                        cnf.progress(Math.min(Math.round(((start + e.loaded) * 100) / file.size), 100));
                     }
                 }
             });
@@ -218,7 +218,7 @@
             error: cnf.error,
             progress: e => {
                 if (e.lengthComputable) {
-                    cnf.progress(Math.round(e.loaded * 100 / e.total));
+                    cnf.progress(Math.round((e.loaded * 100) / e.total));
                 }
             }
         });
@@ -246,7 +246,7 @@
         el.append(
             $input.change(e => {
                 opts.onchange(e.target.files);
-                $(this).val("");
+                e.target.value = null;
             })
         );
 

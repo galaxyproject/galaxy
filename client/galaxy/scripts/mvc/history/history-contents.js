@@ -35,9 +35,6 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     /** @type {String} order used here and when fetching from server */
     order: "hid",
 
-    /** root api url */
-    urlRoot: `${Galaxy.root}api/histories`,
-
     /** complete api url */
     url: function() {
         return `${this.urlRoot}/${this.historyId}/contents`;
@@ -50,6 +47,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         });
 
         options = options || {};
+        this.urlRoot = `${Galaxy.root}api/histories`;
         _super.prototype.initialize.call(this, models, options);
 
         this.history = options.history || null;
@@ -463,16 +461,21 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** create a new HDCA in this collection */
-    createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, options) {
+    createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, copyElements, options) {
         // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
+        if (copyElements === undefined) {
+            copyElements = true;
+        }
+
         var hdca = this.model({
             history_content_type: "dataset_collection",
             collection_type: collectionType,
             history_id: this.historyId,
             name: name,
             hide_source_items: hideSourceItems || false,
+            copy_elements: copyElements,
             // should probably be able to just send in a bunch of json here and restruct per class
             // note: element_identifiers is now (incorrectly) an attribute
             element_identifiers: elementIdentifiers

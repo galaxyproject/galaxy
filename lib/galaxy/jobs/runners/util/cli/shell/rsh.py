@@ -2,7 +2,12 @@ import logging
 import time
 
 import paramiko
+from pulsar.managers.util.retry import RetryActionExecutor
 
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 from galaxy.util.bunch import Bunch
 from .local import LocalShell
 
@@ -56,11 +61,14 @@ class ParamikoShell(object):
         self.private_key = private_key
         self.port = int(port) if port else port
         self.timeout = int(timeout) if timeout else timeout
-        self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.ssh = None
+        self.retry_action_executor = RetryActionExecutor(max_retries=100, interval_max=300)
         self.connect()
 
     def connect(self):
+        log.info("Attempting establishment of new paramiko SSH channel")
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self.ssh.connect(hostname=self.hostname,
                          port=self.port,
                          username=self.username,
@@ -69,18 +77,23 @@ class ParamikoShell(object):
                          timeout=self.timeout)
 
     def execute(self, cmd, timeout=60):
-        try:
-            _, stdout, stderr = self._execute(cmd, timeout)
-        except paramiko.SSHException as e:
-            log.error(e)
-            time.sleep(10)
-            self.connect()
-            _, stdout, stderr = self._execute(cmd, timeout)
+
+        def retry():
+            try:
+                _, stdout, stderr = self._execute(cmd, timeout)
+            except paramiko.SSHException as e:
+                log.error(e)
+                time.sleep(10)
+                self.connect()
+                _, stdout, stderr = self._execute(cmd, timeout)
+            return stdout, stderr
+
+        stdout, stderr = self.retry_action_executor.execute(retry)
         return_code = stdout.channel.recv_exit_status()
-        return Bunch(stdout=stdout.read(), stderr=stderr.read(), returncode=return_code)
+        return Bunch(stdout=unicodify(stdout.read()), stderr=unicodify(stderr.read()), returncode=return_code)
 
     def _execute(self, cmd, timeout):
-        return self.ssh.exec_command(cmd, timeout=timeout)
+        return self.ssh.exec_command(smart_str(cmd), timeout=timeout)
 
 
 class GlobusSecureShell(SecureShell):

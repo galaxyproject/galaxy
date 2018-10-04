@@ -312,7 +312,9 @@ var GenomeDataManager = Cache.extend({
         query_type =
             this.get("data_type") === "raw_data"
                 ? "state"
-                : this.get("data_type") === "data" ? "converted_datasets_state" : "error";
+                : this.get("data_type") === "data"
+                    ? "converted_datasets_state"
+                    : "error";
 
         var ss_deferred = new util_mod.ServerStateDeferred({
             ajax_settings: {

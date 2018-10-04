@@ -93,6 +93,7 @@ def managed_history(f):
         finally:
             if "GALAXY_TEST_NO_CLEANUP" not in os.environ:
                 current_history_id = self.current_history_id()
+                self.dataset_populator.cancel_history_jobs(current_history_id)
                 self.api_delete("histories/%s" % current_history_id)
 
     return func_wrapper
@@ -430,7 +431,7 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesHistoryItemAssertions:
+class UsesHistoryItemAssertions(object):
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -507,7 +508,7 @@ def get_remote_driver():
     )
 
 
-class SeleniumSessionGetPostMixin:
+class SeleniumSessionGetPostMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
     def _get(self, route, data={}):

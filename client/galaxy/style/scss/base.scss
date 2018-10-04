@@ -1,20 +1,14 @@
 // Bootstrap variables and core framework
 @import "../../../node_modules/bootstrap/scss/_functions.scss";
-@import "galaxy_bootstrap/variables.scss";
+@import "theme/blue.scss";
 @import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+
+// Bootstrap-related style overrides
+@import "overrides.scss";
 
 // Fontawesome configuration.
 $fa-font-path: "../images/fonts";
 @import "../../../node_modules/font-awesome/scss/font-awesome.scss";
-
-// Bootstrap-related style overrides
-@import "galaxy_bootstrap/overrides.scss";
-
-// Galaxy specific variables
-@import "galaxy_variables.scss";
-
-$white: #fff;
-$black: #000;
 
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
@@ -73,8 +67,8 @@ $black: #000;
 }
 
 body {
-    background: $base-bg;
-    color: $base-text-color;
+    background: $body-bg;
+    color: $text-color;
     margin: 10px;
 
     // For panel layout pages
@@ -89,13 +83,26 @@ body {
 
 // ==== Panel layout styles ====
 
-$panel-message-height: 30px; //1.875rem;
+// Layout the paneled UI using flexbox.
 
-$layout_top_padding: 0px;
-$border-default-color_padding: 0px;
+#everything {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
 
-$panel_header_height: 30px;
-$panel_footer_height: 25px;
+#columns {
+    // Fill extra space in parent
+    flex: 1;
+    // Allow columns to be absolutely positioned inside
+    position: relative;
+}
 
 #background {
     position: absolute;
@@ -110,9 +117,9 @@ $panel_footer_height: 25px;
 }
 
 #messagebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
+    // position: absolute;
+    // top: $navbar-height + $layout_top_padding + 1;
+    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -122,9 +129,9 @@ $panel_footer_height: 25px;
 }
 
 #inactivebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
+    // position: absolute;
+    // top: $navbar-height + $layout_top_padding + 1;
+    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -136,35 +143,23 @@ $panel_footer_height: 25px;
 // Panels
 
 #left,
-#left-border,
 #center,
-#right-border,
 #right {
     position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    bottom: 0px;
+    top: 0;
+    height: 100%;
     overflow: hidden;
     background: #fff;
 }
-#left,
-#center,
-#right,
-#left-border,
-#right-border {
-    // border-top: solid $border-default-color 1px;
-}
 #left {
     left: 0px;
-    width: 250px;
+    width: $panel-width;
     z-index: 200;
-    border-right: solid $layout-border-color 1px;
-}
-#left-border {
-    left: 250px;
+    border-right: $layout-border;
 }
 #center {
-    left: 250 + $border-default-color_padding;
-    right: 250 + $border-default-color_padding;
+    left: $panel-width;
+    right: $panel-width;
     overflow: hidden;
     z-index: 1;
     .center-container {
@@ -176,7 +171,7 @@ $panel_footer_height: 25px;
             position: absolute;
             width: 100%;
             height: 100%;
-            padding: 10px;
+            padding: $margin-h $margin-v;
             overflow: auto;
         }
         .center-frame {
@@ -186,77 +181,93 @@ $panel_footer_height: 25px;
         }
     }
 }
-#right-border {
-    right: 250px;
-}
+
 #right {
-    width: 250px;
+    width: $panel-width;
     right: 0px;
     z-index: 200;
-    border-left: solid $layout-border-color 1px;
+    border-left: $layout-border;
 }
 
-// If the message box or inactivity box is visible
-body.has-message-box,
-body.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
+#left,
+#right,
+.unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
 }
 
-// If both are visible
-body.has-message-box.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: 2 * $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
-    #inactivebox {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
+#left,
+#right,
+.unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
 }
 
 .unified-panel-header {
     @extend .unselectable;
+    @extend .m-2;
     height: $panel_header_height;
     z-index: 1000;
-    text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
-    background: $navbar-default-bg;
-    border-bottom: solid $layout-border-color 1px;
-    margin: 0;
-    padding: 0;
-    padding-right: 10px;
-    padding-left: 10px;
+    font-size: 1rem;
     font-weight: bold;
-
-    color: #555;
+    display: flex;
+    align-items: center;
+    color: $panel-header-text-color;
     a {
-        color: #555;
+        color: $panel-header-text-color;
     }
-    .fa {
-        font-size: 1.2em;
+    .unified-panel-header-inner {
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .panel-header-buttons {
+        order: 9999;
+    }
+
+    .panel-header-button {
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        width: 1.2rem;
+        text-align: center;
+        padding: 0px;
+        &:not(:last-child) {
+            margin-right: 2px;
+        }
+
+        // Fade to maroon on hover
+        &:hover {
+            color: maroon;
+            @include transition(color 0.25s linear);
+        }
+        // Bootstrap style span caret needs positioning
+        .caret {
+            margin-top: 7px;
+        }
+        // Another way to get a caret
+        &.popup {
+            padding-right: 1.75em;
+            background: url(../images/dropdownarrow.png) no-repeat right 7px;
+        }
     }
 }
 
-.unified-panel-header-inner {
-    padding-top: 8px;
+.unified-panel-controls {
+    padding: 0 $margin-v;
 }
 
 .unified-panel-footer {
     @extend .unselectable;
-    position: absolute;
-    bottom: 0;
+    position: relative;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
     z-index: 1000; // Above #dd-helper
-    border-top: solid $layout-border-color 1px;
+    border-top: $layout-border;
     background: $navbar-default-bg;
 
     color: #555;
@@ -309,14 +320,14 @@ body.has-message-box.has-inactivity-box {
     line-height: $panel_footer_height;
     width: $panel_footer_height - 5;
     background: none;
-    border-right: solid $layout-border-color 1px;
-    border-top: solid $layout-border-color 1px;
+    border-right: $layout-border;
+    border-top: $layout-border;
     background: $navbar-default-bg;
     &.right {
         left: inherit;
         right: 0;
         border-right: none;
-        border-left: solid $border-default-color 1px;
+        border-left: $layout_border;
         &.right:before {
             content: "\f054";
         }
@@ -331,11 +342,10 @@ body.has-message-box.has-inactivity-box {
 }
 
 div.unified-panel-body {
-    position: absolute;
-    top: $panel_header_height;
-    bottom: 0;
     width: 100%;
+    height: 100%;
     padding: 0px;
+    flex: 1;
 }
 
 div.unified-panel-body-background {
@@ -346,33 +356,6 @@ div.unified-panel-body-background {
 #right > div.unified-panel-body {
     bottom: $panel_footer_height;
     overflow: auto;
-}
-
-.panel-header-button {
-    color: #333;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    margin: -1px;
-    padding: 1px;
-    margin-top: -0.2em;
-    // border: solid #999 1px;
-    padding-right: 0.5em;
-    padding-left: 0.5em;
-    // Fade to maroon on hover
-    &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
-    }
-    // Bootstrap style span caret needs positioning
-    .caret {
-        margin-top: 7px;
-    }
-    // Another way to get a caret
-    &.popup {
-        padding-right: 1.75em;
-        background: url(../images/dropdownarrow.png) no-repeat right 7px;
-    }
 }
 
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
@@ -397,11 +380,11 @@ div.unified-panel-body-background {
     height: $panel-message-height;
     line-height: $panel-message-height;
     padding: 0px;
-    padding-left: 26px;
+    padding-left: 2.5rem;
     background-color: $state-danger-bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
-    background-position: 6px 50%;
+    background-position: 0.5rem 50%;
 }
 
 .panel-warning-message {
@@ -415,17 +398,28 @@ div.unified-panel-body-background {
 }
 
 .panel-info-message {
-    background-image: url(info_small.png);
+    background-image: url(info_icon.svg);
+    background-size: 1.5rem;
     background-color: $state-info-bg;
+    svg:path {
+        fill: black;
+    }
 }
 
 // Masthead
 #masthead {
     padding: 0;
     margin-bottom: 0px;
-    background-color: #2c3143;
+    background-color: $base-color-1;
+    height: $masthead-height;
     .navbar-nav {
+        min-height: 100%;
         > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
             &.active {
                 background: black;
             }
@@ -446,21 +440,21 @@ div.unified-panel-body-background {
                 font-weight: bold;
                 font-size: 10px;
                 position: relative;
-                left: 30px;
-                top: -15px;
+                right: 5px;
+                top: 10px;
                 color: gold;
-                height: 0px;
+                width: 0px;
             }
         }
     }
     .navbar-brand {
         position: absolute;
         left: 0;
-        top: 0;
+        // top: 0;
         font-family: verdana;
         font-weight: bold;
         font-size: 20px;
-        line-height: 1;
+        // line-height: 1;
         color: white;
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
@@ -469,7 +463,7 @@ div.unified-panel-body-background {
         .navbar-brand-image {
             display: inline;
             width: 26px;
-            vertical-align: top;
+            // vertical-align: top;
             margin-left: 0.35em;
             border: none;
         }
@@ -481,7 +475,7 @@ div.unified-panel-body-background {
 
 .quota-meter-container {
     position: absolute;
-    top: 0;
+    // top: 0;
     right: 0;
     height: 32px;
 }
@@ -706,6 +700,10 @@ div.form-row-error-message {
     margin-top: 5px;
 }
 
+.workflow-right {
+    background: white;
+}
+
 .workflow-right .right-content .section-row {
     margin-bottom: 10px;
 }
@@ -761,7 +759,7 @@ button {
     padding: 4px;
     font-size: $font-size-base;
     line-height: $line-height-base;
-    color: $gray;
+    color: $gray-700;
     border: 1px solid $input-border;
     padding-left: 14px !important;
     padding-right: 14px;
@@ -781,22 +779,27 @@ button {
     position: absolute;
     display: none;
     right: 6px;
-    top: 9px;
+    top: 5px;
     font-size: 1.4em;
     color: #888;
 }
 
-#search-clear-btn {
-    position: absolute;
-    right: 6px;
-    top: 9px;
-    display: block;
-    font-size: 1.4em !important;
-    text-decoration: none;
-    color: #888;
-    @extend .fa-icon;
-    &:before {
-        content: "\f057";
+#tool-search {
+    position: relative;
+    margin: 10px 0;
+
+    #search-clear-btn {
+        position: absolute;
+        right: 6px;
+        top: 5px;
+        display: block;
+        font-size: 1.4em !important;
+        text-decoration: none;
+        color: #888;
+        @extend .fa-icon;
+        &:before {
+            content: "\f057";
+        }
     }
 }
 
@@ -972,7 +975,7 @@ table.colored th {
 
 table.colored tr.header {
     background: $table-heading-bg;
-    color: contrast($complement-color-3);
+    color: contrast(spin($base-color-3, 180));
     background-repeat: repeat-x;
     background-position: top;
     border-bottom: solid $table-border-color 1px;
@@ -1074,17 +1077,6 @@ div.debug {
     font-weight: bold;
     color: #000;
 }
-.submit-image {
-    background: url(../images/fugue/magnifier-left.png) no-repeat center transparent;
-    background-color: #eee;
-    width: $line-height-base + 8;
-    height: $line-height-base + 8;
-    cursor: pointer;
-    margin: 0;
-    padding: 0;
-    border: 1px solid #aaa;
-    border-left: none;
-}
 #advanced-search td {
     padding: 3px;
 }
@@ -1138,16 +1130,12 @@ div.odd_row {
 // Tool panel stuff
 
 // Extra label colors
-.label-beta {
+.badge-beta {
     @extend .badge-warning;
 }
 
-.label-new {
+.badge-new {
     @extend .badge-info;
-}
-
-.sm-label-pad {
-    margin-right: 2px;
 }
 
 span.toolParameterExpandableCollapsable {
@@ -1300,6 +1288,19 @@ a.action-button {
     vertical-align: middle;
 }
 
+.btn-xs {
+    // The 'new' bootstrap 4 btn-sm is about the same size as the old btn-xs,
+    // should serve as a replacement for anything expecting this.
+    @extend .btn-sm;
+}
+
+.btn-default {
+    // A hopefully temporary alias (as with above) to provide backwards
+    // compatibility for external stuff using .btn-default, which is now
+    // .btn-secondary.
+    @extend .btn-secondary;
+}
+
 //.action-button > * {
 //    vertical-align: middle;
 //}
@@ -1436,7 +1437,7 @@ ul.dropdown-menu {
         font-size: 11px;
         font-weight: bold;
         line-height: $line-height-base;
-        color: $gray-light;
+        color: $gray-500;
         text-transform: uppercase;
     }
 
@@ -1603,10 +1604,14 @@ div.permissionContainer {
 // ==== Tool menu styles
 
 .toolMenuContainer {
-    color: $base-text-color;
-    background: $side-panel-bg;
+    color: $panel-text-color;
+    a {
+        color: $panel-text-color;
+        // text-decoration: none;
+    }
+    background: $panel-bg-color;
     min-height: 100%;
-    padding: 35px 10px;
+    padding: $margin-h $margin-v;
 }
 
 div.toolSectionPad {
@@ -1626,7 +1631,8 @@ div.toolSectionDetailsInner {
 }
 
 div.toolSectionTitle {
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 1rem;
 }
 
 div.toolPanelLabel {
@@ -1640,10 +1646,9 @@ div.toolPanelLabel {
 div.toolTitle {
     padding-top: 5px;
     padding-bottom: 5px;
-    margin-left: 16px;
+    margin-left: 10px;
     margin-right: 10px;
-    display: list-item;
-    list-style: square outside;
+    display: block;
     .labels {
         float: right;
         margin-left: 2px;
@@ -1671,14 +1676,6 @@ div.toolSectionBody div.toolPanelLabel {
 div.toolTitleNoSection {
     padding-bottom: 5px;
     font-weight: bold;
-}
-
-#tool-search {
-    padding-top: 5px;
-    padding-bottom: 10px;
-    position: fixed;
-    top: 65px;
-    width: 210px;
 }
 
 // Dataset Display Styles

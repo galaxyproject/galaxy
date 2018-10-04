@@ -177,20 +177,44 @@ export default Backbone.View.extend({
 
     /** Template of row */
     _templateRow: function(options) {
-        return `<tr class="upload-ftp-row"><td class="_has_collection" style="display: none;"><div class="icon"/></td><td class="ftp-name">${_.escape(
-            options.path
-        )}</td><td class="ftp-size">${Utils.bytesToString(options.size)}</td><td class="ftp-time">${
-            options.ctime
-        }</td></tr>`;
+        return `<tr class="upload-ftp-row">
+                    <td class="_has_collection" style="display: none;">
+                        <div class="icon"/>
+                    </td>
+                    <td class="ftp-name">${_.escape(options.path)}</td>
+                    <td class="ftp-size">${Utils.bytesToString(options.size)}</td>
+                    <td class="ftp-time">${options.ctime}</td>
+                </tr>`;
     },
 
     /** Template of main view */
     _template: function() {
-        return `<div class="${this.model.get(
-            "cls"
-        )}"><div class="upload-ftp-wait fa fa-spinner fa-spin"/><div class="upload-ftp-help">${this.model.get(
-            "help_text"
-        )}</div><div class="upload-ftp-content"><span style="whitespace: nowrap; float: left;">Available files: </span><span style="whitespace: nowrap; float: right;"><span class="upload-icon fa fa-file-text-o"/><span class="upload-ftp-number"/>&nbsp;&nbsp;<span class="upload-icon fa fa-hdd-o"/><span class="upload-ftp-disk"/></span><table class="grid" style="float: left;"><thead><tr><th class="_has_collection" style="display: none;"><div class="upload-ftp-select-all"></th><th>Name</th><th>Size</th><th>Created</th></tr></thead><tbody class="upload-ftp-body"/></table></div><div class="upload-ftp-warning warningmessage">Your FTP directory does not contain any files.</div>`;
-        ("<div>");
+        return `<div class="${this.model.get("cls")}">
+                    <div class="upload-ftp-wait fa fa-spinner fa-spin"/>
+                    <div class="upload-ftp-help">${this.model.get("help_text")}</div>
+                    <div class="upload-ftp-content">
+                        <span style="whitespace: nowrap; float: left;">Available files: </span>
+                        <span style="whitespace: nowrap; float: right;">
+                            <span class="upload-icon fa fa-file-text-o"/>
+                            <span class="upload-ftp-number"/>
+                            <span class="upload-icon fa fa-hdd-o"/>
+                            <span class="upload-ftp-disk"/>
+                        </span>
+                        <table class="grid" style="float: left;">
+                            <thead>
+                                <tr>
+                                    <th class="_has_collection" style="display: none;">
+                                        <div class="upload-ftp-select-all">
+                                    </th>
+                                    <th>Name</th>
+                                    <th>Size</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody class="upload-ftp-body"/>
+                        </table>
+                    </div>
+                    <div class="upload-ftp-warning warningmessage">Your FTP directory does not contain any files.</div>
+                </div>`;
     }
 });

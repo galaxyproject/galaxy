@@ -470,7 +470,7 @@ class InstallRepositoryManager(object):
             # dictionaries, a dictionary defining the Repository, a dictionary defining the
             # Repository revision (RepositoryMetadata), and a dictionary including the additional
             # information required to install the repository.
-            items = json.loads(raw_text)
+            items = json.loads(util.unicodify(raw_text))
             repository_revision_dict = items[1]
             repo_info_dict = items[2]
         else:
@@ -879,12 +879,9 @@ class InstallRepositoryManager(object):
                 current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
                 current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
                 if current_ctx_rev != ctx_rev:
-                    repo = hg_util.get_repo_for_repository(self.app,
-                                                           repository=None,
-                                                           repo_path=os.path.abspath(install_dir),
-                                                           create=False)
-                    hg_util.pull_repository(repo, repository_clone_url, current_changeset_revision)
-                    hg_util.update_repository(repo, ctx_rev=current_ctx_rev)
+                    repo_path = os.path.abspath(install_dir)
+                    hg_util.pull_repository(repo_path, repository_clone_url, current_changeset_revision)
+                    hg_util.update_repository(repo_path, ctx_rev=current_ctx_rev)
             self.__handle_repository_contents(tool_shed_repository=tool_shed_repository,
                                               tool_path=tool_path,
                                               repository_clone_url=repository_clone_url,

@@ -85,6 +85,7 @@ class Sentry(object):
                 'request_id': environ.get('request_id', 'Unknown'),
                 'request_duration_millis': dt * 1000
             },
+            level="warning",
             tags={
                 'type': 'sloreq',
                 'action_key': cak

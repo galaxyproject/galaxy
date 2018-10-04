@@ -5,6 +5,7 @@ from social_core.strategy import BaseStrategy
 from social_core.utils import module_member, setting_name
 from sqlalchemy.exc import IntegrityError
 
+from galaxy.exceptions import MalformedContents
 from ..authnz import IdentityProvider
 from ..model import PSAAssociation, PSACode, PSANonce, PSAPartial, UserAuthnzToken
 
@@ -39,6 +40,10 @@ AUTH_PIPELINE = (
     # project, this is where emails and domains whitelists are applied (if
     # defined).
     'social_core.pipeline.social_auth.auth_allowed',
+
+    # Checks if the decoded response contains all the required fields such
+    # as an ID token or a refresh token.
+    'galaxy.authnz.psa_authnz.contains_required_data',
 
     # Checks if the current social-account is already associated in the site.
     'social_core.pipeline.social_auth.social_user',
@@ -102,13 +107,6 @@ class PSAAuthnz(IdentityProvider):
         if oidc_backend_config.get('prompt') is not None:
             self.config[setting_name('AUTH_EXTRA_ARGUMENTS')]['prompt'] = oidc_backend_config.get('prompt')
 
-    def _on_the_fly_config(self, trans):
-        trans.app.model.PSACode.trans = trans
-        trans.app.model.UserAuthnzToken.trans = trans
-        trans.app.model.PSANonce.trans = trans
-        trans.app.model.PSAPartial.trans = trans
-        trans.app.model.PSAAssociation.trans = trans
-
     def _get_helper(self, name, do_import=False):
         this_config = self.config.get(setting_name(name), DEFAULTS.get(name, None))
         return do_import and module_member(this_config) or this_config
@@ -125,13 +123,13 @@ class PSAAuthnz(IdentityProvider):
         self.config['user'] = user
 
     def authenticate(self, trans):
-        self._on_the_fly_config(trans)
+        on_the_fly_config(trans)
         strategy = Strategy(trans, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
-        self._on_the_fly_config(trans)
+        on_the_fly_config(trans)
         self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
         strategy = Strategy(trans, Storage, self.config)
         strategy.session_set(BACKENDS_NAME[self.config['provider']] + '_state', state_token)
@@ -144,7 +142,7 @@ class PSAAuthnz(IdentityProvider):
         return redirect_url, self.config.get('user', None)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
-        self._on_the_fly_config(trans)
+        on_the_fly_config(trans)
         self.config[setting_name('DISCONNECT_REDIRECT_URL')] =\
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
         strategy = Strategy(trans, Storage, self.config)
@@ -225,7 +223,7 @@ class Strategy(BaseStrategy):
         return self.backend.continue_pipeline(*args, **kwargs)
 
 
-class Storage:
+class Storage(object):
     user = UserAuthnzToken
     nonce = PSANonce
     association = PSAAssociation
@@ -235,6 +233,78 @@ class Storage:
     @classmethod
     def is_integrity_error(cls, exception):
         return exception.__class__ is IntegrityError
+
+
+def on_the_fly_config(trans):
+    trans.app.model.PSACode.trans = trans
+    trans.app.model.UserAuthnzToken.trans = trans
+    trans.app.model.PSANonce.trans = trans
+    trans.app.model.PSAPartial.trans = trans
+    trans.app.model.PSAAssociation.trans = trans
+
+
+def contains_required_data(response=None, is_new=False, **kwargs):
+    """
+    This function is called as part of authentication and authorization
+    pipeline before user is authenticated or authorized (see AUTH_PIPELINE).
+
+    This function asserts if all the data required by Galaxy for a user
+    is provided. It raises an exception if any of the required data is missing,
+    and returns void if otherwise.
+
+    :type  response: dict
+    :param response:    a dictionary containing decoded response from
+                        OIDC backend that contain the following keys
+                        among others:
+                        -   id_token;       see: http://openid.net/specs/openid-connect-core-1_0.html#IDToken
+                        -   access_token;   see: https://tools.ietf.org/html/rfc6749#section-1.4
+                        -   refresh_token;  see: https://tools.ietf.org/html/rfc6749#section-1.5
+                        -   token_type;     see: https://tools.ietf.org/html/rfc6750#section-6.1.1
+                        -   scope;          see: http://openid.net/specs/openid-connect-core-1_0.html#AuthRequest
+                        -   expires_in;     is the expiration time of the access and ID tokens in seconds since
+                                            the response was generated.
+
+    :type  is_new: bool
+    :param is_new: has the user been authenticated?
+
+    :param kwargs:      may contain the following keys among others:
+                        -   uid:        user ID
+                        -   user:       Galaxy user; if user is already authenticated
+                        -   backend:    the backend that is used for user authentication.
+                        -   storage:    an instance of Storage class.
+                        -   strategy:   an instance of the Strategy class.
+                        -   state:      the state code received from identity provider.
+                        -   details:    details about the user's third-party identity as requested in `scope`.
+
+    :rtype:  void
+    :return: Raises an exception if any of the required arguments is missing, and pass if all are given.
+    """
+    hint_msg = "Visit the identity provider's permitted applications page " \
+               "(e.g., visit `https://myaccount.google.com/u/0/permissions` " \
+               "for Google), then revoke the access of this Galaxy instance, " \
+               "and then retry to login. If the problem persists, contact " \
+               "the Admin of this Galaxy instance."
+    if response is None or not isinstance(response, dict):
+        # This can happen only if PSA is not able to decode the `authnz code`
+        # sent back from the identity provider. PSA internally handles such
+        # scenarios; however, this case is implemented to prevent uncaught
+        # server-side errors.
+        raise MalformedContents(err_msg="`response` not found. {}".format(hint_msg))
+    if not response.get("id_token"):
+        # This can happen if a non-OIDC compliant backend is used;
+        # e.g., an OAuth2.0-based backend that only generates access token.
+        raise MalformedContents(err_msg="Missing identity token. {}".format(hint_msg))
+    if is_new and not response.get("refresh_token"):
+        # An identity provider (e.g., Google) sends a refresh token the first
+        # time user consents Galaxy's access (i.e., the first time user logs in
+        # to a galaxy instance using their credentials with the identity provider).
+        # There could be variety of scenarios under which a refresh token might
+        # be missing; e.g., a manipulated Galaxy's database, where a user's records
+        # from galaxy_user and oidc_user_authnz_tokens tables deleted after the
+        # user has provided consent. This can also happen under dev efforts.
+        # The solution is to revoke the consent by visiting the identity provider's
+        # website, and then retry the login process.
+        raise MalformedContents(err_msg="Missing refresh token. {}".format(hint_msg))
 
 
 def allowed_to_disconnect(name=None, user=None, user_storage=None, strategy=None,

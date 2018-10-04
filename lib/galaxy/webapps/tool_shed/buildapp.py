@@ -89,7 +89,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/{action}', controller='repository', action='index')
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route('/repos/*path_info', controller='hg', action='handle_request', path_info='/')
-    # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
+    # Add the web API.  # A good resource for RESTful services - https://routes.readthedocs.io/en/latest/restful.html
     webapp.add_api_controllers('galaxy.webapps.tool_shed.api', app)
     webapp.mapper.connect('api_key_retrieval',
                           '/api/authenticate/baseauth/',

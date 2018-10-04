@@ -142,6 +142,17 @@ class Configuration(object):
         self.citation_cache_lock_dir = resolve_path(kwargs.get("citation_cache_lock_dir", "database/tool_shed_citations/locks"), self.root)
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
 
+        # Security/Policy Compliance
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_username_in_logs = False
+        self.enable_beta_gdpr = string_as_bool(kwargs.get("enable_beta_gdpr", False))
+        if self.enable_beta_gdpr:
+            self.redact_username_during_deletion = True
+            self.redact_email_during_deletion = True
+            self.redact_username_in_logs = True
+            self.allow_user_deletion = True
+
     @property
     def shed_tool_data_path(self):
         return self.tool_data_path

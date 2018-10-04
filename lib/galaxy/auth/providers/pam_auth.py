@@ -61,7 +61,8 @@ class PAM(AuthProvider):
         auto_register_username = None
         auto_register_email = None
         force_fail = False
-        log.debug("use username: {} use email {} email {} username {}".format(options.get('login-use-username'), options.get('login-use-email', False), email, username))
+        if not options['redact_username_in_logs']:
+            log.debug("use username: {} use email {} email {} username {}".format(options.get('login-use-username'), options.get('login-use-email', False), email, username))
         # check email based login first because if email exists in Galaxy DB
         # we will be given the "public name" as username
         if string_as_bool(options.get('login-use-email', False)) and email is not None:
@@ -138,10 +139,10 @@ class PAM(AuthProvider):
             authenticated = p_auth.authenticate(pam_username, password, service=pam_service)
 
         if authenticated:
-            log.debug('PAM authentication successful for {}'.format(pam_username))
+            log.debug('PAM authentication successful for {}'.format('redacted' if options['redact_username_in_logs'] else pam_username))
             return True, auto_register_email, auto_register_username
         else:
-            log.debug('PAM authentication failed for {}'.format(pam_username))
+            log.debug('PAM authentication failed for {}'.format('redacted' if options['redact_username_in_logs'] else pam_username))
             return False, '', ''
 
     def authenticate_user(self, user, password, options):

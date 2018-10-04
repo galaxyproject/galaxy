@@ -121,6 +121,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
             details = _doc_or_none(attribute)
             if details is None:
                 type_el = _type_el(attribute)
+                assert type_el is not None, "No details or type found for %s" % name
                 details = _doc_or_none(type_el)
                 annotation_el = type_el.find("{http://www.w3.org/2001/XMLSchema}annotation")
             else:
@@ -128,7 +129,8 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
             use = attribute.attrib.get("use", "optional") == "required"
             if "|" in details:
-                raise Exception("Cannot build Markdown table")
+                # This seems to work fine for now, but potentially can cause problems.
+                pass
             details = details.replace("\n", " ").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:

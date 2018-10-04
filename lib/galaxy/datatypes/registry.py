@@ -13,6 +13,7 @@ from xml.etree.ElementTree import Element
 import yaml
 
 import galaxy.util
+from galaxy.util.bunch import Bunch
 from . import (
     binary,
     coverage,
@@ -138,7 +139,12 @@ class Registry(object):
                 dtype = elem.get('type', None)
                 type_extension = elem.get('type_extension', None)
                 auto_compressed_types = galaxy.util.listify(elem.get('auto_compressed_types', ''))
-                sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", False))
+                sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", "None"))
+                if sniff_compressed_types is None:
+                    sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
+                    # Make sure this is set in the elems we write out so the config option is passed to the upload
+                    # tool which does not have a config object.
+                    elem.set("sniff_compressed_types", str(sniff_compressed_types))
                 mimetype = elem.get('mimetype', None)
                 display_in_upload = galaxy.util.string_as_bool(elem.get('display_in_upload', False))
                 # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
@@ -314,17 +320,14 @@ class Registry(object):
                                     auto_compressed_type_name = datatype_class_name + upper_compressed_type
                                     attributes = {}
                                     if auto_compressed_type == "gz":
-                                        attributes["compressed_format"] = "gzip"
+                                        dynamic_parent = binary.GzDynamicCompressedArchive
                                     elif auto_compressed_type == "bz2":
-                                        attributes["compressed_format"] = "bz2"
+                                        dynamic_parent = binary.Bz2DynamicCompressedArchive
                                     else:
                                         raise Exception("Unknown auto compression type [%s]" % auto_compressed_type)
                                     attributes["file_ext"] = compressed_extension
-                                    if sniff_compressed_types is None:
-                                        sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
-                                    if not sniff_compressed_types:
-                                        attributes["sniff_prefix"] = lambda self, file_prefix: False
-                                    compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, binary.CompressedArchive, ), attributes)
+                                    attributes["uncompressed_datatype_instance"] = datatype_instance
+                                    compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, dynamic_parent, ), attributes)
                                     if edam_format:
                                         compressed_datatype_class.edam_format = edam_format
                                     if edam_data:
@@ -342,7 +345,8 @@ class Registry(object):
                                     self.converters.append(("%s_to_uncompressed.xml" % auto_compressed_type, compressed_extension, extension))
                                     if datatype_class not in compressed_sniffers:
                                         compressed_sniffers[datatype_class] = []
-                                    compressed_sniffers[datatype_class].append(compressed_datatype_instance)
+                                    if sniff_compressed_types:
+                                        compressed_sniffers[datatype_class].append(compressed_datatype_instance)
                                 # Processing the new datatype elem is now complete, so make sure the element defining it is retained by appending
                                 # the new datatype to the in-memory list of datatype elems to enable persistence.
                                 self.datatype_elems.append(elem)
@@ -370,9 +374,12 @@ class Registry(object):
             sniff_order_classes = set(type(_) for _ in self.sniff_order)
             for datatype in self.datatypes_by_extension.values():
                 # Add a datatype only if it is not already in sniff_order, it
-                # has a sniff() method and was not defined with subclass="true"
+                # has a sniff() method and was not defined with subclass="true".
+                # Do not add dynamic compressed types - these were carefully added or not
+                # to the sniff order in the proper position above.
                 if type(datatype) not in sniff_order_classes and \
-                        hasattr(datatype, 'sniff') and not datatype.is_subclass:
+                        hasattr(datatype, 'sniff') and not datatype.is_subclass and \
+                        not hasattr(datatype, "uncompressed_datatype_instance"):
                     self.sniff_order.append(datatype)
 
         append_to_sniff_order()
@@ -506,13 +513,9 @@ class Registry(object):
                                                 del self.sniff_order[conflict_loc]
                                                 self.log.debug("Removed conflicting sniffer for datatype '%s'" % dtype)
                                             break
-                                    if conflict:
-                                        if override:
-                                            self.sniff_order.append(aclass)
-                                            self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
-                                    else:
-                                        if compressed_sniffers and aclass in compressed_sniffers:
-                                            for compressed_sniffer in compressed_sniffers[aclass]:
+                                    if not conflict or override:
+                                        if compressed_sniffers and aclass.__class__ in compressed_sniffers:
+                                            for compressed_sniffer in compressed_sniffers[aclass.__class__]:
                                                 self.sniff_order.append(compressed_sniffer)
                                         self.sniff_order.append(aclass)
                                         self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
@@ -740,7 +743,6 @@ class Registry(object):
                 'axt'           : sequence.Axt(),
                 'bam'           : binary.Bam(),
                 'bed'           : interval.Bed(),
-                'blib'          : binary.BlibSQlite(),
                 'coverage'      : coverage.LastzCoverage(),
                 'customtrack'   : interval.CustomTrack(),
                 'csfasta'       : sequence.csFasta(),
@@ -828,7 +830,6 @@ class Registry(object):
                 binary.GeminiSQLite(),
                 binary.MzSQlite(),
                 binary.IdpDB(),
-                binary.BlibSQlite(),
                 binary.SQlite(),
                 xml.GenericXml(),
                 sequence.Maf(),
@@ -876,14 +877,21 @@ class Registry(object):
             return converters[target_ext]
         return None
 
-    def find_conversion_destination_for_dataset_by_extensions(self, dataset, accepted_formats, converter_safe=True):
+    def find_conversion_destination_for_dataset_by_extensions(self, dataset_or_ext, accepted_formats, converter_safe=True):
         """Returns ( target_ext, existing converted dataset )"""
-        for convert_ext in self.get_converters_by_datatype(dataset.ext):
+        if hasattr(dataset_or_ext, "ext"):
+            ext = dataset_or_ext.ext
+            dataset = dataset_or_ext
+        else:
+            ext = dataset_or_ext
+            dataset = None
+
+        for convert_ext in self.get_converters_by_datatype(ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
             elif convert_ext_datatype.matches_any(accepted_formats):
-                converted_dataset = dataset.get_converted_files_by_type(convert_ext)
+                converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
                     ret_data = converted_dataset
                 elif not converter_safe:
@@ -965,3 +973,12 @@ class Registry(object):
             Please change it to lower case" % extension)
             extension = extension.lower()
         return extension
+
+
+def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
+    galaxy_dir = galaxy.util.galaxy_directory()
+    sample_conf = os.path.join(galaxy_dir, "config", "datatypes_conf.xml.sample")
+    config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
+    datatypes_registry = Registry(config)
+    datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)
+    return datatypes_registry

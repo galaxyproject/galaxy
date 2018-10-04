@@ -55,5 +55,5 @@ class TestCliInterface(unittest.TestCase):
 def make_private_key():
     key = RSA.generate(1024)
     private_fd, private_path = tempfile.mkstemp()
-    open(private_path, 'w').write(key.exportKey('PEM'))
+    open(private_path, 'wb').write(key.exportKey('PEM'))
     return private_path

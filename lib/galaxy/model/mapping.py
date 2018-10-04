@@ -133,6 +133,18 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
+model.CloudAuthz.table = Table(
+    "cloudauthz", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('provider', String(255)),
+    Column('config', JSONType),
+    Column('authn_id', Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True),
+    Column('tokens', JSONType),
+    Column('last_update', DateTime),
+    Column('last_activity', DateTime),
+    Column('description', TEXT))
+
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column("token", String(32), primary_key=True, unique=True, index=True),
@@ -886,7 +898,6 @@ model.WorkflowStep.table = Table(
     Column("subworkflow_id", Integer, ForeignKey("workflow.id"), index=True, nullable=True),
     Column("type", String(64)),
     Column("tool_id", TEXT),
-    # Reserved for future
     Column("tool_version", TEXT),
     Column("tool_inputs", JSONType),
     Column("tool_errors", JSONType),
@@ -1322,7 +1333,7 @@ model.VisualizationAnnotationAssociation.table = Table(
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
     Column("annotation", TEXT, index=True))
 
-model.HistoryDatasetCollectionAnnotationAssociation.table = Table(
+model.HistoryDatasetCollectionAssociationAnnotationAssociation.table = Table(
     "history_dataset_collection_annotation_association", metadata,
     Column("id", Integer, primary_key=True),
     Column("history_dataset_collection_id", Integer,
@@ -1472,6 +1483,15 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
     user=relation(model.User,
                   primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
                   backref='social_auth')
+))
+
+mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.CloudAuthz.table.c.user_id == model.User.table.c.id),
+                  backref='cloudauthz'),
+    authn=relation(model.UserAuthnzToken,
+                   primaryjoin=(model.CloudAuthz.table.c.authn_id == model.UserAuthnzToken.table.c.id),
+                   backref='cloudauthz')
 ))
 
 mapper(model.ValidationError, model.ValidationError.table)
@@ -1675,6 +1695,8 @@ mapper(model.User, model.User.table, properties=dict(
     api_keys=relation(model.APIKeys,
         backref="user",
         order_by=desc(model.APIKeys.table.c.create_time)),
+    cloudauthzs=relation(model.CloudAuthz,
+                         primaryjoin=model.CloudAuthz.table.c.user_id == model.User.table.c.id),
 ))
 
 mapper(model.PasswordResetToken, model.PasswordResetToken.table,
@@ -2014,7 +2036,7 @@ mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, p
 mapper(model.JobExportHistoryArchive, model.JobExportHistoryArchive.table, properties=dict(
     job=relation(model.Job),
     history=relation(model.History),
-    dataset=relation(model.Dataset)
+    dataset=relation(model.Dataset, backref='job_export_history_archive')
 ))
 
 mapper(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, properties=dict(
@@ -2024,7 +2046,7 @@ mapper(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, prope
 
 mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=dict(
     job=relation(model.Job, backref='job'),
-    dataset=relation(model.Dataset),
+    dataset=relation(model.Dataset, backref='genome_index_tool_data'),
     user=relation(model.User),
     deferred=relation(model.DeferredJob, backref='deferred_job'),
     transfer=relation(model.TransferJob, backref='transfer_job')
@@ -2121,8 +2143,8 @@ simple_mapping(model.HistoryDatasetCollectionAssociation,
     tags=relation(model.HistoryDatasetCollectionTagAssociation,
         order_by=model.HistoryDatasetCollectionTagAssociation.table.c.id,
         backref='dataset_collections'),
-    annotations=relation(model.HistoryDatasetCollectionAnnotationAssociation,
-        order_by=model.HistoryDatasetCollectionAnnotationAssociation.table.c.id,
+    annotations=relation(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
+        order_by=model.HistoryDatasetCollectionAssociationAnnotationAssociation.table.c.id,
         backref="dataset_collections"),
     ratings=relation(model.HistoryDatasetCollectionRatingAssociation,
         order_by=model.HistoryDatasetCollectionRatingAssociation.table.c.id,
@@ -2225,7 +2247,8 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
     workflows=relation(model.Workflow,
         backref='stored_workflow',
         cascade="all, delete-orphan",
-        primaryjoin=(model.StoredWorkflow.table.c.id == model.Workflow.table.c.stored_workflow_id)),
+        primaryjoin=(model.StoredWorkflow.table.c.id == model.Workflow.table.c.stored_workflow_id),
+        order_by=-model.Workflow.id),
     latest_workflow=relation(model.Workflow,
         post_update=True,
         primaryjoin=(model.StoredWorkflow.table.c.latest_workflow_id == model.Workflow.table.c.id),
@@ -2469,7 +2492,7 @@ annotation_mapping(model.StoredWorkflowAnnotationAssociation, stored_workflow=mo
 annotation_mapping(model.WorkflowStepAnnotationAssociation, workflow_step=model.WorkflowStep)
 annotation_mapping(model.PageAnnotationAssociation, page=model.Page)
 annotation_mapping(model.VisualizationAnnotationAssociation, visualization=model.Visualization)
-annotation_mapping(model.HistoryDatasetCollectionAnnotationAssociation,
+annotation_mapping(model.HistoryDatasetCollectionAssociationAnnotationAssociation,
     history_dataset_collection=model.HistoryDatasetCollectionAssociation)
 annotation_mapping(model.LibraryDatasetCollectionAnnotationAssociation,
     library_dataset_collection=model.LibraryDatasetCollectionAssociation)
@@ -2536,12 +2559,17 @@ def db_next_hid(self, n=1):
     :rtype:     int
     :returns:   the next history id
     """
-    conn = object_session(self).connection()
+    session = object_session(self)
+    conn = session.connection()
     table = self.table
     trans = conn.begin()
     try:
-        next_hid = select([table.c.hid_counter], table.c.id == self.id, for_update=True).scalar()
-        table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
+        if "postgres" not in session.bind.dialect.name:
+            next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self), for_update=True).scalar()
+            table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
+        else:
+            stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
+            next_hid = conn.execute(stmt).scalar() - n
         trans.commit()
         return next_hid
     except Exception:

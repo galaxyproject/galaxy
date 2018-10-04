@@ -19,6 +19,14 @@ Subpackages
 Submodules
 ----------
 
+galaxy\.datatypes\.annotation module
+------------------------------------
+
+.. automodule:: galaxy.datatypes.annotation
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.datatypes\.assembly module
 ----------------------------------
 
@@ -163,6 +171,22 @@ galaxy\.datatypes\.ngsindex module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.datatypes\.phylip module
+--------------------------------
+
+.. automodule:: galaxy.datatypes.phylip
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.plant\_tribes module
+---------------------------------------
+
+.. automodule:: galaxy.datatypes.plant_tribes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.datatypes\.proteomics module
 ------------------------------------
 
@@ -231,6 +255,14 @@ galaxy\.datatypes\.triples module
 ---------------------------------
 
 .. automodule:: galaxy.datatypes.triples
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.datatypes\.upload\_util module
+--------------------------------------
+
+.. automodule:: galaxy.datatypes.upload_util
     :members:
     :undoc-members:
     :show-inheritance:

@@ -100,6 +100,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # base analysis interface at which point the application takes over.
 
     webapp.add_client_route('/admin/data_tables', 'admin')
+    webapp.add_client_route('/admin/data_types', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
@@ -116,18 +117,21 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/openids/list')
     webapp.add_client_route('/visualizations')
     webapp.add_client_route('/visualizations/edit')
+    webapp.add_client_route('/visualizations/sharing')
     webapp.add_client_route('/visualizations/list_published')
     webapp.add_client_route('/visualizations/list')
     webapp.add_client_route('/pages/list')
     webapp.add_client_route('/pages/list_published')
     webapp.add_client_route('/pages/create')
     webapp.add_client_route('/pages/edit')
+    webapp.add_client_route('/pages/sharing')
     webapp.add_client_route('/histories/citations')
     webapp.add_client_route('/histories/list')
     webapp.add_client_route('/histories/import')
     webapp.add_client_route('/histories/list_published')
     webapp.add_client_route('/histories/list_shared')
     webapp.add_client_route('/histories/rename')
+    webapp.add_client_route('/histories/sharing')
     webapp.add_client_route('/histories/permissions')
     webapp.add_client_route('/histories/view')
     webapp.add_client_route('/histories/show_structure')
@@ -214,6 +218,11 @@ def populate_api_routes(webapp, app):
                           controller="datasets",
                           action="display",
                           conditions=dict(method=["GET"]))
+    webapp.mapper.connect("history_contents_update_permissions",
+                          "/api/histories/{history_id}/contents/{history_content_id}/permissions",
+                          controller="history_contents",
+                          action="update_permissions",
+                          conditions=dict(method=["PUT"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
@@ -236,6 +245,23 @@ def populate_api_routes(webapp, app):
                               path_prefix='/api/histories/{history_id}/contents/{history_content_id}')
     webapp.mapper.connect('/api/histories/published', action='published', controller="histories", conditions=dict(method=["GET"]))
     webapp.mapper.connect('/api/histories/shared_with_me', action='shared_with_me', controller="histories")
+
+    webapp.mapper.connect('cloud_storage',
+                          '/api/cloud/storage/',
+                          controller='cloud',
+                          action='index',
+                          conditions=dict(method=["GET"]))
+    webapp.mapper.connect('cloud_storage_upload',
+                          '/api/cloud/storage/upload',
+                          controller='cloud',
+                          action='upload',
+                          conditions=dict(method=["POST"]))
+    webapp.mapper.connect('cloud_storage_download',
+                          '/api/cloud/storage/download',
+                          controller='cloud',
+                          action='download',
+                          conditions=dict(method=["POST"]))
+
     _add_item_tags_controller(webapp,
                               name_prefix="history_",
                               path_prefix='/api/histories/{history_id}')
@@ -268,6 +294,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('remote_file', 'remote_files', path_prefix='/api')
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
+
+    webapp.mapper.connect('/api/cloud/authz/', action='index', controller='cloudauthz')
+    webapp.mapper.connect('/api/cloud/authz/create', action='create', controller='cloudauthz')
 
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',
@@ -312,6 +341,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/genomes/{id}/indexes', controller='genomes', action='indexes')
     webapp.mapper.connect('/api/genomes/{id}/sequences', controller='genomes', action='sequences')
     webapp.mapper.resource('visualization', 'visualizations', path_prefix='/api')
+    webapp.mapper.connect('/api/visualizations/{id}/sharing', action='sharing', controller="visualizations", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.resource('plugins', 'plugins', path_prefix='/api')
     webapp.mapper.connect('/api/workflows/build_module', action='build_module', controller="workflows")
     webapp.mapper.connect('/api/workflows/menu', action='get_workflow_menu', controller="workflows", conditions=dict(method=["GET"]))
@@ -319,6 +349,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('workflow', 'workflows', path_prefix='/api')
     webapp.mapper.resource_with_deleted('history', 'histories', path_prefix='/api')
     webapp.mapper.connect('/api/histories/{history_id}/citations', action='citations', controller="histories")
+    webapp.mapper.connect('/api/histories/{id}/sharing', action='sharing', controller="histories", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.connect(
         'dynamic_tool_confs',
         '/api/configuration/dynamic_tool_confs',
@@ -356,6 +387,7 @@ def populate_api_routes(webapp, app):
                            parent_resources=dict(member_name='datatype', collection_name='datatypes'))
     webapp.mapper.resource('search', 'search', path_prefix='/api')
     webapp.mapper.resource('page', 'pages', path_prefix="/api")
+    webapp.mapper.connect('/api/pages/{id}/sharing', action='sharing', controller="pages", conditions=dict(method=["GET", "POST"]))
     webapp.mapper.resource('revision', 'revisions',
                            path_prefix='/api/pages/{page_id}',
                            controller='page_revisions',
@@ -417,6 +449,11 @@ def populate_api_routes(webapp, app):
                           controller='workflows',
                           action='workflow_dict',
                           conditions=dict(method=['GET']))
+    webapp.mapper.connect('show_versions',
+                          '/api/workflows/{workflow_id}/versions',
+                          controller='workflows',
+                          action='show_versions',
+                          conditions=dict(method=['GET']))
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect('workflow_dict',
                           '/api/workflows/download/{workflow_id}',
@@ -433,6 +470,7 @@ def populate_api_routes(webapp, app):
     # route for creating/getting converted datasets
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted', controller='datasets', action='converted', ext=None)
     webapp.mapper.connect('/api/datasets/{dataset_id}/converted/{ext}', controller='datasets', action='converted')
+    webapp.mapper.connect('/api/datasets/{dataset_id}/permissions', controller='datasets', action='update_permissions', conditions=dict(method=["PUT"]))
 
     # API refers to usages and invocations - these mean the same thing but the
     # usage routes should be considered deprecated.
@@ -445,6 +483,13 @@ def populate_api_routes(webapp, app):
         webapp.mapper.connect(
             'list_workflow_%s' % name,
             '/api/workflows/{workflow_id}/%s' % noun,
+            controller='workflows',
+            action='index_invocations',
+            conditions=dict(method=['GET'])
+        )
+        webapp.mapper.connect(
+            'list_invocations',
+            '/api/invocations',
             controller='workflows',
             action='index_invocations',
             conditions=dict(method=['GET'])
@@ -653,11 +698,12 @@ def populate_api_routes(webapp, app):
                           action='get_permissions',
                           conditions=dict(method=["GET"]))
 
+    # POST for legacy reasons, but this should be a PUT.
     webapp.mapper.connect('set_library_permissions',
                           '/api/libraries/{encoded_library_id}/permissions',
                           controller='libraries',
                           action='set_permissions',
-                          conditions=dict(method=["POST"]))
+                          conditions=dict(method=["POST", "PUT"]))
 
     webapp.mapper.connect('show_ld_item',
                           '/api/libraries/datasets/{id}',
@@ -781,6 +827,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('job_inputs', '/api/jobs/{id}/inputs', controller='jobs', action='inputs', conditions=dict(method=['GET']))
     webapp.mapper.connect('job_outputs', '/api/jobs/{id}/outputs', controller='jobs', action='outputs', conditions=dict(method=['GET']))
     webapp.mapper.connect('build_for_rerun', '/api/jobs/{id}/build_for_rerun', controller='jobs', action='build_for_rerun', conditions=dict(method=['GET']))
+    webapp.mapper.connect('resume', '/api/jobs/{id}/resume', controller='jobs', action='resume', conditions=dict(method=['PUT']))
     webapp.mapper.connect('job_error', '/api/jobs/{id}/error', controller='jobs', action='error', conditions=dict(method=['POST']))
 
     # Job files controllers. Only for consumption by remote job runners.
@@ -865,6 +912,12 @@ def populate_api_routes(webapp, app):
                           controller='tool_shed_repositories',
                           action='install',
                           conditions=dict(method=['POST']))
+
+    webapp.mapper.connect('check_for_updates',
+                          '/api/tool_shed_repositories/check_for_updates',
+                          controller='tool_shed_repositories',
+                          action='check_for_updates',
+                          conditions=dict(method=['GET']))
 
     webapp.mapper.connect('tool_shed_repository',
                           '/api/tool_shed_repositories',

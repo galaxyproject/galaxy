@@ -26,7 +26,7 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="4.maf" dbkey="hg17"/>
+      <param name="input1" value="4.maf" dbkey="hg17" ftype="maf"/>
       <param name="complete_blocks" value="partial_disallowed"/>
       <param name="remove_gaps" value="keep_gaps"/>
       <param name="species" value="panTro1" />

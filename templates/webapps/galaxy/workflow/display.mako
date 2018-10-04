@@ -12,7 +12,7 @@
 </%def>
 
 <%def name="do_inputs( inputs, values, prefix, step, other_values=None )">
-  %for input_index, input in enumerate( inputs.itervalues() ):
+  %for input_index, input in enumerate( inputs.values() ):
     %if input.type == "repeat":
       <div class="repeat-group">
           <div class="form-title-row"><b>${input.title_plural}</b></div>
@@ -77,11 +77,11 @@
     %if workflow.importable:
     <a
         href="${h.url_for( controller='/workflow', action='imp', id=trans.security.encode_id(workflow.id) )}"
-        class="icon-button import"
+        class="btn btn-secondary fa fa-plus"
         title="Import workflow"></a>
     <a
         href="${h.url_for( controller='/workflow', action='export_to_file', id=trans.security.encode_id(workflow.id) )}"
-        class="icon-button disk"
+        class="btn btn-secondary fa fa-download"
         title="Save workflow"></a>
     %endif
 </%def>

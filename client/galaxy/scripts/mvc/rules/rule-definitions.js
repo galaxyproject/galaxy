@@ -166,12 +166,72 @@ const RULES = {
         },
         apply: (rule, data, sources, columns) => {
             const ruleValue = rule.value;
-            const identifierIndex = parseInt(ruleValue.substring("identifier".length));
-            function newRow(row, index) {
-                const newRow = row.slice();
-                newRow.push(sources[index]["identifiers"][identifierIndex]);
-                return newRow;
+            let newRow;
+            if (ruleValue.indexOf("identifier") == 0) {
+                const identifierIndex = parseInt(ruleValue.substring("identifier".length));
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    newRow.push(sources[index]["identifiers"][identifierIndex]);
+                    return newRow;
+                };
+            } else if (ruleValue == "tags") {
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    const tags = sources[index]["tags"];
+                    tags.sort();
+                    newRow.push(tags.join(","));
+                    return newRow;
+                };
+            } else if (ruleValue == "hid" || ruleValue == "name" || ruleValue == "path") {
+                newRow = (row, index) => {
+                    const newRow = row.slice();
+                    newRow.push(sources[index][ruleValue]);
+                    return newRow;
+                };
+            } else {
+                return { error: `Unknown metadata type [${ruleValue}}]` };
             }
+            data = data.map(newRow);
+            columns.push(NEW_COLUMN);
+            return { data, columns };
+        }
+    },
+    add_column_group_tag_value: {
+        title: _l("Add Column from Group Tag Value"),
+        display: (rule, colHeaders) => {
+            return `Add column for value of group tag ${rule.value}.`;
+        },
+        init: (component, rule) => {
+            if (!rule) {
+                component.addColumnGroupTagValueValue = null;
+                component.addColumnGroupTagValueDefault = "";
+            } else {
+                component.addColumnGroupTagValueValue = rule.value;
+                component.addColumnGroupTagValueDefault = rule.default_value;
+            }
+        },
+        save: (component, rule) => {
+            rule.value = component.addColumnGroupTagValueValue;
+            rule.default_value = component.addColumnGroupTagValueDefault;
+        },
+        apply: (rule, data, sources, columns) => {
+            const ruleValue = rule.value;
+            const groupTagPrefix = `group:${ruleValue}:`;
+            const newRow = (row, index) => {
+                const newRow = row.slice();
+                const tags = sources[index]["tags"];
+                tags.sort();
+                let groupTagValue = rule.default_value;
+                for (let index in tags) {
+                    const tag = tags[index];
+                    if (tag.indexOf(groupTagPrefix) == 0) {
+                        groupTagValue = tag.substr(groupTagPrefix.length);
+                        break;
+                    }
+                }
+                newRow.push(groupTagValue);
+                return newRow;
+            };
             data = data.map(newRow);
             columns.push(NEW_COLUMN);
             return { data, columns };
@@ -286,7 +346,7 @@ const RULES = {
         },
         save: (component, rule) => {
             rule.target_column = component.addColumnSubstrTarget;
-            rule.length = component.addColumnSubstrLength;
+            rule.length = parseInt(component.addColumnSubstrLength);
             rule.substr_type = component.addColumnSubstrType;
         },
         apply: (rule, data, sources, columns) => {
@@ -714,6 +774,28 @@ const MAPPING_TARGETS = {
         ),
         modes: ["raw", "ftp", "datasets", "library_datasets"],
         importType: "collections"
+    },
+    name_tag: {
+        label: _l("Name Tag"),
+        help: _l("Add a name tag or hash tag based on the specified column value for imported datasets."),
+        importType: "datasets",
+        modes: ["raw", "ftp"]
+    },
+    tags: {
+        multiple: true,
+        label: _l("General Purpose Tag(s)"),
+        help: _l(
+            "Add a general purpose tag based on the specified column value, use : to separate key-value pairs if desired. These tags are not propagated to derived datasets the way name and group tags are."
+        ),
+        modes: ["raw", "ftp", "datasets", "library_datasets"]
+    },
+    group_tags: {
+        multiple: true,
+        label: _l("Group Tag(s)"),
+        help: _l(
+            "Add a group tag based on the specified column value, use : to separate key-value pairs. These tags are propagated to derived datasets and may be useful for factorial experiments."
+        ),
+        modes: ["raw", "ftp", "datasets", "library_datasets"]
     },
     name: {
         label: _l("Name"),

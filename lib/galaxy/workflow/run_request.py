@@ -1,3 +1,4 @@
+import json
 import logging
 import uuid
 
@@ -100,6 +101,16 @@ def _normalize_step_parameters(steps, param_map, legacy=False, already_normalize
             param_dict = param_map.get(str(step.order_index), {})
         else:
             param_dict = _step_parameters(step, param_map, legacy=legacy)
+        if step.type == "subworkflow" and param_dict:
+            if not already_normalized:
+                raise exceptions.RequestParameterInvalidException("Specifying subworkflow step parameters requires already_normalized to be specified as true.")
+            subworkflow_param_dict = {}
+            for key, value in param_dict.items():
+                step_index, param_name = key.split("|", 1)
+                if step_index not in subworkflow_param_dict:
+                    subworkflow_param_dict[step_index] = {}
+                subworkflow_param_dict[step_index][param_name] = value
+            param_dict = _normalize_step_parameters(step.subworkflow.steps, subworkflow_param_dict, legacy=legacy, already_normalized=already_normalized)
         if param_dict:
             normalized_param_map[step.id] = param_dict
     return normalized_param_map
@@ -383,7 +394,7 @@ def workflow_run_config_to_request(trans, run_config, workflow):
                 copy_inputs_to_history=False,
                 use_cached_job=run_config.use_cached_job,
                 inputs={},
-                param_map={},
+                param_map=run_config.param_map.get(step.order_index, {}),
                 allow_tool_state_corrections=run_config.allow_tool_state_corrections,
                 resource_params=run_config.resource_params
             )
@@ -406,6 +417,12 @@ def workflow_run_config_to_request(trans, run_config, workflow):
         )
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
+    for step_id, param_dict in run_config.param_map.items():
+        add_parameter(
+            name=step_id,
+            value=json.dumps(param_dict),
+            type=param_types.STEP_PARAMETERS,
+        )
 
     resource_parameters = run_config.resource_params
     for key, value in resource_parameters.items():
@@ -436,6 +453,8 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
                 use_cached_job = (parameter.value == 'true')
         elif parameter_type == param_types.RESOURCE_PARAMETERS:
             resource_params[parameter.name] = parameter.value
+        elif parameter_type == param_types.STEP_PARAMETERS:
+            param_map[int(parameter.name)] = json.loads(parameter.value)
     for input_association in workflow_invocation.input_datasets:
         inputs[input_association.workflow_step_id] = input_association.dataset
     for input_association in workflow_invocation.input_dataset_collections:

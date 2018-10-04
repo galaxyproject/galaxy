@@ -144,13 +144,10 @@ class Grid(object):
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance(column_filter, list):
                         # Filter is a list; process each item.
-                        column_filter = [text_type(_).encode('utf-8') if not isinstance(_, string_types) else _ for _ in column_filter]
                         extra_url_args["f-" + column.key] = dumps(column_filter)
                     else:
                         # Process singleton filter.
-                        if not isinstance(column_filter, string_types):
-                            column_filter = text_type(column_filter)
-                        extra_url_args["f-" + column.key] = column_filter.encode("utf-8")
+                        extra_url_args["f-" + column.key] = column_filter
         # Process sort arguments.
         sort_key = None
         if 'sort' in kwargs:
@@ -341,9 +338,8 @@ class Grid(object):
                     else:
                         link = None
                     target = column.target
-                    value = column.get_value(trans, self, item)
-                    if isinstance(value, str):
-                        value = text_type(value, 'utf-8')
+                    value = unicodify(column.get_value(trans, self, item))
+                    if value:
                         value = value.replace('/', '//')
                     item_dict['column_config'][column.label] = {
                         'link'      : link,
@@ -580,6 +576,8 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
         else:
             ave_item_rating = item.average_rating
             num_ratings = 2  # just used for pluralization
+        if not ave_item_rating:
+            ave_item_rating = 0
         return trans.fill_template("tool_shed_rating.mako",
                                    ave_item_rating=ave_item_rating,
                                    num_ratings=num_ratings,
@@ -671,7 +669,7 @@ class CommunityTagsColumn(TextColumn):
         if isinstance(column_filter, list):
             # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
             column_filter = ",".join(column_filter)
-        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter)
         clause_list = []
         for name, value in raw_tags:
             if name:
@@ -702,7 +700,7 @@ class IndividualTagsColumn(CommunityTagsColumn):
         if isinstance(column_filter, list):
             # Collapse list of tags into a single string; this is redundant but effective. TODO: fix this by iterating over tags.
             column_filter = ",".join(column_filter)
-        raw_tags = trans.app.tag_handler.parse_tags(column_filter.encode("utf-8"))
+        raw_tags = trans.app.tag_handler.parse_tags(column_filter)
         clause_list = []
         for name, value in raw_tags:
             if name:
@@ -847,12 +845,6 @@ class SharingStatusColumn(GridColumn):
             return item.users_shared_with_count > 0
 
         return item.users_shared_with
-
-    def get_link(self, trans, grid, item):
-        is_shared = self._is_shared(item)
-        if not item.deleted and (is_shared or item.importable or item.published):
-            return dict(operation="share or publish", id=item.id)
-        return None
 
     def filter(self, trans, user, query, column_filter):
         """ Modify query to filter histories by sharing status. """

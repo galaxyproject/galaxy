@@ -67,8 +67,7 @@ export default Backbone.Model.extend({
                 chart_dict: this.chart_dict
             }
         });
-        viz
-            .save()
+        viz.save()
             .then(function(response) {
                 if (response && response.id) {
                     self.visualization_id = response.id;

@@ -70,6 +70,11 @@ export default FormBase.extend({
                 self.deferred.reset();
                 self.deferred.execute(process => {
                     self.model.get("postchange")(process, self);
+                    if (self.model.get("listen_to_history")) {
+                        process.then(() => {
+                            self.stopListening(parent.Galaxy.currHistoryPanel.collection);
+                        });
+                    }
                 });
             }
         });
@@ -77,10 +82,16 @@ export default FormBase.extend({
         if (!this.model.get("collapsible")) {
             this.$el.append(
                 $("<div/>")
-                    .addClass("ui-margin-top-large")
+                    .addClass("mt-2")
                     .append(this._footer())
             );
         }
+        options.tool_errors &&
+            this.message.update({
+                status: "danger",
+                message: options.tool_errors,
+                persistent: true
+            });
         this.show_message &&
             this.message.update({
                 status: "success",
@@ -247,7 +258,8 @@ export default FormBase.extend({
     /** Templates */
     _templateHelp: function(options) {
         var $tmpl = $("<div/>")
-            .addClass("ui-form-help")
+            .addClass("form-help")
+            .addClass("form-text")
             .append(options.help);
         $tmpl.find("a").attr("target", "_blank");
         $tmpl.find("img").each(function() {

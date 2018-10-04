@@ -93,7 +93,6 @@ export default {
 .bold {
     font-weight: bold;
 }
-
 .light {
     font-weight: lighter;
     color: grey;
@@ -101,11 +100,9 @@ export default {
 .right-aligned {
     text-align: right;
 }
-
 .clickable {
     cursor: pointer;
 }
-
 .workflow {
     border: solid gray 1px;
     margin-bottom: 1%;
@@ -120,38 +117,17 @@ export default {
 .workflow > .body {
     border-top: solid gray 1px;
 }
-.workflow > .body > .toolForm {
+.workflow > .body > .tool {
     border: 0px;
     margin: 0;
 }
-
-div.toolForm {
-    border-width: 1px;
-    border-radius: 0px;
-    margin-bottom: 1%;
+div.tool {
+    margin-bottom: 5px;
+    border: 1px solid gray;
 }
-.toolForm > .header {
-    background-color: #ebd9b2;
+.tool > .header {
     padding: 5px 10px;
 }
-.workflow div.toolForm:not(:first-child) .header {
-    border-top: 1px solid #d6b161;
-}
-div.toolFormTitle {
-    padding: 0px 0px 4px 0px;
-    margin: 0px 0px 4px 0px;
-    border: 0px;
-    background-color: transparent;
-    border-bottom: 1px solid #d6b161;
-}
-/* down from EBD9B2 --> 90743A */
-.toolFormTitle > .light {
-    color: #90743a;
-}
-.toolForm em {
-    color: #90743a;
-}
-
 .job-inputs {
     margin: 0px 6px 0px 6px;
     text-align: left;
@@ -159,7 +135,7 @@ div.toolFormTitle {
 .job-inputs td:nth-child(1) {
     text-align: right;
     font-weight: lighter;
-    color: #90743a;
+    color: gray;
 }
 .job-inputs td:nth-child(1):after {
     content: ":";
@@ -167,17 +143,13 @@ div.toolFormTitle {
 .job-inputs td:nth-child(2) {
     padding-left: 4px;
 }
-.job-inputs em {
-}
-
 .job-inputs-show {
     float: right;
 }
-
 .copied-from {
     border: 1px solid lightgrey;
     border-width: 1px 1px 0px 1px;
-    margin-bottom: 1%;
+    margin-bottom: 5px;
 }
 .copied-from .header {
     border-bottom: 1px solid lightgrey;
@@ -186,20 +158,5 @@ div.toolFormTitle {
 .copied-from .header .bold,
 .copied-from .header a {
     color: #888;
-}
-
-.dataset.hda {
-    min-height: 37px;
-    border-width: 0px 0px 1px 0px;
-}
-.toolFormBody > .dataset.hda:last-child {
-    border-bottom-width: 0px;
-}
-.dataset.hda:first-child {
-    border-top: 1px solid #d6b161;
-}
-.dataset.hda .dataset-title-bar {
-    padding-top: 8px;
-    padding-left: 10px;
 }
 </style>

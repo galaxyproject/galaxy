@@ -33,7 +33,8 @@ var Collection = Backbone.Collection.extend({
             id: "analysis",
             title: _l("Analyze Data"),
             url: "",
-            tooltip: _l("Analysis home view")
+            tooltip: _l("Analysis home view"),
+            target: "__use_router__"
         });
 
         //
@@ -44,7 +45,8 @@ var Collection = Backbone.Collection.extend({
             title: _l("Workflow"),
             tooltip: _l("Chain tools into workflows"),
             disabled: !Galaxy.user.id,
-            url: "workflows/list"
+            url: "workflows/list",
+            target: "__use_router__"
         });
 
         //
@@ -53,23 +55,18 @@ var Collection = Backbone.Collection.extend({
         this.add({
             id: "visualization",
             title: _l("Visualize"),
-            url: "visualizations/list",
             tooltip: _l("Visualize datasets"),
             disabled: !Galaxy.user.id,
             menu: [
                 {
                     title: _l("Create Visualization"),
-                    url: "visualizations"
+                    url: "visualizations",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Interactive Environments"),
                     url: "visualization/gie_list",
                     target: "galaxy_main"
-                },
-                {
-                    title: _l("Saved Visualizations"),
-                    url: "visualizations/list",
-                    target: "_frame"
                 }
             ]
         });
@@ -89,19 +86,23 @@ var Collection = Backbone.Collection.extend({
                 },
                 {
                     title: _l("Histories"),
-                    url: "histories/list_published"
+                    url: "histories/list_published",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Workflows"),
-                    url: "workflows/list_published"
+                    url: "workflows/list_published",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Visualizations"),
-                    url: "visualizations/list_published"
+                    url: "visualizations/list_published",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Pages"),
-                    url: "pages/list_published"
+                    url: "pages/list_published",
+                    target: "__use_router__"
                 }
             ]
         });
@@ -269,11 +270,13 @@ var Collection = Backbone.Collection.extend({
                     },
                     {
                         title: _l("Preferences"),
-                        url: "user"
+                        url: "user",
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Custom Builds"),
-                        url: "custom_builds"
+                        url: "custom_builds",
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Logout"),
@@ -284,22 +287,22 @@ var Collection = Backbone.Collection.extend({
                     {
                         title: _l("Saved Datasets"),
                         url: "datasets/list",
-                        target: "_top"
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Saved Histories"),
                         url: "histories/list",
-                        target: "_top"
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Saved Pages"),
                         url: "pages/list",
-                        target: "_top"
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Saved Visualizations"),
                         url: "visualizations/list",
-                        target: "_top"
+                        target: "__use_router__"
                     }
                 ]
             };
@@ -406,7 +409,11 @@ var Tab = Backbone.View.extend({
                 if (options.onclick) {
                     options.onclick();
                 } else {
-                    Galaxy.frame.add(options);
+                    if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
+                        Galaxy.page.router.push(options.url);
+                    } else {
+                        Galaxy.frame.add(options);
+                    }
                 }
             });
     },
@@ -436,7 +443,11 @@ var Tab = Backbone.View.extend({
                 if (model.get("onclick")) {
                     model.get("onclick")();
                 } else {
-                    Galaxy.frame.add(model.attributes);
+                    if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
+                        Galaxy.page.router.push(model.attributes.url);
+                    } else {
+                        Galaxy.frame.add(model.attributes);
+                    }
                 }
             } else {
                 model.set("show_menu", true);

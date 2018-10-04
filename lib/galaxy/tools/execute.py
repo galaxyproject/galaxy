@@ -4,11 +4,11 @@ from various states, tracking results, and building implicit dataset
 collections from matched collections.
 """
 import collections
-import itertools
 import logging
 from threading import Thread
 
 import six
+import six.moves
 from six.moves.queue import Queue
 
 from galaxy import model
@@ -64,7 +64,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_resource_params__']
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job, collection_info)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -80,7 +80,9 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
                 tool,
                 trans,
                 params,
-                history
+                history,
+                execution_cache=execution_cache,
+                collection_info=collection_info,
             )
 
     execution_tracker.ensure_implicit_collections_populated(history, mapping_params.param_template)
@@ -161,7 +163,7 @@ class ExecutionTracker(object):
         self.output_datasets = []
         self.output_collections = []
 
-        self.implicit_collections = {}
+        self.implicit_collections = collections.OrderedDict()
 
     @property
     def param_combinations(self):
@@ -216,7 +218,31 @@ class ExecutionTracker(object):
         return output_collection_name
 
     def sliced_input_collection_structure(self, input_name):
-        input_collection = self.example_params[input_name]
+        unqualified_recurse = self.tool.profile < 18.09 and "|" not in input_name
+
+        def find_collection(input_dict, input_name):
+            for key, value in input_dict.items():
+                if key == input_name:
+                    return value
+                if isinstance(value, dict):
+                    if "|" in input_name:
+                        prefix, rest_input_name = input_name.split("|", 1)
+                        if key == prefix:
+                            return find_collection(value, rest_input_name)
+                    elif unqualified_recurse:
+                        # Looking for "input1" instead of "cond|input1" for instance.
+                        # See discussion on https://github.com/galaxyproject/galaxy/issues/6157.
+                        unqualified_match = find_collection(value, input_name)
+                        if unqualified_match:
+                            return unqualified_match
+
+        input_collection = find_collection(self.example_params, input_name)
+        if input_collection is None:
+            raise Exception("Failed to find referenced collection in inputs.")
+
+        if not hasattr(input_collection, "collection"):
+            raise Exception("Referenced input parameter is not a collection.")
+
         collection_type_description = self.trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(input_collection.collection.collection_type)
         subcollection_mapping_type = None
         if self.is_implicit_input(input_name):
@@ -387,7 +413,7 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(itertools.izip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
             for dataset_collection_element in dataset_collection_elements.values():
                 assert dataset_collection_element.element_object is None
 
@@ -410,7 +436,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
         self.job_callback(job)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(itertools.izip(self.param_combinations, self.walk_implicit_collections())):
+        for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
             # Two options here - check if the element has been populated or check if the
             # a WorkflowInvocationStepJobAssociation exists. Not sure which is better but
             # for now I have the first so lets check.

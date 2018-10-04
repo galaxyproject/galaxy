@@ -9,7 +9,7 @@ export default Backbone.View.extend({
     initialize: function(options) {
         this.model = new Backbone.Model({
             initial_errors: false,
-            cls: "ui-portlet-limited",
+            cls: "ui-portlet",
             icon: null,
             always_refresh: true,
             status: "warning",
@@ -24,34 +24,11 @@ export default Backbone.View.extend({
     update: function(new_model) {
         var self = this;
         this.data.matchModel(new_model, (node, input_id) => {
-            var input = self.input_list[input_id];
             var field = self.field_list[input_id];
-            if (field.refreshDefinition) {
-                field.refreshDefinition(node);
-            }
-            if (input && input.options) {
-                if (!_.isEqual(input.options, node.options)) {
-                    input.options = node.options;
-                    if (field.update) {
-                        var new_options = [];
-                        if (["data", "data_collection", "drill_down"].indexOf(input.type) != -1) {
-                            new_options = input.options;
-                        } else {
-                            for (var i in node.options) {
-                                var opt = node.options[i];
-                                if (opt.length > 2) {
-                                    new_options.push({
-                                        label: opt[0],
-                                        value: opt[1]
-                                    });
-                                }
-                            }
-                        }
-                        field.update(new_options);
-                        field.trigger("change");
-                        Galaxy.emit.debug("form-view::update()", `Updating options for ${input_id}`);
-                    }
-                }
+            if (field.update) {
+                field.update(node);
+                field.trigger("change");
+                Galaxy.emit.debug("form-view::update()", `Updating input: ${input_id}`);
             }
         });
     },
@@ -154,8 +131,8 @@ export default Backbone.View.extend({
             icon: options.icon,
             title: options.title,
             title_id: options.title_id,
-            cls: options.cls,
             operations: !options.hide_operations && options.operations,
+            cls: options.cls,
             buttons: options.buttons,
             collapsible: options.collapsible,
             collapsed: options.collapsed,

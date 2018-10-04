@@ -72,6 +72,23 @@ _cp1252 = {
 }
 
 
+PAGE_MAXRAW = 10**15
+
+
+def _get_page_identifiers(item_id, app):
+    # Assume if item id is integer and less than 10**15, it's unencoded.
+    try:
+        decoded_id = int(item_id)
+        if decoded_id >= PAGE_MAXRAW:
+            raise ValueError("Identifier larger than maximum expected raw int, must be already encoded.")
+        encoded_id = app.security.encode_id(item_id)
+    except ValueError:
+        # It's an encoded id.
+        encoded_id = item_id
+        decoded_id = app.security.decode_id(item_id)
+    return (encoded_id, decoded_id)
+
+
 def format_bool(b):
     if b:
         return "yes"
@@ -111,7 +128,7 @@ class PageListGrid(grids.Grid):
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
         grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action="edit_content")),
         grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action="sharing")),
+        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="", action="pages/sharing")),
         grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
     ]
 
@@ -620,43 +637,11 @@ class PageController(BaseUIController, SharableMixin,
         id = self.decode_id(id)
         page = trans.sa_session.query(model.Page).get(id)
         assert page.user == trans.user
-        return trans.fill_template("page/editor.mako", page=page)
-
-    @web.expose
-    @web.require_login("use Galaxy pages")
-    def sharing(self, trans, id, **kwargs):
-        """ Handle page sharing. """
-
-        # Get session and page.
-        session = trans.sa_session
-        page = trans.sa_session.query(model.Page).get(self.decode_id(id))
-
-        # Do operation on page.
-        if 'make_accessible_via_link' in kwargs:
-            self._make_item_accessible(trans.sa_session, page)
-        elif 'make_accessible_and_publish' in kwargs:
-            self._make_item_accessible(trans.sa_session, page)
-            page.published = True
-        elif 'publish' in kwargs:
-            page.published = True
-        elif 'disable_link_access' in kwargs:
-            page.importable = False
-        elif 'unpublish' in kwargs:
-            page.published = False
-        elif 'disable_link_access_and_unpublish' in kwargs:
-            page.importable = page.published = False
-        elif 'unshare_user' in kwargs:
-            user = session.query(model.User).get(self.decode_id(kwargs['unshare_user']))
-            if not user:
-                error("User not found for provided id")
-            association = session.query(model.PageUserShareAssociation) \
-                                 .filter_by(user=user, page=page).one()
-            session.delete(association)
-
-        session.flush()
-
-        return trans.fill_template("/sharing_base.mako",
-                                   item=page, controller_list='pages', use_panels=True)
+        content = page.latest_revision.content
+        processor = _PageContentProcessor(trans, _placeholderRenderForEdit)
+        processor.feed(content)
+        content = unicodify(processor.output(), 'utf-8')
+        return trans.fill_template("page/editor.mako", page=page, content=content)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -690,7 +675,7 @@ class PageController(BaseUIController, SharableMixin,
                 page_title = escape(page.title)
                 other_email = escape(other.email)
                 trans.set_message("Page '%s' shared with user '%s'" % (page_title, other_email))
-                return trans.response.send_redirect(url_for(controller='page', action='sharing', id=id))
+                return trans.response.send_redirect(url_for("/pages/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
                                    messagetype=mtype,
@@ -707,6 +692,10 @@ class PageController(BaseUIController, SharableMixin,
 
         # Sanitize content
         content = sanitize_html(content)
+        processor = _PageContentProcessor(trans, _placeholderRenderForSave)
+        processor.feed(content)
+        # Output is string, so convert to unicode for saving.
+        content = unicodify(processor.output(), 'utf-8')
 
         # Add a new revision to the page with the provided content.
         page_revision = model.PageRevision()
@@ -901,12 +890,10 @@ class PageController(BaseUIController, SharableMixin,
     def get_item(self, trans, id):
         return self.get_page(trans, id)
 
-    def _get_embedded_history_html(self, trans, id):
+    def _get_embedded_history_html(self, trans, decoded_id):
         """
         Returns html suitable for embedding in another page.
         """
-        # TODO: should be moved to history controller and/or called via ajax from the template
-        decoded_id = self.decode_id(id)
         # histories embedded in pages are set to importable when embedded, check for access here
         history = self.history_manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
 
@@ -929,11 +916,11 @@ class PageController(BaseUIController, SharableMixin,
                                      content_dicts=contents)
         return filled
 
-    def _get_embedded_visualization_html(self, trans, id):
+    def _get_embedded_visualization_html(self, trans, encoded_id):
         """
         Returns html suitable for embedding visualizations in another page.
         """
-        visualization = self.get_visualization(trans, id, False, True)
+        visualization = self.get_visualization(trans, encoded_id, False, True)
         visualization.annotation = self.get_item_annotation_str(trans.sa_session, visualization.user, visualization)
         if not visualization:
             return None
@@ -955,11 +942,11 @@ class PageController(BaseUIController, SharableMixin,
     def _get_embed_html(self, trans, item_class, item_id):
         """ Returns HTML for embedding an item in a page. """
         item_class = self.get_class(item_class)
+        encoded_id, decoded_id = _get_page_identifiers(item_id, trans.app)
         if item_class == model.History:
-            return self._get_embedded_history_html(trans, item_id)
+            return self._get_embedded_history_html(trans, decoded_id)
 
         elif item_class == model.HistoryDatasetAssociation:
-            decoded_id = self.decode_id(item_id)
             dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
             dataset = self.hda_manager.error_if_uploading(dataset)
 
@@ -969,14 +956,62 @@ class PageController(BaseUIController, SharableMixin,
                 return trans.fill_template("dataset/embed.mako", item=dataset, item_data=data)
 
         elif item_class == model.StoredWorkflow:
-            workflow = self.get_stored_workflow(trans, item_id, False, True)
+            workflow = self.get_stored_workflow(trans, encoded_id, False, True)
             workflow.annotation = self.get_item_annotation_str(trans.sa_session, workflow.user, workflow)
             if workflow:
                 self.get_stored_workflow_steps(trans, workflow)
                 return trans.fill_template("workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps)
 
         elif item_class == model.Visualization:
-            return self._get_embedded_visualization_html(trans, item_id)
+            return self._get_embedded_visualization_html(trans, encoded_id)
 
         elif item_class == model.Page:
             pass
+
+
+PLACEHOLDER_TEMPLATE = '''<div class="embedded-item {class_shorthand_lower} placeholder" id="{item_class}-{item_id}"><p class="title">Embedded Galaxy {class_shorthand} - '{item_name}'</p><p class="content">[Do not edit this block; Galaxy will fill it in with the annotated {class_shorthand} when it is displayed]</p></div>'''
+
+# This is a mapping of the id portion of page contents to the cssclass/shortname.
+PAGE_CLASS_MAPPING = {
+    'History': 'History',
+    'HistoryDatasetAssociation': 'Dataset',
+    'StoredWorkflow': 'Workflow',
+    'Visualization': 'Visualization'
+}
+
+
+def _placeholderRenderForEdit(trans, item_class, item_id):
+    return _placeholderRenderForSave(trans, item_class, item_id, encode=True)
+
+
+def _placeholderRenderForSave(trans, item_class, item_id, encode=False):
+    encoded_item_id, decoded_item_id = _get_page_identifiers(item_id, trans.app)
+    item_name = ''
+    if item_class == 'History':
+        history = trans.sa_session.query(trans.model.History).get(decoded_item_id)
+        history = managers.base.security_check(trans, history, False, True)
+        item_name = history.name
+    elif item_class == 'HistoryDatasetAssociation':
+        hda = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(decoded_item_id)
+        hda = managers.base.security_check(trans, hda , False, True)
+        item_name = hda.name
+    elif item_class == 'StoredWorkflow':
+        wf = trans.sa_session.query(trans.model.StoredWorkflow).get(decoded_item_id)
+        wf = managers.base.security_check(trans, wf, False, True)
+        item_name = wf.name
+    elif item_class == 'Visualization':
+        visualization = trans.sa_session.query(trans.model.Visualization).get(decoded_item_id)
+        visualization = managers.base.security_check(trans, visualization, False, True)
+        item_name = visualization.title
+    class_shorthand = PAGE_CLASS_MAPPING[item_class]
+    if encode:
+        item_id = encoded_item_id
+    else:
+        item_id = decoded_item_id
+    return PLACEHOLDER_TEMPLATE.format(
+        item_class=item_class,
+        class_shorthand=class_shorthand,
+        class_shorthand_lower=class_shorthand.lower(),
+        item_id=item_id,
+        item_name=item_name
+    )

@@ -106,12 +106,18 @@ class ContainerFinder(object):
             )
             return container
 
+        def container_from_description_from_dicts(destination_container_dicts):
+            for destination_container_dict in destination_container_dicts:
+                container_description = ContainerDescription.from_dict(destination_container_dict)
+                if container_description:
+                    container = __destination_container(container_description)
+                    if container:
+                        return container
+
         if "container_override" in destination_info:
-            container_description = ContainerDescription.from_dict(destination_info["container_override"][0])
-            if container_description:
-                container = __destination_container(container_description)
-                if container:
-                    return container
+            container = container_from_description_from_dicts(destination_info["container_override"])
+            if container:
+                return container
 
         # If destination forcing Galaxy to use a particular container do it,
         # this is likely kind of a corner case. For instance if deployers
@@ -132,11 +138,9 @@ class ContainerFinder(object):
         # If we still don't have a container, check to see if any container
         # types define a default container id and use that.
         if "container" in destination_info:
-            container_description = ContainerDescription.from_dict(destination_info["container"][0])
-            if container_description:
-                container = __destination_container(container_description)
-                if container:
-                    return container
+            container = container_from_description_from_dicts(destination_info["container"])
+            if container:
+                return container
 
         for container_type in CONTAINER_CLASSES.keys():
             container_id = self.__default_container_id(container_type, destination_info)
@@ -224,7 +228,9 @@ class ContainerRegistry(object):
         return self.__parse_resolver_conf_xml(plugin_source)
 
     def __parse_resolver_conf_xml(self, plugin_source):
-        extra_kwds = {}
+        extra_kwds = {
+            'app_info': self.app_info
+        }
         return plugin_config.load_plugins(self.resolver_classes, plugin_source, extra_kwds)
 
     def __default_containers_resolvers(self):

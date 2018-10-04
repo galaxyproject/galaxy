@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import random
+import re
 import shlex
 import stat
 import string
@@ -45,9 +46,10 @@ class InteractiveEnvironmentRequest(object):
         self.attr.viz_id = plugin.name
         self.attr.history_id = trans.security.encode_id(trans.history.id)
         self.attr.galaxy_config = trans.app.config
+        self.attr.redact_username_in_logs = trans.app.config.redact_username_in_logs
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
-        self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
+        self.attr.app_root = self.attr.root + "static/plugins/interactive_environments/" + self.attr.viz_id + "/static/"
         self.attr.import_volume = True
 
         plugin_path = os.path.abspath(plugin.path)
@@ -249,9 +251,9 @@ class InteractiveEnvironmentRequest(object):
             .replace('${PROXY_PREFIX}', str(self.attr.proxy_prefix.replace('/', '%2F')))
         return url
 
-    def volume(self, host_path, container_path, **kwds):
+    def volume(self, container_path, host_path, **kwds):
         if self.attr.container_interface is None:
-            return DockerVolume(host_path, container_path, **kwds)
+            return DockerVolume(container_path, host_path, **kwds)
         else:
             return self.attr.container_interface.volume_class(
                 container_path,
@@ -374,7 +376,7 @@ class InteractiveEnvironmentRequest(object):
             decoded_id = self.trans.security.decode_id(id)
             dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
             # TODO: do we need to check if the user has access?
-            volumes.append(self.volume(dataset.get_file_name(), '/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext)))
+            volumes.append(self.volume('/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext), dataset.get_file_name()))
         return volumes
 
     def _find_port_mapping(self, port_mappings):
@@ -399,10 +401,19 @@ class InteractiveEnvironmentRequest(object):
         """Legacy launch method for use when the container interface is not enabled
         """
         raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
+        redacted_command = raw_cmd
+        if self.attr.redact_username_in_logs:
+            def make_safe(param):
+                if 'USER_EMAIL' in param:
+                    return re.sub('USER_EMAIL=[^ ]*', 'USER_EMAIL=*********', param)
+                else:
+                    return param
+
+            redacted_command = [make_safe(x) for x in raw_cmd]
 
         log.info("Starting docker container for IE {0} with command [{1}]".format(
             self.attr.viz_id,
-            ' '.join([shlex_quote(x) for x in raw_cmd])
+            ' '.join([shlex_quote(x) for x in redacted_command])
         ))
         p = Popen(raw_cmd, stdout=PIPE, stderr=PIPE, close_fds=True)
         stdout, stderr = p.communicate()

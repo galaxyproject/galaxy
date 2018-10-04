@@ -40,8 +40,10 @@ from galaxy.web.proxy import ProxyManager
 from galaxy.web.stack import application_stack_instance
 from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
 from galaxy.webhooks import WebhooksRegistry
-from tool_shed.galaxy_install import update_repository_manager
-
+from tool_shed.galaxy_install import (
+    installed_repository_manager,
+    update_repository_manager
+)
 
 log = logging.getLogger(__name__)
 app = None
@@ -84,7 +86,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         self._configure_models(check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
-        from tool_shed.galaxy_install import installed_repository_manager
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
 
         self._configure_datatypes_registry(self.installed_repository_manager)
@@ -193,7 +194,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
             def postfork_sentry_client():
                 import raven
-                self.sentry_client = raven.Client(self.config.sentry_dsn)
+                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
