@@ -1074,6 +1074,11 @@ referenced input dataset. This is only valid if the corresponding parameter is
 of ``type`` ``data``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="tags" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestCompositeData">
     <xs:annotation>
