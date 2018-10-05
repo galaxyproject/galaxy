@@ -233,8 +233,8 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
 This is a container tag set for the ``requirement`` and ``container`` tags
 described in greater detail below. ``requirement``s describe software packages
 and other individual computing requirements required to execute a tool, while
-``container``s describe Docker containers that should be able to serve as
-complete descriptions of the runtime of a tool.
+``container``s describe Docker or Singularity containers that should be able to
+serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -312,9 +312,21 @@ resolver.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 This tag set is contained within the 'requirements' tag set. Galaxy can be
-configured to run tools within [Docker](https://www.docker.com/) containers -
-this tag allows the tool to suggest possible valid Docker containers for this
-tool.
+configured to run tools within [Docker](https://www.docker.com/) or [Singularity](https://www.sylabs.io/singularity/)
+containers - this tag allows the tool to suggest possible valid containers for this tool. The contents of the tag should
+be a container image identifier appropriate to the particular container runtime being used, e.g. 
+``quay.io/biocontainers/fastqc:0.11.2--1`` for Docker or ``docker://quay.io/biocontainers/fastqc:0.11.2--1``
+(or alternatively ``/opt/containers/fastqc.simg`` if your Galaxy installation will be loading the image from a filesystem path)
+for Singularity. The requirements tag can contain multiple ``container`` tags describing suitable container options, in
+which case the first container that is found by the Galaxy container resolver at runtime will be used.
+
+Example:
+
+```xml
+<requirements>
+  <container type="docker">quay.io/biocontainers/fastqc:0.11.2--1</container>
+<requirements>
+```
 
 Read more about configuring Galaxy to run Docker jobs
 [here](https://galaxyproject.org/admin/tools/docker/).
@@ -324,7 +336,7 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ContainerType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently must be ``docker``.</xs:documentation>
+            <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently may be ``docker`` or ``singularity``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
