@@ -10,33 +10,33 @@ var FETCH_STATE_ON_ADD = false;
 var BATCH_FETCH_STATE = true;
 
 var JobStatesSummary = Backbone.Model.extend({
-    url: function () {
+    url: function() {
         return `${Galaxy.root}api/histories/${this.attributes.history_id}/contents/dataset_collections/${
             this.attributes.collection_id
-            }/jobs_summary`;
+        }/jobs_summary`;
     },
 
-    hasDetails: function () {
+    hasDetails: function() {
         return this.has("populated_state");
     },
 
-    new: function () {
+    new: function() {
         return !this.hasDetails() || this.get("populated_state") == "new";
     },
 
-    errored: function () {
+    errored: function() {
         return this.get("populated_state") === "error" || this.anyWithStates(ERROR_STATES);
     },
 
-    states: function () {
+    states: function() {
         return this.get("states") || {};
     },
 
-    anyWithState: function (queryState) {
+    anyWithState: function(queryState) {
         return (this.states()[queryState] || 0) > 0;
     },
 
-    anyWithStates: function (queryStates) {
+    anyWithStates: function(queryStates) {
         var states = this.states();
         for (var index in queryStates) {
             if ((states[queryStates[index]] || 0) > 0) {
@@ -46,7 +46,7 @@ var JobStatesSummary = Backbone.Model.extend({
         return false;
     },
 
-    numWithStates: function (queryStates) {
+    numWithStates: function(queryStates) {
         var states = this.states();
         var count = 0;
         for (var index in queryStates) {
@@ -55,15 +55,15 @@ var JobStatesSummary = Backbone.Model.extend({
         return count;
     },
 
-    numInError: function () {
+    numInError: function() {
         return this.numWithStates(ERROR_STATES);
     },
 
-    running: function () {
+    running: function() {
         return this.anyWithState("running");
     },
 
-    terminal: function () {
+    terminal: function() {
         if (this.new()) {
             return false;
         } else {
@@ -72,7 +72,7 @@ var JobStatesSummary = Backbone.Model.extend({
         }
     },
 
-    jobCount: function () {
+    jobCount: function() {
         var states = this.states();
         var count = 0;
         for (var index in states) {
@@ -81,7 +81,7 @@ var JobStatesSummary = Backbone.Model.extend({
         return count;
     },
 
-    toString: function () {
+    toString: function() {
         return `JobStatesSummary(id=${this.get("id")})`;
     }
 });
@@ -89,7 +89,7 @@ var JobStatesSummary = Backbone.Model.extend({
 var JobStatesSummaryCollection = Backbone.Collection.extend({
     model: JobStatesSummary,
 
-    initialize: function () {
+    initialize: function() {
         /* By default we wait for a polling update to do model fetch because
            FETCH_STATE_ON_ADD is false to load the application and target components
            as quickly as possible. that said if the polling is turned off
@@ -117,7 +117,7 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
         this.active = true;
     },
 
-    url: function () {
+    url: function() {
         var nonTerminalModels = this.models.filter(model => {
             return !model.terminal();
         });
@@ -134,7 +134,7 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
         return `${Galaxy.root}api/histories/${this.historyId}/jobs_summary?ids=${ids}&types=${types}`;
     },
 
-    monitor: function () {
+    monitor: function() {
         this.clearUpdateTimeout();
         if (!this.active) {
             return;
@@ -168,14 +168,14 @@ var JobStatesSummaryCollection = Backbone.Collection.extend({
     },
 
     /** clear the timeout and the cached timeout id */
-    clearUpdateTimeout: function () {
+    clearUpdateTimeout: function() {
         if (this.updateTimeoutId) {
             clearTimeout(this.updateTimeoutId);
             this.updateTimeoutId = null;
         }
     },
 
-    toString: function () {
+    toString: function() {
         return `JobStatesSummaryCollection()`;
     }
 });

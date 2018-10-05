@@ -60,7 +60,7 @@ const TOURPAGE_TEMPLATE = `
 
 var tour_opts = {
     storage: window.sessionStorage,
-    onEnd: function () {
+    onEnd: function() {
         window.sessionStorage.removeItem("activeGalaxyTour");
     },
     delay: 150, // Attempts to make it look natural
@@ -120,22 +120,22 @@ var Tours = Backbone.Collection.extend({
 
 export var ToursView = Backbone.View.extend({
     title: _l("Tours"),
-    initialize: function () {
+    initialize: function() {
         var self = this;
         this.setElement("<div/>");
         this.model = new Tours();
         this.model.fetch({
-            success: function () {
+            success: function() {
                 self.render();
             },
-            error: function () {
+            error: function() {
                 // Do something.
                 console.error("Failed to fetch tours.");
             }
         });
     },
 
-    render: function () {
+    render: function() {
         var tpl = _.template(TOURPAGE_TEMPLATE);
 
         var tourtags = {};
@@ -165,7 +165,7 @@ export var ToursView = Backbone.View.extend({
                     tourtagorder: tourtagorder
                 })
             )
-            .on("click", ".tourItem", function (e) {
+            .on("click", ".tourItem", function(e) {
                 e.preventDefault();
                 giveTourById($(this).data("tour.id"));
             })

@@ -563,7 +563,7 @@ class TracksterUIView extends Backbone.View {
         // close selection/finalize template
         html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${
             Galaxy.root
-            }custom_builds" target="_top">Add a Custom Build</a></div></form>`;
+        }custom_builds" target="_top">Add a Custom Build</a></div></form>`;
 
         // return
         return html;

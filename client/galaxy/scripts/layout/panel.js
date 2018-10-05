@@ -7,22 +7,22 @@ var MAX_PANEL_WIDTH = 800;
 
 /** View for left/right panels used by Page view */
 var SidePanel = Backbone.View.extend({
-    initialize: function (options) {
+    initialize: function(options) {
         this.view = options.view;
         this.hidden = false;
         this.saved_size = null;
         this.hiddenByTool = false;
     },
 
-    $center: function () {
+    $center: function() {
         return this.$el.siblings("#center");
     },
 
-    $toggleButton: function () {
+    $toggleButton: function() {
         return this.$(".unified-panel-footer > .panel-collapse");
     },
 
-    render: function () {
+    render: function() {
         var self = this;
         var panel = this.view;
         var components = this.view.model.attributes || {};
@@ -37,12 +37,12 @@ var SidePanel = Backbone.View.extend({
     },
 
     /** panel dom template. id is 'right' or 'left' */
-    _templatePanel: function () {
+    _templatePanel: function() {
         return [this._templateHeader(), this._templateBody(), this._templateFooter()].join("");
     },
 
     /** panel dom template. id is 'right' or 'left' */
-    _templateHeader: function (data) {
+    _templateHeader: function(data) {
         return `<div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <div class="panel-header-buttons" style="float: right"/>
@@ -53,12 +53,12 @@ var SidePanel = Backbone.View.extend({
     },
 
     /** panel dom template. id is 'right' or 'left' */
-    _templateBody: function (data) {
+    _templateBody: function(data) {
         return '<div class="unified-panel-body"/>';
     },
 
     /** panel dom template. id is 'right' or 'left' */
-    _templateFooter: function (data) {
+    _templateFooter: function(data) {
         return [
             '<div class="unified-panel-footer">',
             '<div class="panel-collapse ',
@@ -74,7 +74,7 @@ var SidePanel = Backbone.View.extend({
         "click .unified-panel-footer > .panel-collapse": "toggle"
     },
 
-    _mousedownDragHandler: function (ev) {
+    _mousedownDragHandler: function(ev) {
         var self = this;
         var draggingLeft = this.id === "left";
         // Save the mouse position and width of the element (panel) when the
@@ -96,7 +96,7 @@ var SidePanel = Backbone.View.extend({
         $("#dd-helper")
             .show()
             .on("mousemove", move)
-            .one("mouseup", function (e) {
+            .one("mouseup", function(e) {
                 $(this)
                     .hide()
                     .off("mousemove", move);
@@ -105,13 +105,13 @@ var SidePanel = Backbone.View.extend({
 
     // TODO: the following three could be simplified I think
     // if panel is 'right' (this.id), move center right newSize number of pixels
-    resize: function (newSize) {
+    resize: function(newSize) {
         this.$el.css("width", newSize);
         this.$center().css(this.id, newSize);
         return this;
     },
 
-    show: function () {
+    show: function() {
         if (!this.hidden) {
             return;
         }
@@ -130,7 +130,7 @@ var SidePanel = Backbone.View.extend({
         return this;
     },
 
-    hide: function () {
+    hide: function() {
         if (this.hidden) {
             return;
         }
@@ -145,7 +145,7 @@ var SidePanel = Backbone.View.extend({
         return this;
     },
 
-    toggle: function (ev) {
+    toggle: function(ev) {
         this.hidden ? this.show() : this.hide();
         this.hiddenByTool = false;
         return this;
@@ -154,7 +154,7 @@ var SidePanel = Backbone.View.extend({
     // ..............................................................
     //TODO: only used in message.mako?
     /**   */
-    handle_minwidth_hint: function (hint) {
+    handle_minwidth_hint: function(hint) {
         var space = this.$center().width() - (this.hidden ? this.saved_size : 0);
         if (space < hint) {
             if (!this.hidden) {
@@ -171,7 +171,7 @@ var SidePanel = Backbone.View.extend({
     },
 
     /**   */
-    force_panel: function (op) {
+    force_panel: function(op) {
         if (op == "show") {
             return this.show();
         }
@@ -181,7 +181,7 @@ var SidePanel = Backbone.View.extend({
         return self;
     },
 
-    toString: function () {
+    toString: function() {
         return `SidePanel(${this.id})`;
     }
 });
@@ -198,7 +198,7 @@ var RightPanel = SidePanel.extend({
 
 /** Center panel with the ability to switch between iframe and view */
 var CenterPanel = Backbone.View.extend({
-    initialize: function (options) {
+    initialize: function(options) {
         this.setElement($(this.template()));
         this.$frame = this.$(".center-frame");
         this.$panel = this.$(".center-panel");
@@ -206,7 +206,7 @@ var CenterPanel = Backbone.View.extend({
     },
 
     /** Display iframe if its target url changes, hide center panel */
-    _iframeChangeHandler: function (ev) {
+    _iframeChangeHandler: function(ev) {
         var iframe = ev.currentTarget;
         var location = iframe.contentWindow && iframe.contentWindow.location;
         if (location && location.host) {
@@ -222,7 +222,7 @@ var CenterPanel = Backbone.View.extend({
     },
 
     /** Display a view in the center panel, hide iframe */
-    display: function (view) {
+    display: function(view) {
         var contentWindow = this.$frame[0].contentWindow || {};
         var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
         if (!message || confirm(message)) {
@@ -237,7 +237,7 @@ var CenterPanel = Backbone.View.extend({
         }
     },
 
-    template: function () {
+    template: function() {
         return (
             '<div class="center-container">' +
             '<iframe id="galaxy_main" name="galaxy_main" frameborder="0" class="center-frame" />' +
@@ -246,7 +246,7 @@ var CenterPanel = Backbone.View.extend({
         );
     },
 
-    toString: function () {
+    toString: function() {
         return "CenterPanel";
     }
 });

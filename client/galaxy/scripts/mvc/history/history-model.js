@@ -52,7 +52,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
              *  @param {Object} historyJSON model data for this History
              *  @param {Object} options     any extra settings including logger
              */
-            initialize: function (historyJSON, options) {
+            initialize: function(historyJSON, options) {
                 options = options || {};
                 this.logger = options.logger || null;
                 this.log(`${this}.initialize:`, historyJSON, options);
@@ -75,13 +75,13 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             /** set up any event listeners for this history including those to the contained HDAs
              *  events: error:contents  if an error occurred with the contents collection
              */
-            _setUpListeners: function () {
+            _setUpListeners: function() {
                 // if the model's id changes ('current' or null -> an actual id), update the contents history_id
                 return this.on({
-                    error: function (model, xhr, options, msg, details) {
+                    error: function(model, xhr, options, msg, details) {
                         this.clearUpdateTimeout();
                     },
-                    "change:id": function (model, newId) {
+                    "change:id": function(model, newId) {
                         if (this.contents) {
                             this.contents.historyId = newId;
                         }
@@ -90,13 +90,13 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** event handlers for the contents submodels */
-            _setUpCollectionListeners: function () {
+            _setUpCollectionListeners: function() {
                 if (!this.contents) {
                     return this;
                 }
                 // bubble up errors
                 return this.listenTo(this.contents, {
-                    error: function () {
+                    error: function() {
                         this.trigger.apply(this, jQuery.makeArray(arguments));
                     }
                 });
@@ -104,7 +104,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ derived attributes
             /**  */
-            contentsShown: function () {
+            contentsShown: function() {
                 var contentsActive = this.get("contents_active");
                 var shown = contentsActive.active || 0;
                 shown += this.contents.includeDeleted ? contentsActive.deleted : 0;
@@ -113,20 +113,20 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** convert size in bytes to a more human readable version */
-            nice_size: function () {
+            nice_size: function() {
                 var size = this.get("size");
                 return size ? UTILS.bytesToString(size, true, 2) : _l("(empty)");
             },
 
             /** override to add nice_size */
-            toJSON: function () {
+            toJSON: function() {
                 return _.extend(Backbone.Model.prototype.toJSON.call(this), {
                     nice_size: this.nice_size()
                 });
             },
 
             /** override to allow getting nice_size */
-            get: function (key) {
+            get: function(key) {
                 if (key === "nice_size") {
                     return this.nice_size();
                 }
@@ -137,7 +137,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             /** T/F is this history owned by the current user (Galaxy.user)
              *      Note: that this will return false for an anon user even if the history is theirs.
              */
-            ownedByCurrUser: function () {
+            ownedByCurrUser: function() {
                 // no currUser
                 if (!Galaxy || !Galaxy.user) {
                     return false;
@@ -150,18 +150,18 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** Return the number of running jobs assoc with this history (note: unknown === 0) */
-            numOfUnfinishedJobs: function () {
+            numOfUnfinishedJobs: function() {
                 var unfinishedJobIds = this.get("non_ready_jobs");
                 return unfinishedJobIds ? unfinishedJobIds.length : 0;
             },
 
             /** Return the number of running hda/hdcas in this history (note: unknown === 0) */
-            numOfUnfinishedShownContents: function () {
+            numOfUnfinishedShownContents: function() {
                 return this.contents.runningAndActive().length || 0;
             },
 
             // ........................................................................ updates
-            _fetchContentRelatedAttributes: function () {
+            _fetchContentRelatedAttributes: function() {
                 var contentRelatedAttrs = ["size", "non_ready_jobs", "contents_active", "hid_counter"];
                 return this.fetch({
                     data: jQuery.param({
@@ -171,7 +171,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** check for any changes since the last time we updated (or fetch all if ) */
-            refresh: function (options) {
+            refresh: function(options) {
                 // console.log( this + '.refresh' );
                 options = options || {};
 
@@ -197,7 +197,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** continuously fetch updated contents every UPDATE_DELAY ms if this history's datasets or jobs are unfinished */
-            checkForUpdates: function (options) {
+            checkForUpdates: function(options) {
                 // console.log( this + '.checkForUpdates' );
                 options = options || {};
                 var delay = this.UPDATE_DELAY;
@@ -235,14 +235,14 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** clear the timeout and the cached timeout id */
-            clearUpdateTimeout: function () {
+            clearUpdateTimeout: function() {
                 if (this.updateTimeoutId) {
                     clearTimeout(this.updateTimeoutId);
                     this.updateTimeoutId = null;
                 }
             },
 
-            stopPolling: function () {
+            stopPolling: function() {
                 this.clearUpdateTimeout();
                 if (this.contents) {
                     this.contents.stopPolling();
@@ -251,7 +251,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ ajax
             /** override to use actual Dates objects for create/update times */
-            parse: function (response, options) {
+            parse: function(response, options) {
                 var parsed = Backbone.Model.prototype.parse.call(this, response, options);
                 if (parsed.create_time) {
                     parsed.create_time = new Date(parsed.create_time);
@@ -263,7 +263,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** fetch this histories data (using options) then it's contents (using contentsOptions) */
-            fetchWithContents: function (options, contentsOptions) {
+            fetchWithContents: function(options, contentsOptions) {
                 options = options || {};
                 var self = this;
 
@@ -280,7 +280,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** fetch this histories contents, adjusting options based on the stored history preferences */
-            fetchContents: function (options) {
+            fetchContents: function(options) {
                 options = options || {};
 
                 // we're updating, reset the update time
@@ -289,21 +289,21 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             /** save this history, _Mark_ing it as deleted (just a flag) */
-            _delete: function (options) {
+            _delete: function(options) {
                 if (this.get("deleted")) {
                     return jQuery.when();
                 }
                 return this.save({ deleted: true }, options);
             },
             /** purge this history, _Mark_ing it as purged and removing all dataset data from the server */
-            purge: function (options) {
+            purge: function(options) {
                 if (this.get("purged")) {
                     return jQuery.when();
                 }
                 return this.save({ deleted: true, purged: true }, options);
             },
             /** save this history, _Mark_ing it as undeleted */
-            undelete: function (options) {
+            undelete: function(options) {
                 if (!this.get("deleted")) {
                     return jQuery.when();
                 }
@@ -316,7 +316,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
              *  @fires copied               passed this history and the response JSON from the copy
              *  @returns {xhr}
              */
-            copy: function (current, name, allDatasets) {
+            copy: function(current, name, allDatasets) {
                 current = current !== undefined ? current : true;
                 if (!this.id) {
                     throw new Error("You must set the history ID before copying it.");
@@ -350,7 +350,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 });
             },
 
-            setAsCurrent: function () {
+            setAsCurrent: function() {
                 var history = this;
 
                 var xhr = jQuery.getJSON(`${Galaxy.root}history/set_as_current?id=${this.id}`);
@@ -362,7 +362,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             },
 
             // ........................................................................ misc
-            toString: function () {
+            toString: function() {
                 return `History(${this.get("id")},${this.get("name")})`;
             }
         }
@@ -386,7 +386,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     /** @type {Number} limit used for each subsequent fetch */
     limitPerFetch: 10,
 
-    initialize: function (models, options) {
+    initialize: function(models, options) {
         options = options || {};
         this.log("HistoryCollection.initialize", models, options);
         this.urlRoot = `${Galaxy.root}api/histories`;
@@ -403,7 +403,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
         // the collection *is empty*
     },
 
-    url: function () {
+    url: function() {
         return this.urlRoot;
     },
 
@@ -411,7 +411,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     setUpListeners: function setUpListeners() {
         return this.on({
             // when a history is deleted, remove it from the collection (if optionally set to do so)
-            "change:deleted": function (history) {
+            "change:deleted": function(history) {
                 // TODO: this becomes complicated when more filters are used
                 this.debug("change:deleted", this.includeDeleted, history.get("deleted"));
                 if (!this.includeDeleted && history.get("deleted")) {
@@ -419,11 +419,11 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
                 }
             },
             // listen for a history copy, setting it to current
-            copied: function (original, newData) {
+            copied: function(original, newData) {
                 this.setCurrent(new History(newData, []));
             },
             // when a history is made current, track the id in the collection
-            "set-as-current": function (history) {
+            "set-as-current": function(history) {
                 var oldCurrentId = this.currentHistoryId;
                 this.trigger("no-longer-current", oldCurrentId);
                 this.currentHistoryId = history.id;
@@ -432,14 +432,14 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** override to change view */
-    _buildFetchData: function (options) {
+    _buildFetchData: function(options) {
         return _.extend(_collectionSuper.prototype._buildFetchData.call(this, options), {
             view: "dev-detailed"
         });
     },
 
     /** override to filter out deleted and purged */
-    _buildFetchFilters: function (options) {
+    _buildFetchFilters: function(options) {
         var superFilters = _collectionSuper.prototype._buildFetchFilters.call(this, options) || {};
         var filters = {};
         if (this.includeDeleted !== true) {
@@ -454,7 +454,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** override to fetch current as well (as it may be outside the first 10, etc.) */
-    fetchFirst: function (options) {
+    fetchFirst: function(options) {
         // TODO: batch?
         var xhr = jQuery.when();
         if (this.currentHistoryId) {
@@ -493,7 +493,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     }),
 
     /** override to always have the current history first */
-    sort: function (options) {
+    sort: function(options) {
         options = options || {};
         var silent = options.silent;
         var currentHistory = this.remove(this.get(this.currentHistoryId));
@@ -520,7 +520,7 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
      *  Pass standard bbone options for use in unshift.
      *  @triggers new-current passed history and this collection
      */
-    setCurrent: function (history, options) {
+    setCurrent: function(history, options) {
         options = options || {};
         // new histories go in the front
         this.unshift(history, options);
