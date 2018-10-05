@@ -140,8 +140,10 @@ class CwlToolSource(ToolSource):
         if docker_identifier:
             containers.append({"type": "docker",
                                "identifier": docker_identifier})
+
+        software_requirements = self.tool_proxy.software_requirements()
         return requirements.parse_requirements_from_dict(dict(
-            requirements=[],  # TODO: enable via extensions
+            requirements=list(map(lambda r: {"name": r[0], "version": r[1], "type": "package"}, software_requirements)),
             containers=containers,
         ))
 
