@@ -4863,9 +4863,8 @@ class PSAPartial(PartialMixin):
 class UserAuthnzToken(UserMixin):
     __table_args__ = (UniqueConstraint('provider', 'uid'),)
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider
@@ -4884,12 +4883,12 @@ class UserAuthnzToken(UserMixin):
 
     def set_extra_data(self, extra_data=None):
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
-            self.trans.sa_session.add(self)
-            self.trans.sa_session.flush()
+            self.sa_session.add(self)
+            self.sa_session.flush()
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def username_max_length(cls):
@@ -4903,12 +4902,12 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def changed(cls, user):
-        cls.trans.sa_session.add(user)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(user)
+        cls.sa_session.flush()
 
     @classmethod
     def user_query(cls):
-        return cls.trans.sa_session.query(cls.user_model())
+        return cls.sa_session.query(cls.user_model())
 
     @classmethod
     def user_exists(cls, *args, **kwargs):
@@ -4923,8 +4922,8 @@ class UserAuthnzToken(UserMixin):
         model = cls.user_model()
         instance = model(*args, **kwargs)
         instance.set_random_password()
-        cls.trans.sa_session.add(instance)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(instance)
+        cls.sa_session.flush()
         return instance
 
     @classmethod
@@ -4939,13 +4938,13 @@ class UserAuthnzToken(UserMixin):
     def get_social_auth(cls, provider, uid):
         uid = str(uid)
         try:
-            return cls.trans.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
+            return cls.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
         except IndexError:
             return None
 
     @classmethod
     def get_social_auth_for_user(cls, user, provider=None, id=None):
-        qs = cls.trans.sa_session.query(cls).filter_by(user_id=user.id)
+        qs = cls.sa_session.query(cls).filter_by(user_id=user.id)
         if provider:
             qs = qs.filter_by(provider=provider)
         if id:
@@ -4956,8 +4955,8 @@ class UserAuthnzToken(UserMixin):
     def create_social_auth(cls, user, uid, provider):
         uid = str(uid)
         instance = cls(user=user, uid=uid, provider=provider)
-        cls.trans.sa_session.add(instance)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(instance)
+        cls.sa_session.flush()
         return instance
 
 
