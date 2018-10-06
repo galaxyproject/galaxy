@@ -238,7 +238,7 @@ class Storage(object):
 def on_the_fly_config(trans):
     trans.app.model.PSACode.sa_session = trans.sa_session
     trans.app.model.UserAuthnzToken.trans = trans
-    trans.app.model.PSANonce.trans = trans
+    trans.app.model.PSANonce.sa_session = trans.sa_session
     trans.app.model.PSAPartial.trans = trans
     trans.app.model.PSAAssociation.sa_session = trans.sa_session
 

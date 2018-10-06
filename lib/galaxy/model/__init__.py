@@ -4811,9 +4811,8 @@ class PSACode(CodeMixin):
 
 class PSANonce(NonceMixin):
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, server_url, timestamp, salt):
         self.server_url = server_url
@@ -4821,17 +4820,17 @@ class PSANonce(NonceMixin):
         self.salt = salt
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def use(cls, server_url, timestamp, salt):
         try:
-            return cls.trans.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
+            return cls.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
         except IndexError:
             instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
-            cls.trans.sa_session.add(instance)
-            cls.trans.sa_session.flush()
+            cls.sa_session.add(instance)
+            cls.sa_session.flush()
             return instance
 
 
