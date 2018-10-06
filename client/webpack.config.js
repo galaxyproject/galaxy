@@ -79,15 +79,6 @@ let buildconfig = {
                     }
                 ]
             },
-            //{
-            //    test: require.resolve("backbone"),
-            //    use: [
-            //        {
-            //            loader: "expose-loader",
-            //            options: "Backbone"
-            //        }
-            //    ]
-            //},
             // Alternative to setting window.bundleEntries
             // Just import "extended" in any endpoint that needs
             // access to these globals, or even-better, make
