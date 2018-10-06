@@ -1237,7 +1237,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True):
+    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1250,6 +1250,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             add_to_menu=add_to_menu,
             publish=publish,
             exact_tools=exact_tools,
+            fill_defaults=fill_defaults,
         )
         return created_workflow.stored_workflow, created_workflow.missing_tools
 

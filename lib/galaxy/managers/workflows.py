@@ -244,6 +244,7 @@ class WorkflowContentsManager(UsesAnnotations):
         publish=False,
         create_stored_workflow=True,
         exact_tools=True,
+        fill_defaults=False,
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
@@ -257,6 +258,7 @@ class WorkflowContentsManager(UsesAnnotations):
             data,
             name=name,
             exact_tools=exact_tools,
+            fill_defaults=fill_defaults,
         )
         if 'uuid' in data:
             workflow.uuid = data['uuid']
@@ -298,7 +300,7 @@ class WorkflowContentsManager(UsesAnnotations):
             missing_tools=missing_tool_tups
         )
 
-    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data):
+    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data, **kwds):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
 
@@ -306,6 +308,7 @@ class WorkflowContentsManager(UsesAnnotations):
             trans,
             workflow_data,
             name=stored_workflow.name,
+            **kwds
         )
 
         if missing_tool_tups:

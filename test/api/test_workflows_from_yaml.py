@@ -3,6 +3,7 @@ from __future__ import print_function
 import json
 import os
 
+from base.populators import uses_test_history
 from base.workflow_fixtures import (
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
 )
@@ -299,6 +300,39 @@ steps:
 """)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         print(workflow)
+
+    @uses_test_history()
+    def test_conditional_ints(self, history_id):
+        self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  - label: test_input
+    tool_id: disambiguate_cond
+    state:
+      p3:
+        use: true
+      files:
+        attach_files: false
+""", test_data={}, history_id=history_id)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert "no file specified" in content
+        assert "7 7 4" in content
+
+        self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  - label: test_input
+    tool_id: disambiguate_cond
+    state:
+      p3:
+        use: true
+        p3v: 5
+      files:
+        attach_files: false
+""", test_data={}, history_id=history_id)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert "no file specified" in content
+        assert "7 7 5" in content
 
     def _steps_by_label(self, workflow_as_dict):
         by_label = {}
