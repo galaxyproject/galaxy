@@ -4794,21 +4794,20 @@ class PSAAssociation(AssociationMixin):
 class PSACode(CodeMixin):
     __table_args__ = (UniqueConstraint('code', 'email'),)
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, email, code):
         self.email = email
         self.code = code
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def get_code(cls, code):
-        return cls.trans.sa_session.query(cls).filter(cls.code == code).first()
+        return cls.sa_session.query(cls).filter(cls.code == code).first()
 
 
 class PSANonce(NonceMixin):
