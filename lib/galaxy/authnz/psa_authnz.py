@@ -240,7 +240,7 @@ def on_the_fly_config(trans):
     trans.app.model.UserAuthnzToken.trans = trans
     trans.app.model.PSANonce.trans = trans
     trans.app.model.PSAPartial.trans = trans
-    trans.app.model.PSAAssociation.trans = trans
+    trans.app.model.PSAAssociation.sa_session = trans.sa_session
 
 
 def contains_required_data(response=None, is_new=False, **kwargs):

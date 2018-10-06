@@ -4753,9 +4753,8 @@ class UserOpenID(object):
 
 class PSAAssociation(AssociationMixin):
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, server_url=None, handle=None, secret=None, issued=None, lifetime=None, assoc_type=None):
         self.server_url = server_url
@@ -4766,29 +4765,29 @@ class PSAAssociation(AssociationMixin):
         self.assoc_type = assoc_type
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def store(cls, server_url, association):
         try:
-            assoc = cls.trans.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
+            assoc = cls.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
         except IndexError:
             assoc = cls(server_url=server_url, handle=association.handle)
         assoc.secret = base64.encodestring(association.secret).decode()
         assoc.issued = association.issued
         assoc.lifetime = association.lifetime
         assoc.assoc_type = association.assoc_type
-        cls.trans.sa_session.add(assoc)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(assoc)
+        cls.sa_session.flush()
 
     @classmethod
     def get(cls, *args, **kwargs):
-        return cls.trans.sa_session.query(cls).filter_by(*args, **kwargs)
+        return cls.sa_session.query(cls).filter_by(*args, **kwargs)
 
     @classmethod
     def remove(cls, ids_to_delete):
-        cls.trans.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
+        cls.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
 class PSACode(CodeMixin):
