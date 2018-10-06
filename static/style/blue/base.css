@@ -1,6 +1,6 @@
 @charset "UTF-8";
 /*!
- * Bootstrap v4.1.1 (https://getbootstrap.com/)
+ * Bootstrap v4.1.3 (https://getbootstrap.com/)
  * Copyright 2011-2018 The Bootstrap Authors
  * Copyright 2011-2018 Twitter, Inc.
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
@@ -175,8 +175,9 @@ img {
   vertical-align: middle;
   border-style: none; }
 
-svg:not(:root) {
-  overflow: hidden; }
+svg {
+  overflow: hidden;
+  vertical-align: middle; }
 
 table {
   border-collapse: collapse; }
@@ -1035,7 +1036,6 @@ pre {
 
 .table, .ui-table-striped {
   width: 100%;
-  max-width: 100%;
   margin-bottom: 1rem;
   background-color: transparent; }
   .table th, .ui-table-striped th,
@@ -1251,6 +1251,7 @@ pre {
 .form-control {
   display: block;
   width: 100%;
+  height: calc(1.875rem + 2px);
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
   line-height: 1.5;
@@ -1278,9 +1279,6 @@ pre {
   .form-control:disabled, .form-control[readonly] {
     background-color: #e9ecef;
     opacity: 1; }
-
-select.form-control:not([size]):not([multiple]) {
-  height: calc(1.875rem + 2px); }
 
 select.form-control:focus::-ms-value {
   color: #495057;
@@ -1321,99 +1319,29 @@ select.form-control:focus::-ms-value {
   background-color: transparent;
   border: solid transparent;
   border-width: 1px 0; }
-  .form-control-plaintext.form-control-sm, .input-group-sm > .form-control-plaintext.form-control,
-  .input-group-sm > .input-group-prepend > .form-control-plaintext.input-group-text,
-  .input-group-sm > .input-group-append > .form-control-plaintext.input-group-text,
-  .input-group-sm > .input-group-prepend > .form-control-plaintext.btn,
-  .input-group-sm > .input-group-prepend > input.form-control-plaintext[type="submit"],
-  .input-group-sm > .input-group-prepend >
-  button.form-control-plaintext,
-  .input-group-sm > .input-group-prepend > .form-control-plaintext.action-button,
-  .input-group-sm > .input-group-prepend > .form-control-plaintext.menubutton,
-  .input-group-sm > .input-group-append > .form-control-plaintext.btn,
-  .input-group-sm > .input-group-append > input.form-control-plaintext[type="submit"],
-  .input-group-sm > .input-group-append >
-  button.form-control-plaintext,
-  .input-group-sm > .input-group-append > .form-control-plaintext.action-button,
-  .input-group-sm > .input-group-append > .form-control-plaintext.menubutton, .form-control-plaintext.form-control-lg, .input-group-lg > .form-control-plaintext.form-control,
-  .input-group-lg > .input-group-prepend > .form-control-plaintext.input-group-text,
-  .input-group-lg > .input-group-append > .form-control-plaintext.input-group-text,
-  .input-group-lg > .input-group-prepend > .form-control-plaintext.btn,
-  .input-group-lg > .input-group-prepend > input.form-control-plaintext[type="submit"],
-  .input-group-lg > .input-group-prepend >
-  button.form-control-plaintext,
-  .input-group-lg > .input-group-prepend > .form-control-plaintext.action-button,
-  .input-group-lg > .input-group-prepend > .form-control-plaintext.menubutton,
-  .input-group-lg > .input-group-append > .form-control-plaintext.btn,
-  .input-group-lg > .input-group-append > input.form-control-plaintext[type="submit"],
-  .input-group-lg > .input-group-append >
-  button.form-control-plaintext,
-  .input-group-lg > .input-group-append > .form-control-plaintext.action-button,
-  .input-group-lg > .input-group-append > .form-control-plaintext.menubutton {
+  .form-control-plaintext.form-control-sm, .form-control-plaintext.form-control-lg {
     padding-right: 0;
     padding-left: 0; }
 
-.form-control-sm, .input-group-sm > .form-control,
-.input-group-sm > .input-group-prepend > .input-group-text,
-.input-group-sm > .input-group-append > .input-group-text,
-.input-group-sm > .input-group-prepend > .btn,
-.input-group-sm > .input-group-prepend > input[type="submit"],
-.input-group-sm > .input-group-prepend >
-button,
-.input-group-sm > .input-group-prepend > .action-button,
-.input-group-sm > .input-group-prepend > .menubutton,
-.input-group-sm > .input-group-append > .btn,
-.input-group-sm > .input-group-append > input[type="submit"],
-.input-group-sm > .input-group-append >
-button,
-.input-group-sm > .input-group-append > .action-button,
-.input-group-sm > .input-group-append > .menubutton {
+.form-control-sm {
+  height: calc(1.48438rem + 2px);
   padding: 0.25rem 0.5rem;
   font-size: 0.65625rem;
   line-height: 1.5;
   border-radius: 0.2rem; }
 
-select.form-control-sm:not([size]):not([multiple]), .input-group-sm > select.form-control:not([size]):not([multiple]),
-.input-group-sm > .input-group-prepend > select.input-group-text:not([size]):not([multiple]),
-.input-group-sm > .input-group-append > select.input-group-text:not([size]):not([multiple]),
-.input-group-sm > .input-group-prepend > select.btn:not([size]):not([multiple]),
-.input-group-sm > .input-group-prepend > select.action-button:not([size]):not([multiple]),
-.input-group-sm > .input-group-prepend > select.menubutton:not([size]):not([multiple]),
-.input-group-sm > .input-group-append > select.btn:not([size]):not([multiple]),
-.input-group-sm > .input-group-append > select.action-button:not([size]):not([multiple]),
-.input-group-sm > .input-group-append > select.menubutton:not([size]):not([multiple]) {
-  height: calc(1.48438rem + 2px); }
-
-.form-control-lg, .input-group-lg > .form-control,
-.input-group-lg > .input-group-prepend > .input-group-text,
-.input-group-lg > .input-group-append > .input-group-text,
-.input-group-lg > .input-group-prepend > .btn,
-.input-group-lg > .input-group-prepend > input[type="submit"],
-.input-group-lg > .input-group-prepend >
-button,
-.input-group-lg > .input-group-prepend > .action-button,
-.input-group-lg > .input-group-prepend > .menubutton,
-.input-group-lg > .input-group-append > .btn,
-.input-group-lg > .input-group-append > input[type="submit"],
-.input-group-lg > .input-group-append >
-button,
-.input-group-lg > .input-group-append > .action-button,
-.input-group-lg > .input-group-append > .menubutton {
+.form-control-lg {
+  height: calc(2.40625rem + 2px);
   padding: 0.5rem 1rem;
   font-size: 0.9375rem;
   line-height: 1.5;
   border-radius: 0.3rem; }
 
-select.form-control-lg:not([size]):not([multiple]), .input-group-lg > select.form-control:not([size]):not([multiple]),
-.input-group-lg > .input-group-prepend > select.input-group-text:not([size]):not([multiple]),
-.input-group-lg > .input-group-append > select.input-group-text:not([size]):not([multiple]),
-.input-group-lg > .input-group-prepend > select.btn:not([size]):not([multiple]),
-.input-group-lg > .input-group-prepend > select.action-button:not([size]):not([multiple]),
-.input-group-lg > .input-group-prepend > select.menubutton:not([size]):not([multiple]),
-.input-group-lg > .input-group-append > select.btn:not([size]):not([multiple]),
-.input-group-lg > .input-group-append > select.action-button:not([size]):not([multiple]),
-.input-group-lg > .input-group-append > select.menubutton:not([size]):not([multiple]) {
-  height: calc(2.40625rem + 2px); }
+select.form-control[size], select.form-control[multiple] {
+  height: auto; }
+
+textarea.form-control {
+  height: auto; }
 
 .form-group {
   margin-bottom: 1rem; }
@@ -1471,13 +1399,13 @@ select.form-control-lg:not([size]):not([multiple]), .input-group-lg > select.for
   z-index: 5;
   display: none;
   max-width: 100%;
-  padding: .5rem;
+  padding: 0.25rem 0.5rem;
   margin-top: .1rem;
-  font-size: .875rem;
-  line-height: 1;
+  font-size: 0.65625rem;
+  line-height: 1.5;
   color: #fff;
-  background-color: rgba(33, 186, 33, 0.8);
-  border-radius: .2rem; }
+  background-color: rgba(33, 186, 33, 0.9);
+  border-radius: 0.25rem; }
 
 .was-validated .form-control:valid, .form-control.is-valid, .was-validated
 .custom-select:valid,
@@ -1529,7 +1457,7 @@ select.form-control-lg:not([size]):not([multiple]), .input-group-lg > select.for
 
 .was-validated .custom-file-input:valid ~ .custom-file-label, .custom-file-input.is-valid ~ .custom-file-label {
   border-color: #21ba21; }
-  .was-validated .custom-file-input:valid ~ .custom-file-label::before, .custom-file-input.is-valid ~ .custom-file-label::before {
+  .was-validated .custom-file-input:valid ~ .custom-file-label::after, .custom-file-input.is-valid ~ .custom-file-label::after {
     border-color: inherit; }
 
 .was-validated .custom-file-input:valid ~ .valid-feedback,
@@ -1553,13 +1481,13 @@ select.form-control-lg:not([size]):not([multiple]), .input-group-lg > select.for
   z-index: 5;
   display: none;
   max-width: 100%;
-  padding: .5rem;
+  padding: 0.25rem 0.5rem;
   margin-top: .1rem;
-  font-size: .875rem;
-  line-height: 1;
+  font-size: 0.65625rem;
+  line-height: 1.5;
   color: #fff;
-  background-color: rgba(239, 95, 91, 0.8);
-  border-radius: .2rem; }
+  background-color: rgba(239, 95, 91, 0.9);
+  border-radius: 0.25rem; }
 
 .was-validated .form-control:invalid, .form-control.is-invalid, .was-validated
 .custom-select:invalid,
@@ -1611,7 +1539,7 @@ select.form-control-lg:not([size]):not([multiple]), .input-group-lg > select.for
 
 .was-validated .custom-file-input:invalid ~ .custom-file-label, .custom-file-input.is-invalid ~ .custom-file-label {
   border-color: #ef5f5b; }
-  .was-validated .custom-file-input:invalid ~ .custom-file-label::before, .custom-file-input.is-invalid ~ .custom-file-label::before {
+  .was-validated .custom-file-input:invalid ~ .custom-file-label::after, .custom-file-input.is-invalid ~ .custom-file-label::after {
     border-color: inherit; }
 
 .was-validated .custom-file-input:invalid ~ .invalid-feedback,
@@ -1700,10 +1628,6 @@ button, .action-button, .menubutton {
   .btn:not(:disabled):not(.disabled), input[type="submit"]:not(:disabled):not(.disabled),
   button:not(:disabled):not(.disabled), .action-button:not(:disabled):not(.disabled), .menubutton:not(:disabled):not(.disabled) {
     cursor: pointer; }
-  .btn:not(:disabled):not(.disabled):active, input[type="submit"]:not(:disabled):not(.disabled):active,
-  button:not(:disabled):not(.disabled):active, .action-button:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled):active, .btn:not(:disabled):not(.disabled).active, input[type="submit"]:not(:disabled):not(.disabled).active,
-  button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled).active, .action-button:not(:disabled):not(.disabled):active, .menubutton:not(:disabled):not(.disabled).active, .menubutton:not(:disabled):not(.disabled):active {
-    background-image: none; }
 
 a.btn.disabled, a.disabled.action-button, a.disabled.menubutton,
 fieldset:disabled a.btn,
@@ -2619,10 +2543,6 @@ button,
     flex: 1 1 auto;
     width: 1%;
     margin-bottom: 0; }
-    .input-group > .form-control:focus,
-    .input-group > .custom-select:focus,
-    .input-group > .custom-file:focus {
-      z-index: 3; }
     .input-group > .form-control + .form-control,
     .input-group > .form-control + .custom-select,
     .input-group > .form-control + .custom-file,
@@ -2633,6 +2553,12 @@ button,
     .input-group > .custom-file + .custom-select,
     .input-group > .custom-file + .custom-file {
       margin-left: -1px; }
+  .input-group > .form-control:focus,
+  .input-group > .custom-select:focus,
+  .input-group > .custom-file .custom-file-input:focus ~ .custom-file-label {
+    z-index: 3; }
+  .input-group > .custom-file .custom-file-input:focus {
+    z-index: 4; }
   .input-group > .form-control:not(:last-child),
   .input-group > .custom-select:not(:last-child) {
     border-top-right-radius: 0;
@@ -2763,6 +2689,48 @@ button,
   .input-group-text input[type="checkbox"] {
     margin-top: 0; }
 
+.input-group-lg > .form-control,
+.input-group-lg > .input-group-prepend > .input-group-text,
+.input-group-lg > .input-group-append > .input-group-text,
+.input-group-lg > .input-group-prepend > .btn,
+.input-group-lg > .input-group-prepend > input[type="submit"],
+.input-group-lg > .input-group-prepend >
+button,
+.input-group-lg > .input-group-prepend > .action-button,
+.input-group-lg > .input-group-prepend > .menubutton,
+.input-group-lg > .input-group-append > .btn,
+.input-group-lg > .input-group-append > input[type="submit"],
+.input-group-lg > .input-group-append >
+button,
+.input-group-lg > .input-group-append > .action-button,
+.input-group-lg > .input-group-append > .menubutton {
+  height: calc(2.40625rem + 2px);
+  padding: 0.5rem 1rem;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  border-radius: 0.3rem; }
+
+.input-group-sm > .form-control,
+.input-group-sm > .input-group-prepend > .input-group-text,
+.input-group-sm > .input-group-append > .input-group-text,
+.input-group-sm > .input-group-prepend > .btn,
+.input-group-sm > .input-group-prepend > input[type="submit"],
+.input-group-sm > .input-group-prepend >
+button,
+.input-group-sm > .input-group-prepend > .action-button,
+.input-group-sm > .input-group-prepend > .menubutton,
+.input-group-sm > .input-group-append > .btn,
+.input-group-sm > .input-group-append > input[type="submit"],
+.input-group-sm > .input-group-append >
+button,
+.input-group-sm > .input-group-append > .action-button,
+.input-group-sm > .input-group-append > .menubutton {
+  height: calc(1.48438rem + 2px);
+  padding: 0.25rem 0.5rem;
+  font-size: 0.65625rem;
+  line-height: 1.5;
+  border-radius: 0.2rem; }
+
 .input-group > .input-group-prepend > .btn, .input-group > .input-group-prepend > input[type="submit"], .input-group > .input-group-prepend >
 button, .input-group > .input-group-prepend > .action-button, .input-group > .input-group-prepend > .menubutton,
 .input-group > .input-group-prepend > .input-group-text,
@@ -2806,7 +2774,7 @@ button:not(:first-child),
 .custom-control {
   position: relative;
   display: block;
-  min-height: 1.5rem;
+  min-height: 1.125rem;
   padding-left: 1.5rem; }
 
 .custom-control-inline {
@@ -2835,7 +2803,7 @@ button:not(:first-child),
   margin-bottom: 0; }
   .custom-control-label::before {
     position: absolute;
-    top: 0.25rem;
+    top: 0.0625rem;
     left: -1.5rem;
     display: block;
     width: 1rem;
@@ -2846,7 +2814,7 @@ button:not(:first-child),
     background-color: #dee2e6; }
   .custom-control-label::after {
     position: absolute;
-    top: 0.25rem;
+    top: 0.0625rem;
     left: -1.5rem;
     display: block;
     width: 1rem;
@@ -2905,7 +2873,7 @@ button:not(:first-child),
   .custom-select:focus {
     border-color: #5494cc;
     outline: 0;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.075), 0 0 5px rgba(84, 148, 204, 0.5); }
+    box-shadow: 0 0 0 0.2rem rgba(84, 148, 204, 0.5); }
     .custom-select:focus::-ms-value {
       color: #495057;
       background-color: #fff; }
@@ -2950,6 +2918,8 @@ button:not(:first-child),
     box-shadow: 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
     .custom-file-input:focus ~ .custom-file-label::after {
       border-color: #5494cc; }
+  .custom-file-input:disabled ~ .custom-file-label {
+    background-color: #e9ecef; }
   .custom-file-input:lang(en) ~ .custom-file-label::after {
     content: "Browse"; }
 
@@ -2989,6 +2959,12 @@ button:not(:first-child),
   appearance: none; }
   .custom-range:focus {
     outline: none; }
+    .custom-range:focus::-webkit-slider-thumb {
+      box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
+    .custom-range:focus::-moz-range-thumb {
+      box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
+    .custom-range:focus::-ms-thumb {
+      box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
   .custom-range::-moz-focus-outer {
     border: 0; }
   .custom-range::-webkit-slider-thumb {
@@ -2998,10 +2974,11 @@ button:not(:first-child),
     background-color: #25537b;
     border: 0;
     border-radius: 1rem;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     appearance: none; }
-    .custom-range::-webkit-slider-thumb:focus {
-      outline: none;
-      box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
+    @media screen and (prefers-reduced-motion: reduce) {
+      .custom-range::-webkit-slider-thumb {
+        transition: none; } }
     .custom-range::-webkit-slider-thumb:active {
       background-color: #7bacd7; }
   .custom-range::-webkit-slider-runnable-track {
@@ -3018,10 +2995,11 @@ button:not(:first-child),
     background-color: #25537b;
     border: 0;
     border-radius: 1rem;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     appearance: none; }
-    .custom-range::-moz-range-thumb:focus {
-      outline: none;
-      box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
+    @media screen and (prefers-reduced-motion: reduce) {
+      .custom-range::-moz-range-thumb {
+        transition: none; } }
     .custom-range::-moz-range-thumb:active {
       background-color: #7bacd7; }
   .custom-range::-moz-range-track {
@@ -3035,13 +3013,17 @@ button:not(:first-child),
   .custom-range::-ms-thumb {
     width: 1rem;
     height: 1rem;
+    margin-top: 0;
+    margin-right: 0.2rem;
+    margin-left: 0.2rem;
     background-color: #25537b;
     border: 0;
     border-radius: 1rem;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
     appearance: none; }
-    .custom-range::-ms-thumb:focus {
-      outline: none;
-      box-shadow: 0 0 0 1px #fff, 0 0 0 0.2rem rgba(37, 83, 123, 0.25); }
+    @media screen and (prefers-reduced-motion: reduce) {
+      .custom-range::-ms-thumb {
+        transition: none; } }
     .custom-range::-ms-thumb:active {
       background-color: #7bacd7; }
   .custom-range::-ms-track {
@@ -3059,6 +3041,16 @@ button:not(:first-child),
     margin-right: 15px;
     background-color: #dee2e6;
     border-radius: 1rem; }
+
+.custom-control-label::before,
+.custom-file-label,
+.custom-select {
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; }
+  @media screen and (prefers-reduced-motion: reduce) {
+    .custom-control-label::before,
+    .custom-file-label,
+    .custom-select {
+      transition: none; } }
 
 .nav {
   display: flex;
@@ -4091,12 +4083,12 @@ button .badge, .action-button .badge, .menubutton .badge {
   color: #000;
   text-shadow: 0 1px 0 #fff;
   opacity: .5; }
-  .close:hover, .close:focus {
-    color: #000;
-    text-decoration: none;
-    opacity: .75; }
   .close:not(:disabled):not(.disabled) {
     cursor: pointer; }
+    .close:not(:disabled):not(.disabled):hover, .close:not(:disabled):not(.disabled):focus {
+      color: #000;
+      text-decoration: none;
+      opacity: .75; }
 
 button.close {
   padding: 0;
@@ -4106,6 +4098,9 @@ button.close {
 
 .modal-open {
   overflow: hidden; }
+  .modal-open .modal {
+    overflow-x: hidden;
+    overflow-y: auto; }
 
 .modal {
   position: fixed;
@@ -4117,9 +4112,6 @@ button.close {
   display: none;
   overflow: hidden;
   outline: 0; }
-  .modal-open .modal {
-    overflow-x: hidden;
-    overflow-y: auto; }
 
 .modal-dialog {
   position: relative;
@@ -4139,6 +4131,10 @@ button.close {
   display: flex;
   align-items: center;
   min-height: calc(100% - (0.5rem * 2)); }
+  .modal-dialog-centered::before {
+    display: block;
+    height: calc(100vh - (0.5rem * 2));
+    content: ""; }
 
 .modal-content {
   position: relative;
@@ -4210,6 +4206,8 @@ button.close {
     margin: 1.75rem auto; }
   .modal-dialog-centered {
     min-height: calc(100% - (1.75rem * 2)); }
+    .modal-dialog-centered::before {
+      height: calc(100vh - (1.75rem * 2)); }
   .modal-sm {
     max-width: 300px; } }
 
@@ -4440,17 +4438,19 @@ button.close {
   display: none;
   align-items: center;
   width: 100%;
-  transition: transform 0.6s ease;
   backface-visibility: hidden;
   perspective: 1000px; }
-  @media screen and (prefers-reduced-motion: reduce) {
-    .carousel-item {
-      transition: none; } }
 
 .carousel-item.active,
 .carousel-item-next,
 .carousel-item-prev {
-  display: block; }
+  display: block;
+  transition: transform 0.6s ease; }
+  @media screen and (prefers-reduced-motion: reduce) {
+    .carousel-item.active,
+    .carousel-item-next,
+    .carousel-item-prev {
+      transition: none; } }
 
 .carousel-item-next,
 .carousel-item-prev {
