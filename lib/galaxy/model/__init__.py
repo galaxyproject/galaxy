@@ -4836,9 +4836,8 @@ class PSANonce(NonceMixin):
 
 class PSAPartial(PartialMixin):
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, token, data, next_step, backend):
         self.token = token
@@ -4847,18 +4846,18 @@ class PSAPartial(PartialMixin):
         self.backend = backend
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def load(cls, token):
-        return cls.trans.sa_session.query(cls).filter(cls.token == token).first()
+        return cls.sa_session.query(cls).filter(cls.token == token).first()
 
     @classmethod
     def destroy(cls, token):
         partial = cls.load(token)
         if partial:
-            cls.trans.sa_session.delete(partial)
+            cls.sa_session.delete(partial)
 
 
 class UserAuthnzToken(UserMixin):
