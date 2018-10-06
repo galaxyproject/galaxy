@@ -129,7 +129,7 @@ class AuthnzManager(object):
         if cloudauthz.provider == "aws":
             success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
             strategy = Strategy(trans, Storage, backend.config)
-            on_the_fly_config(trans)
+            on_the_fly_config(trans.app, trans.sa_session)
             try:
                 config['id_token'] = cloudauthz.authn.get_id_token(strategy)
             except requests.exceptions.HTTPError as e:
