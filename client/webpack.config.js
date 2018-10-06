@@ -6,38 +6,6 @@ const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const scriptsBase = path.join(__dirname, "galaxy/scripts");
 const libsBase = path.join(scriptsBase, "libs");
 
-// libraries used on almost every page
-// var commonLibs = [
-//     "polyfills",
-//     // jquery et al
-//     "jquery",
-//     "libs/jquery/jquery.migrate",
-//     "libs/jquery/jquery.autocomplete",
-//     "libs/jquery/jquery.event.hover",
-//     "libs/jquery/jquery.event.drag",
-//     "libs/jquery/jquery.mousewheel",
-//     "libs/jquery/jquery.form",
-//     "libs/jquery/jquery.rating",
-//     "libs/jquery/select2",
-//     "libs/jquery.sparklines",
-//     "libs/jquery/jquery-ui",
-//     "libs/jquery/jstorage",
-//     "libs/jquery/jquery.complexify",
-//     "libs/farbtastic",
-//     "bootstrap",
-//     "bootstrap-tour",
-//     "vue",
-//     // mvc
-//     "libs/underscore",
-//     "libs/backbone",
-//     "libs/toastr",
-//     // all pages get these
-//     "ui/autocom_tagging",
-//     "layout/modal",
-//     "layout/panel",
-//     "onload"
-// ];
-
 let buildconfig = {
     entry: {
         login: ["onload", "./galaxy/scripts/apps/login.js"],
@@ -51,10 +19,7 @@ let buildconfig = {
         chunkFilename: "[name].chunk.js"
     },
     resolve: {
-        modules: [scriptsBase, "node_modules"],
-        alias: {
-            vue: "vue/dist/vue.js"
-        }
+        modules: [scriptsBase, "node_modules"]
     },
     optimization: {
         splitChunks: {
@@ -74,7 +39,12 @@ let buildconfig = {
                 loader: "vue-loader",
                 options: {
                     loaders: {
-                        js: "babel-loader"
+                        js: [
+                            {
+                                loader: "babel-loader",
+                                options: { babelrc: path.join(process.cwd(), "./babelrc") }
+                            }
+                        ]
                     }
                 }
             },
@@ -109,6 +79,15 @@ let buildconfig = {
                     }
                 ]
             },
+            //{
+            //    test: require.resolve("backbone"),
+            //    use: [
+            //        {
+            //            loader: "expose-loader",
+            //            options: "Backbone"
+            //        }
+            //    ]
+            //},
             // Alternative to setting window.bundleEntries
             // Just import "extended" in any endpoint that needs
             // access to these globals, or even-better, make
@@ -125,10 +104,6 @@ let buildconfig = {
             {
                 test: /\.css$/,
                 use: ["style-loader", "css-loader"]
-            },
-            {
-                test: /\.vue$/,
-                loader: "vue-loader"
             }
         ]
     },
