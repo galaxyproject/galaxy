@@ -85,6 +85,13 @@ window.app = function app(options, bootstrapped) {
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
+        _display_vue_helper: function(component, props) {
+            let instance = Vue.extend(component);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance(props).$mount(vm);
+        },
+
         show_tours: function(tour_id) {
             if (tour_id) {
                 Tours.giveTourById(tour_id);
@@ -196,10 +203,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_histories_import: function() {
-            var historyImportInstance = Vue.extend(HistoryImport);
-            var vm = document.createElement("div");
-            this.page.display(vm);
-            new historyImportInstance().$mount(vm);
+            this._display_vue_helper(HistoryImport);
         },
 
         show_histories_permissions: function() {

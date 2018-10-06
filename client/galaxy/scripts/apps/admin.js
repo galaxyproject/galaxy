@@ -1,4 +1,6 @@
 /* global Galaxy */
+/* global $ */
+/* global _ */
 
 import _l from "utils/localization";
 import { GalaxyApp } from "galaxy";
@@ -101,17 +103,17 @@ window.app = function app(options, bootstrapped) {
                 })
             );
         },
-
-        show_data_tables: function() {
-            var vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            new Vue(DataTables).$mount(vueMount);
+        _display_vue_helper: function(component, props) {
+            let instance = Vue.extend(component);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance(props).$mount(vm);
         },
-
+        show_data_tables: function() {
+            this._display_vue_helper(DataTables);
+        },
         show_data_types: function() {
-            var vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            new Vue(DataTypes).$mount(vueMount);
+            this._display_vue_helper(DataTypes);
         },
 
         show_forms: function() {
