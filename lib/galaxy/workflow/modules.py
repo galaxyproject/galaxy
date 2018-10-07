@@ -1244,6 +1244,11 @@ def load_module_sections(trans):
                 "title": "Input Dataset Collection",
                 "description": "Input dataset collection"
             },
+            {
+                "name": "parameter_input",
+                "title": "Parameter Input",
+                "description": "Simple inputs used for workflow logic"
+            },
         ],
     }
 
@@ -1256,12 +1261,7 @@ def load_module_sections(trans):
                     "name": "pause",
                     "title": "Pause Workflow for Dataset Review",
                     "description": "Pause for Review"
-                },
-                {
-                    "name": "parameter_input",
-                    "title": "Parameter Input",
-                    "description": "Simple inputs used for workflow logic"
-                },
+                }
             ],
         }
 
