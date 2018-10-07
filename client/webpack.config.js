@@ -42,7 +42,7 @@ let buildconfig = {
                         js: [
                             {
                                 loader: "babel-loader",
-                                options: { babelrc: path.join(process.cwd(), "./babelrc") }
+                                options: { babelrc: true }
                             }
                         ]
                     }
@@ -52,7 +52,7 @@ let buildconfig = {
                 test: /\.js$/,
                 exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
                 loader: "babel-loader",
-                options: { babelrc: path.join(process.cwd(), "./babelrc") }
+                options: { babelrc: true }
             },
             {
                 test: require.resolve("jquery"),
