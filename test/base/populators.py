@@ -287,7 +287,7 @@ class BaseDatasetPopulator(object):
         return history_id
 
     def upload_payload(self, history_id, content=None, **kwds):
-        name = kwds.get("name", "Test Dataset")
+        name = kwds.get("name", "Test_Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", 'txt')
         upload_params = {
