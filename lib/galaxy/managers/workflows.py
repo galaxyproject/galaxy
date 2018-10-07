@@ -846,6 +846,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 label = "Input Dataset"
             elif step_type == "data_collection_input":
                 label = "Input Dataset Collection"
+            elif step_type == 'parameter_input':
+                label = "Input Parameter"
             else:
                 raise ValueError("Invalid step_type %s" % step_type)
             if legacy:
