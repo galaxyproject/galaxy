@@ -1244,6 +1244,11 @@ def load_module_sections(trans):
                 "title": "Input Dataset Collection",
                 "description": "Input dataset collection"
             },
+            {
+                "name": "parameter_input",
+                "title": "Input parameter",
+                "description": "Insert a re-useable Parameter",
+            }
         ],
     }
 
