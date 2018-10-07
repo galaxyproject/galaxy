@@ -129,12 +129,9 @@ inputs:
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: input1
-      queries:
-        - input2:
-            $link: input1
+    connect:
+      input1: input1
+      queries_0|input2: input1
 
 test_data:
   input1: "hello world"
@@ -258,14 +255,12 @@ steps:
         $link: test_input
   - label: the_pause
     type: pause
-    connect:
-      input:
-      - first_cat#out_file1
+    in:
+      input: first_cat/out_file1
   - label: second_cat
     tool_id: cat1
-    state:
-      input1:
-        $link: the_pause
+    in:
+      input1: the_pause
 """)
         print(self._get("workflows/%s/download" % workflow_id).json())
 
