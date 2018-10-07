@@ -51,7 +51,8 @@ let buildconfig = {
             {
                 test: /\.js$/,
                 exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
-                loader: "babel-loader"
+                loader: "babel-loader",
+                options: { babelrc: path.join(process.cwd(), "./babelrc") }
             },
             {
                 test: require.resolve("jquery"),
