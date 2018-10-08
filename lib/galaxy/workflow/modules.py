@@ -544,14 +544,20 @@ class InputParameterModule(WorkflowModule):
         optional = self.state.inputs.get("optional", self.default_optional)
         input_parameter_type = SelectToolParameter(None, XML(
             '''
-            <param name="parameter_type" label="Parameter type" type="select" value="%s">
+            <param name="parameter_type" label="Parameter type" type="select">
                 <option value="text">Text</option>
                 <option value="integer">Integer</option>
                 <option value="float">Float</option>
                 <option value="boolean">Boolean (True or False)</option>
                 <option value="color">Color</option>
             </param>
-            ''' % parameter_type))
+            '''))
+        for i, option in enumerate(input_parameter_type.static_options):
+            option = list(option)
+            if option[1] == parameter_type:
+                # item 0 is option description, item 1 is value, item 2 is "selected"
+                option[2] = True
+                input_parameter_type.static_options[i] = tuple(option)
         return odict([("parameter_type", input_parameter_type),
                       ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
 
