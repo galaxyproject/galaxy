@@ -15,7 +15,6 @@ let buildconfig = {
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
-        // path: path.resolve(__dirname, "dist"), // test location
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
     },
