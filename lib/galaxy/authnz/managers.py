@@ -124,11 +124,11 @@ class AuthnzManager(object):
             log.debug(msg)
             return False, msg, None
 
-    def _extend_cloudauthz_config(self, cloudauthz, request, session, sa_session, user_id):
+    def _extend_cloudauthz_config(self, cloudauthz, request, sa_session, user_id):
         config = copy.deepcopy(cloudauthz.config)
         if cloudauthz.provider == "aws":
             success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
-            strategy = Strategy(request, session, Storage, backend.config)
+            strategy = Strategy(request, None, Storage, backend.config)
             on_the_fly_config(sa_session)
             try:
                 config['id_token'] = cloudauthz.authn.get_id_token(strategy)
@@ -228,7 +228,7 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def get_cloud_access_credentials(self, cloudauthz, request, session, sa_session, user_id):
+    def get_cloud_access_credentials(self, cloudauthz, request, sa_session, user_id):
         """
         This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
         to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
@@ -260,7 +260,7 @@ class AuthnzManager(object):
                             resource provider. See CloudAuthz (https://github.com/galaxyproject/cloudauthz)
                             for details on the content of this dictionary.
         """
-        config = self._extend_cloudauthz_config(cloudauthz, request, session, sa_session, user_id)
+        config = self._extend_cloudauthz_config(cloudauthz, request, sa_session, user_id)
         try:
             ca = CloudAuthz()
             return ca.authorize(cloudauthz.provider, config)
