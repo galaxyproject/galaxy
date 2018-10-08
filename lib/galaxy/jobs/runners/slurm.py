@@ -48,7 +48,7 @@ class SlurmJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         def _get_slurm_state_with_sacct(job_id, cluster):
-            cmd = ['sacct', '-n', '-o', 'state%-32,exit']
+            cmd = ['sacct', '-n', '-o', 'State%-32,ExitCode']
             if cluster:
                 cmd.extend(['-M', cluster])
             cmd.extend(['-j', job_id])
@@ -60,12 +60,12 @@ class SlurmJobRunner(DRMAAJobRunner):
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
                 raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-            # First line is for 'job_id  exit'
+            # First line is for 'job_id'
             # Second line is for 'job_id.batch' (only available after the batch job is complete)
             # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
-            status, exit_code = stdout.splitlines()[0].split()
+            state, exit_code = stdout.splitlines()[0].split()
             # Strip whitespaces and the final '+' (if present), only return the first word
-            return status.strip().rstrip('+').split()[0], exit_code
+            return state.strip().rstrip('+').split()[0], exit_code
 
         def _get_slurm_state():
             cmd = ['scontrol', '-o']
@@ -134,14 +134,15 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return
                     except Exception:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
-                elif slurm_state in ('OUT_OF_MEMORY') and exit_code == '0:125':
-                    log.debug("(%s/%s) SLURM reported job OUT_OF_MEMORY with exit code 0:125. We are assuming success!",
-                        ajs.job_wrapper.get_id_tag(), ajs.job_id)
-                    drmaa_state = self.drmaa_job_states.DONE
                 elif slurm_state == 'OUT_OF_MEMORY':
-                    log.info('(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
-                    ajs.fail_message = OUT_OF_MEMORY_MSG
-                    ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
+                    if exit_code == '0:125':
+                        log.debug("(%s/%s) SLURM reported job OUT_OF_MEMORY with exit code 0:125. We are assuming success!",
+                            ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                        drmaa_state = self.drmaa_job_states.DONE
+                    else:
+                        log.info('(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                        ajs.fail_message = OUT_OF_MEMORY_MSG
+                        ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
                     check_memory_limit_msg = self.__check_memory_limit(ajs.error_file)
