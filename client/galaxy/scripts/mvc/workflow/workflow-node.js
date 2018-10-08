@@ -6,6 +6,14 @@ import NodeView from "mvc/workflow/workflow-view-node";
 /* global $ */
 /* global Galaxy */
 
+var StepParameterTypes = [
+    'text',
+    'integer',
+    'float',
+    'boolean',
+    'color',
+]
+
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
         this.app = app;
@@ -217,11 +225,20 @@ var Node = Backbone.Model.extend({
         $.each(data.data_inputs, (i, input) => {
             nodeView.addDataInput(input);
         });
+        $.each(node.config_form.inputs, (i, input) => {
+            if (input.value.__class__ == 'RuntimeValue' && StepParameterTypes.includes(input.type)){
+                console.log('Adding Parameter Input');
+                nodeView.addParameterInput(input);
+            }
+        });
         if (data.data_inputs.length > 0 && data.data_outputs.length > 0) {
             nodeView.addRule();
         }
         $.each(data.data_outputs, (i, output) => {
             nodeView.addDataOutput(output);
+        });
+        $.each(data.input_parameters, (i, input_parameter) => {
+            nodeView.addParameterOutput(input_parameter);
         });
         nodeView.render();
         this.app.workflow.node_changed(this, true);
