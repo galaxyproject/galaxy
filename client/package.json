@@ -73,7 +73,7 @@
     "babel-plugin-transform-vue-template": "^0.4.2",
     "babel-preset-env": "^1.7.0",
     "chai": "^4.1.2",
-    "concurrently": "^3.6.0",
+    "concurrently": "^4.0.1",
     "css-loader": "^0.28.11",
     "del": "^3.0.0",
     "expose-loader": "^0.7.5",
