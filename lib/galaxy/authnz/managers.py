@@ -128,7 +128,7 @@ class AuthnzManager(object):
         config = copy.deepcopy(cloudauthz.config)
         if cloudauthz.provider == "aws":
             success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
-            strategy = Strategy(trans, Storage, backend.config)
+            strategy = Strategy(trans.request, trans, Storage, backend.config)
             on_the_fly_config(trans.sa_session)
             try:
                 config['id_token'] = cloudauthz.authn.get_id_token(strategy)
