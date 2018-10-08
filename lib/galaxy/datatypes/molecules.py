@@ -620,11 +620,11 @@ class PQR(GenericMolFile):
           6: Residue_number
               An integer which provides the residue index.
           7: X 8: Y 9: Z
-              3 floats which provide the atomic coordinates (in Å)
+              3 floats which provide the atomic coordinates (in angstroms)
           10: Charge
               A float which provides the atomic charge (in electrons).
           11: Radius
-              A float which provides the atomic radius (in Å).
+              A float which provides the atomic radius (in angstroms).
         """
         pat = '(ATOM|HETATM)\s+' +\
               '(\d+)\s+' +\
