@@ -134,7 +134,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return
                     except Exception:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
-                elif slurm_state in ('OUT_OF_MEMORY') and exit_code in ("0:125", None):
+                elif slurm_state in ('OUT_OF_MEMORY') and exit_code == '0:125':
                     log.debug("(%s/%s) SLURM reported job OUT_OF_MEMORY with exit code 0:125. We are assuming success!",
                         ajs.job_wrapper.get_id_tag(), ajs.job_id)
                     drmaa_state = self.drmaa_job_states.DONE
