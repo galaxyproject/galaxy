@@ -159,7 +159,7 @@ class Strategy(BaseStrategy):
         self.request = request
         self.session = session if session else {}
         self.config = config
-        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request.host.startswith('https:') else False
+        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
         self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
         super(Strategy, self).__init__(storage, tpl)
 
