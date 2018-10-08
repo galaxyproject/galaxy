@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import logging
 import threading
 
+from galaxy.web.stack import register_postfork_function
 from .sleeper import Sleeper
 
 log = logging.getLogger(__name__)
@@ -27,7 +28,11 @@ class Monitors:
         self.sleeper = Sleeper()
         self.monitor_thread = threading.Thread(name=name, target=monitor_func)
         self.monitor_thread.setDaemon(True)
-        if start:
+        self._start = start
+        register_postfork_function(self.start_monitoring)
+
+    def start_monitoring(self):
+        if self._start:
             self.monitor_thread.start()
 
     def stop_monitoring(self):
