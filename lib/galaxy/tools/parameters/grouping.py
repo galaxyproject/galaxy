@@ -369,7 +369,7 @@ class UploadDataset(Group):
                                 continue  # non-url line, ignore
 
                             if "file://" in line:
-                                if not trans.user_is_admin():
+                                if not trans.user_is_admin:
                                     raise AdminRequiredException()
                                 elif not trans.app.config.allow_path_paste:
                                     raise ConfigDoesNotAllowException()

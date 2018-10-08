@@ -956,7 +956,7 @@ def update_repository(app, trans, id, **kwds):
     if repository is None:
         return None, "Unknown repository ID"
 
-    if not (trans.user_is_admin() or
+    if not (trans.user_is_admin or
             trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message

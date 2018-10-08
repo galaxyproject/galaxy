@@ -103,7 +103,7 @@ class ToolRunner(BaseUIController):
             # Get the dataset object
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(id)
             # only allow rerunning if user is allowed access to the dataset.
-            if not (trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), data.dataset)):
+            if not (trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), data.dataset)):
                 error("You are not allowed to access this dataset")
             # Get the associated job, if any.
             job = data.creating_job

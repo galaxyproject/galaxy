@@ -1813,7 +1813,7 @@ class Tool(Dictifiable):
             }
 
         # If an admin user, expose the path to the actual tool config XML file.
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             tool_dict['config_file'] = os.path.abspath(self.config_file)
 
         # Add link details.

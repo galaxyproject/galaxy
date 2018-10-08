@@ -64,7 +64,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         :returns:   list of dictionaries containing summary job information
         """
         state = kwd.get('state', None)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         user_details = kwd.get('user_details', False)
 
         if is_admin:
@@ -130,7 +130,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         :returns:   dictionary containing full description of job data
         """
         job = self.__get_job(trans, id)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
         full_output = util.asbool(kwd.get('full', 'false'))
         if full_output:
@@ -279,7 +279,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         if job is None:
             raise exceptions.ObjectNotFound()
         belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
-        if not trans.user_is_admin() and not belongs_to_user:
+        if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
                 raise exceptions.ItemAccessibilityException("Job has no output datasets.")

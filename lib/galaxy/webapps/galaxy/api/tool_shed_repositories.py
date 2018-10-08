@@ -53,7 +53,7 @@ class ToolShedRepositoriesController(BaseAPIController):
             log.debug(message)
             return dict(status='error', error=message)
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.AdminRequiredException('You are not authorized to request the latest installable revision for a repository in this Galaxy instance.')
 
     def __flatten_repository_dependency_list(self, trans, tool_shed_repository):
@@ -178,7 +178,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner = self.__parse_repository_from_payload(payload)
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.AdminRequiredException('You are not authorized to request the latest installable revision for a repository in this Galaxy instance.')
         params = dict(name=name, owner=owner)
         pathspec = ['api', 'repositories', 'get_ordered_installable_revisions']
@@ -739,7 +739,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                        unsuccessful_count=0,
                        repository_status=[])
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise HTTPForbidden(detail='You are not authorized to reset metadata on repositories installed into this Galaxy instance.')
         irmm = InstalledRepositoryMetadataManager(self.app)
         query = irmm.get_query_for_setting_metadata_on_repositories(order=False)

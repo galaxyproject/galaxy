@@ -205,7 +205,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Displays information needed to run a workflow from the command line.
         """
         stored_workflow = self.__get_stored_workflow(trans, id)
-        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
@@ -437,7 +437,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str(e))
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.user != trans.user and not trans.user_is_admin:
             trans.response.status = 403
             return("Workflow is not owned by current user")
 
@@ -585,7 +585,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
         import_tools = util.string_as_bool(payload.get("import_tools", False))
-        if import_tools and not trans.user_is_admin():
+        if import_tools and not trans.user_is_admin:
             raise exceptions.AdminRequiredException()
 
         from_dict_kwds = self.__import_or_update_kwds(payload)
