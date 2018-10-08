@@ -158,6 +158,9 @@ class WorkflowModule(object):
     def get_data_outputs(self):
         return []
 
+    def get_input_parameters(self):
+        return []
+
     def get_post_job_actions(self, incoming):
         return []
 
@@ -637,6 +640,9 @@ class InputParameterModule(WorkflowModule):
 
     def get_data_inputs(self):
         return []
+
+    def get_input_parameters(self):
+        return [dict(name=self.name, label=self.label, type=self.parameter_type)]
 
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         step = invocation_step.workflow_step

@@ -573,6 +573,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 'errors': module.get_errors(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
+                'input_parameters': module.get_input_parameters(),
                 'config_form': config_form,
                 'annotation': annotation_str,
                 'post_job_actions': {},
