@@ -214,7 +214,7 @@ class CloudManager(sharable.SharableModelManager):
             input_args = {}
 
         cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
-        credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, cloudauthz)
+        credentials = trans.app.authnz_manager.get_cloud_access_credentials(cloudauthz, trans.request, trans.session, trans.sa_session, trans.user.id)
         connection = self._configure_provider(cloudauthz.provider, credentials)
         try:
             bucket = connection.storage.buckets.get(bucket_name)
