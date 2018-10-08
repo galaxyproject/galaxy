@@ -639,7 +639,7 @@ class InputParameterModule(WorkflowModule):
         return state
 
     def get_data_inputs(self):
-        return []
+        return [self.state.inputs]
 
     def get_input_parameters(self):
         return [dict(name=self.name, label=self.label, type=self.parameter_type)]

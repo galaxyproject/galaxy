@@ -200,6 +200,19 @@ var Node = Backbone.Model.extend({
             this.content_id = this.config_form.id;
         }
     },
+    add_output_parameters: function(input_parameters) {
+        $.each(input_parameters, (i, input_parameter) => {
+            this.nodeView.addParameterOutput(input_parameter);
+        });
+    },
+    add_input_parameters: function() {
+        $.each(this.config_form.inputs, (i, input) => {
+            if (input.value.__class__ == 'RuntimeValue' && StepParameterTypes.includes(input.type)){
+                this.nodeView.addParameterInput(input);
+            }
+        });
+    },
+
     init_field_data: function(data) {
         //console.debug("init_field_data: ", data);
         if (data.type) {
@@ -225,21 +238,15 @@ var Node = Backbone.Model.extend({
         $.each(data.data_inputs, (i, input) => {
             nodeView.addDataInput(input);
         });
-        $.each(node.config_form.inputs, (i, input) => {
-            if (input.value.__class__ == 'RuntimeValue' && StepParameterTypes.includes(input.type)){
-                console.log('Adding Parameter Input');
-                nodeView.addParameterInput(input);
-            }
-        });
+
         if (data.data_inputs.length > 0 && data.data_outputs.length > 0) {
             nodeView.addRule();
         }
         $.each(data.data_outputs, (i, output) => {
             nodeView.addDataOutput(output);
         });
-        $.each(data.input_parameters, (i, input_parameter) => {
-            nodeView.addParameterOutput(input_parameter);
-        });
+        this.add_input_parameters();
+        this.add_output_parameters(data.input_parameters);
         nodeView.render();
         this.app.workflow.node_changed(this, true);
     },
@@ -330,6 +337,8 @@ var Node = Backbone.Model.extend({
             // Won't be present in response for data inputs
             this.workflow_outputs = data.workflow_outputs ? data.workflow_outputs : [];
         }
+        this.add_input_parameters();
+        this.add_output_parameters(data.input_parameters);
         // If active, reactivate with new config_form
         this.markChanged();
         this.redraw();
