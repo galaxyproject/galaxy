@@ -8,6 +8,7 @@ from collections import namedtuple
 from gxformat2 import (
     from_galaxy_native,
     ImporterGalaxyInterface,
+    ImportOptions,
     python_to_workflow,
 )
 from six import string_types
@@ -250,13 +251,15 @@ class WorkflowContentsManager(UsesAnnotations):
         so workflows can be extracted.
         """
         workflow_class = as_dict.get("class", None)
-        if workflow_class == "GalaxyWorkflow":
+        if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict:
             if not self.app.config.enable_beta_workflow_format:
                 raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
 
             # Format 2 Galaxy workflow.
             galaxy_interface = Format2ConverterGalaxyInterface()
-            as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None)
+            import_options = ImportOptions()
+            import_options.deduplicate_subworkflows = True
+            as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
         return as_dict
 
     def build_workflow_from_dict(
@@ -370,12 +373,21 @@ class WorkflowContentsManager(UsesAnnotations):
         # but do need to use to make connections
         steps_by_external_id = {}
 
+        # Preload dependent workflows with locally defined content_ids.
+        subworkflows = data.get("subworkflows")
+        subworkflow_id_map = None
+        if subworkflows:
+            subworkflow_id_map = {}
+            for key, subworkflow_dict in subworkflows.items():
+                subworkflow = self.__build_embedded_subworkflow(trans, subworkflow_dict, **kwds)
+                subworkflow_id_map[key] = subworkflow
+
         # Keep track of tools required by the workflow that are not available in
         # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts(data):
-            self.__load_subworkflows(trans, step_dict)
+            self.__load_subworkflows(trans, step_dict, subworkflow_id_map, **kwds)
 
         for step_dict in self.__walk_step_dicts(data):
             module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **kwds)
@@ -932,11 +944,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __load_subworkflows(self, trans, step_dict):
+    def __load_subworkflows(self, trans, step_dict, subworkflow_id_map, **kwds):
         step_type = step_dict.get("type", None)
         if step_type == "subworkflow":
             subworkflow = self.__load_subworkflow_from_step_dict(
-                trans, step_dict
+                trans, step_dict, subworkflow_id_map, **kwds
             )
             step_dict["subworkflow"] = subworkflow
 
@@ -990,7 +1002,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 trans.sa_session.add(m)
         return module, step
 
-    def __load_subworkflow_from_step_dict(self, trans, step_dict):
+    def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, **kwds):
         embedded_subworkflow = step_dict.get("subworkflow", None)
         subworkflow_id = step_dict.get("content_id", None)
         if embedded_subworkflow and subworkflow_id:
@@ -1000,17 +1012,22 @@ class WorkflowContentsManager(UsesAnnotations):
             raise Exception("Subworkflow step must define either subworkflow or content_id.")
 
         if embedded_subworkflow:
-            subworkflow = self.build_workflow_from_dict(
-                trans,
-                embedded_subworkflow,
-                create_stored_workflow=False,
-            ).workflow
+            subworkflow = self.__build_embedded_subworkflow(trans, embedded_subworkflow, **kwds)
+        elif subworkflow_id_map is not None:
+            # Interpret content_id as a workflow local thing.
+            subworkflow = subworkflow_id_map[subworkflow_id[1:]]
         else:
             workflow_manager = WorkflowsManager(self.app)
             subworkflow = workflow_manager.get_owned_workflow(
                 trans, subworkflow_id
             )
 
+        return subworkflow
+
+    def __build_embedded_subworkflow(self, trans, data, **kwds):
+        subworkflow = self.build_workflow_from_dict(
+            trans, data, create_stored_workflow=False, fill_defaults=kwds.get("fill_defaults", False)
+        ).workflow
         return subworkflow
 
     def __connect_workflow_steps(self, steps, steps_by_external_id):

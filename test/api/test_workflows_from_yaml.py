@@ -177,6 +177,47 @@ steps:
         # content = self.dataset_populator.get_history_dataset_content( history_id )
         # self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
+    def test_subworkflow_duplicate(self):
+        duplicate_subworkflow_invocate_wf = """
+format-version: "v2.0"
+$graph:
+- id: nested
+  class: GalaxyWorkflow
+  inputs:
+    inner_input: data
+  outputs:
+    inner_output:
+      outputSource: inner_cat/out_file1
+  steps:
+    inner_cat:
+      tool_id: cat
+      in:
+        input1: inner_input
+        queries_0|input2: inner_input
+
+- id: main
+  class: GalaxyWorkflow
+  inputs:
+    outer_input: data
+  steps:
+  - tool_id: cat
+    label: outer_cat
+    in:
+      input1: outer_input
+  - run: '#nested'
+    label: nested_workflow_1
+    in:
+      inner_input: outer_cat/out_file1
+  - run: '#nested'
+    label: nested_workflow_2
+    in:
+      inner_input: nested_workflow_1/inner_output
+"""
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs(duplicate_subworkflow_invocate_wf, test_data={"outer_input": "hello world"}, history_id=history_id, client_convert=False)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert content == "hello world\nhello world\nhello world\nhello world\n"
+
     def test_pause(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow

@@ -689,7 +689,7 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200, upload_response
+        assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
 
 
