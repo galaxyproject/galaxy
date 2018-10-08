@@ -648,7 +648,7 @@ class InputParameterModule(WorkflowModule):
         return [self.state.inputs]
 
     def get_input_parameters(self):
-        return [dict(name=self.name, label=self.label, type=self.parameter_type)]
+        return [dict(name=self.name, label=self.label, type=self.state.inputs['parameter_type'], optional=self.state.inputs['optional'])]
 
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         step = invocation_step.workflow_step
