@@ -48,7 +48,7 @@ class SlurmJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         def _get_slurm_state_with_sacct(job_id, cluster):
-            cmd = ['sacct', '-n', '-o', 'state%-32']
+            cmd = ['sacct', '-n', '-o', 'state%-32,exit']
             if cluster:
                 cmd.extend(['-M', cluster])
             cmd.extend(['-j', job_id])
@@ -60,12 +60,12 @@ class SlurmJobRunner(DRMAAJobRunner):
                     log.warning('SLURM accounting storage is not properly configured, unable to run sacct')
                     return
                 raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-            # First line is for 'job_id'
+            # First line is for 'job_id  exit'
             # Second line is for 'job_id.batch' (only available after the batch job is complete)
             # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
-            first_line = stdout.splitlines()[0]
+            status, exit_code = stdout.splitlines()[0].split()
             # Strip whitespaces and the final '+' (if present), only return the first word
-            return first_line.strip().rstrip('+').split()[0]
+            return status.strip().rstrip('+').split()[0], exit_code
 
         def _get_slurm_state():
             cmd = ['scontrol', '-o']
@@ -83,10 +83,10 @@ class SlurmJobRunner(DRMAAJobRunner):
                 # Will need to be more clever here if this message is not consistent
                 if stderr == 'slurm_load_jobs error: Invalid job id specified\n':
                     # The job may be old, try to get its state with sacct
-                    job_state = _get_slurm_state_with_sacct(job_id, cluster)
+                    job_state, exit_code = _get_slurm_state_with_sacct(job_id, cluster)
                     if job_state:
-                        return job_state
-                    return 'NOT_FOUND'
+                        return job_state, exit_code
+                    return 'NOT_FOUND', None
                 raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
             stdout = stdout.strip()
             # stdout is a single line in format "key1=value1 key2=value2 ..."
@@ -102,11 +102,11 @@ class SlurmJobRunner(DRMAAJobRunner):
                     # Some value may contain spaces (e.g. `Comment=** time_limit (60m) min_nodes (1) **`)
                     job_info_values[-1] += ' ' + job_info
             job_info_dict = dict(zip(job_info_keys, job_info_values))
-            return job_info_dict['JobState']
+            return job_info_dict['JobState'], job_info_dict['ExitCode']
 
         try:
             if drmaa_state == self.drmaa_job_states.FAILED:
-                slurm_state = _get_slurm_state()
+                slurm_state, exit_code = _get_slurm_state()
                 sleep = 1
                 while slurm_state == 'COMPLETING':
                     log.debug('(%s/%s) Waiting %s seconds for failed job to exit COMPLETING state for post-mortem', ajs.job_wrapper.get_id_tag(), ajs.job_id, sleep)
@@ -115,7 +115,7 @@ class SlurmJobRunner(DRMAAJobRunner):
                     if sleep > 64:
                         ajs.fail_message = "This job failed and the system timed out while trying to determine the cause of the failure."
                         break
-                    slurm_state = _get_slurm_state()
+                    slurm_state, exit_code = _get_slurm_state()
                 if slurm_state == 'NOT_FOUND':
                     log.warning('(%s/%s) Job not found, assuming job check exceeded MinJobAge and completing as successful', ajs.job_wrapper.get_id_tag(), ajs.job_id)
                     drmaa_state = self.drmaa_job_states.DONE
@@ -134,6 +134,10 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return
                     except Exception:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
+                elif slurm_state in ('OUT_OF_MEMORY') and exit_code in ("0:125", None):
+                    log.debug("(%s/%s) SLURM reported job OUT_OF_MEMORY with exit code 0:125. We are assuming success!",
+                        ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                    drmaa_state = self.drmaa_job_states.DONE
                 elif slurm_state == 'OUT_OF_MEMORY':
                     log.info('(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
                     ajs.fail_message = OUT_OF_MEMORY_MSG
