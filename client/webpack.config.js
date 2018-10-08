@@ -10,7 +10,8 @@ let buildconfig = {
     entry: {
         login: ["onload", "./galaxy/scripts/apps/login.js"],
         analysis: ["onload", "./galaxy/scripts/apps/analysis.js"],
-        admin: ["onload", "./galaxy/scripts/apps/admin.js"]
+        admin: ["onload", "./galaxy/scripts/apps/admin.js"],
+        extended: ["onload", "./galaxy/scripts/apps/extended.js"]
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),

@@ -42,7 +42,6 @@ window.init_tag_click_function = init_tag_click_function;
 import Tours from "mvc/tours";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
-// console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
 // jquery on document ready

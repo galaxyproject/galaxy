@@ -70,8 +70,8 @@
     ## load jscript libraries
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
+        'bundled/extended.bundled',
         'bundled/libs.chunk',
-        ## 'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
     )}
