@@ -2,6 +2,7 @@ import logging
 import os
 import tempfile
 
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.tools.actions import ToolAction
 from galaxy.tools.imp_exp import JobExportHistoryArchiveWrapper
 from galaxy.util.odict import odict
@@ -16,6 +17,8 @@ class ImportHistoryToolAction(ToolAction):
         #
         # Create job.
         #
+        if not trans.user_is_active:
+            raise UserActivationRequiredException()
         job = trans.app.model.Job()
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -69,6 +72,8 @@ class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive. """
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+        if not trans.user_is_active:
+            raise UserActivationRequiredException()
         #
         # Get history to export.
         #

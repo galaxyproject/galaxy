@@ -6,6 +6,7 @@ from json import dumps
 from six import string_types
 
 from galaxy import model
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
 from galaxy.objectstore import ObjectStorePopulator
@@ -261,6 +262,8 @@ class DefaultToolAction(object):
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
+        if not trans.user_is_active:
+            raise UserActivationRequiredException()
         incoming = incoming or {}
         self._check_access(tool, trans)
         app = trans.app

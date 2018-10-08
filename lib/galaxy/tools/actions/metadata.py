@@ -3,6 +3,7 @@ import os
 from json import dumps
 
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.jobs.datasets import DatasetPath
 from galaxy.util.odict import odict
 from . import ToolAction
@@ -17,6 +18,8 @@ class SetMetadataToolAction(ToolAction):
         """
         Execute using a web transaction.
         """
+        if not trans.user_is_active:
+            raise UserActivationRequiredException()
         job, odict = self.execute_via_app(tool, trans.app, trans.get_galaxy_session().id,
                                           trans.history.id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)

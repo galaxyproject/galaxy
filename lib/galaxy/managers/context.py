@@ -134,6 +134,10 @@ class ProvidesUserContext(object):
         return can_do_run_as
 
     @property
+    def user_is_active(self):
+        return not self.app.config.user_activation_on or self.user is None or self.user.active
+
+    @property
     def user_ftp_dir(self):
         base_dir = self.app.config.ftp_upload_dir
         if base_dir is None:
