@@ -79,6 +79,43 @@ export default Backbone.View.extend({
         return terminalView;
     },
 
+    addParameterInput: function(input, body) {
+        var skipResize = true;
+        if (!body) {
+            body = this.$(".inputs");
+            // initial addition to node - resize input to help calculate node
+            // width.
+            skipResize = false;
+        }
+        var terminalView = this.terminalViews[input.name];
+        var terminalViewClass = TerminalViews.InputParameterTerminalView;
+        if (terminalView && !(terminalView instanceof terminalViewClass)) {
+            terminalView.el.terminal.destroy();
+            terminalView = null;
+        }
+        if (!terminalView) {
+            terminalView = new terminalViewClass({
+                node: this.node,
+                input: input
+            });
+        } else {
+            var terminal = terminalView.el.terminal;
+            terminal.update(input);
+            terminal.destroyInvalidConnections();
+        }
+        this.terminalViews[input.name] = terminalView;
+        var terminalElement = terminalView.el;
+        var inputView = new DataViews.DataInputView({
+            terminalElement: terminalElement,
+            input: input,
+            nodeView: this,
+            skipResize: skipResize
+        });
+        var ib = inputView.$el;
+        body.append(ib.prepend(terminalView.terminalElements()));
+        return terminalView;
+    },
+
     addDataOutput: function(output) {
         var terminalViewClass = output.collection
             ? TerminalViews.OutputCollectionTerminalView
@@ -94,6 +131,21 @@ export default Backbone.View.extend({
         });
         this.outputViews[output.name] = outputView;
         this.tool_body.append(outputView.$el.append(terminalView.terminalElements()));
+    },
+
+    addParameterOutput: function(input_parameter) {
+        var terminalViewClass = TerminalViews.OutputParameterTerminalView;
+        var terminalView = new terminalViewClass({
+            node: this.node,
+            output: input_parameter,
+        });
+        var parameterView = new DataViews.ParameterOutputView({
+            output: input_parameter,
+            terminalElement: terminalView.el,
+            nodeView: this
+        });
+        this.outputViews[input_parameter.name] = parameterView;
+        this.tool_body.append(parameterView.$el.append(terminalView.terminalElements()));
     },
 
     redrawWorkflowOutputs: function() {

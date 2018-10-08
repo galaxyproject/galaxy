@@ -431,6 +431,18 @@ var InputTerminal = BaseInputTerminal.extend({
     }
 });
 
+var InputParameterTerminal = BaseInputTerminal.extend({
+    update: function(input) {
+        this.type = input.type;
+    },
+    connect: function(connector) {
+        BaseInputTerminal.prototype.connect.call(this, connector);
+    },
+    attachable: function(other) {
+        return this.type == other.attributes.type;
+    },
+});
+
 var InputCollectionTerminal = BaseInputTerminal.extend({
     update: function(input) {
         this.multiple = false;
@@ -566,9 +578,14 @@ var OutputCollectionTerminal = Terminal.extend({
     }
 });
 
+var OutputParameterTerminal = Terminal.extend({
+});
+
 export default {
     InputTerminal: InputTerminal,
+    InputParameterTerminal: InputParameterTerminal,
     OutputTerminal: OutputTerminal,
+    OutputParameterTerminal: OutputParameterTerminal,
     InputCollectionTerminal: InputCollectionTerminal,
     OutputCollectionTerminal: OutputCollectionTerminal,
     TerminalMapping: TerminalMapping,

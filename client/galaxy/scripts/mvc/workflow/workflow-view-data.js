@@ -90,6 +90,61 @@ var DataOutputView = Backbone.View.extend({
     }
 });
 
+var ParameterOutputView = Backbone.View.extend({
+    className: "form-row dataRow",
+
+    initialize: function(options) {
+        this.output = options.output;
+        this.terminalElement = options.terminalElement;
+        this.nodeView = options.nodeView;
+
+        var output = this.output;
+        var label = output.label || output.name;
+        var node = this.nodeView.node;
+
+        this.$el.html(label);
+        this.calloutView = null;
+        if (["tool", "subworkflow"].indexOf(node.type) >= 0) {
+            var calloutView = new OutputCalloutView({
+                label: label,
+                output: output,
+                node: node
+            });
+            this.calloutView = calloutView;
+            this.$el.append(calloutView.el);
+            this.$el.hover(
+                () => {
+                    calloutView.hoverImage();
+                },
+                () => {
+                    calloutView.resetImage();
+                }
+            );
+        }
+        this.$el.css({
+            position: "absolute",
+            left: -1000,
+            top: -1000,
+            display: "none"
+        });
+        $("body").append(this.el);
+        this.nodeView.updateMaxWidth(this.$el.outerWidth() + 17);
+        this.$el
+            .css({
+                position: "",
+                left: "",
+                top: "",
+                display: ""
+            })
+            .detach();
+    },
+    redrawWorkflowOutput: function() {
+        if (this.calloutView) {
+            this.calloutView.resetImage();
+        }
+    }
+});
+
 var OutputCalloutView = Backbone.View.extend({
     tagName: "div",
 
@@ -153,5 +208,6 @@ var OutputCalloutView = Backbone.View.extend({
 
 export default {
     DataInputView: DataInputView,
-    DataOutputView: DataOutputView
+    DataOutputView: DataOutputView,
+    ParameterOutputView: ParameterOutputView,
 };
