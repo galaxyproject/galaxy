@@ -342,6 +342,8 @@ Enhancements
 * Allow starting Galaxy under gunicorn when using galaxy.ini
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6805`_
+* Allow testing tags in input collections.
+  `Pull Request 6823`_
 
 .. small_enhancement
 
@@ -811,6 +813,8 @@ Fixes
   `Pull Request 6809`_
 * do not rule out numbers that are accessed with shift modifier
   `Pull Request 6810`_
+* Upgrade concurrently for 'null' return fix
+  `Pull Request 6828`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1147,4 +1151,6 @@ Fixes
 .. _Pull Request 6808: https://github.com/galaxyproject/galaxy/pull/6808
 .. _Pull Request 6809: https://github.com/galaxyproject/galaxy/pull/6809
 .. _Pull Request 6810: https://github.com/galaxyproject/galaxy/pull/6810
+.. _Pull Request 6823: https://github.com/galaxyproject/galaxy/pull/6823
+.. _Pull Request 6828: https://github.com/galaxyproject/galaxy/pull/6828
 
