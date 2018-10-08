@@ -1,4 +1,6 @@
-import HISTORY_MODEL from "mvc/history/history-model";
+/* global $ */
+/* global _ */
+/* global Galaxy */
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
@@ -454,7 +456,7 @@ var CurrentHistoryView = _super.extend(
                         }
                     });
             }
-            return jQuery.when();
+            return $.when();
         },
 
         /** delete any hidden datasets */
@@ -468,7 +470,7 @@ var CurrentHistoryView = _super.extend(
                     { deleted: true, visible: true }
                 );
             }
-            return jQuery.when();
+            return $.when();
         },
 
         /** Return a string rep of the history */

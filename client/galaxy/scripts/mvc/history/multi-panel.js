@@ -1,7 +1,7 @@
 import _l from "utils/localization";
 import _ from "underscore";
 import Backbone from "backbone";
-import HISTORY_MODEL from "mvc/history/history-model";
+import { HistoryCollection } from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
@@ -317,7 +317,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
         // console.log( 'setCollection:', collection );
         this.stopListening(this.collection);
 
-        this.collection = collection || new HISTORY_MODEL.HistoryCollection();
+        this.collection = collection || new HistoryCollection();
         this.setUpCollectionListeners();
 
         this.createColumns();

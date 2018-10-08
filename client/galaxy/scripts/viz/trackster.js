@@ -22,12 +22,11 @@ import "libs/jquery/jquery.rating";
 import "ui/editable-text";
 
 /* global Galaxy */
-/* global $ */
 
 /**
  * User interface controls for trackster
  */
-class TracksterUI extends Backbone.Model {
+export class TracksterUI extends Backbone.Model {
     constructor(options) {
         super(options);
     }
@@ -370,7 +369,7 @@ class TracksterUI extends Backbone.Model {
     }
 }
 
-class TracksterUIView extends Backbone.View {
+export class TracksterUIView extends Backbone.View {
     constructor(options) {
         super(options);
     }
@@ -624,8 +623,3 @@ class TracksterUIView extends Backbone.View {
         this.ui.view.editor = true;
     }
 }
-
-export default {
-    TracksterUI: TracksterUI,
-    GalaxyApp: TracksterUIView
-};

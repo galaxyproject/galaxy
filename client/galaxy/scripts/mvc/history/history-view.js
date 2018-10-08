@@ -1,8 +1,8 @@
 import * as _ from "underscore";
 import _l from "utils/localization";
 import LIST_VIEW from "mvc/list/list-view";
-import HISTORY_MODEL from "mvc/history/history-model";
-import HISTORY_CONTENTS from "mvc/history/history-contents";
+import { History } from "mvc/history/history-model";
+import { HistoryContents } from "mvc/history/history-contents";
 import HDA_LI from "mvc/history/hda-li";
 import HDCA_LI from "mvc/history/hdca-li";
 import ERROR_MODAL from "mvc/ui/error-modal";
@@ -38,7 +38,7 @@ var HistoryView = _super.extend(
         /** class to use for constructing the HDCA views */
         HDCAViewClass: HDCA_LI.HDCAListItemView,
         /** class to used for constructing collection of sub-view models */
-        collectionClass: HISTORY_CONTENTS.HistoryContents,
+        collectionClass: HistoryContents,
         /** key of attribute in model to assign to this.collection */
         modelCollectionKey: "contents",
 
@@ -106,7 +106,7 @@ var HistoryView = _super.extend(
         loadHistory: function(historyId, options, contentsOptions) {
             contentsOptions = _.extend(contentsOptions || { silent: true });
             this.info("loadHistory:", historyId, options, contentsOptions);
-            this.setModel(new HISTORY_MODEL.History({ id: historyId }));
+            this.setModel(new History({ id: historyId }));
 
             contentsOptions.silent = true;
             this.trigger("loading");
@@ -652,11 +652,11 @@ export function historyEntry(options) {
     }
 
     let viewClass = options.userIsOwner ? HistoryViewEdit.HistoryViewEdit : HistoryView.HistoryView;
-    let historyModel = new HISTORY_MODEL.History(options.historyJSON);
+    let history = new History(options.historyJSON);
 
     // attach the copy dialog to the import button now that we have a history
     $("#import").click(function() {
-        HistoryCopyDialog(historyModel, {
+        HistoryCopyDialog(history, {
             useImport: true,
             // use default datasets option to match the toggle-deleted button
             allDatasets: $("#toggle-deleted").modeButton("getMode").mode === "showing_deleted"
@@ -677,13 +677,13 @@ export function historyEntry(options) {
                   return this.$el.parent();
               }
             : undefined,
-        model: historyModel,
+        model: history,
         show_deleted: options.showDeletedJson,
         show_hidden: options.showHiddenJson,
         purgeAllowed: options.allow_user_dataset_purge
     });
     historyView.trigger("loading");
-    historyModel
+    history
         .fetchContents({ silent: true })
         .fail(function() {
             alert("Galaxy history failed to load");

@@ -2,8 +2,8 @@
 import "bootstrap";
 export { GalaxyApp } from "galaxy";
 import WorkflowView from "mvc/workflow/workflow-view";
-import { Trackster } from "viz/trackster";
-export { default as Trackster } from "viz/trackster";
+import { TracksterUIView } from "viz/trackster";
+export { TracksterUI } from "viz/trackster";
 import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
@@ -24,7 +24,7 @@ export { default as HDAListItemEdit } from "mvc/history/hda-li-edit";
 export { default as HDAModel } from "mvc/history/hda-model";
 import addLogging from "utils/add-logging";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
-export { default as run_stats } from "reports/run_stats";
+export { create_chart, create_histogram } from "reports/run_stats";
 export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 
 export { chart, chartUtilities } from "./chart";
@@ -52,7 +52,7 @@ export function adminToolshed(options) {
 }
 
 export function trackster(options) {
-    new Trackster.GalaxyApp(options);
+    new TracksterUIView(options);
 }
 
 export function circster(options) {

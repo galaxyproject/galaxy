@@ -1,16 +1,18 @@
-import _l from "utils/localization";
 /**
  * Visualization and components for Sweepster, a visualization for exploring a tool's parameter space via
  * genomic visualization.
  */
+/* global Backbone */
+/* global Galaxy */
+/* global $ */
 
+import _l from "utils/localization";
 import * as _ from "libs/underscore";
 import * as d3 from "libs/d3";
-import util from "viz/trackster/util";
 import visualization from "viz/visualization";
 import tracks from "viz/trackster/tracks";
 import tools from "mvc/tool/tools";
-import data from "mvc/dataset/data";
+import { Dataset } from "mvc/dataset/data";
 import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
 /**
@@ -313,7 +315,7 @@ var TrackCollection = Backbone.Collection.extend({
 /**
  * Sweepster visualization model.
  */
-var SweepsterVisualization = visualization.Visualization.extend({
+export var SweepsterVisualization = visualization.Visualization.extend({
     defaults: _.extend({}, visualization.Visualization.prototype.defaults, {
         dataset: null,
         tool: null,
@@ -324,7 +326,7 @@ var SweepsterVisualization = visualization.Visualization.extend({
     }),
 
     initialize: function(options) {
-        this.set("dataset", new data.Dataset(options.dataset));
+        this.set("dataset", new Dataset(options.dataset));
         this.set("tool", new tools.Tool(options.tool));
         this.set("regions", new visualization.GenomeRegionCollection(options.regions));
         this.set("tracks", new TrackCollection(options.tracks));
@@ -706,7 +708,7 @@ var ToolParameterTreeView = Backbone.View.extend({
 /**
  * Sweepster visualization view. View requires rendering in 3-panel setup for now.
  */
-var SweepsterVisualizationView = Backbone.View.extend({
+export var SweepsterVisualizationView = Backbone.View.extend({
     className: "Sweepster",
 
     helpText:
@@ -1048,8 +1050,3 @@ var SweepsterVisualizationView = Backbone.View.extend({
         });
     }
 });
-
-export default {
-    SweepsterVisualization: SweepsterVisualization,
-    SweepsterVisualizationView: SweepsterVisualizationView
-};

@@ -23,7 +23,7 @@ var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
  */
-var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
+export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     _logNamespace: "history",
 
     // ........................................................................ set up
@@ -517,8 +517,3 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         return ["HistoryContents(", [this.historyId, this.length].join(), ")"].join("");
     }
 });
-
-//==============================================================================
-export default {
-    HistoryContents: HistoryContents
-};

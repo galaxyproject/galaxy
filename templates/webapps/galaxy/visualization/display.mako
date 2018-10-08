@@ -54,7 +54,7 @@
         // FIXME: deliberate global required for now due to requireJS integration.
         view = null;
 
-        var ui = new (window.bundleEntries.Trackster.TracksterUI)( "${h.url_for('/')}" );
+        var ui = new (window.bundleEntries.TracksterUI)( "${h.url_for('/')}" );
         var container_element = $("#${trans.security.encode_id( visualization.id )}");
 
         $(function() {
