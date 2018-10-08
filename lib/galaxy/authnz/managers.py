@@ -242,12 +242,18 @@ class AuthnzManager(object):
         identity token, as required by CloudAuthz for AWS. Then requests temporary
         credentials from the CloudAuthz library using the updated configuration.
 
-        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
-        :param trans:       Galaxy web transaction
-
         :type  cloudauthz:  CloudAuthz
         :param cloudauthz:  an instance of CloudAuthz to be used for getting temporary
                             credentials.
+
+        :type   request:    galaxy.web.framework.base.Request
+        :param  request:    Encapsulated HTTP(S) request.
+
+        :type   sa_session: sqlalchemy.orm.scoping.scoped_session
+        :param  sa_session: SQLAlchemy database handle.
+
+        :type   user_id:    int
+        :param  user_id:    Decoded Galaxy user ID.
 
         :rtype:             dict
         :return:            a dictionary containing credentials to access a cloud-based
