@@ -3,7 +3,6 @@ import _l from "utils/localization";
 import LIST_VIEW from "mvc/list/list-view";
 import HISTORY_MODEL from "mvc/history/history-model";
 import HISTORY_CONTENTS from "mvc/history/history-contents";
-import History from "mvc/history/history-model";
 import HDA_LI from "mvc/history/hda-li";
 import HDCA_LI from "mvc/history/hdca-li";
 import ERROR_MODAL from "mvc/ui/error-modal";
@@ -653,7 +652,7 @@ export function historyEntry(options) {
     }
 
     let viewClass = options.userIsOwner ? HistoryViewEdit.HistoryViewEdit : HistoryView.HistoryView;
-    let historyModel = new History.History(options.historyJSON);
+    let historyModel = new HISTORY_MODEL.History(options.historyJSON);
 
     // attach the copy dialog to the import button now that we have a history
     $("#import").click(function() {
