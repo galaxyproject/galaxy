@@ -254,8 +254,8 @@ class GalaxyRBACAgent(RBACAgent):
         else:
             is_public_item = False
         # Admins can always choose from all non-deleted roles
-        if trans.user_is_admin() or trans.app.config.expose_user_email:
-            if trans.user_is_admin():
+        if trans.user_is_admin or trans.app.config.expose_user_email:
+            if trans.user_is_admin:
                 db_query = trans.sa_session.query(trans.app.model.Role).filter(self.model.Role.table.c.deleted == false())
             else:
                 # User is not an admin but the configuration exposes all private roles to all users.
@@ -320,7 +320,7 @@ class GalaxyRBACAgent(RBACAgent):
         """
         Return a sorted list of legitimate roles that can be associated with a permission on
         item where item is a Library or a Dataset.  The cntrller param is the controller from
-        which the request is sent.  We cannot use trans.user_is_admin() because the controller is
+        which the request is sent.  We cannot use trans.user_is_admin because the controller is
         what is important since admin users do not necessarily have permission to do things
         on items outside of the admin view.
 

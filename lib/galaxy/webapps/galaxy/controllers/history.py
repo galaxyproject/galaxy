@@ -491,7 +491,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         ).get(id)
         if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
                              (trans.history and history.id == trans.history.id) or
-                             trans.user_is_admin())):
+                             trans.user_is_admin)):
             return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the

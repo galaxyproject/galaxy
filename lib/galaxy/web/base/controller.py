@@ -431,7 +431,7 @@ class UsesLibraryMixin(object):
 
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
         l = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin() or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
+        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
             error("LibraryFolder is not accessible to the current user")
         return l
 
@@ -462,7 +462,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return ((trans.user_is_admin()) or
+        return ((trans.user_is_admin) or
                 (trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item)))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
@@ -475,7 +475,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             return False
 
         current_user_roles = trans.get_current_user_roles()
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return True
 
         if check_accessible:

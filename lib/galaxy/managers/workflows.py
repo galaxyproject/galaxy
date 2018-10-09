@@ -81,7 +81,7 @@ class WorkflowsManager(object):
         stored_workflow = self.get_stored_workflow(trans, workflow_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin() and not stored_workflow.published:
+        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is not owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
@@ -109,7 +109,7 @@ class WorkflowsManager(object):
         if isinstance(has_workflow, model.WorkflowInvocation):
             # We use the the owner of the history that is associated to the invocation as a proxy
             # for the owner of the invocation.
-            if trans.user != has_workflow.history.user and not trans.user_is_admin():
+            if trans.user != has_workflow.history.user and not trans.user_is_admin:
                 raise exceptions.ItemOwnershipException()
             else:
                 return True
@@ -121,7 +121,7 @@ class WorkflowsManager(object):
         else:
             stored_workflow = has_workflow
 
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.user != trans.user and not trans.user_is_admin:
             if check_ownership:
                 raise exceptions.ItemOwnershipException()
             # else check_accessible...

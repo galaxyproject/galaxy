@@ -1024,7 +1024,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             item_id = kwd.get('id', '')
             if item_id:
                 operation = kwd['operation'].lower()
-                is_admin = trans.user_is_admin()
+                is_admin = trans.user_is_admin
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
                     repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
@@ -1115,7 +1115,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             item_id = kwd.get('id', '')
             if item_id:
                 operation = kwd['operation'].lower()
-                is_admin = trans.user_is_admin()
+                is_admin = trans.user_is_admin
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
                     repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, item_id)
@@ -1339,7 +1339,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin)
 
     @web.json
@@ -1652,7 +1652,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         irm = capsule_manager.ImportRepositoryManager(trans.app,
                                                       trans.request.host,
                                                       trans.user,
-                                                      trans.user_is_admin())
+                                                      trans.user_is_admin)
         export_info_dict = irm.get_export_info_dict(export_info_file_path)
         manifest_file_path = os.path.join(file_path, 'manifest.xml')
         # The manifest.xml file has already been validated, so no error_message should be returned here.
@@ -1708,7 +1708,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     has_deprecated_repositories = True
                     break
             # See if the current user can administer any repositories, but only if not an admin user.
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 if current_user.active_repositories:
                     can_administer_repositories = True
                 else:
@@ -2159,7 +2159,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         return suc.open_repository_files_folder(trans.app, folder_path, repository_id, is_admin)
 
     @web.expose
@@ -2646,7 +2646,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             irm = capsule_manager.ImportRepositoryManager(trans.app,
                                                           trans.request.host,
                                                           trans.user,
-                                                          trans.user_is_admin())
+                                                          trans.user_is_admin)
             capsule_dict = irm.upload_capsule(**kwd)
             status = capsule_dict.get('status', 'error')
             if status == 'error':
@@ -2782,7 +2782,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
             user = trans.user
             if repository:
-                if user is not None and (trans.user_is_admin() or
+                if user is not None and (trans.user_is_admin or
                                          trans.app.security_agent.user_can_administer_repository(user, repository)):
                     return trans.response.send_redirect(web.url_for(controller='repository',
                                                                     action='manage_repository',

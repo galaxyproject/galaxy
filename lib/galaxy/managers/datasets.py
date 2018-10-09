@@ -348,7 +348,7 @@ class DatasetAssociationManager(base.ModelManager,
             dataset = dataset_assoc.dataset
 
         current_user_roles = trans.get_current_user_roles()
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to manage permissions on this dataset.')
 
