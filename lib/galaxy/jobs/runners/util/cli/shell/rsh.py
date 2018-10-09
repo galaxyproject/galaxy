@@ -15,20 +15,23 @@ __all__ = ('RemoteShell', 'SecureShell', 'GlobusSecureShell', 'ParamikoShell')
 
 class RemoteShell(LocalShell):
 
-    def __init__(self, rsh='rsh', rcp='rcp', hostname='localhost', username=None, **kwargs):
+    def __init__(self, rsh='rsh', rcp='rcp', hostname='localhost', username=None, options=None, **kwargs):
         super(RemoteShell, self).__init__(**kwargs)
         self.rsh = rsh
         self.rcp = rcp
         self.hostname = hostname
         self.username = username
+        self.options = options
         self.sessions = {}
 
     def execute(self, cmd, persist=False, timeout=60):
         # TODO: implement persistence
-        if self.username is None:
-            fullcmd = '%s %s %s' % (self.rsh, self.hostname, cmd)
-        else:
-            fullcmd = '%s -l %s %s %s' % (self.rsh, self.username, self.hostname, cmd)
+        fullcmd = [self.rsh]
+        if self.options:
+            fullcmd.extend(self.options)
+        if self.username:
+            fullcmd.extend(["-l", self.username])
+        fullcmd.extend([self.hostname, cmd])
         return super(RemoteShell, self).execute(fullcmd, persist, timeout)
 
 
@@ -37,15 +40,13 @@ class SecureShell(RemoteShell):
 
     def __init__(self, rsh='ssh', rcp='scp', private_key=None, port=None, strict_host_key_checking=True, **kwargs):
         strict_host_key_checking = "yes" if strict_host_key_checking else "no"
-        rsh += " -oStrictHostKeyChecking=%s -oConnectTimeout=60" % strict_host_key_checking
-        rcp += " -oStrictHostKeyChecking=%s -oConnectTimeout=60" % strict_host_key_checking
+        options = ["-oStrictHostKeyChecking=%s" % strict_host_key_checking]
+        options.append("-oConnectTimeout=60")
         if private_key:
-            rsh += " -i %s" % private_key
-            rcp += " -i %s" % private_key
+            options.extend(['-i', private_key])
         if port:
-            rsh += " -p %s" % port
-            rcp += " -p %s" % port
-        super(SecureShell, self).__init__(rsh=rsh, rcp=rcp, **kwargs)
+            options.extend(['-p', str(port)])
+        super(SecureShell, self).__init__(rsh=rsh, rcp=rcp, options=options, **kwargs)
 
 
 class ParamikoShell(object):
