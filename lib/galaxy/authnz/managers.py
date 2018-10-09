@@ -228,7 +228,7 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def get_cloud_access_credentials(self, cloudauthz, request, sa_session, user_id):
+    def get_cloud_access_credentials(self, cloudauthz, sa_session, user_id, request=None):
         """
         This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
         to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
