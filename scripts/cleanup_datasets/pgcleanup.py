@@ -13,8 +13,11 @@ import logging
 import os
 import shutil
 import sys
+from collections import namedtuple
+from functools import partial
 
 import psycopg2
+from psycopg2.extras import NamedTupleCursor
 from six import string_types
 from sqlalchemy.engine.url import make_url
 
@@ -27,15 +30,40 @@ from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.bunch import Bunch
 from galaxy.util.script import app_properties_from_args, populate_config_args
 
-log = logging.getLogger()
+log = logging.getLogger(__name__)
+
+MetadataFile = namedtuple('MetadataFile', ['id', 'object_store_id'])
+Dataset = namedtuple('Dataset', ['id', 'object_store_id'])
 
 
-class MetadataFile(Bunch):
+class RemovesMetadataFiles(object):
     pass
 
 
-class Dataset(Bunch):
+class RemovesDatasets(object):
     pass
+
+
+class Action(object):
+    def handle_row(self, row):
+        pass
+
+    def post_action(self):
+        pass
+
+
+class PurgeDatasets(RemovesDatasets, Action):
+    sql = """
+    """
+
+    def __init__(self):
+        self.datasets = set()
+
+    def handle_row(self, row):
+        self.datasets.add(Dataset(row.purged_dataset_id, row.object_store_id))
+
+    def post_action(self):
+        pass
 
 
 class Cleanup(object):
@@ -44,9 +72,13 @@ class Cleanup(object):
         self.config = None
         self.conn = None
         self.action_names = []
-        self.logs = {}
-        self.disk_accounting_user_ids = []
+        self.disk_accounting_user_ids = set()
+        self.remove_metadata_files = set()
+        self.remove_datasets = set()
         self.object_store = None
+        self.current_action = None
+
+        self.action_logger = None
 
         self.__cache_action_names()
         self.__parse_args()
@@ -63,7 +95,7 @@ class Cleanup(object):
     def __parse_args(self):
         parser = argparse.ArgumentParser()
         populate_config_args(parser)
-        parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='Enable debug logging', default=False)
+        parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='Enable debug logging (SQL queries)', default=False)
         parser.add_argument('--dry-run', action='store_true', dest='dry_run', help="Dry run (rollback all transactions)", default=False)
         parser.add_argument('--force-retry', action='store_true', dest='force_retry', help="Retry file removals (on applicable actions)", default=False)
         parser.add_argument('-o', '--older-than', type=int, dest='days', help='Only perform action(s) on objects that have not been updated since the specified number of days', default=14)
@@ -81,7 +113,7 @@ class Cleanup(object):
             sys.exit(0)
 
     def __setup_logging(self):
-        format = "%(funcName)s %(levelname)s %(asctime)s %(message)s"
+        format = "%(asctime)s %(levelname)-5s %(funcName)s: %(message)s"
         if self.args.debug:
             logging.basicConfig(level=logging.DEBUG, format=format)
         else:
@@ -100,47 +132,80 @@ class Cleanup(object):
 
         assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'
 
-        self.conn = psycopg2.connect(**args)
+        self.conn = psycopg2.connect(cursor_factory=NamedTupleCursor, **args)
 
     def __load_object_store(self):
         self.object_store = build_object_store_from_config(self.config)
 
     def _open_logfile(self):
-        action_name = inspect.stack()[1][3]
-        logname = os.path.join(self.args.log_dir, action_name + '.log')
+        logname = os.path.join(self.args.log_dir, self.current_action + '.log')
 
         if self.args.dry_run:
-            log.debug('--dry-run specified, logging changes to stdout instead of log file: %s' % logname)
-            self.logs[action_name] = sys.stdout
+            log.info('--dry-run specified, logging changes to stdout instead of log file: %s' % logname)
+            self._log_fh = sys.stdout
         else:
-            log.debug('Opening log file: %s' % logname)
-            self.logs[action_name] = open(logname, 'a')
+            log.info('Opening log file: %s' % logname)
+            self._log_fh = open(logname, 'a')
 
         message = '==== Log opened: %s ' % datetime.datetime.now().isoformat()
-        self.logs[action_name].write(message.ljust(72, '='))
-        self.logs[action_name].write('\n')
+        self._log_fh.write(message.ljust(72, '='))
+        self._log_fh.write('\n')
 
-    def _log(self, message, action_name=None):
-        if action_name is None:
-            action_name = inspect.stack()[1][3]
+    def _log(self, message):
+        self.action_log.info(message)
+        '''
+        if self._log_fh is None:
+            self._open_logfile()
         if not message.endswith('\n'):
             message += '\n'
-        self.logs[action_name].write(message)
+        self._log_fh.write(message)
+        '''
 
+    @property
+    def action_log(self):
+        if self.action_logger is None:
+            logf = os.path.join(self.args.log_dir, self.current_action + '.log')
+            if self.args.dry_run:
+                log.info('--dry-run specified, logging changes to stderr instead of log file: %s' % logf)
+                h = logging.StreamHandler()
+            else:
+                log.info('Opening log file: %s' % logf)
+                h = logging.FileHandler(logf)
+            h.setLevel(logging.DEBUG if self.args.debug else logging.INFO)
+            f = logging.Formatter('%(message)s')
+            h.setFormatter(f)
+            l = logging.getLogger(self.current_action)
+            l.addHandler(h)
+            l.propagate = False
+            m = ('==== Log opened: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
+            l.info(m)
+            self.action_logger = l
+        return self.action_logger
+
+    def _close_log(self):
+        if self.action_logger is not None:
+            m = ('==== Log closed: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
+            self.action_logger.info(m)
+            # TODO: close the handler?
+            self.action_logger = None
+
+    '''
     def _close_logfile(self):
-        action_name = inspect.stack()[1][3]
+        if self._log_fh is None:
+            return
 
         message = '==== Log closed: %s ' % datetime.datetime.now().isoformat()
-        self.logs[action_name].write(message.ljust(72, '='))
-        self.logs[action_name].write('\n')
+        self._log_fh.write(message.ljust(72, '='))
+        self._log_fh.write('\n')
 
         if self.args.dry_run:
-            log.debug('--dry-run specified, changes were logged to stdout insted of log file')
+            log.info('--dry-run specified, changes were logged to stdout insted of log file')
         else:
-            log.debug('Closing log file: %s' % self.logs[action_name].name)
-            self.logs[action_name].close()
+            log.info('Closing log file: %s' % self._log_fh.name)
+            self._log_fh.close()
 
-        del self.logs[action_name]
+        self._log_fh = None
+    '''
 
     def _run(self):
         ok = True
@@ -153,7 +218,9 @@ class Cleanup(object):
             sys.exit(1)
         for name in self.args.sequence:
             log.info('Calling %s' % name)
+            self.current_action = name
             self.__getattribute__(name)()
+            self._close_log()
             log.info('Finished %s' % name)
 
     def _create_event(self, message=None):
@@ -162,7 +229,7 @@ class Cleanup(object):
         """
 
         if message is None:
-            message = inspect.stack()[2][3]
+            message = self.current_action
 
         sql = """
             INSERT INTO cleanup_event
@@ -198,23 +265,22 @@ class Cleanup(object):
 
         return cur.fetchone()[0]
 
-    @property
     def _update_time_sql(self):
         # only update time if not doing force retry (otherwise a lot of things would have their update times reset that were actually purged a long time ago)
         if self.args.update_time and not self.args.force_retry:
             return ", update_time = NOW()"
         return ""
 
-    @property
-    def _force_retry_sql(self):
+    def _force_retry_sql(self, force_retry_sql=None):
+        # a misnomer, the value of force_retry_sql is actually the SQL that should be used if *not* forcibly retrying
         if not self.args.force_retry:
-            return " AND NOT purged"""
+            return force_retry_sql or " AND NOT purged"
         return ""
 
-    def _format_sql(self, sql):
+    def _format_sql(self, sql, force_retry_sql=None):
         return sql.format(
-            update_time_sql=self._update_time_sql,
-            force_retry_sql=self._force_retry_sql,
+            update_time_sql=self._update_time_sql(),
+            force_retry_sql=self._force_retry_sql(force_retry_sql=force_retry_sql),
         )
 
     def _add_default_args(self, args):
@@ -222,8 +288,8 @@ class Cleanup(object):
             if 'days' not in args:
                 args['days'] = self.args.days
 
-    def _update(self, sql, args, add_event=True, event_message=None):
-        sql = self._format_sql(sql)
+    def _update(self, sql, args, add_event=True, event_message=None, force_retry_sql=None):
+        sql = self._format_sql(sql, force_retry_sql=force_retry_sql)
         if add_event and isinstance(args, dict) and 'event_id' not in args:
             args['event_id'] = self._create_event(message=event_message)
         self._add_default_args(args)
@@ -242,6 +308,8 @@ class Cleanup(object):
         log.info('Executing SQL')
         cur.execute(sql, args)
         log.info('Database status: %s' % cur.statusmessage)
+        log.info('Flushing transaction')
+        self._flush()
 
         return cur
 
@@ -253,12 +321,60 @@ class Cleanup(object):
             self.conn.commit()
             log.info("All changes committed")
 
-    def _remove_metadata_file(self, id, object_store_id, action_name):
+    def _collect_row_results(self, row, results, causals, primary_key):
+        primary_key = row._fields[0]
+        primary = getattr(row, primary_key)
+        if primary not in results:
+            results[primary] = [set() for x in range(len(causals))]
+        rowgetter = partial(getattr, row)
+        for i, causal in enumerate(causals):
+            vals = tuple(map(rowgetter, causal))
+            if any(vals[1:]):
+                results[primary][i].add(vals)
+
+    def _collect_row_actions(self, row):
+        if hasattr(row, 'disk_accounting_user_id'):
+            self.disk_accounting_user_ids.add(row.disk_accounting_user_id)
+        object_store_id = getattr(row, 'object_store_id', None)
+        if hasattr(row, 'deleted_metadata_file_id'):
+            self.metadata_files.add((row.deleted_metadata_file_id, object_store_id))
+
+    def _log_results(self, results, causals, primary_key):
+        for primary in sorted(results.keys()):
+            self._log('%s: %s' % (primary_key, primary))
+            for causal, s in zip(causals, results[primary]):
+                for r in sorted(s):
+                    secondaries = ', '.join(['%s: %s' % x for x in zip(causal[1:], r[1:])])
+                    self._log('%s %s caused %s' % (causal[0], r[0], secondaries))
+
+    def _handle_results(self, cur, causals=None):
+        """Log the results of an action where results are joined across many tables and may contain duplicates, and
+        handle any actions that should be taken on those results.
+
+        :param row:     cursor object to iterate
+        :type  row:     :class:`psycopg2.cursor`
+        :param causals: names of columns that caused actions to be performed on other columns
+        :type  causals: tuple of tuples of strs
+
+        The first column is considered the "primary" column upon which actions are being taken. If disk usage should be
+        recalculated for users, those user IDs should be in a column named ``disk_accounting_user_id``.
+        """
+        causals = causals or ()
+        results = {}
+        primary_key = None
+        for row in cur:
+            if primary_key is None:
+                primary_key = row._fields[0]
+            self._collect_row_results(row, results, causals, primary_key)
+            self._collect_row_actions(row)
+        self._log_results(results, causals, primary_key)
+
+    def _remove_metadata_file(self, id, object_store_id):
         metadata_file = MetadataFile(id=id, object_store_id=object_store_id)
 
         try:
             filename = self.object_store.get_filename(metadata_file, extra_dir='_metadata_files', extra_dir_at_root=True, alt_name="metadata_%d.dat" % id)
-            self._log('Removing from disk: %s' % filename, action_name)
+            self._log('Removing from disk: %s' % filename)
         except (ObjectNotFound, AttributeError) as e:
             log.error('Unable to get MetadataFile %s filename: %s' % (id, e))
             return
@@ -267,7 +383,7 @@ class Cleanup(object):
             try:
                 os.unlink(filename)
             except Exception as e:
-                self._log('Removal of %s failed with error: %s' % (filename, e), action_name)
+                self._log('Removal of %s failed with error: %s' % (filename, e))
 
     def _update_user_disk_usage(self):
         """
@@ -278,9 +394,9 @@ class Cleanup(object):
 
         This could probably be done more efficiently.
         """
-        log.info('Recalculating disk usage for users whose HistoryDatasetAssociations were purged')
+        log.info('Recalculating disk usage for users whose data were purged')
 
-        for user_id in self.disk_accounting_user_ids:
+        for user_id in sorted(self.disk_accounting_user_ids):
 
             # TODO: h.purged = false should be unnecessary once all hdas in purged histories are purged.
             sql = """
@@ -303,20 +419,17 @@ class Cleanup(object):
 
             args = {'user_id': user_id}
             cur = self._update(sql, args, add_event=False)
-            self._flush()
 
             for tup in cur:
                 # disk_usage might be None (e.g. user has purged all data)
-                log.debug('Updated disk usage for user id %i to %s bytes' % (user_id, tup[0]))
+                log.info('Updated disk usage for user id %i to %s bytes' % (user_id, tup[0]))
 
     def _shutdown(self):
         self.object_store.shutdown()
         self.conn.close()
-        for handle in self.logs.values():
-            message = '==== Log closed at shutdown: %s ' % datetime.datetime.now().isoformat()
-            handle.write(message.ljust(72, '='))
-            handle.write('\n')
-            handle.close()
+        if self.action_log is not None:
+            m = ('==== Log closed at shutdown: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
+            self.action_logger.info(m)
 
     #
     # actions
@@ -332,7 +445,6 @@ class Cleanup(object):
         The old cleanup script does not mark HistoryDatasetAssociations as purged when deleted Histories are purged.  This method can be used to rectify that situation.
         """
         log.info('Marking purged all HistoryDatasetAssociations associated with purged Datasets')
-
         # update_time is intentionally left unmodified.
         sql = """
                 WITH purged_hda_ids
@@ -348,25 +460,204 @@ class Cleanup(object):
                                   (create_time, cleanup_event_id, hda_id)
                            SELECT NOW(), %(event_id)s, id
                              FROM purged_hda_ids)
-              SELECT id
+              SELECT id AS purged_hda_id
                 FROM purged_hda_ids
             ORDER BY id;
         """
-
         cur = self._update(sql, {})
-        self._flush()
+        self._handle_results(cur)
 
-        self._open_logfile()
-        for tup in cur:
-            self._log('Marked HistoryDatasetAssociation purged: %s' % tup[0])
-        self._close_logfile()
+    def delete_inactive_users(self):
+        """
+        Mark deleted all users that are older than the specified number of days.
+        Mark deleted (state = 'deleted') all Jobs whose user_ids are deleted in this step.
+        """
+        log.info('Marking deleted all inactive GalaxyUsers older than %i days' % self.args.days)
+        sql = """
+                WITH deleted_user_ids
+                  AS (     UPDATE galaxy_user
+                              SET deleted = true{update_time_sql}
+                            WHERE NOT active{force_retry_sql}
+                                  AND update_time < (NOW() - interval '%(days)s days')
+                        RETURNING id),
+                     deleted_job_ids
+                  AS (     UPDATE job
+                              SET state = 'deleted'{update_time_sql}
+                             FROM deleted_user_ids
+                            WHERE deleted_user_ids.id = job.user_id
+                                  AND job.state = 'new'
+                        RETURNING job.user_id AS user_id,
+                                  job.id AS id),
+                     user_events
+                  AS (INSERT INTO cleanup_event_user_association
+                                  (create_time, cleanup_event_id, user_id)
+                           SELECT NOW(), %(event_id)s, id
+                             FROM deleted_user_ids)
+              SELECT deleted_user_ids.id AS deleted_user_id,
+                     deleted_job_ids.id AS deleted_job_id
+                FROM deleted_user_ids
+                     LEFT OUTER JOIN deleted_job_ids
+                                     ON deleted_job_ids.user_id = deleted_user_ids.id
+            ORDER BY deleted_user_ids.id
+        """
+        force_retry_sql = " AND NOT deleted"
+        cur = self._update(sql, {}, force_retry_sql=force_retry_sql)
+        causals = (
+            ('purged_user_id', 'purged_job_id'),
+        )
+        self._handle_results(cur, causals)
+
+    def purge_deleted_users(self):
+        """
+        Mark purged all users that are older than the specified number of days.
+        Mark purged all Histories whose user_ids are purged in this step.
+        Mark purged all HistoryDatasetAssociations whose history_ids are purged in this step.
+        Delete all UserGroupAssociations whose user_ids are purged in this step.
+        Delete all UserRoleAssociations whose user_ids are purged in this step EXCEPT FOR THE PRIVATE ROLE.
+        Delete all UserAddresses whose user_ids are purged in this step.
+        """
+        log.info('Marking purged all deleted GalaxyUsers older than %i days' % self.args.days)
+        sql = """
+                WITH purged_user_ids
+                  AS (     UPDATE galaxy_user
+                              SET purged = true{update_time_sql}
+                            WHERE deleted{force_retry_sql}
+                                  AND update_time < (NOW() - interval '%(days)s days')
+                        RETURNING id),
+                     purged_history_ids
+                  AS (     UPDATE history
+                              SET purged = true{update_time_sql}
+                             FROM purged_user_ids
+                            WHERE purged_user_ids.id = history.user_id
+                                  AND NOT history.purged
+                        RETURNING history.user_id AS user_id,
+                                  history.id AS id),
+                     purged_hda_ids
+                  AS (     UPDATE history_dataset_association
+                              SET purged = true{update_time_sql}
+                             FROM purged_history_ids
+                            WHERE purged_history_ids.id = history_dataset_association.history_id
+                                  AND NOT history_dataset_association.purged
+                        RETURNING history_dataset_association.history_id AS history_id,
+                                  history_dataset_association.id AS id),
+                     deleted_metadata_file_ids
+                  AS (     UPDATE metadata_file
+                              SET deleted = true{update_time_sql}
+                             FROM purged_hda_ids
+                            WHERE purged_hda_ids.id = metadata_file.hda_id
+                        RETURNING metadata_file.hda_id AS hda_id,
+                                  metadata_file.id AS id,
+                                  metadata_file.object_store_id AS object_store_id),
+                     deleted_icda_ids
+                  AS (     UPDATE implicitly_converted_dataset_association
+                              SET deleted = true{update_time_sql}
+                             FROM purged_hda_ids
+                            WHERE purged_hda_ids.id = implicitly_converted_dataset_association.hda_parent_id
+                        RETURNING implicitly_converted_dataset_association.hda_id AS hda_id,
+                                  implicitly_converted_dataset_association.hda_parent_id AS hda_parent_id,
+                                  implicitly_converted_dataset_association.id AS id),
+                     deleted_icda_purged_child_hda_ids
+                  AS (     UPDATE history_dataset_association
+                              SET purged = true{update_time_sql}
+                             FROM deleted_icda_ids
+                            WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
+                     deleted_uga_ids
+                  AS (DELETE FROM user_group_association
+                            USING purged_user_ids
+                            WHERE user_group_association.user_id = purged_user_ids.id
+                        RETURNING user_group_association.user_id AS user_id,
+                                  user_group_association.id AS id),
+                     deleted_ura_ids
+                  AS (DELETE FROM user_role_association
+                            USING role
+                            WHERE role.id = user_role_association.role_id
+                                  AND role.type != 'private'
+                                  AND user_role_association.user_id IN
+                                  ( SELECT id
+                                      FROM purged_user_ids)
+                        RETURNING user_role_association.user_id AS user_id,
+                                  user_role_association.id AS id),
+                     deleted_ua_ids
+                  AS (DELETE FROM user_address
+                            USING purged_user_ids
+                            WHERE user_address.user_id = purged_user_ids.id
+                        RETURNING user_address.user_id AS user_id,
+                                  user_address.id AS id),
+                     user_events
+                  AS (INSERT INTO cleanup_event_user_association
+                                  (create_time, cleanup_event_id, user_id)
+                           SELECT NOW(), %(event_id)s, id
+                             FROM purged_user_ids),
+                     history_events
+                  AS (INSERT INTO cleanup_event_history_association
+                                  (create_time, cleanup_event_id, history_id)
+                           SELECT NOW(), %(event_id)s, id
+                             FROM purged_history_ids),
+                     hda_events
+                  AS (INSERT INTO cleanup_event_hda_association
+                                  (create_time, cleanup_event_id, hda_id)
+                           SELECT NOW(), %(event_id)s, id
+                             FROM purged_hda_ids),
+                     metadata_file_events
+                  AS (INSERT INTO cleanup_event_metadata_file_association
+                                  (create_time, cleanup_event_id, metadata_file_id)
+                           SELECT NOW(), %(event_id)s, id
+                             FROM deleted_metadata_file_ids),
+                     icda_events
+                  AS (INSERT INTO cleanup_event_icda_association
+                                  (create_time, cleanup_event_id, icda_id)
+                           SELECT NOW(), %(event_id)s, id
+                             FROM deleted_icda_ids),
+                     icda_hda_events
+                  AS (INSERT INTO cleanup_event_hda_association
+                                  (create_time, cleanup_event_id, hda_id)
+                           SELECT NOW(), %(event_id)s, hda_id
+                             FROM deleted_icda_ids)
+              SELECT purged_user_ids.id AS purged_user_id,
+                     purged_user_ids.id AS disk_accounting_user_id,
+                     purged_history_ids.id AS purged_history_id,
+                     purged_hda_ids.id AS purged_hda_id,
+                     deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+                     deleted_metadata_file_ids.object_store_id AS object_store_id,
+                     deleted_icda_ids.id AS deleted_icda_id,
+                     deleted_icda_ids.hda_id AS deleted_icda_hda_id,
+                     deleted_uga_ids.id AS deleted_uga_id,
+                     deleted_ura_ids.id AS deleted_ura_id,
+                     deleted_ua_ids.id AS deleted_ua_id
+                FROM purged_user_ids
+                     LEFT OUTER JOIN purged_history_ids
+                                     ON purged_user_ids.id = purged_history_ids.user_id
+                     LEFT OUTER JOIN purged_hda_ids
+                                     ON purged_history_ids.id = purged_hda_ids.history_id
+                     LEFT OUTER JOIN deleted_metadata_file_ids
+                                     ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
+                     LEFT OUTER JOIN deleted_icda_ids
+                                     ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
+                     LEFT OUTER JOIN deleted_uga_ids
+                                     ON purged_user_ids.id = deleted_uga_ids.user_id
+                     LEFT OUTER JOIN deleted_ura_ids
+                                     ON purged_user_ids.id = deleted_ura_ids.user_id
+                     LEFT OUTER JOIN deleted_ua_ids
+                                     ON purged_user_ids.id = deleted_ua_ids.user_id
+            ORDER BY purged_user_ids.id
+        """
+        cur = self._update(sql, {})
+        causals = (
+            ('purged_user_id', 'purged_history_id'),
+            ('purged_history_id', 'purged_hda_id'),
+            ('purged_hda_id', 'deleted_metadata_file_id', 'object_store_id'),
+            ('purged_hda_id', 'deleted_icda_id', 'deleted_icda_hda_id'),
+            ('purged_user_id', 'deleted_uga_id'),
+            ('purged_user_id', 'deleted_ura_id'),
+            ('purged_user_id', 'deleted_ua_id'),
+        )
+        self._handle_results(cur, causals)
 
     def delete_userless_histories(self):
         """
         Mark deleted all "anonymous" Histories (not owned by a registered user) that are older than the specified number of days.
         """
         log.info('Marking deleted all userless Histories older than %i days' % self.args.days)
-
         sql = """
                 WITH deleted_history_ids
                   AS (     UPDATE history
@@ -380,18 +671,12 @@ class Cleanup(object):
                                   (create_time, cleanup_event_id, history_id)
                            SELECT NOW(), %(event_id)s, id
                              FROM deleted_history_ids)
-              SELECT id
+              SELECT id AS deleted_history_id
                 FROM deleted_history_ids
             ORDER BY id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
-        self._open_logfile()
-        for tup in cur:
-            self._log('Marked userless History deleted: %s' % tup[0])
-        self._close_logfile()
+        self._handle_results(cur)
 
     def purge_error_hdas(self):
         """
@@ -399,7 +684,6 @@ class Cleanup(object):
         number of days.
         """
         log.info('Marking purged all error state HistoryDatasetAssociations older than %i days' % self.args.days)
-
         sql = """
               WITH purged_hda_ids
                 AS (     UPDATE history_dataset_association
@@ -415,30 +699,21 @@ class Cleanup(object):
                                 (create_time, cleanup_event_id, hda_id)
                          SELECT NOW(), %(event_id)s, id
                            FROM purged_hda_ids)
-            SELECT purged_hda_ids.id,
-                   history.user_id
+            SELECT purged_hda_ids.id AS purged_hda_id,
+                   history.user_id AS disk_accounting_user_id
               FROM purged_hda_ids
                    LEFT OUTER JOIN history
                                    ON purged_hda_ids.history_id = history.id
           ORDER BY purged_hda_ids.id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
-        self._open_logfile()
-        for tup in cur:
-            self._log('Marked HistoryDatasetAssociations purged: %s' % tup[0])
-            if tup[1] is not None and tup[1] not in self.disk_accounting_user_ids:
-                self.disk_accounting_user_ids.append(int(tup[1]))
-        self._close_logfile()
+        self._handle_results(cur)
 
     def purge_hdas_of_purged_histories(self):
         """
         Mark purged all HistoryDatasetAssociations in histories that are purged and older than the specified number of days.
         """
         log.info('Marking purged all HistoryDatasetAssociations in purged Histories older than %i days' % self.args.days)
-
         sql = """
               WITH purged_hda_ids
                 AS (     UPDATE history_dataset_association
@@ -455,23 +730,15 @@ class Cleanup(object):
                                 (create_time, cleanup_event_id, hda_id)
                          SELECT NOW(), %(event_id)s, id
                            FROM purged_hda_ids)
-            SELECT purged_hda_ids.id,
-                   history.user_id
+            SELECT purged_hda_ids.id AS purged_hda_id,
+                   history.user_id AS disk_accounting_user_id
               FROM purged_hda_ids
                    LEFT OUTER JOIN history
                                    ON purged_hda_ids.history_id = history.id
           ORDER BY purged_hda_ids.id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
-        self._open_logfile()
-        for tup in cur:
-            self._log('Marked HistoryDatasetAssociations purged: %s' % tup[0])
-            if tup[1] is not None and tup[1] not in self.disk_accounting_user_ids:
-                self.disk_accounting_user_ids.append(int(tup[1]))
-        self._close_logfile()
+        self._handle_results(cur)
 
     def purge_deleted_hdas(self):
         """
@@ -481,7 +748,6 @@ class Cleanup(object):
         Mark purged all HistoryDatasetAssociations for which an ImplicitlyConvertedDatasetAssociation with matching hda_id is deleted in this step.
         """
         log.info('Marking purged all deleted HistoryDatasetAssociations older than %i days' % self.args.days)
-
         sql = """
               WITH purged_hda_ids
                 AS (     UPDATE history_dataset_association
@@ -545,10 +811,7 @@ class Cleanup(object):
                    LEFT OUTER JOIN history
                                    ON purged_hda_ids.history_id = history.id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
         self._open_logfile()
         for tup in cur:
             self._log('Marked HistoryDatasetAssociations purged: %s' % tup[0])
@@ -556,7 +819,7 @@ class Cleanup(object):
                 self.disk_accounting_user_ids.append(int(tup[1]))
             if tup[2] is not None:
                 self._log('Purge of HDA %s caused deletion of MetadataFile: %s in Object Store: %s' % (tup[0], tup[2], tup[3]))
-                self._remove_metadata_file(tup[2], tup[3], inspect.stack()[0][3])
+                self._remove_metadata_file(tup[2], tup[3], self.current_action)
             if tup[4] is not None:
                 self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[0], tup[4], tup[5]))
         self._close_logfile()
@@ -567,7 +830,6 @@ class Cleanup(object):
         Mark purged all HistoryDatasetAssociations in Histories marked purged in this step (if not already purged).
         """
         log.info('Marking purged all deleted histories that are older than the specified number of days.')
-
         sql = """
               WITH purged_history_ids
                 AS (     UPDATE history
@@ -646,10 +908,7 @@ class Cleanup(object):
                                    ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
           ORDER BY purged_history_ids.id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
         self._open_logfile()
         for tup in cur:
             self._log('Marked History purged: %s' % tup[0])
@@ -659,7 +918,7 @@ class Cleanup(object):
                 self._log('Purge of History %s caused deletion of HistoryDatasetAssociation: %s' % (tup[0], tup[2]))
             if tup[3] is not None:
                 self._log('Purge of HDA %s caused deletion of MetadataFile: %s in Object Store: %s' % (tup[1], tup[3], tup[4]))
-                self._remove_metadata_file(tup[3], tup[4], inspect.stack()[0][3])
+                self._remove_metadata_file(tup[3], tup[4], self.current_action)
             if tup[5] is not None:
                 self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[1], tup[5], tup[6]))
         self._close_logfile()
@@ -669,7 +928,6 @@ class Cleanup(object):
         Mark deleted all Datasets that are derivative of JobExportHistoryArchives that are older than the specified number of days.
         """
         log.info('Marking deleted all Datasets that are derivative of JobExportHistoryArchives that are older than the specified number of days.')
-
         sql = """
                 WITH deleted_dataset_ids
                   AS (     UPDATE dataset
@@ -688,10 +946,7 @@ class Cleanup(object):
                 FROM deleted_dataset_ids
             ORDER BY id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
         self._open_logfile()
         for tup in cur:
             self._log('Marked Dataset deleted: %s' % tup[0])
@@ -702,7 +957,6 @@ class Cleanup(object):
         Mark deleted all Datasets whose associations are all marked as deleted (LDDA) or purged (HDA) that are older than the specified number of days.
         """
         log.info('Marking deleted all Datasets whose associations are all marked as deleted/purged that are older than the specified number of days.')
-
         sql = """
                 WITH deleted_dataset_ids
                   AS (     UPDATE dataset
@@ -728,10 +982,7 @@ class Cleanup(object):
                 FROM deleted_dataset_ids
             ORDER BY id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
         self._open_logfile()
         for tup in cur:
             self._log('Marked Dataset deleted: %s' % tup[0])
@@ -742,7 +993,6 @@ class Cleanup(object):
         Mark purged all Datasets marked deleted that are older than the specified number of days.
         """
         log.info('Marking purged all Datasets marked deleted that are older than the specified number of days.')
-
         sql = """
                 WITH purged_dataset_ids
                   AS (     UPDATE dataset
@@ -756,15 +1006,12 @@ class Cleanup(object):
                                   (create_time, cleanup_event_id, dataset_id)
                            SELECT NOW(), %(event_id)s, id
                              FROM purged_dataset_ids)
-              SELECT id,
-                     object_store_id
+              SELECT id AS purged_dataset_id,
+                     object_store_id AS object_store_id
                 FROM purged_dataset_ids
             ORDER BY id
         """
-
         cur = self._update(sql, {})
-        self._flush()
-
         self._open_logfile()
         for tup in cur:
             self._log('Marked Dataset purged: %s in Object Store: %s' % (tup[0], tup[1]))
