@@ -227,9 +227,9 @@ Admin panel (under Tool Management → Manage dependencies).
 The simple answer is: you don't need to do much to make Conda work for a tool.
 
 The ``<requirement>`` tag in the tool XML file is enough. The name and the
-version should correspond to a Conda package in the ``default``, ``r``,
-``bioconda`` or ``iuc`` Conda channel (you can extend this list if you
-like in your ``galaxy.yml`` ). If this is the case you are ready to go. Read
+version should correspond to a Conda package in one of the enabled channels
+(which are specified by the ``conda_ensure_channels`` directive in
+``galaxy.yml`` ). If this is the case you are ready to go. Read
 more about `Conda channels`_  and browse their packages on https://anaconda.org/ url followed by the channel name (e.g.
 `https://anaconda.org/bioconda <https://anaconda.org/bioconda>`__
 ).
@@ -258,7 +258,7 @@ With Conda package manager installed on your system, run:
 
 .. code-block:: bash
 
-   $ conda search <package_name> -c bioconda -c iuc
+   $ conda search <package_name> -c iuc -c conda-forge -c bioconda
 
 This will search in all channels that are activated by default in
 Galaxy. If you find your package, you are ready to go. If not please
