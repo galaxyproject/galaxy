@@ -251,7 +251,7 @@ class WorkflowContentsManager(UsesAnnotations):
         so workflows can be extracted.
         """
         workflow_class = as_dict.get("class", None)
-        if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict:
+        if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict or "yaml_content" in as_dict:
             if not self.app.config.enable_beta_workflow_format:
                 raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
 

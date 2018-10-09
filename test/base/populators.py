@@ -554,6 +554,7 @@ class BaseWorkflowPopulator(object):
         workflow_id = workflow["id"]
         if round_trip_conversion:
             workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
+            assert "yaml_content" in workflow_yaml_wrapped, workflow_yaml_wrapped
             round_trip_converted_content = workflow_yaml_wrapped["yaml_content"]
             workflow_id = self.upload_yaml_workflow(round_trip_converted_content, client_convert=False, round_trip_conversion=False)
 
@@ -595,7 +596,7 @@ class BaseWorkflowPopulator(object):
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
 
-    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False):
+    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
 
@@ -608,7 +609,7 @@ class BaseWorkflowPopulator(object):
         if client_convert is None:
             client_convert = not round_trip_format_conversion
 
-        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type, client_convert=client_convert, round_trip_format_conversion=round_trip_format_conversion)
+        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type, client_convert=client_convert, round_trip_format_conversion=round_trip_format_conversion, raw_yaml=raw_yaml)
 
         if test_data is None:
             if jobs_descriptions is None:
