@@ -5,7 +5,8 @@ class: GalaxyWorkflow
 doc: |
   Simple workflow that no-op cats a file and then selects 10 random lines.
 inputs:
-  - id: the_input
+  the_input:
+    type: data
     doc: input doc
 steps:
   - tool_id: cat1
@@ -32,8 +33,8 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - tool_id: cat
-    label: first_cat
+  first_cat:
+    tool_id: cat
     in:
       input1: input1
       queries_0|input2: input1
@@ -45,7 +46,8 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - tool_id: multiple_versions
+  mul_versions:
+    tool_id: multiple_versions
     tool_version: "0.0.1"
     state:
       inttest: 8
@@ -57,7 +59,8 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - tool_id: multiple_versions
+  mul_versions:
+    tool_id: multiple_versions
     tool_version: "0.0.1"
     state:
       inttest: "moocow"
@@ -69,11 +72,12 @@ class: GalaxyWorkflow
 inputs:
   text_input: data
 steps:
-  - label: split_up
+  split_up:
     tool_id: collection_creates_pair
     in:
       input1: text_input
-  - tool_id: collection_paired_test
+  paired:
+    tool_id: collection_paired_test
     in:
       f1: split_up/paired_output
 test_data:
@@ -87,25 +91,21 @@ test_data:
 
 WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION = """
 class: GalaxyWorkflow
+inputs:
+  text_input1: data
+  text_input2: data
 steps:
-  - label: text_input1
-    type: input
-  - label: text_input2
-    type: input
-  - label: cat_inputs
+  cat_inputs:
     tool_id: cat1
-    state:
-      input1:
-        $link: text_input1
-      queries:
-        - input2:
-            $link: text_input2
-  - label: split_up
+    in:
+      input1: text_input1
+      queries_0|input2: text_input2
+  split_up:
     tool_id: collection_split_on_column
-    state:
-      input1:
-        $link: cat_inputs#out_file1
-  - tool_id: cat_list
+    in:
+      input1: cat_inputs/out_file1
+  cat_list:
+    tool_id: cat_list
     in:
       input1: split_up/split_output
 test_data:
@@ -125,8 +125,8 @@ inputs:
     type: collection
     collection_type: list
 steps:
-  - tool_id: cat
-    label: cat
+  cat:
+    tool_id: cat
     in:
       input1: input1
 """
@@ -156,7 +156,7 @@ class: GalaxyWorkflow
 inputs:
   input_c: collection
 steps:
-  - label: apply
+  apply:
     tool_id: __APPLY_RULES__
     state:
       input:
@@ -170,8 +170,8 @@ steps:
         mapping:
           - type: list_identifiers
             columns: [0, 1]
-  - tool_id: random_lines1
-    label: random_lines
+  random_lines:
+    tool_id: random_lines1
     state:
       num_lines: 1
       input:
@@ -195,7 +195,7 @@ class: GalaxyWorkflow
 inputs:
   input_c: collection
 steps:
-  - label: apply
+  apply:
     tool_id: __APPLY_RULES__
     state:
       input:
@@ -209,8 +209,8 @@ steps:
         mapping:
           - type: list_identifiers
             columns: [0, 1]
-  - tool_id: collection_creates_list
-    label: copy_list
+  copy_list:
+    tool_id: collection_creates_list
     in:
       input1: apply/output
 test_data:
@@ -232,11 +232,12 @@ outputs:
   outer_output:
     outputSource: second_cat/out_file1
 steps:
-  - tool_id: cat1
-    label: first_cat
+  first_cat:
+    tool_id: cat1
     in:
       input1: outer_input
-  - run:
+  nested_workflow:
+    run:
       class: GalaxyWorkflow
       inputs:
         inner_input: data
@@ -244,8 +245,8 @@ steps:
         workflow_output:
           outputSource: random_lines/out_file1
       steps:
-        - tool_id: random_lines1
-          label: random_lines
+        random_lines:
+          tool_id: random_lines1
           state:
             num_lines: 1
             input:
@@ -253,17 +254,13 @@ steps:
             seed_source:
               seed_source_selector: set_seed
               seed: asdf
-    label: nested_workflow
     in:
       inner_input: first_cat/out_file1
-  - tool_id: cat1
-    label: second_cat
-    state:
-      input1:
-        $link: nested_workflow#workflow_output
-      queries:
-        - input2:
-            $link: nested_workflow#workflow_output
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
 """
 
 
@@ -275,7 +272,8 @@ outputs:
   outer_output:
     outputSource: nested_workflow/workflow_output
 steps:
-  - run:
+  nested_workflow:
+    run:
       class: GalaxyWorkflow
       inputs:
         inner_input: data
@@ -293,7 +291,6 @@ steps:
             seed_source:
               seed_source_selector: set_seed
               seed: asdf
-    label: nested_workflow
     in:
       inner_input: outer_input
 """
@@ -304,15 +301,16 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - tool_id: cat1
-    label: first_cat
+  first_cat:
+    tool_id: cat1
     outputs:
        out_file1:
          hide: true
          rename: "the new value"
     in:
       input1: input1
-  - tool_id: cat1
+  second_cat:
+    tool_id: cat1
     in:
       input1: first_cat/out_file1
 """
@@ -323,7 +321,8 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - tool_id: random_lines1
+  random:
+    tool_id: random_lines1
     runtime_inputs:
       - num_lines
     state:
@@ -340,11 +339,12 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - label: the_pause
+  the_pause:
     type: pause
     in:
       input: input1
-  - tool_id: random_lines1
+  random:
+    tool_id: random_lines1
     runtime_inputs:
       - num_lines
     state:
@@ -360,8 +360,8 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - tool_id: cat
-    label: first_cat
+  first_cat:
+    tool_id: cat
     state:
       input1:
         $link: input1
@@ -380,11 +380,10 @@ class: GalaxyWorkflow
 inputs:
   input1: data
 steps:
-  - tool_id: cat
-    label: first_cat
-    state:
-      input1:
-        $link: input1
+  first_cat:
+    tool_id: cat
+    in:
+      input1: input1
     outputs:
       out_file1:
         rename: "${replaceme} suffix"
@@ -398,7 +397,8 @@ outputs:
   outer_output:
     outputSource: nested_workflow/workflow_output
 steps:
-  - run:
+  nested_workflow:
+    run:
       class: GalaxyWorkflow
       inputs:
         inner_input: data
@@ -413,7 +413,6 @@ steps:
           outputs:
             out_file1:
               rename: "${replaceme} suffix"
-    label: nested_workflow
     in:
       inner_input: outer_input
 """
@@ -426,12 +425,9 @@ outputs:
   wf_output_1:
     outputSource: first_cat/out_file1
 steps:
-  - tool_id: cat1
-    label: first_cat
-    state:
-      input1:
-        $link: input1
-      queries:
-        - input2:
-            $link: input1
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input1
+      queries_0|input2: input1
 """

@@ -125,11 +125,12 @@ class: GalaxyWorkflow
 inputs:
   outer_input: data
 steps:
-  - tool_id: cat1
-    label: first_cat
+  first_cat:
+    tool_id: cat1
     in:
       input1: outer_input
-  - run:
+  nested_workflow:
+    run:
       class: GalaxyWorkflow
       inputs:
         inner_input: data
@@ -142,7 +143,6 @@ steps:
             seed_source:
               seed_source_selector: set_seed
               seed: asdf
-    label: nested_workflow
     in:
       inner_input: first_cat/out_file1
 """, client_convert=False)
@@ -200,18 +200,18 @@ $graph:
   inputs:
     outer_input: data
   steps:
-  - tool_id: cat
-    label: outer_cat
-    in:
-      input1: outer_input
-  - run: '#nested'
-    label: nested_workflow_1
-    in:
-      inner_input: outer_cat/out_file1
-  - run: '#nested'
-    label: nested_workflow_2
-    in:
-      inner_input: nested_workflow_1/inner_output
+    outer_cat:
+      tool_id: cat
+      in:
+        input1: outer_input
+    nested_workflow_1:
+      run: '#nested'
+      in:
+        inner_input: outer_cat/out_file1
+    nested_workflow_2:
+      run: '#nested'
+      in:
+        inner_input: nested_workflow_1/inner_output
 """
         history_id = self.dataset_populator.new_history()
         self._run_jobs(duplicate_subworkflow_invocate_wf, test_data={"outer_input": "hello world"}, history_id=history_id, client_convert=False)
@@ -222,18 +222,18 @@ $graph:
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
-  - label: test_input
+  test_input:
     type: input
-  - label: first_cat
+  first_cat:
     tool_id: cat1
     state:
       input1:
         $link: test_input
-  - label: the_pause
+  the_pause:
     type: pause
     in:
       input: first_cat/out_file1
-  - label: second_cat
+  second_cat:
     tool_id: cat1
     in:
       input1: the_pause
@@ -243,25 +243,22 @@ steps:
     def test_implicit_connections(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-  - label: test_input
-    type: input
-  - label: first_cat
+  first_cat:
     tool_id: cat1
-    state:
-      input1:
-        $link: test_input
-  - label: the_pause
+    in:
+      input1: test_input
+  the_pause:
     type: pause
-    connect:
-      input:
-      - first_cat#out_file1
-  - label: second_cat
+    in:
+      input: first_cat/out_file1
+  second_cat:
     tool_id: cat1
-    state:
-      input1:
-        $link: the_pause
-  - label: third_cat
+    in:
+      input1: the_pause
+  third_cat:
     tool_id: cat1
     connect:
       $step: second_cat
@@ -276,7 +273,7 @@ steps:
         self._run_jobs("""
 class: GalaxyWorkflow
 steps:
-  - label: test_input
+  test_input:
     tool_id: disambiguate_cond
     state:
       p3:
@@ -291,7 +288,7 @@ steps:
         self._run_jobs("""
 class: GalaxyWorkflow
 steps:
-  - label: test_input
+  test_input:
     tool_id: disambiguate_cond
     state:
       p3:
