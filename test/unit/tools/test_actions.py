@@ -82,7 +82,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
 
     def test_output_label(self):
         _, output = self._simple_execute()
-        self.assertEquals(output["out1"].name, "Output (moo)")
+        self.assertEqual(output["out1"].name, "Output (moo)")
 
     def test_output_label_data(self):
         hda1 = self.__add_dataset()
@@ -97,12 +97,12 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        self.assertEquals(output["out1"].name, "Test Tool on data 2 and data 1")
+        self.assertEqual(output["out1"].name, "Test Tool on data 2 and data 1")
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)
-        self.assertEquals(output["out1"].name, "Output (moo)")
-        self.assertEquals(output["out2"].name, "Output 2 (moo)")
+        self.assertEqual(output["out1"].name, "Output (moo)")
+        self.assertEqual(output["out2"].name, "Output 2 (moo)")
 
     def test_params_wrapped(self):
         hda1 = self.__add_dataset()
@@ -111,7 +111,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
             incoming=dict(repeat1=[dict(param1=hda1)]),
         )
         # Again this is a stupid way to ensure data parameters are wrapped.
-        self.assertEquals(output["out1"].name, "Output (%s)" % hda1.dataset.get_file_name())
+        self.assertEqual(output["out1"].name, "Output (%s)" % hda1.dataset.get_file_name())
 
     def test_handler_set(self):
         job, _ = self._simple_execute()

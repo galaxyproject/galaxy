@@ -87,9 +87,9 @@ class PageApiTestCase(BasePageApiTestCase):
         self._assert_status_code_is(show_response, 200)
         show_json = show_response.json()
         self._assert_has_keys(show_json, "slug", "title", "id")
-        self.assertEquals(show_json["slug"], "pagetoshow")
-        self.assertEquals(show_json["title"], "MY PAGE")
-        self.assertEquals(show_json["content"], "<p>Page!</p>")
+        self.assertEqual(show_json["slug"], "pagetoshow")
+        self.assertEqual(show_json["title"], "MY PAGE")
+        self.assertEqual(show_json["content"], "<p>Page!</p>")
 
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")

@@ -137,7 +137,7 @@ test_data:
   input1: "hello world"
 """, history_id=history_id)
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEquals(contents1.strip(), "hello world\nhello world")
+        self.assertEqual(contents1.strip(), "hello world\nhello world")
 
     def test_outputs(self):
         workflow_id = self._upload_yaml_workflow("""
@@ -161,8 +161,8 @@ test_data:
   input1: "hello world"
 """)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
-        self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
-        self.assertEquals(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
+        self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
+        self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
 
     def test_runtime_inputs(self):
         workflow = self._upload_and_download(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
@@ -240,7 +240,7 @@ test_data:
         assert subworkflow_connection["input_subworkflow_step_id"] == 0
 
         # content = self.dataset_populator.get_history_dataset_content( history_id )
-        # self.assertEquals("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
+        # self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
     def test_pause(self):
         workflow_id = self._upload_yaml_workflow("""
