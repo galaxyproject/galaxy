@@ -28,7 +28,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         # Make sure new history appears in index of user's histories.
         index_response = self._get("histories").json()
         indexed_history = [h for h in index_response if h["id"] == created_id][0]
-        self.assertEquals(indexed_history["name"], "TestHistory1")
+        self.assertEqual(indexed_history["name"], "TestHistory1")
 
     def test_show_history(self):
         history_id = self._create_history("TestHistoryForShow")["id"]
@@ -280,7 +280,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         post_data = dict(name=name)
         create_response = self._post("histories", data=post_data).json()
         self._assert_has_keys(create_response, "name", "id")
-        self.assertEquals(create_response["name"], name)
+        self.assertEqual(create_response["name"], name)
         return create_response
 
     # TODO: (CE) test_create_from_copy
