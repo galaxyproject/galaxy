@@ -462,8 +462,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return ((trans.user_is_admin) or
-                (trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item)))
+        return (trans.user_is_admin or
+                trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
         """
