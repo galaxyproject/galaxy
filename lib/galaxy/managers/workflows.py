@@ -978,7 +978,8 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Create the model class for the step
         steps.append(step)
-        steps_by_external_id[step_dict['id']] = step
+        external_id = step_dict["id"]
+        steps_by_external_id[external_id] = step
         if 'workflow_outputs' in step_dict:
             workflow_outputs = step_dict['workflow_outputs']
             found_output_names = set([])
@@ -1052,7 +1053,10 @@ class WorkflowContentsManager(UsesAnnotations):
                     conn.input_step = step
                     conn.input_name = input_name
                     conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[conn_dict['id']]
+                    external_id = conn_dict['id']
+                    if external_id not in steps_by_external_id:
+                        raise KeyError("Failed to find external id %s in %s" % (external_id, steps_by_external_id.keys()))
+                    conn.output_step = steps_by_external_id[external_id]
 
                     input_subworkflow_step_index = conn_dict.get('input_subworkflow_step_id', None)
                     if input_subworkflow_step_index is not None:
