@@ -9,8 +9,8 @@ ie_request.load_deploy_config()
 ie_request.attr.docker_port = 80
 ie_request.attr.import_volume = False
 
-bam = ie_request.volume(hda.file_name, '/input/bamfile.bam', how='ro')
-bam_index = ie_request.volume(hda.metadata.bam_index.file_name, '/input/bamfile.bam.bai', how='ro')
+bam = ie_request.volume(hda.file_name, '/input/bamfile.bam', mode='ro')
+bam_index = ie_request.volume(hda.metadata.bam_index.file_name, '/input/bamfile.bam.bai', mode='ro')
 
 ie_request.launch(volumes=[bam, bam_index], env_override={
     'PUB_HTTP_PORT': ie_request.attr.galaxy_config.dynamic_proxy_bind_port,
