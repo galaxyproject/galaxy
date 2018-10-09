@@ -6,6 +6,7 @@ from json import dumps
 
 from six import text_type
 
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.util import bunch
 
 
@@ -136,6 +137,11 @@ class ProvidesUserContext(object):
     @property
     def user_is_active(self):
         return not self.app.config.user_activation_on or self.user is None or self.user.active
+
+    def check_user_activation(self):
+        """If user activation is enabled and the user is not activated throw an exception."""
+        if not self.user_is_active:
+            raise UserActivationRequiredException()
 
     @property
     def user_ftp_dir(self):
