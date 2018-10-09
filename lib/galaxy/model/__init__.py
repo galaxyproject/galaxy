@@ -80,7 +80,12 @@ AUTO_PROPAGATED_TAGS = ["name"]
 
 class RepresentById(object):
     def __repr__(self):
-        return '<galaxy.model.%s(%s)>' % (self.__class__.__name__, self.id)
+        try:
+            r = '<galaxy.model.%s(%s) at %s>' % (self.__class__.__name__, cached_id(self), hex(id(self)))
+        except Exception:
+            r = object.__repr__(self)
+            log.exception("Caught exception attempting to generate repr for: %s", r)
+        return r
 
 
 class NoConverterException(Exception):
