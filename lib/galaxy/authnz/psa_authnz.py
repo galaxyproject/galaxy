@@ -198,7 +198,7 @@ class Strategy(BaseStrategy):
         if self.request:
             return \
                 self.request.host +\
-                '/authn' + ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
+                '/authnz' + ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
         return path
 
     def redirect(self, url):
