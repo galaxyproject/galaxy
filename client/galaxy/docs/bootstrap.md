@@ -2,7 +2,7 @@
 
 Regular buttons
 
-```
+```html
 <div>
    <button type="button" class="btn btn-primary">Primary</button>
    <button type="button" class="btn btn-secondary">Secondary</button>
@@ -16,7 +16,7 @@ Regular buttons
 
 Disabled
 
-```
+```html
 <div>
    <button type="button" class="btn btn-primary disabled">Primary</button>
    <button type="button" class="btn btn-secondary disabled">Secondary</button>
@@ -28,7 +28,7 @@ Disabled
 </div>
 ```
 
-```
+```html
 <div>
    <button type="button" class="btn btn-outline-primary">Primary</button>
    <button type="button" class="btn btn-outline-secondary">Secondary</button>
@@ -39,7 +39,7 @@ Disabled
 </div>
 ```
 
-```
+```html
  <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
    <button type="button" class="btn btn-primary">Primary</button>
    <div class="btn-group" role="group">
@@ -52,7 +52,7 @@ Disabled
  </div>
 ```
 
-```
+```html
  <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
    <button type="button" class="btn btn-success">Success</button>
    <div class="btn-group" role="group">
@@ -65,7 +65,7 @@ Disabled
  </div>
 ```
 
-```
+```html
  <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
    <button type="button" class="btn btn-info">Info</button>
    <div class="btn-group" role="group">
@@ -78,7 +78,7 @@ Disabled
  </div>
 ```
 
-```
+```html
    <div class="btn-group" role="group" aria-label="Button group with nested dropdown">
      <button type="button" class="btn btn-danger">Danger</button>
      <div class="btn-group" role="group">
@@ -92,7 +92,7 @@ Disabled
  </div>
 ```
 
-```
+```html
  <div>
    <button type="button" class="btn btn-primary btn-lg">Large button</button>
    <button type="button" class="btn btn-primary">Default button</button>
@@ -102,7 +102,7 @@ Disabled
 
 ## Alerts
 
-```
+```html
 <div class="alert alert-dismissable alert-warning">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <h4>Warning!</h4>
@@ -110,21 +110,21 @@ Disabled
 </div>
 ```
 
-```
+```html
 <div class="alert alert-dismissable alert-danger">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <strong>Oh snap!</strong> <a href="#" class="alert-link">Change a few things up</a> and try submitting again.
 </div>
 ```
 
-```
+```html
 <div class="alert alert-dismissable alert-success">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <strong>Well done!</strong> You successfully read <a href="#" class="alert-link">this important alert message</a>.
 </div>
 ```
 
-```
+```html
 <div class="alert alert-dismissable alert-info">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <strong>Heads up!</strong> This <a href="#" class="alert-link">alert needs your attention</a>, but it's not super important.
@@ -133,7 +133,7 @@ Disabled
 
 ## Badges
 
-```
+```html
 <div>
   <span class="badge badge-primary">Primary</span>
   <span class="badge badge-secondary">Secondary</span>
@@ -144,7 +144,7 @@ Disabled
 </div>
 ```
 
-```
+```html
 <div class="">
   <ul class="nav nav-pills">
     <li class="active"><a href="#">Home <span class="badge">42</span></a></li>
@@ -156,7 +156,7 @@ Disabled
 
 ## Tables
 
-```
+```html
 <div class="">
   <table class="table table-striped table-bordered table-hover">
     <thead>
@@ -217,7 +217,7 @@ Disabled
 
 ## Cards
 
-```
+```html
 <div class="row">
   <div class="col-lg-4">
     <div class="bs-component">

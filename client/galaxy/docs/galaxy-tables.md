@@ -2,7 +2,7 @@
 
 Tables using the .grid class
 
-```
+```html
 <table class="grid">
   <thead class="grid-table-header">
     <tr><th>One</th><th>Two</th></tr>
