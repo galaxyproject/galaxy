@@ -237,7 +237,9 @@ var Node = Backbone.Model.extend({
         });
         node.nodeView = nodeView;
         $.each(data.data_inputs, (i, input) => {
-            nodeView.addDataInput(input);
+            if (nodeView.node.type != 'parameter_input') {
+                nodeView.addDataInput(input);
+            }
         });
 
         if (data.data_inputs.length > 0 && data.data_outputs.length > 0) {
@@ -317,8 +319,10 @@ var Node = Backbone.Model.extend({
         var new_body = nodeView.newInputsDiv();
         var newTerminalViews = {};
         _.each(data.data_inputs, input => {
-            var terminalView = node.nodeView.addDataInput(input, new_body);
-            newTerminalViews[input.name] = terminalView;
+            if (nodeView.node.type != 'parameter_input') {
+                var terminalView = node.nodeView.addDataInput(input, new_body);
+                newTerminalViews[input.name] = terminalView;
+            }
         });
         // Cleanup any leftover terminals
         _.each(_.difference(_.values(nodeView.terminalViews), _.values(newTerminalViews)), unusedView => {
