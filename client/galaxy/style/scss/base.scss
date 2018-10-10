@@ -4,7 +4,7 @@
 @import "../../../node_modules/bootstrap/scss/bootstrap.scss";
 
 // Fontawesome configuration.
-$fa-font-path: "../images/fonts";
+$fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 // Bootstrap-related style overrides
@@ -253,7 +253,7 @@ body {
         // Another way to get a caret
         &.popup {
             padding-right: 1.75em;
-            background: url(../images/dropdownarrow.png) no-repeat right 7px;
+            background: url(../../images/dropdownarrow.png) no-repeat right 7px;
         }
     }
 }
@@ -282,7 +282,7 @@ body {
         text-align: center;
         height: $panel_footer_height;
         width: $panel_footer_height - 5;
-        background-image: url(../images/visualization/draggable_horizontal.png);
+        background-image: url(../../images/visualization/draggable_horizontal.png);
         background-repeat: no-repeat;
         background-position: 50% 50%;
         cursor: w-resize;
@@ -380,23 +380,23 @@ div.unified-panel-body-background {
     padding: 0px;
     padding-left: 26px;
     background-color: $state-danger-bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
     background-position: 6px 50%;
 }
 
 .panel-warning-message {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
     background-color: $state-warning-bg;
 }
 
 .panel-done-message {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
     background-color: $state-success-bg;
 }
 
 .panel-info-message {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
     background-color: $state-info-bg;
 }
 
@@ -809,7 +809,7 @@ button {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
-    background-image: url(error_large.png);
+    background-image: url(../../images/error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 5px;
     .messagerow {
@@ -825,18 +825,18 @@ button {
 .warningmessagelarge {
     @extend .alert-warning;
     padding-left: 52px;
-    background-image: url(warn_large.png);
+    background-image: url(../../images/warn_large.png);
 }
 
 .donemessagelarge {
     @extend .alert-success;
     padding-left: 52px;
-    background-image: url(ok_large.png);
+    background-image: url(../../images/ok_large.png);
 }
 
 .infomessagelarge {
     @extend .alert-info;
-    background-image: url(info_large.png);
+    background-image: url(../../images/info_large.png);
 }
 
 .screencastBox {
@@ -863,7 +863,7 @@ button {
     min-height: 15px;
     //border: 1px solid $error_message_border;
     //background-color: $error_message_bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 6px;
 }
@@ -878,20 +878,20 @@ button {
 .warningmessagesmall,
 .ui-form-help .warning {
     @extend .alert-warning;
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemessage,
 .donemessagesmall {
     @extend .alert-success;
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomessage,
 .infomessagesmall,
 .ui-form-help .note {
     @extend .alert-info;
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 .errormark,
@@ -902,20 +902,20 @@ button {
 .err_bgr {
     padding-left: 20px;
     min-height: 15px;
-    background: url(error_small.png) no-repeat;
+    background: url(../../images/error_small.png) no-repeat;
 }
 
 .warningmark {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemark {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomark,
 .ok_bgr {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 /* I think this is only used in view details */
@@ -1078,7 +1078,7 @@ div.debug {
     border-collapse: separate;
 }
 .delete-search-icon {
-    background: url(../images/delete_tag_icon_gray.png) center no-repeat;
+    background: url(../../images/delete_tag_icon_gray.png) center no-repeat;
     display: inline-block;
     width: 10px;
     cursor: pointer;
@@ -1385,7 +1385,7 @@ a.action-button {
 }
 
 .menubutton.popup.split:hover {
-    //background: url(../images/ddarrowsplit.png) no-repeat right -39px;
+    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
 }
 
 // Popup menu styles
@@ -1544,7 +1544,7 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput {
-    background: url(../images/documents-stack.png) no-repeat;
+    background: url(../../images/documents-stack.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1552,12 +1552,12 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput.disabled {
-    background: url(../images/documents-stack-faded.png) no-repeat;
+    background: url(../../images/documents-stack-faded.png) no-repeat;
     cursor: pointer;
 }
 
 .icon-button.link {
-    background: url(../images/silk/link.png) no-repeat;
+    background: url(../../images/silk/link.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1565,7 +1565,7 @@ div.permissionContainer {
 }
 
 .icon-button.link-broken {
-    background: url(../images/silk/link_break.png) no-repeat;
+    background: url(../../images/silk/link_break.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1681,7 +1681,7 @@ div.toolTitleNoSection {
     height: 32px;
     width: 32px;
     display: none;
-    background: url(largespinner.gif);
+    background: url(../../images/largespinner.gif);
 }
 
 #content_table td {
@@ -1737,14 +1737,14 @@ div.toolTitleNoSection {
 }
 
 .icon-button.general-question {
-    background: url(question-octagon-frame.png) no-repeat;
+    background: url(../../images/question-octagon-frame.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
 
 .icon-button.tag-question {
-    background: url(question-balloon.png) no-repeat;
+    background: url(../../images/question-balloon.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;

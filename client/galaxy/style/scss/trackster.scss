@@ -65,12 +65,12 @@ $separator-color: #888;
 }
 
 #zoom-out {
-    background: transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat;
+    background: transparent url(../../images/fugue/magnifier-zoom-out.png) center center no-repeat;
 }
 
 #zoom-in {
     margin-left: 10px;
-    background: transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat;
+    background: transparent url(../../images/fugue/magnifier-zoom.png) center center no-repeat;
 }
 
 .nav-input {
@@ -154,7 +154,7 @@ $separator-color: #888;
     position: absolute;
     margin-top: 0px;
     height: 14px;
-    background: #c1c9e5 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+    background: #c1c9e5 url(../../images/visualization/draggable_horizontal.png) center center no-repeat;
     border: solid #666 1px;
 }
 
@@ -176,7 +176,7 @@ $separator-color: #888;
 .group-handle {
     cursor: move;
     float: left;
-    background: #eee url("../images/tracks/block.png");
+    background: #eee url("../../images/tracks/block.png");
     width: 12px;
     height: 12px;
 }
@@ -228,7 +228,7 @@ $separator-color: #888;
 }
 
 .tiles {
-    background: url("../images/tracks/diag_bg.gif");
+    background: url("../../images/tracks/diag_bg.gif");
     position: relative;
     overflow: hidden;
 }
@@ -430,7 +430,7 @@ input {
 }
 
 .exclamation {
-    background: transparent url(../images/fugue/exclamation.png) no-repeat;
+    background: transparent url(../../images/fugue/exclamation.png) no-repeat;
     margin-left: 5em;
 }
 
@@ -443,10 +443,10 @@ input {
 // TODO: make images into spritemap.
 @mixin icon-hover-mixin($name) {
     &.#{$name} {
-        background: transparent url("../images/fugue/#{$name}-bw.png") no-repeat;
+        background: transparent url("../../images/fugue/#{$name}-bw.png") no-repeat;
 
         &:hover {
-            background: transparent url("../images/fugue/#{$name}.png") no-repeat;
+            background: transparent url("../../images/fugue/#{$name}.png") no-repeat;
         }
     }
 }
@@ -469,22 +469,22 @@ input {
 
 .remove-icon,
 .overview-close {
-    background: transparent url(../images/fugue/cross-small-bw.png) no-repeat;
+    background: transparent url(../../images/fugue/cross-small-bw.png) no-repeat;
 }
 
 .icon-button.remove-icon:hover,
 .overview-close:hover {
-    background: transparent url(../images/fugue/cross-circle.png) no-repeat;
+    background: transparent url(../../images/fugue/cross-circle.png) no-repeat;
 }
 
 .child-track-icon {
-    background: url("../images/fugue/arrow-000-small-bw.png") no-repeat;
+    background: url("../../images/fugue/arrow-000-small-bw.png") no-repeat;
     width: 30px;
     cursor: move;
 }
 
 .track-resize {
-    background: white url("../images/visualization/draggable_vertical.png") no-repeat top center;
+    background: white url("../../images/visualization/draggable_vertical.png") no-repeat top center;
     position: absolute;
     right: 3px;
     bottom: -4px;
@@ -534,7 +534,7 @@ input {
     font-size: 10px;
     filter: alpha(opacity=80);
     background-repeat: no-repeat;
-    background-image: url(../images/tipsy.gif);
+    background-image: url(../../images/tipsy.gif);
     background-position: top center;
 }
 
@@ -565,7 +565,7 @@ input {
     margin-top: 2px;
     cursor: move;
     float: left;
-    background: transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+    background: transparent url(../../images/visualization/draggable_horizontal.png) center center no-repeat;
     width: 10px;
     height: 12px;
 }

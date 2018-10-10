@@ -5,6 +5,8 @@ const VueLoaderPlugin = require("vue-loader/lib/plugin");
 
 const scriptsBase = path.join(__dirname, "galaxy/scripts");
 const libsBase = path.join(scriptsBase, "libs");
+const styleBase = path.join(__dirname, "galaxy/style");
+const imageBase = path.join(__dirname, "../static/style");
 
 let buildconfig = {
     entry: {
@@ -19,7 +21,7 @@ let buildconfig = {
         chunkFilename: "[name].chunk.js"
     },
     resolve: {
-        modules: [scriptsBase, "node_modules"]
+        modules: [scriptsBase, "node_modules", styleBase, imageBase]
     },
     optimization: {
         splitChunks: {
@@ -80,6 +82,31 @@ let buildconfig = {
                     }
                 ]
             },
+            {
+                test: /\.(png|jpg|jpeg|gif|svg|woff|woff2|ttf|eot)(\?.*$|$)/,
+                use: {
+                    loader: "file-loader"
+                }
+            },
+            {
+                test: /\.scss$/,
+                use: [
+                    {
+                        loader: "style-loader"
+                    },
+                    {
+                        loader: "css-loader"
+                    },
+                    {
+                        loader: "sass-loader"
+                    }
+                ]
+            },
+            //{
+            //    test: /\.css$/,
+            //    use: ["style-loader", "css-loader"],
+            //    exclude: [path.join(libsBase, "components"), /(node_modules\/(?!(handsontable)\/))/]
+            //},
             // Alternative to setting window.bundleEntries
             // Just import "extended" in any endpoint that needs
             // access to these globals, or even-better, make

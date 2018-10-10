@@ -6669,8 +6669,8 @@ a.text-dark:hover, .quota-meter-text a:hover, a.text-dark:focus, .quota-meter-te
  * -------------------------- */
 @font-face {
   font-family: 'FontAwesome';
-  src: url("../images/fonts/fontawesome-webfont.eot?v=4.7.0");
-  src: url("../images/fonts/fontawesome-webfont.eot?#iefix&v=4.7.0") format("embedded-opentype"), url("../images/fonts/fontawesome-webfont.woff2?v=4.7.0") format("woff2"), url("../images/fonts/fontawesome-webfont.woff?v=4.7.0") format("woff"), url("../images/fonts/fontawesome-webfont.ttf?v=4.7.0") format("truetype"), url("../images/fonts/fontawesome-webfont.svg?v=4.7.0#fontawesomeregular") format("svg");
+  src: url("../../../node_modules/font-awesome/fonts//fontawesome-webfont.eot?v=4.7.0");
+  src: url("../../../node_modules/font-awesome/fonts//fontawesome-webfont.eot?#iefix&v=4.7.0") format("embedded-opentype"), url("../../../node_modules/font-awesome/fonts//fontawesome-webfont.woff2?v=4.7.0") format("woff2"), url("../../../node_modules/font-awesome/fonts//fontawesome-webfont.woff?v=4.7.0") format("woff"), url("../../../node_modules/font-awesome/fonts//fontawesome-webfont.ttf?v=4.7.0") format("truetype"), url("../../../node_modules/font-awesome/fonts//fontawesome-webfont.svg?v=4.7.0#fontawesomeregular") format("svg");
   font-weight: normal;
   font-style: normal; }
 
@@ -9174,7 +9174,7 @@ html[dir="rtl"] .select2-container .select2-choice > .select2-chosen {
   font-size: 1px;
   text-decoration: none;
   border: 0;
-  background: url("../images/select2.png") right top no-repeat;
+  background: url("../../images/select2.png") right top no-repeat;
   cursor: pointer;
   outline: 0; }
 
@@ -9266,7 +9266,7 @@ html[dir="rtl"] .select2-container .select2-choice .select2-arrow {
   display: block;
   width: 100%;
   height: 100%;
-  background: url("../images/select2.png") no-repeat 0 1px; }
+  background: url("../../images/select2.png") no-repeat 0 1px; }
 
 html[dir="rtl"] .select2-container .select2-choice .select2-arrow b {
   background-position: 2px 1px; }
@@ -9295,29 +9295,29 @@ html[dir="rtl"] .select2-container .select2-choice .select2-arrow b {
   border-radius: 0;
   -webkit-box-shadow: none;
   box-shadow: none;
-  background: #fff url("../images/select2.png") no-repeat 100% -22px;
-  background: url("../images/select2.png") no-repeat 100% -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
-  background: url("../images/select2.png") no-repeat 100% -22px, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
-  background: url("../images/select2.png") no-repeat 100% -22px, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
-  background: url("../images/select2.png") no-repeat 100% -22px, linear-gradient(to bottom, #fff 85%, #eee 99%) 0 0; }
+  background: #fff url("../../images/select2.png") no-repeat 100% -22px;
+  background: url("../../images/select2.png") no-repeat 100% -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
+  background: url("../../images/select2.png") no-repeat 100% -22px, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
+  background: url("../../images/select2.png") no-repeat 100% -22px, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
+  background: url("../../images/select2.png") no-repeat 100% -22px, linear-gradient(to bottom, #fff 85%, #eee 99%) 0 0; }
 
 html[dir="rtl"] .select2-search input {
   padding: 4px 5px 4px 20px;
-  background: #fff url("../images/select2.png") no-repeat -37px -22px;
-  background: url("../images/select2.png") no-repeat -37px -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
-  background: url("../images/select2.png") no-repeat -37px -22px, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
-  background: url("../images/select2.png") no-repeat -37px -22px, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
-  background: url("../images/select2.png") no-repeat -37px -22px, linear-gradient(to bottom, #fff 85%, #eee 99%) 0 0; }
+  background: #fff url("../../images/select2.png") no-repeat -37px -22px;
+  background: url("../../images/select2.png") no-repeat -37px -22px, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
+  background: url("../../images/select2.png") no-repeat -37px -22px, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
+  background: url("../../images/select2.png") no-repeat -37px -22px, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
+  background: url("../../images/select2.png") no-repeat -37px -22px, linear-gradient(to bottom, #fff 85%, #eee 99%) 0 0; }
 
 .select2-drop.select2-drop-above .select2-search input {
   margin-top: 4px; }
 
 .select2-search input.select2-active {
-  background: #fff url("../images/select2-spinner.gif") no-repeat 100%;
-  background: url("../images/select2-spinner.gif") no-repeat 100%, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
-  background: url("../images/select2-spinner.gif") no-repeat 100%, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
-  background: url("../images/select2-spinner.gif") no-repeat 100%, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
-  background: url("../images/select2-spinner.gif") no-repeat 100%, linear-gradient(to bottom, #fff 85%, #eee 99%) 0 0; }
+  background: #fff url("../../images/select2-spinner.gif") no-repeat 100%;
+  background: url("../../images/select2-spinner.gif") no-repeat 100%, -webkit-gradient(linear, left bottom, left top, color-stop(0.85, #fff), color-stop(0.99, #eee));
+  background: url("../../images/select2-spinner.gif") no-repeat 100%, -webkit-linear-gradient(center bottom, #fff 85%, #eee 99%);
+  background: url("../../images/select2-spinner.gif") no-repeat 100%, -moz-linear-gradient(center bottom, #fff 85%, #eee 99%);
+  background: url("../../images/select2-spinner.gif") no-repeat 100%, linear-gradient(to bottom, #fff 85%, #eee 99%) 0 0; }
 
 .select2-container-active .select2-choice,
 .select2-container-active .select2-choices {
@@ -9472,7 +9472,7 @@ disabled look for disabled choices in the results dropdown
   display: none; }
 
 .select2-more-results.select2-active {
-  background: #f4f4f4 url("../images/select2-spinner.gif") no-repeat 100%; }
+  background: #f4f4f4 url("../../images/select2-spinner.gif") no-repeat 100%; }
 
 .select2-results .select2-ajax-error {
   background: rgba(255, 50, 50, 0.2); }
@@ -9552,7 +9552,7 @@ html[dir="rtl"] .select2-container-multi .select2-choices li {
   background: transparent !important; }
 
 .select2-container-multi .select2-choices .select2-search-field input.select2-active {
-  background: #fff url("../images/select2-spinner.gif") no-repeat 100% !important; }
+  background: #fff url("../../images/select2-spinner.gif") no-repeat 100% !important; }
 
 .select2-default {
   color: #999 !important; }
@@ -9600,7 +9600,7 @@ html[dir="rtl"] .select2-container-multi .select2-choices .select2-search-choice
   top: 4px;
   font-size: 1px;
   outline: none;
-  background: url("../images/select2.png") right top no-repeat; }
+  background: url("../../images/select2.png") right top no-repeat; }
 
 html[dir="rtl"] .select2-search-choice-close {
   right: auto;
@@ -9672,7 +9672,7 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   .select2-search-choice-close,
   .select2-container .select2-choice abbr,
   .select2-container .select2-choice .select2-arrow b {
-    background-image: url("../images/select2x2.png") !important;
+    background-image: url("../../images/select2x2.png") !important;
     background-repeat: no-repeat !important;
     background-size: 60px 40px !important; }
   .select2-search input {
@@ -11725,7 +11725,7 @@ button.toast-close-button {
 
 #jstree-dnd.jstree-default .jstree-ok,
 #jstree-dnd.jstree-default .jstree-er {
-  background-image: url("../images/jstree/32px.png");
+  background-image: url("../../images/jstree/32px.png");
   background-repeat: no-repeat;
   background-color: transparent; }
 
@@ -11795,7 +11795,7 @@ button.toast-close-button {
 
 .jstree-default .jstree-node,
 .jstree-default .jstree-icon {
-  background-image: url("../images/jstree/32px.png"); }
+  background-image: url("../../images/jstree/32px.png"); }
 
 .jstree-default .jstree-node {
   background-position: -292px -4px;
@@ -11891,13 +11891,13 @@ button.toast-close-button {
   background-position: 0 0; }
 
 .jstree-default > .jstree-container-ul .jstree-loading > .jstree-ocl {
-  background: url("../images/jstree/throbber.gif") center center no-repeat; }
+  background: url("../../images/jstree/throbber.gif") center center no-repeat; }
 
 .jstree-default .jstree-file {
-  background: url("../images/jstree/32px.png") -100px -68px no-repeat; }
+  background: url("../../images/jstree/32px.png") -100px -68px no-repeat; }
 
 .jstree-default .jstree-folder {
-  background: url("../images/jstree/32px.png") -260px -4px no-repeat; }
+  background: url("../../images/jstree/32px.png") -260px -4px no-repeat; }
 
 .jstree-default.jstree-rtl .jstree-node {
   background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAACAQMAAAB49I5GAAAABlBMVEUAAAAdHRvEkCwcAAAAAXRSTlMAQObYZgAAAAxJREFUCNdjAAMOBgAAGAAJMwQHdQAAAABJRU5ErkJggg=="); }
@@ -11933,7 +11933,7 @@ button.toast-close-button {
 
 .jstree-default-small .jstree-node,
 .jstree-default-small .jstree-icon {
-  background-image: url("../images/jstree/32px.png"); }
+  background-image: url("../../images/jstree/32px.png"); }
 
 .jstree-default-small .jstree-node {
   background-position: -295px -7px;
@@ -12029,13 +12029,13 @@ button.toast-close-button {
   background-position: 0 0; }
 
 .jstree-default-small > .jstree-container-ul .jstree-loading > .jstree-ocl {
-  background: url("../images/jstree/throbber.gif") center center no-repeat; }
+  background: url("../../images/jstree/throbber.gif") center center no-repeat; }
 
 .jstree-default-small .jstree-file {
-  background: url("../images/jstree/32px.png") -103px -71px no-repeat; }
+  background: url("../../images/jstree/32px.png") -103px -71px no-repeat; }
 
 .jstree-default-small .jstree-folder {
-  background: url("../images/jstree/32px.png") -263px -7px no-repeat; }
+  background: url("../../images/jstree/32px.png") -263px -7px no-repeat; }
 
 .jstree-default-small.jstree-rtl .jstree-node {
   background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAACAQMAAABv1h6PAAAABlBMVEUAAAAdHRvEkCwcAAAAAXRSTlMAQObYZgAAAAxJREFUCNdjAAMHBgAAiABBI4gz9AAAAABJRU5ErkJggg=="); }
@@ -12071,7 +12071,7 @@ button.toast-close-button {
 
 .jstree-default-large .jstree-node,
 .jstree-default-large .jstree-icon {
-  background-image: url("../images/jstree/32px.png"); }
+  background-image: url("../../images/jstree/32px.png"); }
 
 .jstree-default-large .jstree-node {
   background-position: -288px 0px;
@@ -12167,13 +12167,13 @@ button.toast-close-button {
   background-position: 0 0; }
 
 .jstree-default-large > .jstree-container-ul .jstree-loading > .jstree-ocl {
-  background: url("../images/jstree/throbber.gif") center center no-repeat; }
+  background: url("../../images/jstree/throbber.gif") center center no-repeat; }
 
 .jstree-default-large .jstree-file {
-  background: url("../images/jstree/32px.png") -96px -64px no-repeat; }
+  background: url("../../images/jstree/32px.png") -96px -64px no-repeat; }
 
 .jstree-default-large .jstree-folder {
-  background: url("../images/jstree/32px.png") -256px 0px no-repeat; }
+  background: url("../../images/jstree/32px.png") -256px 0px no-repeat; }
 
 .jstree-default-large.jstree-rtl .jstree-node {
   background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAACAQMAAAAD0EyKAAAABlBMVEUAAAAdHRvEkCwcAAAAAXRSTlMAQObYZgAAAAxJREFUCNdjgIIGBgABCgCBvVLXcAAAAABJRU5ErkJggg=="); }
@@ -12192,11 +12192,11 @@ button.toast-close-button {
     width: 40px;
     height: 40px; }
   #jstree-dnd.jstree-dnd-responsive > .jstree-ok {
-    background-image: url("../images/jstree/40px.png");
+    background-image: url("../../images/jstree/40px.png");
     background-position: 0 -200px;
     background-size: 120px 240px; }
   #jstree-dnd.jstree-dnd-responsive > .jstree-er {
-    background-image: url("../images/jstree/40px.png");
+    background-image: url("../../images/jstree/40px.png");
     background-position: -40px -200px;
     background-size: 120px 240px; }
   #jstree-marker.jstree-dnd-responsive {
@@ -12212,7 +12212,7 @@ button.toast-close-button {
 		.jstree-closed > .jstree-ocl { border-radius:20px; background-color:white; }
 		*/ }
   .jstree-default-responsive .jstree-icon {
-    background-image: url("../images/jstree/40px.png"); }
+    background-image: url("../../images/jstree/40px.png"); }
   .jstree-default-responsive .jstree-node,
   .jstree-default-responsive .jstree-leaf > .jstree-ocl {
     background: transparent; }
@@ -12289,7 +12289,7 @@ button.toast-close-button {
   .jstree-default-responsive .jstree-node > .jstree-ocl,
   .jstree-default-responsive .jstree-themeicon,
   .jstree-default-responsive .jstree-checkbox {
-    background-image: url("../images/jstree/40px.png");
+    background-image: url("../../images/jstree/40px.png");
     background-size: 120px 240px; }
   .jstree-default-responsive .jstree-node {
     background-position: -80px 0;
@@ -12305,10 +12305,10 @@ button.toast-close-button {
     background-image: none;
     background-position: 0 0; }
   .jstree-default-responsive .jstree-file {
-    background: url("../images/jstree/40px.png") 0 -160px no-repeat;
+    background: url("../../images/jstree/40px.png") 0 -160px no-repeat;
     background-size: 120px 240px; }
   .jstree-default-responsive .jstree-folder {
-    background: url("../images/jstree/40px.png") -40px -40px no-repeat;
+    background: url("../../images/jstree/40px.png") -40px -40px no-repeat;
     background-size: 120px 240px; } }
 
 .jstree-default > .jstree-container-ul > .jstree-node {
@@ -12616,7 +12616,7 @@ body {
       margin-top: 7px; }
     .unified-panel-header .panel-header-button.popup {
       padding-right: 1.75em;
-      background: url(../images/dropdownarrow.png) no-repeat right 7px; }
+      background: url(../../images/dropdownarrow.png) no-repeat right 7px; }
 
 .unified-panel-footer, .panel-collapse {
   position: absolute;
@@ -12638,7 +12638,7 @@ body {
     text-align: center;
     height: 25px;
     width: 20px;
-    background-image: url(../images/visualization/draggable_horizontal.png);
+    background-image: url(../../images/visualization/draggable_horizontal.png);
     background-repeat: no-repeat;
     background-position: 50% 50%;
     cursor: w-resize; }
@@ -12714,20 +12714,20 @@ div.unified-panel-body-background {
   padding: 0px;
   padding-left: 26px;
   background-color: #f9c7c6;
-  background-image: url(error_small.png);
+  background-image: url(../../images/error_small.png);
   background-repeat: no-repeat;
   background-position: 6px 50%; }
 
 .panel-warning-message {
-  background-image: url(warn_small.png);
+  background-image: url(../../images/warn_small.png);
   background-color: #fcdbac; }
 
 .panel-done-message {
-  background-image: url(ok_small.png);
+  background-image: url(../../images/ok_small.png);
   background-color: #b1e7b1; }
 
 .panel-info-message {
-  background-image: url(info_small.png);
+  background-image: url(../../images/info_small.png);
   background-color: #b0e7f8; }
 
 #masthead {
@@ -13049,7 +13049,7 @@ input[type="password"] {
 .ui-form-help .note {
   min-height: 36px;
   padding-left: 52px;
-  background-image: url(error_large.png);
+  background-image: url(../../images/error_large.png);
   background-repeat: no-repeat;
   background-position: 10px 5px; }
   .errormessagelarge .messagerow, .error-modal .modal-content .messagerow,
@@ -13066,14 +13066,14 @@ input[type="password"] {
 
 .warningmessagelarge {
   padding-left: 52px;
-  background-image: url(warn_large.png); }
+  background-image: url(../../images/warn_large.png); }
 
 .donemessagelarge {
   padding-left: 52px;
-  background-image: url(ok_large.png); }
+  background-image: url(../../images/ok_large.png); }
 
 .infomessagelarge {
-  background-image: url(info_large.png); }
+  background-image: url(../../images/info_large.png); }
 
 .screencastBox {
   padding-left: 10px;
@@ -13095,23 +13095,23 @@ input[type="password"] {
   padding: 5px;
   padding-left: 25px;
   min-height: 15px;
-  background-image: url(error_small.png);
+  background-image: url(../../images/error_small.png);
   background-repeat: no-repeat;
   background-position: 5px 6px; }
 
 .warningmessage,
 .warningmessagesmall,
 .ui-form-help .warning {
-  background-image: url(warn_small.png); }
+  background-image: url(../../images/warn_small.png); }
 
 .donemessage,
 .donemessagesmall {
-  background-image: url(ok_small.png); }
+  background-image: url(../../images/ok_small.png); }
 
 .infomessage,
 .infomessagesmall,
 .ui-form-help .note {
-  background-image: url(info_small.png); }
+  background-image: url(../../images/info_small.png); }
 
 .errormark,
 .warningmark,
@@ -13121,17 +13121,17 @@ input[type="password"] {
 .err_bgr {
   padding-left: 20px;
   min-height: 15px;
-  background: url(error_small.png) no-repeat; }
+  background: url(../../images/error_small.png) no-repeat; }
 
 .warningmark {
-  background-image: url(warn_small.png); }
+  background-image: url(../../images/warn_small.png); }
 
 .donemark {
-  background-image: url(ok_small.png); }
+  background-image: url(../../images/ok_small.png); }
 
 .infomark,
 .ok_bgr {
-  background-image: url(info_small.png); }
+  background-image: url(../../images/info_small.png); }
 
 /* I think this is only used in view details */
 table.simple {
@@ -13282,7 +13282,7 @@ div.debug {
   border-collapse: separate; }
 
 .delete-search-icon {
-  background: url(../images/delete_tag_icon_gray.png) center no-repeat;
+  background: url(../../images/delete_tag_icon_gray.png) center no-repeat;
   display: inline-block;
   width: 10px;
   cursor: pointer;
@@ -13587,25 +13587,25 @@ div.permissionContainer {
   border: dotted #999999 1px; }
 
 .icon-button.multiinput {
-  background: url(../images/documents-stack.png) no-repeat;
+  background: url(../../images/documents-stack.png) no-repeat;
   cursor: pointer;
   float: none;
   display: inline-block;
   margin-left: 10px; }
 
 .icon-button.multiinput.disabled {
-  background: url(../images/documents-stack-faded.png) no-repeat;
+  background: url(../../images/documents-stack-faded.png) no-repeat;
   cursor: pointer; }
 
 .icon-button.link {
-  background: url(../images/silk/link.png) no-repeat;
+  background: url(../../images/silk/link.png) no-repeat;
   cursor: pointer;
   float: none;
   display: inline-block;
   margin-left: 10px; }
 
 .icon-button.link-broken {
-  background: url(../images/silk/link_break.png) no-repeat;
+  background: url(../../images/silk/link_break.png) no-repeat;
   cursor: pointer;
   float: none;
   display: inline-block;
@@ -15303,7 +15303,7 @@ div.toolTitleNoSection {
   height: 32px;
   width: 32px;
   display: none;
-  background: url(largespinner.gif); }
+  background: url(../../images/largespinner.gif); }
 
 #content_table td {
   text-align: right;
@@ -15357,13 +15357,13 @@ div.toolTitleNoSection {
       margin-left: 0; }
 
 .icon-button.general-question {
-  background: url(question-octagon-frame.png) no-repeat;
+  background: url(../../images/question-octagon-frame.png) no-repeat;
   float: right;
   margin-top: 3px;
   margin-right: 4px; }
 
 .icon-button.tag-question {
-  background: url(question-balloon.png) no-repeat;
+  background: url(../../images/question-balloon.png) no-repeat;
   float: right;
   margin-top: 3px;
   margin-right: 4px; }
