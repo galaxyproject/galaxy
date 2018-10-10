@@ -257,6 +257,10 @@ class MockTrans(object):
 
     user_is_active = property(get_user_is_active, set_user_is_active)
 
+    def check_user_activation(self):
+        if not self.user_is_active:
+            raise UserActivationRequiredException()
+
     def db_dataset_for(self, input_db_key):
         return None
 
