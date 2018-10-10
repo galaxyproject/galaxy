@@ -40,8 +40,8 @@ class SecureShell(RemoteShell):
 
     def __init__(self, rsh='ssh', rcp='scp', private_key=None, port=None, strict_host_key_checking=True, **kwargs):
         strict_host_key_checking = "yes" if strict_host_key_checking else "no"
-        options = ["-oStrictHostKeyChecking=%s" % strict_host_key_checking]
-        options.append("-oConnectTimeout=60")
+        options = ["-o", "StrictHostKeyChecking=%s" % strict_host_key_checking]
+        options.extend(["-o", "ConnectTimeout=60"])
         if private_key:
             options.extend(['-i', private_key])
         if port:
