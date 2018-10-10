@@ -4440,7 +4440,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_dataset_collections.append(request_to_content)
         else:
-            request_to_content = WorkflowRequestInputStepParmeter()
+            request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
@@ -4548,20 +4548,6 @@ class WorkflowInvocationStep(Dictifiable):
         return rval
 
 
-class WorkflowInvocationStepJobAssociation(Dictifiable):
-    dict_collection_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
-    dict_element_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
-
-
-class WorkflowRequest(Dictifiable):
-    dict_collection_visible_keys = ['id', 'name', 'type', 'state', 'history_id', 'workflow_id']
-    dict_element_visible_keys = ['id', 'name', 'type', 'state', 'history_id', 'workflow_id']
-
-    def to_dict(self, view='collection', value_mapper=None):
-        rval = super(WorkflowRequest, self).to_dict(view=view, value_mapper=value_mapper)
-        return rval
-
-
 class WorkflowRequestInputParameter(Dictifiable):
     """ Workflow-related parameters not tied to steps or inputs.
     """
@@ -4603,7 +4589,7 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
-class WorkflowRequestInputStepParmeter(Dictifiable):
+class WorkflowRequestInputStepParameter(Dictifiable):
     """ Workflow step parameter inputs.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
@@ -5196,17 +5182,6 @@ class ToolTagAssociation(ItemTagAssociation):
         self.id = id
         self.user = user
         self.tool_id = tool_id
-        self.tag_id = tag_id
-        self.user_tname = user_tname
-        self.value = None
-        self.user_value = None
-
-
-class WorkRequestTagAssociation(ItemTagAssociation):
-    def __init__(self, id=None, user=None, workflow_request_id=None, tag_id=None, user_tname=None, value=None):
-        self.id = id
-        self.user = user
-        self.workflow_request_id = workflow_request_id
         self.tag_id = tag_id
         self.user_tname = user_tname
         self.value = None
