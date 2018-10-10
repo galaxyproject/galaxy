@@ -201,8 +201,9 @@ var Node = Backbone.Model.extend({
         }
     },
     add_output_parameters: function(input_parameters) {
+        var self = this;
         $.each(input_parameters, (i, input_parameter) => {
-            this.nodeView.addParameterOutput(input_parameter);
+            self.nodeView.addParameterOutput(input_parameter);
         });
     },
     add_input_parameters: function() {
