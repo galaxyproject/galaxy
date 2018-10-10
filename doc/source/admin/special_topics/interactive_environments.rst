@@ -9,7 +9,7 @@ How GIEs Work
 -------------
 
 A GIE is primarily composed of a Docker container, and the Galaxy visualization
-component. Galaxy visualisation plugins are rendered using Mako templates and
+component. Galaxy visualization plugins are rendered using Mako templates and
 Mako templates in turn can run Python code. GIEs build upon visualization plugins,
 adding features to allow for container management and proxying. This Python code
 in the Mako templates is used to launch the Docker container within which a GIE
