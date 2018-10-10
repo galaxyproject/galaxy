@@ -30,55 +30,13 @@ from base.workflow_fixtures import (  # noqa: I100
 from galaxy.exceptions import error_codes  # noqa: I201
 
 
-SIMPLE_NESTED_WORKFLOW_YAML = """
-class: GalaxyWorkflow
-inputs:
-  - id: outer_input
-outputs:
-  - id: outer_output
-    source: second_cat#out_file1
-steps:
-  - tool_id: cat1
-    label: first_cat
-    in:
-      input1: outer_input
-  - run:
-      class: GalaxyWorkflow
-      inputs:
-        - id: inner_input
-      outputs:
-        - id: workflow_output
-          source: random_lines#out_file1
-      steps:
-        - tool_id: random_lines1
-          label: random_lines
-          state:
-            num_lines: 1
-            input:
-              $link: inner_input
-            seed_source:
-              seed_source_selector: set_seed
-              seed: asdf
-    label: nested_workflow
-    in:
-      inner_input: first_cat/out_file1
-  - tool_id: cat1
-    label: second_cat
-    state:
-      input1:
-        $link: nested_workflow#workflow_output
-      queries:
-        - input2:
-            $link: nested_workflow#workflow_output
-"""
-
 NESTED_WORKFLOW_AUTO_LABELS = """
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
@@ -986,17 +944,14 @@ test_data:
     @skip_without_tool("cat")
     def test_run_subworkflow_replacment_parameters(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow_run_description = """%s
-
-test_data:
-  replacement_parameters:
-    replaceme: moocow
-  outer_input:
-    value: 1.bed
-    type: File
-""" % WORKFLOW_NESTED_REPLACEMENT_PARAMETER
-            self._run_jobs(workflow_run_description, history_id=history_id)
-
+            test_data = """
+replacement_parameters:
+  replaceme: moocow
+outer_input:
+  value: 1.bed
+  type: File
+"""
+            self._run_jobs(WORKFLOW_NESTED_REPLACEMENT_PARAMETER, test_data=test_data, history_id=history_id)
             details = self.dataset_populator.get_history_dataset_details(history_id)
             assert details["name"] == "moocow suffix"
 
@@ -1061,11 +1016,10 @@ test_data:
         with self.dataset_populator.test_history() as history_id:
             workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
+inputs:
+  test_input_1: data
+  test_input_2: data
 steps:
-  - label: test_input_1
-    type: input
-  - label: test_input_2
-    type: input
   - label: first_cat
     tool_id: cat1
     state:
@@ -1133,8 +1087,8 @@ test_data: {}
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - type: collection
-    label: input_c
+  input_c: collection
+
 steps:
   - label: mixed_collection
     tool_id: exit_code_from_file
@@ -1189,20 +1143,16 @@ test_data:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: input1
-
-test_data:
-  input1: "hello world"
-""", history_id=history_id)
+    in:
+      input1: input1
+""", test_data={"input1": "hello world"}, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
             invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
@@ -1220,26 +1170,25 @@ test_data:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1:
     type: data_collection_input
     collection_type: list
 outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
-test_data:
-  input1:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
+    in:
+      input1: input1
+""", test_data="""
+input1:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
@@ -1263,27 +1212,26 @@ test_data:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
-  - id: wf_output_1
-    source: first_cat#out_file1
+  wf_output_1:
+    outputSource: first_cat/out_file1
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
-test_data:
-  input1:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
-      - identifier: el2
-        value: 1.fastq
-        type: File
+    in:
+      input1: input1
+""", test_data="""
+input1:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+    - identifier: el2
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
@@ -1305,28 +1253,27 @@ test_data:
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_jobs("""
 class: GalaxyWorkflow
+inputs:
+  text_input: data
 outputs:
-  - id: wf_output_1
-    source: split_up#paired_output
+  wf_output_1:
+    outputSource: split_up/paired_output
 steps:
-  - label: text_input
-    type: input
   - label: split_up
     tool_id: collection_creates_pair
-    state:
-      input1:
-        $link: text_input
-test_data:
-  text_input:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
-      - identifier: el2
-        value: 1.fastq
-        type: File
+    in:
+      input1: text_input
+""", test_data="""
+text_input:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+    - identifier: el2
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
@@ -1346,20 +1293,19 @@ test_data:
 
     def test_workflow_run_input_mapping_with_subworkflows(self):
         with self.dataset_populator.test_history() as history_id:
-            summary = self._run_jobs("""%s
-
-test_data:
-  outer_input:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
-      - identifier: el2
-        value: 1.fastq
-        type: File
-""" % WORKFLOW_NESTED_SIMPLE, history_id=history_id)
+            test_data = """
+outer_input:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+    - identifier: el2
+      value: 1.fastq
+      type: File
+"""
+            summary = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data=test_data, history_id=history_id)
             workflow_id = summary.workflow_id
             invocation_id = summary.invocation_id
             invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
@@ -1390,23 +1336,22 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: outer_input
+    in:
+      input1: outer_input
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
-        - id: workflow_output
-          source: random_lines#out_file1
+        workflow_output:
+          outputSource: random_lines/out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -1418,18 +1363,16 @@ steps:
               seed_source_selector: set_seed
               seed: asdf
     label: nested_workflow
-    connect:
-      inner_input: first_cat#out_file1
+    in:
+      inner_input: first_cat/out_file1
   - tool_id: split
     label: split
-    state:
-      input1:
-        $link: nested_workflow#workflow_output
+    in:
+      input1: nested_workflow/workflow_output
   - tool_id: cat_list
     label: second_cat
-    state:
-      input1:
-        $link: split#output
+    in:
+      input1: split/output
 
 test_data:
   outer_input:
@@ -1451,23 +1394,22 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: outer_input
+    in:
+      input1: outer_input
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
-        - id: workflow_output
-          source: inner_cat#out_file1
+        workflow_output:
+          outputSource: inner_cat/out_file1
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -1480,28 +1422,24 @@ steps:
               seed: asdf
         - tool_id: split
           label: split
-          state:
-            input1:
-              $link: random_lines#out_file1
+          in:
+            input1: random_lines/out_file1
         - tool_id: cat1
           label: inner_cat
-          state:
-            input1:
-              $link: split#output
+          in:
+            input1: split/output
 
     label: nested_workflow
-    connect:
-      inner_input: first_cat#out_file1
+    in:
+      inner_input: first_cat/out_file1
   - tool_id: cat_list
     label: second_cat
-    state:
-      input1:
-        $link: nested_workflow#workflow_output
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
+    in:
+      input1: nested_workflow/workflow_output
+""", test_data="""
+outer_input:
+  value: 1.bed
+  type: File
 """, history_id=history_id, wait=True)
             self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
@@ -1513,23 +1451,22 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: outer_input
+  outer_input: data
 outputs:
-  - id: outer_output
-    source: second_cat#out_file1
+  outer_output:
+    outputSource: second_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: outer_input
+    in:
+      input1: outer_input
   - run:
       class: GalaxyWorkflow
       inputs:
-        - id: inner_input
+        inner_input: data
       outputs:
-        - id: workflow_output
-          source: split#output
+        workflow_output:
+          outputSource: split/output
       steps:
         - tool_id: random_lines1
           label: random_lines
@@ -1542,22 +1479,19 @@ steps:
               seed: asdf
         - tool_id: split
           label: split
-          state:
-            input1:
-              $link: random_lines#out_file1
+          in:
+            input1: random_lines/out_file1
     label: nested_workflow
-    connect:
-      inner_input: first_cat#out_file1
+    in:
+      inner_input: first_cat/out_file1
   - tool_id: cat_list
     label: second_cat
-    state:
-      input1:
-        $link: nested_workflow#workflow_output
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
+    in:
+      input1: nested_workflow/workflow_output
+""", test_data="""
+outer_input:
+  value: 1.bed
+  type: File
 """, history_id=history_id, wait=True)
             self.assertEqual("chr6\t108722976\t108723115\tCCDS5067.1_cds_0_0_chr6_108722977_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", self.dataset_populator.get_history_dataset_content(history_id))
 
@@ -1569,16 +1503,15 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
-  - id: count_list
-    source: count_list#out_file1
+  count_list:
+    outputSource: count_list/out_file1
 steps:
   - tool_id: empty_list
     label: empty_list
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
   - tool_id: random_lines1
     label: random_lines
     state:
@@ -1590,14 +1523,12 @@ steps:
         seed: asdf
   - tool_id: count_list
     label: count_list
-    state:
-      input1:
-        $link: random_lines#out_file1
-
-test_data:
-  input1:
-    value: 1.bed
-    type: File
+    in:
+      input1: random_lines/out_file1
+""", test_data="""
+input1:
+  value: 1.bed
+  type: File
 """, history_id=history_id, wait=True)
             self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
 
@@ -1606,17 +1537,16 @@ test_data:
         with self.dataset_populator.test_history() as history_id:
             jobs_summary = self._run_jobs("""
 class: GalaxyWorkflow
+inputs:
+  text_input1: collection
 steps:
-  - label: text_input1
-    type: input_collection
   - tool_id: collection_type_source_map_over
-    state:
-      input_collect:
-        $link: text_input1
-test_data:
-  text_input1:
-    type: "list:paired"
-        """, history_id=history_id)
+    in:
+      input_collect: text_input1
+""", test_data="""
+text_input1:
+  type: "list:paired"
+""", history_id=history_id)
             hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=1)
             assert hdca['collection_type'] == 'list:paired'
             assert len(hdca['elements'][0]['object']["elements"]) == 2
@@ -1629,16 +1559,15 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
-  - id: count_multi_file
-    source: count_multi_file#out_file1
+  count_multi_file:
+    outputSource: count_multi_file/out_file1
 steps:
   - tool_id: empty_list
     label: empty_list
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
   - tool_id: random_lines1
     label: random_lines
     state:
@@ -1650,14 +1579,12 @@ steps:
         seed: asdf
   - tool_id: count_multi_file
     label: count_multi_file
-    state:
-      input1:
-        $link: random_lines#out_file1
-
-test_data:
-  input1:
-    value: 1.bed
-    type: File
+    in:
+      input1: random_lines/out_file1
+""", test_data="""
+input1:
+  value: 1.bed
+  type: File
 """, history_id=history_id, wait=True)
             self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
 
@@ -1807,20 +1734,18 @@ test_data:
             workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
   - tool_id: cat
     label: second_cat
-    state:
-      input1:
-        $link: first_cat#out_file1
+    in:
+      input1: first_cat/out_file1
 """)
             DELETED = 0
             PAUSED_1 = 3
@@ -1849,24 +1774,21 @@ steps:
         with self.dataset_populator.test_history() as history_id:
             run_summary = self._run_jobs("""
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-- label: test_input
-  type: input
 - label: first_cat
   tool_id: cat1
-  state:
-    input1:
-      $link: test_input
+  in:
+    input1: test_input
 - label: the_pause
   type: pause
-  connect:
-    input:
-    - first_cat#out_file1
+  in:
+    input: first_cat/out_file1
 - label: second_cat
   tool_id: cat1
-  state:
-    input1:
-      $link: the_pause
+  in:
+    input1: the_pause
 - label: third_cat
   tool_id: random_lines1
   connect:
@@ -1878,9 +1800,7 @@ steps:
     seed_source:
       seed_source_selector: set_seed
       seed: asdf
-test_data:
-  test_input: "hello world"
-""", history_id=history_id, wait=False)
+""", test_data={"test_input": "hello world"}, history_id=history_id, wait=False)
             history_id = run_summary.history_id
             workflow_id = run_summary.workflow_id
             invocation_id = run_summary.invocation_id
@@ -1902,18 +1822,17 @@ test_data:
             run_summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - label: text_input
-    type: text
+  text_input: text
 steps:
 - tool_id: validation_repeat
   state:
     r2:
      - text:
         $link: text_input
-test_data:
-  text_input:
-    value: "abd"
-    type: raw
+""", test_data="""
+text_input:
+  value: "abd"
+  type: raw
 """, history_id=history_id, wait=True)
             time.sleep(10)
             self.workflow_populator.wait_for_invocation(run_summary.workflow_id, run_summary.invocation_id)
@@ -1925,18 +1844,17 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - label: text_input
-    type: text
+  text_input: text
 steps:
 - tool_id: validation_repeat
   state:
     r2:
      - text:
         $link: text_input
-test_data:
-  text_input:
-    value: ""
-    type: raw
+""", test_data="""
+text_input:
+  value: ""
+  type: raw
 """, history_id=history_id, wait=True, assert_ok=False)
 
     def test_run_with_text_connection(self):
@@ -1944,10 +1862,8 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - label: data_input
-    type: data
-  - label: text_input
-    type: text
+  data_input: data
+  text_input: text
 steps:
 - label: randomlines
   tool_id: random_lines1
@@ -1959,13 +1875,13 @@ steps:
       seed_source_selector: set_seed
       seed:
         $link: text_input
-test_data:
-  data_input:
-    value: 1.bed
-    type: File
-  text_input:
-    value: asdf
-    type: raw
+""", test_data="""
+data_input:
+  value: 1.bed
+  type: File
+text_input:
+  value: asdf
+  type: raw
 """, history_id=history_id)
 
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
@@ -1999,14 +1915,12 @@ test_data:
     @skip_without_tool('cat1')
     def test_nested_workflow_rerun_with_use_cached_job(self):
         with self.dataset_populator.test_history() as history_id_one, self.dataset_populator.test_history() as history_id_two:
-            workflow_run_description = """%s
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
-""" % WORKFLOW_NESTED_SIMPLE
-            run_jobs_summary = self._run_jobs(workflow_run_description, history_id=history_id_one)
+            test_data = """
+outer_input:
+  value: 1.bed
+  type: File
+"""
+            run_jobs_summary = self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data=test_data, history_id=history_id_one)
             workflow_request = run_jobs_summary.workflow_request
             # We copy the inputs to a new history and re-run the workflow
             inputs = json.loads(workflow_request['inputs'])
@@ -2131,16 +2045,15 @@ test_data:
 class: GalaxyWorkflow
 inputs: []
 outputs:
-  - id: wf_output_1
-    source: output_filter#out_1
+  wf_output_1:
+    outputSource: output_filter/out_1
 steps:
   - tool_id: output_filter
     label: output_filter
     state:
       produce_out_1: False
       filter_text_1: '1'
-test_data: {}
-    """, history_id=history_id, wait=False)
+""", test_data={}, history_id=history_id, wait=False)
             self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
             contents = self.__history_contents(history_id)
             assert len(contents) == 1
@@ -2153,26 +2066,25 @@ test_data: {}
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         rename: "my new name"
-test_data:
-  input1:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
+""", test_data="""
+input1:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
             content = self.dataset_populator.get_history_dataset_details(history_id, hid=4, wait=True, assert_ok=True)
             name = content["name"]
@@ -2189,26 +2101,25 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         rename: "#{input1} suffix"
-test_data:
-  input1:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
+""", test_data="""
+input1:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
             content = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
             name = content["name"]
@@ -2221,20 +2132,19 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: collection_creates_pair
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       paired_output:
         rename: "my new name"
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fasta1
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
 
@@ -2256,8 +2166,7 @@ steps:
         rename: "my new name"
       out_file2:
         rename: "my other new name"
-test_data: {}
-""", history_id=history_id)
+""", test_data={}, history_id=history_id)
         details1 = self.dataset_populator.get_history_dataset_details(history_id, hid=1, wait=True, assert_ok=True)
         details2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
 
@@ -2279,7 +2188,7 @@ test_data: {}
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: fail_identifier
     label: first_fail
@@ -2291,17 +2200,16 @@ steps:
       out_file1:
         rename: "cat1 out"
   - tool_id: cat
-    state:
-      input1:
-        $link: first_fail#out_file1
+    in:
+      input1: first_fail/out_file1
     outputs:
       out_file1:
         rename: "#{input1} suffix"
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fail
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fail
 """, history_id=history_id, wait=True, assert_ok=False)
             content = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=False)
             name = content["name"]
@@ -2327,21 +2235,20 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         rename: "#{input1} #{input1 | upper} suffix"
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: '#{input1}'
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: '#{input1}'
 """, history_id=history_id)
             content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
             name = content["name"]
@@ -2353,8 +2260,8 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-  - id: input2
+  input1: data
+  input2: data
 steps:
   - tool_id: cat
     label: first_cat
@@ -2367,15 +2274,15 @@ steps:
     outputs:
       out_file1:
         rename: "#{queries_0.input2| basename} suffix"
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fasta1
-  input2:
-    value: 1.fasta
-    type: File
-    name: fasta2
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+input2:
+  value: 1.fasta
+  type: File
+  name: fasta2
 """, history_id=history_id)
             content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
             name = content["name"]
@@ -2387,8 +2294,8 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: fasta_input
-  - id: fastq_input
+  fasta_input: data
+  fastq_input: data
 steps:
   - tool_id: mapper2
     state:
@@ -2403,17 +2310,17 @@ steps:
         # Wish it was qualified for conditionals but it doesn't seem to be. -John
         # rename: "#{fastq_input.fastq_input1 | basename} suffix"
         rename: "#{fastq_input1 | basename} suffix"
-test_data:
-  fasta_input:
-    value: 1.fasta
-    type: File
-    name: fasta1
-    file_type: fasta
-  fastq_input:
-    value: 1.fastqsanger
-    type: File
-    name: fastq1
-    file_type: fastqsanger
+""", test_data="""
+fasta_input:
+  value: 1.fasta
+  type: File
+  name: fasta1
+  file_type: fasta
+fastq_input:
+  value: 1.fastqsanger
+  type: File
+  name: fastq1
+  file_type: fastqsanger
 """, history_id=history_id)
             content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
             name = content["name"]
@@ -2425,8 +2332,8 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: fasta_input
-  - id: fastq_inputs
+  fasta_input: data
+  fastq_inputs: data
 steps:
   - tool_id: mapper2
     state:
@@ -2441,22 +2348,22 @@ steps:
         # Wish it was qualified for conditionals but it doesn't seem to be. -John
         # rename: "#{fastq_input.fastq_input1 | basename} suffix"
         rename: "#{fastq_input1} suffix"
-test_data:
-  fasta_input:
-    value: 1.fasta
-    type: File
-    name: fasta1
-    file_type: fasta
-  fastq_inputs:
-    type: list
-    name: the_dataset_pair
-    elements:
-      - identifier: forward
-        value: 1.fastq
-        type: File
-      - identifier: reverse
-        value: 1.fastq
-        type: File
+""", test_data="""
+fasta_input:
+  value: 1.fasta
+  type: File
+  name: fasta1
+  file_type: fasta
+fastq_inputs:
+  type: list
+  name: the_dataset_pair
+  elements:
+    - identifier: forward
+      value: 1.fastq
+      type: File
+    - identifier: reverse
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
             content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
             name = content["name"]
@@ -2468,7 +2375,7 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: collection_creates_pair
     state:
@@ -2477,11 +2384,11 @@ steps:
     outputs:
       paired_output:
         hide: true
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fasta1
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
 
@@ -2500,20 +2407,19 @@ inputs:
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         hide: true
-test_data:
-  input1:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
+""", test_data="""
+input1:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
 
             content = self.dataset_populator.get_history_dataset_details(history_id, hid=4, wait=True, assert_ok=True)
@@ -2530,13 +2436,12 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - label: first_cat
     tool_id: cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         add_tags:
@@ -2546,14 +2451,13 @@ steps:
             - "machine:illumina"
   - label: second_cat
     tool_id: cat
-    state:
-      input1:
-        $link: first_cat#out_file1
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fasta1
+    in:
+      input1: first_cat/out_file1
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
 """, history_id=history_id)
 
             details0 = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
@@ -2575,21 +2479,20 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: collection_creates_pair
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       paired_output:
         add_tags:
             - "name:foo"
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fasta1
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
 
@@ -2602,27 +2505,26 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
-    type: data_collection_input
+  input1:
+    type: collection
     collection_type: list
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         add_tags:
             - "name:foo"
-test_data:
-  input1:
-    type: list
-    name: the_dataset_list
-    elements:
-      - identifier: el1
-        value: 1.fastq
-        type: File
+""", test_data="""
+input1:
+  type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
 
@@ -2636,30 +2538,28 @@ test_data:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 steps:
   - tool_id: cat
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
     outputs:
       out_file1:
         add_tags:
           - "name:foo"
   - tool_id: collection_creates_pair
-    state:
-      input1:
-        $link: first_cat#out_file1
+    in:
+      input1: first_cat#out_file1
     outputs:
       paired_output:
         remove_tags:
           - "name:foo"
-test_data:
-  input1:
-    value: 1.fasta
-    type: File
-    name: fasta1
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
 """, history_id=history_id)
             details_dataset_with_tag = self.dataset_populator.get_history_dataset_details(history_id, hid=2, wait=True, assert_ok=True)
 
@@ -2707,24 +2607,21 @@ test_data:
     def test_run_with_delayed_runtime_pja(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-  - label: test_input
-    type: input
   - label: first_cat
     tool_id: cat1
-    state:
-      input1:
-        $link: test_input
+    in:
+      input1: test_input
   - label: the_pause
     type: pause
-    connect:
-      input:
-      - first_cat#out_file1
+    in:
+      input: first_cat/out_file1
   - label: second_cat
     tool_id: cat1
-    state:
-      input1:
-        $link: the_pause
+    in:
+      input1: the_pause
 """)
         downloaded_workflow = self._download_workflow(workflow_id)
         uuid_dict = dict((int(index), step["uuid"]) for index, step in downloaded_workflow["steps"].items())
@@ -2764,32 +2661,27 @@ steps:
             self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - id: input1
+  input1: data
 outputs:
-  - id: wf_output_1
-    source: third_cat#out_file1
+  wf_output_1:
+    outputSource: third_cat/out_file1
 steps:
   - tool_id: cat1
     label: first_cat
-    state:
-      input1:
-        $link: input1
+    in:
+      input1: input1
   - tool_id: cat1
     label: second_cat
-    state:
-      input1:
-        $link: first_cat#out_file1
+    in:
+      input1: first_cat/out_file1
   - tool_id: cat1
     label: third_cat
-    state:
-      input1:
-        $link: second_cat#out_file1
+    in:
+      input1: second_cat/out_file1
     outputs:
       out_file1:
         delete_intermediate_datasets: true
-test_data:
-  input1: "hello world"
-""", history_id=history_id)
+""", test_data={"input1": "hello world"}, history_id=history_id)
             hda1 = self.dataset_populator.get_history_dataset_details(history_id, hid=1)
             hda2 = self.dataset_populator.get_history_dataset_details(history_id, hid=2)
             hda3 = self.dataset_populator.get_history_dataset_details(history_id, hid=3)
@@ -3071,22 +2963,20 @@ steps:
         summary = self._run_jobs("""
 class: GalaxyWorkflow
 inputs:
-  - type: collection
-    label: input_c
+  input_c: collection
 steps:
   - label: cat1
     tool_id: cat1
-    state:
-       input1:
-         $link: input_c
-test_data:
-  input_c:
-    type: list
-    elements:
-      - identifier: i1
-        content: "0"
-      - identifier: i2
-        content: "1"
+    in:
+       input1: input_c
+""", test_data="""
+input_c:
+  type: list
+  elements:
+    - identifier: i1
+      content: "0"
+    - identifier: i2
+      content: "1"
 """, history_id=history_id, wait=True, assert_ok=True)
         workflow_id = summary.workflow_id
         invocation_id = summary.invocation_id
