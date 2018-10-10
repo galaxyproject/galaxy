@@ -377,11 +377,6 @@ class Configuration(object):
         # Set this to go back to setting the object store in the tool request instead of
         # in the job handler.
         self.legacy_eager_objectstore_initialization = string_as_bool(kwargs.get('legacy_eager_objectstore_initialization', 'False'))
-        # These workflow modules should not be considered part of Galaxy's
-        # public API yet - the module state definitions may change and
-        # workflows built using these modules may not function in the
-        # future.
-        self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))

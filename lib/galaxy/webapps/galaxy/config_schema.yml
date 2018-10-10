@@ -2099,14 +2099,6 @@ mapping:
           If tool_submission_burst_threads is set to a number greater than 1, this
           is the number of jobs to schedule at which the task queue will be created.
 
-      enable_beta_workflow_modules:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable beta workflow modules that should not yet be considered part of Galaxy's
-          stable API.
-
       force_beta_workflow_scheduled_min_steps:
         type: int
         default: 250

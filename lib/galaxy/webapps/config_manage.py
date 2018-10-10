@@ -275,6 +275,7 @@ OPTION_ACTIONS = {
     'allow_library_path_paste': _RenameAction("allow_path_paste"),
     'trust_ipython_notebook_conversion': _RenameAction("trust_jupyter_notebook_conversion"),
     'enable_beta_tool_command_isolation': _DeprecatedAndDroppedAction(),
+    'enable_beta_workflow_modules': _DeprecatedAndDroppedAction(),
     'single_user': _ProductionUnsafe(True),
     'tool_submission_burst_threads': _ProductionPerformance(),
     'tool_submission_burst_at': _ProductionPerformance(),

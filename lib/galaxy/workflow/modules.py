@@ -1257,30 +1257,17 @@ def load_module_sections(trans):
                 "description": "Input dataset collection"
             },
             {
+                "name": "pause",
+                "title": "Pause Workflow for Dataset Review",
+                "description": "Pause for Review"
+            },
+            {
                 "name": "parameter_input",
-                "title": "Input parameter",
-                "description": "Insert a re-useable Parameter",
-            }
+                "title": "Parameter Input",
+                "description": "Simple inputs used for workflow logic"
+            },
         ],
     }
-
-    if trans.app.config.enable_beta_workflow_modules:
-        module_sections['experimental'] = {
-            "name": "experimental",
-            "title": "Experimental",
-            "modules": [
-                {
-                    "name": "pause",
-                    "title": "Pause Workflow for Dataset Review",
-                    "description": "Pause for Review"
-                },
-                {
-                    "name": "parameter_input",
-                    "title": "Parameter Input",
-                    "description": "Simple inputs used for workflow logic"
-                },
-            ],
-        }
 
     return module_sections
 
