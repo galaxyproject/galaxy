@@ -40,7 +40,6 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('base')}
     ${h.css('bootstrap-tour')}
 </%def>
 
