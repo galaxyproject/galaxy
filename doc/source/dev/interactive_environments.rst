@@ -103,12 +103,12 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
     # host than Galaxy.
     #docker_hostname = localhost
 
-    # Try to set the tempdirectory to world execute - this can fix the issue
+    # Try to set the temp directory to world execute - this can fix the issue
     # where 'sudo docker' is not able to mount the folder otherwise.
     # "finalize namespace chdir to /import permission denied"
     #wx_tempdir = False
 
-    # Overwride the IE tempdirectory. This can be useful if you regular tempdir is
+    # Overwrite the IE temp directory. This can be useful if you regular tempdir is
     # located on an NFS share, which does not work well as Docker volume. In this case
     # you can have a shared sshfs share which you can use as temporary directory to
     # share data between the IE and Galaxy.
@@ -318,11 +318,11 @@ Galaxy immediately forgets the container exists. Thus, we say that if a
 container has no connections to TCP connections to itself, then it should
 commit suicide by killing the root process.
 
-Here's an example Dockerfile for our helloworld container
+Here's an example ``Dockerfile`` for our helloworld container
 
 .. code-block:: dockerfile
 
-    FROM ubuntu:14.04
+    FROM alpine
     # These environment variables are passed from Galaxy to the container
     # and help you enable connectivity to Galaxy from within the container.
     # This means your user can import/export data from/to Galaxy.
@@ -333,24 +333,28 @@ Here's an example Dockerfile for our helloworld container
         GALAXY_URL=none \
         GALAXY_WEB_PORT=10000 \
         HISTORY_ID=none \
-        REMOTE_HOST=none
+        REMOTE_HOST=none \
+        DOCKER_PORT=none \
+        CORS_ORIGIN-none
 
-    RUN apt-get -qq update && \
-        apt-get install --no-install-recommends -y \
-        wget procps nginx python python-pip net-tools nginx
+    RUN apk update && \
+    apk add \
+        wget procps nginx python py2-pip net-tools nginx git patch
 
     # Our very important scripts. Make sure you've run `chmod +x startup.sh
     # monitor_traffic.sh` outside of the container!
     ADD ./startup.sh /startup.sh
     ADD ./monitor_traffic.sh /monitor_traffic.sh
 
-    # /import will be the universal mount-point for Jupyter
+    # /import will be the universal mount-point
     # The Galaxy instance can copy in data that needs to be present to the
     # container
-    RUN mkdir /import
+    RUN mkdir -p /import /web/helloworld /run/nginx
 
     # Nginx configuration
     COPY ./proxy.conf /proxy.conf
+    COPY ./index.html /web/helloworld/
+    RUN chmod ugo+r /web/helloworld/index.html
 
     VOLUME ["/import"]
     WORKDIR /import/
@@ -370,19 +374,55 @@ the file the user selected which was mounted as a volume into
 
 .. code-block:: nginx
 
-    server {
-        listen 80;
-        server_name localhost;
-        access_log /var/log/nginx/localhost.access.log;
+    events {
+        worker_connections  1024;
+    }
 
-        # Note the trailing slash used everywhere!
-        location PROXY_PREFIX/helloworld/ {
-            proxy_buffering off;
-            proxy_pass         http://127.0.0.1:8000/;
-            proxy_redirect     http://127.0.0.1:8000/ PROXY_PREFIX/helloworld/;
+
+    http {
+        include       mime.types;
+        default_type  application/octet-stream;
+
+        sendfile        on;
+        keepalive_timeout  65;
+
+        server {
+            listen 80;
+            server_name localhost;
+            access_log /var/log/nginx/localhost.access.log;
+
+            root /web/;
+
+            location PROXY_PREFIX/ {
+                alias /web/;
+            }
+
+            rewrite ^(.*)/helloworld/(.*\.dat)$ PROXY_PREFIX/helloworld/dir/$2;
+
+            location PROXY_PREFIX/helloworld/dir/ {
+                proxy_buffering off;
+                proxy_pass         http://127.0.0.1:8000/;
+                proxy_redirect     http://127.0.0.1:8000/ PROXY_PREFIX/helloworld/dir/;
+            }
         }
     }
 
+Below is our ``index.html`` file
+
+.. code-block:: html
+
+    <html>
+        <head>
+        </head>
+        <body>
+            <h1>Welcome to Hello-World IE</h1>
+            <p>
+                There is one service running, a <a href="dir/">directory
+                listing</a>. (We originally had more but the github repository
+            for the flask app we were using disappeared.)
+            </p>
+        </body>
+    </html>
 
 And here we'll run that service in our ``startup.sh`` file
 
@@ -484,7 +524,7 @@ As you can see, a LOT is going on! We'll break it down further:
       temporary files, and so on.
     - ``GALAXY_PASTER_PORT`` (deprecated) and ``GALAXY_WEB_PORT`` are the raw
       port that Galaxy is listening on. You can use this to help decide how to
-      takl to Galaxy.
+      talk to Galaxy.
     - ``GALAXY_URL`` is the URL that Galaxy should be accessible at. For
       various reasons this may not be true. We recommend looking at our
       implementation of `galaxy.py
