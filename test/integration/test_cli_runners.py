@@ -4,25 +4,12 @@ import shlex
 import string
 import subprocess
 import tempfile
-import time
 import unittest
 
-import paramiko
 from base import integration_util
 from base.populators import skip_without_tool
 
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
-
-
-def deploy_key(key, server, username, password, port=22):
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(server, username=username, password=password, port=port)
-    client.exec_command('rm -R .ssh/')
-    client.exec_command('mkdir -p .ssh/')
-    client.exec_command('echo "%s" > .ssh/authorized_keys' % key)
-    client.exec_command('chmod 644 .ssh/authorized_keys')
-    client.exec_command('chmod 700 .ssh/')
 
 
 def generate_key(key_path):
@@ -32,10 +19,13 @@ def generate_key(key_path):
 
 @integration_util.skip_unless_docker()
 def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):
+    key_file = tempfile.NamedTemporaryFile(suffix='_slurm_integration_ssh_key', delete=True).name
+    generate_key(key_file)
+    pub_key = "%s.pub" % key_file
     START_SLURM_DOCKER = ['docker',
                           'run',
                           '-h',
-                          'docker.example.com',
+                          'localhost',
                           '-p',
                           '{port}:22'.format(port=port),
                           '-d',
@@ -44,17 +34,12 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           '--rm',
                           '-v',
                           "{jobs_directory}:{jobs_directory}".format(jobs_directory=jobs_directory),
+                          "-v",
+                          "{pub_key}:/home/testuser/.ssh/authorized_keys".format(pub_key=pub_key),
                           '--ulimit',
                           'nofile=2048:2048',
                           image]
     subprocess.check_call(START_SLURM_DOCKER)
-    key_file = tempfile.NamedTemporaryFile(suffix='_slurm_integration_ssh_key', delete=True).name
-    generate_key(key_file)
-    # Wait until ssh server in container is up
-    time.sleep(5)
-    with open("%s.pub" % key_file) as fh:
-        key = fh.read()
-    deploy_key(key=key, server='localhost', username='testuser', password='testuser', port=port)
     return collections.namedtuple('remote_connection', 'hostname username password port private_key')(
         'localhost', 'testuser', 'testuser', port, key_file
     )
