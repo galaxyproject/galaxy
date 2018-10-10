@@ -601,7 +601,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 visit_input_values(module.tool.inputs, module.state.inputs, callback)
                 # Filter
                 # FIXME: this removes connection without displaying a message currently!
-                input_connections = [conn for conn in input_connections if conn.input_name in data_input_names]
+                input_connections = [conn for conn in input_connections if conn.input_name in data_input_names or conn.non_data_connection]
                 # post_job_actions
                 pja_dict = {}
                 for pja in step.post_job_actions:
