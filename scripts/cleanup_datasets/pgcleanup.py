@@ -12,6 +12,7 @@ import inspect
 import logging
 import os
 import shutil
+import string
 import sys
 from collections import namedtuple
 from functools import partial
@@ -30,6 +31,8 @@ from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.bunch import Bunch
 from galaxy.util.script import app_properties_from_args, populate_config_args
 
+DEFAULT_LOG_DIR = os.path.join(galaxy_root, 'scripts', 'cleanup_datasets')
+
 log = logging.getLogger(__name__)
 
 MetadataFile = namedtuple('MetadataFile', ['id', 'object_store_id'])
@@ -45,6 +48,164 @@ class RemovesDatasets(object):
 
 
 class Action(object):
+    update_time_sql = ", update_time = NOW()"
+    force_retry_sql = " AND NOT purged"
+    causals = ()
+    _action_sql = ""
+    _action_sql_args = {}
+
+    # these shouldn't be overridden by subclasses
+
+    @classmethod
+    def name_c(cls):
+        name = [cls.__name__[0].lower()]
+        for c in cls.__name__[1:]:
+            if c in string.ascii_uppercase:
+                c = '_' + c.lower()
+            name.append(c)
+        return ''.join(name)
+
+    @classmethod
+    def doc_iter(cls):
+        for line in cls.__doc__.splitlines():
+            yield line.replace(' ', '', 4)
+
+    def __init__(self, args):
+        self.__log_dir = args.log_dir
+        self.__dry_run = args.dry_run
+        self.__debug = args.debug
+        self.__update_time = args.update_time
+        self.__force_retry = args.force_retry
+        self.__days = args.days
+        self.__log = None
+        self._init()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if self.__log is not None:
+            self.__close_log()
+
+    def __open_log(self):
+        logf = os.path.join(self.__log_dir, self.name + '.log')
+        if self.__dry_run:
+            log.info('--dry-run specified, logging changes to stderr instead of log file: %s' % logf)
+            h = logging.StreamHandler()
+        else:
+            log.info('Opening log file: %s' % logf)
+            h = logging.FileHandler(logf)
+        h.setLevel(logging.DEBUG if self.__debug else logging.INFO)
+        f = logging.Formatter('%(message)s')
+        h.setFormatter(f)
+        l = logging.getLogger(self.name)
+        l.addHandler(h)
+        l.propagate = False
+        m = ('==== Log opened: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
+        l.info(m)
+        self.__log = l
+
+    def __close_log(self):
+        m = ('==== Log closed: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
+        self.log.info(m)
+        self.__log = None
+
+    @property
+    def log(self):
+        if self.__log is None:
+            self.__open_log()
+        return self.__log
+
+    @property
+    def name(self):
+        return self.__class__.name_c()
+
+    # subclasses can override these as needed
+
+    @property
+    def _update_time_sql(self):
+        # only update time if not doing force retry (otherwise a lot of things would have their update times reset that
+        # were actually purged a long time ago)
+        if self.__update_time and not self.__force_retry:
+            return self.update_time_sql
+        return ""
+
+    @property
+    def _force_retry_sql(self):
+        # a misnomer, the value of force_retry_sql is actually the SQL that should be used if *not* forcibly retrying
+        if not self.__force_retry:
+            return self.force_retry_sql
+        return ""
+
+    @property
+    def sql(self):
+        return self._action_sql.format(
+            update_time_sql=self._update_time_sql,
+            force_retry_sql=self._force_retry_sql,
+        )
+
+    @property
+    def sql_args(self):
+        args = self._action_sql_args.copy()
+        if 'days' not in args:
+            args['days'] = self.__days
+        return args
+
+    def _collect_row_results(self, row, results, primary_key):
+        primary_key = row._fields[0]
+        primary = getattr(row, primary_key)
+        if primary not in results:
+            results[primary] = [set() for x in range(len(self.causals))]
+        rowgetter = partial(getattr, row)
+        for i, causal in enumerate(self.causals):
+            vals = tuple(map(rowgetter, causal))
+            if any(vals[1:]):
+                results[primary][i].add(vals)
+
+    def _collect_row_actions(self, row):
+        if hasattr(row, 'disk_accounting_user_id'):
+            self.disk_accounting_user_ids.add(row.disk_accounting_user_id)
+        object_store_id = getattr(row, 'object_store_id', None)
+        if hasattr(row, 'deleted_metadata_file_id'):
+            self.metadata_files.add((row.deleted_metadata_file_id, object_store_id))
+
+    def _log_results(self, results, primary_key):
+        for primary in sorted(results.keys()):
+            self._log('%s: %s' % (primary_key, primary))
+            for causal, s in zip(self.causals, results[primary]):
+                for r in sorted(s):
+                    secondaries = ', '.join(['%s: %s' % x for x in zip(causal[1:], r[1:])])
+                    self._log('%s %s caused %s' % (causal[0], r[0], secondaries))
+
+    # FIXME: can you do this better than with causals?
+
+    def handle_results(self, cur):
+        """Log the results of an action where results are joined across many tables and may contain duplicates, and
+        handle any actions that should be taken on those results.
+
+        :param row:     cursor object to iterate
+        :type  row:     :class:`psycopg2.cursor`
+
+        XX :param causals: names of columns that caused actions to be performed on other columns
+        XX :type  causals: tuple of tuples of strs
+
+        The first column is considered the "primary" column upon which actions are being taken. If disk usage should be
+        recalculated for users, those user IDs should be in a column named ``disk_accounting_user_id``.
+        """
+        results = {}
+        primary_key = None
+        for row in cur:
+            if primary_key is None:
+                primary_key = row._fields[0]
+            self._collect_row_results(row, results, primary_key)
+            self._collect_row_actions(row)
+        self._log_results(results, primary_key)
+
+    # subclasses can implement these
+
+    def _init(self):
+        pass
+
     def handle_row(self, row):
         pass
 
@@ -53,10 +214,30 @@ class Action(object):
 
 
 class PurgeDatasets(RemovesDatasets, Action):
-    sql = """
+    """
+    Mark purged all Datasets marked deleted that are older than the specified number of days.
     """
 
-    def __init__(self):
+    sql = """
+            WITH purged_dataset_ids
+              AS (     UPDATE dataset
+                          SET purged = true{update_time_sql}
+                        WHERE deleted{force_retry_sql}
+                              AND update_time < (NOW() - interval '%(days)s days')
+                    RETURNING id,
+                              object_store_id),
+                 dataset_events
+              AS (INSERT INTO cleanup_event_dataset_association
+                              (create_time, cleanup_event_id, dataset_id)
+                       SELECT NOW(), %(event_id)s, id
+                         FROM purged_dataset_ids)
+          SELECT id AS purged_dataset_id,
+                 object_store_id AS object_store_id
+            FROM purged_dataset_ids
+        ORDER BY id
+    """
+
+    def _init(self):
         self.datasets = set()
 
     def handle_row(self, row):
@@ -70,8 +251,8 @@ class Cleanup(object):
     def __init__(self):
         self.args = None
         self.config = None
-        self.conn = None
-        self.action_names = []
+        self.__conn = None
+        self.__actions = None
         self.disk_accounting_user_ids = set()
         self.remove_metadata_files = set()
         self.remove_datasets = set()
@@ -80,148 +261,128 @@ class Cleanup(object):
 
         self.action_logger = None
 
-        self.__cache_action_names()
         self.__parse_args()
         self.__setup_logging()
+        self.__validate_actions()
         self.__load_config()
-        self.__connect_db()
         self.__load_object_store()
 
-    def __cache_action_names(self):
-        for name, value in inspect.getmembers(self):
-            if not name.startswith('_') and inspect.ismethod(value):
-                self.action_names.append(name)
+    @property
+    def actions(self):
+        if self.__actions is None:
+            self.__actions = {}
+            for name, value in inspect.getmembers(sys.modules[__name__]):
+                if not name.startswith('_') and inspect.isclass(value) and value != Action and issubclass(value, Action):
+                    self.__actions[value.name_c()] = value
+        return self.__actions
+
+    @property
+    def conn(self):
+        if self.__conn is None:
+            url = make_url(galaxy.config.get_database_url(self.config))
+            log.info('Connecting to database with URL: %s' % url)
+            args = url.translate_connect_args(username='user')
+            args.update(url.query)
+            assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'
+            self.__conn = psycopg2.connect(cursor_factory=NamedTupleCursor, **args)
+        return self.__conn
 
     def __parse_args(self):
         parser = argparse.ArgumentParser()
         populate_config_args(parser)
-        parser.add_argument('-d', '--debug', action='store_true', dest='debug', help='Enable debug logging (SQL queries)', default=False)
-        parser.add_argument('--dry-run', action='store_true', dest='dry_run', help="Dry run (rollback all transactions)", default=False)
-        parser.add_argument('--force-retry', action='store_true', dest='force_retry', help="Retry file removals (on applicable actions)", default=False)
-        parser.add_argument('-o', '--older-than', type=int, dest='days', help='Only perform action(s) on objects that have not been updated since the specified number of days', default=14)
-        parser.add_argument('-U', '--no-update-time', action='store_false', dest='update_time', help="Don't set update_time on updated objects", default=True)
-        parser.add_argument('-s', '--sequence', dest='sequence', help='Comma-separated sequence of actions, chosen from: %s' % self.action_names, default='')
-        parser.add_argument('-w', '--work-mem', dest='work_mem', help='Set PostgreSQL work_mem for this connection', default=None)
-        parser.add_argument('-l', '--log-dir', dest='log_dir', help='Log file directory', default=os.path.join(galaxy_root, 'scripts', 'cleanup_datasets'))
+        parser.add_argument(
+            '-d', '--debug',
+            action='store_true',
+            default=False,
+            help='Enable debug logging (SQL queries)')
+        parser.add_argument(
+            '--dry-run',
+            action='store_true',
+            default=False,
+            help="Dry run (rollback all transactions)")
+        parser.add_argument(
+            '--force-retry',
+            action='store_true',
+            default=False,
+            help="Retry file removals (on applicable actions)")
+        parser.add_argument(
+            '-o', '--older-than',
+            dest='days',
+            type=int,
+            default=14,
+            help='Only perform action(s) on objects that have not been updated since the specified number of days')
+        parser.add_argument(
+            '-U', '--no-update-time',
+            action='store_false',
+            dest='update_time',
+            default=True,
+            help="Don't set update_time on updated objects")
+        parser.add_argument(
+            '-s', '--sequence',
+            dest='sequence',
+            default='',
+            help='DEPRECATED: Comma-separated sequence of actions')
+        parser.add_argument(
+            '-w', '--work-mem',
+            dest='work_mem',
+            default=None,
+            help='Set PostgreSQL work_mem for this connection')
+        parser.add_argument(
+            '-l', '--log-dir',
+            default=DEFAULT_LOG_DIR,
+            help='Log file directory')
+        parser.add_argument(
+            'actions',
+            nargs='*',
+            metavar='ACTION',
+            default=[],
+            help='Action(s) to perform, chosen from: %s' % ', '.join(sorted(self.actions.keys())))
         self.args = parser.parse_args()
 
+        # add deprecated sequence arg to actions
         self.args.sequence = [x.strip() for x in self.args.sequence.split(',')]
-
-        if self.args.sequence == ['']:
-            print("Error: At least one action must be specified in the action sequence\n")
-            parser.print_help()
-            sys.exit(0)
+        if self.args.sequence != ['']:
+            self.args.actions.extend(self.args.sequence)
 
     def __setup_logging(self):
-        format = "%(asctime)s %(levelname)-5s %(funcName)s: %(message)s"
+        format = "%(asctime)s %(levelname)-5s %(funcName)s(): %(message)s"
         if self.args.debug:
             logging.basicConfig(level=logging.DEBUG, format=format)
         else:
             logging.basicConfig(level=logging.INFO, format=format)
 
-    def __load_config(self):
-        app_properties = app_properties_from_args(self.args)
-        self.config = galaxy.config.Configuration(**app_properties)
-
-    def __connect_db(self):
-        url = make_url(galaxy.config.get_database_url(self.config))
-
-        log.info('Connecting to database with URL: %s' % url)
-        args = url.translate_connect_args(username='user')
-        args.update(url.query)
-
-        assert url.get_dialect().name == 'postgresql', 'This script can only be used with PostgreSQL.'
-
-        self.conn = psycopg2.connect(cursor_factory=NamedTupleCursor, **args)
-
-    def __load_object_store(self):
-        self.object_store = build_object_store_from_config(self.config)
-
-    def _open_logfile(self):
-        logname = os.path.join(self.args.log_dir, self.current_action + '.log')
-
-        if self.args.dry_run:
-            log.info('--dry-run specified, logging changes to stdout instead of log file: %s' % logname)
-            self._log_fh = sys.stdout
-        else:
-            log.info('Opening log file: %s' % logname)
-            self._log_fh = open(logname, 'a')
-
-        message = '==== Log opened: %s ' % datetime.datetime.now().isoformat()
-        self._log_fh.write(message.ljust(72, '='))
-        self._log_fh.write('\n')
-
-    def _log(self, message):
-        self.action_log.info(message)
-        '''
-        if self._log_fh is None:
-            self._open_logfile()
-        if not message.endswith('\n'):
-            message += '\n'
-        self._log_fh.write(message)
-        '''
-
-    @property
-    def action_log(self):
-        if self.action_logger is None:
-            logf = os.path.join(self.args.log_dir, self.current_action + '.log')
-            if self.args.dry_run:
-                log.info('--dry-run specified, logging changes to stderr instead of log file: %s' % logf)
-                h = logging.StreamHandler()
-            else:
-                log.info('Opening log file: %s' % logf)
-                h = logging.FileHandler(logf)
-            h.setLevel(logging.DEBUG if self.args.debug else logging.INFO)
-            f = logging.Formatter('%(message)s')
-            h.setFormatter(f)
-            l = logging.getLogger(self.current_action)
-            l.addHandler(h)
-            l.propagate = False
-            m = ('==== Log opened: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
-            l.info(m)
-            self.action_logger = l
-        return self.action_logger
-
-    def _close_log(self):
-        if self.action_logger is not None:
-            m = ('==== Log closed: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
-            self.action_logger.info(m)
-            # TODO: close the handler?
-            self.action_logger = None
-
-    '''
-    def _close_logfile(self):
-        if self._log_fh is None:
-            return
-
-        message = '==== Log closed: %s ' % datetime.datetime.now().isoformat()
-        self._log_fh.write(message.ljust(72, '='))
-        self._log_fh.write('\n')
-
-        if self.args.dry_run:
-            log.info('--dry-run specified, changes were logged to stdout insted of log file')
-        else:
-            log.info('Closing log file: %s' % self._log_fh.name)
-            self._log_fh.close()
-
-        self._log_fh = None
-    '''
-
-    def _run(self):
+    def __validate_actions(self):
         ok = True
-        for name in self.args.sequence:
-            if name not in self.action_names:
+        for name in self.args.actions:
+            if name not in self.actions.keys():
                 log.error('Unknown action in sequence: %s' % name)
                 ok = False
         if not ok:
             log.critical('Exiting due to previous error(s)')
             sys.exit(1)
-        for name in self.args.sequence:
-            log.info('Calling %s' % name)
+
+    def __load_config(self):
+        app_properties = app_properties_from_args(self.args)
+        self.config = galaxy.config.Configuration(**app_properties)
+
+    def __load_object_store(self):
+        self.object_store = build_object_store_from_config(self.config)
+
+    def run(self):
+        for name in self.args.actions:
+            cls = self.actions[name]
+            log.info("Running action '%s':", name)
+            map(log.info, cls.doc_iter())
             self.current_action = name
-            self.__getattribute__(name)()
-            self._close_log()
+            with cls(self.args) as action:
+                self._run_action(action)
+            #self.__getattribute__(name)()
             log.info('Finished %s' % name)
+        if self.disk_accounting_user_ids:
+            self.update_user_disk_usage()
+
+    def _run_action(self, action):
+        self._update(action.sql, action.sql_args, force_retry_sql=action.force_retry_sql)
 
     def _create_event(self, message=None):
         """
@@ -265,34 +426,9 @@ class Cleanup(object):
 
         return cur.fetchone()[0]
 
-    def _update_time_sql(self):
-        # only update time if not doing force retry (otherwise a lot of things would have their update times reset that were actually purged a long time ago)
-        if self.args.update_time and not self.args.force_retry:
-            return ", update_time = NOW()"
-        return ""
-
-    def _force_retry_sql(self, force_retry_sql=None):
-        # a misnomer, the value of force_retry_sql is actually the SQL that should be used if *not* forcibly retrying
-        if not self.args.force_retry:
-            return force_retry_sql or " AND NOT purged"
-        return ""
-
-    def _format_sql(self, sql, force_retry_sql=None):
-        return sql.format(
-            update_time_sql=self._update_time_sql(),
-            force_retry_sql=self._force_retry_sql(force_retry_sql=force_retry_sql),
-        )
-
-    def _add_default_args(self, args):
-        if isinstance(args, dict):
-            if 'days' not in args:
-                args['days'] = self.args.days
-
-    def _update(self, sql, args, add_event=True, event_message=None, force_retry_sql=None):
-        sql = self._format_sql(sql, force_retry_sql=force_retry_sql)
+    def _update(self, sql, args, add_event=True, event_message=None):
         if add_event and isinstance(args, dict) and 'event_id' not in args:
             args['event_id'] = self._create_event(message=event_message)
-        self._add_default_args(args)
 
         if args is not None:
             log.debug('SQL is: %s', sql % args_for_print(args))
@@ -321,54 +457,6 @@ class Cleanup(object):
             self.conn.commit()
             log.info("All changes committed")
 
-    def _collect_row_results(self, row, results, causals, primary_key):
-        primary_key = row._fields[0]
-        primary = getattr(row, primary_key)
-        if primary not in results:
-            results[primary] = [set() for x in range(len(causals))]
-        rowgetter = partial(getattr, row)
-        for i, causal in enumerate(causals):
-            vals = tuple(map(rowgetter, causal))
-            if any(vals[1:]):
-                results[primary][i].add(vals)
-
-    def _collect_row_actions(self, row):
-        if hasattr(row, 'disk_accounting_user_id'):
-            self.disk_accounting_user_ids.add(row.disk_accounting_user_id)
-        object_store_id = getattr(row, 'object_store_id', None)
-        if hasattr(row, 'deleted_metadata_file_id'):
-            self.metadata_files.add((row.deleted_metadata_file_id, object_store_id))
-
-    def _log_results(self, results, causals, primary_key):
-        for primary in sorted(results.keys()):
-            self._log('%s: %s' % (primary_key, primary))
-            for causal, s in zip(causals, results[primary]):
-                for r in sorted(s):
-                    secondaries = ', '.join(['%s: %s' % x for x in zip(causal[1:], r[1:])])
-                    self._log('%s %s caused %s' % (causal[0], r[0], secondaries))
-
-    def _handle_results(self, cur, causals=None):
-        """Log the results of an action where results are joined across many tables and may contain duplicates, and
-        handle any actions that should be taken on those results.
-
-        :param row:     cursor object to iterate
-        :type  row:     :class:`psycopg2.cursor`
-        :param causals: names of columns that caused actions to be performed on other columns
-        :type  causals: tuple of tuples of strs
-
-        The first column is considered the "primary" column upon which actions are being taken. If disk usage should be
-        recalculated for users, those user IDs should be in a column named ``disk_accounting_user_id``.
-        """
-        causals = causals or ()
-        results = {}
-        primary_key = None
-        for row in cur:
-            if primary_key is None:
-                primary_key = row._fields[0]
-            self._collect_row_results(row, results, causals, primary_key)
-            self._collect_row_actions(row)
-        self._log_results(results, causals, primary_key)
-
     def _remove_metadata_file(self, id, object_store_id):
         metadata_file = MetadataFile(id=id, object_store_id=object_store_id)
 
@@ -385,7 +473,7 @@ class Cleanup(object):
             except Exception as e:
                 self._log('Removal of %s failed with error: %s' % (filename, e))
 
-    def _update_user_disk_usage(self):
+    def update_user_disk_usage(self):
         """
         Any operation that purges a HistoryDatasetAssociation may require
         updating a user's disk usage.  Rather than attempt to resolve dataset
@@ -427,7 +515,7 @@ class Cleanup(object):
     def _shutdown(self):
         self.object_store.shutdown()
         self.conn.close()
-        if self.action_log is not None:
+        if self.action_logger is not None:
             m = ('==== Log closed at shutdown: %s ' % datetime.datetime.now().isoformat()).ljust(72, '=')
             self.action_logger.info(m)
 
@@ -989,27 +1077,8 @@ class Cleanup(object):
         self._close_logfile()
 
     def purge_datasets(self):
-        """
-        Mark purged all Datasets marked deleted that are older than the specified number of days.
-        """
         log.info('Marking purged all Datasets marked deleted that are older than the specified number of days.')
         sql = """
-                WITH purged_dataset_ids
-                  AS (     UPDATE dataset
-                              SET purged = true{update_time_sql}
-                            WHERE deleted{force_retry_sql}
-                                  AND update_time < (NOW() - interval '%(days)s days')
-                        RETURNING id,
-                                  object_store_id),
-                     dataset_events
-                  AS (INSERT INTO cleanup_event_dataset_association
-                                  (create_time, cleanup_event_id, dataset_id)
-                           SELECT NOW(), %(event_id)s, id
-                             FROM purged_dataset_ids)
-              SELECT id AS purged_dataset_id,
-                     object_store_id AS object_store_id
-                FROM purged_dataset_ids
-            ORDER BY id
         """
         cur = self._update(sql, {})
         self._open_logfile()
@@ -1075,9 +1144,7 @@ def args_for_print(args):
 if __name__ == '__main__':
     cleanup = Cleanup()
     try:
-        cleanup._run()
-        if cleanup.disk_accounting_user_ids:
-            cleanup._update_user_disk_usage()
+        cleanup.run()
     except Exception:
         log.exception('Caught exception in run sequence:')
     cleanup._shutdown()
