@@ -123,9 +123,6 @@ test/unit/**.log
 # Jars
 tool-data/shared/jars/
 
-# CSS build artifacts.
-sprite-*.scss
-
 # JS, Local node_modules, and bower_components directories
 static/maps
 static/plugins
