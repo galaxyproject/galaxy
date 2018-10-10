@@ -781,7 +781,7 @@ The provided mixins are intended to be used with the array-like variables
 
 @mixin sprite-image($sprite) {
   $sprite-image: nth($sprite, 9);
-  background-image: url(#{$sprite-image});
+  background-image: url(../../images/#{$sprite-image});
 }
 
 @mixin sprite($sprite) {
