@@ -18,11 +18,11 @@ def deploy_key(key, server, username, password, port=22):
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     client.connect(server, username=username, password=password, port=port)
-    client.exec_command('rm -R ~/.ssh/')
-    client.exec_command('mkdir -p ~/.ssh/')
-    client.exec_command('echo "%s" > ~/.ssh/authorized_keys' % key)
-    client.exec_command('chmod 644 ~/.ssh/authorized_keys')
-    client.exec_command('chmod 700 ~/.ssh/')
+    client.exec_command('rm -R .ssh/')
+    client.exec_command('mkdir -p .ssh/')
+    client.exec_command('echo "%s" > .ssh/authorized_keys' % key)
+    client.exec_command('chmod 644 .ssh/authorized_keys')
+    client.exec_command('chmod 700 .ssh/')
 
 
 def generate_key(key_path):
@@ -100,7 +100,8 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         cls.container_name = "%s_container" % cls.__name__
         cls.jobs_directory = tempfile.mkdtemp()
         cls.remote_connection = start_ssh_docker(container_name=cls.container_name,
-                                                 jobs_directory=cls.jobs_directory)
+                                                 jobs_directory=cls.jobs_directory,
+                                                 image=cls.image)
         super(BaseCliIntegrationTestCase, cls).setUpClass()
 
     @classmethod
@@ -112,7 +113,9 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config, ):
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
-        config["job_config_file"] = cli_job_config(remote_connection=cls.remote_connection, shell_plugin=cls.shell_plugin)
+        config["job_config_file"] = cli_job_config(remote_connection=cls.remote_connection,
+                                                   shell_plugin=cls.shell_plugin,
+                                                   job_plugin=cls.job_plugin)
 
     @skip_without_tool("job_environment_default")
     def test_running_cli_job(self):
