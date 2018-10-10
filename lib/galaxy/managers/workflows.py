@@ -771,6 +771,14 @@ class WorkflowContentsManager(UsesAnnotations):
                 for output in module.get_data_outputs():
                     step_dict['outputs'].append({'name': output['name'], 'type': output['extensions'][0]})
 
+            step_in = {}
+            for step_input in step.inputs:
+                if step_input.default_value_set:
+                    step_in[step_input.name] = {"default": step_input.default_value}
+
+            if step_in:
+                step_dict["in"] = step_in
+
             # Connections
             input_connections = step.input_connections
             if step.type is None or step.type == 'tool':
@@ -998,6 +1006,16 @@ class WorkflowContentsManager(UsesAnnotations):
                     label=label,
                 )
                 trans.sa_session.add(m)
+
+        if "in" in step_dict:
+            for input_name, input_dict in step_dict["in"].items():
+                step_input = step.get_or_add_input(input_name)
+                NO_DEFAULT_DEFINED = object()
+                default = input_dict.get("default", NO_DEFAULT_DEFINED)
+                if default is not NO_DEFAULT_DEFINED:
+                    step_input.default_value = default
+                    step_input.default_value_set = True
+
         return module, step
 
     def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, **kwds):
@@ -1041,23 +1059,21 @@ class WorkflowContentsManager(UsesAnnotations):
                     continue
                 if not isinstance(conn_list, list):  # Older style singleton connection
                     conn_list = [conn_list]
+
                 for conn_dict in conn_list:
                     if 'output_name' not in conn_dict or 'id' not in conn_dict:
                         template = "Invalid connection [%s] - must be dict with output_name and id fields."
                         message = template % conn_dict
                         raise exceptions.MessageException(message)
-                    conn = model.WorkflowStepConnection()
-                    conn.input_step = step
-                    conn.input_name = input_name
-                    conn.output_name = conn_dict['output_name']
                     external_id = conn_dict['id']
                     if external_id not in steps_by_external_id:
                         raise KeyError("Failed to find external id %s in %s" % (external_id, steps_by_external_id.keys()))
-                    conn.output_step = steps_by_external_id[external_id]
+                    output_step = steps_by_external_id[external_id]
 
+                    output_name = conn_dict["output_name"]
                     input_subworkflow_step_index = conn_dict.get('input_subworkflow_step_id', None)
-                    if input_subworkflow_step_index is not None:
-                        conn.input_subworkflow_step = step.subworkflow.step_by_index(input_subworkflow_step_index)
+
+                    step.add_connection(input_name, output_name, output_step, input_subworkflow_step_index)
 
             del step.temp_input_connections
 

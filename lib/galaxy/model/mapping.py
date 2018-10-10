@@ -908,6 +908,21 @@ model.WorkflowStep.table = Table(
     # Column( "input_connections", JSONType ),
     Column("label", Unicode(255)))
 
+
+model.WorkflowStepInput.table = Table(
+    "workflow_step_input", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("name", TEXT),
+    Column("merge_type", TEXT),
+    Column("scatter_type", TEXT),
+    Column("value_from", JSONType),
+    Column("value_from_type", TEXT),
+    Column("default_value", JSONType),
+    Column("default_value_set", Boolean, default=False),
+    Column("runtime_value", Boolean))
+
+
 model.WorkflowRequestStepState.table = Table(
     "workflow_request_step_states", metadata,
     Column("id", Integer, primary_key=True),
@@ -953,9 +968,8 @@ model.WorkflowStepConnection.table = Table(
     "workflow_step_connection", metadata,
     Column("id", Integer, primary_key=True),
     Column("output_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-    Column("input_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("input_step_input_id", Integer, ForeignKey("workflow_step_input.id"), index=True),
     Column("output_name", TEXT),
-    Column("input_name", TEXT),
     Column("input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
 )
 
@@ -2218,6 +2232,13 @@ mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
         backref="workflow_steps")
 ))
 
+mapper(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(
+    workflow_step=relation(model.WorkflowStep,
+        backref=backref("inputs", uselist=True),
+        cascade="all",
+        primaryjoin=(model.WorkflowStep.table.c.id == model.WorkflowStepInput.table.c.workflow_step_id))
+))
+
 mapper(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
     workflow_step=relation(model.WorkflowStep,
         backref='workflow_outputs',
@@ -2225,10 +2246,10 @@ mapper(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
 ))
 
 mapper(model.WorkflowStepConnection, model.WorkflowStepConnection.table, properties=dict(
-    input_step=relation(model.WorkflowStep,
-        backref="input_connections",
+    input_step_input=relation(model.WorkflowStepInput,
+        backref="connections",
         cascade="all",
-        primaryjoin=(model.WorkflowStepConnection.table.c.input_step_id == model.WorkflowStep.table.c.id)),
+        primaryjoin=(model.WorkflowStepConnection.table.c.input_step_input_id == model.WorkflowStepInput.table.c.id)),
     input_subworkflow_step=relation(model.WorkflowStep,
         backref=backref("parent_workflow_input_connections", uselist=True),
         primaryjoin=(model.WorkflowStepConnection.table.c.input_subworkflow_step_id == model.WorkflowStep.table.c.id),

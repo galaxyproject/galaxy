@@ -485,6 +485,11 @@ class MappingTests(unittest.TestCase):
         workflow_step_2.type = "subworkflow"
         workflow_step_2.subworkflow = child_workflow
 
+        workflow_step_1.get_or_add_input("moo1")
+        workflow_step_1.get_or_add_input("moo2")
+        workflow_step_2.get_or_add_input("moo")
+        workflow_step_1.add_connection("foo", "cow", workflow_step_2)
+
         workflow = workflow_from_steps([workflow_step_1, workflow_step_2])
         self.persist(workflow)
 
