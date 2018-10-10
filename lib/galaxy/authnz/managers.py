@@ -124,12 +124,12 @@ class AuthnzManager(object):
             log.debug(msg)
             return False, msg, None
 
-    def _extend_cloudauthz_config(self, trans, cloudauthz):
+    def _extend_cloudauthz_config(self, cloudauthz, request, sa_session, user_id):
         config = copy.deepcopy(cloudauthz.config)
         if cloudauthz.provider == "aws":
             success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
-            strategy = Strategy(trans, Storage, backend.config)
-            on_the_fly_config(trans.sa_session)
+            strategy = Strategy(request, None, Storage, backend.config)
+            on_the_fly_config(sa_session)
             try:
                 config['id_token'] = cloudauthz.authn.get_id_token(strategy)
             except requests.exceptions.HTTPError as e:
@@ -138,7 +138,7 @@ class AuthnzManager(object):
                 log.debug("Failed to get/refresh ID token for user with ID `{}` for assuming authz_id `{}`. "
                           "User may not have a refresh token. If the problem persists, set the `prompt` key to "
                           "`consent` in `oidc_backends_config.xml`, then restart Galaxy and ask user to: {}"
-                          "Error Message: `{}`".format(trans.user.id, cloudauthz.id, msg, e.response.text))
+                          "Error Message: `{}`".format(user_id, cloudauthz.id, msg, e.response.text))
                 raise exceptions.AuthenticationFailed(
                     err_msg="An error occurred getting your ID token. {}. If the problem persists, please "
                             "contact Galaxy admin.".format(msg))
@@ -228,7 +228,7 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def get_cloud_access_credentials(self, trans, cloudauthz):
+    def get_cloud_access_credentials(self, cloudauthz, sa_session, user_id, request=None):
         """
         This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
         to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
@@ -242,19 +242,25 @@ class AuthnzManager(object):
         identity token, as required by CloudAuthz for AWS. Then requests temporary
         credentials from the CloudAuthz library using the updated configuration.
 
-        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
-        :param trans:       Galaxy web transaction
-
         :type  cloudauthz:  CloudAuthz
         :param cloudauthz:  an instance of CloudAuthz to be used for getting temporary
                             credentials.
+
+        :type   request:    galaxy.web.framework.base.Request
+        :param  request:    Encapsulated HTTP(S) request.
+
+        :type   sa_session: sqlalchemy.orm.scoping.scoped_session
+        :param  sa_session: SQLAlchemy database handle.
+
+        :type   user_id:    int
+        :param  user_id:    Decoded Galaxy user ID.
 
         :rtype:             dict
         :return:            a dictionary containing credentials to access a cloud-based
                             resource provider. See CloudAuthz (https://github.com/galaxyproject/cloudauthz)
                             for details on the content of this dictionary.
         """
-        config = self._extend_cloudauthz_config(trans, cloudauthz)
+        config = self._extend_cloudauthz_config(cloudauthz, request, sa_session, user_id)
         try:
             ca = CloudAuthz()
             return ca.authorize(cloudauthz.provider, config)
