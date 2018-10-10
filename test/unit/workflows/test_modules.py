@@ -280,7 +280,8 @@ def __mock_tool(
         outputs={'out_file1': bunch.Bunch(collection=None,
                                           format='input',
                                           format_source=None,
-                                          change_format=[])},
+                                          change_format=[],
+                                          label=None)},
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
         to_json=_to_json

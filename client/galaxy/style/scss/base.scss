@@ -189,7 +189,9 @@ body {
     border-left: $layout-border;
 }
 
-#left, #right, .unified-panel {
+#left,
+#right,
+.unified-panel {
     background: $panel-bg-color;
     display: flex;
     flex-direction: column;
@@ -218,7 +220,6 @@ body {
     }
     .unified-panel-header-inner {
         width: 100%;
-        display: flex;
         align-items: center;
         justify-content: space-between;
     }
@@ -383,7 +384,7 @@ div.unified-panel-body-background {
     background-color: $state-danger-bg;
     background-image: url(error_small.png);
     background-repeat: no-repeat;
-    background-position: .5rem 50%;
+    background-position: 0.5rem 50%;
 }
 
 .panel-warning-message {

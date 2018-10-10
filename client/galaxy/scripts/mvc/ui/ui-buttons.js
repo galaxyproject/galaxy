@@ -225,7 +225,8 @@ var ButtonMenu = Backbone.View.extend({
             $("<div/>").append(
                 (this.$root = $("<button/>")
                     .append((this.$icon = $("<i/>")))
-                    .append((this.$title = $("<span/>")))))
+                    .append((this.$title = $("<span/>"))))
+            )
         );
         this.listenTo(this.model, "change", this.render, this);
         this.listenTo(this.collection, "change add remove reset", this.render, this);
@@ -255,10 +256,11 @@ var ButtonMenu = Backbone.View.extend({
             .removeClass()
             .addClass("icon fa")
             .addClass(options.icon);
-        options.title && this.$title
-            .removeClass()
-            .addClass("title ml-1")
-            .html(options.title);
+        options.title &&
+            this.$title
+                .removeClass()
+                .addClass("title ml-1")
+                .html(options.title);
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")

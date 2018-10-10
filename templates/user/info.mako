@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 
-<% is_admin = cntrller == 'admin' and trans.user_is_admin() %>
+<% is_admin = cntrller == 'admin' and trans.user_is_admin %>
 
 <%def name="render_user_info()">
 

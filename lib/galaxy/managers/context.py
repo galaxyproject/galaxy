@@ -119,11 +119,13 @@ class ProvidesUserContext(object):
             roles = []
         return roles
 
+    @property
     def user_is_admin(self):
         if self.api_inherit_admin:
             return True
         return self.user and self.user.email in self.app.config.admin_users_list
 
+    @property
     def user_can_do_run_as(self):
         run_as_users = [user for user in self.app.config.get("api_allow_run_as", "").split(",") if user]
         if not run_as_users:

@@ -7,6 +7,7 @@ import os
 import tarfile
 import zipfile
 
+from galaxy.util.path import safe_relpath
 from .checkers import (
     bz2,
     is_bz2,
@@ -90,7 +91,7 @@ class CompressedFile(object):
                 extraction_path = os.path.join(path, self.file_name)
                 if not os.path.exists(extraction_path):
                     os.makedirs(extraction_path)
-                self.archive.extractall(extraction_path)
+                self.archive.extractall(extraction_path, members=self.safemembers())
         else:
             # Get the common prefix for all the files in the archive. If the common prefix ends with a slash,
             # or self.isdir() returns True, the archive contains a single directory with the desired contents.
@@ -103,7 +104,7 @@ class CompressedFile(object):
                 extraction_path = os.path.join(path, self.file_name)
                 if not os.path.exists(extraction_path):
                     os.makedirs(extraction_path)
-            self.archive.extractall(extraction_path)
+            self.archive.extractall(extraction_path, members=self.safemembers())
         # Since .zip files store unix permissions separately, we need to iterate through the zip file
         # and set permissions on extracted members.
         if self.file_type == 'zip':
@@ -119,6 +120,23 @@ class CompressedFile(object):
                     else:
                         log.warning("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
         return os.path.abspath(os.path.join(extraction_path, common_prefix))
+
+    def safemembers(self):
+        members = self.archive
+        if self.file_type == "tar":
+            for finfo in members:
+                if not safe_relpath(finfo.name):
+                    raise Exception(finfo.name + " is blocked (illegal path).")
+                elif (finfo.issym() or finfo.islnk()) and not safe_relpath(finfo.linkname):
+                    raise Exception(finfo.name + " is blocked.")
+                else:
+                    yield finfo
+        elif self.file_type == "zip":
+            for name in members.namelist():
+                if not safe_relpath(name):
+                    raise Exception(name + " is blocked (illegal path).")
+                else:
+                    yield name
 
     def getmembers_tar(self):
         return self.archive.getmembers()

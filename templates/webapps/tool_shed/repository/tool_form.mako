@@ -24,7 +24,7 @@
     <body>
         <%def name="do_inputs( inputs, tool_state, prefix, other_values=None )">
             <% other_values = ExpressionContext( tool_state, other_values ) %>
-            %for input_index, input in enumerate( inputs.itervalues() ):
+            %for input_index, input in enumerate( inputs.values() ):
                 %if not input.visible:
                     <% pass %>
                 %elif input.type in ["repeat", "section"]:

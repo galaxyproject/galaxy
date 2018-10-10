@@ -84,6 +84,7 @@ var BaseInputTerminalView = TerminalView.extend({
 
         terminal.node = node;
         terminal.name = name;
+        terminal.label = input.label;
         node.input_terminals[name] = terminal;
     },
     events: {
@@ -185,6 +186,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         this.$el.attr("id", id);
         terminal.node = node;
         terminal.name = name;
+        terminal.label = output.label;
         node.output_terminals[name] = terminal;
     },
     events: {

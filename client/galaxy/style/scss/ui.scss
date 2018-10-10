@@ -202,7 +202,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
                 text-decoration: underline;
             }
         }
-        .portlet-operations  {
+        .portlet-operations {
             button {
                 @extend .ml-1;
             }
@@ -396,7 +396,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 .ui-select {
-    position:relative;
+    position: relative;
     .icon-dropdown {
         position: absolute;
         top: 0.7rem;
@@ -408,7 +408,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         cursor: pointer;
         -webkit-appearance: none;
         -moz-border-radius: $border-radius-base;
-
     }
     .select2-container {
         width: 100%;

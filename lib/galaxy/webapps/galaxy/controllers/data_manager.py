@@ -16,7 +16,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     def index(self, trans, **kwd):
-        not_is_admin = not trans.user_is_admin()
+        not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
         message = escape(kwd.get('message', ''))
@@ -25,7 +25,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     def manage_data_manager(self, trans, **kwd):
-        not_is_admin = not trans.user_is_admin()
+        not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
         message = escape(kwd.get('message', ''))
@@ -39,7 +39,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     def view_job(self, trans, **kwd):
-        not_is_admin = not trans.user_is_admin()
+        not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
         message = escape(kwd.get('message', ''))
@@ -72,7 +72,7 @@ class DataManager(BaseUIController):
 
     @web.expose
     def manage_data_table(self, trans, **kwd):
-        not_is_admin = not trans.user_is_admin()
+        not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
         message = escape(kwd.get('message', ''))

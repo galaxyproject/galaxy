@@ -1814,7 +1814,7 @@ class Tool(Dictifiable):
             }
 
         # If an admin user, expose the path to the actual tool config XML file.
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             tool_dict['config_file'] = os.path.abspath(self.config_file)
 
         # Add link details.
@@ -2491,6 +2491,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
             raise Exception("Invalid tool parameters.")
         extracted = extracted_element.element_object
         extracted_o = extracted.copy(copy_tags=tags, new_name=extracted_element.element_identifier)
+        extracted_o.visible = True
         self._add_datasets_to_history(history, [extracted_o])
 
         out_data["output"] = extracted_o

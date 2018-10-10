@@ -56,7 +56,7 @@ class GroupManager(object):
         """
         Create a new group.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise ItemAccessibilityException('Only administrators can create groups.')
         else:
             if self.get(trans, name=name):
@@ -72,7 +72,7 @@ class GroupManager(object):
         Update the given group
         """
         changed = False
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise ItemAccessibilityException('Only administrators can update groups.')
         if group.deleted:
             raise RequestParameterInvalidException('You cannot modify a deleted group. Undelete it first.')
@@ -91,7 +91,7 @@ class GroupManager(object):
         """
         Mark given group deleted/undeleted based on the flag.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise ItemAccessibilityException('Only administrators can delete and undelete groups.')
         if undelete:
             group.deleted = False
@@ -108,7 +108,7 @@ class GroupManager(object):
         :returns: query that will emit all groups
         :rtype:   sqlalchemy query
         """
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         query = trans.sa_session.query(trans.app.model.Group)
         if is_admin:
             if deleted is None:

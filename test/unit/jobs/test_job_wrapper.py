@@ -54,7 +54,7 @@ class BaseWrapperTestCase(UsesApp):
         wrapper = self._wrapper()
         version_path = wrapper.get_version_string_path()
         expected_path = os.path.join(self.test_directory, "new_files", "GALAXY_VERSION_STRING_345")
-        self.assertEquals(version_path, expected_path)
+        self.assertEqual(version_path, expected_path)
 
     def test_prepare_sets_command_line(self):
         with self._prepared_wrapper() as wrapper:

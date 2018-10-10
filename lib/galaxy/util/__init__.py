@@ -34,6 +34,10 @@ except ImportError:
     # For Pulsar on Windows (which does not use the function that uses grp)
     grp = None
 
+from boltons.iterutils import (
+    default_enter,
+    remap,
+)
 from six import binary_type, iteritems, PY2, string_types, text_type
 from six.moves import email_mime_multipart, email_mime_text, xrange, zip
 from six.moves.urllib import (
@@ -567,6 +571,32 @@ def sanitize_for_filename(text, default=None):
     return out
 
 
+def find_instance_nested(item, instances, match_key=None):
+    """
+    Recursively find instances from lists, dicts, tuples.
+
+    `instances` should be a tuple of valid instances
+    If match_key is given the key must match for an instance to be added to the list of found instances.
+    """
+
+    matches = []
+
+    def visit(path, key, value):
+        if isinstance(value, instances):
+            if match_key is None or match_key == key:
+                matches.append(value)
+        return key, value
+
+    def enter(path, key, value):
+        if isinstance(value, instances):
+            return None, False
+        return default_enter(path, key, value)
+
+    remap(item, visit, reraise_visit=False, enter=enter)
+
+    return matches
+
+
 def mask_password_from_url(url):
     """
     Masks out passwords from connection urls like the database connection in galaxy.ini
@@ -1013,6 +1043,19 @@ def strip_control_characters(s):
     return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
 
 
+def strip_control_characters_nested(item):
+    """Recursively strips control characters from lists, dicts, tuples."""
+
+    def visit(path, key, value):
+        if isinstance(key, string_types):
+            key = strip_control_characters(key)
+        if isinstance(value, string_types):
+            value = strip_control_characters(value)
+        return key, value
+
+    return remap(item, visit)
+
+
 def object_to_string(obj):
     return binascii.hexlify(obj)
 
@@ -1299,6 +1342,15 @@ def nice_size(size):
 def size_to_bytes(size):
     """
     Returns a number of bytes if given a reasonably formatted string with the size
+
+    >>> size_to_bytes('1024')
+    1024
+    >>> size_to_bytes('10 bytes')
+    10
+    >>> size_to_bytes('4k')
+    4096
+    >>> size_to_bytes('2.2 TB')
+    2418925581107
     """
     # Assume input in bytes if we can convert directly to an int
     try:
@@ -1306,21 +1358,25 @@ def size_to_bytes(size):
     except ValueError:
         pass
     # Otherwise it must have non-numeric characters
-    size_re = re.compile('([\d\.]+)\s*([tgmk]b?|b|bytes?)$')
+    size_re = re.compile('([\d\.]+)\s*([eptgmk]b?|b|bytes?)$')
     size_match = re.match(size_re, size.lower())
     assert size_match is not None
     size = float(size_match.group(1))
     multiple = size_match.group(2)
-    if multiple.startswith('t'):
-        return int(size * 1024 ** 4)
-    elif multiple.startswith('g'):
-        return int(size * 1024 ** 3)
-    elif multiple.startswith('m'):
-        return int(size * 1024 ** 2)
+    if multiple.startswith('b'):
+        return int(size)
     elif multiple.startswith('k'):
         return int(size * 1024)
-    elif multiple.startswith('b'):
-        return int(size)
+    elif multiple.startswith('m'):
+        return int(size * 1024 ** 2)
+    elif multiple.startswith('g'):
+        return int(size * 1024 ** 3)
+    elif multiple.startswith('t'):
+        return int(size * 1024 ** 4)
+    elif multiple.startswith('p'):
+        return int(size * 1024 ** 5)
+    elif multiple.startswith('e'):
+        return int(size * 1024 ** 6)
 
 
 def send_mail(frm, to, subject, body, config, html=None):

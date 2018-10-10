@@ -5,6 +5,10 @@ import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import * as _ from "underscore";
+
+/* global Galaxy */
+/* global $ */
 
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
@@ -100,7 +104,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-times",
                 classes: "delete-btn",
                 onclick: function() {
-                    self.$el.find(".icon-btn.delete-btn").tooltip('dispose');
+                    self.$el.find(".icon-btn.delete-btn").tooltip("dispose");
                     self.model["delete"]();
                 }
             });
@@ -260,30 +264,27 @@ var DatasetListItemEdit = _super.extend(
             }
 
             if (visualizations.length >= 1) {
-                var url = Galaxy.root + "visualizations?dataset_id=" + this.model.get("id");
-                return $("<a/>")
-                    .addClass("visualization-link icon-btn")
-                    .attr("href", url)
-                    .append($("<span/>").addClass("fa fa-bar-chart-o"))
-                    .on("click", function(e) {
-                        Galaxy.frame.add({ url: url, title: "Visualization" });
-                        e.preventDefault();
-                    });
+                let dsid = this.model.get("id");
+                let url = Galaxy.root + "visualizations?dataset_id=" + dsid;
+                return faIconButton({
+                    title: _l("Visualize this data"),
+                    href: url,
+                    classes: "visualization-link",
+                    faIcon: "fa-bar-chart-o",
+                    onclick: ev => {
+                        if (Galaxy.frame && Galaxy.frame.active) {
+                            ev.preventDefault();
+                            Galaxy.frame.add({ url: url, title: "Visualization" });
+                        } else if (Galaxy.router) {
+                            ev.preventDefault();
+                            Galaxy.router.push("visualizations", {
+                                dataset_id: dsid
+                            });
+                            Galaxy.trigger("activate-hda", dsid);
+                        }
+                    }
+                });
             }
-        },
-
-        /** add scratchbook functionality to visualization links */
-        _addScratchBookFn: function($links) {
-            $links.click(ev => {
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.add({
-                        title: _l("Visualization"),
-                        url: $(this).attr("href")
-                    });
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                }
-            });
         },
 
         //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
@@ -392,7 +393,7 @@ var DatasetListItemEdit = _super.extend(
 
         /** listener for item purge (in the messages section) */
         _clickPurgeLink: function(ev) {
-            if (confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
+            if (window.confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
                 this.model.purge();
             }
             return false;
