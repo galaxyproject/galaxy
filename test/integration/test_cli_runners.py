@@ -1,27 +1,35 @@
 """Integration tests for the CLI shell plugins and runners."""
 import collections
-import shlex
+import os
 import string
 import subprocess
 import tempfile
 import unittest
 
-from base import integration_util
+from Crypto.PublicKey import RSA
+
+from base import integration_util  # noqa: I100,I202
 from base.populators import skip_without_tool
+from .test_job_environments import BaseJobEnvironmentIntegrationTestCase  # noqa: I201
 
-from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
+
+def generate_keys():
+    key = RSA.generate(2048)
+    return (key.export_key(), key.publickey().export_key(format='OpenSSH'))
 
 
-def generate_key(key_path):
-    CMD = 'ssh-keygen -b 2048 -t rsa -f {key_path} -q -N ""'.format(key_path=key_path)
-    subprocess.check_call(shlex.split(CMD))
+RemoteConnection = collections.namedtuple('remote_connection', ['hostname', 'username', 'password', 'port', 'private_key', 'public_key'])
 
 
 @integration_util.skip_unless_docker()
 def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi/slurm'):
-    key_file = tempfile.NamedTemporaryFile(suffix='_slurm_integration_ssh_key', delete=True).name
-    generate_key(key_file)
-    pub_key = "%s.pub" % key_file
+    private_key, public_key = generate_keys()
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(private_key)
+        private_key_file = f.name
+    with tempfile.NamedTemporaryFile(delete=False) as f:
+        f.write(public_key)
+        public_key_file = f.name
     START_SLURM_DOCKER = ['docker',
                           'run',
                           '-h',
@@ -35,18 +43,18 @@ def start_ssh_docker(container_name, jobs_directory, port=10022, image='agaveapi
                           '-v',
                           "{jobs_directory}:{jobs_directory}".format(jobs_directory=jobs_directory),
                           "-v",
-                          "{pub_key}:/home/testuser/.ssh/authorized_keys".format(pub_key=pub_key),
+                          "{public_key_file}:/home/testuser/.ssh/authorized_keys".format(public_key_file=public_key_file),
                           '--ulimit',
                           'nofile=2048:2048',
                           image]
     subprocess.check_call(START_SLURM_DOCKER)
-    return collections.namedtuple('remote_connection', 'hostname username password port private_key')(
-        'localhost', 'testuser', 'testuser', port, key_file
-    )
+    return RemoteConnection('localhost', 'testuser', 'testuser', port, private_key_file, public_key_file)
 
 
-def stop_ssh_docker(container_name):
+def stop_ssh_docker(container_name, remote_connection):
     subprocess.check_call(['docker', 'rm', '-f', container_name])
+    os.remove(remote_connection.private_key)
+    os.remove(remote_connection.public_key)
 
 
 def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='Slurm'):
@@ -91,7 +99,7 @@ class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
 
     @classmethod
     def tearDownClass(cls):
-        stop_ssh_docker(container_name=cls.container_name)
+        stop_ssh_docker(cls.container_name, cls.remote_connection)
         super(BaseCliIntegrationTestCase, cls).tearDownClass()
 
     @classmethod
