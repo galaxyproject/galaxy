@@ -131,4 +131,4 @@ gulp.task("watch-style", function() {
 
 gulp.task("staging", ["stage-libs", "fonts"]);
 
-gulp.task("default", ["scripts", "libs", "plugins"]);
+gulp.task("default", ["libs", "plugins"]);

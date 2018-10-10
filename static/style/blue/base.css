@@ -15399,157 +15399,157 @@ The `sprites` mixin generates identical output to the CSS template
 @include sprites($spritesheet-sprites);
 */
 .icon-button.tag {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -16px -112px;
   width: 16px;
   height: 16px; }
 
 .icon-button.tags {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -32px -112px;
   width: 16px;
   height: 16px; }
 
 .icon-button.tag--plus {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: 0px -112px;
   width: 16px;
   height: 16px; }
 
 .icon-button.toggle-expand {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -80px -112px;
   width: 16px;
   height: 16px; }
 
 .icon-button.toggle {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -48px -112px;
   width: 16px;
   height: 16px; }
 
 .icon-button.toggle:hover {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -96px -112px;
   width: 16px;
   height: 16px; }
 
 .icon-button.arrow-circle {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -32px 0px;
   width: 16px;
   height: 16px; }
 
 .icon-button.chevron {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -32px -64px;
   width: 16px;
   height: 16px; }
 
 .icon-button.bug {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -64px -32px;
   width: 16px;
   height: 16px; }
 
 .icon-button.disk {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -16px -80px;
   width: 16px;
   height: 16px; }
 
 .icon-button.information {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -96px -80px;
   width: 16px;
   height: 16px; }
 
 .icon-button.annotate {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -112px -96px;
   width: 16px;
   height: 16px; }
 
 .icon-button.go-to-full-screen {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: 0px 0px;
   width: 16px;
   height: 16px; }
 
 .icon-button.import {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -112px -80px;
   width: 16px;
   height: 16px; }
 
 .icon-button.plus-button {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -112px -48px;
   width: 16px;
   height: 16px; }
 
 .icon-button.plus-button:hover {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -112px -64px;
   width: 16px;
   height: 16px; }
 
 .icon-button.gear {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -96px 0px;
   width: 16px;
   height: 16px; }
 
 .icon-button.chart_curve {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -64px -48px;
   width: 16px;
   height: 16px; }
 
 .icon-button.disk--arrow {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -80px -64px;
   width: 16px;
   height: 16px; }
 
 .icon-button.disk--arrow:hover {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: 0px -80px;
   width: 16px;
   height: 16px; }
 
 .icon-button.cross-circle {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -80px 0px;
   width: 16px;
   height: 16px; }
 
 .icon-button.cross-circle:hover {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -80px -16px;
   width: 16px;
   height: 16px; }
 
 .icon-button.arrow-split {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -16px -32px;
   width: 16px;
   height: 16px; }
 
 .icon-button.arrow-split:hover {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -32px -32px;
   width: 16px;
   height: 16px; }
 
 .icon-button.chevron-expand:hover {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: -16px -64px;
   width: 16px;
   height: 16px; }
 
 .icon-button.chevron-expand {
-  background-image: url(sprite-fugue.png);
+  background-image: url(../../images/sprite-fugue.png);
   background-position: 0px -64px;
   width: 16px;
   height: 16px; }
