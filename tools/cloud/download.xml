@@ -9,7 +9,9 @@
     </requirements>
     <command><![CDATA[
         #set $authz_record=$__app__.authnz_manager.try_get_authz_config($__app__.obj.model.context.current, $__user_id__, $authz_id)
-        #set $credentials_file = $__app__.authnz_manager.get_cloud_access_credentials_in_file($__app__.config.new_file_path, $authz_record, $__app__.obj.model.context.current, $__user_id__)
+        #if $credentials_file == None
+            #set $credentials_file = $__app__.authnz_manager.get_cloud_access_credentials_in_file($__app__.config.new_file_path, $authz_record, $__app__.obj.model.context.current, $__user_id__)
+        #end if
         python $__tool_directory__/download.py
             --provider=$authz_record.provider
             --filename=$filename
@@ -31,6 +33,7 @@
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
         <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
+        <param name="credentials_file" type="hidden" label="Credentials File" />
     </inputs>
     <outputs>
         <data name="output" type="data" label="Output log" hidden="false"/>
