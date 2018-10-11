@@ -59,6 +59,7 @@ const FRAMEWORK_PLUGIN = test_framework() == "qunit" ? "karma-qunit" : "karma-mo
 module.exports = function(config) {
     config.set({
         basepath: ".",
+        failOnEmptyTestSuite: false,
         files: TEST_FILES.concat([
             // Non-test assets that will be served by web server.
             // CSS needed by tests.
