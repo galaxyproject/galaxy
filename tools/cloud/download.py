@@ -80,9 +80,6 @@ def parse_args(args):
 
 def __main__():
     args = parse_args(sys.argv[1:])
-    if args.provider not in ["aws", "azure", "openstack"]:
-        raise Exception("Invalid Provider `{}`; see `SUPPORTED_PROVIDERS` in lib/galaxy/managers/cloud.py "
-                        "for a list of supported providers.".format(args.provider))
     overwrite_existing = args.overwrite_existing.lower() == "true"
     credentials = load_credential(args.credentials_file)
     download(args.provider, credentials, args.bucket, args.object_label, args.filename, overwrite_existing)
