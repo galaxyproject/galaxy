@@ -329,14 +329,11 @@ class CloudManager(sharable.SharableModelManager):
                 continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 try:
-                    credentials_file = trans.app.authnz_manager.get_cloud_access_credentials_in_file(
-                        trans.app.config.new_file_path, cloudauthz, trans.sa_session, trans.user.id)
                     object_label = hda.name.replace(" ", "_")
                     args = {
                         # We encode ID here because it the tool wrapper assumes
                         # it receives an encoded ID and attempts decoding it.
                         "authz_id": trans.security.encode_id(cloudauthz.id),
-                        "credentials_file": credentials_file,
                         "bucket": bucket_name,
                         "object_label": object_label,
                         "filename": hda,
