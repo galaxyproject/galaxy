@@ -93,7 +93,7 @@
                             Email address of user to share with
                         </label>
                         <div style="float: left; width: 100%;  margin-right: 10px;">
-                            %if trans.app.config.expose_user_email or trans.app.config.expose_user_name or trans.user_is_admin():
+                            %if trans.app.config.expose_user_email or trans.app.config.expose_user_name or trans.user_is_admin:
                             <input type="hidden" id="email_select" name="email" >
                             </input>
                             %else:

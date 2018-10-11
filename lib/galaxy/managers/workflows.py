@@ -81,7 +81,7 @@ class WorkflowsManager(object):
         stored_workflow = self.get_stored_workflow(trans, workflow_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin() and not stored_workflow.published:
+        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is not owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
@@ -109,7 +109,7 @@ class WorkflowsManager(object):
         if isinstance(has_workflow, model.WorkflowInvocation):
             # We use the the owner of the history that is associated to the invocation as a proxy
             # for the owner of the invocation.
-            if trans.user != has_workflow.history.user and not trans.user_is_admin():
+            if trans.user != has_workflow.history.user and not trans.user_is_admin:
                 raise exceptions.ItemOwnershipException()
             else:
                 return True
@@ -121,7 +121,7 @@ class WorkflowsManager(object):
         else:
             stored_workflow = has_workflow
 
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.user != trans.user and not trans.user_is_admin:
             if check_ownership:
                 raise exceptions.ItemOwnershipException()
             # else check_accessible...
@@ -244,6 +244,7 @@ class WorkflowContentsManager(UsesAnnotations):
         publish=False,
         create_stored_workflow=True,
         exact_tools=True,
+        fill_defaults=False,
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
@@ -257,6 +258,7 @@ class WorkflowContentsManager(UsesAnnotations):
             data,
             name=name,
             exact_tools=exact_tools,
+            fill_defaults=fill_defaults,
         )
         if 'uuid' in data:
             workflow.uuid = data['uuid']
@@ -298,7 +300,7 @@ class WorkflowContentsManager(UsesAnnotations):
             missing_tools=missing_tool_tups
         )
 
-    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data):
+    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data, **kwds):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
 
@@ -306,6 +308,7 @@ class WorkflowContentsManager(UsesAnnotations):
             trans,
             workflow_data,
             name=stored_workflow.name,
+            **kwds
         )
 
         if missing_tool_tups:
@@ -381,27 +384,27 @@ class WorkflowContentsManager(UsesAnnotations):
             version = None
         if version is not None:
             version = int(version)
+        workflow = stored.get_internal_version(version)
         if style == "editor":
-            wf_dict = self._workflow_to_dict_editor(trans, stored, version=version)
+            wf_dict = self._workflow_to_dict_editor(trans, stored, workflow)
         elif style == "legacy":
-            wf_dict = self._workflow_to_dict_instance(stored, legacy=True, version=version)
+            wf_dict = self._workflow_to_dict_instance(stored, workflow=workflow, legacy=True)
         elif style == "instance":
-            wf_dict = self._workflow_to_dict_instance(stored, legacy=False, version=version)
+            wf_dict = self._workflow_to_dict_instance(stored, workflow=workflow, legacy=False)
         elif style == "run":
-            wf_dict = self._workflow_to_dict_run(trans, stored, version=version)
+            wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow)
         else:
-            wf_dict = self._workflow_to_dict_export(trans, stored, version=version)
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         if version:
             wf_dict['version'] = version
         else:
             wf_dict['version'] = len(stored.workflows) - 1
         return wf_dict
 
-    def _workflow_to_dict_run(self, trans, stored, version=None):
+    def _workflow_to_dict_run(self, trans, stored, workflow):
         """
         Builds workflow dictionary used by run workflow form
         """
-        workflow = stored.get_internal_version(version)
         if len(workflow.steps) == 0:
             raise exceptions.MessageException('Workflow cannot be run because it does not have any steps.')
         if attach_ordered_steps(workflow, workflow.steps):
@@ -485,8 +488,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
-    def _workflow_to_dict_editor(self, trans, stored, version=None):
-        workflow = stored.get_internal_version(version)
+    def _workflow_to_dict_editor(self, trans, stored, workflow, tooltip=True):
         # Pack workflow data into a dictionary and return
         data = {}
         data['name'] = workflow.name
@@ -520,7 +522,6 @@ class WorkflowContentsManager(UsesAnnotations):
                 'content_id': module.get_content_id(),
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
-                'tooltip': module.get_tooltip(static_path=url_for('/static')),
                 'errors': module.get_errors(),
                 'data_inputs': module.get_data_inputs(),
                 'data_outputs': module.get_data_outputs(),
@@ -530,6 +531,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 'uuid': str(step.uuid) if step.uuid else None,
                 'workflow_outputs': []
             }
+            if tooltip:
+                step_dict['tooltip'] = module.get_tooltip(static_path=url_for('/static'))
             # Connections
             input_connections = step.input_connections
             input_connections_type = {}
@@ -591,15 +594,30 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict['position'] = step.position
             # Add to return value
             data['steps'][step.order_index] = step_dict
+        data['steps'] = self._resolve_collection_type_source(data['steps'])
         return data
 
-    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, version=None):
+    def _resolve_collection_type_source(self, steps):
+        """
+        Fill in collection type for step outputs that infer the collection type via collection_type_source.
+
+        This information is only needed in the workflow editor.
+        """
+        for order_index in sorted(steps):
+            step = steps[order_index]
+            for i, step_data_output in enumerate(step['data_outputs']):
+                if step_data_output.get('collection_type_source') and step_data_output['collection_type'] is None:
+                    collection_type_source = step_data_output['collection_type_source']
+                    for input_connection in step['input_connections'].get(collection_type_source, []):
+                        input_step = steps[input_connection['id']]
+                        for input_step_data_output in input_step['data_outputs']:
+                            if input_step_data_output['name'] == input_connection['output_name']:
+                                step_data_output['collection_type'] = input_step_data_output.get('collection_type')
+        return steps
+
+    def _workflow_to_dict_export(self, trans, stored=None, workflow=None):
         """ Export the workflow contents to a dictionary ready for JSON-ification and export.
         """
-        if workflow is None:
-            assert stored is not None
-            workflow = stored.get_internal_version(version)
-
         annotation_str = ""
         tag_str = ""
         if stored is not None:
@@ -764,11 +782,10 @@ class WorkflowContentsManager(UsesAnnotations):
             data['steps'][step.order_index] = step_dict
         return data
 
-    def _workflow_to_dict_instance(self, stored, legacy=True, version=None):
+    def _workflow_to_dict_instance(self, stored, workflow, legacy=True):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view='element', value_mapper={'id': encode})
-        workflow = stored.get_internal_version(version)
         item['url'] = url_for('workflow', id=item['id'])
         item['owner'] = stored.user.username
         inputs = {}

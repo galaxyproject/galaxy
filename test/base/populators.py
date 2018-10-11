@@ -5,6 +5,7 @@ import random
 import string
 import time
 import unittest
+from collections import namedtuple
 from functools import wraps
 from operator import itemgetter
 
@@ -14,16 +15,17 @@ except ImportError:
     def nottest(x):
         return x
 import requests
+import yaml
+from gxformat2 import (
+    convert_and_import_workflow,
+    ImporterGalaxyInterface,
+)
 from pkg_resources import resource_string
 from six import StringIO
 
 from galaxy.tools.verify.test_data import TestDataResolver
 from galaxy.util import unicodify
 from . import api_asserts
-from .workflows_format_2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
 
 
 # Simple workflow that takes an input and call cat wrapper on it.
@@ -239,7 +241,7 @@ class BaseDatasetPopulator(object):
             self.cancel_job(active_job["id"])
 
     def history_jobs(self, history_id):
-        query_params = {"history_id": history_id}
+        query_params = {"history_id": history_id, "order_by": "create_time"}
         jobs_response = self._get("jobs", query_params)
         assert jobs_response.status_code == 200
         return jobs_response.json()
@@ -558,13 +560,17 @@ class BaseWorkflowPopulator(object):
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
 
+    def invoke_workflow_raw(self, workflow_id, request):
+        url = "workflows/%s/usage" % (workflow_id)
+        invocation_response = self._post(url, data=request)
+        return invocation_response
+
     def invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
         request["history"] = "hist_id=%s" % history_id,
         if inputs:
             request["inputs"] = json.dumps(inputs)
             request["inputs_by"] = 'step_index'
-        url = "workflows/%s/usage" % (workflow_id)
-        invocation_response = self._post(url, data=request)
+        invocation_response = self.invoke_workflow_raw(workflow_id, request)
         if assert_ok:
             api_asserts.assert_status_code_is(invocation_response, 200)
             invocation_id = invocation_response.json()["id"]
@@ -572,12 +578,74 @@ class BaseWorkflowPopulator(object):
         else:
             return invocation_response
 
+    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True):
+        """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
+        workflow_populator = self
+
+        def read_test_data(test_dict):
+            test_data_resolver = TestDataResolver()
+            filename = test_data_resolver.get_filename(test_dict["value"])
+            content = open(filename, "r").read()
+            return content
+
+        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type)
+
+        if test_data is None:
+            if jobs_descriptions is None:
+                assert source_type != "path"
+                jobs_descriptions = yaml.safe_load(has_workflow)
+
+            test_data = jobs_descriptions.get("test_data", {})
+
+        if not isinstance(test_data, dict):
+            test_data = yaml.safe_load(test_data)
+
+        parameters = test_data.pop('step_parameters', {})
+        replacement_parameters = test_data.pop("replacement_parameters", {})
+        inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            workflow_id=workflow_id,
+        )
+        workflow_request["inputs"] = json.dumps(label_map)
+        workflow_request["inputs_by"] = 'name'
+        if parameters:
+            workflow_request["parameters"] = json.dumps(parameters)
+            workflow_request["parameters_normalized"] = True
+        if replacement_parameters:
+            workflow_request["replacement_params"] = json.dumps(replacement_parameters)
+        if has_uploads:
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
+        api_asserts.assert_status_code_is(invocation_response, expected_response)
+        invocation = invocation_response.json()
+        invocation_id = invocation.get('id')
+        if invocation_id:
+            # Wait for workflow to become fully scheduled and then for all jobs
+            # complete.
+            if wait:
+                workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
+            jobs = self.dataset_populator.history_jobs(history_id)
+            return RunJobsSummary(
+                history_id=history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation_id,
+                inputs=inputs,
+                jobs=jobs,
+                invocation=invocation,
+                workflow_request=workflow_request
+            )
+
+
+RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])
+
 
 class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
 
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
     def _post(self, route, data={}):
         return self.galaxy_interactor.post(route, data)
@@ -1124,6 +1192,7 @@ class GiDatasetCollectionPopulator(BaseDatasetCollectionPopulator, GiPostGetMixi
         """Construct a dataset collection populator from a bioblend GalaxyInstance."""
         self._gi = gi
         self.dataset_populator = GiDatasetPopulator(gi)
+        self.dataset_collection_populator = GiDatasetCollectionPopulator(gi)
 
     def _create_collection(self, payload):
         create_response = self._post("dataset_collections", data=payload)

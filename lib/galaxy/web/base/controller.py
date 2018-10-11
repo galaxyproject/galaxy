@@ -431,7 +431,7 @@ class UsesLibraryMixin(object):
 
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
         l = self.get_object(trans, id, 'Library')
-        if check_accessible and not (trans.user_is_admin() or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
+        if check_accessible and not (trans.user_is_admin or trans.app.security_agent.can_access_library(trans.get_current_user_roles(), l)):
             error("LibraryFolder is not accessible to the current user")
         return l
 
@@ -462,8 +462,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
     def can_current_user_add_to_library_item(self, trans, item):
         if not trans.user:
             return False
-        return ((trans.user_is_admin()) or
-                (trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item)))
+        return (trans.user_is_admin or
+                trans.app.security_agent.can_add_library_item(trans.get_current_user_roles(), item))
 
     def check_user_can_add_to_library_item(self, trans, item, check_accessible=True):
         """
@@ -475,7 +475,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             return False
 
         current_user_roles = trans.get_current_user_roles()
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return True
 
         if check_accessible:
@@ -1237,7 +1237,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True):
+    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True, fill_defaults=False):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1250,6 +1250,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             add_to_menu=add_to_menu,
             publish=publish,
             exact_tools=exact_tools,
+            fill_defaults=fill_defaults,
         )
         return created_workflow.stored_workflow, created_workflow.missing_tools
 
@@ -1399,18 +1400,25 @@ class SharableMixin(object):
 
     @web.expose_api
     def sharing(self, trans, id, payload=None, **kwd):
+        skipped = False
         class_name = self.manager.model_class.__name__
         item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
         if payload and payload.get("action"):
             action = payload.get("action")
             if action == "make_accessible_via_link":
                 self._make_item_accessible(trans.sa_session, item)
+                if item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
             elif action == "make_accessible_and_publish":
                 self._make_item_accessible(trans.sa_session, item)
+                if item.has_possible_members and payload.get("make_members_public", False):
+                    shared, skipped = self._make_members_public(trans, item)
                 item.published = True
             elif action == "publish":
                 if item.importable:
                     item.published = True
+                    if item.has_possible_members and payload.get("make_members_public", False):
+                        shared, skipped = self._make_members_public(trans, item)
                 else:
                     raise exceptions.MessageException("%s not importable." % class_name)
             elif action == "disable_link_access":
@@ -1435,7 +1443,29 @@ class SharableMixin(object):
         item_dict = self.serializer.serialize_to_view(item,
             user=trans.user, trans=trans, default_view="sharing")
         item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        if skipped:
+            item_dict["skipped"] = True
         return item_dict
+
+    def _make_members_public(self, trans, item):
+        """ Make the non-purged datasets in history public
+        Performs pemissions check.
+        """
+        # TODO eventually we should handle more classes than just History
+        skipped = False
+        for hda in item.activatable_datasets:
+            dataset = hda.dataset
+            if not trans.app.security_agent.dataset_is_public(dataset):
+                if trans.app.security_agent.can_manage_dataset(trans.user.all_roles(), dataset):
+                    try:
+                        trans.app.security_agent.make_dataset_public(hda.dataset)
+                    except Exception:
+                        log.warning("Unable to make dataset with id: %s public.").format(dataset.id)
+                        skipped = True
+                else:
+                    log.warning("User without permissions tried to make dataset with id: %s public.").format(dataset.id)
+                    skipped = True
+        return item, skipped
 
     # -- Abstract methods. --
 

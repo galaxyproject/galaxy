@@ -6,7 +6,6 @@ import datetime
 import logging
 
 from galaxy.exceptions import (
-    AuthenticationFailed,
     ItemAccessibilityException,
     MessageException,
     ObjectNotFound,
@@ -18,7 +17,6 @@ from galaxy.util import Params
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
-    from cloudbridge.cloud.interfaces.exceptions import ProviderConnectionException
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
@@ -62,16 +60,21 @@ class CloudManager(sharable.SharableModelManager):
         if provider == 'aws':
             access = credentials.get('access_key', None)
             if access is None:
-                missing_credentials.append('access_key')
+                access = credentials.get("AccessKeyId", None)
+                if access is None:
+                    missing_credentials.append('access_key')
             secret = credentials.get('secret_key', None)
             if secret is None:
-                missing_credentials.append('secret_key')
+                secret = credentials.get("SecretAccessKey", None)
+                if secret is None:
+                    missing_credentials.append('secret_key')
             if len(missing_credentials) > 0:
                 raise RequestParameterMissingException("The following required key(s) are missing from the provided "
                                                        "credentials object: {}".format(missing_credentials))
-
+            session_token = credentials.get("SessionToken")
             config = {'aws_access_key': access,
-                      'aws_secret_key': secret}
+                      'aws_secret_key': secret,
+                      "aws_session_token": session_token}
             connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
             subscription = credentials.get('subscription_id', None)
@@ -128,11 +131,20 @@ class CloudManager(sharable.SharableModelManager):
             raise RequestParameterInvalidException("Unrecognized provider '{}'; the following are the supported "
                                                    "providers: {}.".format(provider, SUPPORTED_PROVIDERS))
 
-        try:
-            if connection.authenticate():
-                return connection
-        except ProviderConnectionException as e:
-            raise AuthenticationFailed("Could not authenticate to the '{}' provider. {}".format(provider, e))
+        # The authorization-assertion mechanism of Cloudbridge assumes a user has an elevated privileges,
+        # such as Admin-level access to all resources (see https://github.com/CloudVE/cloudbridge/issues/135).
+        # As a result, a user who wants to authorize Galaxy to read/write an Amazon S3 bucket, need to
+        # also authorize Galaxy with full permission to Amazon EC2 (because Cloudbridge leverages EC2-specific
+        # operation to assert credentials). While the EC2 authorization is not required by Galaxy to
+        # read/write a S3 bucket, it can cause this exception.
+        #
+        # Until Cloudbridge implements an authorization-specific credentials assertion, we are not asserting
+        # the authorization/validity of the credentials, in order to avoid asking users to grant Galaxy with an
+        # elevated, yet unnecessary, privileges.
+        #
+        # Note, if user's credentials are invalid/expired to perform the authorized action, that can cause
+        # exceptions which we capture separately in related read/write attempts.
+        return connection
 
     @staticmethod
     def _get_inputs(obj, key, input_args):
@@ -162,10 +174,14 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
-    def upload(self, trans, history_id, provider, bucket_name, objects, credentials, input_args=None):
+    def upload(self, trans, history_id, bucket_name, objects, authz_id, input_args=None):
         """
         Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
+
+        This manager does NOT require use credentials, instead, it uses a more secure method,
+        which leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz) and automatically
+        requests temporary credentials to access the defined resources.
 
         :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans:       Galaxy web transaction
@@ -173,20 +189,16 @@ class CloudManager(sharable.SharableModelManager):
         :type  history_id:  string
         :param history_id:  the (decoded) id of history to which the object should be uploaded to.
 
-        :type  provider:    string
-        :param provider:    the name of cloud-based resource provided. A list of supported providers is given in
-                            `SUPPORTED_PROVIDERS` variable.
-
         :type  bucket_name: string
         :param bucket_name: the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
 
         :type  objects:     list of string
         :param objects:     the name of objects to be uploaded.
 
-        :type  credentials: dict
-        :param credentials: a dictionary containing all the credentials required to authenticated to the
-                            specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN,
-                            "access_key": YOUR_AWS_ACCESS_TOKEN}).
+        :type  authz_id:    int
+        :param authz_id:    the ID of CloudAuthz to be used for authorizing access to the resource provider. You may
+                            get a list of the defined authorizations via `/api/cloud/authz`. Also, you can
+                            use `/api/cloud/authz/create` to define a new authorization.
 
         :type  input_args:  dict
         :param input_args:  a [Optional] a dictionary of input parameters:
@@ -201,7 +213,9 @@ class CloudManager(sharable.SharableModelManager):
         if input_args is None:
             input_args = {}
 
-        connection = self._configure_provider(provider, credentials)
+        cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans, authz_id)
+        credentials = trans.app.authnz_manager.get_cloud_access_credentials(cloudauthz, trans.sa_session, trans.user.id, trans.request)
+        connection = self._configure_provider(cloudauthz.provider, credentials)
         try:
             bucket = connection.storage.buckets.get(bucket_name)
             if bucket is None:
@@ -216,7 +230,12 @@ class CloudManager(sharable.SharableModelManager):
             except Exception as e:
                 raise MessageException("The following error occurred while getting the object {}: {}".format(obj, str(e)))
             if key is None:
-                raise ObjectNotFound("Could not get the object `{}`.".format(obj))
+                log.exception(
+                    "Could not get object `{}` for user `{}`. Object may not exist, or the provided credentials are "
+                    "invalid or not authorized to read the bucket/object.".format(obj, trans.user.id))
+                raise ObjectNotFound(
+                    "Could not get the object `{}`. Please check if the object exists, and credentials are valid and "
+                    "authorized to read the bucket and object. ".format(obj))
 
             params = Params(self._get_inputs(obj, key, input_args), sanitize=False)
             incoming = params.__dict__
@@ -228,7 +247,7 @@ class CloudManager(sharable.SharableModelManager):
             job_errors = output.get('job_errors', [])
             if job_errors:
                 raise ValueError('Following error occurred while uploading the given object(s) from {}: {}'.format(
-                    provider, job_errors))
+                    cloudauthz.provider, job_errors))
             else:
                 for d in output['out_data']:
                     datasets.append(d[1].dataset)
@@ -271,8 +290,9 @@ class CloudManager(sharable.SharableModelManager):
                                     "False", Galaxy appends datetime to the dataset name to prevent
                                     overwriting the existing object.
 
-        :rtype:                     list
-        :return:                    A list of labels for the objects that were uploaded.
+        :rtype:                     tuple
+        :return:                    A tuple of two lists of labels of the objects that were successfully and
+                                    unsuccessfully downloaded to cloud..
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -284,12 +304,18 @@ class CloudManager(sharable.SharableModelManager):
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         downloaded = []
+        failed = []
         for hda in history.datasets:
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 object_label = hda.name
                 if overwrite_existing is False and bucket.objects.get(object_label) is not None:
                     object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
                 created_obj = bucket.objects.create(object_label)
-                created_obj.upload_from_file(hda.dataset.get_file_name())
-                downloaded.append(object_label)
-        return downloaded
+                try:
+                    created_obj.upload_from_file(hda.dataset.get_file_name())
+                    downloaded.append(object_label)
+                except Exception as e:
+                    log.debug("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
+                              "{}".format(e.message))
+                    failed.append(object_label)
+        return downloaded, failed

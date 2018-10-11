@@ -1,3 +1,5 @@
+import * as Toastr from "libs/toastr";
+
 function Connector(handle1, handle2) {
     this.canvas = null;
     this.dragging = false;
@@ -30,8 +32,11 @@ $.extend(Connector.prototype, {
         }
         $(this.canvas).remove();
     },
-    destroyIfInvalid: function() {
+    destroyIfInvalid: function(warn) {
         if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1)) {
+            if (warn) {
+                Toastr.warning("Destroying a connection because collection type has changed.");
+            }
             this.destroy();
         }
     },

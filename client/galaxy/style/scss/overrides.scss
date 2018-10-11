@@ -11,6 +11,10 @@ pre {
     white-space: pre;
 }
 
+.alert {
+    word-wrap: break-word;
+}
+
 .btn.hover {
     $btn: hover();
 }
@@ -62,31 +66,6 @@ input[type="radio"] {
         }
     }
 }
-/*
-
-NOTE: these styles do not currently work.
-
-.modal {
-  position: absolute;
-  top: 50px;
-  width: 660px;
-  margin-left: -330px;
-}
-
-.modal:after {
-  content: "";
-  height: 0px;
-  position: relative;
-  top: 50px;
-  display: block;
-  border: solid transparent 1px;
-}
-
-.modal-body {
-  height: auto;
-  max-height: none;
-}
-*/
 
 // Scroll modal body.
 .modal-body {

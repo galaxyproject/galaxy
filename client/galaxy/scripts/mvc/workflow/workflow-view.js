@@ -278,46 +278,51 @@ export default Backbone.View.extend({
             let workflow_versions = JSON.parse(
                 $.ajax({
                     url: `${Galaxy.root}api/workflows/${self.options.id}/versions`,
-                    async: false,
+                    async: false
                 }).responseText
             );
 
             for (let i = 0; i < workflow_versions.length; i++) {
                 let current_wf = workflow_versions[i];
-                let version_text = `Version ${current_wf['version']}, ${current_wf['steps']} steps`;
+                let version_text = `Version ${current_wf["version"]}, ${current_wf["steps"]} steps`;
                 let selected = false;
                 if (i == self.workflow.workflow_version) {
                     version_text = `${version_text} (active)`;
                     selected = true;
-                };
+                }
                 _workflow_version_dropdown[version_text] = {
                     version: i,
-                    selected: selected,
-                }
+                    selected: selected
+                };
             }
-            return _workflow_version_dropdown
-        }
+            return _workflow_version_dropdown;
+        };
 
         this.build_version_select = function() {
             let versions = this.get_workflow_versions();
             $("#workflow-version-switch").empty();
             $.each(versions, function(k, v) {
-                $('#workflow-version-switch').append($('<option></option>').html(k).val(v.version).selected(v.selected));
+                $("#workflow-version-switch").append(
+                    $("<option></option>")
+                        .html(k)
+                        .val(v.version)
+                        .selected(v.selected)
+                );
             });
-            $("#workflow-version-switch").on('change', function () {
-                $('#workflow-version-switch').unbind('change');
+            $("#workflow-version-switch").on("change", function() {
+                $("#workflow-version-switch").unbind("change");
                 if (this.value != self.workflow.workflow_version) {
                     if (self.workflow && self.workflow.has_changes) {
                         let r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
                         if (r == false) {
                             // We rebuild the version select list, to reset the selected version
                             self.build_version_select();
-                            return
+                            return;
                         }
                     }
                     self.load_workflow(self.options.id, this.value);
                 }
-            })
+            });
         };
 
         this.load_workflow = function load_workflow(id, version) {
@@ -360,19 +365,21 @@ export default Backbone.View.extend({
                     self.showWorkflowParameters();
                 },
                 error: function(response) {
-                        window.show_modal("Loading workflow failed.", response.err_msg, { Ok: function( response ){
-                        window.onbeforeunload = undefined;
-                        window.document.location = workflow_index;
-}})
+                    window.show_modal("Loading workflow failed.", response.err_msg, {
+                        Ok: function(response) {
+                            window.onbeforeunload = undefined;
+                            window.document.location = workflow_index;
+                        }
+                    });
                 },
                 beforeSubmit: function(data) {
                     show_message("Loading workflow", "progress");
                 }
             });
-        }
+        };
 
         // Load workflow definition
-        this.load_workflow(self.options.id, self.options.version)
+        this.load_workflow(self.options.id, self.options.version);
         if (window.make_popupmenu) {
             make_popupmenu($("#workflow-options-button"), {
                 Save: save_current_workflow,
@@ -547,7 +554,7 @@ export default Backbone.View.extend({
         );
         _.each(this.options.workflows, workflow => {
             if (workflow.id !== self.options.id) {
-                var copy = new Ui.ButtonIcon({
+                var copy = new Ui.Button({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
@@ -770,7 +777,7 @@ export default Backbone.View.extend({
             content.workflow = this.workflow;
             content.datatypes = this.datatypes;
             content.icon = WorkflowIcons[node.type];
-            content.cls = "ui-portlet-narrow";
+            content.cls = "ui-portlet-section";
             if (node) {
                 var form_type = node.type == "tool" ? "Tool" : "Default";
                 $el.append(new FormWrappers[form_type](content).form.$el);

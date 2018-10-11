@@ -133,6 +133,18 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
+model.CloudAuthz.table = Table(
+    "cloudauthz", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('provider', String(255)),
+    Column('config', JSONType),
+    Column('authn_id', Integer, ForeignKey("oidc_user_authnz_tokens.id"), index=True),
+    Column('tokens', JSONType),
+    Column('last_update', DateTime),
+    Column('last_activity', DateTime),
+    Column('description', TEXT))
+
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column("token", String(32), primary_key=True, unique=True, index=True),
@@ -913,7 +925,7 @@ model.WorkflowRequestInputParameter.table = Table(
     Column("value", TEXT),
     Column("type", Unicode(255)))
 
-model.WorkflowRequestInputStepParmeter.table = Table(
+model.WorkflowRequestInputStepParameter.table = Table(
     "workflow_request_input_step_parameter", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
@@ -1473,6 +1485,15 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
                   backref='social_auth')
 ))
 
+mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.CloudAuthz.table.c.user_id == model.User.table.c.id),
+                  backref='cloudauthz'),
+    authn=relation(model.UserAuthnzToken,
+                   primaryjoin=(model.CloudAuthz.table.c.authn_id == model.UserAuthnzToken.table.c.id),
+                   backref='cloudauthz')
+))
+
 mapper(model.ValidationError, model.ValidationError.table)
 
 simple_mapping(model.HistoryDatasetAssociation,
@@ -1674,6 +1695,8 @@ mapper(model.User, model.User.table, properties=dict(
     api_keys=relation(model.APIKeys,
         backref="user",
         order_by=desc(model.APIKeys.table.c.create_time)),
+    cloudauthzs=relation(model.CloudAuthz,
+                         primaryjoin=model.CloudAuthz.table.c.user_id == model.User.table.c.id),
 ))
 
 mapper(model.PasswordResetToken, model.PasswordResetToken.table,
@@ -2013,7 +2036,7 @@ mapper(model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table, p
 mapper(model.JobExportHistoryArchive, model.JobExportHistoryArchive.table, properties=dict(
     job=relation(model.Job),
     history=relation(model.History),
-    dataset=relation(model.Dataset)
+    dataset=relation(model.Dataset, backref='job_export_history_archive')
 ))
 
 mapper(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, properties=dict(
@@ -2023,7 +2046,7 @@ mapper(model.JobImportHistoryArchive, model.JobImportHistoryArchive.table, prope
 
 mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=dict(
     job=relation(model.Job, backref='job'),
-    dataset=relation(model.Dataset),
+    dataset=relation(model.Dataset, backref='genome_index_tool_data'),
     user=relation(model.User),
     deferred=relation(model.DeferredJob, backref='deferred_job'),
     transfer=relation(model.TransferJob, backref='transfer_job')
@@ -2271,7 +2294,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
     history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
     input_parameters=relation(model.WorkflowRequestInputParameter),
     step_states=relation(model.WorkflowRequestStepState),
-    input_step_parameters=relation(model.WorkflowRequestInputStepParmeter),
+    input_step_parameters=relation(model.WorkflowRequestInputStepParameter),
     input_datasets=relation(model.WorkflowRequestToInputDatasetAssociation),
     input_dataset_collections=relation(model.WorkflowRequestToInputDatasetCollectionAssociation),
     subworkflow_invocations=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
@@ -2306,7 +2329,7 @@ simple_mapping(model.WorkflowRequestStepState,
     workflow_invocation=relation(model.WorkflowInvocation),
     workflow_step=relation(model.WorkflowStep))
 
-simple_mapping(model.WorkflowRequestInputStepParmeter,
+simple_mapping(model.WorkflowRequestInputStepParameter,
     workflow_invocation=relation(model.WorkflowInvocation),
     workflow_step=relation(model.WorkflowStep))
 

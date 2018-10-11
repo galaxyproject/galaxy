@@ -1,7 +1,7 @@
 <template>
     <div v-if="ready">
         <h2>Share or Publish {{model_class}} `{{item.title}}`</h2>
-        <b-alert variant="danger" :show="err_msg">
+        <b-alert :show="show_danger" variant="danger" dismissible>
             {{ err_msg }}
         </b-alert>
         </br>
@@ -53,9 +53,17 @@
             <div v-else>
                 <p>This {{model_class_lc}} is currently restricted so that only you and the users listed below can access it. You can:</p>
                 <b-button @click="setSharing('make_accessible_via_link')">Make {{model_class}} Accessible via Link</b-button>
+                <span v-if="has_possible_members" class="chkk">
+                Also make all objects within the {{model_class}} accessible.
+                <input type="checkbox" v-model="make_members_public" id="chk_make_members_public">
+                </span>
                 <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the {{model_class_lc}}.</div>
                 <br/>
                 <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')">Make {{model_class}} Accessible and Publish</b-button>
+                <span v-if="has_possible_members" class="chkk">
+                Also make all objects within the {{model_class}} accessible.
+                <input type="checkbox" v-model="make_members_public" id="chk_make_members_public">
+                </span>
                 <div class="toolParamHelp">Makes the {{model_class_lc}} accessible via link (see above) and publishes the {{model_class_lc}} to Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section, where it is publicly listed and searchable.</div>
             </div>
             <br/><br/>
@@ -131,6 +139,12 @@ export default {
         },
         slug_url() {
             return `${Galaxy.root}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
+        },
+        has_possible_members() {
+            return ["history"].indexOf(this.model_class_lc) > -1;
+        },
+        show_danger() {
+            return this.err_msg !== null;
         }
     },
     data() {
@@ -147,7 +161,8 @@ export default {
                 published: false,
                 users_shared_with: []
             },
-            share_fields: ["email", { key: "id", label: "" }]
+            share_fields: ["email", { key: "id", label: "" }],
+            make_members_public: false
         };
     },
     created: function() {
@@ -180,13 +195,20 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setSharing: function(action, user_id) {
+            let data = {
+                action: action,
+                user_id: user_id
+            };
+            if (this.has_possible_members) {
+                data.make_members_public = this.make_members_public;
+            }
             axios
-                .post(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`, {
-                    action: action,
-                    user_id: user_id
-                })
+                .post(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`, data)
                 .then(response => {
                     Object.assign(this.item, response.data);
+                    if (response.data.skipped) {
+                        this.err_msg = "Some of the items within this object were not published due to an error.";
+                    }
                 })
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
@@ -233,3 +255,8 @@ export default {
     }
 };
 </script>
+<style>
+.chkk {
+    display: inline-block;
+}
+</style>

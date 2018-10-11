@@ -216,7 +216,7 @@ registration:
 
 tool_form:
   selectors:
-    options: '#options .dropdown-toggle'
+    options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
     citations: '.citations-formatted'
     reference: '.citations-formatted .formatted-reference'

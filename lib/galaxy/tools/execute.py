@@ -437,9 +437,6 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
 
     def new_collection_execution_slices(self):
         for job_index, (param_combination, dataset_collection_elements) in enumerate(six.moves.zip(self.param_combinations, self.walk_implicit_collections())):
-            # Two options here - check if the element has been populated or check if the
-            # a WorkflowInvocationStepJobAssociation exists. Not sure which is better but
-            # for now I have the first so lets check.
             found_result = False
             for dataset_collection_element in dataset_collection_elements.values():
                 if dataset_collection_element.element_object is not None:

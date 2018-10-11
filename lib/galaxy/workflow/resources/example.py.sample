@@ -11,7 +11,7 @@ def admin_mapping(trans, stored_workflow, **kwds):
     ``workflow_resource_params_mapper`` to ``galaxy.workflow.resources.example:admin_mapping``.
     """
     workflow_resource_params = kwds["workflow_resource_params"]
-    if trans.user_is_admin():
+    if trans.user_is_admin:
         priority_attrib = workflow_resource_params.get("priority").attrib
         priority_attrib['data'] = []
         for child in workflow_resource_params.get('priority').getchildren():

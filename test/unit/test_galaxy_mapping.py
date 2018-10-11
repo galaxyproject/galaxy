@@ -238,7 +238,7 @@ class MappingTests(unittest.TestCase):
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        # self.assertEquals(len(loaded_dataset_collection.datasets), 2)
+        # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
         # assert loaded_dataset_collection.collection_type == "pair"
 
     def test_default_disk_usage(self):

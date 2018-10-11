@@ -45,12 +45,9 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner" style="float: right">
-            <a id="save-button" class="panel-header-button">Save</a>
-            <a id="close-button" class="panel-header-button">Close</a>
-        </div>
         <div class="unified-panel-header-inner">
-            Page Editor <span style="font-weight: normal">| Title : ${page.title | h}</span>
+            Page Editor: ${page.title | h}
+            <a id="save-button" class="btn btn-secondary fa fa-save float-right"></a>
         </div>
     </div>
 

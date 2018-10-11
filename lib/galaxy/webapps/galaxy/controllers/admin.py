@@ -1517,7 +1517,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         # Purging a deleted User deletes all of the following:
         # - History where user_id = User.id
         #    - HistoryDatasetAssociation where history_id = History.id
-        #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
         # - UserGroupAssociation where user_id == User.id
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
@@ -1533,11 +1532,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 trans.sa_session.refresh(h)
                 for hda in h.active_datasets:
                     # Delete HistoryDatasetAssociation
-                    d = trans.sa_session.query(trans.app.model.Dataset).get(hda.dataset_id)
-                    # Delete Dataset
-                    if not d.deleted:
-                        d.deleted = True
-                        trans.sa_session.add(d)
                     hda.deleted = True
                     trans.sa_session.add(hda)
                 h.deleted = True

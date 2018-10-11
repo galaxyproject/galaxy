@@ -319,7 +319,7 @@
                         </div>
                     %endfor
                     ## Data Manager Tools
-                    %if trans.user_is_admin() and trans.app.data_managers.data_managers:
+                    %if trans.user_is_admin and trans.app.data_managers.data_managers:
                        <div>&nbsp;</div>
                        <div class="toolSectionWrapper">
                            <div class="toolSectionTitle" id="title___DATA_MANAGER_TOOLS__">

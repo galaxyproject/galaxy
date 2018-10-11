@@ -1,8 +1,6 @@
 import logging
 from json import dumps
 
-from six.moves.urllib.parse import unquote_plus
-
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
@@ -460,7 +458,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         for k, v in inputs.items():
             if isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
                 ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
-                if trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
+                if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
                     input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
 
         for k, v in input_patch.items():
@@ -517,7 +515,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     # -- Helper methods --
     #
     def _get_tool(self, id, tool_version=None, user=None):
-        id = unquote_plus(id)
         tool = self.app.toolbox.get_tool(id, tool_version)
         if not tool:
             raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % id)

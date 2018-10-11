@@ -16,6 +16,7 @@ class ImportHistoryToolAction(ToolAction):
         #
         # Create job.
         #
+        trans.check_user_activation()
         job = trans.app.model.Job()
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -69,6 +70,7 @@ class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive. """
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+        trans.check_user_activation()
         #
         # Get history to export.
         #

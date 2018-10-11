@@ -14,9 +14,10 @@ var View = Backbone.View.extend({
         this.options = options;
 
         // create insert new list element button
-        this.browse_button = new Ui.ButtonIcon({
+        this.browse_button = new Ui.Button({
             title: _l("Browse"),
             icon: "fa fa-sign-in",
+            cls: "btn btn-secondary float-left",
             tooltip: _l("Browse GenomeSpace"),
             onclick: function() {
                 self.browseGenomeSpace(options);
@@ -28,8 +29,8 @@ var View = Backbone.View.extend({
 
         // create elements
         this.setElement(this._template(options));
-        this.$(".ui-gs-browse-button").append(this.browse_button.$el);
-        this.$(".ui-gs-filename-textbox").append(this.filename_textbox.$el);
+        this.$(".ui-browse-button").append(this.browse_button.$el);
+        this.$(".ui-filename-textbox").append(this.filename_textbox.$el);
     },
 
     /** Browse GenomeSpace */
@@ -44,14 +45,10 @@ var View = Backbone.View.extend({
 
     /** Main Template */
     _template: function(options) {
-        return (
-            '<div class="ui-gs-select-file">' +
-            '<div class="ui-gs-browse-field">' +
-            '<span class="ui-gs-browse-button" />' +
-            '<span class="ui-gs-filename-textbox" />' +
-            "</div>" +
-            "</div>"
-        );
+        return `<div class="row">
+                    <div class="ui-browse-button col-3" />
+                    <div class="ui-filename-textbox col"/>
+                </div>`;
     },
 
     /** Return/Set currently selected genomespace filename */

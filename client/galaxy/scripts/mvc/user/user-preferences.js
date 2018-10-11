@@ -113,10 +113,9 @@ var View = Backbone.View.extend({
         var config = Galaxy.config;
         $.getJSON(`${Galaxy.root}api/users/${Galaxy.user.id}`, data => {
             self.$preferences = $("<div/>")
-                .addClass("ui-panel")
                 .append($("<h2/>").append("User preferences"))
                 .append($("<p/>").append(`You are logged in as <strong>${_.escape(data.email)}</strong>.`))
-                .append((self.$table = $("<table/>").addClass("ui-panel-table")));
+                .append((self.$table = $("<table/>")));
             var message = QueryStringParsing.get("message");
             var status = QueryStringParsing.get("status");
             if (message && status) {
@@ -161,19 +160,23 @@ var View = Backbone.View.extend({
     },
 
     _templateLink: function(options) {
-        return `<tr><td><div class="ui-panel-icon fa ${
-            options.icon
-        }"></td><td><a class="ui-panel-anchor" href="javascript:void(0)">${
-            options.title
-        }</a><div class="ui-form-info">${options.description}</div></td></tr>`;
+        return `<tr>
+                    <td class="align-top">
+                        <i class="ml-3 mr-3 fa fa-lg ${options.icon}">
+                    </td>
+                    <td>
+                        <a href="javascript:void(0)"><b>${options.title}</b></a>
+                        <div class="form-text text-muted">${options.description}</div>
+                    </td>
+                </tr>`;
     },
 
     _templateFooter: function(options) {
-        return `<p class="ui-panel-footer">You are using <strong>${
+        return `<p class="mt-2">You are using <strong>${
             options.nice_total_disk_usage
         }</strong> of disk space in this Galaxy instance. ${
             Galaxy.config.enable_quotas ? `Your disk quota is: <strong>${options.quota}</strong>. ` : ""
-        }Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>`;
+        }Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b>documentation</b></a> for tips on how to find all of the data in your account.</p>`;
     }
 });
 

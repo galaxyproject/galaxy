@@ -17,6 +17,7 @@ class SetMetadataToolAction(ToolAction):
         """
         Execute using a web transaction.
         """
+        trans.check_user_activation()
         job, odict = self.execute_via_app(tool, trans.app, trans.get_galaxy_session().id,
                                           trans.history.id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)

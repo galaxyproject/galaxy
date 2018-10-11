@@ -140,7 +140,7 @@ export default Backbone.View.extend({
         });
 
         // add ftp file viewer
-        this.ftp = new Popover.View({
+        this.ftp = new Popover({
             title: _l("FTP files"),
             container: this.btnFtp.$el
         });
@@ -322,32 +322,26 @@ export default Backbone.View.extend({
 
     /** Show/hide ftp popup */
     _eventFtp: function() {
-        if (!this.ftp.visible) {
-            this.ftp.empty();
-            var self = this;
-            this.ftp.append(
-                new UploadFtp({
-                    collection: this.collection,
-                    ftp_upload_site: this.ftp_upload_site,
-                    onadd: function(ftp_file) {
-                        return self.uploadbox.add([
-                            {
-                                mode: "ftp",
-                                name: ftp_file.path,
-                                size: ftp_file.size,
-                                path: ftp_file.path
-                            }
-                        ]);
-                    },
-                    onremove: function(model_index) {
-                        self.collection.remove(model_index);
-                    }
-                }).$el
-            );
-            this.ftp.show();
-        } else {
-            this.ftp.hide();
-        }
+        var self = this;
+        this.ftp.show(
+            new UploadFtp({
+                collection: this.collection,
+                ftp_upload_site: this.ftp_upload_site,
+                onadd: function(ftp_file) {
+                    return self.uploadbox.add([
+                        {
+                            mode: "ftp",
+                            name: ftp_file.path,
+                            size: ftp_file.size,
+                            path: ftp_file.path
+                        }
+                    ]);
+                },
+                onremove: function(model_index) {
+                    self.collection.remove(model_index);
+                }
+            }).$el
+        );
     },
 
     /** Create a new file */

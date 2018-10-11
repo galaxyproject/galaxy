@@ -28,9 +28,9 @@ $vertical-gap: 8px;
     }
 
     $spacing-top: 6px;
-    $spacing-right: 10px;
+    $spacing-right: $margin-v * 0.5;
     $spacing-bottom: 6px;
-    $spacing-left: 8px;
+    $spacing-left: $margin-v * 0.5;
     .padded {
         padding: $spacing-top $spacing-right $spacing-bottom $spacing-left;
     }
@@ -61,11 +61,9 @@ $vertical-gap: 8px;
         float: left;
         // always initially hidden and zero width
         display: none;
-        width: 32px;
+        width: 15px;
         height: 32px;
-        //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-        margin: 0px 0px - ($spacing-bottom) 0px;
-        padding: ($spacing-top + 2) 0px 2px ($spacing-left - 1);
+        margin: 9px;
         font-size: 80%;
         color: $btn-default-color;
         cursor: pointer;

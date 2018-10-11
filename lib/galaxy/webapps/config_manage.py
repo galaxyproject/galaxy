@@ -85,6 +85,12 @@ UWSGI_OPTIONS = OrderedDict([
         'default': '/static=static',
         'type': 'str',
     }),
+    ('static-map.3', {
+        'key': 'static-map',
+        'desc': """Mapping to serve the favicon.""",
+        'default': '/favicon.ico=static/favicon.ico',
+        'type': 'str',
+    }),
     ('master', {
         'desc': """Enable the master process manager. Disabled by default for maximum compatibility with CTRL+C, but should be enabled for use with --daemon and/or production deployments.""",
         'default': False,

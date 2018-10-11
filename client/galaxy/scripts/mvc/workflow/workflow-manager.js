@@ -278,7 +278,7 @@ class Workflow {
                 $.each(node.output_terminals, (ot_id, ot) => {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
-                        var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, '\\')}`);
+                        var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
                         callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
                         wf.has_changes = true;
                     }

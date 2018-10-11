@@ -32,7 +32,7 @@ export default Backbone.View.extend({
         this.$percentage = this.$(".upload-percentage");
 
         // append popup to settings icon
-        this.settings = new Popover.View({
+        this.settings = new Popover({
             title: _l("Upload configuration"),
             container: this.$(".upload-settings"),
             placement: "bottom"
@@ -151,13 +151,7 @@ export default Backbone.View.extend({
 
     /** Attach file info popup */
     _showSettings: function() {
-        if (!this.settings.visible) {
-            this.settings.empty();
-            this.settings.append(new UploadSettings(this).$el);
-            this.settings.show();
-        } else {
-            this.settings.hide();
-        }
+        this.settings.show(new UploadSettings(this).$el);
     },
 
     /** View template */

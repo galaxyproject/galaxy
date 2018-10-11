@@ -163,9 +163,9 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_filesize_run(self, l):
         job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'Destination1')
+        self.assertEqual(job, 'Destination1')
         priority_job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'Destination1_high')
+        self.assertEqual(priority_job, 'Destination1_high')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -186,9 +186,9 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_default_tool(self, l):
         job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'cluster_default')
+        self.assertEqual(job, 'cluster_default')
         priority_job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'cluster_default_high')
+        self.assertEqual(priority_job, 'cluster_default_high')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -205,9 +205,9 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_arguments_tool(self, l):
         job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'Destination6')
+        self.assertEqual(job, 'Destination6')
         priority_job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'Destination6_med')
+        self.assertEqual(priority_job, 'Destination6_med')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -222,9 +222,9 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_arguments_arg_not_found(self, l):
         job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'cluster_default')
+        self.assertEqual(job, 'cluster_default')
         priority_job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'cluster_default_high')
+        self.assertEqual(priority_job, 'cluster_default_high')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -239,9 +239,9 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_tool_not_found(self, l):
         job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'cluster_default')
+        self.assertEqual(job, 'cluster_default')
         priority_job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'cluster_default_high')
+        self.assertEqual(priority_job, 'cluster_default_high')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -258,9 +258,9 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_fasta(self, l):
         job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'Destination4')
+        self.assertEqual(job, 'Destination4')
         priority_job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'Destination4_high')
+        self.assertEqual(priority_job, 'Destination4_high')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -279,9 +279,9 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_fasta_count(self, l):
         job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, path, job_conf_path)
-        self.assertEquals(job, 'Destination4')
+        self.assertEqual(job, 'Destination4')
         priority_job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, priority_path, job_conf_path)
-        self.assertEquals(priority_job, 'Destination4_high')
+        self.assertEqual(priority_job, 'Destination4_high')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
@@ -300,7 +300,7 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_no_verbose(self, l):
         job = map_tool_to_destination(runJob, theApp, noVBTool, "user@email.com", True, no_verbose_path, job_conf_path)
-        self.assertEquals(job, 'Destination1')
+        self.assertEqual(job, 'Destination1')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_no_verbose' with 'Destination1'.")
@@ -309,7 +309,7 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_authorized_user(self, l):
         job = map_tool_to_destination(runJob, theApp, usersTool, "user@email.com", True, users_test_path, job_conf_path)
-        self.assertEquals(job, 'special_cluster')
+        self.assertEqual(job, 'special_cluster')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_users' with 'special_cluster'."),
@@ -318,7 +318,7 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_unauthorized_user(self, l):
         job = map_tool_to_destination(runJob, theApp, usersTool, "userblah@email.com", True, users_test_path, job_conf_path)
-        self.assertEquals(job, 'lame_cluster')
+        self.assertEqual(job, 'lame_cluster')
 
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_users' with 'lame_cluster'.")
@@ -344,11 +344,11 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_empty_file(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest2, job_conf_path=job_conf_path, test=True), {})
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest2, job_conf_path=job_conf_path, test=True), {})
 
     @log_capture()
     def test_no_tool_name(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest3, job_conf_path=job_conf_path, test=True), yt.iv3dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest3, job_conf_path=job_conf_path, test=True), yt.iv3dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Malformed YML; expected job name, but found a list instead!'),
@@ -357,7 +357,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_type(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest4, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest4, job_conf_path=job_conf_path, test=True), yt.ivDict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No rule_type found for rule 1 in 'spades'."),
@@ -366,7 +366,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_lower_bound(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest51, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest51, job_conf_path=job_conf_path, test=True), yt.ivDict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Missing bounds for rule 1 in 'spades'. Ignoring rule."),
@@ -375,7 +375,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_upper_bound(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest52, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest52, job_conf_path=job_conf_path, test=True), yt.ivDict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Missing bounds for rule 1 in 'spades'. Ignoring rule."),
@@ -384,7 +384,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_arg(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest53, job_conf_path=job_conf_path, test=True), yt.ivDict53)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest53, job_conf_path=job_conf_path, test=True), yt.ivDict53)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Found a fail_message for rule 1 in 'spades', but destination is not 'fail'! Setting destination to 'fail'."),
@@ -393,7 +393,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_bad_rule_type(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest6, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest6, job_conf_path=job_conf_path, test=True), yt.ivDict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Unrecognized rule_type 'iencs' found in 'spades'. Ignoring..."),
@@ -402,7 +402,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_err_msg(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest91, job_conf_path=job_conf_path, test=True), yt.iv91dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest91, job_conf_path=job_conf_path, test=True), yt.iv91dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No nice_value found for rule 1 in 'spades'. Setting nice_value to 0."),
@@ -431,7 +431,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_no_err_msg(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest12, job_conf_path=job_conf_path, test=True), yt.iv12dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest12, job_conf_path=job_conf_path, test=True), yt.iv12dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG',
@@ -441,7 +441,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_no_args(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest131, job_conf_path=job_conf_path, test=True), yt.iv131dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest131, job_conf_path=job_conf_path, test=True), yt.iv131dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG',
@@ -451,7 +451,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_no_arg(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest132, job_conf_path=job_conf_path, test=True), yt.iv132dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest132, job_conf_path=job_conf_path, test=True), yt.iv132dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Found a fail_message for rule 1 in 'spades', but destination is not 'fail'! Setting destination to 'fail'."),
@@ -467,7 +467,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_multiple_jobs(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True), yt.iv133dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True), yt.iv133dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Missing a fail_message for rule 1 in 'smalt'. Adding generic fail_message."),
@@ -483,7 +483,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_no_destination(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True), yt.iv134dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True), yt.iv134dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "No destination specified for rule 1 in 'spades'. Ignoring..."),
@@ -492,7 +492,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_reversed_bounds(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest135, job_conf_path=job_conf_path, test=True), yt.iv135dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest135, job_conf_path=job_conf_path, test=True), yt.iv135dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "lower_bound exceeds upper_bound for rule 1 in 'spades'. Reversing bounds."),
@@ -508,7 +508,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_missing_tool_fields(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True), yt.iv136dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True), yt.iv136dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Tool 'spades' does not have rules nor a default_destination!"),
@@ -524,7 +524,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_blank_tool(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True), yt.iv137dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True), yt.iv137dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Config section for tool 'spades' is blank!"),
@@ -541,7 +541,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_malformed_users(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True), yt.iv138dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True), yt.iv138dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Entry '123' in users for rule 1 in tool 'spades' is in an invalid format! Ignoring entry."),
@@ -558,7 +558,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_no_users(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True), yt.iv139dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True), yt.iv139dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Couldn't find a list under 'users:'! Ignoring rule."),
@@ -576,7 +576,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_malformed_user_email(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True), yt.iv140dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True), yt.iv140dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Supplied email 'invalid.user2@com' for rule 2 in tool 'spades' is in an invalid format! Ignoring email."),
@@ -596,7 +596,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_empty_users(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True), yt.iv141dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True), yt.iv141dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Entry 'None' in users for rule 2 in tool 'spades' is in an invalid format! Ignoring entry."),
@@ -615,7 +615,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_bad_num_input_datasets_bound(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True), yt.iv142dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True), yt.iv142dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Error: lower_bound is set to Infinity, but must be lower than upper_bound! Setting lower_bound to 0!"),
@@ -631,7 +631,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_worse_num_input_datasets_bound(self, l):
-        self.assertEquals(dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True), yt.iv143dict)
+        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True), yt.iv143dict)
         l.check_present(
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', 'Running config validation...'),
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Error: lower_bound is set to Infinity, but must be lower than upper_bound! Setting lower_bound to 0!"),

@@ -9,9 +9,9 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+gunicorn = "*"
 lxml = "!=4.2.2"
 mock = "*"
-nodeenv = "*"
 NoseHTML = "*"
 pygithub3 = {version = "*", markers = "python_version < '3'"}
 pytest = "*"
@@ -33,6 +33,7 @@ PyYAML = "*"
 SQLAlchemy = "*"
 SQLAlchemy-Utils = "*"
 Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
+nodeenv = "*"
 pycryptodome = "*"
 uWSGI = "*"
 pysam = "==0.14.1"
@@ -71,6 +72,8 @@ pyparsing = "*"
 paramiko = "*"
 python-genomespaceclient = "<2.0"
 social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
+cloudauthz = "<=0.2.0"
+gxformat2 = "*"
 
 [requires]
 python_version = "2.7"
