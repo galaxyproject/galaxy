@@ -317,7 +317,6 @@ class CloudManager(sharable.SharableModelManager):
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
         cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
-        credentials = trans.app.authnz_manager.get_cloud_access_credentials(cloudauthz, trans.sa_session, trans.user.id)
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         if not history:
@@ -329,12 +328,8 @@ class CloudManager(sharable.SharableModelManager):
             if hda.deleted or hda.purged or hda.state != "ok" or hda.creating_job.tool_id == DOWNLOAD_TOOL:
                 continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
-                credentials_file = os.path.abspath(os.path.join(
-                    trans.app.config.new_file_path,
-                    "cd_" + ''.join(random.SystemRandom().choice(
-                        string.ascii_uppercase + string.digits) for _ in range(11))))
-                with open(credentials_file, "w") as f:
-                    f.write(json.dumps(credentials))
+                credentials_file = trans.app.authnz_manager.get_cloud_access_credentials_in_file(
+                    trans.app.config.new_file_path, cloudauthz, trans.sa_session, trans.user.id)
                 object_label = hda.name.replace(" ", "_")
                 args = {
                     "authz_id": cloudauthz.id,
