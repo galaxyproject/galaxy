@@ -31,32 +31,11 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 
-def load_credential(args):
-    if args.credentials_file:
-        with open(args.credentials_file, "r") as f:
-            credentials = f.read()
-        os.remove(args.credentials_file)
-        return json.loads(credentials)
-    else:
-        if args.provider == "aws":
-            return {'access_key': args.ca_access_key,
-                    'secret_key': args.ca_secret_key}
-
-        elif args.provider == "azure":
-            return {'subscription_id': args.cm_subscription_id,
-                    'client_id': args.cm_client_id,
-                    'secret': args.cm_secret,
-                    'tenant': args.cm_tenant,
-                    'storage_account': args.cm_storage_account,
-                    'resource_group': args.cm_resource_group}
-
-        elif args.provider == "openstack":
-            return {'username': args.co_username,
-                    'password': args.co_password,
-                    'auth_url': args.co_auth_url,
-                    'project_name': args.co_project_name,
-                    'project_domain_name': args.co_project_domain_name,
-                    'user_domain_name': args.co_user_domain_name}
+def load_credential(credentials_file):
+    with open(credentials_file, "r") as f:
+        credentials = f.read()
+    os.remove(credentials_file)
+    return json.loads(credentials)
 
 
 def download(provider, credentials, bucket, object_label, filename, overwrite_existing):
@@ -94,30 +73,7 @@ def parse_args(args):
                              "should overwrite it (true) or append a time stamp to avoid "
                              "overwriting (false).")
 
-    parser.add_argument('-c', '--credentials_file', type=str, required=False,
-                        help="[Optional] A file that contains a JSON object containing user credentials "
-                             "required to authorize access to the cloud-based storage provider."
-                             "Use either this file, or pass the credentials using provider-specific args.")
-
-    # Amazon Web Services (AWS) specific credentials to read/write to Amazon Simple Storage Service (S3).
-    parser.add_argument('--ca_access_key', type=str, required=False, help="AWS Credentials: Access Key")
-    parser.add_argument('--ca_secret_key', type=str, required=False, help="AWS Credentials: Secret Key")
-
-    # Microsoft Azure specifc configuration and credentials to read/write to an Azure Blob Storage account.
-    parser.add_argument('--cm_subscription_id', type=str, required=False, help="Azure Credentials: Subscription ID")
-    parser.add_argument('--cm_client_id', type=str, required=False, help="Azure Credentials: Client ID")
-    parser.add_argument('--cm_secret', type=str, required=False, help="Azure Credentials: Secret")
-    parser.add_argument('--cm_tenant', type=str, required=False, help="Azure Credentials: Tenant")
-    parser.add_argument('--cm_storage_account', type=str, required=False, help="Azure storage account")
-    parser.add_argument('--cm_resource_group', type=str, required=False, help="Azure resource group")
-
-    # OpenStack-specific configuration and credentials to read/write to Object Storage (Swift).
-    parser.add_argument('--co_username', type=str, required=False, help="OpenStack Credentials: Username")
-    parser.add_argument('--co_password', type=str, required=False, help="OpenStack Credentials: Password")
-    parser.add_argument('--co_auth_url', type=str, required=False, help="OpenStack Credentials: Auth URL")
-    parser.add_argument('--co_project_name', type=str, required=False, help="OpenStack Credentials: Project Name")
-    parser.add_argument('--co_project_domain_name', type=str, required=False, help="OpenStack Credentials: Project Domain Name")
-    parser.add_argument('--co_user_domain_name', type=str, required=False, help="OpenStack Credentials: User Domain Name")
+    parser.add_argument('--credentials_file', type=str, required=True, help="Credentials file")
 
     return parser.parse_args(args)
 
@@ -128,7 +84,7 @@ def __main__():
         raise Exception("Invalid Provider `{}`; see `SUPPORTED_PROVIDERS` in lib/galaxy/managers/cloud.py "
                         "for a list of supported providers.".format(args.provider))
     overwrite_existing = args.overwrite_existing.lower() == "true"
-    credentials = load_credential(args)
+    credentials = load_credential(args.credentials_file)
     download(args.provider, credentials, args.bucket, args.object_label, args.filename, overwrite_existing)
 
 
