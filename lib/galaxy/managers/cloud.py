@@ -308,7 +308,7 @@ class CloudManager(sharable.SharableModelManager):
 
         :rtype:                     tuple
         :return:                    A tuple of two lists of labels of the objects that were successfully and
-                                    unsuccessfully downloaded to cloud..
+                                    unsuccessfully downloaded to cloud.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)

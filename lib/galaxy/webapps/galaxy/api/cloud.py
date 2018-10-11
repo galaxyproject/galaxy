@@ -164,9 +164,16 @@ class CloudController(BaseAPIController):
         :param kwargs:
 
         :rtype:     dictionary
-        :return:    Information about the downloaded datasets, containing the following keys:
-                        *   `bucket_name`:          The name of bucket/container to which the listed datasets are downloaded.
-                        *   `downloaded_dataset`:   A list of JSON objects describing the download datasets.
+        :return:    Information about the (un)successfully submitted dataset download jobs,
+                    containing the following keys:
+                        *   `bucket_name`:                  The name of bucket to which the listed datasets are queued
+                                                            to be downloaded.
+                        *   `downloaded_dataset_labels`:    A list of JSON objects with the following key-value pair:
+                            **  `object`:                   The name of object is queued to be created.
+                            **  `job_id`:                   The id of the queued download job.
+
+                        *   `failed_dataset_labels`:        A list of datasets Galaxy failed to create (and queue) a
+                                                            download job for.
         """
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
