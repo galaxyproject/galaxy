@@ -33,7 +33,6 @@
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
         <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
-        <param name="credentials_file" type="hidden" label="Credentials File" />
     </inputs>
     <outputs>
         <data name="output" type="data" label="Output log" hidden="false"/>
