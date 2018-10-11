@@ -353,4 +353,4 @@ class CloudManager(sharable.SharableModelManager):
                     log.debug("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
                               "{}".format(e.message))
                     failed.append(object_label)
-        return downloaded
+        return downloaded, failed
