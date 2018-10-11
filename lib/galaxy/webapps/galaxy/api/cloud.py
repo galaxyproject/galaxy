@@ -220,6 +220,11 @@ class CloudController(BaseAPIController):
                 raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
                                        "{}".format(invalid_dataset_ids))
 
+        log.info(msg="Received api/download request for `{}` datasets using authnz with id `{}`, and history `{}`."
+                     "".format("all the dataset in the given history" if not dataset_ids else len(dataset_ids),
+                               authz_id,
+                               history_id))
+
         downloaded, failed = self.cloud_manager.download(trans=trans,
                                                          history_id=history_id,
                                                          bucket_name=bucket,

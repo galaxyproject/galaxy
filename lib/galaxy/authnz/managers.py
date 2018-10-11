@@ -267,6 +267,8 @@ class AuthnzManager(object):
         config = self._extend_cloudauthz_config(cloudauthz, request, sa_session, user_id)
         try:
             ca = CloudAuthz()
+            log.info("Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
+                cloudauthz.id, user_id))
             return ca.authorize(cloudauthz.provider, config)
         except CloudAuthzBaseException as e:
             log.exception(e.message)
@@ -305,6 +307,8 @@ class AuthnzManager(object):
                                                 "cd_" + ''.join(random.SystemRandom().choice(
                                                     string.ascii_uppercase + string.digits) for _ in range(11))))
         credentials = self.get_cloud_access_credentials(cloudauthz, sa_session, user_id, request)
+        log.info("Writting credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
+                 "".format(cloudauthz.id, filename))
         with open(filename, "w") as f:
             f.write(json.dumps(credentials))
         return filename
