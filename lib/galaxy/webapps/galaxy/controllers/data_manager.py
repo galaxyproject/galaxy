@@ -57,7 +57,8 @@ class DataManager(BaseUIController):
         data_manager_id = kwd.get('id', None)
         data_manager = trans.app.data_managers.get_manager(data_manager_id)
         if data_manager is None:
-            return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid Data Manager (%s) was requested" % data_manager_id, status="error"))
+            return {'message': "Invalid Data Manager (%s) was requested" % data_manager_id,
+                    'status': "error"}
         jobs = []
         for assoc in trans.sa_session.query(trans.app.model.DataManagerJobAssociation).filter_by(data_manager_id=data_manager_id):
             j = assoc.job
