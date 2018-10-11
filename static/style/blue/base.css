@@ -5617,7 +5617,7 @@ button.bg-dark:focus {
 .errormessagesmall, .charts-client .charts-right
 .warningmessagesmall, .charts-client .charts-right
 .donemessagesmall, .charts-client .charts-right
-.infomessagesmall, .history-panel > .empty-message {
+.infomessagesmall {
   margin: 0.5rem !important; }
 
 .mt-2, .list-item .primary-actions,
@@ -5636,7 +5636,7 @@ button.bg-dark:focus {
 .mx-2 {
   margin-left: 0.5rem !important; }
 
-.m-3, .toolMenuContainer {
+.m-3, .history-panel > .empty-message, .toolMenuContainer {
   margin: 1rem !important; }
 
 .mt-3,
