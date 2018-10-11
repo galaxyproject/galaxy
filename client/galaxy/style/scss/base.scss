@@ -22,6 +22,7 @@ $black: #000;
 }
 
 @import "select2.scss";
+//@import jquery-rating style
 /* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
     min-width: 256px;

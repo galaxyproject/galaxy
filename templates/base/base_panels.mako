@@ -21,7 +21,6 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css(
-        'base',
         'jquery.rating',
         'bootstrap-tour'
     )}
