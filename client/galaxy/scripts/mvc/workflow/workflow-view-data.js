@@ -9,7 +9,7 @@ var DataInputView = Backbone.View.extend({
         this.nodeView = options.nodeView;
         this.terminalElement = options.terminalElement;
 
-        this.$el.attr("name", this.input.name).html(this.input.label);
+        this.$el.attr("name", this.input.name).html(this.input.label || this.input.name);
 
         if (!options.skipResize) {
             this.$el.css({
