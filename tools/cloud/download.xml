@@ -7,32 +7,17 @@
     <requirements>
         <requirement type="package" version="0.3.3">cloudbridge</requirement>
     </requirements>
-    <command interpreter="python">
-        download.py
+    <command><![CDATA[
+        #set $authz_record=$__app__.authnz_manager.try_get_authz_config($__app__.obj.model.context.current, $__user_id__, $authz_id)
+        #set $credentials_file = $__app__.authnz_manager.get_cloud_access_credentials_in_file($__app__.config.new_file_path, $authz_record, $__app__.obj.model.context.current, $__user_id__)
+        python $__tool_directory__/download.py
+            --provider=$authz_record.provider
             --filename=$filename
-            --provider=$connection.provider
-            #if $connection.provider=="aws"
-                --ca_access_key=$connection.access_key
-                --ca_secret_key=$connection.secret_key
-            #else if $connection.provider=="azure"
-                --cm_subscription_id=$connection.subscription_id
-                --cm_client_id=$connection.client_id
-                --cm_secret=$connection.secret
-                --cm_tenant=$connection.tenant
-                --cm_storage_account=$connection.storage_account
-                --cm_resource_group=$connection.resource_group
-            #else if $connection.provider=="openstack"
-                --co_username=$connection.username
-                --co_password=$connection.password
-                --co_auth_url=$connection.auth_url
-                --co_project_name=$connection.project_name
-                --co_project_domain_name=$connection.project_domain_name
-                --co_user_domain_name=$connection.user_domain_name
-            #end if
+            --credentials_file=$credentials_file
             --bucket=$bucket
             --object_label=$filename.name.replace(" ", "_")
             --overwrite_existing=$overwrite_existing
-    </command>
+    ]]></command>
     <inputs>
         <param name="filename" type="data" label="Datasets to be downloaded to a cloud-based storage:" />
         <!--    ************************ NOTE ************************
@@ -42,33 +27,7 @@
                 CloudManager (lib/galaxy/managers/cloud.py).
                 ******************************************************
         -->
-        <conditional name="connection">
-            <param name="provider" type="select" label="Cloud-Based Storage Provider">
-                <option value="aws">Amazon Simple Storage Service (S3)</option>
-                <option value="azure">Microsoft Azure Blob Storage</option>
-                <option value="openstack">OpenStack Object Storage (Swift)</option>
-            </param>
-            <when value="aws">
-                <param name="access_key" label="Access key" type="text"/>
-                <param name="secret_key" label="Secret key" type="text"/>
-            </when>
-            <when value="azure">
-                <param name="subscription_id" label="Subscription ID" type="text"/>
-                <param name="client_id" label="Client ID" type="text"/>
-                <param name="secret" label="Secret" type="text"/>
-                <param name="tenant" label="Tenant" type="text"/>
-                <param name="storage_account" label="Storage Account" type="text"/>
-                <param name="resource_group" label="Resource Group" type="text"/>
-            </when>
-            <when value="openstack">
-                <param name="username" label="Username" type="text"/>
-                <param name="password" label="Password" type="text"/>
-                <param name="auth_url" label="Auth URL" type="text"/>
-                <param name="project_name" label="Project Name" type="text"/>
-                <param name="project_domain_name" label="Project Domain Name" type="text"/>
-                <param name="user_domain_name" label="User Domain Name" type="text"/>
-            </when>
-        </conditional>
+        <param name="authz_id" type="text" label="Authz ID" />
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
         <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
