@@ -346,6 +346,7 @@ class CloudManager(sharable.SharableModelManager):
                 object_label = hda.name.replace(" ", "_")
                 args = {
                     "connection": connection,
+                    "authz_id": cloudauthz.id,
                     "credentials_file": credentials_file,
                     "bucket": bucket,
                     "object_label": object_label,
