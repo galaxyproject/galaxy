@@ -328,24 +328,29 @@ class CloudManager(sharable.SharableModelManager):
             if hda.deleted or hda.purged or hda.state != "ok" or hda.creating_job.tool_id == DOWNLOAD_TOOL:
                 continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
-                credentials_file = trans.app.authnz_manager.get_cloud_access_credentials_in_file(
-                    trans.app.config.new_file_path, cloudauthz, trans.sa_session, trans.user.id)
-                object_label = hda.name.replace(" ", "_")
-                args = {
-                    "authz_id": cloudauthz.id,
-                    "credentials_file": credentials_file,
-                    "bucket": bucket_name,
-                    "object_label": object_label,
-                    "filename": hda,
-                    "overwrite_existing": overwrite_existing
-                }
-                incoming = (util.Params(args, sanitize=False)).__dict__
-                d2c = trans.app.toolbox.get_tool(DOWNLOAD_TOOL, DOWNLOAD_TOOL_VERSION)
-                res = d2c.execute(trans, incoming, history=history)
-                job = res[0]
-                downloaded.append(json.dumps(
-                    {
-                        "object": object_label,
-                        "job_id": trans.app.security.encode_id(job.id)
-                    }))
+                try:
+                    credentials_file = trans.app.authnz_manager.get_cloud_access_credentials_in_file(
+                        trans.app.config.new_file_path, cloudauthz, trans.sa_session, trans.user.id)
+                    object_label = hda.name.replace(" ", "_")
+                    args = {
+                        "authz_id": cloudauthz.id,
+                        "credentials_file": credentials_file,
+                        "bucket": bucket_name,
+                        "object_label": object_label,
+                        "filename": hda,
+                        "overwrite_existing": overwrite_existing
+                    }
+                    incoming = (util.Params(args, sanitize=False)).__dict__
+                    d2c = trans.app.toolbox.get_tool(DOWNLOAD_TOOL, DOWNLOAD_TOOL_VERSION)
+                    res = d2c.execute(trans, incoming, history=history)
+                    job = res[0]
+                    downloaded.append(json.dumps(
+                        {
+                            "object": object_label,
+                            "job_id": trans.app.security.encode_id(job.id)
+                        }))
+                except Exception as e:
+                    log.debug("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
+                              "{}".format(e.message))
+                    failed.append(object_label)
         return downloaded
