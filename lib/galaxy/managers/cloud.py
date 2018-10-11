@@ -333,7 +333,9 @@ class CloudManager(sharable.SharableModelManager):
                         trans.app.config.new_file_path, cloudauthz, trans.sa_session, trans.user.id)
                     object_label = hda.name.replace(" ", "_")
                     args = {
-                        "authz_id": cloudauthz.id,
+                        # We encode ID here because it the tool wrapper assumes
+                        # it receives an encoded ID and attempts decoding it.
+                        "authz_id": trans.security.encode_id(cloudauthz.id),
                         "credentials_file": credentials_file,
                         "bucket": bucket_name,
                         "object_label": object_label,
