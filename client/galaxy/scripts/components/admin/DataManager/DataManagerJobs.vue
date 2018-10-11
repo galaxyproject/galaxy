@@ -1,8 +1,9 @@
 <template>
   <div>
-    <b-breadcrumb :items="breadcrumbItems" id="breadcrumb" />
+    <b-breadcrumb v-if="!loading" :items="breadcrumbItems" id="breadcrumb" />
     <Alert :message="message" :variant="status" />
     <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
+    <Alert v-else-if="loading" message="Waiting for data" variant="info" />
     <Alert v-else-if="!jobs.length" message="There are no jobs for this data manager." variant="primary" />
     <div v-else>
       <b-container fluid class="mb-3">
@@ -88,7 +89,8 @@ export default {
             filter: "",
             viewOnly: false,
             message: "",
-            status: ""
+            status: "",
+            loading: true
         };
     },
     computed: {
@@ -161,6 +163,7 @@ export default {
                 this.viewOnly = response.data.viewOnly;
                 this.message = response.data.message;
                 this.status = response.data.status;
+                this.loading = false;
             })
             .catch(error => {
                 console.error(error);
