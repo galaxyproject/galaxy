@@ -17,7 +17,6 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
-from galaxy.util.object_wrapper import SafeStringWrapper
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -181,8 +180,6 @@ class AuthnzManager(object):
         :rtype :            model.CloudAuthz
         :return:            a cloudauthz configuration.
         """
-        if isinstance(user_id, SafeStringWrapper):
-            user_id = int(user_id)
         qres = sa_session.query(model.CloudAuthz).get(authz_id)
         if qres is None:
             raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
@@ -267,8 +264,6 @@ class AuthnzManager(object):
                             resource provider. See CloudAuthz (https://github.com/galaxyproject/cloudauthz)
                             for details on the content of this dictionary.
         """
-        if isinstance(user_id, SafeStringWrapper):
-            user_id = int(user_id)
         config = self._extend_cloudauthz_config(cloudauthz, request, sa_session, user_id)
         try:
             ca = CloudAuthz()
