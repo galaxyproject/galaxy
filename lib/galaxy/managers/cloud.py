@@ -317,7 +317,7 @@ class CloudManager(sharable.SharableModelManager):
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
         cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
-        credentials = trans.app.authnz_manager.get_cloud_access_credentials(trans, cloudauthz)
+        credentials = trans.app.authnz_manager.get_cloud_access_credentials(cloudauthz, trans.sa_session, trans.user.id)
         connection = self.configure_provider(cloudauthz.provider, credentials)
 
         bucket = connection.storage.buckets.get(bucket_name)
