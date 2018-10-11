@@ -523,7 +523,7 @@ class FileParameter(MetadataParameter):
         if value:
             new_value = galaxy.model.MetadataFile(dataset=target_context.parent, name=self.spec.name)
             object_session(target_context.parent).add(new_value)
-            object_session(target_context.parent).flush([new_value])
+            object_session(target_context.parent).flush()
             shutil.copy(value.file_name, new_value.file_name)
             return self.unwrap(new_value)
         return None
@@ -573,7 +573,7 @@ class FileParameter(MetadataParameter):
         if object_session(dataset):
             mf = galaxy.model.MetadataFile(name=self.spec.name, dataset=dataset, **kwds)
             object_session(dataset).add(mf)
-            object_session(dataset).flush([dataset, mf])  # flush to assign id
+            object_session(dataset).flush()  # flush to assign id
             return mf
         else:
             # we need to make a tmp file that is accessable to the head node,
@@ -776,7 +776,7 @@ class JobExternalOutputMetadataWrapper(object):
                 json.dump(override_metadata, open(metadata_files.filename_override_metadata, 'wt+'))
                 # add to session and flush
                 sa_session.add(metadata_files)
-                sa_session.flush([metadata_files])
+                sa_session.flush()
             metadata_files_list.append(metadata_files)
         args = '"%s" "%s" %s %s' % (metadata_path_on_compute(datatypes_config),
                                     job_metadata,
