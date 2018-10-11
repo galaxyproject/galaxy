@@ -1,9 +1,10 @@
 <template>
     <div>
-        <b-breadcrumb :items="breadcrumbItems" />
+        <b-breadcrumb v-if="!loading" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
         <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
         <b-container v-else>
             <b-row>
                 <b-col>
@@ -89,7 +90,8 @@ export default {
             ],
             viewOnly: false,
             message: "",
-            status: ""
+            status: "",
+            loading: true
         };
     },
     computed: {
@@ -145,6 +147,7 @@ export default {
                 this.viewOnly = response.data.viewOnly;
                 this.message = response.data.message;
                 this.status = response.data.status;
+                this.loading = false;
             })
             .catch(error => {
                 console.error(error);
