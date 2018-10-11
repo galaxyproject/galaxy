@@ -32,7 +32,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 
 # Any change to this list, MUST be reflected in the DOWNLOAD_TOOL wrapper
 # (tools/cloud/download.xml).
-SUPPORTED_PROVIDERS = {"aws": 0, "azure": 1, "openstack": 2}
+SUPPORTED_PROVIDERS = {"aws": 0, "azure": 1}
 
 DOWNLOAD_TOOL = "download_to_cloud"
 DOWNLOAD_TOOL_VERSION = "0.1.0"
