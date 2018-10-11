@@ -44,10 +44,10 @@
     "vue": "2.5.17"
   },
   "scripts": {
-    "watch": "gulp staging && yarn run save-build-hash && concurrently \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
-    "build": "NODE_ENV=development gulp staging && concurrently \"yarn run style\" \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\" && yarn run save-build-hash",
-    "build-production": "NODE_ENV=production gulp staging && concurrently \"yarn run style\" \"yarn run webpack-production\" \"yarn run gulp clean && yarn run gulp-production\" && yarn run save-build-hash",
-    "build-production-maps": "NODE_ENV=production gulp staging && concurrently \"yarn run style\" \"yarn run webpack-production-maps\" \"yarn run gulp clean && yarn run gulp-production-maps\" && yarn run save-build-hash",
+    "watch": "gulp staging && yarn run save-build-hash && concurrently -r \"yarn run webpack-watch\" \"yarn run gulp watch\" \"yarn run style-watch\"",
+    "build": "NODE_ENV=development gulp staging && concurrently -r \"yarn run style\" \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\" && yarn run save-build-hash",
+    "build-production": "NODE_ENV=production gulp staging && concurrently -r \"yarn run style\" \"yarn run webpack-production\" \"yarn run gulp clean && yarn run gulp-production\" && yarn run save-build-hash",
+    "build-production-maps": "NODE_ENV=production gulp staging && concurrently -r \"yarn run style\" \"yarn run webpack-production-maps\" \"yarn run gulp clean && yarn run gulp-production-maps\" && yarn run save-build-hash",
     "webpack": "webpack -d",
     "save-build-hash": "(git rev-parse HEAD 2>/dev/null || echo '') >../static/client_build_hash.txt",
     "webpack-watch": "webpack -d --watch",
@@ -63,7 +63,7 @@
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
     "build-charts": "webpack -p --config ../config/plugins/visualizations/charts/webpack.config.js",
     "build-scatterplot": "NODE_PATH=./node_modules webpack -p --config ../config/plugins/visualizations/scatterplot/webpack.config.js",
-    "prettier": "concurrently \"yarn run prettier-style\" \"yarn run prettier-scripts\"",
+    "prettier": "concurrently -r \"yarn run prettier-style\" \"yarn run prettier-scripts\"",
     "prettier-scripts": "prettier --write --tab-width 4 --print-width 120 \"galaxy/scripts/{,!(libs)/**/}/{*.js,*.vue}\"",
     "prettier-style": "prettier --write --tab-width 4 --print-width 120 \"galaxy/style/scss/**/*.scss\"",
     "styleguide": "vue-styleguidist server",
