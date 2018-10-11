@@ -325,6 +325,9 @@ class CloudManager(sharable.SharableModelManager):
             raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket_name))
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
+        if not history:
+            raise ObjectNotFound("History with ID `{}` not found.".format(trans.app.security.encode_id(history_id)))
+
         downloaded = []
         failed = []
         for hda in history.datasets:
