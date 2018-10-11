@@ -318,11 +318,6 @@ class CloudManager(sharable.SharableModelManager):
 
         cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(cloudauthz, trans.sa_session, trans.user.id)
-        connection = self.configure_provider(cloudauthz.provider, credentials)
-
-        bucket = connection.storage.buckets.get(bucket_name)
-        if bucket is None:
-            raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket_name))
 
         history = trans.sa_session.query(trans.app.model.History).get(history_id)
         if not history:
@@ -340,12 +335,8 @@ class CloudManager(sharable.SharableModelManager):
                         string.ascii_uppercase + string.digits) for _ in range(11))))
                 with open(credentials_file, "w") as f:
                     f.write(json.dumps(credentials))
-                connection = credentials
-                connection["provider"] = cloudauthz.provider
-                connection["__current_case__"] = SUPPORTED_PROVIDERS[cloudauthz.provider]
                 object_label = hda.name.replace(" ", "_")
                 args = {
-                    "connection": connection,
                     "authz_id": cloudauthz.id,
                     "credentials_file": credentials_file,
                     "bucket": bucket_name,
