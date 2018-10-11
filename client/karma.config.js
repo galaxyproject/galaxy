@@ -4,6 +4,9 @@ var webpackConfig = require("./webpack.config");
 // https://github.com/webpack-contrib/karma-webpack/issues/24
 webpackConfig.plugins.splice(0, 1);
 
+//Test against production builds
+webpackConfig.mode = "production";
+
 // Don't build Galaxy bundles - we build per-test bundles.
 webpackConfig.entry = function() {
     return {};
