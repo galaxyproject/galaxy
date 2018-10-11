@@ -20,13 +20,6 @@
     ]]></command>
     <inputs>
         <param name="filename" type="data" label="Datasets to be downloaded to a cloud-based storage:" />
-        <!--    ************************ NOTE ************************
-                Any change, even order, to the following parameters
-                (provider, provider options, and credential parameters
-                of different providers), MUST be reflected in the
-                CloudManager (lib/galaxy/managers/cloud.py).
-                ******************************************************
-        -->
         <param name="authz_id" type="text" label="Authz ID" />
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
