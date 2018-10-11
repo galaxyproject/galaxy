@@ -3,7 +3,7 @@
 These are the classes for the menu itself, normally floating, so placed inside
 a relative element.
 
-```html
+```vue
 <div style="position: relative; height: 12rem;">
   <div class="popmenu-wrapper" style="top: 0;">
     <ul class="dropdown-menu">

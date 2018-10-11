@@ -2,7 +2,7 @@
 
 Messages that appear across the top of the panel view below the masthead.
 
-```html
+```vue
 <div>
   <div v-for="type in ['done', 'info', 'warning', 'error']">
     <div v-bind:class="'panel-' + type + '-message'">I'm a panel-{{type}}-message</div>
@@ -14,7 +14,7 @@ Messages that appear across the top of the panel view below the masthead.
 
 Used for providing feedback inline.
 
-```html
+```vue
 <div>
   <div v-for="type in ['done', 'info', 'warning', 'error']">
     <div v-bind:class="type + 'messagelarge'">I'm a {{type}}messagelarge</div>
@@ -24,7 +24,7 @@ Used for providing feedback inline.
 
 ### Small Messages
 
-```html
+```vue
 <div>
   <div v-for="type in ['done', 'info', 'warning', 'error']">
     <div v-bind:class="type + 'message'">I'm a {{type}}message</div>
