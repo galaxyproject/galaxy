@@ -5,6 +5,9 @@
         @extend .px-3;
         flex: 0 0 auto;
         .title {
+            .name {
+                margin-left: -1px;
+            }
             input {
                 font-weight: bold;
             }

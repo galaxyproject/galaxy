@@ -13720,6 +13720,8 @@ pre.peek {
 
 .history-panel > .controls {
   flex: 0 0 auto; }
+  .history-panel > .controls .title .name {
+    margin-left: -1px; }
   .history-panel > .controls .title input {
     font-weight: bold; }
   .history-panel > .controls .subtitle:not(:empty) span + span:before {
