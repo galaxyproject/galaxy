@@ -172,8 +172,12 @@ class CloudController(BaseAPIController):
                             **  `object`:                   The name of object is queued to be created.
                             **  `job_id`:                   The id of the queued download job.
 
-                        *   `failed_dataset_labels`:        A list of datasets Galaxy failed to create (and queue) a
-                                                            download job for.
+                        *   `failed_dataset_labels`:        A list of JSON objects with the following key-value pair
+                                                            representing the datasets Galaxy failed to create
+                                                            (and queue) download job for:
+                            **  `object`:                   The name of object is queued to be created.
+                            **  `error`:                    A descriptive error message.
+
         """
         missing_arguments = []
         encoded_history_id = payload.get("history_id", None)
