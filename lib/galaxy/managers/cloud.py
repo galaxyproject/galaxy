@@ -348,7 +348,7 @@ class CloudManager(sharable.SharableModelManager):
                     "connection": connection,
                     "authz_id": cloudauthz.id,
                     "credentials_file": credentials_file,
-                    "bucket": bucket,
+                    "bucket": bucket_name,
                     "object_label": object_label,
                     "filename": hda,
                     "overwrite_existing": overwrite_existing
