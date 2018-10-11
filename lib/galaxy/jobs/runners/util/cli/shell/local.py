@@ -44,7 +44,7 @@ class LocalShell(BaseShellExec):
 
     def execute(self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds):
         outf = TemporaryFile()
-        p = Popen(cmd, shell=True, stdin=None, stdout=outf, stderr=PIPE)
+        p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE)
         # poll until timeout
 
         for i in range(int(timeout / timeout_check_interval)):
