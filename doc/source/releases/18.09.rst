@@ -112,7 +112,7 @@ Enhancements
 * Fix collection mapping to allow subcollection mapping over multi-data
   inputs.
   `Pull Request 6255`_
-*  Use Mercurial CLI instead of API for archive_repository_revision()
+* Use Mercurial CLI instead of API for archive_repository_revision()
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6273`_
 * Consolidate use of get_repo_for_repository() and clone_repository()
@@ -374,8 +374,8 @@ Enhancements
 * Python3: Encode return values of JSON encoder
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6439`_
-* Python3: Drop fix_json, doesn't seem to be necessary and fixes workflow unit
-  t…
+* Python3: Drop ``json_fix``, doesn't seem to be necessary and fixes workflow
+  unit tests
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6446`_
 * py3: fixes test_DatasetManager.py:DatasetManagerTestCase
@@ -530,10 +530,10 @@ Fixes
 * Strip a spurious Slurm warning from job stderr
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6293`_
-* Fix `GALAXY_RUN_ALL=1 ./run.sh --daemon`
+* Fix ``GALAXY_RUN_ALL=1 ./run.sh --daemon``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6295`_
-* add the canonical url to grt config
+* Add the canonical URL to grt config
   `Pull Request 6301`_
 * Stop listening to history changes after job submission
   `Pull Request 6303`_
@@ -810,6 +810,9 @@ Fixes
 * Update conda channel priority: conda-forge > bioconda
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6830`_
+* Register job monitor thread as postfork function
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6836`_
 * Unified panel style bottom padding fix
   `Pull Request 6839`_
 * Fix slurm cli on secure shell
@@ -1154,6 +1157,7 @@ Fixes
 .. _Pull Request 6823: https://github.com/galaxyproject/galaxy/pull/6823
 .. _Pull Request 6828: https://github.com/galaxyproject/galaxy/pull/6828
 .. _Pull Request 6830: https://github.com/galaxyproject/galaxy/pull/6830
+.. _Pull Request 6836: https://github.com/galaxyproject/galaxy/pull/6836
 .. _Pull Request 6839: https://github.com/galaxyproject/galaxy/pull/6839
 .. _Pull Request 6845: https://github.com/galaxyproject/galaxy/pull/6845
 
