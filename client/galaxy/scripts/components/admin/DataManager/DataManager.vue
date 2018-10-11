@@ -2,6 +2,7 @@
     <div>
         <Alert :message="message" :variant="status" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
         <div v-else-if="!dataManagers.length">
             <Alert variant="primary">
                 <h4 class="alert-heading">None installed</h4>
@@ -87,7 +88,8 @@ export default {
             filter: "",
             viewOnly: false,
             message: "",
-            status: ""
+            status: "",
+            loading: true
         };
     },
     computed: {
@@ -112,6 +114,7 @@ export default {
                 this.viewOnly = response.data.viewOnly;
                 this.message = response.data.message;
                 this.status = response.data.status;
+                this.loading = false;
             })
             .catch(error => {
                 console.error(error);
