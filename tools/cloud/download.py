@@ -44,12 +44,12 @@ def download(provider, credentials, bucket, object_label, filename, overwrite_ex
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
     connection = CloudManager.configure_provider(provider, credentials)
-    bucket_obj = connection.object_store.get(bucket)
+    bucket_obj = connection.storage.buckets.get(bucket)
     if bucket_obj is None:
         raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
-    if overwrite_existing is False and bucket_obj.get(object_label) is not None:
+    if overwrite_existing is False and bucket_obj.objects.get(object_label) is not None:
         object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-    created_obj = bucket_obj.create_object(object_label)
+    created_obj = bucket_obj.objects.create(object_label)
     created_obj.upload_from_file(filename)
 
 
