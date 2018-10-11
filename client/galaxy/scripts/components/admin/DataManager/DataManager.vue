@@ -3,7 +3,7 @@
         <Alert :message="message" :variant="status" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" variant="info" />
-        <div v-else-if="!dataManagers.length">
+        <div v-else-if="dataManagers && !dataManagers.length">
             <Alert variant="primary">
                 <h4 class="alert-heading">None installed</h4>
                 You do not currently have any Data Managers installed
@@ -13,7 +13,7 @@
                 <ToolShedButton />
             </Alert>
         </div>
-        <div v-else>
+        <div v-else-if="dataManagers && dataTables">
             <Alert variant="secondary" dismissible>
                 Choose your data managing option from below. You may install additional Data Managers from a
                 <ToolShedButton />
