@@ -786,8 +786,7 @@ button {
 
 #tool-search {
     position: relative;
-    margin: 10px 0;
-
+    @extend .mb-2;
     #search-clear-btn {
         position: absolute;
         right: 6px;

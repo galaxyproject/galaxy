@@ -5628,7 +5628,7 @@ button.bg-dark:focus {
 .mx-2 {
   margin-right: 0.5rem !important; }
 
-.mb-2, .ui-portlet-section,
+.mb-2, .ui-portlet-section, #tool-search,
 .my-2 {
   margin-bottom: 0.5rem !important; }
 
@@ -12627,8 +12627,7 @@ input[type="password"] {
   color: #888; }
 
 #tool-search {
-  position: relative;
-  margin: 10px 0; }
+  position: relative; }
   #tool-search #search-clear-btn {
     position: absolute;
     right: 6px;
