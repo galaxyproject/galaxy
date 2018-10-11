@@ -15,10 +15,8 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 5457`_
 * Copy data from a cloud-based storage to a Galaxy history
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 5835`_
 * Upload data to a cloud-based storage
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 6078`_
 * New datatype: SBML
   (thanks to `@cmonjeau <https://github.com/cmonjeau>`__).
@@ -236,7 +234,6 @@ Enhancements
 * More optimized HID generation - in one commit instead of two.
   `Pull Request 6516`_
 * Improvements to Cloud Storage Manager
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 6519`_
 * Handle pasted content in fetch API.
   `Pull Request 6523`_
@@ -281,7 +278,6 @@ Enhancements
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 6597`_
 * Refresh an expired OIDC ID token
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 6606`_
 * Handle driver shutdown, show all tests in pytest
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -391,7 +387,6 @@ Enhancements
 * Remove redundant/duplicate endpoint to edit user info
   `Pull Request 6501`_
 * Remove the deprecated AOL openid backend.
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 6505`_
 * Fix all py3 api tests
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -416,7 +411,6 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6610`_
 * Raise an exception if a history with decoded id does not exist.
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 6611`_
 * Test tools shipped with Galaxy
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -428,7 +422,6 @@ Enhancements
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6638`_
 * Upgrade CloudBridge to v1.0.1
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 6660`_
 * Increase robustness and accuracy of job search / cache use
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
@@ -661,7 +654,6 @@ Fixes
 * Fix and docs for advanced container options in job_conf.xml.
   `Pull Request 6503`_
 * Return a json blob containing redirect URI in OIDC login controller
-  (thanks to `@VJalili <https://github.com/VJalili>`__).
   `Pull Request 6517`_
 * Fix warning in CONVERTER_bam_to_bigwig_0 and CONVERTER_sam_to_bigwig_0
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -815,6 +807,14 @@ Fixes
   `Pull Request 6810`_
 * Upgrade concurrently for 'null' return fix
   `Pull Request 6828`_
+* Update conda channel priority: conda-forge > bioconda
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6830`_
+* Unified panel style bottom padding fix
+  `Pull Request 6839`_
+* Fix slurm cli on secure shell
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6845`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1153,4 +1153,7 @@ Fixes
 .. _Pull Request 6810: https://github.com/galaxyproject/galaxy/pull/6810
 .. _Pull Request 6823: https://github.com/galaxyproject/galaxy/pull/6823
 .. _Pull Request 6828: https://github.com/galaxyproject/galaxy/pull/6828
+.. _Pull Request 6830: https://github.com/galaxyproject/galaxy/pull/6830
+.. _Pull Request 6839: https://github.com/galaxyproject/galaxy/pull/6839
+.. _Pull Request 6845: https://github.com/galaxyproject/galaxy/pull/6845
 
