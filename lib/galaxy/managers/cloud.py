@@ -346,7 +346,12 @@ class CloudManager(sharable.SharableModelManager):
                             "job_id": trans.app.security.encode_id(job.id)
                         }))
                 except Exception as e:
-                    log.debug("Failed to download dataset to cloud, maybe invalid or unauthorized credentials. "
-                              "{}".format(e.message))
-                    failed.append(object_label)
+                    err_msg = "maybe invalid or unauthorized credentials. {}".format(e.message)
+                    log.debug("Failed to download the dataset `{}` per user `{}` request to cloud, {}".format(
+                        object_label, trans.user.id, err_msg))
+                    failed.append(json.dumps(
+                        {
+                            "object": object_label,
+                            "error":  err_msg
+                        }))
         return downloaded, failed
