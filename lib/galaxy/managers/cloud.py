@@ -4,9 +4,6 @@ Manager and serializer for cloud-based storages.
 
 import json
 import logging
-import os
-import random
-import string
 
 from galaxy import model
 from galaxy import util
