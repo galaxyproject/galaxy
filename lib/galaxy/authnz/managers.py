@@ -276,3 +276,10 @@ class AuthnzManager(object):
         except CloudAuthzBaseException as e:
             log.exception(e.message)
             raise exceptions.AuthenticationFailed(e.message)
+
+    def get_cloud_access_credentials_in_file(self, new_file_path, cloudauthz, sa_session, user_id, request=None):
+        filename = os.path.abspath(os.path.join(new_file_path, "cd_" + ''.join(random.SystemRandom().choice(string.ascii_uppercase + string.digits) for _ in range(11))))
+        credentials = self.get_cloud_access_credentials(cloudauthz, sa_session, user_id, request)
+        with open(filename, "w") as f:
+            f.write(json.dumps(credentials))
+        return filename
