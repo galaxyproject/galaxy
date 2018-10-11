@@ -352,6 +352,6 @@ class CloudManager(sharable.SharableModelManager):
                     failed.append(json.dumps(
                         {
                             "object": object_label,
-                            "error":  err_msg
+                            "error": err_msg
                         }))
         return downloaded, failed
