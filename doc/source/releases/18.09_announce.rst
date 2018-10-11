@@ -39,12 +39,12 @@ Highlights
   Lint, unit, API, framework, integration and Selenium tests all pass, time
   for you to give it a try and report any bug you find!
 
-    `https://github.com/galaxyproject/galaxy/issues/1715`
+  `Tracking issue <https://github.com/galaxyproject/galaxy/issues/1715>`__
 
 Get Galaxy
 ==========
 
-The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
 
 To get a new Galaxy repository run:
   .. code-block:: shell
@@ -72,7 +72,7 @@ Deprecation Notice
 ==================
 
 With 19.01, all Galaxy users will be forced to have a username.  This
-requirement has been enforced on user creation for years, though we've never
+requirement has been enforced on user creation for years, though we have never
 taken steps to coerce users created in the past who did not have one.  The
 19.01 release will come with a migration script that will coerce this in the
 database, which will allow us to have consistent handling of this field.
