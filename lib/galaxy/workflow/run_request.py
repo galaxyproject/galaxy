@@ -265,6 +265,17 @@ def build_workflow_run_configs(trans, workflow, payload):
             # inputs with referential integrity if parameters are already normalized (coming from tool form).
             normalized_inputs = {}
 
+        if param_map:
+            # disentangle raw parameter dictionaries into formal request structures if we can
+            # to setup proper WorkflowRequestToInputDatasetAssociation, WorkflowRequestToInputDatasetCollectionAssociation
+            # and WorkflowRequestInputStepParameter objects.
+            for step in workflow.steps:
+                normalized_key = step.id
+                if step.type == "parameter_input":
+                    if normalized_key in param_map:
+                        value = param_map.pop(normalized_key)
+                        normalized_inputs[normalized_key] = value["input"]
+
         steps_by_id = workflow.steps_by_id
         # Set workflow inputs.
         for key, input_dict in normalized_inputs.items():
