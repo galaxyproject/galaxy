@@ -12289,7 +12289,7 @@ div.unified-panel-body-background {
 
 #left > div.unified-panel-body,
 #right > div.unified-panel-body {
-  bottom: 25px;
+  padding-bottom: 25px;
   overflow: auto; }
 
 #dd-helper {

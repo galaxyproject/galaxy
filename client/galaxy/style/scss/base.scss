@@ -354,7 +354,7 @@ div.unified-panel-body-background {
 
 #left > div.unified-panel-body,
 #right > div.unified-panel-body {
-    bottom: $panel_footer_height;
+    padding-bottom: $panel_footer_height;
     overflow: auto;
 }
 
