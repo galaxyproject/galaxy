@@ -30,6 +30,11 @@ let buildconfig = {
                     name: "libs",
                     test: /(node_modules|galaxy\/scripts\/(?!apps))/,
                     chunks: "initial"
+                },
+                style: {
+                    name: "style",
+                    test: /(node_modules|galaxy\/style\/)/,
+                    chunks: "initial"
                 }
             }
         }
