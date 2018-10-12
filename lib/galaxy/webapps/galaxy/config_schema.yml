@@ -277,6 +277,13 @@ mapping:
           conda channels to enable by default
           (https://conda.io/docs/user-guide/tasks/manage-channels.html)
 
+      conda_use_local:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Use locally-built conda packages.
+
       conda_auto_install:
         type: bool
         default: false

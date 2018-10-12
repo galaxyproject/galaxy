@@ -336,6 +336,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~
+``conda_use_local``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use locally-built conda packages.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~
 ``conda_auto_install``
 ~~~~~~~~~~~~~~~~~~~~~~

@@ -242,6 +242,9 @@ galaxy:
   # guide/tasks/manage-channels.html)
   #conda_ensure_channels: 'iuc,conda-forge,bioconda,defaults'
 
+  # Use locally-built conda packages.
+  #conda_use_local: false
+
   # Set to True to instruct Galaxy to look for and install missing tool
   # dependencies before each job runs.
   #conda_auto_install: false
