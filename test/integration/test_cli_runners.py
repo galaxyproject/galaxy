@@ -62,8 +62,8 @@ def cli_job_config(remote_connection, shell_plugin='ParamikoShell', job_plugin='
     <plugins>
         <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" workers="1"/>
     </plugins>
-    <destinations default="ssh_slurm">
-        <destination id="ssh_slurm" runner="cli">
+    <destinations default="shell">
+        <destination id="shell" runner="cli">
             <param id="shell_plugin">$shell_plugin</param>
             <param id="job_plugin">$job_plugin</param>
             <param id="shell_username">$username</param>
