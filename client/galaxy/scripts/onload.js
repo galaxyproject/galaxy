@@ -22,9 +22,6 @@ import "jquery.complexify";
 import "bootstrap";
 import "bootstrap-tour";
 
-// Galaxy core styles
-import "scss/base.scss";
-
 // window.bundleEntries
 import "apps/extended";
 

@@ -35,6 +35,7 @@
         ${ h.js(
             'libs/require',
             'bundled/libs.chunk',
+            'bundled/style.chunk',
             'bundled/' + js_app_name + '.bundled'
         )}
 

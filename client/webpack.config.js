@@ -10,10 +10,10 @@ const imageBase = path.join(__dirname, "../static/style");
 
 let buildconfig = {
     entry: {
-        login: ["onload", "./galaxy/scripts/apps/login.js"],
-        analysis: ["onload", "./galaxy/scripts/apps/analysis.js"],
-        admin: ["onload", "./galaxy/scripts/apps/admin.js"],
-        extended: ["onload", "./galaxy/scripts/apps/extended.js"]
+        login: ["onload", "./galaxy/scripts/apps/login.js", "style"],
+        analysis: ["onload", "./galaxy/scripts/apps/analysis.js", "style"],
+        admin: ["onload", "./galaxy/scripts/apps/admin.js", "style"],
+        extended: ["onload", "./galaxy/scripts/apps/extended.js", "style"]
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
@@ -30,6 +30,11 @@ let buildconfig = {
                     name: "libs",
                     test: /(node_modules|galaxy\/scripts\/(?!apps))/,
                     chunks: "initial"
+                },
+                style: {
+                    name: "style",
+                    test: /(galaxy\/style\/)/,
+                    chunks: "all"
                 }
             }
         }
