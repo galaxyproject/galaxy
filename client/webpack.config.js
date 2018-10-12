@@ -2,6 +2,7 @@
 const webpack = require("webpack");
 const path = require("path");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 const scriptsBase = path.join(__dirname, "galaxy/scripts");
 const libsBase = path.join(scriptsBase, "libs");
@@ -31,10 +32,11 @@ let buildconfig = {
                     test: /(node_modules|galaxy\/scripts\/(?!apps))/,
                     chunks: "initial"
                 },
-                style: {
-                    name: "style",
-                    test: /(node_modules|galaxy\/style\/)/,
-                    chunks: "initial"
+                styles: {
+                    name: "styles",
+                    test: /\.css$/,
+                    chunks: "all",
+                    enforce: true
                 }
             }
         }
@@ -93,7 +95,7 @@ let buildconfig = {
                     loader: "file-loader",
                     options: {
                         outputPath: "assets",
-                        publicPath: '/static/scripts/bundled/assets/'
+                        publicPath: "/static/scripts/bundled/assets/"
                     }
                 }
             },
@@ -101,8 +103,11 @@ let buildconfig = {
                 test: /\.scss$/,
                 use: [
                     {
-                        loader: "style-loader"
+                        loader: MiniCssExtractPlugin.loader
                     },
+                    //{
+                    //    loader: "style-loader"
+                    //},
                     {
                         loader: "css-loader"
                     },
@@ -131,7 +136,11 @@ let buildconfig = {
             },
             {
                 test: /\.css$/,
-                use: ["style-loader", "css-loader"]
+                use: [
+                    "style-loader",
+                    //MiniCssExtractPlugin.loader,
+                    "css-loader"
+                ]
             }
         ]
     },
@@ -153,6 +162,10 @@ let buildconfig = {
             jQuery: "jquery",
             _: "underscore",
             Backbone: "backbone"
+        }),
+        new MiniCssExtractPlugin({
+            filename: "[name].css",
+            chunkFilename: "[id].css"
         }),
         new VueLoaderPlugin()
     ]
