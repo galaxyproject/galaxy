@@ -790,8 +790,6 @@ class WorkflowContentsManager(UsesAnnotations):
                     # If the tool is installed we attempt to verify input values
                     # and connections, otherwise the last known state will be dumped without modifications.
                     visit_input_values(module.tool.inputs, module.state.inputs, callback)
-                    # FIXME: this removes connection without displaying a message currently!
-                    input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
 
             # Encode input connections as dictionary
             input_conn_dict = {}
