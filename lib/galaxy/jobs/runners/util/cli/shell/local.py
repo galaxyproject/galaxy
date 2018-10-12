@@ -24,7 +24,7 @@ class LocalShell(BaseShellExec):
     """
 
     >>> shell = LocalShell()
-    >>> def exec_python(script, **kwds): return shell.execute('python -c "%s"' % script, **kwds)
+    >>> def exec_python(script, **kwds): return shell.execute(['python', '-c', script], **kwds)
     >>> exec_result = exec_python("from __future__ import print_function; print('Hello World')")
     >>> exec_result.stderr == u''
     True
