@@ -93,7 +93,6 @@
     "karma-polyfill": "^1.0.0",
     "karma-qunit": "^1.2.1",
     "karma-webpack": "^2.0.6",
-    "mini-css-extract-plugin": "^0.4.4",
     "mocha": "^5.2.0",
     "node-sass": "^4.9.3",
     "phantomjs-polyfill": "0.0.2",
