@@ -53,7 +53,7 @@ var paths = {
 };
 
 var dev_mode = function() {
-    return process.env.NODE_ENV != "production";
+    return process.env.NODE_ENV !== "production";
 };
 
 var source_maps = function() {
