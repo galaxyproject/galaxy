@@ -802,6 +802,25 @@ class ToolsTestCase(api.ApiTestCase):
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         self.assertEqual(output1_content.strip(), "Cat1Test\nCat2Test")
 
+    @skip_without_tool("mapper_two")
+    @uses_test_history(require_new=False)
+    def test_bam_state_regression(self, history_id):
+        # Test regression of https://github.com/galaxyproject/galaxy/issues/6856. With changes
+        # to metadata file flushing to optimize creating bam outputs and copying bam datasets
+        # we observed very subtle problems with HDA state changes on other files being flushed at
+        # the same time. This tests txt datasets finalized before and after the bam outputs as
+        # well as other bam files all flush properly during job completion.
+        new_dataset1 = self.dataset_populator.new_dataset(history_id, content='123\n456\n789')
+        inputs = {
+            'input1': dataset_to_param(new_dataset1),
+            'reference': dataset_to_param(new_dataset1),
+        }
+        outputs = self._run_and_get_outputs('mapper_two', history_id, inputs)
+        assert len(outputs) == 4
+        for output in outputs:
+            details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output)
+            assert details["state"] == "ok"
+
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
     def test_multirun_cat1(self, history_id):
