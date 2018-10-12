@@ -8,13 +8,13 @@
 
   <!-- <cached_mulled /> -->
   <!-- cached_mulled: resolves container URI through bioconda to mulled
-       automatic mapping, preferring cached containers in the accessible docker
+       automatic mapping, preferring cached images in the accessible docker
        engine. Requires docker engine. -->
 
   <!-- <cached_mulled_singularity /> -->
   <!-- cached_mulled_singularity: resolves container URI through
        bioconda to mulled automatic mapping, preferring cached singularity
-       containers to building local singularity containers. Only works with
+       images to building local singularity images. Only works with
        enable_beta_mulled_containers set to true in the galaxy.yaml config file.
        -->
 
@@ -27,10 +27,10 @@
        -->
 
   <!-- <build_mulled /> -->
-  <!-- build_mulled: builds a docker container locally for one or more bioconda
+  <!-- build_mulled: builds a docker image locally for one or more bioconda
        packages listed in the tools definition. -->
        
   <!-- <build_mulled_singularity /> -->
-  <!-- build_mulled_singularity: builds a singularity container locally for one
+  <!-- build_mulled_singularity: builds a singularity image locally for one
        or more package requirements listed as part of the tool's definition. -->
 </containers_resolvers>
