@@ -9,8 +9,8 @@ from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
-    AsynchronousJobState
-)
+    AsynchronousJobState,
+    JobState)
 from galaxy.util import asbool
 from .util.cli import CliInterface, split_params
 
@@ -177,6 +177,9 @@ class ShellJobRunner(AsynchronousJobRunner):
                 if not state == model.Job.states.OK:
                     # No need to change_state when the state is OK, this will be handled by `self.finish_job`
                     ajs.job_wrapper.change_state(state)
+                if state == model.Job.states.ERROR:
+                    # Try to find out the reason for exiting
+                    self.__handle_out_of_memory(ajs, external_job_id)
             if state == model.Job.states.RUNNING and not ajs.running:
                 ajs.running = True
             ajs.old_state = state
@@ -187,6 +190,16 @@ class ShellJobRunner(AsynchronousJobRunner):
                 new_watched.append(ajs)
         # Replace the watch list with the updated version
         self.watched = new_watched
+
+    def __handle_out_of_memory(self, ajs, external_job_id):
+        shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
+        shell, job_interface = self.get_cli_plugins(shell_params, job_params)
+        cmd_out = shell.execute(job_interface.get_failure_reason(external_job_id))
+        if cmd_out is not None:
+            if job_interface.parse_failure_reason(cmd_out.stdout, external_job_id) \
+                    == JobState.runner_states.MEMORY_LIMIT_REACHED:
+                ajs.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+                ajs.fail_message = "Tool failed due to insufficient memory. Try with more memory."
 
     def __get_job_states(self):
         job_destinations = {}
