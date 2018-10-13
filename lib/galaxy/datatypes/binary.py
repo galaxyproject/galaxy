@@ -1552,6 +1552,7 @@ class GAFASQLite(SQlite):
 class Xlsx(Binary):
     """Class for Excel 2007 (xlsx) files"""
     file_ext = "xlsx"
+    compressed = True
 
     def sniff(self, filename):
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
