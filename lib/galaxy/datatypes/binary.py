@@ -119,7 +119,7 @@ class Cel(Binary):
         Try to guess if the file is a CEL file.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('test.CEL')
+        >>> fname = get_test_fname('test.cel')
         >>> Cel().sniff(fname)
         True
 
@@ -1472,7 +1472,7 @@ class IdpDB(SQlite):
     Class describing an IDPicker 3 idpDB (sqlite) database
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('test.idpDB')
+    >>> fname = get_test_fname('test.idpdb')
     >>> IdpDB().sniff(fname)
     True
     >>> fname = get_test_fname('interval.interval')

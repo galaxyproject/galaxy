@@ -254,7 +254,7 @@ def is_column_based(fname_or_file_prefix, sep='\t', skip=0):
     False
     >>> is_column_based(fname, sep=' ')
     True
-    >>> fname = get_test_fname('test_ensembl.tab')
+    >>> fname = get_test_fname('test_ensembl.tabular')
     >>> is_column_based(fname)
     True
     >>> fname = get_test_fname('test_tab1.tabular')
@@ -421,7 +421,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.xls')
     >>> guess_ext(fname, sniff_order, is_binary=True)
     'excel.xls'
-    >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+    >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
     >>> guess_ext(fname, sniff_order)
     'biom2'
     >>> fname = get_test_fname('454Score.pdf')
@@ -439,7 +439,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.owl')
     >>> guess_ext(fname, sniff_order)
     'owl'
-    >>> fname = get_test_fname('Acanium.hmm')
+    >>> fname = get_test_fname('Acanium.snaphmm')
     >>> guess_ext(fname, sniff_order)
     'snaphmm'
     >>> fname = get_test_fname('wiggle.wig')
