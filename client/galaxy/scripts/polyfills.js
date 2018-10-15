@@ -3,6 +3,8 @@
     and polyfill for non-standard features.
  */
 
+import "@babel/polyfill";
+
 (() => {
     /* TODO: move to modernizr or something besides us doing this...
      * These are across all of our apps (reports, tool shed), but:
@@ -71,7 +73,9 @@
         }
     ];
     // build a list of feature names for features that were not found
-    var incompatibilities = features.filter(feature => !feature.compatible()).map(feature => feature.name);
+    var incompatibilities = features
+        .filter(feature => !feature.compatible())
+        .map(feature => feature.name);
 
     // if there are needed features missing, follow the index link to the static incompat warning
     if (incompatibilities.length) {
