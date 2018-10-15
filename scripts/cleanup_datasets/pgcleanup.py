@@ -11,7 +11,6 @@ import datetime
 import inspect
 import logging
 import os
-import shutil
 import string
 import sys
 from collections import namedtuple
@@ -19,7 +18,6 @@ from functools import partial
 
 import psycopg2
 from psycopg2.extras import NamedTupleCursor
-from six import string_types
 from sqlalchemy.engine.url import make_url
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
@@ -28,7 +26,6 @@ sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.util.bunch import Bunch
 from galaxy.util.script import app_properties_from_args, populate_config_args
 
 DEFAULT_LOG_DIR = os.path.join(galaxy_root, 'scripts', 'cleanup_datasets')
@@ -36,14 +33,15 @@ DEFAULT_LOG_DIR = os.path.join(galaxy_root, 'scripts', 'cleanup_datasets')
 log = logging.getLogger(__name__)
 
 
-##
-## BASE CLASSES, etc.
-##
+#
+# BASE CLASSES, etc.
+#
 
 
 class LevelFormatter(logging.Formatter):
     warn_fmt = "%(levelname)-5s %(funcName)s(): %(message)s"
     def_fmt = "%(message)s"
+
     def format(self, record):
         if record.levelno > logging.INFO:
             fmt = self.warn_fmt
@@ -130,7 +128,6 @@ class Action(object):
             log.info('Opening log file: %s' % logf)
             h = logging.FileHandler(logf)
         h.setLevel(logging.DEBUG if self._debug else logging.INFO)
-        #f = logging.Formatter('%(message)s')
         h.setFormatter(LevelFormatter())
         l = logging.getLogger(self.name)
         l.addHandler(h)
@@ -278,9 +275,9 @@ class RemovesObjects(object):
         raise NotImplementedError()
 
 
-##
-## MIXINS
-##
+#
+# MIXINS
+#
 
 
 class PurgesHDAs(object):
@@ -325,6 +322,7 @@ class PurgesHDAs(object):
                           (create_time, cleanup_event_id, hda_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, hda_id
                      FROM deleted_icda_ids)"""
+
     @property
     def sql(self):
         _purge_hda_dependencies_sql = self._purge_hda_dependencies_sql.format(
@@ -425,9 +423,9 @@ class RemovesDatasets(RemovesObjects):
             check_exists=True)
 
 
-##
-## ACTIONS
-##
+#
+# ACTIONS
+#
 
 
 class UpdateHDAPurgedFlag(Action):
@@ -645,7 +643,7 @@ class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
         """
         user_ids = sorted(self.__zero_disk_usage_user_ids)
         args = {'user_ids': tuple(user_ids)}
-        cur = self._update(sql, args, add_event=False)
+        self._update(sql, args, add_event=False)
         self.log.info('zero_disk_usage user_ids: %s', ' '.join([str(i) for i in user_ids]))
 
 
@@ -667,49 +665,6 @@ class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalc
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id,
                           history_id),
-             hda_events
-          AS (INSERT INTO cleanup_event_hda_association
-                          (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM purged_hda_ids),
-             {purge_hda_dependencies_sql}
-      SELECT purged_hda_ids.id AS purged_hda_id,
-             history.user_id AS recalculate_disk_usage_user_id,
-             deleted_metadata_file_ids.id AS deleted_metadata_file_id,
-             deleted_metadata_file_ids.object_store_id AS object_store_id,
-             deleted_icda_ids.id AS deleted_icda_id,
-             deleted_icda_ids.hda_id AS deleted_icda_hda_id
-        FROM purged_hda_ids
-             LEFT OUTER JOIN history
-                             ON purged_hda_ids.history_id = history.id
-             LEFT OUTER JOIN deleted_metadata_file_ids
-                             ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
-             LEFT OUTER JOIN deleted_icda_ids
-                             ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
-    ORDER BY purged_hda_ids.id
-    """
-    causals = (
-        ('purged_hda_id', 'deleted_metadata_file_id', 'object_store_id'),
-        ('purged_hda_id', 'deleted_icda_id', 'deleted_icda_hda_id'),
-    )
-
-
-class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
-    """
-    - Mark purged all HistoryDatasetAssociations whose dataset_id is state = 'error' that are older
-      than the specified number of days.
-    """
-    force_retry_sql = " AND NOT history_dataset_association.purged"
-    _action_sql = """
-        WITH purged_hda_ids
-          AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
-                     FROM dataset
-                    WHERE history_dataset_association.dataset_id = dataset.id{force_retry_sql}
-                          AND dataset.state = 'error'
-                          AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
-                RETURNING history_dataset_association.id as id,
-                          history_dataset_association.history_id as history_id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
@@ -1097,7 +1052,6 @@ class Cleanup(object):
             self.args.actions.extend(self.args.sequence)
 
     def __setup_logging(self):
-        format = "%(asctime)s %(levelname)-5s %(funcName)s(): %(message)s"
         logging.basicConfig(
             level=logging.DEBUG if self.args.debug else logging.INFO,
             format="%(asctime)s %(levelname)-5s %(funcName)s(): %(message)s")
