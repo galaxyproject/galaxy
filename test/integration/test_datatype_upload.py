@@ -11,6 +11,7 @@ TEST_FILE_DIR = '%s/../../lib/galaxy/datatypes/test' % SCRIPT_DIRECTORY
 TEST_DATA = collections.namedtuple('UploadDatatypesData', 'path datatype')
 GALAXY_ROOT = os.path.abspath('%s/../../' % SCRIPT_DIRECTORY)
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, 'config/datatypes_conf.xml.sample')
+PARENT_SNIFFER_MAP = {'fastqsolexa': 'fastq'}
 
 
 def find_datatype(registry, filename):
@@ -60,7 +61,8 @@ def test_upload_datatype_auto(instance, test_data):
             file_type = test_data.datatype.file_ext
         dataset = instance.dataset_populator.new_dataset(instance.history_id, content=content, wait=False, file_type=file_type)
     dataset = instance.dataset_populator.get_history_dataset_details(instance.history_id, dataset=dataset, assert_ok=False)
+    expected_file_ext = test_data.datatype.file_ext
     if 'false' in test_data.path:
-        assert dataset['file_ext'] != test_data.datatype.file_ext
+        assert dataset['file_ext'] != PARENT_SNIFFER_MAP.get(expected_file_ext, expected_file_ext)
     else:
-        assert dataset['file_ext'] == test_data.datatype.file_ext
+        assert dataset['file_ext'] == PARENT_SNIFFER_MAP.get(expected_file_ext, expected_file_ext)
