@@ -466,7 +466,7 @@ class Configuration(object):
         # allow_path_paste value.
         self.allow_library_path_paste = string_as_bool(kwargs.get('allow_library_path_paste', self.allow_path_paste))
         self.disable_library_comptypes = kwargs.get('disable_library_comptypes', '').lower().split(',')
-        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", False))
+        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", True))
         self.check_upload_content = string_as_bool(kwargs.get('check_upload_content', True))
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')

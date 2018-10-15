@@ -28,12 +28,9 @@ $vertical-gap: 8px;
     }
 
     $spacing-top: 6px;
-    $spacing-right: 10px;
+    $spacing-right: $margin-v * 0.5;
     $spacing-bottom: 6px;
-    $spacing-left: 8px;
-    .padded {
-        padding: $spacing-top $spacing-right $spacing-bottom $spacing-left;
-    }
+    $spacing-left: $margin-v * 0.5;
 
     .warnings {
         &:not(:empty) {
@@ -61,11 +58,9 @@ $vertical-gap: 8px;
         float: left;
         // always initially hidden and zero width
         display: none;
-        width: 32px;
-        height: 32px;
-        //HACK: neg. on the bottom due to padding-bottom in title-bar - very tweakish
-        margin: 0px 0px - ($spacing-bottom) 0px;
-        padding: ($spacing-top + 2) 0px 2px ($spacing-left - 1);
+        @extend .pt-2;
+        @extend .pl-3;
+        width: 2.5rem;
         font-size: 80%;
         color: $btn-default-color;
         cursor: pointer;
@@ -80,8 +75,8 @@ $vertical-gap: 8px;
     .title-bar {
         cursor: pointer;
         outline: none;
-        @extend .padded;
-
+        @extend .p-2;
+        @extend .px-3;
         .title {
             display: inline;
             font-weight: bold;
@@ -112,8 +107,9 @@ $vertical-gap: 8px;
 
     .primary-actions {
         @extend .icon-btn-group;
+        @extend .mt-2;
+        @extend .mx-3;
         float: right;
-        margin: $spacing-top $spacing-right 0;
         .icon-btn {
             margin-left: $icon-btn-margin;
         }
@@ -121,12 +117,8 @@ $vertical-gap: 8px;
 
     .details {
         display: none;
-        padding: 0px $spacing-right $spacing-bottom $spacing-left;
-        //TODO: FIXME
-        //& > [class$:messagesmall] {
-        //    margin: 0px 0px 8px 0px;
-        //}
-
+        @extend .pb-2;
+        @extend .px-3;
         label {
             margin: 0px;
             padding: 0px;

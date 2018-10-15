@@ -4,7 +4,6 @@ import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadExtension from "mvc/upload/upload-extension";
-import Popover from "mvc/ui/ui-popover";
 import Select from "mvc/ui/ui-select";
 import Ui from "mvc/ui/ui-misc";
 export default Backbone.View.extend({

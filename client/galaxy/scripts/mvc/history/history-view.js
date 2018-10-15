@@ -645,7 +645,7 @@ export function historyEntry(options) {
             window.location = "${ switch_to_url }";
         }
     });
-    // use_panels effects where the the center_panel() is rendered:
+    // use_panels affects where the the center_panel() is rendered:
     //  w/o it renders to the body, w/ it renders to #center - we need to adjust a few things for scrolling to work
     if (options.hasMasthead) {
         $("#center").addClass("flex-vertical-container");

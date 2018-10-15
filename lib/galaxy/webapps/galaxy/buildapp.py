@@ -295,6 +295,9 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
+    webapp.mapper.connect('/api/cloud/authz/', action='index', controller='cloudauthz')
+    webapp.mapper.connect('/api/cloud/authz/create', action='create', controller='cloudauthz')
+
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',
                           controller='histories',
@@ -445,6 +448,11 @@ def populate_api_routes(webapp, app):
                           '/api/workflows/{workflow_id}/download',
                           controller='workflows',
                           action='workflow_dict',
+                          conditions=dict(method=['GET']))
+    webapp.mapper.connect('show_versions',
+                          '/api/workflows/{workflow_id}/versions',
+                          controller='workflows',
+                          action='show_versions',
                           conditions=dict(method=['GET']))
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect('workflow_dict',
@@ -904,6 +912,12 @@ def populate_api_routes(webapp, app):
                           controller='tool_shed_repositories',
                           action='install',
                           conditions=dict(method=['POST']))
+
+    webapp.mapper.connect('check_for_updates',
+                          '/api/tool_shed_repositories/check_for_updates',
+                          controller='tool_shed_repositories',
+                          action='check_for_updates',
+                          conditions=dict(method=['GET']))
 
     webapp.mapper.connect('tool_shed_repository',
                           '/api/tool_shed_repositories',

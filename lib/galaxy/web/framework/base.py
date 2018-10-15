@@ -369,7 +369,7 @@ class Request(webob.Request):
         Create a new request wrapping the WSGI environment `environ`
         """
         #  self.environ = environ
-        webob.Request.__init__(self, environ, charset='utf-8', decode_param_names=False)
+        webob.Request.__init__(self, environ, charset='utf-8')
     # Properties that are computed and cached on first use
 
     @lazy_property

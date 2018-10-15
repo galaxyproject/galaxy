@@ -45,7 +45,7 @@ mapping:
 
       cookie_path:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If proxy-prefix is enabled and you're running more than one Galaxy instance
@@ -109,7 +109,7 @@ mapping:
 
       database_template:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If auto-creating a postgres database on startup - it can be based on an existing
@@ -271,11 +271,18 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: iuc,bioconda,conda-forge,defaults
+        default: iuc,conda-forge,bioconda,defaults
         required: false
         desc: |
           conda channels to enable by default
           (https://conda.io/docs/user-guide/tasks/manage-channels.html)
+
+      conda_use_local:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Use locally-built conda packages.
 
       conda_auto_install:
         type: bool
@@ -343,7 +350,7 @@ mapping:
 
       watch_tools:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of tools and tool directories
@@ -394,7 +401,7 @@ mapping:
 
       containers_resolvers_config_file:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Container resolvers configuration (beta). Setup a file describing container
@@ -490,7 +497,7 @@ mapping:
 
       watch_tool_data_dir:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of the tool_data and shed_tool_data_path
@@ -526,6 +533,17 @@ mapping:
           Galaxy (.sample is used if default does not exist).  If a datatype appears in
           multiple files, the last definition is used (though the first sniffer is used
           so limit sniffer definitions to one file).
+
+      sniff_compressed_dynamic_datatypes_default:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Enable sniffing of compressed datatypes. This can be configured/overridden
+          on a per-datatype basis in the datatypes_conf.xml file.
+          With this option set to False the compressed datatypes will be unpacked
+          before sniffing.
+
 
       datatypes_disable_auto:
         type: bool
@@ -642,7 +660,7 @@ mapping:
           Number of checks to execute if check_job_script_integrity is enabled.
 
       check_job_script_integrity_sleep:
-        type: str
+        type: float
         default: .25
         required: false
         desc: |
@@ -709,7 +727,7 @@ mapping:
 
       smtp_server:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Galaxy sends mail for various things: subscribing users to the mailing list
@@ -720,7 +738,7 @@ mapping:
 
       smtp_username:
         type: str
-        default: null
+        default: '' 
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -729,7 +747,7 @@ mapping:
 
       smtp_password:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -754,7 +772,7 @@ mapping:
 
       error_email_to:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Datasets in an error state include a link to report the error.  Those reports
@@ -764,7 +782,7 @@ mapping:
 
       email_from:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Email address to use in the 'From' field when sending emails for
@@ -848,7 +866,7 @@ mapping:
 
       ga_code:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           You can enter tracking code here to track visitor's behavior
@@ -900,7 +918,7 @@ mapping:
 
       message_box_content:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Show a message box under the masthead.
@@ -914,7 +932,7 @@ mapping:
 
       brand:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -1002,21 +1020,21 @@ mapping:
 
       biostar_url:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable integration with a custom Biostar instance.
 
       biostar_key_name:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable integration with a custom Biostar instance.
 
       biostar_key:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable integration with a custom Biostar instance.
@@ -1073,7 +1091,7 @@ mapping:
 
       terms_url:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
@@ -1187,7 +1205,7 @@ mapping:
 
       nginx_x_accel_redirect_base:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
@@ -1219,7 +1237,7 @@ mapping:
 
       nginx_upload_store:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -1229,7 +1247,7 @@ mapping:
 
       nginx_upload_path:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -1238,7 +1256,7 @@ mapping:
 
       nginx_upload_job_files_store:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1248,7 +1266,7 @@ mapping:
 
       nginx_upload_job_files_path:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1363,7 +1381,7 @@ mapping:
 
       dynamic_proxy_golang_api_key:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           The golang proxy uses a RESTful HTTP API for communication with Galaxy
@@ -1390,7 +1408,7 @@ mapping:
 
       logging:
         type: map
-        default: galaxy.config.LOGGING_CONFIG_DEFAULT
+        allowempty: True
         desc: |
           Controls where and how the server logs messages. If unset, the default is to log all messages to standard
           output at the level defined by the `log_level` configuration option. Configuration is described in the
@@ -1483,7 +1501,7 @@ mapping:
 
       allowed_origin_hostnames:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Return a Access-Control-Allow-Origin response header that matches the Origin
@@ -1580,7 +1598,7 @@ mapping:
 
       sentry_dsn:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Log to Sentry
@@ -1647,7 +1665,7 @@ mapping:
 
       library_import_dir:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows administrators to
@@ -1655,7 +1673,7 @@ mapping:
 
       user_library_import_dir:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows authorized
@@ -1674,7 +1692,7 @@ mapping:
 
       user_library_import_symlink_whitelist:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           For security reasons, users may not import any files that actually lie
@@ -1728,7 +1746,7 @@ mapping:
 
       tool_name_boost:
         type: float
-        default: 9
+        default: 9.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1738,7 +1756,7 @@ mapping:
 
       tool_section_boost:
         type: float
-        default: 3
+        default: 3.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1748,7 +1766,7 @@ mapping:
 
       tool_description_boost:
         type: float
-        default: 2
+        default: 2.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1758,7 +1776,7 @@ mapping:
 
       tool_label_boost:
         type: float
-        default: 1
+        default: 1.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1768,7 +1786,7 @@ mapping:
 
       tool_stub_boost:
         type: float
-        default: 5
+        default: 5.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1854,7 +1872,7 @@ mapping:
 
       remote_user_maildomain:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If use_remote_user is enabled and your external authentication
@@ -1886,7 +1904,7 @@ mapping:
 
       remote_user_logout_href:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If use_remote_user is enabled, you can set this to a URL that will log your
@@ -1913,7 +1931,7 @@ mapping:
 
       admin_users:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Administrative users - set this to a comma-separated list of valid Galaxy
@@ -2144,7 +2162,7 @@ mapping:
           invocation to schedule indefinitely. The default corresponds to 1 month.
 
       maximum_workflow_jobs_per_scheduling_iteration:
-        type: str
+        type: int
         default: -1
         required: false
         desc: |
@@ -2217,7 +2235,7 @@ mapping:
 
       api_allow_run_as:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Optional list of email addresses of API users who can make calls on behalf of
@@ -2263,7 +2281,7 @@ mapping:
 
       ftp_upload_dir:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
@@ -2274,7 +2292,7 @@ mapping:
 
       ftp_upload_site:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           This should be the hostname of your FTP server, which will be provided to
@@ -2554,7 +2572,7 @@ mapping:
 
       environment_setup_file:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           File to source to set up the environment when running jobs.  By default, the
@@ -2709,3 +2727,12 @@ mapping:
         required: false
         desc: |
           persistent_communication_rooms is a comma-separated list of rooms that should be always available.
+
+      use_pbkdf2:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Allow disabling pbkdf2 hashing of passwords for legacy situations.
+          This should normally be left enabled unless there is a specific
+          reason to disable it.

@@ -1028,7 +1028,7 @@ class NavigatesGalaxy(HasDriver):
         tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
 
     def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
         rules_div_element = self.tool_parameter_div("rules")
@@ -1370,8 +1370,7 @@ class NavigatesGalaxy(HasDriver):
         preclick = step.get("preclick", [])
         for preclick_selector in preclick:
             print("(Pre)Clicking %s" % preclick_selector)
-            element = self.tour_wait_for_clickable_element(preclick_selector)
-            element.click()
+            self._tour_wait_for_and_click_element(preclick_selector)
 
         element_str = step.get("element", None)
         if element_str is not None:
@@ -1388,8 +1387,12 @@ class NavigatesGalaxy(HasDriver):
         postclick = step.get("postclick", [])
         for postclick_selector in postclick:
             print("(Post)Clicking %s" % postclick_selector)
-            element = self.tour_wait_for_clickable_element(postclick_selector)
-            element.click()
+            self._tour_wait_for_and_click_element(postclick_selector)
+
+    @retry_during_transitions
+    def _tour_wait_for_and_click_element(self, selector):
+        element = self.tour_wait_for_clickable_element(selector)
+        element.click()
 
     @retry_during_transitions
     def wait_for_and_click_selector(self, selector):

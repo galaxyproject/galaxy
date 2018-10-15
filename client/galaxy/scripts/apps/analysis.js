@@ -1,5 +1,6 @@
 /* global Galaxy, $, _ */
 import { GalaxyApp } from "galaxy";
+import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
 import HistoryPanel from "./panels/history-panel";
@@ -357,7 +358,12 @@ window.app = function app(options, bootstrapped) {
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm: function(params) {
             //TODO: load tool form code async
-            params.id = decodeURIComponent(params.tool_id);
+            if (params.tool_id) {
+                params.id = decodeUriComponent(params.tool_id);
+            }
+            if (params.version) {
+                params.version = decodeUriComponent(params.version);
+            }
             this.page.display(new ToolForm.View(params));
         },
 

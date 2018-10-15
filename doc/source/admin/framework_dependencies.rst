@@ -204,8 +204,8 @@ not run the script, the dependencies will simply be installed via pip.
 
 .. code-block:: console
 
-    $ conda config --add channels conda-forge
     $ conda config --add channels bioconda
+    $ conda config --add channels conda-forge
     $ conda create --name galaxy --file <(lib/galaxy/dependencies/conda-file.sh)
     Filtering out requirements not available in conda... done
     Solving environment: done

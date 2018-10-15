@@ -28,6 +28,11 @@ except (ImportError, SyntaxError):
     pathmapper = None
 
 try:
+    from cwltool.context import LoadingContext  # Introduced in cwltool 1.0.20180615183820
+except (ImportError, SyntaxError):
+    LoadingContext = None
+
+try:
     from cwltool import load_tool
 except (ImportError, SyntaxError):
     load_tool = None
@@ -76,6 +81,7 @@ __all__ = (
     'main',
     'ref_resolver',
     'load_tool',
+    'LoadingContext',
     'workflow',
     'process',
     'pathmapper',

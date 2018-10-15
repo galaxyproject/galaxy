@@ -346,7 +346,7 @@ const RULES = {
         },
         save: (component, rule) => {
             rule.target_column = component.addColumnSubstrTarget;
-            rule.length = component.addColumnSubstrLength;
+            rule.length = parseInt(component.addColumnSubstrLength);
             rule.substr_type = component.addColumnSubstrType;
         },
         apply: (rule, data, sources, columns) => {
@@ -476,13 +476,13 @@ const RULES = {
                 component.addFilterCountWhich = "first";
                 component.addFilterCountInvert = false;
             } else {
-                component.addFilterCountN = rule.count;
+                component.addFilterCountN = parseInt(rule.count);
                 component.addFilterCountWhich = rule.which;
                 component.addFilterCountInvert = rule.inverse;
             }
         },
         save: (component, rule) => {
-            rule.count = component.addFilterCountN;
+            rule.count = parseInt(component.addFilterCountN);
             rule.which = component.addFilterCountWhich;
             rule.invert = component.addFilterCountInvert;
         },

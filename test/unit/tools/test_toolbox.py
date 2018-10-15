@@ -200,6 +200,51 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
         assert tool.version == "3.0"
 
+    def test_tool_reload_for_broken_tool(self):
+        self._init_tool(filename="simple_tool.xml", version="1.0")
+        self._add_config("""<toolbox><tool file="simple_tool.xml"/></toolbox>""")
+        toolbox = self.toolbox
+        tool = toolbox.get_tool('test_tool')
+        assert tool is not None
+        assert tool.version == "1.0"
+        assert tool.tool_errors is None
+        # Tool is loaded, now let's break it
+        tool_path = tool.config_file
+        with open(tool.config_file, 'w') as out:
+            out.write('certainly not a valid tool')
+
+        def check_tool_errors():
+            tool = self.app.toolbox.get_tool("test_tool")
+            assert tool is not None
+            assert tool.version == "1.0"
+            assert tool.tool_errors == 'Current on-disk tool is not valid'
+
+        self._try_until_no_errors(check_tool_errors)
+
+        # Tool is still loaded, lets restore it with a new version
+        self._init_tool(filename="simple_tool.xml", version="2.0")
+
+        def check_no_tool_errors():
+            tool = self.app.toolbox.get_tool("test_tool")
+            assert tool is not None
+            assert tool.version == "2.0"
+            assert tool.tool_errors is None
+            assert tool_path == tool.config_file, "config file"
+
+        self._try_until_no_errors(check_no_tool_errors)
+
+    def _try_until_no_errors(self, f):
+        e = None
+        for i in range(30):
+            try:
+                f()
+                return
+            except AssertionError as error:
+                e = error
+                time.sleep(.25)
+
+        raise e
+
     def test_enforce_tool_profile(self):
         self._init_tool(filename="old_tool.xml", version="1.0", profile="17.01", tool_id="test_old_tool_profile")
         self._init_tool(filename="new_tool.xml", version="2.0", profile="27.01", tool_id="test_new_tool_profile")
@@ -271,6 +316,21 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert test_tool.repository_name is None
         assert test_tool.repository_owner is None
         assert test_tool.installed_changeset_revision is None
+
+    def test_tool_shed_request_version(self):
+        self._init_tool()
+        self._setup_two_versions_in_config(section=False)
+        self._setup_two_versions()
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.1")
+        assert test_tool.version == '0.1'
+
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="0.2")
+        assert test_tool.version == '0.2'
+
+        # there is no version 3, return newest version
+        test_tool = self.toolbox.get_tool("test_tool", tool_version="3")
+        assert test_tool.version == '0.2'
 
     def test_load_file_in_section(self):
         self._init_tool_in_section()

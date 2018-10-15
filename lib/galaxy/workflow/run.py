@@ -5,8 +5,11 @@ from galaxy import model
 from galaxy.util import ExecutionTimer
 from galaxy.util.odict import odict
 from galaxy.workflow import modules
-from galaxy.workflow.run_request import (workflow_run_config_to_request,
-    WorkflowRunConfig)
+from galaxy.workflow.run_request import (
+    workflow_request_to_run_config,
+    workflow_run_config_to_request,
+    WorkflowRunConfig
+)
 
 log = logging.getLogger(__name__)
 
@@ -145,6 +148,7 @@ class WorkflowInvoker(object):
                 self.workflow_invocation,
                 workflow_run_config.inputs,
                 module_injector,
+                param_map=workflow_run_config.param_map,
                 jobs_per_scheduling_iteration=getattr(trans.app.config, "maximum_workflow_jobs_per_scheduling_iteration", -1),
             )
         self.progress = progress
@@ -268,11 +272,12 @@ STEP_OUTPUT_DELAYED = object()
 
 class WorkflowProgress(object):
 
-    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, jobs_per_scheduling_iteration=-1):
+    def __init__(self, workflow_invocation, inputs_by_step_id, module_injector, param_map, jobs_per_scheduling_iteration=-1):
         self.outputs = odict()
         self.module_injector = module_injector
         self.workflow_invocation = workflow_invocation
         self.inputs_by_step_id = inputs_by_step_id
+        self.param_map = param_map
         self.jobs_per_scheduling_iteration = jobs_per_scheduling_iteration
         self.jobs_scheduled_this_iteration = 0
 
@@ -298,7 +303,7 @@ class WorkflowProgress(object):
         for step in steps:
             step_id = step.id
             if not hasattr(step, 'module'):
-                self.module_injector.inject(step)
+                self.module_injector.inject(step, step_args=self.param_map.get(step.id, {}))
                 if step_id not in step_states:
                     template = "Workflow invocation [%s] has no step state for step id [%s]. States ids are %s."
                     message = template % (self.workflow_invocation.id, step_id, list(step_states.keys()))
@@ -442,16 +447,10 @@ class WorkflowProgress(object):
         return subworkflow_invocation
 
     def subworkflow_invoker(self, trans, step, use_cached_job=False):
-        subworkflow_progress = self.subworkflow_progress(step)
+        subworkflow_invocation = self._subworkflow_invocation(step)
+        workflow_run_config = workflow_request_to_run_config(trans, subworkflow_invocation)
+        subworkflow_progress = self.subworkflow_progress(subworkflow_invocation, step, workflow_run_config.param_map)
         subworkflow_invocation = subworkflow_progress.workflow_invocation
-        workflow_run_config = WorkflowRunConfig(
-            target_history=subworkflow_invocation.history,
-            replacement_dict={},
-            inputs={},
-            param_map={},
-            copy_inputs_to_history=False,
-            use_cached_job=use_cached_job
-        )
         return WorkflowInvoker(
             trans,
             workflow=subworkflow_invocation.workflow,
@@ -459,8 +458,7 @@ class WorkflowProgress(object):
             progress=subworkflow_progress,
         )
 
-    def subworkflow_progress(self, step):
-        subworkflow_invocation = self._subworkflow_invocation(step)
+    def subworkflow_progress(self, subworkflow_invocation, step, param_map):
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
@@ -484,6 +482,7 @@ class WorkflowProgress(object):
             subworkflow_invocation,
             subworkflow_inputs,
             self.module_injector,
+            param_map=param_map
         )
 
     def _recover_mapping(self, step_invocation):

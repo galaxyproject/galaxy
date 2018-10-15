@@ -20,7 +20,7 @@
     same path as the prefix in the filter above.  This value becomes
     the "path" attribute set in the cookie so the cookies from each
     instance will not clobber each other.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -109,7 +109,7 @@
     on an existing template database. This will set that. This is
     probably only useful for testing but documentation is included
     here for completeness.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -332,8 +332,18 @@
 :Description:
     conda channels to enable by default (https://conda.io/docs/user-
     guide/tasks/manage-channels.html)
-:Default: ``iuc,bioconda,conda-forge,defaults``
+:Default: ``iuc,conda-forge,bioconda,defaults``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``conda_use_local``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use locally-built conda packages.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -502,7 +512,7 @@
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default containers loaded is
     determined by enable_beta_mulled_containers.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -678,6 +688,19 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``sniff_compressed_dynamic_datatypes_default``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable sniffing of compressed datatypes. This can be
+    configured/overridden on a per-datatype basis in the
+    datatypes_conf.xml file. With this option set to False the
+    compressed datatypes will be unpacked before sniffing.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``datatypes_disable_auto``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -841,7 +864,7 @@
     Time to sleep between checks if check_job_script_integrity is
     enabled (in seconds).
 :Default: ``0.25``
-:Type: str
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~
@@ -937,7 +960,7 @@
     needs to send mail through an SMTP server, which you may define
     here (host:port). Galaxy will automatically try STARTTLS but will
     continue upon failure.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -949,7 +972,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -961,7 +984,7 @@
     If your SMTP server requires a username and password, you can
     provide them here (password in cleartext here, but if your server
     supports STARTTLS it will be sent over the network encrypted).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -999,7 +1022,7 @@
     disabled if no address is set.  Also this email is shown as a
     contact to user in case of Galaxy misconfiguration and other
     events user may encounter.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1013,7 +1036,7 @@
     resets. We recommend using string in the following format: Galaxy
     Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
     no-reply@HOSTNAME>' will be used.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1124,7 +1147,7 @@
 :Description:
     You can enter tracking code here to track visitor's behavior
     through your Google Analytics account.  Example: UA-XXXXXXXX-Y
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1186,7 +1209,7 @@
 
 :Description:
     Show a message box under the masthead.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1206,7 +1229,7 @@
 
 :Description:
     Append "/{brand}" to the "Galaxy" text in the masthead.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1322,7 +1345,7 @@
 
 :Description:
     Enable integration with a custom Biostar instance.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1332,7 +1355,7 @@
 
 :Description:
     Enable integration with a custom Biostar instance.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1342,7 +1365,7 @@
 
 :Description:
     Enable integration with a custom Biostar instance.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1426,7 +1449,7 @@
     The URL linked by the "Terms and Conditions" link in the "Help"
     menu, as well as on the user registration and login forms and in
     the activation emails.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1579,7 +1602,7 @@
     Redirect.  This should be set to the path defined in the nginx
     config as an internal redirect with access to Galaxy's data files
     (see documentation linked above).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1622,7 +1645,7 @@
     explained in detail in the documentation linked above.  The upload
     store is a temporary directory in which files uploaded by the
     upload module will be placed.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1634,7 +1657,7 @@
     This value overrides the action set on the file upload form, e.g.
     the web path where the nginx_upload_module has been configured to
     intercept upload requests.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1647,7 +1670,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1660,7 +1683,7 @@
     out upon job completion by remote job runners (i.e. Pulsar) that
     initiate staging operations on the remote end.  See the Galaxy
     nginx documentation for the corresponding nginx configuration.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1818,7 +1841,7 @@
     Galaxy instead of a JSON or SQLite file for IPC. If you do not
     specify this, it will be set randomly for you. You should set this
     if you are managing the proxy manually.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -1856,7 +1879,7 @@
     defined by the `log_level` configuration option. Configuration is
     described in the documentation at:
     https://docs.galaxyproject.org/en/master/admin/config_logging.html
-:Default: ``galaxy.config.LOGGING_CONFIG_DEFAULT``
+:Default: ``None``
 :Type: map
 
 
@@ -1992,7 +2015,7 @@
     beginning and ending with /. E.g.
     mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
     https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2126,7 +2149,7 @@
     middleware and errors will be sent to the indicated sentry
     instance.  This connection string is available in your sentry
     instance under <project_name> -> Settings -> API Keys.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2209,7 +2232,7 @@
 :Description:
     Add an option to the library upload form which allows
     administrators to upload a directory of files.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2224,7 +2247,7 @@
     admin user's Galaxy login ( email ).  The non-admin user is
     restricted to uploading files or sub-directories of files
     contained in their directory.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2252,7 +2275,7 @@
     *any* user with library import permissions can import from
     anywhere in these directories (assuming they are able to create
     symlinks to them).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2324,7 +2347,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``9``
+:Default: ``9.0``
 :Type: float
 
 
@@ -2337,7 +2360,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``3``
+:Default: ``3.0``
 :Type: float
 
 
@@ -2350,7 +2373,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``2``
+:Default: ``2.0``
 :Type: float
 
 
@@ -2363,7 +2386,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``1``
+:Default: ``1.0``
 :Type: float
 
 
@@ -2376,7 +2399,7 @@
     higher the boost, the more importance the scoring algorithm gives
     to the given field.  Section refers to the tool group in the tool
     panel.  Rest of the fields are tool's attributes.
-:Default: ``5``
+:Default: ``5.0``
 :Type: float
 
 
@@ -2492,7 +2515,7 @@
     method just returns bare usernames, set a default mail domain to
     be appended to usernames, to become your Galaxy usernames (email
     addresses).
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2534,7 +2557,7 @@
 :Description:
     If use_remote_user is enabled, you can set this to a URL that will
     log your users out.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2574,7 +2597,7 @@
     the Admin section of the server, and will have access to create
     users, groups, roles, libraries, and more.  For more information,
     see:   https://galaxyproject.org/admin/
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -2880,7 +2903,7 @@
     alchemy session between workflow invocation scheduling iterations.
     Set to -1 to disable any such maximum (the default).
 :Default: ``-1``
-:Type: str
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2976,7 +2999,7 @@
 :Description:
     Optional list of email addresses of API users who can make calls
     on behalf of other users.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3043,7 +3066,7 @@
     following two options. This should point to a directory containing
     subdirectories matching users' identifier (defaults to e-mail),
     where Galaxy will look for files.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3054,7 +3077,7 @@
 :Description:
     This should be the hostname of your FTP server, which will be
     provided to users in the help text.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3443,7 +3466,7 @@
     environment prior to running tools.  This can be especially useful
     for running jobs as the actual user, to remove the need to
     configure each user's environment individually.
-:Default: ``None``
+:Default: ````
 :Type: str
 
 
@@ -3652,6 +3675,18 @@
     that should be always available.
 :Default: ``None``
 :Type: str
+
+
+~~~~~~~~~~~~~~
+``use_pbkdf2``
+~~~~~~~~~~~~~~
+
+:Description:
+    Allow disabling pbkdf2 hashing of passwords for legacy situations.
+    This should normally be left enabled unless there is a specific
+    reason to disable it.
+:Default: ``true``
+:Type: bool
 
 
 

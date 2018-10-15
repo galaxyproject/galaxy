@@ -145,6 +145,11 @@ class AdminRequiredException(MessageException):
     err_code = error_codes.ADMIN_REQUIRED
 
 
+class UserActivationRequiredException(MessageException):
+    status_code = 403
+    err_code = error_codes.USER_ACTIVATION_REQUIRED
+
+
 class ObjectNotFound(MessageException):
     """ Accessed object was not found """
     status_code = 404

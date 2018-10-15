@@ -40,7 +40,8 @@ DEVTEAM = [
     "afgane", "dannon", "blankenberg",
     "davebx", "martenson", "jmchilton",
     "tnabtaf", "natefoo", "jgoecks",
-    "guerler", "jennaj", "nekrut", "jxtx"
+    "guerler", "jennaj", "nekrut", "jxtx",
+    "VJalili"
 ]
 
 TEMPLATE = """
@@ -102,7 +103,7 @@ Highlights
 Get Galaxy
 ==========
 
-The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
 
 To get a new Galaxy repository run:
   .. code-block:: shell
@@ -163,6 +164,10 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Update ``next_milestone`` in [P4's configuration](https://github.com/galaxyproject/p4) to `${next_version}` so it properly tags new PRs.
     - [ ] Set the ``release_${version}`` branch in GitHub [settings](https://github.com/galaxyproject/galaxy/settings/branches) as protected.
 
+- [ ] **Issue Review Timeline Notes**
+    - [ ] Ensure any security fixes will be ready prior to ${freeze_date} + 1 week, to allow time for notification prior to release.
+    - [ ] Ensure ownership of outstanding bugfixes and track progress during freeze.
+
 - [ ] **Deploy and Test Release**
 
     - [ ] Update test.galaxyproject.org to ensure it is running a dev at or past branch point (${freeze_date} + 1 day).
@@ -198,7 +203,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Ensure all [blocking milestone PRs](https://github.com/galaxyproject/galaxy/pulls?q=is%3Aopen+is%3Apr+milestone%3A${version}) have been merged or closed.
 
           make release-check-blocking-prs RELEASE_CURR=${version}
-    - [ ] Ensure previous release is merged into current. [Github branch comparison](https://github.com/galaxyproject/galaxy/compare/release_${version}...release_${previous_version})
+    - [ ] Ensure previous release is merged into current. [GitHub branch comparison](https://github.com/galaxyproject/galaxy/compare/release_${version}...release_${previous_version})
     - [ ] Create and push release tag:
 
           make release-create RELEASE_CURR=${version}

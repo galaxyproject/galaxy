@@ -34,7 +34,11 @@ from sqlalchemy import (
     type_coerce,
     types)
 from sqlalchemy.ext import hybrid
-from sqlalchemy.orm import aliased, joinedload, object_session
+from sqlalchemy.orm import (
+    aliased,
+    joinedload,
+    object_session,
+)
 from sqlalchemy.schema import UniqueConstraint
 
 import galaxy.model.metadata
@@ -71,7 +75,7 @@ JOB_METRIC_MAX_LENGTH = 1023
 JOB_METRIC_PRECISION = 26
 JOB_METRIC_SCALE = 7
 # Tags that get automatically propagated from inputs to outputs when running jobs.
-AUTO_PROPAGATED_TAGS = ["name", "group"]
+AUTO_PROPAGATED_TAGS = ["name"]
 
 
 class NoConverterException(Exception):
@@ -218,8 +222,8 @@ class JobLike(object):
         return self.text_metrics + self.numeric_metrics
 
     def set_streams(self, stdout, stderr):
-        stdout = galaxy.util.unicodify(stdout)
-        stderr = galaxy.util.unicodify(stderr)
+        stdout = galaxy.util.unicodify(stdout) or u''
+        stderr = galaxy.util.unicodify(stderr) or u''
         if (len(stdout) > galaxy.util.DATABASE_MAX_STRING_SIZE):
             stdout = galaxy.util.shrink_string_by_size(stdout, galaxy.util.DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
             log.info("stdout for %s %d is greater than %s, only a portion will be logged to database", type(self), self.id, galaxy.util.DATABASE_MAX_STRING_SIZE_PRETTY)
@@ -1110,7 +1114,7 @@ class JobToInputDatasetAssociation(object):
     def __init__(self, name, dataset):
         self.name = name
         self.dataset = dataset
-        self.dataset_version = dataset.version if dataset else None
+        self.dataset_version = 0  # We start with version 0 and update once the job is ready
 
 
 class JobToOutputDatasetAssociation(object):
@@ -1527,6 +1531,10 @@ class History(HasTags, Dictifiable, UsesAnnotations, HasName):
         db_session.flush()
 
         return new_history
+
+    @property
+    def has_possible_members(self):
+        return True
 
     @property
     def activatable_datasets(self):
@@ -2568,7 +2576,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         state = inspect(self)
         changes = {}
 
-        for attr in state.attrs:
+        for attr in state.mapper.columns:
+            # We only create a new version if columns of the HDA table have changed, and ignore relationships.
             hist = state.get_history(attr.key, True)
 
             if not hist.has_changes():
@@ -2594,7 +2603,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
             self.version = self.version + 1 if self.version else 1
             session.add(past_hda)
 
-    def copy(self, parent_id=None, copy_tags=None, force_flush=True, copy_hid=True):
+    def copy(self, parent_id=None, copy_tags=None, force_flush=True, copy_hid=True, new_name=None):
         """
         Create a copy of this HDA.
         """
@@ -2602,7 +2611,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         if copy_hid:
             hid = self.hid
         hda = HistoryDatasetAssociation(hid=hid,
-                                        name=self.name,
+                                        name=new_name or self.name,
                                         info=self.info,
                                         blurb=self.blurb,
                                         peek=self.peek,
@@ -3365,6 +3374,44 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
         return top_level_populated
 
     @property
+    def dataset_action_tuples(self):
+        if not hasattr(self, '_dataset_action_tuples'):
+            db_session = object_session(self)
+
+            dc = alias(DatasetCollection.table)
+            de = alias(DatasetCollectionElement.table)
+            hda = alias(HistoryDatasetAssociation.table)
+            dataset = alias(Dataset.table)
+            dataset_permission = alias(DatasetPermissions.table)
+
+            select_from = dc.outerjoin(de, de.c.dataset_collection_id == dc.c.id)
+
+            depth_collection_type = self.collection_type
+            while ":" in depth_collection_type:
+                child_collection = alias(DatasetCollection.table)
+                child_collection_element = alias(DatasetCollectionElement.table)
+                select_from = select_from.outerjoin(child_collection, child_collection.c.id == de.c.child_collection_id)
+                select_from = select_from.outerjoin(child_collection_element, child_collection_element.c.dataset_collection_id == child_collection.c.id)
+
+                de = child_collection_element
+                depth_collection_type = depth_collection_type.split(":", 1)[1]
+
+            select_from = select_from.outerjoin(hda, hda.c.id == de.c.hda_id).outerjoin(dataset, hda.c.dataset_id == dataset.c.id)
+            select_from = select_from.outerjoin(dataset_permission, dataset.c.id == dataset_permission.c.dataset_id)
+
+            select_stmt = select([dataset_permission.c.action, dataset_permission.c.role_id]).select_from(select_from).where(dc.c.id == self.id).distinct()
+
+            _dataset_action_tuples = []
+            for _dataset_action_tuple in db_session.execute(select_stmt).fetchall():
+                if _dataset_action_tuple[0] is None:
+                    continue
+                _dataset_action_tuples.append(_dataset_action_tuple)
+
+            self._dataset_action_tuples = _dataset_action_tuples
+
+        return self._dataset_action_tuples
+
+    @property
     def waiting_for_elements(self):
         top_level_waiting = self.populated_state == DatasetCollection.populated_states.NEW
         if not top_level_waiting and self.has_subcollections:
@@ -3407,6 +3454,17 @@ class DatasetCollection(Dictifiable, UsesAnnotations):
             else:
                 elements.append(element)
         return elements
+
+    @property
+    def first_dataset_element(self):
+        for element in self.elements:
+            if element.is_collection:
+                first_element = element.child_collection.first_dataset_element
+                if first_element:
+                    return first_element
+            else:
+                return element
+        return None
 
     @property
     def state(self):
@@ -3863,6 +3921,13 @@ class StoredWorkflow(HasTags, Dictifiable):
         self.latest_workflow_id = None
         self.workflows = []
 
+    def get_internal_version(self, version):
+        if version is None:
+            return self.latest_workflow
+        if len(self.workflows) <= version:
+            raise Exception("Version does not exist")
+        return list(reversed(self.workflows))[version]
+
     def copy_tags_from(self, target_user, source_workflow):
         # Override to only copy owner tags.
         for src_swta in source_workflow.owner_tags:
@@ -4183,7 +4248,8 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
     def create_subworkflow_invocation_for_step(self, step):
         assert step.type == "subworkflow"
         subworkflow_invocation = WorkflowInvocation()
-        return self.attach_subworkflow_invocation_for_step(step, subworkflow_invocation)
+        self.attach_subworkflow_invocation_for_step(step, subworkflow_invocation)
+        return subworkflow_invocation
 
     def attach_subworkflow_invocation_for_step(self, step, subworkflow_invocation):
         assert step.type == "subworkflow"
@@ -4374,7 +4440,7 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable):
             request_to_content.workflow_step_id = step_id
             self.input_dataset_collections.append(request_to_content)
         else:
-            request_to_content = WorkflowRequestInputStepParmeter()
+            request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
             request_to_content.workflow_step_id = step_id
             self.input_step_parameters.append(request_to_content)
@@ -4482,26 +4548,13 @@ class WorkflowInvocationStep(Dictifiable):
         return rval
 
 
-class WorkflowInvocationStepJobAssociation(Dictifiable):
-    dict_collection_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
-    dict_element_visible_keys = ('id', 'job_id', 'workflow_invocation_step_id')
-
-
-class WorkflowRequest(Dictifiable):
-    dict_collection_visible_keys = ['id', 'name', 'type', 'state', 'history_id', 'workflow_id']
-    dict_element_visible_keys = ['id', 'name', 'type', 'state', 'history_id', 'workflow_id']
-
-    def to_dict(self, view='collection', value_mapper=None):
-        rval = super(WorkflowRequest, self).to_dict(view=view, value_mapper=value_mapper)
-        return rval
-
-
 class WorkflowRequestInputParameter(Dictifiable):
     """ Workflow-related parameters not tied to steps or inputs.
     """
     dict_collection_visible_keys = ['id', 'name', 'value', 'type']
     types = Bunch(
         REPLACEMENT_PARAMETERS='replacements',
+        STEP_PARAMETERS='step',
         META_PARAMETERS='meta',
         RESOURCE_PARAMETERS='resource',
     )
@@ -4536,7 +4589,7 @@ class WorkflowRequestToInputDatasetCollectionAssociation(Dictifiable):
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'dataset_collection_id', 'name']
 
 
-class WorkflowRequestInputStepParmeter(Dictifiable):
+class WorkflowRequestInputStepParameter(Dictifiable):
     """ Workflow step parameter inputs.
     """
     dict_collection_visible_keys = ['id', 'workflow_invocation_id', 'workflow_step_id', 'parameter_value']
@@ -4686,9 +4739,8 @@ class UserOpenID(object):
 
 class PSAAssociation(AssociationMixin):
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, server_url=None, handle=None, secret=None, issued=None, lifetime=None, assoc_type=None):
         self.server_url = server_url
@@ -4699,56 +4751,54 @@ class PSAAssociation(AssociationMixin):
         self.assoc_type = assoc_type
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def store(cls, server_url, association):
         try:
-            assoc = cls.trans.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
+            assoc = cls.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
         except IndexError:
             assoc = cls(server_url=server_url, handle=association.handle)
         assoc.secret = base64.encodestring(association.secret).decode()
         assoc.issued = association.issued
         assoc.lifetime = association.lifetime
         assoc.assoc_type = association.assoc_type
-        cls.trans.sa_session.add(assoc)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(assoc)
+        cls.sa_session.flush()
 
     @classmethod
     def get(cls, *args, **kwargs):
-        return cls.trans.sa_session.query(cls).filter_by(*args, **kwargs)
+        return cls.sa_session.query(cls).filter_by(*args, **kwargs)
 
     @classmethod
     def remove(cls, ids_to_delete):
-        cls.trans.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
+        cls.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session='fetch')
 
 
 class PSACode(CodeMixin):
     __table_args__ = (UniqueConstraint('code', 'email'),)
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, email, code):
         self.email = email
         self.code = code
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def get_code(cls, code):
-        return cls.trans.sa_session.query(cls).filter(cls.code == code).first()
+        return cls.sa_session.query(cls).filter(cls.code == code).first()
 
 
 class PSANonce(NonceMixin):
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, server_url, timestamp, salt):
         self.server_url = server_url
@@ -4756,25 +4806,24 @@ class PSANonce(NonceMixin):
         self.salt = salt
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def use(cls, server_url, timestamp, salt):
         try:
-            return cls.trans.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
+            return cls.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
         except IndexError:
             instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
-            cls.trans.sa_session.add(instance)
-            cls.trans.sa_session.flush()
+            cls.sa_session.add(instance)
+            cls.sa_session.flush()
             return instance
 
 
 class PSAPartial(PartialMixin):
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, token, data, next_step, backend):
         self.token = token
@@ -4783,26 +4832,25 @@ class PSAPartial(PartialMixin):
         self.backend = backend
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def load(cls, token):
-        return cls.trans.sa_session.query(cls).filter(cls.token == token).first()
+        return cls.sa_session.query(cls).filter(cls.token == token).first()
 
     @classmethod
     def destroy(cls, token):
         partial = cls.load(token)
         if partial:
-            cls.trans.sa_session.delete(partial)
+            cls.sa_session.delete(partial)
 
 
 class UserAuthnzToken(UserMixin):
     __table_args__ = (UniqueConstraint('provider', 'uid'),)
 
-    # This static property is of type: galaxy.web.framework.webapp.GalaxyWebTransaction
-    # and it is set in: galaxy.authnz.psa_authnz.PSAAuthnz
-    trans = None
+    # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz
+    sa_session = None
 
     def __init__(self, provider, uid, extra_data=None, lifetime=None, assoc_type=None, user=None):
         self.provider = provider
@@ -4821,12 +4869,12 @@ class UserAuthnzToken(UserMixin):
 
     def set_extra_data(self, extra_data=None):
         if super(UserAuthnzToken, self).set_extra_data(extra_data):
-            self.trans.sa_session.add(self)
-            self.trans.sa_session.flush()
+            self.sa_session.add(self)
+            self.sa_session.flush()
 
     def save(self):
-        self.trans.sa_session.add(self)
-        self.trans.sa_session.flush()
+        self.sa_session.add(self)
+        self.sa_session.flush()
 
     @classmethod
     def username_max_length(cls):
@@ -4840,12 +4888,12 @@ class UserAuthnzToken(UserMixin):
 
     @classmethod
     def changed(cls, user):
-        cls.trans.sa_session.add(user)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(user)
+        cls.sa_session.flush()
 
     @classmethod
     def user_query(cls):
-        return cls.trans.sa_session.query(cls.user_model())
+        return cls.sa_session.query(cls.user_model())
 
     @classmethod
     def user_exists(cls, *args, **kwargs):
@@ -4860,8 +4908,8 @@ class UserAuthnzToken(UserMixin):
         model = cls.user_model()
         instance = model(*args, **kwargs)
         instance.set_random_password()
-        cls.trans.sa_session.add(instance)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(instance)
+        cls.sa_session.flush()
         return instance
 
     @classmethod
@@ -4876,13 +4924,13 @@ class UserAuthnzToken(UserMixin):
     def get_social_auth(cls, provider, uid):
         uid = str(uid)
         try:
-            return cls.trans.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
+            return cls.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
         except IndexError:
             return None
 
     @classmethod
     def get_social_auth_for_user(cls, user, provider=None, id=None):
-        qs = cls.trans.sa_session.query(cls).filter_by(user_id=user.id)
+        qs = cls.sa_session.query(cls).filter_by(user_id=user.id)
         if provider:
             qs = qs.filter_by(provider=provider)
         if id:
@@ -4893,9 +4941,36 @@ class UserAuthnzToken(UserMixin):
     def create_social_auth(cls, user, uid, provider):
         uid = str(uid)
         instance = cls(user=user, uid=uid, provider=provider)
-        cls.trans.sa_session.add(instance)
-        cls.trans.sa_session.flush()
+        cls.sa_session.add(instance)
+        cls.sa_session.flush()
         return instance
+
+
+class CloudAuthz(object):
+    def __init__(self, user_id, provider, config, authn_id, description=""):
+        self.user_id = user_id
+        self.provider = provider
+        self.config = config
+        self.authn_id = authn_id
+        self.tokens = None
+        self.last_update = datetime.now()
+        self.last_activity = datetime.now()
+        self.description = description
+
+    def __eq__(self, other):
+        if not isinstance(other, CloudAuthz):
+            return False
+        return self.equals(other.user_id, other.provider, other.authn_id, other.config)
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def equals(self, user_id, provider, authn_id, config):
+        return (self.user_id == user_id and
+                self.provider == provider and
+                self.authn_id == authn_id and
+                len({k: self.config[k] for k in self.config if k in config and
+                     self.config[k] == config[k]}) == len(self.config))
 
 
 class Page(Dictifiable):
@@ -5107,17 +5182,6 @@ class ToolTagAssociation(ItemTagAssociation):
         self.id = id
         self.user = user
         self.tool_id = tool_id
-        self.tag_id = tag_id
-        self.user_tname = user_tname
-        self.value = None
-        self.user_value = None
-
-
-class WorkRequestTagAssociation(ItemTagAssociation):
-    def __init__(self, id=None, user=None, workflow_request_id=None, tag_id=None, user_tname=None, value=None):
-        self.id = id
-        self.user = user
-        self.workflow_request_id = workflow_request_id
         self.tag_id = tag_id
         self.user_tname = user_tname
         self.value = None

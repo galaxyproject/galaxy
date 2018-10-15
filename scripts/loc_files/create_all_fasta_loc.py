@@ -205,11 +205,11 @@ def __main__():
     loc_path = None
     tree = parse(options.data_table_xml)
     tables = tree.getroot()
-    for table in tables.getiterator():
+    for table in tables.iter():
         name = table.attrib.get('name')
         if name == options.data_table_name:
             cols = None
-            for node in table.getiterator():
+            for node in table.iter():
                 if node.tag == 'columns':
                     cols = node.text
                 elif node.tag == 'file':

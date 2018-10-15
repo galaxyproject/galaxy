@@ -37,7 +37,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
         try:
             controller = trans.webapp.api_controllers.get( 'configuration', None )
             if controller:
-                config_dict = controller.get_config_dict( trans, trans.user_is_admin() )
+                config_dict = controller.get_config_dict( trans, trans.user_is_admin )
         except Exception as exc:
             pass
         return config_dict
@@ -62,7 +62,7 @@ ${ h.dumps( get_config_dict() )}
                 user_dict = trans.user.to_dict( view='element',
                     value_mapper={ 'id': trans.security.encode_id, 'total_disk_usage': float, 'email': escape, 'username': escape } )
                 user_dict[ 'quota_percent' ] = trans.app.quota_agent.get_percent( trans=trans )
-                user_dict[ 'is_admin' ] = trans.user_is_admin()
+                user_dict[ 'is_admin' ] = trans.user_is_admin
 
                 # tags used
                 users_api_controller = trans.webapp.api_controllers[ 'users' ]

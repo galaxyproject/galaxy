@@ -8,7 +8,7 @@ import sys
 from bioblend import galaxy
 
 
-class Uploader:
+class Uploader(object):
 
     def __init__(self, url, api, library_id, folder_id, should_link,
                  non_local):

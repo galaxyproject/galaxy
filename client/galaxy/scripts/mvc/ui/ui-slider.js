@@ -44,7 +44,7 @@ var View = Backbone.View.extend({
                         v == 13 ||
                         v == 37 ||
                         v == 39 ||
-                        (v >= 48 && v <= 57 && !pressed[16]) ||
+                        (v >= 48 && v <= 57) ||
                         (v >= 96 && v <= 105) ||
                         ((v == 190 || v == 110) &&
                             $(this)
@@ -76,12 +76,9 @@ var View = Backbone.View.extend({
             }
         }
         if (this.has_slider) {
-            this.$text.addClass("ui-form-slider-left");
             this.$slider.slider({ min: opts.min, max: opts.max, step: step }).on("slide", (event, ui) => {
                 self.value(ui.value);
             });
-        } else {
-            this.$slider.hide();
         }
 
         // add listeners
@@ -91,8 +88,17 @@ var View = Backbone.View.extend({
 
     render: function() {
         var value = this.model.get("value");
-        this.has_slider && this.$slider.slider("value", value);
-        value !== this.$text.val() && this.$text.val(value);
+        if (this.has_slider) {
+            this.$slider.slider("value", value);
+            this.$slider.show();
+            this.$text.addClass("col-3 mr-3");
+        } else {
+            this.$slider.hide();
+            this.$text.removeClass("col-3 mr-3");
+        }
+        if (value !== this.$text.val()) {
+            this.$text.val(value);
+        }
     },
 
     /** Set and return the current value */
@@ -127,12 +133,12 @@ var View = Backbone.View.extend({
 
     /** Slider template */
     _template: function() {
-        return (
-            '<div class="ui-form-slider">' +
-            '<input class="ui-form-slider-text" type="text"/>' +
-            '<div class="ui-form-slider-element"/>' +
-            "</div>"
-        );
+        return `<div class="ui-form-slider container">
+                    <div class="row">
+                        <input class="ui-form-slider-text form-control" type="text"/>
+                        <div class="ui-form-slider-element col mt-1"/>
+                    </div>
+                </div>`;
     }
 });
 

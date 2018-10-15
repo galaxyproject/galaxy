@@ -19,7 +19,7 @@ from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 from .testcase import FunctionalTestCase
 
 
-class UsesApiTestCaseMixin:
+class UsesApiTestCaseMixin(object):
 
     def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:

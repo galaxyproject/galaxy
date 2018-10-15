@@ -9,9 +9,9 @@ verify_ssl = true
 name = "pypi"
 
 [dev-packages]
+gunicorn = "*"
 lxml = "!=4.2.2"
 mock = "*"
-nodeenv = "*"
 NoseHTML = "*"
 pygithub3 = {version = "*", markers = "python_version < '3'"}
 pytest = "*"
@@ -33,6 +33,7 @@ PyYAML = "*"
 SQLAlchemy = "*"
 SQLAlchemy-Utils = "*"
 Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
+nodeenv = "*"
 pycryptodome = "*"
 uWSGI = "*"
 pysam = "==0.14.1"
@@ -59,7 +60,7 @@ pykwalify = "*"
 "Cheetah3" = "*"
 requests = "*"
 bioblend = "*"
-boto = "<=2.46.1"  # Pin version here to help pipenv satisfy the same pin coming from cloudbridge-0.3.3 (required by python-genomespaceclient 0.2)
+boto = "*"
 kombu = "*"
 psutil = "*"
 pulsar-galaxy-lib = "*"
@@ -69,8 +70,10 @@ svgwrite = "*"
 pyparsing = "*"
 "Fabric3" = "*"
 paramiko = "*"
-python-genomespaceclient = "<1.0"
+python-genomespaceclient = "<2.0"
 social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
+cloudauthz = "<=0.2.0"
+gxformat2 = "*"
 
 [requires]
 python_version = "2.7"

@@ -4,6 +4,10 @@
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
+import * as _ from "underscore";
+
+/* global Galaxy */
+/* global $ */
 
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
@@ -388,7 +392,18 @@ var CurrentHistoryView = _super.extend(
                 },
                 // when the center panel is given a new view, clear the current indicator
                 "center-panel:load": function(view) {
-                    this._setCurrentContentById();
+                    try {
+                        let hdaId = view.model.attributes.dataset_id || null;
+                        if (hdaId === null) {
+                            throw "Invalid id";
+                        }
+                        this._setCurrentContentById(`dataset-${hdaId}`);
+                    } catch (e) {
+                        this._setCurrentContentById();
+                    }
+                },
+                "activate-hda": function(hdaId) {
+                    this._setCurrentContentById(`dataset-${hdaId}`);
                 }
             });
         },
@@ -445,7 +460,7 @@ var CurrentHistoryView = _super.extend(
         /** unhide any hidden datasets */
         unhideHidden: function() {
             var self = this;
-            if (confirm(_l("Really unhide all hidden datasets?"))) {
+            if (window.confirm(_l("Really unhide all hidden datasets?"))) {
                 // get all hidden, regardless of deleted/purged
                 return self.model.contents
                     ._filterAndUpdate({ visible: false, deleted: "", purged: "" }, { visible: true })
@@ -462,7 +477,7 @@ var CurrentHistoryView = _super.extend(
         /** delete any hidden datasets */
         deleteHidden: function() {
             var self = this;
-            if (confirm(_l("Really delete all hidden datasets?"))) {
+            if (window.confirm(_l("Really delete all hidden datasets?"))) {
                 return self.model.contents._filterAndUpdate(
                     // get all hidden, regardless of deleted/purged
                     { visible: false, deleted: "", purged: "" },

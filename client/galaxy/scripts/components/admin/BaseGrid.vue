@@ -1,9 +1,9 @@
 <template>
-  <div class="toolForm">
-    <div class="toolFormTitle">
+  <div class="card">
+    <div class="card-header">
       <slot name="title">{{ title }}</slot>
     </div>
-    <div class="toolFormBody">
+    <div class="card-body">
       <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <slot name="columns">
           <th v-for="column in columns" bgcolor="#D8D8D8">{{ column.text }}</th>
@@ -41,3 +41,8 @@ export default {
     }
 };
 </script>
+<style>
+.card-body {
+    overflow: auto;
+}
+</style>
