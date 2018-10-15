@@ -96,7 +96,7 @@ var View = Backbone.View.extend({
     /** Main Template */
     _template: function(options) {
         return `
-            <div class="ui-rules-edit">
+            <div class="ui-rules-edit clearfix">
                 <span class="ui-rules-preview" />
                 <span class="ui-rules-edit-button" />
             </div>
