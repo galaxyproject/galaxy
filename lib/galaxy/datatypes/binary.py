@@ -657,7 +657,8 @@ class Bcf(BaseBcf):
                                        '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name)))
         os.symlink(dataset.file_name, dataset_symlink)
         try:
-            pysam.bcftools.index(dataset_symlink)
+            cmd = ['python', '-c', "import pysam.bcftools; pysam.bcftools.index('%s')" % (dataset_symlink)]
+            subprocess.check_call(cmd)
             shutil.move(dataset_symlink + '.csi', index_file.file_name)
         except Exception as e:
             raise Exception('Error setting BCF metadata: %s' % (str(e)))
