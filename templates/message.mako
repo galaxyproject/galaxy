@@ -56,7 +56,6 @@
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
-    <div class="${status}message">${_(msg)}</div>
-    <br/>
+    <div class="alert alert-${status}">${_(msg)}</div>
 </%def>
 
