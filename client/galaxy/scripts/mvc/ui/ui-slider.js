@@ -133,7 +133,7 @@ var View = Backbone.View.extend({
 
     /** Slider template */
     _template: function() {
-        return `<div class="ui-form-slider container">
+        return `<div class="ui-form-slider container-fluid">
                     <div class="row">
                         <input class="ui-form-slider-text form-control" type="text"/>
                         <div class="ui-form-slider-element col mt-1"/>
