@@ -64,6 +64,7 @@ $.fn.make_text_editable = function(config_dict) {
                     }
                 });
             button_elt = $("<button/>")
+                .addClass("btn-sm")
                 .text("Done")
                 .click(() => {
                     set_text(input_elt.val());
