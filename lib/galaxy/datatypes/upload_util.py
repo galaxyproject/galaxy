@@ -30,6 +30,7 @@ def handle_upload(
 ):
     stdout = None
     converted_path = None
+    multi_file_zip = False
 
     # Does the first 1K contain a null?
     is_binary = check_binary(path)
@@ -38,7 +39,7 @@ def handle_upload(
     # or if autodetection is selected and the file sniffs as a keep-compressed datatype, it will not be decompressed.
     if not link_data_only:
         if auto_decompress and is_zip(path) and not is_single_file_zip(path):
-            stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
+            multi_file_zip = True
         try:
             ext, converted_path, compression_type = sniff.handle_uploaded_dataset_file_internal(
                 path,
@@ -85,5 +86,7 @@ def handle_upload(
                       " manually")
 
     datatype = registry.get_datatype_by_extension(ext)
+    if multi_file_zip and not getattr(datatype, 'compressed', False):
+        stdout = 'ZIP file contained more than one file, only the first file was added to Galaxy.'
 
     return stdout, ext, datatype, is_binary, converted_path
