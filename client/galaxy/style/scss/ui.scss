@@ -31,6 +31,12 @@ $ui-margin-horizontal: $margin-h;
 $ui-margin-horizontal-small: $margin-h * 0.5;
 $ui-margin-horizontal-large: $margin-v * 2;
 
+.card {
+    .card-body {
+        overflow: auto;
+    }
+}
+
 .ui-modal {
     display: none;
     overflow: auto;
