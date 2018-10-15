@@ -283,6 +283,61 @@ class RemovesObjects(object):
 ##
 
 
+class PurgesHDAs(object):
+    """Avoid repetition in queries that purge HDAs, since they must also delete MetadataFiles and ICDAs.
+
+    To use, place ``{purge_hda_dependencies_sql}`` somewhere in your CTEs after a ``purged_hda_ids`` CTE returning HDA
+    ids. If you have additional CTEs after the template point, be sure to append a ``,``.
+    """
+    _purge_hda_dependencies_sql = """deleted_metadata_file_ids
+          AS (     UPDATE metadata_file
+                      SET deleted = true{update_time_sql}
+                     FROM purged_hda_ids
+                    WHERE purged_hda_ids.id = metadata_file.hda_id
+                RETURNING metadata_file.hda_id AS hda_id,
+                          metadata_file.id AS id,
+                          metadata_file.object_store_id AS object_store_id),
+             deleted_icda_ids
+          AS (     UPDATE implicitly_converted_dataset_association
+                      SET deleted = true{update_time_sql}
+                     FROM purged_hda_ids
+                    WHERE purged_hda_ids.id = implicitly_converted_dataset_association.hda_parent_id
+                RETURNING implicitly_converted_dataset_association.hda_id AS hda_id,
+                          implicitly_converted_dataset_association.hda_parent_id AS hda_parent_id,
+                          implicitly_converted_dataset_association.id AS id),
+             deleted_icda_purged_child_hda_ids
+          AS (     UPDATE history_dataset_association
+                      SET purged = true{update_time_sql}
+                     FROM deleted_icda_ids
+                    WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
+             metadata_file_events
+          AS (INSERT INTO cleanup_event_metadata_file_association
+                          (create_time, cleanup_event_id, metadata_file_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM deleted_metadata_file_ids),
+             icda_events
+          AS (INSERT INTO cleanup_event_icda_association
+                          (create_time, cleanup_event_id, icda_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM deleted_icda_ids),
+             icda_hda_events
+          AS (INSERT INTO cleanup_event_hda_association
+                          (create_time, cleanup_event_id, hda_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, hda_id
+                     FROM deleted_icda_ids)"""
+    @property
+    def sql(self):
+        _purge_hda_dependencies_sql = self._purge_hda_dependencies_sql.format(
+            update_time_sql=self._update_time_sql,
+            force_retry_sql=self._force_retry_sql,
+        )
+        return self._action_sql.format(
+            purge_hda_dependencies_sql=_purge_hda_dependencies_sql,
+            update_time_sql=self._update_time_sql,
+            force_retry_sql=self._force_retry_sql,
+        )
+
+
 class RequiresDiskUsageRecalculation(object):
     """Causes disk usage to be recalculated for affected users.
 
@@ -290,8 +345,8 @@ class RequiresDiskUsageRecalculation(object):
     """
     def _init(self):
         self.__recalculate_disk_usage_user_ids = set()
-        self._register_row_action_method(self.collect_recalculate_disk_usage_user_id)
-        self._register_post_action_method(self.recalculate_disk_usage)
+        self._register_row_method(self.collect_recalculate_disk_usage_user_id)
+        self._register_post_method(self.recalculate_disk_usage)
 
     def collect_recalculate_disk_usage_user_id(self, row):
         if row.recalculate_disk_usage_user_id:
@@ -463,7 +518,7 @@ class DeleteInactiveUsers(Action):
     )
 
 
-class PurgeDeletedUsers(RemovesMetadataFiles, Action):
+class PurgeDeletedUsers(PurgesHDAs, RemovesMetadataFiles, Action):
     """
     - Mark purged all users that are older than the specified number of days.
     - Mark purged all Histories whose user_ids are purged in this step.
@@ -480,43 +535,6 @@ class PurgeDeletedUsers(RemovesMetadataFiles, Action):
                     WHERE deleted{force_retry_sql}
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id),
-             purged_history_ids
-          AS (     UPDATE history
-                      SET purged = true{update_time_sql}
-                     FROM purged_user_ids
-                    WHERE purged_user_ids.id = history.user_id
-                          AND NOT history.purged
-                RETURNING history.user_id AS user_id,
-                          history.id AS id),
-             purged_hda_ids
-          AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
-                     FROM purged_history_ids
-                    WHERE purged_history_ids.id = history_dataset_association.history_id
-                          AND NOT history_dataset_association.purged
-                RETURNING history_dataset_association.history_id AS history_id,
-                          history_dataset_association.id AS id),
-             deleted_metadata_file_ids
-          AS (     UPDATE metadata_file
-                      SET deleted = true{update_time_sql}
-                     FROM purged_hda_ids
-                    WHERE purged_hda_ids.id = metadata_file.hda_id
-                RETURNING metadata_file.hda_id AS hda_id,
-                          metadata_file.id AS id,
-                          metadata_file.object_store_id AS object_store_id),
-             deleted_icda_ids
-          AS (     UPDATE implicitly_converted_dataset_association
-                      SET deleted = true{update_time_sql}
-                     FROM purged_hda_ids
-                    WHERE purged_hda_ids.id = implicitly_converted_dataset_association.hda_parent_id
-                RETURNING implicitly_converted_dataset_association.hda_id AS hda_id,
-                          implicitly_converted_dataset_association.hda_parent_id AS hda_parent_id,
-                          implicitly_converted_dataset_association.id AS id),
-             deleted_icda_purged_child_hda_ids
-          AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
-                     FROM deleted_icda_ids
-                    WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
              deleted_uga_ids
           AS (DELETE FROM user_group_association
                     USING purged_user_ids
@@ -544,31 +562,33 @@ class PurgeDeletedUsers(RemovesMetadataFiles, Action):
                           (create_time, cleanup_event_id, user_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
                      FROM purged_user_ids),
+             purged_history_ids
+          AS (     UPDATE history
+                      SET purged = true{update_time_sql}
+                     FROM purged_user_ids
+                    WHERE purged_user_ids.id = history.user_id
+                          AND NOT history.purged
+                RETURNING history.user_id AS user_id,
+                          history.id AS id),
              history_events
           AS (INSERT INTO cleanup_event_history_association
                           (create_time, cleanup_event_id, history_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
                      FROM purged_history_ids),
+             purged_hda_ids
+          AS (     UPDATE history_dataset_association
+                      SET purged = true{update_time_sql}
+                     FROM purged_history_ids
+                    WHERE purged_history_ids.id = history_dataset_association.history_id
+                          AND NOT history_dataset_association.purged
+                RETURNING history_dataset_association.history_id AS history_id,
+                          history_dataset_association.id AS id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
                      FROM purged_hda_ids),
-             metadata_file_events
-          AS (INSERT INTO cleanup_event_metadata_file_association
-                          (create_time, cleanup_event_id, metadata_file_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM deleted_metadata_file_ids),
-             icda_events
-          AS (INSERT INTO cleanup_event_icda_association
-                          (create_time, cleanup_event_id, icda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM deleted_icda_ids),
-             icda_hda_events
-          AS (INSERT INTO cleanup_event_hda_association
-                          (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, hda_id
-                     FROM deleted_icda_ids)
+             {purge_hda_dependencies_sql}
       SELECT purged_user_ids.id AS purged_user_id,
              purged_user_ids.id AS zero_disk_usage_user_id,
              purged_history_ids.id AS purged_history_id,
@@ -629,7 +649,7 @@ class PurgeDeletedUsers(RemovesMetadataFiles, Action):
         self.log.info('zero_disk_usage user_ids: %s', ' '.join([str(i) for i in user_ids]))
 
 
-class PurgeDeletedHDAs(RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
+class PurgeDeletedHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
     """
     - Mark purged all HistoryDatasetAssociations currently marked deleted that are older than the
       specified number of days.
@@ -647,49 +667,94 @@ class PurgeDeletedHDAs(RemovesMetadataFiles, RequiresDiskUsageRecalculation, Act
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id,
                           history_id),
-             deleted_metadata_file_ids
-          AS (     UPDATE metadata_file
-                      SET deleted = true{update_time_sql}
-                     FROM purged_hda_ids
-                    WHERE purged_hda_ids.id = metadata_file.hda_id
-                RETURNING metadata_file.hda_id AS hda_id,
-                          metadata_file.id AS id,
-                          metadata_file.object_store_id AS object_store_id),
-             deleted_icda_ids
-          AS (     UPDATE implicitly_converted_dataset_association
-                      SET deleted = true{update_time_sql}
-                     FROM purged_hda_ids
-                    WHERE purged_hda_ids.id = implicitly_converted_dataset_association.hda_parent_id
-                RETURNING implicitly_converted_dataset_association.hda_id AS hda_id,
-                          implicitly_converted_dataset_association.hda_parent_id AS hda_parent_id,
-                          implicitly_converted_dataset_association.id AS id),
-             deleted_icda_purged_child_hda_ids
-          AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
-                     FROM deleted_icda_ids
-                    WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
                      FROM purged_hda_ids),
-             metadata_file_events
-          AS (INSERT INTO cleanup_event_metadata_file_association
-                          (create_time, cleanup_event_id, metadata_file_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM deleted_metadata_file_ids),
-             icda_events
-          AS (INSERT INTO cleanup_event_icda_association
-                          (create_time, cleanup_event_id, icda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM deleted_icda_ids),
-             icda_hda_events
-          AS (INSERT INTO cleanup_event_hda_association
-                          (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, hda_id
-                     FROM deleted_icda_ids)
+             {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
              history.user_id AS recalculate_disk_usage_user_id,
+             deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.object_store_id AS object_store_id,
+             deleted_icda_ids.id AS deleted_icda_id,
+             deleted_icda_ids.hda_id AS deleted_icda_hda_id
+        FROM purged_hda_ids
+             LEFT OUTER JOIN history
+                             ON purged_hda_ids.history_id = history.id
+             LEFT OUTER JOIN deleted_metadata_file_ids
+                             ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
+             LEFT OUTER JOIN deleted_icda_ids
+                             ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
+    ORDER BY purged_hda_ids.id
+    """
+    causals = (
+        ('purged_hda_id', 'deleted_metadata_file_id', 'object_store_id'),
+        ('purged_hda_id', 'deleted_icda_id', 'deleted_icda_hda_id'),
+    )
+
+
+class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
+    """
+    - Mark purged all HistoryDatasetAssociations whose dataset_id is state = 'error' that are older
+      than the specified number of days.
+    """
+    force_retry_sql = " AND NOT history_dataset_association.purged"
+    _action_sql = """
+        WITH purged_hda_ids
+          AS (     UPDATE history_dataset_association
+                      SET purged = true{update_time_sql}
+                     FROM dataset
+                    WHERE history_dataset_association.dataset_id = dataset.id{force_retry_sql}
+                          AND dataset.state = 'error'
+                          AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                RETURNING history_dataset_association.id as id,
+                          history_dataset_association.history_id as history_id),
+             hda_events
+          AS (INSERT INTO cleanup_event_hda_association
+                          (create_time, cleanup_event_id, hda_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM purged_hda_ids),
+             {purge_hda_dependencies_sql}
+      SELECT purged_hda_ids.id AS purged_hda_id,
+             history.user_id AS recalculate_disk_usage_user_id,
+             deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.object_store_id AS object_store_id,
+             deleted_icda_ids.id AS deleted_icda_id,
+             deleted_icda_ids.hda_id AS deleted_icda_hda_id
+        FROM purged_hda_ids
+             LEFT OUTER JOIN history
+                             ON purged_hda_ids.history_id = history.id
+             LEFT OUTER JOIN deleted_metadata_file_ids
+                             ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
+             LEFT OUTER JOIN deleted_icda_ids
+                             ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
+    ORDER BY purged_hda_ids.id
+    """
+    causals = (
+        ('purged_hda_id', 'deleted_metadata_file_id', 'object_store_id'),
+        ('purged_hda_id', 'deleted_icda_id', 'deleted_icda_hda_id'),
+    )
+
+
+class PurgeHistorylessHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
+    """
+    - Mark purged all HistoryDatasetAssociations whose history_id is null.
+    """
+    _action_sql = """
+        WITH purged_hda_ids
+          AS (     UPDATE history_dataset_association
+                      SET purged = true{update_time_sql}
+                    WHERE history_id IS NULL{force_retry_sql}
+                          AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
+                RETURNING id),
+             hda_events
+          AS (INSERT INTO cleanup_event_hda_association
+                          (create_time, cleanup_event_id, hda_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM purged_hda_ids),
+             {purge_hda_dependencies_sql}
+      SELECT purged_hda_ids.id AS purged_hda_id,
              deleted_metadata_file_ids.id AS deleted_metadata_file_id,
              deleted_metadata_file_ids.object_store_id AS object_store_id,
              deleted_icda_ids.id AS deleted_icda_id,
@@ -699,8 +764,6 @@ class PurgeDeletedHDAs(RemovesMetadataFiles, RequiresDiskUsageRecalculation, Act
                              ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
              LEFT OUTER JOIN deleted_icda_ids
                              ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
-             LEFT OUTER JOIN history
-                             ON purged_hda_ids.history_id = history.id
     ORDER BY purged_hda_ids.id
     """
     causals = (
@@ -709,23 +772,18 @@ class PurgeDeletedHDAs(RemovesMetadataFiles, RequiresDiskUsageRecalculation, Act
     )
 
 
-class PurgeErrorHDAs(RequiresDiskUsageRecalculation, Action):
+class PurgeErrorHDAs(PurgesHDAs, RemovesMetadataFiles, RequiresDiskUsageRecalculation, Action):
     """
     - Mark purged all HistoryDatasetAssociations whose dataset_id is state = 'error' that are older
       than the specified number of days.
     """
-    # FIXME: do we need to do anything with ICDAs and MFs here? probably, yes?
-    # force_retry? what use would force_retry actually be here? well for one, if ICDAs and MFs were being handled, it
-    # would cause them to be tried again, otherwise they'll be permenantly undeleted
-    # TODO: maybe instead of duplicating this over and over again and having it depend on the upsert, we should just
-    # have ICDA and MF actions? not sure i like that you'd have to run even more actions though
+    force_retry_sql = " AND NOT history_dataset_association.purged"
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
                       SET purged = true{update_time_sql}
                      FROM dataset
-                    WHERE history_dataset_association.dataset_id = dataset.id
-                          AND NOT history_dataset_association.purged
+                    WHERE history_dataset_association.dataset_id = dataset.id{force_retry_sql}
                           AND dataset.state = 'error'
                           AND history_dataset_association.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING history_dataset_association.id as id,
@@ -734,29 +792,41 @@ class PurgeErrorHDAs(RequiresDiskUsageRecalculation, Action):
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM purged_hda_ids)
+                     FROM purged_hda_ids),
+             {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
-             history.user_id AS recalculate_disk_usage_user_id
+             history.user_id AS recalculate_disk_usage_user_id,
+             deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.object_store_id AS object_store_id,
+             deleted_icda_ids.id AS deleted_icda_id,
+             deleted_icda_ids.hda_id AS deleted_icda_hda_id
         FROM purged_hda_ids
              LEFT OUTER JOIN history
                              ON purged_hda_ids.history_id = history.id
+             LEFT OUTER JOIN deleted_metadata_file_ids
+                             ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
+             LEFT OUTER JOIN deleted_icda_ids
+                             ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
     ORDER BY purged_hda_ids.id
     """
+    causals = (
+        ('purged_hda_id', 'deleted_metadata_file_id', 'object_store_id'),
+        ('purged_hda_id', 'deleted_icda_id', 'deleted_icda_hda_id'),
+    )
 
 
-class PurgeHDAsOfPurgedHistories(RequiresDiskUsageRecalculation, Action):
+class PurgeHDAsOfPurgedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Action):
     """
     - Mark purged all HistoryDatasetAssociations in histories that are purged and older than the
       specified number of days.
     """
-    # FIXME: ICDAs and MFs here as well yes?
+    force_retry_sql = " AND NOT history_dataset_association.purged"
     _action_sql = """
         WITH purged_hda_ids
           AS (     UPDATE history_dataset_association
                       SET purged = true{update_time_sql}
                      FROM history
-                    WHERE history_dataset_association.history_id = history.id
-                          AND NOT history_dataset_association.purged
+                    WHERE history_dataset_association.history_id = history.id{force_retry_sql}
                           AND history.purged
                           AND history.update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING history_dataset_association.id as id,
@@ -765,17 +835,26 @@ class PurgeHDAsOfPurgedHistories(RequiresDiskUsageRecalculation, Action):
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM purged_hda_ids)
+                     FROM purged_hda_ids),
+             {purge_hda_dependencies_sql}
       SELECT purged_hda_ids.id AS purged_hda_id,
-             history.user_id AS recalculate_disk_usage_user_id
+             history.user_id AS recalculate_disk_usage_user_id,
+             deleted_metadata_file_ids.id AS deleted_metadata_file_id,
+             deleted_metadata_file_ids.object_store_id AS object_store_id,
+             deleted_icda_ids.id AS deleted_icda_id,
+             deleted_icda_ids.hda_id AS deleted_icda_hda_id
         FROM purged_hda_ids
              LEFT OUTER JOIN history
                              ON purged_hda_ids.history_id = history.id
+             LEFT OUTER JOIN deleted_metadata_file_ids
+                             ON deleted_metadata_file_ids.hda_id = purged_hda_ids.id
+             LEFT OUTER JOIN deleted_icda_ids
+                             ON deleted_icda_ids.hda_parent_id = purged_hda_ids.id
     ORDER BY purged_hda_ids.id
     """
 
 
-class PurgeDeletedHistories(RequiresDiskUsageRecalculation, Action):
+class PurgeDeletedHistories(PurgesHDAs, RequiresDiskUsageRecalculation, Action):
     """
     - Mark purged all Histories marked deleted that are older than the specified number of days.
     - Mark purged all HistoryDatasetAssociations in Histories marked purged in this step (if not
@@ -789,6 +868,11 @@ class PurgeDeletedHistories(RequiresDiskUsageRecalculation, Action):
                           AND update_time < (NOW() AT TIME ZONE 'utc' - interval '%(days)s days')
                 RETURNING id,
                           user_id),
+             history_events
+          AS (INSERT INTO cleanup_event_history_association
+                          (create_time, cleanup_event_id, history_id)
+                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
+                     FROM purged_history_ids),
              purged_hda_ids
           AS (     UPDATE history_dataset_association
                       SET purged = true{update_time_sql}
@@ -797,52 +881,12 @@ class PurgeDeletedHistories(RequiresDiskUsageRecalculation, Action):
                           AND NOT history_dataset_association.purged
                 RETURNING history_dataset_association.history_id AS history_id,
                           history_dataset_association.id AS id),
-             deleted_metadata_file_ids
-          AS (     UPDATE metadata_file
-                      SET deleted = true{update_time_sql}
-                     FROM purged_hda_ids
-                    WHERE purged_hda_ids.id = metadata_file.hda_id
-                RETURNING metadata_file.hda_id AS hda_id,
-                          metadata_file.id AS id,
-                          metadata_file.object_store_id AS object_store_id),
-             deleted_icda_ids
-          AS (     UPDATE implicitly_converted_dataset_association
-                      SET deleted = true{update_time_sql}
-                     FROM purged_hda_ids
-                    WHERE purged_hda_ids.id = implicitly_converted_dataset_association.hda_parent_id
-                RETURNING implicitly_converted_dataset_association.hda_id AS hda_id,
-                          implicitly_converted_dataset_association.hda_parent_id AS hda_parent_id,
-                          implicitly_converted_dataset_association.id AS id),
-             deleted_icda_purged_child_hda_ids
-          AS (     UPDATE history_dataset_association
-                      SET purged = true{update_time_sql}
-                     FROM deleted_icda_ids
-                    WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
-             history_events
-          AS (INSERT INTO cleanup_event_history_association
-                          (create_time, cleanup_event_id, history_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM purged_history_ids),
              hda_events
           AS (INSERT INTO cleanup_event_hda_association
                           (create_time, cleanup_event_id, hda_id)
                    SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
                      FROM purged_hda_ids),
-             metadata_file_events
-          AS (INSERT INTO cleanup_event_metadata_file_association
-                          (create_time, cleanup_event_id, metadata_file_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM deleted_metadata_file_ids),
-             icda_events
-          AS (INSERT INTO cleanup_event_icda_association
-                          (create_time, cleanup_event_id, icda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, id
-                     FROM deleted_icda_ids),
-             icda_hda_events
-          AS (INSERT INTO cleanup_event_hda_association
-                          (create_time, cleanup_event_id, hda_id)
-                   SELECT NOW() AT TIME ZONE 'utc', %(event_id)s, hda_id
-                     FROM deleted_icda_ids)
+             {purge_hda_dependencies_sql}
       SELECT purged_history_ids.id AS purged_history_id,
              purged_history_ids.user_id AS recalculate_disk_usage_user_id,
              purged_hda_ids.id AS purged_hda_id,
@@ -895,8 +939,9 @@ class DeleteDatasets(Action):
     """
     - Mark deleted all Datasets whose associations are all marked as deleted (LDDA) or purged (HDA)
       that are older than the specified number of days.
+    - JobExportHistoryArchives have no deleted column, so the datasets for these will simply be
+      deleted after the specified number of days
     """
-    # FIXME: should we do anything with JEHAs and other dataset associations here?
     _action_sql = """
         WITH deleted_dataset_ids
           AS (     UPDATE dataset
