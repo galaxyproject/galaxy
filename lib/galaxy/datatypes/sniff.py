@@ -359,7 +359,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname, sniff_order)
     'unsorted.bam'
-    >>> fname = get_test_fname('test.idpDB')
+    >>> fname = get_test_fname('test.idpdb')
     >>> guess_ext(fname, sniff_order)
     'idpdb'
     >>> fname = get_test_fname('test.mz5')
