@@ -26,7 +26,7 @@
         <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
     </inputs>
     <outputs>
-        <data name="output" type="data" label="Output log" hidden="false"/>
+        <data name="output" type="data" label="Download to cloud log" hidden="false"/>
     </outputs>
     <help>
 
