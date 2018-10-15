@@ -332,7 +332,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('test.gff')
     >>> guess_ext(fname, sniff_order)
     'gff'
-    >>> fname = get_test_fname('gff_version_3.gff')
+    >>> fname = get_test_fname('gff.gff3')
     >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('2.txt')

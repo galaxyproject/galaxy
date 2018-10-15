@@ -831,7 +831,7 @@ class Gff(Tabular, _RemoteCallMixin):
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('gff_version_3.gff')
+        >>> fname = get_test_fname('gff.gff3')
         >>> Gff().sniff( fname )
         False
         >>> fname = get_test_fname('test.gff')
@@ -966,7 +966,7 @@ class Gff3(Gff):
         >>> fname = get_test_fname( 'test.gtf' )
         >>> Gff3().sniff( fname )
         False
-        >>> fname = get_test_fname('gff_version_3.gff')
+        >>> fname = get_test_fname('gff.gff3')
         >>> Gff3().sniff( fname )
         True
         """
