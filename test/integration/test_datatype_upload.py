@@ -1,14 +1,16 @@
 import collections
 import os
+import tempfile
 
 import pytest
 
 from galaxy.datatypes.registry import Registry
+from galaxy.util.hash_util import md5_hash_file
 from .test_upload_configuration_options import BaseUploadContentConfigurationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 TEST_FILE_DIR = '%s/../../lib/galaxy/datatypes/test' % SCRIPT_DIRECTORY
-TEST_DATA = collections.namedtuple('UploadDatatypesData', 'path datatype')
+TEST_DATA = collections.namedtuple('UploadDatatypesData', 'path datatype uploadable')
 GALAXY_ROOT = os.path.abspath('%s/../../' % SCRIPT_DIRECTORY)
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, 'config/datatypes_conf.xml.sample')
 PARENT_SNIFFER_MAP = {'fastqsolexa': 'fastq'}
@@ -26,9 +28,11 @@ def find_datatype(registry, filename):
 def collect_test_data():
     registry = Registry()
     registry.load_datatypes(root_dir=GALAXY_ROOT, config=DATATYPES_CONFIG)
-    test_data_description = [TEST_DATA(path=os.path.join(TEST_FILE_DIR, f),
-                                       datatype=find_datatype(registry, f)
-                                       ) for f in os.listdir(TEST_FILE_DIR)]
+    test_files = os.listdir(TEST_FILE_DIR)
+    files = [os.path.join(TEST_FILE_DIR, f) for f in test_files]
+    datatypes = [find_datatype(registry, f) for f in test_files]
+    uploadable = [datatype.file_ext in registry.upload_file_formats for datatype in datatypes]
+    test_data_description = [TEST_DATA(*items) for items in zip(files, datatypes, uploadable)]
     return {os.path.basename(data.path): data for data in test_data_description}
 
 
@@ -37,6 +41,7 @@ class UploadTestDatatypeDataTestCase(BaseUploadContentConfigurationTestCase):
     datatypes_conf_override = DATATYPES_CONFIG
 
     def runTest(self):
+        # we don't want to run the standard unittest tests when we setup UploadTestDatatypeDataTestCase
         pass
 
 
@@ -49,11 +54,17 @@ def instance():
     instance.tearDownClass()
 
 
+@pytest.fixture
+def temp_file():
+    with tempfile.NamedTemporaryFile(delete=True, mode='wb') as fh:
+        yield fh
+
+
 TEST_CASES = collect_test_data()
 
 
 @pytest.mark.parametrize('test_data', TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_auto(instance, test_data):
+def test_upload_datatype_auto(instance, test_data, temp_file):
     with open(test_data.path, 'rb') as content:
         if hasattr(test_data.datatype, 'sniff') or 'false' in test_data.path:
             file_type = 'auto'
@@ -61,8 +72,20 @@ def test_upload_datatype_auto(instance, test_data):
             file_type = test_data.datatype.file_ext
         dataset = instance.dataset_populator.new_dataset(instance.history_id, content=content, wait=False, file_type=file_type)
     dataset = instance.dataset_populator.get_history_dataset_details(instance.history_id, dataset=dataset, assert_ok=False)
+    # State should be OK if the datatype can be uploaded
     expected_file_ext = test_data.datatype.file_ext
+    if test_data.uploadable:
+        assert dataset['state'] == 'ok'
+    else:
+        # We either get a different datatype or we error directly
+        assert dataset['file_ext'] != expected_file_ext or dataset['state'] == 'error'
+        return
+    # Check that correct datatype has been detected
     if 'false' in test_data.path:
         assert dataset['file_ext'] != PARENT_SNIFFER_MAP.get(expected_file_ext, expected_file_ext)
     else:
         assert dataset['file_ext'] == PARENT_SNIFFER_MAP.get(expected_file_ext, expected_file_ext)
+    # download file and verify it hasn't been manipulated
+    temp_file.write(instance.dataset_populator.get_history_dataset_content(history_id=instance.history_id, dataset=dataset, type='bytes'))
+    temp_file.flush()
+    assert md5_hash_file(test_data.path) == md5_hash_file(temp_file.name)
