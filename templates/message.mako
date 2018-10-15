@@ -56,7 +56,8 @@
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
-    <div class="${status}message">${_(msg)}</div>
-    <br/>
+    <% status = "success" if status == "done" else status %>
+    <% status = "danger" if status == "error" else status %>
+    <div class="mt-2 alert alert-${status}">${_(msg)}</div>
 </%def>
 
