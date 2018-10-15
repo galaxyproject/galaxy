@@ -305,7 +305,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname, sniff_order)
     'interval'
-    >>> fname = get_test_fname('interval1.bed')
+    >>> fname = get_test_fname('interv1.bed')
     >>> guess_ext(fname, sniff_order)
     'bed'
     >>> fname = get_test_fname('test_tab.bed')
