@@ -1178,19 +1178,20 @@ class MemePsp(Sequence):
                 except ValueError:
                     return True
             return False
-        try:
-            num_lines = 0
-            fh = file_prefix.string_io()
+        num_lines = 0
+        fh = file_prefix.string_io()
+        got_header = False
+        got_priors = False
+        while num_lines < 100:
             line = fh.readline()
             if not line:
                 # EOF.
-                return False
+                break
             num_lines += 1
-            if num_lines > 100:
-                return True
             line = line.strip()
             if line:
                 if line.startswith('>'):
+                    got_header = True
                     # The line must not be blank, nor start with '>'
                     line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
@@ -1198,17 +1199,14 @@ class MemePsp(Sequence):
                     # All items within the line must be floats.
                     if not floats_verified(line):
                         return False
+                    else:
+                        got_priors = True
                     # If there is a second line within the ID section,
                     # all items within the line must be floats.
                     line = fh.readline().strip()
                     if line:
                         if not floats_verified(line):
                             return False
-                else:
-                    # We found a non-empty line,
-                    # but it's not a psp id width.
-                    return False
-        except Exception:
-            return False
-        # We've reached EOF in less than 100 lines.
-        return True
+        # We've checked the first 100 lines and they are compatible with the memepsp format
+        # and contain at least one valid entry
+        return got_header and got_priors
