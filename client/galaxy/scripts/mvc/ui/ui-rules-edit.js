@@ -98,7 +98,7 @@ var View = Backbone.View.extend({
         return `
             <div class="ui-rules-edit clearfix">
                 <span class="ui-rules-preview" />
-                <span class="ui-rules-edit-button" />
+                <span class="ui-rules-edit-button float-left" />
             </div>
         `;
     },
