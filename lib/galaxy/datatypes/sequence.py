@@ -1156,7 +1156,11 @@ class MemePsp(Sequence):
                     float(item)
                 except ValueError:
                     return False
-            return True
+                try:
+                    int(item)
+                except ValueError:
+                    return True
+            return False
         try:
             num_lines = 0
             fh = file_prefix.string_io()
