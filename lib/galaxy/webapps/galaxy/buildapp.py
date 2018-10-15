@@ -296,7 +296,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
     webapp.mapper.connect('/api/cloud/authz/', action='index', controller='cloudauthz', conditions=dict(method=["GET"]))
-    webapp.mapper.connect('/api/cloud/authz/create',
+    webapp.mapper.connect('/api/cloud/authz/',
                           action='create',
                           controller='cloudauthz',
                           conditions=dict(method=["POST"]))
