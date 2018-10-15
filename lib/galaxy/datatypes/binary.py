@@ -931,7 +931,7 @@ class Biom2(H5):
     def sniff(self, filename):
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
         >>> Biom2().sniff(fname)
         True
         >>> fname = get_test_fname('test.mz5')
@@ -1013,7 +1013,7 @@ class Cool(H5):
         >>> fname = get_test_fname('wiggle.wig')
         >>> Cool().sniff(fname)
         False
-        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+        >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
         >>> Cool().sniff(fname)
         False
         """
