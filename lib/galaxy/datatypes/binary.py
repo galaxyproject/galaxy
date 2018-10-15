@@ -668,7 +668,7 @@ class Bcf(BaseBcf):
         dataset.metadata.bcf_index = index_file
 
 
-class BcfUncompressed(Bcf):
+class BcfUncompressed(BaseBcf):
     """
     Class describing an uncompressed BCF file
 
