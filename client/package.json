@@ -93,7 +93,7 @@
     "karma-phantomjs-launcher": "^1.0.4",
     "karma-polyfill": "^1.0.0",
     "karma-qunit": "^1.2.1",
-    "karma-webpack": "^2.0.6",
+    "karma-webpack": "^4.0.0-rc.2",
     "mocha": "^5.2.0",
     "node-sass": "^4.9.3",
     "phantomjs-polyfill": "0.0.2",
