@@ -338,6 +338,14 @@ class CloudManager(sharable.SharableModelManager):
                     }
                     incoming = (util.Params(args, sanitize=False)).__dict__
                     d2c = trans.app.toolbox.get_tool(SEND_TOOL, SEND_TOOL_VERSION)
+                    if not d2c:
+                        log.debug("Failed to get the `send` tool per user `{}` request.".format(trans.user.id))
+                        failed.append(json.dumps(
+                            {
+                                "object": object_label,
+                                "error": "Unable to get the `send` tool."
+                            }))
+                        continue
                     res = d2c.execute(trans, incoming, history=history)
                     job = res[0]
                     sent.append(json.dumps(
