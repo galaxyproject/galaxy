@@ -759,6 +759,14 @@ def handle_uploaded_dataset_file_internal(
 
         # This needs to be checked again after decompression
         is_binary = check_binary(converted_path)
+        guessed_ext = ext
+        if ext in AUTO_DETECT_EXTENSIONS:
+            guessed_ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
+            guessed_datatype = datatypes_registry.get_datatype_by_extension(guessed_ext)
+            if not is_binary and guessed_datatype.is_binary:
+                # It's possible to have a datatype that is binary but not within the first 1024 bytes,
+                # so check_binary might return a false negative. This is for instance true for PDF files
+                is_binary = True
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
@@ -771,9 +779,10 @@ def handle_uploaded_dataset_file_internal(
                 if converted_path and filename != converted_path:
                     os.unlink(converted_path)
                 converted_path = _converted_path
-
-        if ext in AUTO_DETECT_EXTENSIONS:
-            ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
+            if ext in AUTO_DETECT_EXTENSIONS:
+                ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
+        else:
+            ext = guessed_ext
 
         if not is_binary and check_content and check_html(converted_path):
             raise InappropriateDatasetContentError('The uploaded file contains invalid HTML content')
