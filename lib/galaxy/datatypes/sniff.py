@@ -418,7 +418,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('diamond_db.dmnd')
     >>> guess_ext(fname, sniff_order)
     'dmnd'
-    >>> fname = get_test_fname('1.xls')
+    >>> fname = get_test_fname('1.excel.xls')
     >>> guess_ext(fname, sniff_order, is_binary=True)
     'excel.xls'
     >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
