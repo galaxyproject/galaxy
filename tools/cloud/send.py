@@ -1,11 +1,11 @@
 """
-This tool implements the logic of downloading data
+This tool implements the logic of sending data
 from Galaxy to a cloud-based storage.
 
 This tool depends on the CloudManager for configuring
 a connection to a cloud-based resource provider. Also,
 it leverages Cloudbridge (github.com/CloudVE/cloudbridge)
-to download a dataset to a cloud-based storage.
+to send a dataset to a cloud-based storage.
 
 """
 
@@ -39,7 +39,7 @@ def load_credential(credentials_file):
     return json.loads(credentials)
 
 
-def download(provider, credentials, bucket, object_label, filename, overwrite_existing):
+def send(provider, credentials, bucket, object_label, filename, overwrite_existing):
     if not os.path.exists(filename):
         raise Exception("The file `{}` does not exist.".format(filename))
     if CloudProviderFactory is None:
@@ -54,7 +54,7 @@ def download(provider, credentials, bucket, object_label, filename, overwrite_ex
         object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
     print("[4/5] Creating object {}.".format(object_label))
     created_obj = bucket_obj.objects.create(object_label)
-    print("[5/5] Downloading dataset.")
+    print("[5/5] Sending dataset.")
     created_obj.upload_from_file(filename)
 
 
@@ -87,7 +87,7 @@ def __main__():
     args = parse_args(sys.argv[1:])
     overwrite_existing = args.overwrite_existing.lower() == "true"
     credentials = load_credential(args.credentials_file)
-    download(args.provider, credentials, args.bucket, args.object_label, args.filename, overwrite_existing)
+    send(args.provider, credentials, args.bucket, args.object_label, args.filename, overwrite_existing)
     print("Finished successfully.")
 
 
