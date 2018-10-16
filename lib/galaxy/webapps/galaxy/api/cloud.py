@@ -133,12 +133,12 @@ class CloudController(BaseAPIController):
         return rtv
 
     @expose_api
-    def download(self, trans, payload, **kwargs):
+    def send(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/download
-            Downloads given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named
+        * POST /api/cloud/storage/send
+            Sends given dataset(s) in a given history to a given cloud-based bucket. Each dataset is named
             using the label assigned to the dataset in the given history (see `HistoryDatasetAssociation.name`).
-            If no dataset ID is given, this API downloads all the datasets belonging to a given history to a given
+            If no dataset ID is given, this API sends all the datasets belonging to a given history to a given
             cloud-based bucket.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
@@ -146,35 +146,35 @@ class CloudController(BaseAPIController):
         :type  payload: dictionary
         :param payload: A dictionary structure containing the following keys:
             *   history_id              the (encoded) id of history from which the object should be downloaed.
-            *   bucket:                 the name of a bucket to which data should be downloaded (e.g., a bucket name on AWS S3).
+            *   bucket:                 the name of a bucket to which data should be sent (e.g., a bucket name on AWS S3).
             *   authz_id:               the encoded ID of CloudAuthz to be used for authorizing access to the resource
                                         provider. You may get a list of the defined authorizations via
                                         `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a
                                         new authorization.
             *   dataset_ids:            [Optional; default: None]
                                         A list of encoded dataset IDs belonging to the specified history
-                                        that should be downloaded to the given bucket. If not provided, Galaxy downloads
+                                        that should be sent to the given bucket. If not provided, Galaxy sends
                                         all the datasets belonging the specified history.
             *   overwrite_existing:     [Optional; default: False]
                                         A boolean value. If set to "True", and an object with same name of the dataset
-                                        to be downloaded already exist in the bucket, Galaxy replaces the existing object
-                                        with the dataset to be downloaded. If set to "False", Galaxy appends datetime
+                                        to be sent already exist in the bucket, Galaxy replaces the existing object
+                                        with the dataset to be sent. If set to "False", Galaxy appends datetime
                                         to the dataset name to prevent overwriting an existing object.
 
         :param kwargs:
 
         :rtype:     dictionary
-        :return:    Information about the (un)successfully submitted dataset download jobs,
+        :return:    Information about the (un)successfully submitted dataset send jobs,
                     containing the following keys:
                         *   `bucket_name`:                  The name of bucket to which the listed datasets are queued
-                                                            to be downloaded.
-                        *   `downloaded_dataset_labels`:    A list of JSON objects with the following key-value pair:
+                                                            to be sent.
+                        *   `sent_dataset_labels`:          A list of JSON objects with the following key-value pair:
                             **  `object`:                   The name of object is queued to be created.
-                            **  `job_id`:                   The id of the queued download job.
+                            **  `job_id`:                   The id of the queued send job.
 
                         *   `failed_dataset_labels`:        A list of JSON objects with the following key-value pair
                                                             representing the datasets Galaxy failed to create
-                                                            (and queue) download job for:
+                                                            (and queue) send job for:
                             **  `object`:                   The name of object is queued to be created.
                             **  `error`:                    A descriptive error message.
 
@@ -220,17 +220,17 @@ class CloudController(BaseAPIController):
                 raise ActionInputError("The following provided dataset IDs are invalid, please correct them and retry. "
                                        "{}".format(invalid_dataset_ids))
 
-        log.info(msg="Received api/download request for `{}` datasets using authnz with id `{}`, and history `{}`."
+        log.info(msg="Received api/send request for `{}` datasets using authnz with id `{}`, and history `{}`."
                      "".format("all the dataset in the given history" if not dataset_ids else len(dataset_ids),
                                authz_id,
                                history_id))
 
-        downloaded, failed = self.cloud_manager.download(trans=trans,
-                                                         history_id=history_id,
-                                                         bucket_name=bucket,
-                                                         authz_id=authz_id,
-                                                         dataset_ids=dataset_ids,
-                                                         overwrite_existing=payload.get("overwrite_existing", False))
-        return {'downloaded_dataset_labels': downloaded,
+        sent, failed = self.cloud_manager.download(trans=trans,
+                                                   history_id=history_id,
+                                                   bucket_name=bucket,
+                                                   authz_id=authz_id,
+                                                   dataset_ids=dataset_ids,
+                                                   overwrite_existing=payload.get("overwrite_existing", False))
+        return {'sent_dataset_labels': sent,
                 'failed_dataset_labels': failed,
                 'bucket_name': bucket}
