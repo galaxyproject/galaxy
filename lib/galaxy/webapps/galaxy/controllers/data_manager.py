@@ -97,9 +97,10 @@ class DataManager(BaseUIController):
             job = trans.sa_session.query(trans.app.model.Job).get(job_id)
         except Exception as e:
             job = None
-            log.error("Bad job id (%s) passed to view_job: %s" % (job_id, e))
+            log.error("Bad job id (%s) passed to job_info: %s" % (job_id, e))
         if not job:
-            return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid job (%s) was requested" % job_id, status="error"))
+            return {'message': "Invalid job (%s) was requested" % job_id,
+                    'status': "error"}
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = trans.app.data_managers.get_manager(data_manager_id)
         hdas = [assoc.dataset for assoc in job.get_output_datasets()]

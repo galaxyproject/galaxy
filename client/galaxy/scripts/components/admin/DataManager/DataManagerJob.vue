@@ -1,11 +1,11 @@
 <template>
     <div>
-        <b-breadcrumb v-if="!loading" :items="breadcrumbItems" />
+        <b-breadcrumb v-if="dataManager && jobId && !loading" :items="breadcrumbItems" id="breadcrumb" />
         <Alert :message="message" :variant="status" />
         <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" variant="info" />
-        <b-container v-else>
+        <b-container v-else-if="dataManager">
             <b-row>
                 <b-col>
                     <b-card header-bg-variant="primary" header-text-variant="white" border-variant="primary" class="mb-3" id="data-manager-card">
@@ -24,26 +24,26 @@
                                 </b-row>
                             </b-container>
                         </template>
-                        <b-card v-for="(item, i) in tableItems" :key="i" class="mb-4" id="data-card">
+                        <b-card v-for="(hda, i) in hdaInfo" :key="i" class="mb-4" :id="'data-card-' + i">
                             <template slot="header">
-                                <b-table :fields="fields" :items="[item]" caption-top small stacked>
+                                <b-table :fields="fields" :items="[hda]" caption-top small stacked>
                                     <template slot="table-caption">
                                         <b-container>
                                             <b-row align-v="center">
                                                 <b-col cols="auto">
-                                                    <b-button v-b-tooltip.hover title="View complete info" :href="tableItems[i]['infoUrl']" target="galaxy_main">
+                                                    <b-button v-b-tooltip.hover title="View complete info" :href="hdaInfo[i]['infoUrl']" target="galaxy_main">
                                                         <span class="fa fa-info-circle" />
                                                     </b-button>
                                                 </b-col>
                                                 <b-col>
-                                                    <b>{{ item["name"] }}</b>
+                                                    <b>{{ hda["name"] }}</b>
                                                 </b-col>
                                             </b-row>
                                         </b-container>
                                     </template>
                                 </b-table>
                             </template>
-                            <b-table v-for="(output, j) in dataManagerOutput[i]" :key="j" :fields="outputFields(output[1])" :items="output[1]" small stacked hover striped>
+                            <b-table v-for="(output, j) in dataManagerOutput[i]" :key="j" :fields="outputFields(output[1][0])" :items="output[1]" small stacked hover striped>
                                 <template slot="table-caption">
                                     Data Table:
                                     <b>{{ output[0] }}</b>
@@ -73,6 +73,7 @@ export default {
     },
     data() {
         return {
+            jobId: Number,
             exitCode: Number,
             runUrl: "#",
             dataManager: [],
@@ -118,19 +119,11 @@ export default {
                     active: true
                 }
             ];
-        },
-        tableItems() {
-            let tableItems = this.hdaInfo;
-            return tableItems;
         }
     },
     methods: {
         outputFields(output) {
-            let outputFields = [];
-            for (const k of Object.keys(output[0])) {
-                outputFields.push({ key: k, label: k });
-            }
-            return outputFields;
+            return Object.keys(output).reduce((acc, c) => [...acc, { key: c, label: c }], []);
         }
     },
     created() {
@@ -157,6 +150,7 @@ export default {
 </script>
 
 <style>
+/* Can not be scoped because of table-cell-break-word tdClass */
 .table-cell-break-word {
     word-break: break-word;
 }
