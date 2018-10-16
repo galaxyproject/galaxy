@@ -958,7 +958,7 @@ class Lav(data.Text):
     """Class describing a LAV alignment"""
     # gvk- 11/19/09 - This is really an alignment, but we no longer have tools that use this data type, and it is
     # here simply for backward compatibility ( although it is still in the datatypes registry ).  Subclassing
-    # from data.Text eliminates managing metadata elements inherited from the Alignemnt class.
+    # from data.Text eliminates managing metadata elements inherited from the Alignment class.
 
     edam_data = "data_0863"
     edam_format = "format_3014"
