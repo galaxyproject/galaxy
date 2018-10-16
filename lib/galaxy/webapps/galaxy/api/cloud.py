@@ -225,12 +225,12 @@ class CloudController(BaseAPIController):
                                authz_id,
                                history_id))
 
-        sent, failed = self.cloud_manager.download(trans=trans,
-                                                   history_id=history_id,
-                                                   bucket_name=bucket,
-                                                   authz_id=authz_id,
-                                                   dataset_ids=dataset_ids,
-                                                   overwrite_existing=payload.get("overwrite_existing", False))
+        sent, failed = self.cloud_manager.send(trans=trans,
+                                               history_id=history_id,
+                                               bucket_name=bucket,
+                                               authz_id=authz_id,
+                                               dataset_ids=dataset_ids,
+                                               overwrite_existing=payload.get("overwrite_existing", False))
         return {'sent_dataset_labels': sent,
                 'failed_dataset_labels': failed,
                 'bucket_name': bucket}

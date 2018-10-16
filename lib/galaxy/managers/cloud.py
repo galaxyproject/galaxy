@@ -30,12 +30,12 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
-# Any change to this list, MUST be reflected in the DOWNLOAD_TOOL wrapper
+# Any change to this list, MUST be reflected in the SEND_TOOL wrapper
 # (tools/cloud/send.xml).
 SUPPORTED_PROVIDERS = {"aws": 0, "azure": 1}
 
-DOWNLOAD_TOOL = "send_to_cloud"
-DOWNLOAD_TOOL_VERSION = "0.1.0"
+SEND_TOOL = "send_to_cloud"
+SEND_TOOL_VERSION = "0.1.0"
 
 # TODO: this configuration should be set in a config file.
 SINGED_URL_TTL = 3600
@@ -274,19 +274,19 @@ class CloudManager(sharable.SharableModelManager):
 
         return datasets
 
-    def download(self, trans, history_id, bucket_name, authz_id, dataset_ids=None, overwrite_existing=False):
+    def send(self, trans, history_id, bucket_name, authz_id, dataset_ids=None, overwrite_existing=False):
         """
-        Implements the logic of downloading dataset(s) from a given history to a given cloud-based storage
+        Implements the logic of sending dataset(s) from a given history to a given cloud-based storage
         (e.g., Amazon S3).
 
         :type  trans:               galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans:               Galaxy web transaction
 
         :type  history_id:          string
-        :param history_id:          the (encoded) id of history from which the object should be downloaded.
+        :param history_id:          the (encoded) id of history from which the object should be sent.
 
         :type  bucket_name:         string
-        :param bucket_name:         the name of a bucket to which data should be downloaded (e.g., a bucket
+        :param bucket_name:         the name of a bucket to which data should be sent (e.g., a bucket
                                     name on AWS S3).
 
         :type  authz_id:            int
@@ -296,19 +296,19 @@ class CloudManager(sharable.SharableModelManager):
 
         :type  dataset_ids:         set
         :param dataset_ids:         [Optional] The list of (decoded) dataset ID(s) belonging to the given
-                                    history which should be downloaded to the given provider. If not provided,
-                                    Galaxy downloads all the datasets belonging to the given history.
+                                    history which should be sent to the given provider. If not provided,
+                                    Galaxy sends all the datasets belonging to the given history.
 
         :type  overwrite_existing:  boolean
         :param overwrite_existing:  [Optional] If set to "True", and an object with same name of the
-                                    dataset to be downloaded already exist in the bucket, Galaxy replaces
-                                    the existing object with the dataset to be downloaded. If set to
+                                    dataset to be sent already exist in the bucket, Galaxy replaces
+                                    the existing object with the dataset to be sent. If set to
                                     "False", Galaxy appends datetime to the dataset name to prevent
                                     overwriting the existing object.
 
         :rtype:                     tuple
         :return:                    A tuple of two lists of labels of the objects that were successfully and
-                                    unsuccessfully downloaded to cloud.
+                                    unsuccessfully sent to cloud.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -319,10 +319,10 @@ class CloudManager(sharable.SharableModelManager):
         if not history:
             raise ObjectNotFound("History with ID `{}` not found.".format(trans.app.security.encode_id(history_id)))
 
-        downloaded = []
+        sent = []
         failed = []
         for hda in history.datasets:
-            if hda.deleted or hda.purged or hda.state != "ok" or hda.creating_job.tool_id == DOWNLOAD_TOOL:
+            if hda.deleted or hda.purged or hda.state != "ok" or hda.creating_job.tool_id == SEND_TOOL:
                 continue
             if dataset_ids is None or hda.dataset.id in dataset_ids:
                 try:
@@ -337,21 +337,21 @@ class CloudManager(sharable.SharableModelManager):
                         "overwrite_existing": overwrite_existing
                     }
                     incoming = (util.Params(args, sanitize=False)).__dict__
-                    d2c = trans.app.toolbox.get_tool(DOWNLOAD_TOOL, DOWNLOAD_TOOL_VERSION)
+                    d2c = trans.app.toolbox.get_tool(SEND_TOOL, SEND_TOOL_VERSION)
                     res = d2c.execute(trans, incoming, history=history)
                     job = res[0]
-                    downloaded.append(json.dumps(
+                    sent.append(json.dumps(
                         {
                             "object": object_label,
                             "job_id": trans.app.security.encode_id(job.id)
                         }))
                 except Exception as e:
                     err_msg = "maybe invalid or unauthorized credentials. {}".format(e.message)
-                    log.debug("Failed to download the dataset `{}` per user `{}` request to cloud, {}".format(
+                    log.debug("Failed to send the dataset `{}` per user `{}` request to cloud, {}".format(
                         object_label, trans.user.id, err_msg))
                     failed.append(json.dumps(
                         {
                             "object": object_label,
                             "error": err_msg
                         }))
-        return downloaded, failed
+        return sent, failed
