@@ -59,7 +59,7 @@ class CloudAuthzController(BaseAPIController):
     @expose_api
     def create(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/authz/create
+        * POST /api/cloud/authz
             Request to store the payload as a cloudauthz (cloud authorization) configuration for a user.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
