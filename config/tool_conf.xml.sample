@@ -24,7 +24,7 @@
     <tool file="genomespace/genomespace_push.xml" />
   </section>
   <section id="send" name="Send Data">
-    <tool file="cloud/download.xml" />
+    <tool file="cloud/send.xml" />
     <tool file="genomespace/genomespace_exporter.xml" />
   </section>
   <section id="collection_operations" name="Collection Operations">
