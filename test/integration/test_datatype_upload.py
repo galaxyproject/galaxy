@@ -72,20 +72,28 @@ def test_upload_datatype_auto(instance, test_data, temp_file):
             file_type = test_data.datatype.file_ext
         dataset = instance.dataset_populator.new_dataset(instance.history_id, content=content, wait=False, file_type=file_type)
     dataset = instance.dataset_populator.get_history_dataset_details(instance.history_id, dataset=dataset, assert_ok=False)
-    # State should be OK if the datatype can be uploaded
     expected_file_ext = test_data.datatype.file_ext
-    if test_data.uploadable:
-        assert dataset['state'] == 'ok'
-    else:
-        # We either get a different datatype or we error directly
-        assert dataset['file_ext'] != expected_file_ext or dataset['state'] == 'error'
+    # State might be error if the datatype can't be uploaded
+    if dataset['state'] == 'error' and not test_data.uploadable:
+        # Some things can't be uploaded, if attempting to upload these datasets we mention why
+        assert 'invalid' in dataset['misc_info'] or 'unsupported' in dataset['misc_info']
         return
+    elif dataset['state'] == 'error' and 'empty' in dataset['misc_info']:
+        return
+    else:
+        # state should be OK
+        assert dataset['state'] == 'ok'
     # Check that correct datatype has been detected
     if 'false' in test_data.path:
+        # datasets with false in their name are not of a specific datatype
         assert dataset['file_ext'] != PARENT_SNIFFER_MAP.get(expected_file_ext, expected_file_ext)
     else:
         assert dataset['file_ext'] == PARENT_SNIFFER_MAP.get(expected_file_ext, expected_file_ext)
     # download file and verify it hasn't been manipulated
-    temp_file.write(instance.dataset_populator.get_history_dataset_content(history_id=instance.history_id, dataset=dataset, type='bytes'))
+    temp_file.write(instance.dataset_populator.get_history_dataset_content(history_id=instance.history_id,
+                                                                           dataset=dataset,
+                                                                           type='bytes',
+                                                                           assert_ok=False,
+                                                                           raw=True))
     temp_file.flush()
     assert md5_hash_file(test_data.path) == md5_hash_file(temp_file.name)
