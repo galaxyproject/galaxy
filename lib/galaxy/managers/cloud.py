@@ -34,7 +34,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 # (tools/cloud/send.xml).
 SUPPORTED_PROVIDERS = {"aws": 0, "azure": 1}
 
-DOWNLOAD_TOOL = "download_to_cloud"
+DOWNLOAD_TOOL = "send_to_cloud"
 DOWNLOAD_TOOL_VERSION = "0.1.0"
 
 # TODO: this configuration should be set in a config file.

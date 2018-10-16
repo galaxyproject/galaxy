@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<tool id="download_to_cloud" name="Download dataset" version="0.1.0" workflow_compatible="false">
+<tool id="send_to_cloud" name="Send dataset" version="0.1.0" workflow_compatible="false">
     <description>
         to Cloud
     </description>
@@ -10,7 +10,7 @@
     <command><![CDATA[
         #set $authz_record=$__app__.authnz_manager.try_get_authz_config($__app__.obj.model.context.current, int($__user_id__), $__app__.security.decode_id($authz_id.__str__()))
         #set $credentials_file = $__app__.authnz_manager.get_cloud_access_credentials_in_file($__app__.config.new_file_path, $authz_record, $__app__.obj.model.context.current, int($__user_id__))
-        python $__tool_directory__/download.py
+        python $__tool_directory__/send.py
             --provider=$authz_record.provider
             --filename=$filename
             --credentials_file=$credentials_file
@@ -19,20 +19,20 @@
             --overwrite_existing=$overwrite_existing
     ]]></command>
     <inputs>
-        <param name="filename" type="data" label="Datasets to be downloaded to a cloud-based storage:" />
+        <param name="filename" type="data" label="Datasets to be sent to a cloud-based storage:" />
         <param name="authz_id" type="text" label="Authz ID" />
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
         <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
     </inputs>
     <outputs>
-        <data name="output" type="data" label="Download to cloud log" hidden="false"/>
+        <data name="output" type="data" label="Send to cloud log" hidden="false"/>
     </outputs>
     <help>
 
 **What it does**
 
-Downloads a dataset from Galaxy to a cloud-based storage.
+Sends a dataset from Galaxy to a cloud-based storage.
 
     </help>
 </tool>
