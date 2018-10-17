@@ -36,13 +36,13 @@ var generateUUID = function () {
         
             $(self).each(function (eachIndex, eachItem) {
                 self.paths = [];
- 
                 var img = eachItem;
+                console.log(options);
                 // Get a reference to the canvas object
                 var canvas = $('<canvas>')
                     .attr({
-                        width: options.img_width,
-                        height: options.img_height
+                        width: options.img_width + 'px',
+                        height: options.img_height + 'px'
                     })
                     .addClass('image-markup-canvas')
                     .css({
@@ -50,13 +50,14 @@ var generateUUID = function () {
                         top: '0px',
                         left: '0px'
                     });
- 
                 $(img).after(canvas);
- 
                 $(img).data('paths', []);
                 // Create an empty project and a view for the canvas:
                 paper.setup(canvas[0]);
-
+                
+                canvas[0].width = options.img_width;
+                canvas[0].height = options.img_height;
+                
                 $(canvas).mouseenter(function () {
                     paper.projects[eachIndex].activate();
                 });
@@ -283,19 +284,16 @@ var generateUUID = function () {
  
         this.download = function () {
             var canvas = paper.project.activeLayer.view.element;
-            //var img = $(canvas).parent().find('img')[0];
-            var img = $(canvas)[0];
+            var img = $(canvas).parent().find('img')[0];
             var mergeCanvas = $('<canvas>')
             .attr({
-                width: img.width, //$(img).width(),
-                height: img.height//$(img).height()
+                width: $(img).width(),
+                height: $(img).height()
             });
             var mergedContext = mergeCanvas[0].getContext('2d');
-            mergedContext.clearRect(0, 0, img.width, img.height);
+            //mergedContext.clearRect(0, 0, $(img).width(), $(img).height());
             mergedContext.drawImage(img, 0, 0);
- 
             mergedContext.drawImage(canvas, 0, 0);
- 
             self.downloadCanvas(mergeCanvas[0], "image-markup.png");
         }
  
@@ -335,7 +333,7 @@ var generateUUID = function () {
  
         }
  
-        this.setPenColor = function (color) { ///static/plugins/visualizations/annotate_image/static
+        this.setPenColor = function (color) {
             self.setOptions({ color: color });
             $('.image-markup-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/" + color + "-pen.png) 14 50, auto");
         }

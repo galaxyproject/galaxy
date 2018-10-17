@@ -29,6 +29,8 @@
             $.get(url, function(response) {
                 image.attr('src', response.download_url);
                 image.on('load', function(){
+                    image.width($(this).width());
+                    image.height($(this).height());
                     image.imageMarkup({ color: 'red', width: 4, opacity: 0.5, img_width: $(this).width(), img_height: $(this).height()  });
                 });
                 
