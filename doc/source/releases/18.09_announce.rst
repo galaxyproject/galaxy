@@ -73,7 +73,9 @@ Tool Vulnerabilities Discovered
 -------------------------------
 Older versions of certain repositories in the Tool Shed were identified as vulnerable. All of these are owned and maintained by the ``iuc``. The repository list follows:
 
-* ``gemini`` (all tools in the suite)
+* ``gemini_query``
+* ``gemini_stats``
+* ``gemini_gene_wise``
 * ``iqtree``
 * ``shovill``
 * ``fastq_dump``
