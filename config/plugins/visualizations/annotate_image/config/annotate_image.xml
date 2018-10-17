@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Annotate image">
-    <description>An image annotater built using at https://github.com/paperjs/paper.js.</description>
+    <description>An image annotater built using PaperJS at https://github.com/paperjs/paper.js.</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
