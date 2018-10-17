@@ -16,7 +16,9 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 }
 
 @import "select2.scss";
-//@import jquery-rating style
+// TODO: import sub-styles here, for bundling?
+// @import "jquery.rating.css";
+
 /* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
     min-width: 256px;

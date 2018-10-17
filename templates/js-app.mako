@@ -19,11 +19,9 @@
         ## TODO: use loaders to move everything but the essentials below the fold
         ${ h.css(
             'jquery.rating',
-            ##'jquery-ui/smoothness/jquery-ui',
+            'jquery-ui/smoothness/jquery-ui',
             ## base needs to come after jquery-ui because of ui-button, ui- etc. name collision
-            ##'base',
-            ##'bootstrap-tour',,
-            '../scripts/bundled/base'
+            'base'
         )}
         ${ page_setup() }
     </head>
