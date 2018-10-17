@@ -9,7 +9,7 @@
     <title>Annotate image</title>
     ${h.javascript_link( app_root +  "js/jquery-3.3.1.min.js" )}
     ${h.javascript_link( app_root +  "js/paper-full.min.js" )}
-    ${h.stylesheet_link(app_root + 'css/image-markup.css' )}
+    ${h.stylesheet_link(app_root + 'css/create-canvas.css' )}
     ${h.stylesheet_link(app_root + 'css/jquery.contextMenu.css' )}
 
 </head>
@@ -20,7 +20,7 @@
     ${h.javascript_link( app_root +  "js/CommandManager.js" )}
     ${h.javascript_link( app_root +  "js/jquery.contextMenu.js" )}
     ${h.javascript_link( app_root +  "js/jquery.ui.position.js" )}
-    ${h.javascript_link( app_root +  "js/image-markup.js" )}
+    ${h.javascript_link( app_root +  "js/create-canvas.js" )}
     <script>
         $(document).ready(function () {
             var datasetId = '${trans.security.encode_id(hda.id)}',
@@ -31,7 +31,7 @@
                 image.on('load', function(){
                     image.width($(this).width());
                     image.height($(this).height());
-                    image.imageMarkup({ color: 'red', width: 4, opacity: 0.5, img_width: $(this).width(), img_height: $(this).height()  });
+                    image.createCanvas({ color: 'blue', width: 2, opacity: 0.5, img_width: $(this).width(), img_height: $(this).height() });
                 });
             });
         });

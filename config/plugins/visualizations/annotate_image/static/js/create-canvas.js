@@ -13,7 +13,7 @@ var generateUUID = function () {
  
     var defaults = { color: 'red', width: 4, opacity: .5 };
  
-    $.fn.imageMarkup = function (options) {
+    $.fn.createCanvas = function (options) {
         var settings = $.extend({}, defaults, options || {});
         var self = this;
  
@@ -43,7 +43,7 @@ var generateUUID = function () {
                         width: options.img_width + 'px',
                         height: options.img_height + 'px'
                     })
-                    .addClass('image-markup-canvas')
+                    .addClass('image-canvas')
                     .css({
                         position: 'absolute',
                         top: '0px',
@@ -282,18 +282,33 @@ var generateUUID = function () {
         }
  
         this.download = function () {
-            var canvas = paper.project.activeLayer.view.element;
-            var img = $(canvas).parent().find('img')[0];
+            var canvas = paper.project.activeLayer.view.element,
+                img = $(canvas)[0];
             var mergeCanvas = $('<canvas>')
             .attr({
-                width: $(img).width(),
-                height: $(img).height()
+                width: img.width, //$(img).width(),
+                height: img.height//$(img).height()
             });
             var mergedContext = mergeCanvas[0].getContext('2d');
-            //mergedContext.clearRect(0, 0, $(img).width(), $(img).height());
+            mergedContext.clearRect(0, 0, img.width, img.height);
             mergedContext.drawImage(img, 0, 0);
             mergedContext.drawImage(canvas, 0, 0);
-            self.downloadCanvas(mergeCanvas[0], "image-markup.png");
+            self.downloadCanvas(mergeCanvas[0], "only-annotations.png");
+            
+            // create canvas for original and annotations
+            var annotated_img = $(canvas).parent().find('img')[0];
+            var wt = $(annotated_img).width();
+            var ht = $(annotated_img).height();
+            var mergeCanvasAnnotated = $('<canvas>')
+            .attr({
+                width: $(annotated_img).width(),
+                height: $(annotated_img).height()
+            });
+            var mergedContextAnnotated = mergeCanvasAnnotated[0].getContext('2d');
+            mergedContextAnnotated.clearRect(0, 0, $(annotated_img).width(), $(annotated_img).height());
+            mergedContextAnnotated.drawImage(annotated_img, 0, 0);
+            mergedContextAnnotated.drawImage(canvas, 0, 0);
+            self.downloadCanvas(mergeCanvasAnnotated[0], "original-with-annotations.png");
         }
  
         this.setText = function () {
@@ -334,19 +349,19 @@ var generateUUID = function () {
  
         this.setPenColor = function (color) {
             self.setOptions({ color: color });
-            $('.image-markup-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/" + color + "-pen.png) 14 50, auto");
+            $('.image-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/" + color + "-pen.png) 14 50, auto");
         }
  
         this.setCursorHandOpen = function () {
-            $('.image-markup-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/hand-open.png) 25 25, auto");
+            $('.image-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/hand-open.png) 25 25, auto");
         }
  
         this.setCursorHandClose = function () {
-            $('.image-markup-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/hand-close.png) 25 25, auto");
+            $('.image-canvas').css('cursor', "url(/static/plugins/visualizations/annotate_image/static/images/hand-close.png) 25 25, auto");
         }
  
         $.contextMenu({
-            selector: '.image-markup-canvas',
+            selector: '.image-canvas',
             callback: function (key, options) {
                 switch (key) {
                     //COMMANDS
