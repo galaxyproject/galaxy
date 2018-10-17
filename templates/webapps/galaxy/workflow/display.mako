@@ -14,13 +14,13 @@
 <%def name="do_inputs( inputs, values, prefix, step, other_values=None )">
   %for input_index, input in enumerate( inputs.values() ):
     %if input.type == "repeat":
-      <div class="repeat-group">
-          <div class="form-title-row"><b>${input.title_plural}</b></div>
+      <div>
+          <div class="form-row"><b>${input.title_plural}</b></div>
           <% repeat_values = values[input.name] %>
           %for i in range( len( repeat_values ) ):
-            <div class="repeat-group-item">
+            <div class="ui-portlet-section ml-2">
                 <% index = repeat_values[i]['__index__'] %>
-                <div class="form-title-row"><b>${input.title} ${i + 1}</b></div>
+                <div class="form-row"><b>${input.title} ${i + 1}</b></div>
                 ${do_inputs( input.inputs, repeat_values[ i ], prefix + input.name + "_" + str(index) + "|", step, other_values )}
             </div> 
           %endfor
@@ -34,9 +34,9 @@
     %elif input.type == "section":
       <% new_prefix = prefix + input.name + "|" %>
       <% group_values = values[input.name] %>
-      <div class="form-title-row"><b>${input.title}:</b></div>
-      <div class="repeat-group">
-        <div class="repeat-group-item">
+      <div class="form-row"><b>${input.title}:</b></div>
+      <div>
+        <div class="ui-portlet-section ml-2">
           ${do_inputs( input.inputs, group_values, new_prefix, step, other_values )}
         </div>
       </div>
@@ -100,22 +100,22 @@
               <% 
                 tool = trans.app.toolbox.get_tool( step.tool_id )
               %>
-              <div class="toolForm">
+              <div class="card mt-3 mr-3">
                 %if tool:
-                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name | h}</div>
-                  <div class="toolFormBody">
+                  <div class="card-header">Step ${int(step.order_index)+1}: ${tool.name | h}</div>
+                  <div class="card-body">
                     ${do_inputs( tool.inputs, step.state.inputs, "", step )}
                   </div>
                 %else:
-                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id | h}'</div>
+                  <div class="card-header">Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id | h}'</div>
                 %endif
               </div>
             %else:
             ## TODO: always input dataset?
             <% module = step.module %>
-              <div class="toolForm">
-                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${module.name | h}</div>
-                  <div class="toolFormBody">
+              <div class="card mt-3 mr-3">
+                  <div class="card-header">Step ${int(step.order_index)+1}: ${module.name | h}</div>
+                  <div class="card-body">
                     ${do_inputs( module.get_runtime_inputs(), step.state.inputs, "", step )}
                   </div>
               </div>

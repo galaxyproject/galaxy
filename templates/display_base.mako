@@ -79,7 +79,7 @@
 </%def>
 
 <%def name="render_item_header( item )">
-    <h3>Galaxy ${get_class_display_name( item.__class__ )} '${get_item_name( item )| h}'</h3>
+    <h3>${get_item_name( item )| h}</h3>
     %if hasattr( item, "annotation") and item.annotation is not None:
         <div class="annotation">Annotation: ${item.annotation}</div>
     %endif
@@ -115,7 +115,7 @@
         href_to_user_items = h.url_for( controller='/' + modern_route, action='list_published', xxx=item.user.username)
         href_to_user_items = href_to_user_items.replace( 'xxx', 'f-username')
     %>
-    <div class="page-body p-2">
+    <div class="page-body p-3">
         <div>
             ${self.render_item_header( item )}
         </div>
