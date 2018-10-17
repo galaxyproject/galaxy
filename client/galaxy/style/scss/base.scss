@@ -223,11 +223,9 @@ body {
         align-items: center;
         justify-content: space-between;
     }
-
     .panel-header-buttons {
         order: 9999;
     }
-
     .panel-header-button {
         text-decoration: none;
         display: inline-block;
@@ -238,7 +236,6 @@ body {
         &:not(:last-child) {
             margin-right: 2px;
         }
-
         // Fade to maroon on hover
         &:hover {
             color: maroon;
@@ -269,12 +266,10 @@ body {
     z-index: 1000; // Above #dd-helper
     border-top: $layout-border;
     background: $navbar-default-bg;
-
     color: #555;
     a {
         color: #555;
     }
-
     .drag {
         position: absolute;
         top: 0;
