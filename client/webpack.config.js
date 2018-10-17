@@ -29,6 +29,12 @@ let buildconfig = {
     optimization: {
         splitChunks: {
             cacheGroups: {
+                style: {
+                    name: "style",
+                    test: /\.css$/,
+                    chunks: "all",
+                    enforce: true
+                },
                 libs: {
                     name: "libs",
                     test: /(node_modules|galaxy\/scripts\/(?!apps))/,
@@ -55,10 +61,7 @@ let buildconfig = {
             },
             {
                 test: /\.js$/,
-                exclude: [
-                    /(node_modules\/(?!(handsontable)\/)|bower_components)/,
-                    libsBase
-                ],
+                exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
                 loader: "babel-loader",
                 options: { babelrc: true }
             },
@@ -98,6 +101,19 @@ let buildconfig = {
                     }
                 }
             },
+            // Alternative to setting window.bundleEntries
+            // Just import "extended" in any endpoint that needs
+            // access to these globals, or even-better, make
+            // more endpoints and skip the global altogether
+            {
+                test: /apps\/extended/,
+                use: [
+                    {
+                        loader: "expose-loader",
+                        options: "bundleEntries"
+                    }
+                ]
+            },
             {
                 test: /\.css$/,
                 use: [
@@ -119,19 +135,6 @@ let buildconfig = {
                     {
                         loader: "sass-loader",
                         options: { sourceMap: true }
-                    }
-                ]
-            },
-            // Alternative to setting window.bundleEntries
-            // Just import "extended" in any endpoint that needs
-            // access to these globals, or even-better, make
-            // more endpoints and skip the global altogether
-            {
-                test: /apps\/extended/,
-                use: [
-                    {
-                        loader: "expose-loader",
-                        options: "bundleEntries"
                     }
                 ]
             }

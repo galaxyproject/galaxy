@@ -1,16 +1,48 @@
 var webpackConfig = require("./webpack.config");
 
-// CommonsChunkPlugin not compatible with karma.
-// https://github.com/webpack-contrib/karma-webpack/issues/24
-webpackConfig.plugins.splice(0, 1);
-
-//Test against production builds
-webpackConfig.mode = "production";
-
 // Don't build Galaxy bundles - we build per-test bundles.
 webpackConfig.entry = function() {
     return {};
 };
+webpackConfig.module.rules = webpackConfig.module.rules.slice(0, 6).concat([
+    {
+        test: /\.css$/,
+        use: [
+            { loader: "style-loader" },
+            {
+                loader: "css-loader",
+                options: { sourceMap: true }
+            }
+        ]
+    },
+    {
+        test: /\.scss$/,
+        use: [
+            { loader: "style-loader" },
+            {
+                loader: "css-loader",
+                options: { sourceMap: true }
+            },
+            {
+                loader: "sass-loader",
+                options: { sourceMap: true }
+            }
+        ]
+    },
+    // Alternative to setting window.bundleEntries
+    // Just import "extended" in any endpoint that needs
+    // access to these globals, or even-better, make
+    // more endpoints and skip the global altogether
+    {
+        test: /apps\/extended/,
+        use: [
+            {
+                loader: "expose-loader",
+                options: "bundleEntries"
+            }
+        ]
+    }
+]);
 
 // Single pack mode runs whole test suite much more quickly - but requires
 // running the whole test suite so it would be slower for one-off tests.
