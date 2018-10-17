@@ -22,7 +22,8 @@
             ##'jquery-ui/smoothness/jquery-ui',
             ## base needs to come after jquery-ui because of ui-button, ui- etc. name collision
             ##'base',
-            ##'bootstrap-tour',
+            ##'bootstrap-tour',,
+            '../scripts/bundled/base'
         )}
         ${ page_setup() }
     </head>
@@ -35,7 +36,7 @@
         ${ h.js(
             'libs/require',
             'bundled/libs.chunk',
-            'bundled/style.chunk',
+            ## 'bundled/style.chunk',
             'bundled/' + js_app_name + '.bundled'
         )}
 

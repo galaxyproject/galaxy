@@ -8,6 +8,9 @@ const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(__dirname, "galaxy/style");
 const imageBase = path.join(__dirname, "../static/style");
 
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+
 let buildconfig = {
     entry: {
         login: ["onload", "./galaxy/scripts/apps/login.js"],
@@ -52,7 +55,10 @@ let buildconfig = {
             },
             {
                 test: /\.js$/,
-                exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
+                exclude: [
+                    /(node_modules\/(?!(handsontable)\/)|bower_components)/,
+                    libsBase
+                ],
                 loader: "babel-loader",
                 options: { babelrc: true }
             },
@@ -88,29 +94,34 @@ let buildconfig = {
                     loader: "file-loader",
                     options: {
                         outputPath: "assets",
-                        publicPath: '/static/scripts/bundled/assets/'
+                        publicPath: "/static/scripts/bundled/assets/"
                     }
                 }
             },
             {
-                test: /\.scss$/,
+                test: /\.css$/,
                 use: [
+                    MiniCssExtractPlugin.loader,
                     {
-                        loader: "style-loader"
-                    },
-                    {
-                        loader: "css-loader"
-                    },
-                    {
-                        loader: "sass-loader"
+                        loader: "css-loader",
+                        options: { sourceMap: true }
                     }
                 ]
             },
-            //{
-            //    test: /\.css$/,
-            //    use: ["style-loader", "css-loader"],
-            //    exclude: [path.join(libsBase, "components"), /(node_modules\/(?!(handsontable)\/))/]
-            //},
+            {
+                test: /\.scss$/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    {
+                        loader: "css-loader",
+                        options: { sourceMap: true }
+                    },
+                    {
+                        loader: "sass-loader",
+                        options: { sourceMap: true }
+                    }
+                ]
+            },
             // Alternative to setting window.bundleEntries
             // Just import "extended" in any endpoint that needs
             // access to these globals, or even-better, make
@@ -123,10 +134,6 @@ let buildconfig = {
                         options: "bundleEntries"
                     }
                 ]
-            },
-            {
-                test: /\.css$/,
-                use: ["style-loader", "css-loader"]
             }
         ]
     },
@@ -149,7 +156,19 @@ let buildconfig = {
             _: "underscore",
             Backbone: "backbone"
         }),
-        new VueLoaderPlugin()
+        new VueLoaderPlugin(),
+        new MiniCssExtractPlugin({
+            filename: "base.css"
+        }),
+        // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
+        new OptimizeCssAssetsPlugin({
+            cssProcessorOptions: {
+                map: {
+                    inline: false,
+                    annotation: true
+                }
+            }
+        })
     ]
 };
 
