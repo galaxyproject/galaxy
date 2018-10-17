@@ -37,7 +37,6 @@ var generateUUID = function () {
             $(self).each(function (eachIndex, eachItem) {
                 self.paths = [];
                 var img = eachItem;
-                console.log(options);
                 // Get a reference to the canvas object
                 var canvas = $('<canvas>')
                     .attr({

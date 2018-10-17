@@ -9,9 +9,9 @@
     cursor: url(../images/red-pen.png) 14 50, auto;
 }
 
-.context-menu-item.icon-text { background-image: url(/static/plugins/visualizations/annotate_image/static/images/text.png); }
-.context-menu-item.icon-blackpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/blackpen.png); }
-.context-menu-item.icon-redpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/redpen.png); }
-.context-menu-item.icon-greenpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/greenpen.png); }
-.context-menu-item.icon-bluepen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/bluepen.png); }
-.context-menu-item.icon-yellowpen { background-image: url(/static/plugins/visualizations/annotate_image/static/images/yellowpen.png); }
+.context-menu-item.context-menu-icon-text { background-image: url(../images/text.png); }
+.context-menu-item.context-menu-icon-blackpen { background-image: url(../images/blackpen.png); }
+.context-menu-item.context-menu-icon-redpen { background-image: url(../images/redpen.png); }
+.context-menu-item.context-menu-icon-greenpen { background-image: url(../images/greenpen.png); }
+.context-menu-item.context-menu-icon-bluepen { background-image: url(../images/bluepen.png); }
+.context-menu-item.context-menu-icon-yellowpen { background-image: url(../images/yellowpen.png); }

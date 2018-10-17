@@ -7,7 +7,7 @@
 <head lang="en">
     <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1"/>
     <title>Annotate image</title>
-    ${h.javascript_link( app_root +  "js/jquery-1.9.1.min.js" )}
+    ${h.javascript_link( app_root +  "js/jquery-3.3.1.min.js" )}
     ${h.javascript_link( app_root +  "js/paper-full.min.js" )}
     ${h.stylesheet_link(app_root + 'css/image-markup.css' )}
     ${h.stylesheet_link(app_root + 'css/jquery.contextMenu.css' )}
@@ -33,7 +33,6 @@
                     image.height($(this).height());
                     image.imageMarkup({ color: 'red', width: 4, opacity: 0.5, img_width: $(this).width(), img_height: $(this).height()  });
                 });
-                
             });
         });
     </script>
