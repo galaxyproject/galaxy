@@ -2,7 +2,6 @@ import logging
 from json import loads
 
 import paste.httpexceptions
-from markupsafe import escape
 from six import string_types
 
 import galaxy.queue_worker
