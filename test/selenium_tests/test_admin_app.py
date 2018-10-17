@@ -97,3 +97,8 @@ class AdminAppTestCase(SeleniumTestCase):
         admin_component.dm_job_data_manager_card.wait_for_visible()
         admin_component.dm_job_data_card(hda_index=0).wait_for_visible()
         self.screenshot("admin_data_manager_job")
+
+        admin_component.index.local_data.wait_for_and_click()
+        admin_component.dm_table_button(data_table="testbeta").wait_for_and_click()
+        admin_component.dm_table_card.wait_for_visible()
+        self.screenshot("admin_data_manager_table")

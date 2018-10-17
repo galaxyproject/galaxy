@@ -34,10 +34,7 @@ class DataManager(BaseUIController):
         data_tables = []
         managed_table_names = trans.app.data_managers.managed_data_tables.keys()
         for table_name in sorted(trans.app.tool_data_tables.get_tables().keys()):
-            data_tables.append({'url': web.url_for(controller='data_manager',
-                                                   action='manage_data_table',
-                                                   table_name=table_name),
-                                'name': table_name,
+            data_tables.append({'name': table_name,
                                 'managed': True if table_name in managed_table_names else False})
 
         return {'dataManagers': data_managers,
@@ -145,21 +142,33 @@ class DataManager(BaseUIController):
                 'status': status}
 
     @web.expose
-    def manage_data_table(self, trans, **kwd):
+    @web.json
+    def tool_data_table_info(self, trans, **kwd):
+        return self.tool_data_table_info_1(trans, **kwd)
+
+    def tool_data_table_info_1(self, trans, **kwd):
         not_is_admin = not trans.user_is_admin
         if not_is_admin and not trans.app.config.enable_data_manager_user_view:
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
-        message = escape(kwd.get('message', ''))
-        status = escape(kwd.get('status', 'info'))
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'info')
         data_table_name = kwd.get('table_name', None)
         if not data_table_name:
-            return trans.response.send_redirect(web.url_for(controller="data_manager", action="index"))
+            return {'message': "No data table was requested.",
+                    'status': "error"}
         data_table = trans.app.tool_data_tables.get(data_table_name, None)
         if data_table is None:
-            return trans.response.send_redirect(web.url_for(controller="data_manager", action="index", message="Invalid Data table (%s) was requested" % data_table_name, status="error"))
-        return trans.fill_template("data_manager/manage_data_table.mako", data_table=data_table, view_only=not_is_admin, message=message, status=status)
+            return {'message': "Invalid data table '%s' was requested." % data_table_name,
+                    'status': "error"}
+        return {'dataTable': {'name': data_table.name,
+                              'columns': data_table.get_column_name_list(),
+                              'data': data_table.data},
+                'viewOnly': not_is_admin,
+                'message': message,
+                'status': status}
 
     @web.expose
+    @web.json
     @web.require_admin
     def reload_tool_data_tables(self, trans, table_name=None, **kwd):
         if table_name and isinstance(table_name, string_types):
@@ -169,27 +178,18 @@ class DataManager(BaseUIController):
         galaxy.queue_worker.send_control_task(trans.app, 'reload_tool_data_tables',
                                               noop_self=True,
                                               kwargs={'table_name': table_name})
-        redirect_url = None
+        data = None
         if table_names:
-            status = 'done'
-            if len(table_names) == 1:
-                message = "The data table '%s' has been reloaded." % table_names[0]
-                redirect_url = web.url_for(controller='data_manager',
-                                           action='manage_data_table',
-                                           table_name=table_names[0],
-                                           message=message,
-                                           status=status)
-            else:
-                message = "The data tables '%s' have been reloaded." % ', '.join(table_names)
+            message = "Reloaded data table%s '%s'." % ('s'[len(table_names) == 1:],
+                                                       ', '.join(table_names))
+            data = self.tool_data_table_info_1(trans,
+                                               table_name=table_names[0],
+                                               message=message,
+                                               status="done")
         else:
-            message = "No data tables have been reloaded."
-            status = 'error'
-        if redirect_url is None:
-            redirect_url = web.url_for(controller='admin',
-                                       action='view_tool_data_tables',
-                                       message=message,
-                                       status=status)
-        return trans.response.send_redirect(redirect_url)
+            data = {'message': "No data tables have been reloaded.",
+                    'status': "error"}
+        return data
 
     @web.expose
     @web.json

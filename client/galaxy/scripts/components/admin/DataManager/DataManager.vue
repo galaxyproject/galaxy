@@ -50,11 +50,11 @@
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
-                <b-card no-body header="<h4>View Tool Data Table Entries</h4>">
+                <b-card no-body header="<h4>Tool Data Tables</h4>">
                     <b-list-group flush>
-                        <b-list-group-item v-for="(dataTable, index) in dataTablesFiltered" :key="index" :href="dataTable['url']" target="galaxy_main" :variant="dataTable['managed'] === true ? 'primary' : ''">
+                        <b-list-group-item v-for="(dataTable, index) in dataTablesFiltered" :key="index" :to="{name: 'DataManagerTable', params: { name: dataTable['name'] }}" :id="kebabCase(dataTable['name']) + '-table'" :variant="dataTable['managed'] === true ? 'primary' : 'link'">
                             {{ dataTable['name'] }}
-                            <span v-if="dataTable['managed'] === true" class="fa fa-exchange" />
+                            <b-badge v-if="dataTable['managed'] === true" variant="primary" pill><span class="fa fa-exchange" /></b-badge>
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>

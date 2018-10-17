@@ -312,6 +312,8 @@ admin:
     dm_job_breadcrumb: '#breadcrumb'
     dm_job_data_manager_card: '#data-manager-card'
     dm_job_data_card: '#data-card-${hda_index}'
+    dm_table_button: '#${data_table}-table'
+    dm_table_card: '#data-table-card'
     users_grid: '#users-grid'
     users_grid_create_button: '.manage-table-actions .action-button'
     groups_grid_create_button: '.manage-table-actions .action-button'
