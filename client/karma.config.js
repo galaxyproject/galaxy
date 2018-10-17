@@ -4,6 +4,8 @@ var webpackConfig = require("./webpack.config");
 webpackConfig.entry = function() {
     return {};
 };
+
+// TODO: Search for and replace loader automatically instead of this flaky splice.
 webpackConfig.module.rules = webpackConfig.module.rules.slice(0, 6).concat([
     {
         test: /\.css$/,
@@ -26,19 +28,6 @@ webpackConfig.module.rules = webpackConfig.module.rules.slice(0, 6).concat([
             {
                 loader: "sass-loader",
                 options: { sourceMap: true }
-            }
-        ]
-    },
-    // Alternative to setting window.bundleEntries
-    // Just import "extended" in any endpoint that needs
-    // access to these globals, or even-better, make
-    // more endpoints and skip the global altogether
-    {
-        test: /apps\/extended/,
-        use: [
-            {
-                loader: "expose-loader",
-                options: "bundleEntries"
             }
         ]
     }
