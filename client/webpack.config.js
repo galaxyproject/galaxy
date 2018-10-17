@@ -158,8 +158,7 @@ let buildconfig = {
         }),
         new VueLoaderPlugin(),
         new MiniCssExtractPlugin({
-            filename: "[name].css",
-            chunkFilename: "[id].css"
+            filename: "base.css"
         }),
         // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
         new OptimizeCssAssetsPlugin({

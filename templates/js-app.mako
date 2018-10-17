@@ -23,7 +23,7 @@
             ## base needs to come after jquery-ui because of ui-button, ui- etc. name collision
             ##'base',
             ##'bootstrap-tour',,
-            '../scripts/bundled/' + js_app_name
+            '../scripts/bundled/base'
         )}
         ${ page_setup() }
     </head>
