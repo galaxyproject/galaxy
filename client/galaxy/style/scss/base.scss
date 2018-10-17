@@ -346,16 +346,11 @@ div.unified-panel-body {
     height: 100%;
     padding: 0px;
     flex: 1;
+    overflow: auto;
 }
 
 div.unified-panel-body-background {
     background: none repeat scroll 0 0 $panel-bg-color;
-}
-
-#left > div.unified-panel-body,
-#right > div.unified-panel-body {
-    padding-bottom: $panel_footer_height;
-    overflow: auto;
 }
 
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
