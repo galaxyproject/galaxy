@@ -68,6 +68,20 @@ Tracked as GX-2018-0006. Servers running Galaxy 18.05 should be updated as soon 
 See `the public announcement for full details
 <http://announce.list.galaxyproject.org/GX-2018-0006-Unauthorized-File-System-Operations-via-New-Upload-API-td4639432.html>`__.
 
+
+Tool Vulnerabilities Discovered
+-------------------------------
+Older versions of certain repositories in the Tool Shed were identified as vulnerable. All of these are owned and maintained by the ``iuc``. The repository list follows:
+
+* ``gemini`` (all tools in the suite)
+* ``iqtree``
+* ``shovill``
+* ``fastq_dump``
+* ``sam_dump``
+* ``sra_pileup``
+
+If you have any of these repositories installed in your Galaxy, please update them to the latest revision immediately and disable/uninstall all older versions.
+
 Deprecation Notice
 ==================
 
