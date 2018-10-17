@@ -10,9 +10,9 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Uninstall tool dependencies</div>
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-header">Uninstall tool dependencies</div>
+    <div class="card-body">
         <form name="uninstall_tool_dependenceies" id="uninstall_tool_dependenceies" action="${h.url_for( controller='admin_toolshed', action='uninstall_tool_dependencies' )}" method="post" >       
             <div class="form-row">
                 <table class="grid">

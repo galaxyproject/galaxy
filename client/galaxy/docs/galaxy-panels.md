@@ -1,6 +1,6 @@
 ## Panel (toolMenuContainer)
 
-```
+```vue
 <div style="height: 200px;">
   <div style="position: absolute; width: 250px; height: 200px; border: dotted gray 1px">
     <div class="unified-panel-header">
