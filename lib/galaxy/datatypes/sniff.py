@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import codecs
 import gzip
+import io
 import logging
 import os
 import re
@@ -116,9 +117,9 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with os.fdopen(fd, "wt") as fp:
+    with io.open(fd, mode="wt", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(open(fname, "U")):
+        for i, line in enumerate(io.open(fname, mode="U", encoding='utf-8')):
             fp.write("%s\n" % line.rstrip("\r\n"))
     if i is None:
         i = 0
@@ -132,13 +133,13 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
         return (i, temp_name)
 
 
-def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
+def sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Transforms in place a 'sep' separated file to a tab separated one
 
     >>> fname = get_test_fname('temp.txt')
     >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write("1 2\\n3 4\\n")
+    ...     _ = fh.write(u"1 2\\n3 4\\n")
     >>> sep2tabs(fname)
     (2, None)
     >>> open(fname).read()
@@ -146,17 +147,17 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with os.fdopen(fd, "wt") as fp:
+    with io.open(fd, mode="wt", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(open(fname)):
+        for i, line in enumerate(io.open(fname, encoding='utf-8')):
             if line.endswith("\r"):
                 line = line.rstrip('\r')
                 elems = regexp.split(line)
-                fp.write("%s\r" % '\t'.join(elems))
+                fp.write(u"%s\r" % '\t'.join(elems))
             else:
                 line = line.rstrip('\n')
                 elems = regexp.split(line)
-                fp.write("%s\n" % '\t'.join(elems))
+                fp.write(u"%s\n" % '\t'.join(elems))
     if i is None:
         i = 0
     else:
@@ -169,14 +170,14 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
         return (i, temp_name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines_sep2tabs(fname, in_place=True, patt="\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
 
     >>> fname = get_test_fname('temp.txt')
     >>> with open(fname, 'wt') as fh:
-    ...     _ = fh.write("1 2\\r3 4")
+    ...     _ = fh.write(u"1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -184,11 +185,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with os.fdopen(fd, "wt") as fp:
-        for i, line in enumerate(open(fname, "U")):
+    with io.open(fd, mode="wt", encoding='utf-8') as fp:
+        for i, line in enumerate(codecs.open(fname, mode="U", encoding='utf-8')):
             line = line.rstrip('\r\n')
             elems = regexp.split(line)
-            fp.write("%s\n" % '\t'.join(elems))
+            fp.write(u"%s\n" % '\t'.join(elems))
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
