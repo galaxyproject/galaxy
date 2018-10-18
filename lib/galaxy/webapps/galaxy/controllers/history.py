@@ -17,7 +17,6 @@ from galaxy.model.item_attrs import (
 from galaxy.util import listify, Params, parse_int, sanitize_text
 from galaxy.util.create_history_template import render_item
 from galaxy.util.odict import odict
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
