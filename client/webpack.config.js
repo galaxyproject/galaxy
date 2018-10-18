@@ -2,14 +2,14 @@
 const webpack = require("webpack");
 const path = require("path");
 const VueLoaderPlugin = require("vue-loader/lib/plugin");
+const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const DuplicatePackageCheckerPlugin = require("duplicate-package-checker-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "galaxy/scripts");
 const libsBase = path.join(scriptsBase, "libs");
 const styleBase = path.join(__dirname, "galaxy/style");
 const imageBase = path.join(__dirname, "../static/style");
-
-const OptimizeCssAssetsPlugin = require("optimize-css-assets-webpack-plugin");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 
 let buildconfig = {
     entry: {
@@ -29,16 +29,16 @@ let buildconfig = {
     optimization: {
         splitChunks: {
             cacheGroups: {
-                style: {
-                    name: "style",
-                    test: /\.css$/,
+                styles: {
+                    name: "base",
                     chunks: "all",
-                    enforce: true
+                    enforce: true,
+                    test: m => m.constructor.name == "CssModule"
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!apps))/,
-                    chunks: "initial"
+                    test: /(node_modules|galaxy\/scripts\/(?!apps))/, // .*\.(vue|js)$
+                    chunks: "all"
                 }
             }
         }
@@ -47,21 +47,15 @@ let buildconfig = {
         rules: [
             {
                 test: /\.vue$/,
-                loader: "vue-loader",
-                options: {
-                    loaders: {
-                        js: [
-                            {
-                                loader: "babel-loader",
-                                options: { babelrc: true }
-                            }
-                        ]
-                    }
-                }
+                loader: "vue-loader"
             },
             {
                 test: /\.js$/,
-                exclude: [/(node_modules\/(?!(handsontable)\/)|bower_components)/, libsBase],
+                // Pretty sure we don't want anything except node_modules here
+                exclude: [
+                    /(node_modules\/(?!(handsontable)\/)|bower_components)/,
+                    libsBase
+                ],
                 loader: "babel-loader",
                 options: { babelrc: true }
             },
@@ -161,7 +155,8 @@ let buildconfig = {
         }),
         new VueLoaderPlugin(),
         new MiniCssExtractPlugin({
-            filename: "base.css"
+            filename: "[name].css",
+            sourceMap: true
         }),
         // https://github.com/webpack-contrib/mini-css-extract-plugin/issues/141
         new OptimizeCssAssetsPlugin({
@@ -171,7 +166,8 @@ let buildconfig = {
                     annotation: true
                 }
             }
-        })
+        }),
+        new DuplicatePackageCheckerPlugin()
     ]
 };
 

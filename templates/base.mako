@@ -40,6 +40,7 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
+    ${h.css("base")}
     ${h.css('bootstrap-tour')}
     ${h.css('base')}
 </%def>
@@ -59,8 +60,9 @@
 
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.chunk',
         'libs/require',
+        'bundled/libs.chunk',
+        'bundled/base.chunk',
         'bundled/extended.bundled'
     )}
 

@@ -52,9 +52,9 @@
 
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/extended.bundled',
-        'bundled/libs.chunk',
         'libs/require'
+        'bundled/libs.chunk',
+        'bundled/extended.bundled'
     )}
     
 </%def>

@@ -18,10 +18,11 @@
         <link rel="index" href="${ h.url_for( '/' ) }"/>
         ## TODO: use loaders to move everything but the essentials below the fold
         ${ h.css(
-            'jquery.rating',
-            'jquery-ui/smoothness/jquery-ui',
+            ## 'jquery.rating',
+            ##'jquery-ui/smoothness/jquery-ui',
             ## base needs to come after jquery-ui because of ui-button, ui- etc. name collision
-            'base'
+            'base',
+            ##'bootstrap-tour',
         )}
         ${ page_setup() }
     </head>
@@ -34,7 +35,7 @@
         ${ h.js(
             'libs/require',
             'bundled/libs.chunk',
-            ## 'bundled/style.chunk',
+            'bundled/base.chunk',
             'bundled/' + js_app_name + '.bundled'
         )}
 
