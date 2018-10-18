@@ -18,11 +18,11 @@ _:  # global stuff
 
   messages:
     selectors:
-      all: '[class*="message"]'
-      error: '.errormessage'
+      all: '[class*="alert"]'
+      error: '.alert-danger'
       warning: '.alert-warning'
-      done: '.donemessage'
-      info: '.infomessage'
+      done: '.alert-success'
+      info: '.alert-info'
       donelarge: '.donemessagelarge'
       infolarge: '.infomessagelarge'
 

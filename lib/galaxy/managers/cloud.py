@@ -197,8 +197,8 @@ class CloudManager(sharable.SharableModelManager):
 
         :type  authz_id:    int
         :param authz_id:    the ID of CloudAuthz to be used for authorizing access to the resource provider. You may
-                            get a list of the defined authorizations via `/api/cloud/authz`. Also, you can
-                            use `/api/cloud/authz/create` to define a new authorization.
+                            get a list of the defined authorizations sending GET to `/api/cloud/authz`. Also, you can
+                            POST to `/api/cloud/authz` to define a new authorization.
 
         :type  input_args:  dict
         :param input_args:  a [Optional] a dictionary of input parameters:

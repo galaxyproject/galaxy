@@ -65,8 +65,8 @@ Changing Styles/CSS
 ===================
 
 The CSS and styling used by Galaxy is also controlled from this directory.
-Galaxy uses LESS, a superset of CSS that compiles to CSS, for its styling. LESS
-files are kept in client/galaxy/style/less. Compiled CSS is in
+Galaxy uses Sass for its styling, a superset of CSS that compiles to CSS. Sass
+files are kept in client/galaxy/style/scss. Compiled CSS is in
 static/style/blue.
 
 As mentioned above, 'make client' will also rebuild styles.  If you *only* want
