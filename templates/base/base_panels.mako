@@ -22,7 +22,8 @@
 <%def name="stylesheets()">
     ${h.css(
         'jquery.rating',
-        'bootstrap-tour'
+        'bootstrap-tour',
+        'base'
     )}
     <style type="text/css">
     #center {
