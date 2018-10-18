@@ -35,7 +35,7 @@ def order_workflow_steps(steps):
     if position_data_available:
         steps.sort(key=lambda _: math.sqrt(_.position['left'] ** 2 + _.position['top'] ** 2))
     try:
-        edges = edgelist_for_workflow_steps(steps)
+        edges = sorted(edgelist_for_workflow_steps(steps))
         node_order = topsort(edges)
         return [steps[i] for i in node_order]
     except CycleError:

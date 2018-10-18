@@ -17,6 +17,22 @@ galaxy\.objectstore\.azure\_blob module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.objectstore\.cloud module
+---------------------------------
+
+.. automodule:: galaxy.objectstore.cloud
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.objectstore\.pithos module
+----------------------------------
+
+.. automodule:: galaxy.objectstore.pithos
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.objectstore\.pulsar module
 ----------------------------------
 

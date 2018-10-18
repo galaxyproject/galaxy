@@ -626,6 +626,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 type: "dataset_collection",
                 collection_type: "list:paired",
                 hide_source_items: self.hideOriginals || false,
+                copy_elements: self.copyElements,
                 name: _.escape(name || self.$(".collection-name").val()),
                 element_identifiers: self.paired.map(pair => self._pairToJSON(pair))
             };
@@ -866,8 +867,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             this.paired.forEach((pair, i) => {
                 //TODO: cache these?
                 var pairView = new PairView({ pair: pair });
-                self
-                    .$(".paired-columns .column-datasets")
+                self.$(".paired-columns .column-datasets")
                     .append(pairView.render().$el)
                     .append(
                         [
@@ -1241,8 +1241,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 var $startTarget = $(ev.target).addClass("selected");
 
                 var moveListener = ev => {
-                    self
-                        .$(ev.target)
+                    self.$(ev.target)
                         .filter(".dataset")
                         .addClass("selected");
                 };
@@ -1824,7 +1823,8 @@ function createListOfPairsCollection(collection, defaultHideSourceItems) {
     //TODO: validate elements
     return pairedCollectionCreatorModal(elements, {
         historyId: collection.historyId,
-        defaultHideSourceItems: defaultHideSourceItems
+        defaultHideSourceItems: defaultHideSourceItems,
+        copyElements: !defaultHideSourceItems
     });
 }
 

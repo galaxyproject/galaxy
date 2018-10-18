@@ -81,7 +81,7 @@ def get_config(argv, use_argparse=True, cwd=None):
     Read sys.argv and parse out repository of migrations and database url.
 
     >>> import os
-    >>> from ConfigParser import SafeConfigParser
+    >>> from six.moves.configparser import SafeConfigParser
     >>> from shutil import rmtree
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()

@@ -21,6 +21,7 @@ class ToolCache(object):
         self._mod_time_by_path = {}
         self._new_tool_ids = set()
         self._removed_tool_ids = set()
+        self._removed_tools_by_path = {}
 
     def cleanup(self):
         """
@@ -33,6 +34,10 @@ class ToolCache(object):
             paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
             for config_filename, tool_ids in paths_to_cleanup.items():
                 del self._hash_by_tool_paths[config_filename]
+                if os.path.exists(config_filename):
+                    # This tool has probably been broken while editing on disk
+                    # We record it here, so that we can recover it
+                    self._removed_tools_by_path[config_filename] = self._tools_by_path[config_filename]
                 del self._tools_by_path[config_filename]
                 for tool_id in tool_ids:
                     if tool_id in self._tool_paths_by_id:
@@ -66,6 +71,9 @@ class ToolCache(object):
     def get_tool(self, config_filename):
         """Get the tool at `config_filename` from the cache if the tool is up to date."""
         return self._tools_by_path.get(config_filename, None)
+
+    def get_removed_tool(self, config_filename):
+        return self._removed_tools_by_path.get(config_filename)
 
     def get_tool_by_id(self, tool_id):
         """Get the tool with the id `tool_id` from the cache if the tool is up to date. """
@@ -103,10 +111,12 @@ class ToolCache(object):
                 self._tool_ids_by_macro_paths[macro_path].add(tool_id)
 
     def reset_status(self):
-        """Reset self._new_tool_ids and self._removed_tool_ids once
-        all operations that need to know about new tools have finished running."""
+        """
+        Reset tracking of new and newly disabled tools.
+        """
         self._new_tool_ids = set()
         self._removed_tool_ids = set()
+        self._removed_tools_by_path = {}
 
 
 class ToolShedRepositoryCache(object):

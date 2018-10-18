@@ -77,7 +77,7 @@ if (@pos) { $params{"region_query"} = 1; }
 
 open(FH, ">", $out) or die "Couldn't open $out, $!\n";
 print FH "<html><head><title>g:Profiler link</title></head><body>\n";
-print FH '<form method="POST" action="http://biit.cs.ut.ee/gprofiler/index.cgi">';
+print FH '<form method="POST" action="http://biit.cs.ut.ee/gprofiler/index.cgi">', "\n";
 foreach my $k (keys %params) {
    print FH "<input type='hidden' name='$k' value='$params{$k}'>\n";
 }

@@ -41,12 +41,4 @@ galaxy\.containers\.docker\_swarm module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.containers\.docker\_swarm\_manager module
--------------------------------------------------
-
-.. automodule:: galaxy.containers.docker_swarm_manager
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 

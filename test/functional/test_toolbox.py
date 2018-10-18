@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import logging
-import new
 
 try:
     from nose.tools import nottest
@@ -11,9 +10,9 @@ except ImportError:
 
 from base.driver_util import setup_keep_outdir, target_url_parts
 from base.instrument import register_job_data
+from base.testcase import FunctionalTestCase  # noqa: I100,I201,I202
 from galaxy.tools import DataManagerTool  # noqa: I201
 from galaxy.tools.verify.interactor import GalaxyInteractorApi, verify_tool  # noqa: I201
-from .twilltestcase import TwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -23,12 +22,8 @@ toolbox = None
 TOOL_TYPES_NO_TEST = (DataManagerTool, )
 
 
-class ToolTestCase(TwillTestCase):
-    """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`.
-
-    Ideally this would be FunctionalTestCase instead of a TwillTestCase but the
-    subclass DataManagerToolTestCase requires the use of Twill still.
-    """
+class ToolTestCase(FunctionalTestCase):
+    """Abstract test case that runs tests based on a `galaxy.tools.test.ToolTest`."""
 
     def do_it(self, tool_id=None, tool_version=None, test_index=0, resource_parameters={}):
         """
@@ -42,7 +37,16 @@ class ToolTestCase(TwillTestCase):
 
 
 @nottest
-def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_api_key=None):
+def build_tests(app=None,
+                testing_shed_tools=False,
+                master_api_key=None,
+                user_api_key=None,
+                name_prefix="TestForTool_",
+                baseclass=ToolTestCase,
+                create_admin=False,
+                user_email=None,
+                G=None,
+                contains=None):
     """
     If the module level variable `toolbox` is set, generate `ToolTestCase`
     classes for all of its tests and put them into this modules globals() so
@@ -52,19 +56,24 @@ def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_ap
     # if app is None:
     host, port, url = target_url_parts()
     keep_outputs_dir = setup_keep_outdir()
+
     galaxy_interactor_kwds = {
         "galaxy_url": url,
         "master_api_key": master_api_key,
         "api_key": user_api_key,
         "keep_outputs_dir": keep_outputs_dir,
+        "user_api_key_is_admin_key": True,
     }
+    if create_admin and not user_api_key:
+        galaxy_interactor_kwds['test_user'] = user_email
     galaxy_interactor = GalaxyInteractorApi(**galaxy_interactor_kwds)
 
-    # Push all the toolbox tests to module level
-    G = globals()
+    if not G:
+        # Push all the toolbox tests to module level
+        G = globals()
 
     # Eliminate all previous tests from G.
-    for key, val in G.items():
+    for key, val in G.copy().items():
         if key.startswith('TestForTool_'):
             del G[key]
 
@@ -72,8 +81,10 @@ def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_ap
     for tool_id, tool_summary in tests_summary.items():
         # Create a new subclass of ToolTestCase, dynamically adding methods
         # named test_tool_XXX that run each test defined in the tool config.
-        name = "TestForTool_" + tool_id.replace(' ', '_')
-        baseclasses = (ToolTestCase, )
+        if contains and contains not in tool_id:
+                continue
+        name = name_prefix + tool_id.replace(' ', '_')
+        baseclasses = (baseclass, )
         namespace = dict()
 
         all_versions_test_count = 0
@@ -96,11 +107,13 @@ def build_tests(app=None, testing_shed_tools=False, master_api_key=None, user_ap
                 namespace['tool_id'] = tool_id
                 namespace["galaxy_interactor"] = galaxy_interactor
                 namespace['master_api_key'] = master_api_key
-                namespace['user_api_key'] = user_api_key
+                namespace['user_api_key'] = user_api_key or galaxy_interactor.api_key
+                namespace['test_count'] = count
 
                 all_versions_test_count += 1
 
-            # The new.classobj function returns a new class object, with name name, derived
+            # Create new class object, with name name, derived
             # from baseclasses (which should be a tuple of classes) and with namespace dict.
-            new_class_obj = new.classobj(str(name), baseclasses, namespace)
+            new_class_obj = type(str(name), baseclasses, namespace)
             G[name] = new_class_obj
+    return G

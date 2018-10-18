@@ -19,7 +19,9 @@ STRING_AND_LIST_METHODS = [name for name in dir('') + dir([]) if not name.starts
 VALID_FUNCTIONS = BUILTIN_AND_MATH_FUNCTIONS + STRING_AND_LIST_METHODS
 
 
-def _check_name(ast_node, allowed_variables=[]):
+def _check_name(ast_node, allowed_variables=None):
+    if allowed_variables is None:
+        allowed_variables = []
     name = ast_node.id
     return name in (VALID_FUNCTIONS + allowed_variables)
 
@@ -48,7 +50,7 @@ def _check_call(ast_node):
     return True
 
 
-def _check_expression(text, allowed_variables=[]):
+def _check_expression(text, allowed_variables=None):
     """
 
     >>> allowed_variables = ["c1", "c2", "c3", "c4", "c5"]
@@ -81,6 +83,8 @@ def _check_expression(text, allowed_variables=[]):
     >>> _check_expression("str(c2) in [\\\"a\\\",\\\"b\\\"]", allowed_variables)
     True
     """
+    if allowed_variables is None:
+        allowed_variables = []
     try:
         module = parse(text)
     except SyntaxError:
@@ -132,6 +136,6 @@ def safe_eval(expression, variables):
     >>> exception_thrown
     True
     """
-    if not _check_expression(expression, allowed_variables=variables.keys()):
+    if not _check_expression(expression, allowed_variables=list(variables.keys())):
         raise Exception("Invalid expression [%s], only a very simple subset of Python is allowed." % expression)
     return eval(expression, globals(), variables)

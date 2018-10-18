@@ -6,7 +6,7 @@ import time
 from bioblend.galaxy import GalaxyInstance
 
 
-class ApplyTagsHistory:
+class ApplyTagsHistory(object):
 
     @classmethod
     def __init__(self, galaxy_url, galaxy_api_key, history_id=None):

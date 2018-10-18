@@ -5,6 +5,8 @@ from abc import (
 
 import six
 
+from .error_level import StdioErrorLevel
+
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
@@ -211,6 +213,9 @@ class ToolSource(object):
         """ Return tool profile version as Galaxy major e.g. 16.01 or 16.04.
         """
 
+    def macro_paths(self):
+        return []
+
     def parse_tests_to_dict(self):
         return {'tests': []}
 
@@ -337,8 +342,7 @@ class ToolStdioRegex(object):
         self.match = ""
         self.stdout_match = False
         self.stderr_match = False
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
+        self.error_level = StdioErrorLevel.FATAL
         self.desc = ""
 
 
@@ -351,8 +355,7 @@ class ToolStdioExitCode(object):
     def __init__(self):
         self.range_start = float("-inf")
         self.range_end = float("inf")
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
+        self.error_level = StdioErrorLevel.FATAL
         self.desc = ""
 
 

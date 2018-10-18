@@ -89,11 +89,10 @@ if command -v git >/dev/null && [ -d .git ]; then
     GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
     case $GIT_BRANCH in
         release_*|master)
-            # All non-release branches should build the client as necessary
-            SKIP_CLIENT_BUILD=1
+            # All branches should now build the client as necessary, turn this
+            # back into an if?  Or is there more we need to do here?
             ;;
         *)
-            # Ensure nodeenv is installed
             DEV_WHEELS=1
             # SKIP_CLIENT_BUILD will default to false, but can be overridden by the command line argument
             ;;
@@ -242,8 +241,11 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
 
     # Build client
-    if ! make client; then
+    if ! make client-production-maps; then
         echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
         exit 1
     fi
+else
+    echo "Regenerating static plugin directories."
+    python ./scripts/plugin_staging.py
 fi

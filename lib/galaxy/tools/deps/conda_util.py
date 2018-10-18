@@ -12,7 +12,11 @@ import packaging.version
 import six
 from six.moves import shlex_quote
 
-from galaxy.util import unicodify
+from galaxy.tools.deps.commands import CommandLineException
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 from . import (
     commands,
     installable
@@ -243,7 +247,8 @@ class CondaContext(installable.InstallableContext):
         Return the process exit code (i.e. 0 in case of success).
         """
         create_base_args = [
-            "-y"
+            "-y",
+            "--quiet"
         ]
         if allow_local and self.use_local:
             create_base_args.extend(["--use-local"])
@@ -415,7 +420,7 @@ def hash_conda_packages(conda_packages, conda_target=None):
     """
     h = hashlib.new('sha256')
     for conda_package in conda_packages:
-        h.update(conda_package.install_environment)
+        h.update(smart_str(conda_package.install_environment))
     return h.hexdigest()
 
 
@@ -503,10 +508,14 @@ def best_search_result(conda_target, conda_context, channels_override=None, offl
     else:
         search_cmd.extend(conda_context._override_channels_args)
     search_cmd.append(conda_target.package)
-    res = commands.execute(search_cmd)
-    res = unicodify(res)
-    hits = json.loads(res).get(conda_target.package, [])
-    hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
+    try:
+        res = commands.execute(search_cmd)
+        res = unicodify(res)
+        hits = json.loads(res).get(conda_target.package, [])
+        hits = sorted(hits, key=lambda hit: packaging.version.parse(hit['version']), reverse=True)
+    except CommandLineException:
+        log.error("Could not execute: '%s'", search_cmd)
+        hits = []
 
     if len(hits) == 0:
         return (None, None)

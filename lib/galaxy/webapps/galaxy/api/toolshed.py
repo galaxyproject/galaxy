@@ -271,7 +271,6 @@ class ToolShedController(BaseAPIController):
                 if metadata['has_repository_dependencies']:
                     for repository_dependency in metadata['repository_dependencies']:
                         tools[changeset] = self.__get_tools(repository_dependency, tools[changeset])
-                repository_data['tools'] = tools
             for key, dependency_dict in metadata['tool_dependencies'].items():
                 if 'readme' in dependency_dict:
                     del(dependency_dict['readme'])
@@ -280,6 +279,11 @@ class ToolShedController(BaseAPIController):
             if metadata['has_repository_dependencies']:
                 for repository_dependency in metadata['repository_dependencies']:
                     tool_dependencies[changeset] = self.__get_tool_dependencies(repository_dependency, tool_dependencies[changeset])
+        for changeset in repository_data['repository']['metadata']:
+            if changeset in tools:
+                repository_data['repository']['metadata'][changeset]['tools'] = tools[changeset]
+            else:
+                repository_data['repository']['metadata'][changeset]['tools'] = []
         repository_data['tool_dependencies'] = tool_dependencies
         return repository_data
 

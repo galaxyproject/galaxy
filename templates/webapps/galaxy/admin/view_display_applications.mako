@@ -5,19 +5,19 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm" id="display-applications-grid">
-    <div class="toolFormTitle">There are currently ${len( display_applications )} <a class="icon-btn" href="${ h.url_for( controller='admin', action='reload_display_application' ) }" title="Reload all display applications" data-placement="bottom">
+<div class="card" id="display-applications-grid">
+    <div class="card-header">There are currently ${len( display_applications )} <a class="icon-btn" href="${ h.url_for( controller='admin', action='reload_display_application' ) }" title="Reload all display applications" data-placement="bottom">
                         <span class="fa fa-refresh"></span>
                     </a> display applications loaded.</div>
-    <div class="toolFormBody">
-        <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
+    <div class="card-body">
+        <table class="manage-table colored">
             <tr>
-                <th bgcolor="#D8D8D8">Reload</th>
-                <th bgcolor="#D8D8D8">Name</th>
-                <th bgcolor="#D8D8D8">ID</th>
-                <th bgcolor="#D8D8D8">Version</th>
-                <th bgcolor="#D8D8D8">Links</th>
-                <th bgcolor="#D8D8D8">Filename</th>
+                <th>Reload</th>
+                <th>Name</th>
+                <th>ID</th>
+                <th>Version</th>
+                <th>Links</th>
+                <th>Filename</th>
             </tr>
             <% ctr = 0 %>
             %for display_app in display_applications.values():

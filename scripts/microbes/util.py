@@ -7,7 +7,7 @@ assert sys.version_info[:2] >= (2, 4)
 
 
 # genbank_to_bed
-class Region:
+class Region(object):
     def __init__(self):
         self.qualifiers = {}
         self.start = None
@@ -37,7 +37,7 @@ class Region:
                     self.end = end
 
 
-class GenBankFeatureParser:
+class GenBankFeatureParser(object):
     """Parses Features from Single Locus GenBank file"""
     def __init__(self, fh, features_list=[]):
         self.fh = fh

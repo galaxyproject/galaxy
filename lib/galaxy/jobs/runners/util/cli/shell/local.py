@@ -24,7 +24,7 @@ class LocalShell(BaseShellExec):
     """
 
     >>> shell = LocalShell()
-    >>> def exec_python(script, **kwds): return shell.execute('python -c "%s"' % script, **kwds)
+    >>> def exec_python(script, **kwds): return shell.execute(['python', '-c', script], **kwds)
     >>> exec_result = exec_python("from __future__ import print_function; print('Hello World')")
     >>> exec_result.stderr == u''
     True
@@ -44,7 +44,7 @@ class LocalShell(BaseShellExec):
 
     def execute(self, cmd, persist=False, timeout=DEFAULT_TIMEOUT, timeout_check_interval=DEFAULT_TIMEOUT_CHECK_INTERVAL, **kwds):
         outf = TemporaryFile()
-        p = Popen(cmd, shell=True, stdin=None, stdout=outf, stderr=PIPE)
+        p = Popen(cmd, stdin=None, stdout=outf, stderr=PIPE)
         # poll until timeout
 
         for i in range(int(timeout / timeout_check_interval)):

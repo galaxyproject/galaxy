@@ -7,8 +7,11 @@ from traceback import format_exc
 import paste.httpexceptions
 from six import string_types
 
-from galaxy import util
 from galaxy.exceptions import error_codes, MessageException
+from galaxy.util import (
+    parse_non_hex_float,
+    unicodify
+)
 from galaxy.util.json import safe_dumps
 from galaxy.web.framework import url_for
 
@@ -83,7 +86,7 @@ def require_login(verb="perform this action", use_panels=False, webapp='galaxy')
 def require_admin(func):
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             msg = "You must be an administrator to access this feature."
             user = trans.get_user()
             if not trans.app.config.admin_users_list:
@@ -135,7 +138,7 @@ def expose_api(func, to_json=True, user_required=True):
 
         # Perform api_run_as processing, possibly changing identity
         if 'payload' in kwargs and isinstance(kwargs['payload'], dict) and 'run_as' in kwargs['payload']:
-            if not trans.user_can_do_run_as():
+            if not trans.user_can_do_run_as:
                 error_message = 'User does not have permissions to run jobs as another user'
                 return error
             try:
@@ -145,7 +148,7 @@ def expose_api(func, to_json=True, user_required=True):
                 return "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-                trans.api_inherit_admin = trans.user_is_admin()
+                trans.api_inherit_admin = trans.user_is_admin
                 trans.set_user(user)
             except Exception:
                 trans.response.status = 400
@@ -182,16 +185,15 @@ def __extract_payload_from_request(trans, func, kwargs):
                     # note: parse_non_hex_float only needed here for single string values where something like
                     # 40000000000000e5 will be parsed as a scientific notation float. This is as opposed to hex strings
                     # in larger JSON structures where quoting prevents this (further below)
-                    payload[k] = loads(v, parse_float=util.parse_non_hex_float)
+                    payload[k] = loads(v, parse_float=parse_non_hex_float)
                 except Exception:
                     # may not actually be json, just continue
                     pass
-        payload = util.recursively_stringify_dictionary_keys(payload)
     else:
         # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
-        payload = util.recursively_stringify_dictionary_keys(loads(trans.request.body))
+        payload = loads(unicodify(trans.request.body))
     return payload
 
 
@@ -261,18 +263,18 @@ def _future_expose_api(func, to_json=True, user_required=True, user_or_session_r
         # TODO: Refactor next block out into a helper procedure.
         # Perform api_run_as processing, possibly changing identity
         if 'payload' in kwargs and 'run_as' in kwargs['payload']:
-            if not trans.user_can_do_run_as():
+            if not trans.user_can_do_run_as:
                 error_code = error_codes.USER_CANNOT_RUN_AS
                 return __api_error_response(trans, err_code=error_code, status_code=403)
             try:
                 decoded_user_id = trans.security.decode_id(kwargs['payload']['run_as'])
-            except TypeError:
+            except (TypeError, ValueError):
                 error_message = "Malformed user id ( %s ) specified, unable to decode." % str(kwargs['payload']['run_as'])
                 error_code = error_codes.USER_INVALID_RUN_AS
                 return __api_error_response(trans, err_code=error_code, err_msg=error_message, status_code=400)
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(decoded_user_id)
-                trans.api_inherit_admin = trans.user_is_admin()
+                trans.api_inherit_admin = trans.user_is_admin
                 trans.set_user(user)
             except Exception:
                 error_code = error_codes.USER_INVALID_RUN_AS

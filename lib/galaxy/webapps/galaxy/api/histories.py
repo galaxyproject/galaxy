@@ -20,7 +20,8 @@ from galaxy import (
 from galaxy.managers import (
     citations,
     histories,
-    users
+    users,
+    workflows,
 )
 from galaxy.util import (
     restore_text,
@@ -49,6 +50,7 @@ class HistoriesController(BaseAPIController, ExportsHistoryMixin, ImportsHistory
         super(HistoriesController, self).__init__(app)
         self.citations_manager = citations.CitationsManager(app)
         self.user_manager = users.UserManager(app)
+        self.workflow_manager = workflows.WorkflowsManager(app)
         self.manager = histories.HistoryManager(app)
         self.serializer = histories.HistorySerializer(app)
         self.deserializer = histories.HistoryDeserializer(app)

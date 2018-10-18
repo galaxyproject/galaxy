@@ -26,7 +26,7 @@ $tag:tool|stdio://complexType[@name='Stdio']
 $tag:tool|stdio|exit_code://complexType[@name='ExitCode'] hide_attributes
 $tag:tool|stdio|regex://complexType[@name='Regex'] hide_attributes
 $tag:tool|version_command://complexType[@name='VersionCommand']
-$tag:tool|command://element[@name='tool']//element[@name='command'] hide_attributes
+$tag:tool|command://complexType[@name='Command']
 $tag:tool|environment_variables://complexType[@name='EnvironmentVariables']
 $tag:tool|environment_variables|environment_variable://complexType[@name='EnvironmentVariable']
 $tag:tool|configfiles://complexType[@name='ConfigFiles']

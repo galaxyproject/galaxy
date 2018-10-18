@@ -695,8 +695,7 @@ var ToolParameterTreeView = Backbone.View.extend({
 
         node.append("circle").attr("r", 9);
 
-        node
-            .append("text")
+        node.append("text")
             .attr("dx", d => (d.children ? -12 : 12))
             .attr("dy", 3)
             .attr("text-anchor", d => (d.children ? "end" : "start"))
@@ -804,8 +803,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
         regions.each(region => {
             tr.append($("<th>").text(region.toString()));
         });
-        tr
-            .children()
+        tr.children()
             .first()
             .attr("colspan", 2);
 
@@ -948,15 +946,13 @@ var SweepsterVisualizationView = Backbone.View.extend({
                 var connected_node_ids = _.pluck(param_tree.get_connected_nodes(settings_leaf), "id");
 
                 // TODO: can do faster with enter?
-                d3
-                    .select(self.tool_param_tree_view.$el[0])
+                d3.select(self.tool_param_tree_view.$el[0])
                     .selectAll("g.node")
                     .filter(d => _.find(connected_node_ids, id => id === d.id) !== undefined)
                     .style("fill", "#f00");
             },
             () => {
-                d3
-                    .select(self.tool_param_tree_view.$el[0])
+                d3.select(self.tool_param_tree_view.$el[0])
                     .selectAll("g.node")
                     .style("fill", "#000");
             }

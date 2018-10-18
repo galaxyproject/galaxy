@@ -1,6 +1,7 @@
 import $ from "jquery";
 import "bootstrap";
 import * as _ from "underscore";
+import decodeUriComponent from "decode-uri-component";
 import GalaxyApp from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
@@ -109,7 +110,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_visualizations: function(action_id) {
-            var activeTab = action_id == "list_published" ? "shared" : "visualization";
+            var activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
@@ -144,10 +145,15 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_workflows_published: function() {
+            var userFilter = QueryStringParsing.get("f-username");
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}workflow/list_published`,
-                    active_tab: "shared"
+                    active_tab: "shared",
+                    url_data:
+                        {
+                            'f-username': ( userFilter == null ) ? "" : userFilter
+                        }
                 })
             );
         },
@@ -357,7 +363,12 @@ window.app = function app(options, bootstrapped) {
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm: function(params) {
             //TODO: load tool form code async
-            params.id = decodeURIComponent(params.tool_id);
+            if (params.tool_id) {
+                params.id = decodeUriComponent(params.tool_id);
+            }
+            if (params.version) {
+                params.version = decodeUriComponent(params.version);
+            }
             this.page.display(new ToolForm.View(params));
         },
 

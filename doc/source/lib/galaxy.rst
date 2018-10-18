@@ -13,13 +13,13 @@ Subpackages
 
     galaxy.actions
     galaxy.auth
+    galaxy.authnz
     galaxy.containers
     galaxy.dataset_collections
     galaxy.datatypes
     galaxy.dependencies
     galaxy.eggs
     galaxy.exceptions
-    galaxy.external_services
     galaxy.forms
     galaxy.jobs
     galaxy.managers
@@ -27,7 +27,6 @@ Subpackages
     galaxy.objectstore
     galaxy.openid
     galaxy.quota
-    galaxy.sample_tracking
     galaxy.security
     galaxy.tools
     galaxy.tours

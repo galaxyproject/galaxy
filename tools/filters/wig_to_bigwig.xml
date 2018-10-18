@@ -11,7 +11,7 @@
   </stdio>
   <command>
       <![CDATA[
-      grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1
+      grep -v "^track" '$input1' | wigToBigWig stdin '$chromInfo' '$out_file1'
     #if $settings.settingsType == "full":
       -blockSize=${settings.blockSize} -itemsPerSlot=${settings.itemsPerSlot} ${settings.clip} ${settings.unc}
     #else:
@@ -57,9 +57,9 @@
       <output name="out_file1" file="2.bigwig"/>
     </test>
     <test>
-      <param name="input1" value="1.bedgraph" dbkey="hg19" ftype="bedgraph"/>
+      <param name="input1" value="1.bedgraph" dbkey="hg17" ftype="bedgraph"/>
       <param name="settingsType" value="preset" />
-      <output name="out_file1" file="3.bigwig"/>
+      <output name="out_file1" file="3.bigwig" compare="sim_size"/>
     </test>
   </tests>
   <help>

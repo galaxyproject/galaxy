@@ -3,7 +3,10 @@ SLURM job control via the DRMAA API.
 """
 import logging
 import os
+import re
+import shutil
 import subprocess
+import tempfile
 import time
 
 from galaxy import model
@@ -25,6 +28,14 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
+SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE = re.compile(r"""slurmstepd: error: task/cgroup: unable to add task\[pid=\d+\] to memory cg '\(null\)'$""")
+SLURM_UNABLE_TO_CREATE_CGROUP_MSG_RE = re.compile(r"""slurmstepd: error: xcgroup_instantiate: unable to create cgroup '[^']+' : No space left on device$""")
+SLURM_UNABLE_TO_INSTANCIATE_JOB_MSG_RE = re.compile(r"""slurmstepd: error: jobacct_gather/cgroup: unable to instanciate job \d+ memory cgroup$""")
+SLURM_TOP_WARNING_RES = (
+    SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE,
+    SLURM_UNABLE_TO_CREATE_CGROUP_MSG_RE,
+    SLURM_UNABLE_TO_INSTANCIATE_JOB_MSG_RE
+)
 
 # These messages are returned to the user
 OUT_OF_MEMORY_MSG = 'This job was terminated because it used more memory than it was allocated.'
@@ -149,6 +160,8 @@ class SlurmJobRunner(DRMAAJobRunner):
                     self.work_queue.put((self.fail_job, ajs))
                     return
             if drmaa_state == self.drmaa_job_states.DONE:
+                with open(ajs.error_file, 'r') as rfh:
+                    _remove_spurious_top_lines(rfh, ajs)
                 with open(ajs.error_file, 'r+') as f:
                     if os.path.getsize(ajs.error_file) > SLURM_MEMORY_LIMIT_SCAN_SIZE:
                         f.seek(-SLURM_MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
@@ -189,3 +202,32 @@ class SlurmJobRunner(DRMAAJobRunner):
             log.exception('Error reading end of %s:', efile_path)
 
         return False
+
+
+def _remove_spurious_top_lines(rfh, ajs, maxlines=3):
+    bad = []
+    putback = None
+    for i in range(maxlines):
+        line = rfh.readline()
+        log.trace('checking line: %s', line)
+        for pattern in SLURM_TOP_WARNING_RES:
+            if pattern.match(line):
+                bad.append(line)
+                # found a match, stop checking REs and check next line
+                break
+        else:
+            if bad:
+                # no match found on this line so line is now a good line, but previous bad lines are found, so it needs to be put back
+                putback = line
+            # no match on this line, stop looking
+            break
+        # check next line
+    if bad:
+        with tempfile.NamedTemporaryFile('w', delete=False) as wfh:
+            if putback is not None:
+                wfh.write(putback)
+            shutil.copyfileobj(rfh, wfh)
+            wf_name = wfh.name
+        shutil.move(wf_name, ajs.error_file)
+        for line in bad:
+            log.debug('(%s/%s) Job completed, removing SLURM spurious warning: "%s"', ajs.job_wrapper.get_id_tag(), ajs.job_id, line)

@@ -40,7 +40,7 @@ var DataOutputView = Backbone.View.extend({
         this.nodeView = options.nodeView;
 
         var output = this.output;
-        var label = output.name;
+        var label = output.label || output.name;
         var node = this.nodeView.node;
 
         var isInput = output.extensions.indexOf("input") >= 0 || output.extensions.indexOf("input_collection") >= 0;
@@ -111,9 +111,10 @@ var OutputCalloutView = Backbone.View.extend({
                             var outputName = view.output.name;
                             if (node.isWorkflowOutput(outputName)) {
                                 node.removeWorkflowOutput(outputName);
-                                view
-                                    .$("img")
-                                    .attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`);
+                                view.$("img").attr(
+                                    "src",
+                                    `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
+                                );
                             } else {
                                 node.addWorkflowOutput(outputName);
                                 view.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);

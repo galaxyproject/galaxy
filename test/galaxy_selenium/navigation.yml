@@ -18,11 +18,11 @@ _:  # global stuff
 
   messages:
     selectors:
-      all: '[class*="message"]'
-      error: '.errormessage'
+      all: '[class*="alert"]'
+      error: '.alert-danger'
       warning: '.alert-warning'
-      done: '.donemessage'
-      info: '.infomessage'
+      done: '.alert-success'
+      info: '.alert-info'
       donelarge: '.donemessagelarge'
       infolarge: '.infomessagelarge'
 
@@ -196,8 +196,9 @@ collection_builders:
 histories:
   sharing:
     selectors:
-      user_n_menu: '#user-${n}-popup'
+      unshare_user_button: '.unshare_user'
       share_with_a_user_button: '#share_with_a_user'
+      make_accessible_and_publish: '#make_accessible_and_publish'
     labels:
       unshare: 'Unshare'
 
@@ -215,12 +216,12 @@ registration:
 
 tool_form:
   selectors:
-    options: '#options .dropdown-toggle'
+    options: '#options [data-toggle="dropdown"]'
     execute: 'button#execute'
     citations: '.citations-formatted'
     reference: '.citations-formatted .formatted-reference'
     show_bibtex: 'button.citations-to-bibtex'
-    bibtex_area: '.citations-bibtex textarea'
+    bibtex_area: 'code.citations-bibtex'
     parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
 
   labels:
@@ -236,6 +237,8 @@ workflow_run:
 
   selectors: 
     input_div: "[step-label='${label}'] .select2-container"
+    # TODO: put step labels in the DOM ideally
+    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap + span"
 
 workflow_editor:
 
@@ -292,12 +295,11 @@ admin:
       quotas: '#admin-link-quotas'
       groups: '#admin-link-groups'
       roles: '#admin-link-roles'
-      api_keys: '#admin-link-api-keys'
       impersonate: '#admin-link-impersonate'
 
   selectors:
     # TODO: place betters IDS or something on this in these grids in the DOM
-    datatypes_grid: '#datatypes-grid'
+    datatypes_grid: '#data-types-grid'
     data_tables_grid: '#data-tables-grid'
     display_applications_grid: '#display-applications-grid'
     update_jobs: 'form[name="jobs"]'

@@ -9,7 +9,7 @@ import subprocess
 from functools import partial
 
 try:
-    import docker
+    import docker.types
 except ImportError:
     from galaxy.util.bunch import Bunch
     docker = Bunch(types=Bunch(

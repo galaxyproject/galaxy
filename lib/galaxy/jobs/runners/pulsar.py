@@ -1,6 +1,6 @@
 """Job runner used to execute Galaxy jobs through Pulsar.
 
-More infromation on Pulsar can be found at http://pulsar.readthedocs.org/.
+More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
 from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 
@@ -131,7 +131,7 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
-    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Producer.publish
+    # https://kombu.readthedocs.io/en/latest/reference/kombu.html#kombu.Producer.publish
     amqp_publish_retry=dict(
         map=specs.to_bool,
         default=False,
@@ -141,7 +141,7 @@ PULSAR_PARAM_SPECS = dict(
         valid=lambda x: 0 <= x and x <= 9,
         default=0,
     ),
-    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Exchange.delivery_mode
+    # https://kombu.readthedocs.io/en/latest/reference/kombu.html#kombu.Exchange.delivery_mode
     amqp_publish_delivery_mode=dict(
         map=str,
         valid=specs.is_in("transient", "persistent"),
@@ -378,7 +378,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 remote_command_params=remote_command_params,
             )
         except UnsupportedPulsarException as e:
-            job_wrapper.fail(e.message, exception=False)
+            job_wrapper.fail(str(e), exception=False)
             log.exception("failure running job %d", job_wrapper.job_id)
         except Exception:
             job_wrapper.fail("failure preparing job", exception=True)

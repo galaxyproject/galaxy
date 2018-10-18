@@ -50,7 +50,7 @@ class LibraryManager(object):
         """
         Create a new library.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.ItemAccessibilityException('Only administrators can create libraries.')
         else:
             library = trans.app.model.Library(name=name, description=description, synopsis=synopsis)
@@ -65,7 +65,7 @@ class LibraryManager(object):
         Update the given library
         """
         changed = False
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.ItemAccessibilityException('Only administrators can update libraries.')
         if library.deleted:
             raise exceptions.RequestParameterInvalidException('You cannot modify a deleted library. Undelete it first.')
@@ -90,7 +90,7 @@ class LibraryManager(object):
         """
         Mark given library deleted/undeleted based on the flag.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.ItemAccessibilityException('Only administrators can delete and undelete libraries.')
         if undelete:
             library.deleted = False
@@ -115,7 +115,7 @@ class LibraryManager(object):
                   libraries later on.
         :rtype:   dict
         """
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         query = trans.sa_session.query(trans.app.model.Library)
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = {lp.library_id for lp in (
@@ -174,7 +174,7 @@ class LibraryManager(object):
         :rtype:     Library
         """
         # all libraries are accessible to an admin
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return library
         if check_accessible:
             library = self.check_accessible(trans, library)
@@ -213,7 +213,7 @@ class LibraryManager(object):
         library_dict = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
         library_dict['public'] = False if (restricted_library_ids and library.id in restricted_library_ids) else True
         library_dict['create_time_pretty'] = pretty_print_time_interval(library.create_time, precise=True)
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             if prefetched_ids:
                 library_dict['can_user_add'] = True if (allowed_library_add_ids and library.id in allowed_library_add_ids) else False
                 library_dict['can_user_modify'] = True if (allowed_library_modify_ids and library.id in allowed_library_modify_ids) else False

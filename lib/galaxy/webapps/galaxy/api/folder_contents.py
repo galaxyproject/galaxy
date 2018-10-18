@@ -53,7 +53,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         :raises: MalformedId, InconsistentDatabase, ObjectNotFound,
              InternalServerError
         """
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         deleted = kwd.get('include_deleted', 'missing')
         current_user_roles = trans.get_current_user_roles()
         try:
@@ -96,8 +96,9 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 #  Is the dataset public or private?
                 #  When both are False the dataset is 'restricted'
                 #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
-                is_unrestricted = trans.app.security_agent.dataset_is_public(content_item.library_dataset_dataset_association.dataset)
-                if trans.user and trans.app.security_agent.dataset_is_private_to_user(trans, content_item):
+                dataset = content_item.library_dataset_dataset_association.dataset
+                is_unrestricted = trans.app.security_agent.dataset_is_public(dataset)
+                if trans.user and trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                     is_private = True
                 else:
                     is_private = False
@@ -189,7 +190,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         :type:      list
         """
         current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         content_items = []
         for subfolder in folder.folders:
             if subfolder.deleted:

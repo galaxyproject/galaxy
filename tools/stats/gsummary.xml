@@ -1,10 +1,10 @@
-<tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.1">
+<tool id="Summary_Statistics1" name="Summary Statistics" version="1.1.2">
   <description>for any numerical column</description>
   <edam_topics>
     <edam_topic>topic_2269</edam_topic>
   </edam_topics>
   <requirements>
-    <requirement type="package" version="2.7.8">rpy2</requirement>
+    <requirement type="package" version="2.9.4">rpy2</requirement>
   </requirements>
   <stdio>
     <exit_code range="1" level="fatal" />

@@ -3,12 +3,12 @@ Contains the main interface in the Universe class
 """
 from __future__ import absolute_import
 
-import cgi
 import logging
 import os
 
 import requests
-from paste.httpexceptions import (
+from webob.compat import cgi_FieldStorage
+from webob.exc import (
     HTTPBadGateway,
     HTTPNotFound
 )
@@ -251,20 +251,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         else:
             return "No data with id=%d" % id
 
-    @web.expose
-    def peek(self, trans, id=None):
-        """Returns a 'peek' at the data.
-        """
-        # TODO: unused?
-        # TODO: unencoded id
-        data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        if data:
-            yield "<html><body><pre>"
-            yield data.peek
-            yield "</pre></body></html>"
-        else:
-            yield "No data with id=%d" % id
-
     # ---- History management -----------------------------------------------
     @web.expose
     def history_delete(self, trans, id):
@@ -436,7 +422,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             rval += "%s: %s <br/>" % (k, trans.request.headers[k])
         for k in kwd:
             rval += "%s: %s <br/>" % (k, kwd[k])
-            if isinstance(kwd[k], cgi.FieldStorage):
+            if isinstance(kwd[k], cgi_FieldStorage):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
 

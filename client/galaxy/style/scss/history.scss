@@ -1,52 +1,35 @@
-// ---------------------------------------------------------------------------- all histories
+// all histories
 .history-panel {
     @extend .flex-vertical-container;
-
     > .controls {
-        margin: 8px 8px 1px;
-        padding: 0px;
+        @extend .px-3;
         flex: 0 0 auto;
-
         .title {
-            margin-bottom: 4px;
+            .name {
+                margin-left: -1px;
+            }
             input {
-                width: 100%;
-                // keep the text in position
-                margin: -3px 0px -3px -3px;
                 font-weight: bold;
             }
         }
         .subtitle:not(:empty) {
-            min-height: 15px;
-            margin: -4px 0px 8px;
             span + span:before {
                 content: ", ";
             }
         }
         .history-size {
             float: left;
-            margin: 4px 0 0;
+            @extend .mt-1;
         }
         .actions {
-            margin-bottom: 8px;
             &:empty {
                 height: $icon-btn-size;
             }
         }
-
-        // TODO: remove
         .messages {
             clear: both;
-            margin-bottom: 0px;
-            & > * {
-                cursor: pointer;
-                &:last-child {
-                    margin-bottom: 8px;
-                }
-            }
             .quota-message {
                 display: none;
-                margin: 8px 0px 5px 0px;
             }
         }
 
@@ -71,7 +54,7 @@
             .annotation {
                 background: white;
                 border-radius: 3px;
-                border: 1px solid fade-out($layout-border-color, .5);
+                border: 1px solid fade-out($layout-border-color, 0.5);
                 padding: 4px;
                 white-space: pre-wrap;
                 overflow: auto;
@@ -190,7 +173,7 @@
     }
 
     > .empty-message {
-        margin: 0px 10px 0px 10px;
+        @extend .m-3;
     }
 
     .loading-indicator,
@@ -321,7 +304,7 @@
 
         // show clickable for expansion
         cursor: pointer;
-        border-bottom: 1px solid rgba(grey, .5);
+        border-bottom: 1px solid rgba(grey, 0.5);
         & > * {
             display: table-cell;
             vertical-align: top;
@@ -374,25 +357,6 @@
 
 // ---------------------------------------------------------------------------- analyze data page - right panel
 #right.history-right-panel {
-    background-color: $panel-bg-color;
-    .unified-panel-header {
-        .unified-panel-header-inner {
-            .panel-header-buttons {
-                .panel-header-button {
-                    display: inline-block;
-                    height: $icon-btn-size;
-                    width: $icon-btn-size;
-                    text-align: center;
-                    line-height: $icon-btn-size - 3;
-                    font-size: 1.2em;
-                    padding: 0px;
-                    &:not(:last-child) {
-                        margin-right: 2px;
-                    }
-                }
-            }
-        }
-    }
     .unified-panel-body {
         display: -webkit-flex;
         .middle {

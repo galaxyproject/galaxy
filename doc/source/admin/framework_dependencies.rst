@@ -166,7 +166,7 @@ apply. You should create a virtualenv on the remote resource, install Galaxy's d
 ``<env>`` tag pointing to the virtualenv's ``activate`` as in the `Galaxy job handlers`_ section. Instructions on how to
 create a virtualenv can be found under the `Managing dependencies manually`_ section.
 
-.. _Pulsar: http://pulsar.readthedocs.org/
+.. _Pulsar: https://pulsar.readthedocs.io/
 
 Conda
 ^^^^^
@@ -204,8 +204,8 @@ not run the script, the dependencies will simply be installed via pip.
 
 .. code-block:: console
 
-    $ conda config --add channels conda-forge
     $ conda config --add channels bioconda
+    $ conda config --add channels conda-forge
     $ conda create --name galaxy --file <(lib/galaxy/dependencies/conda-file.sh)
     Filtering out requirements not available in conda... done
     Solving environment: done
@@ -315,8 +315,8 @@ If this is the case, uninstall bx-python from Conda and reinstall it from the Ga
     Installing collected packages: bx-python
     Successfully installed bx-python-0.7.3
 
-.. _Conda: http://conda.pydata.org/
-.. _Conda environments: http://conda.pydata.org/docs/using/envs.html
+.. _Conda: https://conda.io/
+.. _Conda environments: https://conda.io/docs/user-guide/tasks/manage-environments.html
 .. _conda-forge: https://conda-forge.org/
 .. _Bioconda: https://bioconda.github.io/
 
@@ -371,8 +371,7 @@ dependencies directly from PyPI_.
 Adding additional Galaxy dependencies
 -------------------------------------
 
-New packages can be added to Galaxy, or the versions of existing packages can be updated, using `pipenv`_ and `Galaxy
-Starforge`_, Galaxy's Docker-based build system.
+New packages can be added to Galaxy, or the versions of existing packages can be updated, using `pipenv`_ and `Starforge`_, Galaxy's Docker-based build system.
 
 .. note::
 
@@ -403,13 +402,13 @@ the following process to add new packages and have their wheels built:
 
 You may attempt to skip directly to step 4 and let the Starforge wheel PR builder build your wheels for you. This is
 especially useful if you are simply updating an existing wheel's version. However, if you are adding a new C extension
-wheel that is not simple to build, you may need to go through many iterations of updating the PR and having a `Galaxy
-Committers group`_ member triggering builds before wheels are successfully built. You can avoid this cycle by performing
+wheel that is not simple to build, you may need to go through many iterations of updating the PR and having a
+:doc:`Galaxy Committers group </project/organization>` member triggering builds
+before wheels are successfully built. You can avoid this cycle by performing
 steps 1-3 locally.
 
-.. _pipenv: http://pipenv.readthedocs.io/
-.. _Starforge:
-.. _Galaxy Starforge: https://github.com/galaxyproject/starforge/
+.. _pipenv: https://pipenv.readthedocs.io/
+.. _Starforge: https://github.com/galaxyproject/starforge/
 .. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
 .. _wheels.yml: https://github.com/galaxyproject/starforge/blob/master/wheels/build/wheels.yml
 .. _Jenkins: https://jenkins.galaxyproject.org/

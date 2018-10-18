@@ -9,7 +9,7 @@ How GIEs Work
 -------------
 
 A GIE is primarily composed of a Docker container, and the Galaxy visualization
-component. Galaxy vizualisation plugins are rendered using Mako templates and
+component. Galaxy visualization plugins are rendered using Mako templates and
 Mako templates in turn can run Python code. GIEs build upon visualization plugins,
 adding features to allow for container management and proxying. This Python code
 in the Mako templates is used to launch the Docker container within which a GIE
@@ -41,6 +41,7 @@ Currently the Galaxy proxy is a NodeJS+Sqlite3 proxy.
 - Node has recently upgraded, and our proxy is pinned to an old version of
   sqlite3. As such you'll currently need to have an older version of Node
   available (0.10.X - 0.11.X vintage).
+- One can use `NVM <https://github.com/creationix/nvm>`__ to install and manage multiple versions of Node.
 - We're working on solutions in this space to provide a better deployment
   mechanism here and fewer dependencies.
 - Please note that if you have NodeJS installed under Ubuntu, it often
@@ -190,7 +191,7 @@ proxying to GIE and other visualization plugin static content.
 
 .. code-block:: nginx
 
-    location ~ ^/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
+    location ~ ^/static/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
         alias /path/to/galaxy-dist/config/plugins/$plug_type/$vis_name/static/$static_file;
     }
 

@@ -26,10 +26,10 @@ Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` 
 * **Webless Galaxy application** - The Galaxy application run as a standalone Python application with no web/WSGI server
 * **[Paste][paste]** - Application server written in pure Python that implements the HTTP and Python WSGI protocols
 
-[uwsgi]: http://uwsgi-docs.readthedocs.io/
-[uwsgi-mules]: http://uwsgi-docs.readthedocs.io/en/latest/Mules.html
-[uwsgi-zerg-mode]: http://uwsgi-docs.readthedocs.io/en/latest/Zerg.html
-[paste]: http://paste.readthedocs.io/
+[uwsgi]: https://uwsgi-docs.readthedocs.io/
+[uwsgi-mules]: https://uwsgi-docs.readthedocs.io/en/latest/Mules.html
+[uwsgi-zerg-mode]: https://uwsgi-docs.readthedocs.io/en/latest/Zerg.html
+[paste]: https://paste.readthedocs.io/
 
 ## Application Servers
 

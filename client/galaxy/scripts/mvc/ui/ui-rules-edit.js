@@ -19,7 +19,7 @@ var View = Backbone.View.extend({
         const view = this;
 
         // create insert new list element button
-        this.browse_button = new Ui.ButtonIcon({
+        this.browse_button = new Ui.Button({
             title: _l("Edit"),
             icon: "fa fa-edit",
             tooltip: _l("Edit Rules"),
@@ -96,9 +96,9 @@ var View = Backbone.View.extend({
     /** Main Template */
     _template: function(options) {
         return `
-            <div class="ui-rules-edit">
+            <div class="ui-rules-edit clearfix">
                 <span class="ui-rules-preview" />
-                <span class="ui-rules-edit-button" />
+                <span class="ui-rules-edit-button float-left" />
             </div>
         `;
     },
@@ -115,7 +115,7 @@ var View = Backbone.View.extend({
 
     // update
     update: function(input_def) {
-        self.target = input_def.target;
+        this.target = input_def.target;
     },
 
     // get value

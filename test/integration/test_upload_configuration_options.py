@@ -669,13 +669,13 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         full_dir_path = os.path.join(self.server_dir(), dir_to_import)
         os.makedirs(full_dir_path)
         file_content = "hello world\n"
-        with tempfile.NamedTemporaryFile(dir=full_dir_path, delete=False) as fh:
+        with tempfile.NamedTemporaryFile(mode='w', dir=full_dir_path, delete=False) as fh:
             fh.write(file_content)
             file_to_import = fh.name
 
         library_dataset = self.library_populator.new_library_dataset("serverdirupload", upload_option="upload_directory", server_dir=dir_to_import)
         # Check the file is still there and was not modified
-        with open(file_to_import) as fh:
+        with open(file_to_import, 'r') as fh:
             read_content = fh.read()
         assert read_content == file_content
 

@@ -147,25 +147,28 @@ class JobSearch(object):
                     conditions.append(and_(
                         model.Job.id == a.job_id,
                         a.name == k,
-                        a.dataset_id == b.id,
+                        a.dataset_id == b.id,  # b is the HDA use for the job
                         c.dataset_id == b.dataset_id,
                         c.id == v,  # c is the requested job input HDA
-                        # We can compare input dataset names and metadata for a job
-                        # if we know that the input dataset hasn't changed since the job was run,
-                        # or if the job recorded a dataset_version and name and metadata of the current
-                        # job request matches those that were recorded for the job in question (introduced in release 18.01)
-                        or_(and_(
-                            b.update_time < model.Job.create_time,
-                            b.name == c.name,
-                            b.extension == c.extension,
-                            b.metadata == c.metadata,
-                        ), and_(
-                            b.id == e.history_dataset_association_id,
-                            a.dataset_version == e.version,
-                            e.name == c.name,
-                            e.extension == c.extension,
-                            e._metadata == c._metadata,
-                        )),
+                        # We need to make sure that the job we are looking for has been run with identical inputs.
+                        # Here we deal with 3 requirements:
+                        #  - the jobs' input dataset (=b) version is 0, meaning the job's input dataset is not yet ready
+                        #  - b's update_time is older than the job create time, meaning no changes occured
+                        #  - the job has a dataset_version recorded, and that versions' metadata matches c's metadata.
+                        or_(
+                            and_(or_(a.dataset_version.in_([0, b.version]),
+                                     b.update_time < model.Job.create_time),
+                                 b.name == c.name,
+                                 b.extension == c.extension,
+                                 b.metadata == c.metadata,
+                                 ),
+                            and_(b.id == e.history_dataset_association_id,
+                                 a.dataset_version == e.version,
+                                 e.name == c.name,
+                                 e.extension == c.extension,
+                                 e._metadata == c._metadata,
+                                 ),
+                        ),
                         or_(b.deleted == false(), c.deleted == false())
                     ))
                     if identifier:
@@ -203,7 +206,7 @@ class JobSearch(object):
                     return []
 
         for k, v in wildcard_param_dump.items():
-            wildcard_value = json.dumps(v).replace('"id": "__id_wildcard__"', '"id": %')
+            wildcard_value = json.dumps(v, sort_keys=True).replace('"id": "__id_wildcard__"', '"id": %')
             a = aliased(model.JobParameter)
             conditions.append(and_(
                 model.Job.id == a.job_id,
@@ -239,7 +242,7 @@ class JobSearch(object):
                     a = aliased(model.JobParameter)
                     job_parameter_conditions.append(and_(
                         a.name == k,
-                        a.value == json.dumps(v)
+                        a.value == json.dumps(v, sort_keys=True)
                     ))
             else:
                 job_parameter_conditions = [model.Job.id == job]

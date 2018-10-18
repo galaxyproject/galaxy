@@ -1,10 +1,15 @@
+import * as Toastr from "libs/toastr";
+
 function Connector(handle1, handle2) {
     this.canvas = null;
     this.dragging = false;
     this.inner_color = "#FFFFFF";
     this.outer_color = "#D8B365";
     if (handle1 && handle2) {
-        this.connect(handle1, handle2);
+        this.connect(
+            handle1,
+            handle2
+        );
     }
 }
 $.extend(Connector.prototype, {
@@ -27,8 +32,11 @@ $.extend(Connector.prototype, {
         }
         $(this.canvas).remove();
     },
-    destroyIfInvalid: function() {
+    destroyIfInvalid: function(warn) {
         if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1)) {
+            if (warn) {
+                Toastr.warning("Destroying a connection because collection type has changed.");
+            }
             this.destroy();
         }
     },
@@ -39,6 +47,8 @@ $.extend(Connector.prototype, {
         const endRibbon = handle2 && handle2.isMappedOver();
         const canvasClass = `${startRibbon ? "start-ribbon" : ""} ${endRibbon ? "end-ribbon" : ""}`;
         var canvas_container = $("#canvas-container");
+        // FIXME: global
+        var canvasZoom = window.workflow_globals.canvas_manager.canvasZoom;
         if (!this.canvas) {
             this.canvas = document.createElement("canvas");
             canvas_container.append($(this.canvas));
@@ -54,8 +64,8 @@ $.extend(Connector.prototype, {
             "handle2-id",
             handle2 && handle2.element.getAttribute ? handle2.element.getAttribute("id") : ""
         );
-        var relativeLeft = e => $(e).offset().left - canvas_container.offset().left;
-        var relativeTop = e => $(e).offset().top - canvas_container.offset().top;
+        var relativeLeft = e => ($(e).offset().left - canvas_container.offset().left) / canvasZoom;
+        var relativeTop = e => ($(e).offset().top - canvas_container.offset().top) / canvasZoom;
         if (!handle1 || !handle2) {
             return;
         }

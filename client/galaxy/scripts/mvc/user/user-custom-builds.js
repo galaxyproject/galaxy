@@ -45,25 +45,25 @@ var View = Backbone.View.extend({
                         .append(
                             $("<h4/>")
                                 .text("System Installed Builds")
-                                .addClass("ui-margin-top")
+                                .addClass("mt-1")
                         )
                         .append(this.installed_builds.$el))
                 )
                 .append(
                     $("<h4/>")
                         .text("Add a Custom Build")
-                        .addClass("ui-margin-top")
+                        .addClass("mt-4")
                 )
                 .append(
                     $("<span/>")
-                        .addClass("ui-column")
+                        .addClass("row")
                         .append(
                             $("<div/>")
-                                .addClass("ui-column-left")
+                                .addClass("col")
                                 .append(this.message.$el)
-                                .append((this.$form = $("<div/>").addClass("ui-margin-top")))
+                                .append((this.$form = $("<div/>").addClass("mt-1")))
                         )
-                        .append((this.$help = $("<div/>").addClass("ui-column-right")))
+                        .append((this.$help = $("<div/>").addClass("col m-2")))
                 )
         );
         this.listenTo(this.collection, "add remove reset", () => {
@@ -90,7 +90,7 @@ var View = Backbone.View.extend({
             self.table.add(model.id);
             self.table.add(model.get("count") !== undefined ? model.get("count") : "Processing...");
             self.table.add(
-                new Ui.ButtonIcon({
+                new Ui.Button({
                     icon: "fa-trash-o",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Delete custom build."),
@@ -186,7 +186,7 @@ var View = Backbone.View.extend({
                     icon: "fa-save",
                     tooltip: _l("Create new Build"),
                     title: _l("Save"),
-                    cls: "btn btn-primary ui-clear-float",
+                    cls: "btn btn-primary",
                     onclick: function() {
                         var data = form.data.create();
                         if (!data.id || !data.name) {

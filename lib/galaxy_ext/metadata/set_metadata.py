@@ -26,7 +26,7 @@ from galaxy.model.custom_types import total_size
 from galaxy.util import stringify_dictionary_keys
 
 # ensure supported version
-assert sys.version_info[:2] >= (2, 6) and sys.version_info[:2] <= (2, 7), 'Python version must be 2.6 or 2.7, this is: %s' % sys.version
+assert sys.version_info[:2] >= (2, 7), 'Python version must be at least 2.7, this is: %s' % sys.version
 
 logging.basicConfig()
 log = logging.getLogger(__name__)
@@ -126,7 +126,7 @@ def set_metadata():
             override_metadata = None
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
-            dataset = cPickle.load(open(filename_in))  # load DatasetInstance
+            dataset = cPickle.load(open(filename_in, 'rb'))  # load DatasetInstance
             dataset.dataset.external_filename = dataset_filename_override
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
             dataset.dataset.external_extra_files_path = files_path
@@ -147,9 +147,9 @@ def set_metadata():
                         log.info("Key %s too large for metadata, discarding" % k)
                         dataset.metadata.remove_key(k)
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
-            json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wb+'))  # setting metadata has succeeded
+            json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception as e:
-            json.dump((False, str(e)), open(filename_results_code, 'wb+'))  # setting metadata has failed somehow
+            json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
     for i, (filename, file_dict) in enumerate(new_job_metadata_dict.items(), start=1):
         new_dataset_filename = os.path.join(tool_job_working_directory, "working", file_dict['filename'])
@@ -162,7 +162,7 @@ def set_metadata():
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry)
         file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
     if existing_job_metadata_dict or new_job_metadata_dict:
-        with open(job_metadata, 'wb') as job_metadata_fh:
+        with open(job_metadata, 'wt') as job_metadata_fh:
             for value in list(existing_job_metadata_dict.values()) + list(new_job_metadata_dict.values()):
                 job_metadata_fh.write("%s\n" % (json.dumps(value)))
 

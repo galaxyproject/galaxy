@@ -33,7 +33,7 @@ class StreamBall(object):
     def stream(self, environ, start_response):
         response_write = start_response(self.wsgi_status, self.wsgi_headeritems)
 
-        class tarfileobj:
+        class tarfileobj(object):
             def write(self, *args, **kwargs):
                 response_write(*args, **kwargs)
         tf = tarfile.open(mode=self.mode, fileobj=tarfileobj())

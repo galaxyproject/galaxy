@@ -97,6 +97,13 @@ class UserListGrid(grids.Grid):
             else:
                 return 'N'
 
+    class APIKeyColumn(grids.GridColumn):
+        def get_value(self, trans, grid, user):
+            if user.api_keys:
+                return user.api_keys[0].key
+            else:
+                return ""
+
     # Grid definition
     title = "Users"
     title_id = "users-grid"
@@ -122,6 +129,7 @@ class UserListGrid(grids.Grid):
         StatusColumn("Status", attach_popup=False),
         TimeCreatedColumn("Created", attach_popup=False),
         ActivatedColumn("Activated", attach_popup=False),
+        APIKeyColumn("API Key", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced")
     ]
@@ -149,7 +157,11 @@ class UserListGrid(grids.Grid):
                             target="top"),
         grids.GridOperation("Recalculate Disk Usage",
                             condition=(lambda item: not item.deleted),
-                            allow_multiple=False)
+                            allow_multiple=False),
+        grids.GridOperation("Generate New API Key",
+                            allow_multiple=False,
+                            async_compatible=True)
+
     ]
     standard_filters = [
         grids.GridColumnFilter("Active", args=dict(deleted=False)),
@@ -517,6 +529,11 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True)
     undelete_operation = grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
     purge_operation = grids.GridOperation("Purge", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
+    impersonate_operation = grids.GridOperation(
+        "Impersonate",
+        url_args=dict(controller="admin", action="impersonate"),
+        allow_multiple=False
+    )
 
     @web.expose
     @web.require_admin
@@ -559,6 +576,20 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.json
     @web.require_admin
+    def data_types_list(self, trans, **kwd):
+        datatypes = []
+        keys = set()
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        for dtype in sorted(trans.app.datatypes_registry.datatype_elems,
+                           key=lambda dtype: dtype.get('extension')):
+            datatypes.append(dtype.attrib)
+            keys |= set(dtype.attrib)
+        return {'keys': list(keys), 'data': datatypes, 'message': message, 'status': status}
+
+    @web.expose
+    @web.json
+    @web.require_admin
     def users_list(self, trans, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', '')
@@ -576,6 +607,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._purge_user(trans, ids)
             elif operation == 'recalculate disk usage':
                 message, status = self._recalculate_user(trans, id)
+            elif operation == 'generate new api key':
+                message, status = self._new_user_apikey(trans, id)
         if trans.app.config.allow_user_deletion:
             if self.delete_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.delete_operation)
@@ -583,6 +616,9 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 self.user_list_grid.operations.append(self.undelete_operation)
             if self.purge_operation not in self.user_list_grid.operations:
                 self.user_list_grid.operations.append(self.purge_operation)
+        if trans.app.config.allow_user_impersonation:
+            if self.impersonate_operation not in self.user_list_grid.operations:
+                self.user_list_grid.operations.append(self.impersonate_operation)
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
@@ -788,25 +824,23 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def impersonate(self, trans, email=None, **kwd):
+    def impersonate(self, trans, **kwd):
         if not trans.app.config.allow_user_impersonation:
             return trans.show_error_message("User impersonation is not enabled in this instance of Galaxy.")
-        message = ''
-        status = 'done'
-        emails = None
-        if email is not None:
-            user = trans.sa_session.query(trans.app.model.User).filter_by(email=email).first()
-            if user:
-                trans.handle_user_logout()
-                trans.handle_user_login(user)
-                message = 'You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (email, url_for(controller='root'))
-                emails = []
-            else:
-                message = 'Invalid user selected'
-                status = 'error'
-        if emails is None:
-            emails = [u.email for u in trans.sa_session.query(trans.app.model.User).enable_eagerloads(False).all()]
-        return trans.fill_template('admin/impersonate.mako', emails=emails, message=message, status=status)
+        user = None
+        user_id = kwd.get('id', None)
+        if user_id is not None:
+            try:
+                user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+                if user:
+                    trans.handle_user_logout()
+                    trans.handle_user_login(user)
+                    return trans.show_message('You are now logged in as %s, <a target="_top" href="%s">return to the home page</a>' % (user.email, url_for(controller='root')), use_panels=True)
+            except Exception:
+                log.exception("Error fetching user for impersonation")
+        return trans.response.send_redirect(web.url_for(controller='admin',
+                                                        action='users',
+                                                        message="Invalid user selected", status="error"))
 
     def check_for_tool_dependencies(self, trans, migration_stage):
         # Get the 000x_tools.xml file associated with migration_stage.
@@ -873,13 +907,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.require_admin
     def tool_errors(self, trans, **kwd):
         return trans.fill_template('admin/tool_errors.mako', tool_errors=global_tool_errors.error_stack)
-
-    @web.expose
-    @web.require_admin
-    def view_datatypes_registry(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        return trans.fill_template('admin/view_datatypes_registry.mako', message=message, status=status)
 
     @web.expose
     @web.require_admin
@@ -1490,7 +1517,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         # Purging a deleted User deletes all of the following:
         # - History where user_id = User.id
         #    - HistoryDatasetAssociation where history_id = History.id
-        #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
         # - UserGroupAssociation where user_id == User.id
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
@@ -1506,11 +1532,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 trans.sa_session.refresh(h)
                 for hda in h.active_datasets:
                     # Delete HistoryDatasetAssociation
-                    d = trans.sa_session.query(trans.app.model.Dataset).get(hda.dataset_id)
-                    # Delete Dataset
-                    if not d.deleted:
-                        d.deleted = True
-                        trans.sa_session.add(d)
                     hda.deleted = True
                     trans.sa_session.add(hda)
                 h.deleted = True
@@ -1544,6 +1565,18 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         else:
             message = 'Usage has changed by %s to %s.' % (nice_size(new - current), nice_size(new))
         return (message, 'done')
+
+    def _new_user_apikey(self, trans, user_id):
+        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
+        if not user:
+            return ('User not found for id (%s)' % sanitize_text(str(user_id)), 'error')
+        new_key = trans.app.model.APIKeys(
+            user_id=trans.security.decode_id(user_id),
+            key=trans.app.security.get_new_guid()
+        )
+        trans.sa_session.add(new_key)
+        trans.sa_session.flush()
+        return ("New key '%s' generated for requested user '%s'." % (new_key.key, user.email), "done")
 
     @web.expose_api
     @web.require_admin

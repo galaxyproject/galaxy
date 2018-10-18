@@ -1,10 +1,25 @@
 
+import copy
 import importlib
 import logging
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
-from .psa_authnz import PSAAuthnz
+import requests
+from cloudauthz import CloudAuthz
+from cloudauthz.exceptions import (
+    CloudAuthzBaseException
+)
+
+from galaxy import exceptions
+from galaxy import model
+from .psa_authnz import (
+    BACKENDS_NAME,
+    on_the_fly_config,
+    PSAAuthnz,
+    Storage,
+    Strategy
+)
 
 log = logging.getLogger(__name__)
 
@@ -89,8 +104,15 @@ class AuthnzManager(object):
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
 
+    def _unify_provider_name(self, provider):
+        if provider in self.oidc_backends_config:
+            return provider.lower()
+        for k, v in BACKENDS_NAME.iteritems():
+            if v == provider:
+                return k.lower()
+
     def _get_authnz_backend(self, provider):
-        provider = provider.lower()
+        provider = self._unify_provider_name(provider)
         if provider in self.oidc_backends_config:
             try:
                 return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
@@ -101,6 +123,68 @@ class AuthnzManager(object):
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider'.format(provider)
             log.debug(msg)
             return False, msg, None
+
+    def _extend_cloudauthz_config(self, cloudauthz, request, sa_session, user_id):
+        config = copy.deepcopy(cloudauthz.config)
+        if cloudauthz.provider == "aws":
+            success, message, backend = self._get_authnz_backend(cloudauthz.authn.provider)
+            strategy = Strategy(request, None, Storage, backend.config)
+            on_the_fly_config(sa_session)
+            try:
+                config['id_token'] = cloudauthz.authn.get_id_token(strategy)
+            except requests.exceptions.HTTPError as e:
+                msg = "Sign-out from Galaxy and remove its access from `{}`, then log back in using `{}` " \
+                      "account.".format(self._unify_provider_name(cloudauthz.authn.provider), cloudauthz.authn.uid)
+                log.debug("Failed to get/refresh ID token for user with ID `{}` for assuming authz_id `{}`. "
+                          "User may not have a refresh token. If the problem persists, set the `prompt` key to "
+                          "`consent` in `oidc_backends_config.xml`, then restart Galaxy and ask user to: {}"
+                          "Error Message: `{}`".format(user_id, cloudauthz.id, msg, e.response.text))
+                raise exceptions.AuthenticationFailed(
+                    err_msg="An error occurred getting your ID token. {}. If the problem persists, please "
+                            "contact Galaxy admin.".format(msg))
+        return config
+
+    @staticmethod
+    def can_user_assume_authn(trans, authn_id):
+        qres = trans.sa_session.query(model.UserAuthnzToken).get(authn_id)
+        if qres is None:
+            msg = "Authentication record with the given `authn_id` (`{}`) not found.".format(
+                trans.security.encode_id(authn_id))
+            log.debug(msg)
+            raise exceptions.ObjectNotFound(msg)
+        if qres.user_id != trans.user.id:
+            msg = "The request authentication with ID `{}` is not accessible to user with ID " \
+                  "`{}`.".format(trans.security.encode_id(authn_id), trans.security.encode_id(trans.user.id))
+            log.warn(msg)
+            raise exceptions.ItemAccessibilityException(msg)
+
+    @staticmethod
+    def try_get_authz_config(trans, authz_id):
+        """
+        It returns a cloudauthz config (see model.CloudAuthz) with the
+        given ID; and raise an exception if either a config with given
+        ID does not exist, or the configuration is defined for a another
+        user than trans.user.
+
+        :type  trans:       galaxy.web.framework.webapp.GalaxyWebTransaction
+        :param trans:       Galaxy web transaction
+
+        :type  authz_id:    int
+        :param authz_id:    The ID of a CloudAuthz configuration to be used for
+                            getting temporary credentials.
+
+        :rtype :            model.CloudAuthz
+        :return:            a cloudauthz configuration.
+        """
+        qres = trans.sa_session.query(model.CloudAuthz).get(authz_id)
+        if qres is None:
+            raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
+        if trans.user.id != qres.user_id:
+            msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
+                  "ID:`{}`.".format(qres.id, trans.user.id)
+            log.warn(msg)
+            raise exceptions.ItemAccessibilityException(msg)
+        return qres
 
     def authenticate(self, provider, trans):
         """
@@ -143,3 +227,43 @@ class AuthnzManager(object):
                   '{}'.format(provider, trans.user.username, str(e))
             log.exception(msg)
             return False, msg, None
+
+    def get_cloud_access_credentials(self, cloudauthz, sa_session, user_id, request=None):
+        """
+        This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
+        to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
+        for temporary access credentials to a given resource.
+
+        It first checks if a cloudauthz config with the given ID (`authz_id`) is
+        available and can be assumed by the user, and raises an exception if either
+        is false. Otherwise, it then extends the cloudauthz configuration as required
+        by the CloudAuthz library for the provider specified in the configuration.
+        For instance, it adds on-the-fly values such as a valid OpenID Connect
+        identity token, as required by CloudAuthz for AWS. Then requests temporary
+        credentials from the CloudAuthz library using the updated configuration.
+
+        :type  cloudauthz:  CloudAuthz
+        :param cloudauthz:  an instance of CloudAuthz to be used for getting temporary
+                            credentials.
+
+        :type   request:    galaxy.web.framework.base.Request
+        :param  request:    Encapsulated HTTP(S) request.
+
+        :type   sa_session: sqlalchemy.orm.scoping.scoped_session
+        :param  sa_session: SQLAlchemy database handle.
+
+        :type   user_id:    int
+        :param  user_id:    Decoded Galaxy user ID.
+
+        :rtype:             dict
+        :return:            a dictionary containing credentials to access a cloud-based
+                            resource provider. See CloudAuthz (https://github.com/galaxyproject/cloudauthz)
+                            for details on the content of this dictionary.
+        """
+        config = self._extend_cloudauthz_config(cloudauthz, request, sa_session, user_id)
+        try:
+            ca = CloudAuthz()
+            return ca.authorize(cloudauthz.provider, config)
+        except CloudAuthzBaseException as e:
+            log.exception(e.message)
+            raise exceptions.AuthenticationFailed(e.message)

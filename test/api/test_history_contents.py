@@ -30,6 +30,114 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         hda_summary = self.__check_for_hda(contents_response, hda1)
         assert "display_types" not in hda_summary  # Quick summary, not full details
 
+    def test_make_private_and_public(self):
+        hda1 = self._wait_for_new_hda()
+        update_url = "histories/%s/contents/%s/permissions" % (self.history_id, hda1["id"])
+
+        role_id = self.dataset_populator.user_private_role_id()
+        # Give manage permission to the user.
+        payload = {
+            "access": [],
+            "manage": [role_id],
+        }
+        update_response = self._update_permissions(update_url, payload, admin=True)
+        self._assert_status_code_is(update_response, 200)
+        self._assert_other_user_can_access(hda1["id"])
+        # Then we restrict access.
+        payload = {
+            "action": "make_private",
+        }
+        update_response = self._update_permissions(update_url, payload)
+        self._assert_status_code_is(update_response, 200)
+        self._assert_other_user_cannot_access(hda1["id"])
+
+        # Then we restrict access.
+        payload = {
+            "action": "remove_restrictions",
+        }
+        update_response = self._update_permissions(update_url, payload)
+        self._assert_status_code_is(update_response, 200)
+        self._assert_other_user_can_access(hda1["id"])
+
+    def test_set_permissions_add_admin_history_contents(self):
+        self._verify_dataset_permissions("history_contents")
+
+    def test_set_permissions_add_admin_datasets(self):
+        self._verify_dataset_permissions("dataset")
+
+    def _verify_dataset_permissions(self, api_endpoint):
+        hda1 = self._wait_for_new_hda()
+        hda_id = hda1["id"]
+        if api_endpoint == "history_contents":
+            update_url = "histories/%s/contents/%s/permissions" % (self.history_id, hda_id)
+        else:
+            update_url = "datasets/%s/permissions" % hda_id
+
+        role_id = self.dataset_populator.user_private_role_id()
+
+        payload = {
+            "access": [role_id],
+            "manage": [role_id],
+        }
+
+        # Other users cannot modify permissions.
+        with self._different_user():
+            update_response = self._update_permissions(update_url, payload)
+            self._assert_status_code_is(update_response, 403)
+
+        # First the details render for another user.
+        self._assert_other_user_can_access(hda_id)
+
+        # Then we restrict access.
+        update_response = self._update_permissions(update_url, payload, admin=True)
+        self._assert_status_code_is(update_response, 200)
+
+        # Finally the details don't render.
+        self._assert_other_user_cannot_access(hda_id)
+
+        # But they do for the original user.
+        contents_response = self._get("histories/%s/contents/%s" % (self.history_id, hda_id)).json()
+        assert "name" in contents_response
+
+        update_response = self._update_permissions(update_url, payload)
+        self._assert_status_code_is(update_response, 200)
+
+        payload = {
+            "access": [role_id],
+            "manage": [role_id],
+        }
+        update_response = self._update_permissions(update_url, payload)
+        self._assert_status_code_is(update_response, 200)
+        self._assert_other_user_cannot_access(hda_id)
+
+        user_id = self.dataset_populator.user_id()
+        with self._different_user():
+            different_user_id = self.dataset_populator.user_id()
+        combined_user_role = self.dataset_populator.create_role([user_id, different_user_id], description="role for testing permissions")
+
+        payload = {
+            "access": [combined_user_role["id"]],
+            "manage": [role_id],
+        }
+        update_response = self._update_permissions(update_url, payload)
+        self._assert_status_code_is(update_response, 200)
+        # Now other user can see dataset again with access permission.
+        self._assert_other_user_can_access(hda_id)
+        # access doesn't imply management though...
+        with self._different_user():
+            update_response = self._update_permissions(update_url, payload)
+            self._assert_status_code_is(update_response, 403)
+
+    def _assert_other_user_cannot_access(self, history_content_id):
+        with self._different_user():
+            contents_response = self._get("histories/%s/contents/%s" % (self.history_id, history_content_id)).json()
+            assert "name" not in contents_response
+
+    def _assert_other_user_can_access(self, history_content_id):
+        with self._different_user():
+            contents_response = self._get("histories/%s/contents/%s" % (self.history_id, history_content_id)).json()
+            assert "name" in contents_response
+
     def test_index_hda_all_details(self):
         hda1 = self._new_dataset(self.history_id)
         contents_response = self._get("histories/%s/contents?details=all" % self.history_id)
@@ -105,8 +213,16 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         self._wait_for_history(self.history_id)
         return hda1
 
-    def _raw_update(self, item_id, data):
-        update_url = self._api_url("histories/%s/contents/%s" % (self.history_id, item_id), use_key=True)
+    def _raw_update(self, item_id, data, admin=False, history_id=None):
+        history_id = history_id or self.history_id
+        key_param = "use_admin_key" if admin else "use_key"
+        update_url = self._api_url("histories/%s/contents/%s" % (history_id, item_id), **{key_param: True})
+        update_response = put(update_url, json=data)
+        return update_response
+
+    def _update_permissions(self, url, data, admin=False):
+        key_param = "use_admin_key" if admin else "use_key"
+        update_url = self._api_url(url, **{key_param: True})
         update_response = put(update_url, json=data)
         return update_response
 
@@ -143,6 +259,33 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         )
         endpoint = "histories/%s/contents/dataset_collections" % self.history_id
         self._check_pair_creation(endpoint, payload)
+
+    def test_dataset_collection_create_from_exisiting_datasets_with_new_tags(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
+            hda2_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")['id']
+            update_response = self._raw_update(hda2_id, dict(tags=['existing:tag']), history_id=history_id).json()
+            assert update_response['tags'] == ['existing:tag']
+            creation_payload = {'collection_type': 'list',
+                                'history_id': history_id,
+                                'element_identifiers': json.dumps([{'id': hda_id,
+                                                                    'src': 'hda',
+                                                                    'name': 'element_id1',
+                                                                    'tags': ['my_new_tag']},
+                                                                   {'id': hda2_id,
+                                                                    'src': 'hda',
+                                                                    'name': 'element_id2',
+                                                                    'tags': ['another_new_tag']}
+                                                                   ]),
+                                'type': 'dataset_collection',
+                                'copy_elements': True}
+            r = self._post("histories/%s/contents" % self.history_id, creation_payload).json()
+            assert r['elements'][0]['object']['id'] != hda_id, "HDA has not been copied"
+            assert len(r['elements'][0]['object']['tags']) == 1
+            assert r['elements'][0]['object']['tags'][0] == 'my_new_tag'
+            assert len(r['elements'][1]['object']['tags']) == 2, r['elements'][1]['object']['tags']
+            original_hda = self.dataset_populator.get_history_dataset_details(history_id=history_id, dataset_id=hda_id)
+            assert len(original_hda['tags']) == 0, original_hda['tags']
 
     def _check_pair_creation(self, endpoint, payload):
         pre_collection_count = self.__count_contents(type="dataset_collection")
@@ -327,8 +470,7 @@ class HistoryContentsApiTestCase(api.ApiTestCase, TestsDatasets):
         with self._different_user():
             second_history_id = self._new_history()
             create_response = self._post("histories/%s/contents/dataset_collections" % second_history_id, create_data)
-            # TODO: This should be 403 and a proper JSON response.
-            self._assert_status_code_is(create_response, 400)
+            self._assert_status_code_is(create_response, 403)
 
     def __check_create_collection_response(self, response):
         self._assert_status_code_is(response, 200)

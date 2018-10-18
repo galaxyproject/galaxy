@@ -141,7 +141,7 @@ def _expand_macro(element, expand_el, macros, tokens):
     # require this parent_map data structure but elementtree does not
     # track parents or recongnize .find('..').
     # TODO fix this now that we're not using elementtree
-    parent_map = dict((c, p) for p in element.getiterator() for c in p)
+    parent_map = dict((c, p) for p in element.iter() for c in p)
     _xml_replace(expand_el, expanded_elements, parent_map)
 
 
@@ -150,7 +150,7 @@ def _expand_yield_statements(macro_def, expand_el):
 
     expand_el_children = list(expand_el)
     macro_def_parent_map = \
-        dict((c, p) for macro_def_el in macro_def for p in macro_def_el.getiterator() for c in p)
+        dict((c, p) for macro_def_el in macro_def for p in macro_def_el.iter() for c in p)
 
     for yield_el in yield_els:
         _xml_replace(yield_el, expand_el_children, macro_def_parent_map)

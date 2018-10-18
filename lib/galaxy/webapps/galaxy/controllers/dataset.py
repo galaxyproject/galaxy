@@ -124,7 +124,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
-        return (allow_admin and trans.user_is_admin()) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
+        return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
 
     @web.expose
     def errors(self, trans, id):
@@ -203,7 +203,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin() or (data.history and trans.get_user() == data.history.user)):
+        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message("Please wait until this dataset finishes uploading before attempting to view it.")
@@ -1151,13 +1151,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         for hist in target_histories:
                             if content.history_content_type == "dataset":
-                                hist.add_dataset(content.copy())
+                                copy = content.copy()
+                                hist.add_dataset(copy)
                             else:
                                 copy_collected_datasets = True
                                 copy_kwds = {}
                                 if copy_collected_datasets:
                                     copy_kwds["element_destination"] = hist
-                                hist.add_dataset_collection(content.copy(**copy_kwds))
+                                copy = content.copy(**copy_kwds)
+                                hist.add_dataset_collection(copy)
+                            if user:
+                                copy.copy_tags_from(user, content)
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()

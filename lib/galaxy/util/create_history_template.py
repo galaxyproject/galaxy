@@ -44,7 +44,7 @@ def render_hda_copied_from_history(trans, hda, children):
     id = trans.security.encode_id(hda.id)
     history_id = trans.security.encode_id(hda.copied_from_history_dataset_association.history_id)
     url = url_for('/histories/view?id=' + history_id)
-    template = '<div class="copied-from copied-from-history"><div class="header"><div class="copied-from-dataset">'
+    template = '<div class="copied-from"><div class="header"><div>'
     template += '<span class="light"> Copied from history dataset: </span>'
     template += '<span class="bold">' + hda.copied_from_history_dataset_association.name + '</span>'
     template += '</div><div class="copied-from-source">'
@@ -65,9 +65,9 @@ def render_hda_copied_from_library(trans, hda, children):
     folder = hda.copied_from_library_dataset_dataset_association.library_dataset.folder
     folder_id = 'F' + trans.security.encode_id(folder.id)
     url = url_for('/library/list#folders/' + folder_id)
-    template = '<div class="copied-from copied-from-library">'
+    template = '<div class="copied-from">'
     template += '<div class="header">'
-    template += '<div class="copied-from-dataset">'
+    template += '<div>'
     template += '<span class="light">Copied from library dataset:</span>'
     template += '<span class="bold">' + hda.copied_from_library_dataset_dataset_association.name + '</span>'
     template += '</div>'
@@ -81,10 +81,10 @@ def render_hda_copied_from_library(trans, hda, children):
 
 def render_item_job(trans, job, children):
     """
-    Render a job (as a toolForm) and its children (hdas)
+    Render a job and its children (hdas)
     """
     template = ''
-    template = '<div class="tool toolForm">'
+    template = '<div class="tool">'
     tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version)
     if tool:
         tool_name = tool.name
@@ -97,7 +97,7 @@ def render_item_job(trans, job, children):
         params_object = job.get_param_values(trans.app, ignore_errors=True)
     except Exception:
         pass
-    template += '<div class="header"><div class="toolFormTitle"><span class="bold">' + tool_name + '</span>'
+    template += '<div class="header"><div><span class="bold">' + tool_name + '</span>'
     template += '<span class="light"> - ' + tool_desc + '</span></div>'
     if tool and params_object:
         template += '<table class="job-inputs">'
@@ -106,7 +106,7 @@ def render_item_job(trans, job, children):
     else:
         template += '<em>No parameter data available</em>'
     template += '</div>'
-    template += '<div class="body toolFormBody">'
+    template += '<div class="body">'
     child_template = ''
     for e, c in reversed(children):
         child_template += render_item(trans, e, c)
@@ -117,9 +117,8 @@ def render_item_job(trans, job, children):
 
 def render_item_wf(trans, wf, children):
     """
-    Render a workflow and its children (jobs/toolForms)
+    Render a workflow and its children (jobs)
     """
-    template = ''
     template = '<div class="workflow"><div class="header"><span class="bold">' + wf.workflow.name + '</span>'
     template += '<span class="light">- Workflow</span></div><div class="body">'
     for e, c in reversed(children):
@@ -184,10 +183,10 @@ def inputs_recursive(trans, input_params, param_values, depth=1, upgrade_message
                         hda = element
                         encoded_id = trans.security.encode_id(hda.id)
                         dataset_info_url = url_for(controller="dataset", action="show_params", dataset_id=encoded_id)
-                        tool_parameter_template += '<a class="input-dataset-show-params" target="galaxy_main" data-hda-id="' + encoded_id + '"'
+                        tool_parameter_template += '<a target="galaxy_main" data-hda-id="' + encoded_id + '"'
                         tool_parameter_template += 'href="' + dataset_info_url + '">' + str(hda.hid) + ':' + hda.name + '</a>'
                     else:
-                        tool_parameter_template += element.hid + ':' + element.name
+                        tool_parameter_template += str(element.hid) + ':' + element.name
                     tool_parameter_template += '</td><td></td></tr>'
             elif input.visible:
                 label = input.label if (hasattr(input, "label") and input.label) else input.name

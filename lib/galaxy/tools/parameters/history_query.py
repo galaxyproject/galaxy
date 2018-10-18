@@ -53,4 +53,4 @@ class HistoryQuery(object):
             # See note about the way this is sorted above.
             if collection_type_description.is_subcollection_of_type(hdca_collection_type):
                 return collection_type_description
-            return False
+        return False
