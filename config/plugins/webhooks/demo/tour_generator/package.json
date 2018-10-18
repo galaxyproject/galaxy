@@ -5,6 +5,6 @@
     "toastr": "^2.1.4"
   },
   "scripts":{
-      "build": "parcel build tour_generator.js --out-file script.js"
+      "build": "parcel build tour_generator.js --out-dir . --out-file script.js --no-source-maps"
   }
 }

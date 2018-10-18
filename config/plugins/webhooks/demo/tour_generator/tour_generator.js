@@ -1,9 +1,9 @@
 import * as Toastr from "toastr";
-import Tours from "../../../../../client/galaxy/scripts/mvc/tours";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 
 /* global Galaxy */
+/* global $ */
 
 window.TourGenerator = Backbone.View.extend({
     initialize: function(options) {
@@ -68,7 +68,7 @@ window.TourGenerator = Backbone.View.extend({
     },
 
     _generateTour: function(data) {
-        var tour = Tours.giveTourWithData(data);
+        var tour = Galaxy.giveTourWithData(data);
         // Force ending the tour when pressing the Execute button
         $("#execute").on("mousedown", function() {
             if (tour) {

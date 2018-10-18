@@ -195,6 +195,8 @@ $(document).ready(() => {
 
     Tours.activeGalaxyTourRunner();
 
+    Galaxy.giveTourWithData = Tours.giveTourWithData;
+
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {
             if (Galaxy.config.enable_webhooks) {
