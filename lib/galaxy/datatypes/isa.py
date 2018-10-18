@@ -14,11 +14,8 @@ import os.path
 import re
 import shutil
 import sys
-import tarfile
 import tempfile
-import zipfile
 from cgi import escape
-from io import BytesIO
 from json import dumps  # noqa: F401
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
@@ -52,6 +49,7 @@ logger = logging.getLogger(__name__)
 
 # Function for opening correctly a CSV file for csv.reader() for both Python 2 and 3 {{{1
 ################################################################
+
 
 def utf8_text_file_open(path):
     if sys.version_info[0] < 3:
