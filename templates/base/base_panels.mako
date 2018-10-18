@@ -54,6 +54,7 @@
         ## TODO: remove when all libs are required directly in modules
         'libs/require',
         'bundled/libs.chunk',
+        'bundled/base.chunk',
         'bundled/extended.bundled'
     )}
     
