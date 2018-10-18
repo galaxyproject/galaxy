@@ -32,13 +32,14 @@ let buildconfig = {
                 styles: {
                     name: "base",
                     chunks: "all",
-                    enforce: true,
-                    test: m => m.constructor.name == "CssModule"
+                    test: m => m.constructor.name == "CssModule",
+                    priority: -5
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!apps))/, // .*\.(vue|js)$
-                    chunks: "all"
+                    test: /(node_modules|galaxy\/scripts\/(?!apps)).*\.(vue|js)$/, // .*\.(vue|js)$
+                    chunks: "all",
+                    priority: -10
                 }
             }
         }
