@@ -14,6 +14,7 @@ import user from "mvc/user/user-model";
 import Modal from "mvc/ui/ui-modal";
 export { default as pages } from "galaxy.pages";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
+import { HistoryCollection } from "mvc/history/history-model";
 export { History } from "mvc/history/history-model";
 export { HistoryContents } from "mvc/history/history-contents";
 import MultiPanel from "mvc/history/multi-panel";
@@ -68,7 +69,7 @@ export function library(options) {
 }
 
 export function multiHistory(options) {
-    let histories = new History.HistoryCollection([], {
+    let histories = new HistoryCollection([], {
         includeDeleted: options.includingDeleted,
         order: options.order,
         limitOnFirstFetch: options.limit,
