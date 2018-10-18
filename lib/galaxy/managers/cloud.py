@@ -187,13 +187,13 @@ class CloudManager(sharable.SharableModelManager):
         :param trans:       Galaxy web transaction
 
         :type  history_id:  string
-        :param history_id:  the (decoded) id of history to which the object should be uploaded to.
+        :param history_id:  the (decoded) id of history to which the object should be received to.
 
         :type  bucket_name: string
-        :param bucket_name: the name of a bucket from which data should be uploaded (e.g., a bucket name on AWS S3).
+        :param bucket_name: the name of a bucket from which data should be fetched (e.g., a bucket name on AWS S3).
 
         :type  objects:     list of string
-        :param objects:     the name of objects to be uploaded.
+        :param objects:     the name of objects to be fetched.
 
         :type  authz_id:    int
         :param authz_id:    the ID of CloudAuthz to be used for authorizing access to the resource provider. You may
@@ -205,7 +205,7 @@ class CloudManager(sharable.SharableModelManager):
                             dbkey, file_type, space_to_tab, to_posix_lines (see galaxy/webapps/galaxy/api/cloud.py)
 
         :rtype:             list of galaxy.model.Dataset
-        :return:            a list of datasets created for the uploaded files.
+        :return:            a list of datasets created for the fetched files.
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
@@ -246,7 +246,7 @@ class CloudManager(sharable.SharableModelManager):
 
             job_errors = output.get('job_errors', [])
             if job_errors:
-                raise ValueError('Following error occurred while uploading the given object(s) from {}: {}'.format(
+                raise ValueError('Following error occurred while getting the given object(s) from {}: {}'.format(
                     cloudauthz.provider, job_errors))
             else:
                 for d in output['out_data']:
