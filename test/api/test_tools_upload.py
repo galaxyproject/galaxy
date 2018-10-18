@@ -247,7 +247,7 @@ class ToolsUploadTestCase(api.ApiTestCase):
         assert details["state"] == "ok"
         assert details["file_ext"] == "isa-tab", details
         assert details["file_size"] == 85, details
-            
+
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
             payload = self.dataset_populator.upload_payload(history_id, "Test123", dbkey="hg19")
