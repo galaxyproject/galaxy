@@ -121,12 +121,12 @@ class CloudController(BaseAPIController):
             raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
                 type(objects)))
 
-        datasets = self.cloud_manager.upload(trans=trans,
-                                             history_id=history_id,
-                                             bucket_name=bucket,
-                                             objects=objects,
-                                             authz_id=authz_id,
-                                             input_args=payload.get("input_args", None))
+        datasets = self.cloud_manager.get(trans=trans,
+                                          history_id=history_id,
+                                          bucket_name=bucket,
+                                          objects=objects,
+                                          authz_id=authz_id,
+                                          input_args=payload.get("input_args", None))
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))

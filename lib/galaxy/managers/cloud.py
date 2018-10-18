@@ -174,9 +174,9 @@ class CloudManager(sharable.SharableModelManager):
             'files_0|url_paste': key.generate_url(expires_in=SINGED_URL_TTL),
         }
 
-    def upload(self, trans, history_id, bucket_name, objects, authz_id, input_args=None):
+    def get(self, trans, history_id, bucket_name, objects, authz_id, input_args=None):
         """
-        Implements the logic of uploading a file from a cloud-based storage (e.g., Amazon S3)
+        Implements the logic of getting a file from a cloud-based storage (e.g., Amazon S3)
         and persisting it as a Galaxy dataset.
 
         This manager does NOT require use credentials, instead, it uses a more secure method,
