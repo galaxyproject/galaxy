@@ -40,10 +40,10 @@ class CloudController(BaseAPIController):
         return 'Not Implemented'
 
     @expose_api
-    def upload(self, trans, payload, **kwargs):
+    def get(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/upload
-            Uploads given objects from a given cloud-based bucket to a Galaxy history.
+        * POST /api/cloud/storage/get
+            gets given objects from a given cloud-based bucket to a Galaxy history.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
