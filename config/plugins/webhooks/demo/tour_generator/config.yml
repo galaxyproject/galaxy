@@ -8,15 +8,11 @@ icon: fa-puzzle-piece
 title: Generate Tour
 
 function: >
-    require(["libs/toastr"], function(Toastr) {
-      if (typeof TourGenerator !== 'undefined') {
-        new TourGenerator({
-          toolId: options.id,
-          toolVersion: options.version
-        });
-      } else if (typeof Toastr !== 'undefined') {
-        Toastr.warning('Tour Generator is not loaded.');
-      } else {
-        alert('Tour Generator is not loaded.');
-      }
-    })
+  if (typeof TourGenerator !== 'undefined') {
+    new TourGenerator({
+      toolId: options.id,
+      toolVersion: options.version
+    });
+  } else {
+      console.error("Tour generator is not loaded.  Please report this to a Galaxy administrator.")
+  }
