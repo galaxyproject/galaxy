@@ -60,6 +60,7 @@ h5py==2.8.0
 html5lib==1.0.1
 idna==2.7
 ipaddress==1.0.22; python_version < '3.3'
+isa-rwval==0.10.4
 iso8601==0.1.12
 isodate==0.6.0
 jmespath==0.9.3
