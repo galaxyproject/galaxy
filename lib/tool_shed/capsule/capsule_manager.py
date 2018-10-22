@@ -92,7 +92,7 @@ class ExportRepositoryManager(object):
             # Keep information about the export in a file named export_info.xml in the archive.
             sub_elements = self.generate_export_elem()
             export_elem = xml_util.create_element('export_info', attributes=None, sub_elements=sub_elements)
-            tmp_export_info = xml_util.create_and_write_tmp_file(export_elem, use_indent=True)
+            tmp_export_info = xml_util.create_and_write_tmp_file(export_elem)
             try:
                 repositories_archive.add(tmp_export_info, arcname='export_info.xml')
             finally:
@@ -102,7 +102,7 @@ class ExportRepositoryManager(object):
             exported_repository_root = xml_util.create_element('repositories')
             for exported_repository_elem in exported_repository_registry.exported_repository_elems:
                 exported_repository_root.append(exported_repository_elem)
-            tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root, use_indent=True)
+            tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root)
             try:
                 repositories_archive.add(tmp_manifest, arcname='manifest.xml')
             finally:
@@ -165,7 +165,7 @@ class ExportRepositoryManager(object):
                         if error_message:
                             return None, error_message
                         if altered:
-                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem, use_indent=True)
+                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                             shutil.move(tmp_filename, full_path)
                     elif name == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
@@ -173,7 +173,7 @@ class ExportRepositoryManager(object):
                         if error_message:
                             return None, error_message
                         if altered:
-                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem, use_indent=True)
+                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                             shutil.move(tmp_filename, full_path)
                     repository_archive.add(full_path, arcname=relative_path)
         repository_archive.close()
