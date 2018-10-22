@@ -20,7 +20,7 @@ var Visualization = Backbone.Model.extend({
         /** override urlRoot to handle prefix */
         urlRoot: function() {
             var apiUrl = "api/visualizations";
-            return Galaxy.root + apiUrl;
+            return Galaxy.root_api + apiUrl;
         },
 
         /** Set up the model, determine if accessible, bind listeners
