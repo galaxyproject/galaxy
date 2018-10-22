@@ -524,7 +524,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             with open(job_state.output_file, 'r') as outfile:
                 stdout_content = outfile.read()
         except IOError as e:
-            stdout_content = "<Failed to recuperate log>"
+            stdout_content = "<Failed to recuperate log for job {} >".format(job_state.job_id)
             log.error("Failed to get stdout for job %s", job_state.job_id)
             log.exception(e)
 
