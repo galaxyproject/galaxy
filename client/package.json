@@ -104,7 +104,7 @@
     "vue-style-loader": "^4.1.2",
     "vue-styleguidist": "^1.8.9",
     "vue-template-compiler": "2.5.17",
-    "webpack": "^4.21.0",
+    "webpack": "^4.22.0",
     "webpack-cli": "^3.1.2",
     "yaml-loader": "^0.5.0"
   }
