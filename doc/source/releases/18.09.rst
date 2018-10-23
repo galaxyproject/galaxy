@@ -820,6 +820,17 @@ Fixes
 * Fix slurm cli on secure shell
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6845`_
+* update paramiko dep
+  `Pull Request 6859`_
+* Fix ``LocalShell`` doctest
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6863`_
+* Keep xlsx files compressed
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6867`_
+* Do not traceback when uploading a TS repo with no changes
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 6875`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1162,4 +1173,8 @@ Fixes
 .. _Pull Request 6836: https://github.com/galaxyproject/galaxy/pull/6836
 .. _Pull Request 6839: https://github.com/galaxyproject/galaxy/pull/6839
 .. _Pull Request 6845: https://github.com/galaxyproject/galaxy/pull/6845
+.. _Pull Request 6859: https://github.com/galaxyproject/galaxy/pull/6859
+.. _Pull Request 6863: https://github.com/galaxyproject/galaxy/pull/6863
+.. _Pull Request 6867: https://github.com/galaxyproject/galaxy/pull/6867
+.. _Pull Request 6875: https://github.com/galaxyproject/galaxy/pull/6875
 
