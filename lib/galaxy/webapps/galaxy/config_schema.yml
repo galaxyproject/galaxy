@@ -358,7 +358,7 @@ mapping:
 
       watch_job_rules:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of dynamic job rules. If changes are
@@ -1602,7 +1602,7 @@ mapping:
 
       sentry_sloreq_threshold:
         type: float
-        default: 0
+        default: 0.0
         required: false
         desc: |
           Sentry slow request logging.  Requests slower than the threshold
