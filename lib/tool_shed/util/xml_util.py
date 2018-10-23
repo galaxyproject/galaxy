@@ -1,3 +1,4 @@
+import io
 import logging
 import os
 import sys
@@ -26,7 +27,7 @@ def create_and_write_tmp_file(elem):
     fh = tempfile.NamedTemporaryFile(prefix="tmp-toolshed-cawrf", delete=False)
     tmp_filename = fh.name
     fh.close()
-    with open(tmp_filename, 'w') as fh:
+    with io.open(tmp_filename, mode='w', encoding='utf-8') as fh:
         fh.write(tmp_str)
     return tmp_filename
 
