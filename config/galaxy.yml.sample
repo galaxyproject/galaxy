@@ -297,7 +297,7 @@ galaxy:
   # Set to True to enable monitoring of dynamic job rules. If changes
   # are found, rules are automatically reloaded. Takes the same values
   # as the 'watch_tools' option.
-  #watch_job_rules: false
+  #watch_job_rules: 'false'
 
   # As of 18.09, Galaxy defaults to setting up the object store
   # configuration for output datasets during the job queue step in job
@@ -1047,7 +1047,7 @@ galaxy:
   # server (above, sentry_dsn).  A value of '0' is disabled.  For
   # example, you would set this to .005 to log all queries taking longer
   # than 5 milliseconds.
-  #sentry_sloreq_threshold: 0
+  #sentry_sloreq_threshold: 0.0
 
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will
