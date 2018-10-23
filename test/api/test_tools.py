@@ -221,6 +221,27 @@ class ToolsTestCase(api.ApiTestCase):
         test_data = test_data_response.json()
         assert len(test_data) == 3
 
+    def test_upload_composite_as_tar(self):
+        with self.dataset_populator.test_history() as history_id:
+            tar_path = self.test_data_resolver.get_filename("testdir.tar")
+            tar_f = open(tar_path, "rb")
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                extra_inputs={
+                    "files_1|file_data": tar_f,
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            dataset = run_response.json()["outputs"][0]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
+            assert content.strip() == "Test123"
+            extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
+            assert len(extra_files) == 1, extra_files
+            assert False
+
     def test_unzip_collection(self):
         with self.dataset_populator.test_history() as history_id:
             hdca_id = self.__build_pair(history_id, ["123", "456"])
