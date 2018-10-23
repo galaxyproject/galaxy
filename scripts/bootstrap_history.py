@@ -3,7 +3,6 @@
 # pull message down and embed, use arg parse, handle multiple, etc...
 from __future__ import print_function
 
-import ast
 import calendar
 import datetime
 import json
@@ -25,9 +24,7 @@ from six import string_types
 from six.moves.urllib.parse import urljoin
 
 PROJECT_DIRECTORY = os.path.join(os.path.dirname(__file__), os.pardir)
-SOURCE_DIR = os.path.join(PROJECT_DIRECTORY, "lib")
-GALAXY_SOURCE_DIR = os.path.join(SOURCE_DIR, "galaxy")
-GALAXY_VERSION_FILE = os.path.join(GALAXY_SOURCE_DIR, "version.py")
+GALAXY_VERSION_FILE = os.path.join(PROJECT_DIRECTORY, "lib", "galaxy", "version.py")
 PROJECT_OWNER = "galaxyproject"
 PROJECT_NAME = "galaxy"
 PROJECT_URL = "https://github.com/%s/%s" % (PROJECT_OWNER, PROJECT_NAME)
@@ -245,10 +242,19 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 # https://api.github.com/repos/galaxyproject/galaxy/compare/release_15.05...dev
 
 
-def commit_time(commit_hash):
-    api_url = urljoin(PROJECT_API, "commits/%s" % commit_hash)
-    req = requests.get(api_url).json()
-    return datetime.datetime.strptime(req["commit"]["committer"]["date"], "%Y-%m-%dT%H:%M:%SZ")
+def print_next_minor_version():
+    minor_version_str = None
+    with open(GALAXY_VERSION_FILE) as f:
+        for line in f:
+            result = re.match(r'VERSION_MINOR = "(.*)"', line)
+            if result:
+                minor_version_str = result.group(1)
+                break
+    try:
+        minor_version = int(minor_version_str)
+    except (TypeError, ValueError):
+        minor_version = 0
+    print(minor_version + 1)
 
 
 def release_issue(argv):
@@ -412,6 +418,10 @@ def main(argv):
         raise Exception("Requests library not found, please pip install requests")
     github = _github_client()
     newest_release = None
+
+    if argv[1] == "--print-next-minor-version":
+        print_next_minor_version()
+        return
 
     if argv[1] == "--check-blocking-prs":
         check_blocking_prs(argv)
@@ -585,10 +595,6 @@ def _previous_release(to):
     return previous_release
 
 
-def _latest_release():
-    return _releases()[-1]
-
-
 def _releases():
     all_files = sorted(os.listdir(RELEASES_PATH))
     release_note_file_pattern = re.compile(r"\d+\.\d+.rst")
@@ -596,29 +602,11 @@ def _releases():
     return sorted(f.rstrip('.rst') for f in release_note_files)
 
 
-def _get_major_version():
-    with open(GALAXY_VERSION_FILE, 'rb') as f:
-        init_contents = f.read().decode('utf-8')
-
-        def get_var(var_name):
-            pattern = re.compile(r'%s\s+=\s+(.*)' % var_name)
-            match = pattern.search(init_contents).group(1)
-            return str(ast.literal_eval(match))
-        return get_var("VERSION_MAJOR")
-
-
-def _get_release_name(argv):
-    if len(argv) > 2:
-        return argv[2]
-    else:
-        return _get_major_version()
-
-
 def _github_client():
-    if Github:
+    try:
         github_json = os.path.expanduser("~/.github.json")
         github = Github(**json.load(open(github_json, "r")))
-    else:
+    except Exception:
         github = None
     return github
 
