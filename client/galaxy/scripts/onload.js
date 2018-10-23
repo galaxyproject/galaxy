@@ -11,7 +11,7 @@ import "jquery-mousewheel";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "libs/jquery/select2";
-import "jquery-ui";
+import "libs/jquery/jquery-ui";
 import "libs/jquery/jstorage";
 import "libs/farbtastic";
 import "jquery.cookie";
