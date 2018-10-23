@@ -56,7 +56,7 @@ def contains_workflow_parameter(value, search=False):
 
 def is_runtime_value(value):
     return isinstance(value, RuntimeValue) or (isinstance(value, dict)
-        and value.get("__class__") == "RuntimeValue")
+        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -155,13 +155,13 @@ class ToolParameter(Dictifiable):
 
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
-            return {'__class__': 'RuntimeValue'}
+            return runtime_to_json(value)
         return self.to_json(value, app, use_security)
 
     def value_from_basic(self, value, app, ignore_errors=False):
         # Handle Runtime and Unvalidated values
         if is_runtime_value(value):
-            return RuntimeValue()
+            return runtime_to_object(value)
         elif isinstance(value, dict) and value.get('__class__') == 'UnvalidatedValue':
             return value['value']
         # Delegate to the 'to_python' method
@@ -2246,7 +2246,7 @@ class BaseJsonToolParameter(ToolParameter):
 
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
-            return {'__class__': 'RuntimeValue'}
+            return runtime_to_json(value)
         return value
 
     def to_json(self, value, app, use_security):
@@ -2323,8 +2323,29 @@ parameter_types = dict(
 )
 
 
+def runtime_to_json(runtime_value):
+    if isinstance(runtime_value, ConnectedValue) or (isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"):
+        return {"__class__": "ConnectedValue"}
+    else:
+        return {"__class__": "RuntimeValue"}
+
+
+def runtime_to_object(runtime_value):
+    if isinstance(runtime_value, ConnectedValue) or (isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"):
+        return ConnectedValue()
+    else:
+        return RuntimeValue()
+
+
 class RuntimeValue(object):
     """
     Wrapper to note a value that is not yet set, but will be required at runtime.
+    """
+    pass
+
+
+class ConnectedValue(RuntimeValue):
+    """
+    Wrapper to note a value that is not yet set, but will be inferred from a connection.
     """
     pass

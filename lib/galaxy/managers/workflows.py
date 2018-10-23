@@ -561,7 +561,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
-            config_form = module.get_config_form()
+            config_form = module.get_config_form(step=step)
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
