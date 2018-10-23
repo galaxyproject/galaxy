@@ -208,7 +208,7 @@ var Node = Backbone.Model.extend({
     },
     add_input_parameters: function() {
         $.each(this.config_form.inputs, (i, input) => {
-            if (input.value && input.value.__class__ == 'RuntimeValue' && StepParameterTypes.includes(input.type)){
+            if (input.value && input.value.__class__ == 'ConnectedValue' && StepParameterTypes.includes(input.type)){
                 this.nodeView.addParameterInput(input);
             }
         });
