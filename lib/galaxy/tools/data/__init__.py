@@ -15,6 +15,7 @@ import string
 import time
 from glob import glob
 from tempfile import NamedTemporaryFile
+from xml.etree import ElementTree
 
 import requests
 
@@ -185,12 +186,12 @@ class ToolDataTableManager(object):
         # add new elems
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
+
+        root = ElementTree.fromstring('<?xml version="1.0"?>\n<tables></tables>')
+        for elem in out_elems:
+            root.append(elem)
         with RenamedTemporaryFile(full_path, mode='w') as out:
-            out.write('<?xml version="1.0"?>\n<tables>\n')
-            for elem in out_elems:
-                elem = util.xml_to_string(elem, pretty=True)
-                out.write(elem)
-            out.write('</tables>\n')
+            out.write(util.xml_to_string(root, pretty=True))
         os.chmod(full_path, 0o644)
         if out_path_is_new:
             self.tool_data_path_files.update_files()
