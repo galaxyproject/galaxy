@@ -310,21 +310,27 @@ class DRMAAJobRunner(AsynchronousJobRunner):
 
     def stop_job(self, job):
         """Attempts to delete a job from the DRM queue"""
+        dest_params = {}
+        try:
+            # fully dynamic destinations may not be defined in the job config
+            dest_params = self.app.job_config.get_destination(job.destination_id).params
+        except KeyError:
+            pass
         try:
             ext_id = job.get_job_runner_external_id()
             assert ext_id not in (None, 'None'), 'External job id is None'
-            kill_script = job.get_destination_configuration(self.app.config, "drmaa_external_killjob_script", None)
+            kill_script = job.get_destination_configuration(dest_params, self.app.config, "drmaa_external_killjob_script", None)
             if kill_script is None:
                 self.ds.kill(ext_id)
             else:
                 command = shlex.split(kill_script)
                 command.extend([str(ext_id), str(self.userid)])
                 subprocess.Popen(command, shell=False)
-            log.debug("(%s/%s) Removed from DRM queue at user's request" % (job.get_id(), ext_id))
+            log.info("(%s/%s) Removed from DRM queue at user's request" % (job.get_id(), ext_id))
         except drmaa.InvalidJobException:
-            log.debug("(%s/%s) User killed running job, but it was already dead" % (job.get_id(), ext_id))
+            log.exception("(%s/%s) User killed running job, but it was already dead" % (job.get_id(), ext_id))
         except Exception as e:
-            log.debug("(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % (job.get_id(), ext_id, e))
+            log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % (job.get_id(), ext_id, e))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
