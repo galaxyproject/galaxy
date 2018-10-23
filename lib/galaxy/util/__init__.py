@@ -236,11 +236,21 @@ def parse_xml_string(xml_string):
 
 def xml_to_string(elem, pretty=False):
     """Returns a string from an xml tree"""
-    if PY2:
-        xml_str = ElementTree.tostring(elem)
-    else:
-        xml_str = ElementTree.tostring(elem, encoding='unicode')
-    if pretty:
+    try:
+        if elem is not None:
+            if PY2:
+                xml_str = ElementTree.tostring(elem, encoding='utf-8')
+            else:
+                xml_str = ElementTree.tostring(elem, encoding='unicode')
+        else:
+            xml_str = ''
+    except TypeError as e:
+        # we assume this is a comment
+        if hasattr(elem, 'text'):
+            return "<!-- %s -->\n" % elem.text
+        else:
+            raise e
+    if xml_str and pretty:
         pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent='    ')
         return "\n".join([line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line)])
     return xml_str

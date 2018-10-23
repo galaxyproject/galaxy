@@ -5,7 +5,6 @@ import tempfile
 from xml.etree import ElementTree as XmlET
 
 from galaxy.util import (
-    listify,
     xml_to_string
 )
 
@@ -22,15 +21,12 @@ class Py27CommentedTreeBuilder(XmlET.TreeBuilder):
         self.end(XmlET.Comment)
 
 
-def create_and_write_tmp_file(elems):
-    tmp_str = ''
-    for elem in listify(elems):
-        tmp_str += xml_to_string(elem, pretty=True)
-    fh = tempfile.NamedTemporaryFile('wb', prefix="tmp-toolshed-cawrf")
+def create_and_write_tmp_file(elem):
+    tmp_str = xml_to_string(elem, pretty=True)
+    fh = tempfile.NamedTemporaryFile(prefix="tmp-toolshed-cawrf", delete=False)
     tmp_filename = fh.name
     fh.close()
     with open(tmp_filename, 'w') as fh:
-        fh.write('<?xml version="1.0"?>\n')
         fh.write(tmp_str)
     return tmp_filename
 
