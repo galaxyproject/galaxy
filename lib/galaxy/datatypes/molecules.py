@@ -45,7 +45,7 @@ def count_lines(filename, non_empty=False):
     """
     try:
         if non_empty:
-            out = subprocess.Popen(['grep', '-cve', '^\s*$', filename], stdout=subprocess.PIPE)
+            out = subprocess.Popen(['grep', '-cve', r'^\s*$', filename], stdout=subprocess.PIPE)
         else:
             out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
@@ -136,7 +136,7 @@ class SDF(GenericMolFile):
         """
         Set the number of molecules in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines("^\$\$\$\$$", dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines(r"^\$\$\$\$$", dataset.file_name)
 
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """
@@ -717,7 +717,7 @@ class CML(GenericXml):
         """
         Set the number of lines of data in dataset.
         """
-        dataset.metadata.number_of_molecules = count_special_lines('^\s*<molecule', dataset.file_name)
+        dataset.metadata.number_of_molecules = count_special_lines(r'^\s*<molecule', dataset.file_name)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:

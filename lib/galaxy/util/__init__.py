@@ -640,9 +640,9 @@ def ready_name_for_url(raw_name):
     """
 
     # Replace whitespace with '-'
-    slug_base = re.sub("\s+", "-", raw_name)
+    slug_base = re.sub(r"\s+", "-", raw_name)
     # Remove all non-alphanumeric characters.
-    slug_base = re.sub("[^a-zA-Z0-9\-]", "", slug_base)
+    slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
     # Remove trailing '-'.
     if slug_base.endswith('-'):
         slug_base = slug_base[:-1]
@@ -957,7 +957,7 @@ def listify(item, do_strip=False):
 
 def commaify(amount):
     orig = amount
-    new = re.sub("^(-?\d+)(\d{3})", '\g<1>,\g<2>', amount)
+    new = re.sub(r"^(-?\d+)(\d{3})", r'\g<1>,\g<2>', amount)
     if orig == new:
         return new
     else:
@@ -1256,7 +1256,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
     perms = unmasked_perms & ~umask
     try:
         st = os.stat(path)
-    except OSError as e:
+    except OSError:
         log.exception('Unable to set permissions or group on %s', path)
         return
     # fix modes
@@ -1364,8 +1364,8 @@ def size_to_bytes(size):
     except ValueError:
         pass
     # Otherwise it must have non-numeric characters
-    size_re = re.compile('([\d\.]+)\s*([eptgmk]b?|b|bytes?)$')
-    size_match = re.match(size_re, size.lower())
+    size_re = re.compile(r'([\d\.]+)\s*([eptgmk]b?|b|bytes?)$')
+    size_match = size_re.match(size.lower())
     assert size_match is not None
     size = float(size_match.group(1))
     multiple = size_match.group(2)
@@ -1557,7 +1557,7 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
 
 
 def parse_non_hex_float(s):
-    """
+    r"""
     Parse string `s` into a float but throw a `ValueError` if the string is in
     the otherwise acceptable format `\d+e\d+` (e.g. 40000000000000e5.)
 

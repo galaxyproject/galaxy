@@ -324,7 +324,6 @@ class TestDynamicToolDestination(unittest.TestCase):
             ('galaxy.jobs.dynamic_tool_destination', 'DEBUG', "Running 'test_users' with 'lame_cluster'.")
         )
 
-
 # ================================Invalid yaml files==============================
     @log_capture()
     def test_no_file(self, l):

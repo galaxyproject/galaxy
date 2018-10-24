@@ -548,7 +548,7 @@ class DatasetCollectionManager(object):
 
     def __get_library_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
         if check_ownership:
-            raise NotImplemented("Functionality (getting library dataset collection with ownership check) unimplemented.")
+            raise NotImplementedError("Functionality (getting library dataset collection with ownership check) unimplemented.")
         instance_id = int(trans.security.decode_id(id))
         collection_instance = trans.sa_session.query(trans.app.model.LibraryDatasetCollectionAssociation).get(instance_id)
         if check_accessible:

@@ -177,7 +177,7 @@ def add_composite_file(dataset, registry, output_path, files_path):
     if dataset.file_type is not None:
         try:
             datatype = registry.get_datatype_by_extension(dataset.file_type)
-        except Exception as e:
+        except Exception:
             print("Unable to instantiate the datatype object for the file type '%s'" % dataset.file_type)
 
     if dataset.composite_files:

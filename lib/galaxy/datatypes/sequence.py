@@ -366,7 +366,7 @@ class Fasta(Sequence):
 
                     # If there is a third line, and it isn't a header line, it may not contain chars like '()[].' otherwise it's most likely a DotBracket file
                     line = fh.readline()
-                    if not line.startswith('>') and re.search("[\(\)\[\]\.]", line):
+                    if not line.startswith('>') and re.search(r"[\(\)\[\]\.]", line):
                         break
                     return True
                 else:
@@ -529,7 +529,7 @@ class csFasta(Sequence):
                         break
                     elif line[0] not in string.ascii_uppercase:
                         return False
-                    elif len(line) > 1 and not re.search('^[\d.]+$', line[1:]):
+                    elif len(line) > 1 and not re.search(r'^[\d.]+$', line[1:]):
                         return False
                     return True
                 else:
@@ -1013,8 +1013,8 @@ class DotBracket(Sequence):
     edam_format = "format_1457"
     file_ext = "dbn"
 
-    sequence_regexp = re.compile("^[ACGTURYKMSWBDHVN]+$", re.I)
-    structure_regexp = re.compile("^[\(\)\.\[\]{}]+$")
+    sequence_regexp = re.compile(r"^[ACGTURYKMSWBDHVN]+$", re.I)
+    structure_regexp = re.compile(r"^[\(\)\.\[\]{}]+$")
 
     def set_meta(self, dataset, **kwd):
         """

@@ -42,7 +42,7 @@ def main():
         if word and word not in math_allowed:
             stop_err("Invalid expression '%s': term '%s' is not recognized or allowed" % (expression, word))
     symbols = set()
-    for symbol in re.compile('[^a-z0-9\s]+').findall(expression):
+    for symbol in re.compile(r'[^a-z0-9\s]+').findall(expression):
         if symbol and symbol not in ops_allowed:
             stop_err("Invalid expression '%s': operator '%s' is not recognized or allowed" % (expression, symbol))
         else:

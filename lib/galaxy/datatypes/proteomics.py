@@ -106,7 +106,7 @@ class ProteomicsXml(GenericXml):
             if line is None or not line.startswith('<?'):
                 break
         # pattern match <root or <ns:root for any ns string
-        pattern = '^<(\w*:)?%s' % self.root
+        pattern = r'^<(\w*:)?%s' % self.root
         return line is not None and re.match(pattern, line) is not None
 
     def set_peek(self, dataset, is_multi_byte=False):
