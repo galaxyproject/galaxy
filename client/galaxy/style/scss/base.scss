@@ -1960,6 +1960,78 @@ div.toolTitleNoSection {
     }
 }
 
+/* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
+ * workflow editor; everything should be moved out of the mako and into its own
+ * file */
+
+#canvas-viewport {
+    background: white url("../../images/light_gray_grid.gif");
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    overflow: hidden;
+}
+
+#close-viewport {
+    border-left: 1px solid #999;
+    border-top: 1px solid #999;
+    background: #ddd url("../../images/overview_arrows.png") 12px 0px;
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    width: 12px;
+    height: 12px;
+    z-index: 25000;
+}
+
+.input-terminal {
+    width: 12px;
+    height: 12px;
+    background: url("../../images/workflow_circle_open.png");
+    position: absolute;
+    top: 50%;
+    margin-top: -6px;
+    left: -6px;
+    z-index: 1500;
+}
+.output-terminal {
+    width: 12px;
+    height: 12px;
+    background: url("../../images/workflow_circle_open.png");
+    position: absolute;
+    top: 50%;
+    margin-top: -6px;
+    right: -6px;
+    z-index: 1500;
+}
+.drag-terminal {
+    width: 12px;
+    height: 12px;
+    background: url("../../images/workflow_circle_drag.png");
+    position: absolute;
+    z-index: 1500;
+}
+.input-terminal-active {
+    background: url("../../images/workflow_circle_green.png");
+}
+#overview-border {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: 20000px;
+    bottom: 0px;
+    border-top: solid gray 1px;
+    border-left: solid grey 1px;
+    padding: 7px 0 0 7px;
+    background: #eeeeee no-repeat url("../../images/resizable.png");
+    z-index: 20000;
+    overflow: hidden;
+    max-width: 300px;
+    max-height: 300px;
+    min-width: 50px;
+    min-height: 50px;
+}
+
 /* For Vue */
 [v-cloak] {
     display: none;
