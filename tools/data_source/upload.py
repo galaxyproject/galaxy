@@ -283,7 +283,7 @@ def __main__():
             else:
                 metadata.append(add_file(dataset, registry, output_path))
         except UploadProblemException as e:
-            metadata.append(file_err(e.message, dataset))
+            metadata.append(file_err(str(e), dataset))
     __write_job_metadata(metadata)
 
 

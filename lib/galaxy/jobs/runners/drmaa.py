@@ -282,9 +282,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 log.warning("(%s/%s) unable to communicate with DRM: %s", galaxy_id_tag, external_job_id, e)
                 new_watched.append(ajs)
                 continue
-            except Exception as e:
+            except Exception:
                 # so we don't kill the monitor thread
-                log.exception("(%s/%s) unable to check job status: %s" % (galaxy_id_tag, external_job_id, e))
+                log.exception("(%s/%s) unable to check job status" % (galaxy_id_tag, external_job_id))
                 log.warning("(%s/%s) job will now be errored" % (galaxy_id_tag, external_job_id))
                 ajs.fail_message = "Cluster could not complete job"
                 self.work_queue.put((self.fail_job, ajs))
@@ -329,8 +329,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             log.info("(%s/%s) Removed from DRM queue at user's request" % (job.get_id(), ext_id))
         except drmaa.InvalidJobException:
             log.exception("(%s/%s) User killed running job, but it was already dead" % (job.get_id(), ext_id))
-        except Exception as e:
-            log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % (job.get_id(), ext_id, e))
+        except Exception:
+            log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.get_id(), ext_id))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
