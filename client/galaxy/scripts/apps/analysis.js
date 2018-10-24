@@ -153,10 +153,9 @@ window.app = function app(options, bootstrapped) {
                 new GridView({
                     url_base: `${Galaxy.root}workflow/list_published`,
                     active_tab: "shared",
-                    url_data:
-                        {
-                            'f-username': ( userFilter == null ) ? "" : userFilter
-                        }
+                    url_data: {
+                        "f-username": userFilter == null ? "" : userFilter
+                    }
                 })
             );
         },
