@@ -557,9 +557,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'annotation'        : inputs.get('__annotation', ''),
             'name'              : module.get_name(),
             'tool_state'        : module.get_state(),
-            'data_inputs'       : module.get_data_inputs(),
-            'input_parameters'  : module.get_input_parameters(),
-            'data_outputs'      : module.get_data_outputs(),
+            'inputs'            : module.get_all_inputs(connectable_only=True),
+            'outputs'           : module.get_all_outputs(),
             'config_form'       : module.get_config_form(),
             'post_job_actions'  : module.get_post_job_actions(inputs)
         }

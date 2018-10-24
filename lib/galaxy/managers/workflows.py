@@ -571,9 +571,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
                 'errors': module.get_errors(),
-                'data_inputs': module.get_data_inputs(),
-                'data_outputs': module.get_data_outputs(),
-                'input_parameters': module.get_input_parameters(),
+                'inputs': module.get_all_inputs(connectable_only=True),
+                'outputs': module.get_all_outputs(),
                 'config_form': config_form,
                 'annotation': annotation_str,
                 'post_job_actions': {},
@@ -654,12 +653,12 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         for order_index in sorted(steps):
             step = steps[order_index]
-            for i, step_data_output in enumerate(step['data_outputs']):
+            for i, step_data_output in enumerate(step['outputs']):
                 if step_data_output.get('collection_type_source') and step_data_output['collection_type'] is None:
                     collection_type_source = step_data_output['collection_type_source']
                     for input_connection in step['input_connections'].get(collection_type_source, []):
                         input_step = steps[input_connection['id']]
-                        for input_step_data_output in input_step['data_outputs']:
+                        for input_step_data_output in input_step['outputs']:
                             if input_step_data_output['name'] == input_connection['output_name']:
                                 step_data_output['collection_type'] = input_step_data_output.get('collection_type')
         return steps

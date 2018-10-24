@@ -468,8 +468,8 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
                 'name',
                 'tool_state',
                 'tooltip',
-                'data_inputs',
-                'data_outputs',
+                'inputs',
+                'outputs',
                 'config_form',
                 'annotation',
                 'post_job_actions',
@@ -494,7 +494,7 @@ steps:
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         steps = downloaded_workflow['steps']
         assert len(steps) == 2
-        assert steps['1']['data_outputs'][0]['collection_type'] == 'list:paired'
+        assert steps['1']['outputs'][0]['collection_type'] == 'list:paired'
 
     @skip_without_tool('collection_type_source')
     def test_export_editor_subworkflow_collection_type_source(self):
@@ -525,7 +525,7 @@ steps:
         steps = downloaded_workflow['steps']
         assert len(steps) == 2
         assert steps['1']['type'] == 'subworkflow'
-        assert steps['1']['data_outputs'][0]['collection_type'] == 'list:paired'
+        assert steps['1']['outputs'][0]['collection_type'] == 'list:paired'
 
     def test_import_missing_tool(self):
         workflow = self.workflow_populator.load_workflow_from_resource(name="test_workflow_missing_tool")
