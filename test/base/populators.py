@@ -223,7 +223,7 @@ class BaseDatasetPopulator(object):
             wait_on(has_active_jobs, "active jobs", timeout=timeout)
         except TimeoutAssertionError as e:
             jobs = self.history_jobs(history_id)
-            message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e.message)
+            message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e)
             raise TimeoutAssertionError(message)
 
         if assert_ok:
@@ -1152,7 +1152,7 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
         response = state_func()
-        raise TimeoutAssertionError("%s Current response containing state [%s]." % (str(e), response.json()))
+        raise TimeoutAssertionError("%s Current response containing state [%s]." % (e, response.json()))
 
 
 class GiPostGetMixin(object):

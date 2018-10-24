@@ -86,8 +86,8 @@ class ToolPanelManager(object):
                 root.append(elem)
             with RenamedTemporaryFile(config_filename, mode='w') as fh:
                 fh.write(xml_to_string(root, pretty=True))
-        except Exception as e:
-            log.exception("Exception in ToolPanelManager.config_elems_to_xml_file: \n %s", str(e))
+        except Exception:
+            log.exception("Exception in ToolPanelManager.config_elems_to_xml_file")
 
     def generate_tool_elem(self, tool_shed, repository_name, changeset_revision, owner, tool_file_path,
                            tool, tool_section):

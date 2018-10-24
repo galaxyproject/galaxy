@@ -577,7 +577,7 @@ class AdminToolshed(AdminGalaxy):
             tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
             return json.dumps(tsr_ids_for_monitoring)
         except install_manager.RepositoriesInstalledException as e:
-            return self.message_exception(trans, e.message)
+            return self.message_exception(trans, str(e))
 
     @web.expose
     @web.require_admin
