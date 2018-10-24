@@ -209,7 +209,7 @@ class JobRunnerMapper(object):
 
     def __handle_rule(self, rule_function, destination):
         job_destination = self.__invoke_expand_function(rule_function, destination.params)
-        if not isinstance(job_destination, galaxy.jobs.JobDestination):
+        if job_destination is not None and not isinstance(job_destination, galaxy.jobs.JobDestination):
             job_destination_rep = str(job_destination)  # Should be either id or url
             if '://' in job_destination_rep:
                 job_destination = self.__convert_url_to_destination(job_destination_rep)
@@ -224,14 +224,15 @@ class JobRunnerMapper(object):
             job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
         else:
             job_destination = raw_job_destination
-        log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
+        if job_destination is not None:
+            log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
         self.cached_job_destination = job_destination
 
     def get_job_destination(self, params):
         """
         Cache the job_destination to avoid recalculation.
         """
-        if not hasattr(self, 'cached_job_destination'):
+        if not hasattr(self, 'cached_job_destination') or self.cached_job_destination is None:
             self.__cache_job_destination(params)
         return self.cached_job_destination
 

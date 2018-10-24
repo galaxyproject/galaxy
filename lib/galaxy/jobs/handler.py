@@ -481,6 +481,8 @@ class JobHandlerQueue(Monitors):
                 log.debug("Intentionally failing job with message (%s)" % failure_message)
             job_wrapper.fail(failure_message)
             return JOB_ERROR, job_destination
+        if job_destination is None:
+            return JOB_WAIT, None
         # job is ready to run, check limits
         # TODO: these checks should be refactored to minimize duplication and made more modular/pluggable
         state = self.__check_destination_jobs(job, job_wrapper)
