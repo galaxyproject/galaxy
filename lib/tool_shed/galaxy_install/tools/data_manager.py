@@ -40,8 +40,8 @@ class DataManagerHandler(object):
         try:
             with RenamedTemporaryFile(config_filename, mode='w') as fh:
                 fh.write(xml_to_string(root))
-        except Exception as e:
-            log.exception("Exception in DataManagerHandler.data_manager_config_elems_to_xml_file:\n %s", str(e))
+        except Exception:
+            log.exception("Exception in DataManagerHandler.data_manager_config_elems_to_xml_file")
 
     def install_data_managers(self, shed_data_manager_conf_filename, metadata_dict, shed_config_dict,
                               relative_install_dir, repository, repository_tools_tups):
