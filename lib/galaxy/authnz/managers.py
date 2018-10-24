@@ -271,8 +271,8 @@ class AuthnzManager(object):
                 cloudauthz.id, user_id))
             return ca.authorize(cloudauthz.provider, config)
         except CloudAuthzBaseException as e:
-            log.info(e.message)
-            raise exceptions.AuthenticationFailed(e.message)
+            log.info(e)
+            raise exceptions.AuthenticationFailed(e)
 
     def get_cloud_access_credentials_in_file(self, new_file_path, cloudauthz, sa_session, user_id, request=None):
         """
