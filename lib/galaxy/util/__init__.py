@@ -22,6 +22,7 @@ import tempfile
 import threading
 import time
 import unicodedata
+import xml.dom.minidom
 from datetime import datetime
 from hashlib import md5
 from os.path import relpath
@@ -235,19 +236,24 @@ def parse_xml_string(xml_string):
 
 def xml_to_string(elem, pretty=False):
     """Returns a string from an xml tree"""
-    if pretty:
-        elem = pretty_print_xml(elem)
     try:
-        if PY2:
-            return ElementTree.tostring(elem)
+        if elem is not None:
+            if PY2:
+                xml_str = ElementTree.tostring(elem, encoding='utf-8')
+            else:
+                xml_str = ElementTree.tostring(elem, encoding='unicode')
         else:
-            return ElementTree.tostring(elem, encoding='unicode')
+            xml_str = ''
     except TypeError as e:
         # we assume this is a comment
         if hasattr(elem, 'text'):
-            return "<!-- %s -->\n" % (elem.text)
+            return "<!-- %s -->\n" % elem.text
         else:
             raise e
+    if xml_str and pretty:
+        pretty_string = xml.dom.minidom.parseString(xml_str).toprettyxml(indent='    ')
+        return "\n".join([line for line in pretty_string.split('\n') if not re.match(r'^[\s\\nb\']*$', line)])
+    return xml_str
 
 
 def xml_element_compare(elem1, elem2):
