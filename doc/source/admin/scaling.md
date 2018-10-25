@@ -407,6 +407,18 @@ option, `enable-threads` is set implicitly. This option enables the Python GIL a
 by Galaxy itself for various non-web tasks), which Galaxy uses extensively. Setting it explicitly, however, is harmless
 and can prevent strange difficult-to-debug situations if `threads` is accidentally unset.
 
+**Worker/Mule shutdown/reload mercy**
+
+By default, uWSGI will wait up to 60 seconds for web workers and mules to terminate. This is generally safe for
+servicing web requests, but some parts of Galaxy's job preparation/submission and collection/finishing operations can
+take quite a bit of time to complete and are not entirely reentrant: job errors or state inconsistencies can occur if
+interrupted (although every effort has been made to minimize such possibilities).  By default, Galaxy will wait up to 30
+seconds for the threads allocated for these operations to terminate after instructing them to shut down.  You can change
+this behavior by increasing the value of `monitor_thread_join_timeout` in the `galaxy` section of `galaxy.yml`.  If you
+increase this near to or above 60, you should set the appropriate uWSGI `*-restart-mercy` option to a higher value. If
+using **uWSGI all-in-one**, set `worker-reload-mercy`, and if using **uWSGI + Mule job handling**, set
+`mule-reload-mercy` (both in the `uwsgi` section of `galaxy.yml`).
+
 **Signals**
 
 The signal handling options (`die-on-term` and `hook-master-start` with `unix_signal` values) are not required but, if
@@ -494,6 +506,7 @@ umask           = 022
 autostart       = true
 autorestart     = true
 startsecs       = 10
+stopwaitsecs    = 65
 user            = galaxy
 numprocs        = 1
 stopsignal      = INT
@@ -505,6 +518,9 @@ process should `autostart` on boot, and `autorestart` if it ever crashes. We spe
 must stay up for this long before we consider it OK. If the process crashes sooner than that (e.g. bad changes you've
 made to your local installation) supervisord will try again a couple of times to restart the process before giving up
 and marking it as failed. This is one of the many ways supervisord is much friendly for managing these sorts of tasks. 
+
+The value of `stopwaitsecs` should be at least as large as the smallest value of uWSGI's `reload-mercy`,
+`worker-reload-mercy`, and `mule-reload-mercy` options, all of which default to `60`.
 
 If using the **uWSGI + Webless** scenario, you'll need to addtionally define job handlers to start. There's no simple
 way to activate a virtualenv when using supervisor, but you can simulate the effects by setting `$PATH` and
@@ -520,6 +536,7 @@ umask           = 022
 autostart       = true
 autorestart     = true
 startsecs       = 15
+stopwaitsecs    = 35
 user            = galaxy
 environment     = VIRTUAL_ENV="/srv/galaxy/venv",PATH="/srv/galaxy/venv/bin:%(ENV_PATH)s"
 ```
@@ -528,6 +545,9 @@ This is similar to the "web" definition above, however, you'll notice that we us
 substitution in the `command` and `process_name` fields. We've set `numprocs = 3`, which says to launch three handler
 processes. Supervisord will loop over `0..numprocs` and launch `handler0`, `handler1`, and `handler2` processes
 automatically for us, templating out the command string so each handler receives a different log file and name.
+
+The value of `stopwaitsecs` should be at least as large as the `monitor_thread_join_timeout` Galaxy option, which
+defaults to `30`.
 
 Lastly, collect the tasks defined above into a single group. If you are not using webless handlers this is as simple as:
 
