@@ -965,5 +965,12 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.values():
-            runner.shutdown()
+        for name, runner in self.job_runners.items():
+            failures = []
+            try:
+                runner.shutdown()
+            except Exception:
+                failures.append(name)
+                log.exception("Failed to shutdown runner %s", name)
+            if failures:
+                raise Exception("Failed to shutdown runners: %s" % ', '.join(failures))
