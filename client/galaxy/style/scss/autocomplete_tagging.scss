@@ -38,7 +38,9 @@
 }
 
 .ac_loading {
-    background: white url("indicator.gif") right center no-repeat;
+    //TODO: lost indicator.gif, figure out a replacement
+    //background: white url("indicator.gif") right center no-repeat;
+    background: white;
 }
 
 .ac_odd {

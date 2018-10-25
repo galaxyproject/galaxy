@@ -21,6 +21,11 @@ import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
 
+//import "style/scss/autocomplete_tagging.scss";
+//import "static/style/jquery-ui/smoothness/jquery-ui.css";
+//import "static/style/library.css";
+//import "static/style/trackster.css";
+
 /* global Galaxy */
 
 /**
@@ -33,11 +38,6 @@ export class TracksterUI extends Backbone.Model {
 
     initialize(baseURL) {
         this.baseURL = baseURL;
-        Utils.cssLoadFile("static/style/jquery.rating.css");
-        Utils.cssLoadFile("static/style/autocomplete_tagging.css");
-        Utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
-        Utils.cssLoadFile("static/style/library.css");
-        Utils.cssLoadFile("static/style/trackster.css");
     }
 
     /**
