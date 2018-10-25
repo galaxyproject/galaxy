@@ -87,7 +87,7 @@ If you have any of these repositories installed in your Galaxy, please update th
 Galaxy Client Artifacts
 =======================
 
-New for 18.09, we no longer include pre-compiled javascript and other
+New for 18.09, we no longer include pre-compiled JavaScript and other
 client-related sources in the GitHub repository.  Instead, Galaxy now includes
 in its dependencies all the components necessary to build on startup when it
 detects changes in the client code.  This will make it easier to integrate
