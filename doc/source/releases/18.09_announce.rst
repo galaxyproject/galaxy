@@ -88,11 +88,11 @@ Galaxy Client Artifacts
 =======================
 
 New for 18.09, we no longer include pre-compiled JavaScript and other
-client-related sources in the GitHub repository.  Instead, Galaxy now includes
-in its dependencies all the components necessary to build on startup when it
-detects changes in the client code.  This will make it easier to integrate
-customizations to your local client, among other benefits moving forward with
-our continued client modernization.
+client-related artifacts in the GitHub repository.  Instead, Galaxy now
+includes in its dependencies all the components necessary to build on startup
+when it detects changes in the client code.  This will make it easier to
+integrate customizations to your local client, among other benefits moving
+forward with our continued client modernization.
 
 This client building code executes automatically via the 'common_startup.sh'
 script, but if you run Galaxy in a way that doesn't utilize that script, you
