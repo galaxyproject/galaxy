@@ -966,7 +966,4 @@ class DefaultJobDispatcher(object):
 
     def shutdown(self):
         for runner in self.job_runners.values():
-            try:
-                runner.shutdown()
-            except Exception:
-                raise Exception("Failed to shutdown runner %s" % runner)
+            runner.shutdown()
