@@ -60,7 +60,7 @@ def main(argv=None):
         try:
             verify_tool(
                 tool_id, galaxy_interactor, test_index=test_index, tool_version=tool_version,
-                register_job_data=register, quiet=not verbose
+                register_job_data=register, quiet=not verbose, allow_path_paste=args.allow_path_paste
             )
 
             if verbose:
@@ -93,6 +93,7 @@ def _arg_parser():
     parser.add_argument('-u', '--galaxy-url', default="http://localhost:8080", help='Galaxy URL')
     parser.add_argument('-k', '--key', default=None, help='Galaxy User API Key')
     parser.add_argument('-a', '--admin-key', default=None, help='Galaxy Admin API Key')
+    parser.add_argument('--allow_path_paste', default=False, action="store_true", help='This requires Galaxy-side config option with the same name enabled. Allows for fetching test data locally. Only for admins.')
     parser.add_argument('-t', '--tool-id', default=None, help='Tool ID')
     parser.add_argument('--tool-version', default=None, help='Tool Version')
     parser.add_argument('-i', '--test-index', default=ALL_TESTS, help='Tool Test Index (starting at 0) - by default all tests will run.')
