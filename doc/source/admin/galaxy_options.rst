@@ -2103,7 +2103,8 @@
     jobs, and which can cause job errors if not shut down cleanly. If
     using supervisord, consider also increasing the value of
     `stopwaitsecs`. If using job handler mules, consider also setting
-    the `mule-reload-mercy` uWSGI option.
+    the `mule-reload-mercy` uWSGI option. See the Galaxy Admin
+    Documentation for more.
 :Default: ``30``
 :Type: int
 

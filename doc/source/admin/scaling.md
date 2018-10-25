@@ -414,9 +414,13 @@ servicing web requests, but some parts of Galaxy's job preparation/submission an
 take quite a bit of time to complete and are not entirely reentrant: job errors or state inconsistencies can occur if
 interrupted (although every effort has been made to minimize such possibilities).  By default, Galaxy will wait up to 30
 seconds for the threads allocated for these operations to terminate after instructing them to shut down.  You can change
-this behavior by increasing the value of `monitor_thread_join_timeout` in the `galaxy` section of `galaxy.yml`.  If you
-increase this near to or above 60, you should set the appropriate uWSGI `*-restart-mercy` option to a higher value. If
-using **uWSGI all-in-one**, set `worker-reload-mercy`, and if using **uWSGI + Mule job handling**, set
+this behavior by increasing the value of `monitor_thread_join_timeout` in the `galaxy` section of `galaxy.yml`. The
+maximum amount of time that Galaxy will take to shut down job runner workers is `monitor_thread_join_timeout *
+runner_plugin_count` since each plugin is shut down sequentially (`runner_plugin_count` is the number of `<plugin>`s in
+your `job_conf.xml`).
+
+Thus you should set the appropriate uWSGI `*-restart-mercy` option to a value higher than the maximum job runner worker
+shutdown time. If using **uWSGI all-in-one**, set `worker-reload-mercy`, and if using **uWSGI + Mule job handling**, set
 `mule-reload-mercy` (both in the `uwsgi` section of `galaxy.yml`).
 
 **Signals**
@@ -546,8 +550,9 @@ substitution in the `command` and `process_name` fields. We've set `numprocs = 3
 processes. Supervisord will loop over `0..numprocs` and launch `handler0`, `handler1`, and `handler2` processes
 automatically for us, templating out the command string so each handler receives a different log file and name.
 
-The value of `stopwaitsecs` should be at least as large as the `monitor_thread_join_timeout` Galaxy option, which
-defaults to `30`.
+The value of `stopwaitsecs` should be at least as large as `monitor_thread_join_timeout * runner_plugin_count`, which
+is `30` in the default configuration (`monitor_thread_join_timeout` is a Galaxy configuration option and
+`runner_plugin_count` is the number of `<plugin>`s in your `job_conf.xml`).
 
 Lastly, collect the tasks defined above into a single group. If you are not using webless handlers this is as simple as:
 
