@@ -264,6 +264,9 @@ workflow_editor:
     tool_menu_section_link: '#title___workflow__${section_name}__ a span'
     tool_menu_item_link: 'a#tool-menu-${section_name}-${item_name}'
 
+    connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
+    collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'
+
     label_input: "[tour_id='__label'] input"
     annotation_input: "[tour_id='__annotation'] textarea"
 
