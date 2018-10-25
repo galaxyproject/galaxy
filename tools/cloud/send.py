@@ -60,10 +60,10 @@ def send(provider, credentials, bucket, object_label, filename, overwrite_existi
     transfer_start_time = time.time()
     created_obj.upload_from_file(filename)
     print("Finished successfully.")
-    print("Job runtime:\t{}".format(time.time()-start_time))
+    print("Job runtime:\t{}".format(time.time() - start_time))
     print("Transfer ET:\t{}\tSpeed:\t{}MB/sec".format(
-        time.time()-transfer_start_time,
-        round((os.path.getsize(filename) >> 20)/(time.time()-transfer_start_time), 3)))
+        time.time() - transfer_start_time,
+        round((os.path.getsize(filename) >> 20) / (time.time() - transfer_start_time), 3)))
 
 
 def parse_args(args):
