@@ -58,6 +58,22 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+Upgrade Warning for Admins
+==========================
+
+This release includes changes to the way that non-terminal jobs are handled that greatly improve performance and the
+user experience. As a result, when upgrading a Galaxy server with a large number of jobs in the ``new`` state, job
+handlers will block on first startup (jobs will not run) as these old ``new`` state jobs are migrated to a terminal
+state. This process will generate messages of the format:
+
+    .. code-block::
+
+        galaxy.jobs DEBUG 2018-10-18 22:40:36,900 Pausing Job '995223', Execution of this dataset's job is paused because its input datasets are in an error state.
+
+Once migration is complete, job handlers will resume normal operation.
+
+For more details, see `Pull Request 6036`_ and `Issue 5944 <https://github.com/galaxyproject/galaxy/issues/5944>`__.
+
 Security
 ========
 
