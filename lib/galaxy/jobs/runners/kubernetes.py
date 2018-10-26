@@ -457,32 +457,29 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         elif len(jobs.response['items']) == 0:
             # there is no job responding to this job_id, it is either lost or something happened.
             log.error("No Jobs are available under expected selector app=" + job_state.job_id)
-            error_file = open(job_state.error_file, 'w')
-            error_file.write("No Kubernetes Jobs are available under expected selector app=" + job_state.job_id + "\n")
-            error_file.close()
+            with open(job_state.error_file, 'w') as error_file:
+                error_file.write("No Kubernetes Jobs are available under expected selector app=" + job_state.job_id + "\n")
             self.mark_as_failed(job_state)
             return job_state
         else:
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("There is more than one Kubernetes Job associated to job id " + job_state.job_id)
             self.__produce_log_file(job_state)
-            error_file = open(job_state.error_file, 'w')
-            error_file.write("There is more than one Kubernetes Job associated to job id " + job_state.job_id + "\n")
-            error_file.close()
+            with open(job_state.error_file, 'w') as error_file:
+                error_file.write("There is more than one Kubernetes Job associated to job id " + job_state.job_id + "\n")
             self.mark_as_failed(job_state)
             return job_state
 
     def _handle_job_failure(self, job, job_state, reason=None):
         self.__produce_log_file(job_state)
-        error_file = open(job_state.error_file, 'w')
-        if reason == "OOM":
-            error_file.write("Job killed after running out of memory. Try with more memory.\n")
-            job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
-            job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-        else:
-            error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
-            job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
-        error_file.close()
+        with open(job_state.error_file, 'w') as error_file:
+            if reason == "OOM":
+                error_file.write("Job killed after running out of memory. Try with more memory.\n")
+                job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
+                job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+            else:
+                error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
+                job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
         job_state.running = False
         self.mark_as_failed(job_state)
         job.scale(replicas=0)
@@ -538,22 +535,22 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __produce_log_file(self, job_state):
         pod_r = Pod.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
-        logs = ""
+        log_string = ""
         for pod_obj in pod_r.response['items']:
             try:
                 pod = Pod(self._pykube_api, pod_obj)
-                logs += "\n\n==== Pod " + pod.name + " log start ====\n\n"
-                logs += pod.logs(timestamps=True)
-                logs += "\n\n==== Pod " + pod.name + " log end   ===="
+                log_string += "\n\n==== Pod " + pod.name + " log start ====\n\n"
+                log_string += pod.logs(timestamps=True)
+                log_string += "\n\n==== Pod " + pod.name + " log end   ===="
             except Exception as detail:
-                log.info("Could not write pod\'s " + pod_obj['metadata']['name'] +
-                         " log file due to HTTPError " + str(detail))
+                log.info("Could not write log file for pod %s due to HTTPError %s",
+                         detail, pod_obj['metadata']['name'])
+        if isinstance(log_string, text_type):
+            log_string = log_string.encode('utf8')
 
         logs_file_path = job_state.output_file
         try:
             with open(logs_file_path, mode="w") as logs_file:
-               if isinstance(log_string, text_type):
-                   log_string = log_string.encode('utf8')
                 logs_file.write(log_string)
         except IOError as e:
             log.error("Couldn't produce log files for %s", job_state.job_id)
