@@ -544,7 +544,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 log_string += "\n\n==== Pod " + pod.name + " log end   ===="
             except Exception as detail:
                 log.info("Could not write log file for pod %s due to HTTPError %s",
-                         detail, pod_obj['metadata']['name'])
+                         pod_obj['metadata']['name'], detail)
         if isinstance(log_string, text_type):
             log_string = log_string.encode('utf8')
 
