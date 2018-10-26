@@ -5628,7 +5628,7 @@ button.bg-dark:focus {
 .mx-2 {
   margin-right: 0.5rem !important; }
 
-.mb-2, .ui-portlet-section, #tool-search,
+.mb-2, .ui-portlet-section, #tool-search, .list-panel .controls > *:not(:empty),
 .my-2 {
   margin-bottom: 0.5rem !important; }
 
@@ -5646,7 +5646,8 @@ button.bg-dark:focus {
 .mr-3,
 .mx-3,
 .unified-panel-header,
-.list-item .primary-actions {
+.list-item .primary-actions,
+.dataset-collection-panel > .controls {
   margin-right: 1rem !important; }
 
 .mb-3,
@@ -5656,7 +5657,8 @@ button.bg-dark:focus {
 .ml-3,
 .mx-3,
 .unified-panel-header,
-.list-item .primary-actions {
+.list-item .primary-actions,
+.dataset-collection-panel > .controls {
   margin-left: 1rem !important; }
 
 .m-4 {
@@ -6890,7 +6892,7 @@ pre.code {
   -moz-osx-font-smoothing: grayscale; }
 
 /* makes the font 33% larger relative to the icon container */
-.fa-lg, .dataset-collection-panel > .controls .navigation .back span {
+.fa-lg {
   font-size: 1.33333em;
   line-height: 0.75em;
   vertical-align: -15%; }
@@ -6924,7 +6926,7 @@ pre.code {
   width: 2.14286em;
   top: 0.14286em;
   text-align: center; }
-  .fa-li.fa-lg, .dataset-collection-panel > .controls .navigation .back span.fa-li {
+  .fa-li.fa-lg {
     left: -1.85714em; }
 
 .fa-border {
@@ -12285,15 +12287,11 @@ div.unified-panel-body {
   width: 100%;
   height: 100%;
   padding: 0px;
-  flex: 1; }
+  flex: 1;
+  overflow: auto; }
 
 div.unified-panel-body-background {
   background: none repeat scroll 0 0 #f8f9fa; }
-
-#left > div.unified-panel-body,
-#right > div.unified-panel-body {
-  padding-bottom: 25px;
-  overflow: auto; }
 
 #dd-helper {
   background: white;
@@ -13337,8 +13335,6 @@ div.permissionContainer {
 
 .list-panel {
   overflow: hidden; }
-  .list-panel .controls > *:not(:empty) {
-    margin-bottom: 8px; }
   .list-panel .controls .name {
     word-wrap: break-word;
     font-weight: bold; }
@@ -14141,30 +14137,15 @@ pre.peek {
 .dataset-collection-panel .vertically-spaced {
   margin-top: 4px; }
 
-.dataset-collection-panel > .controls {
-  margin: 8px 8px 1px;
-  padding: 0px; }
-  .dataset-collection-panel > .controls .navigation {
-    margin-top: 4px; }
-    .dataset-collection-panel > .controls .navigation .back span {
-      margin-right: 4px;
-      font-weight: bold; }
-  .dataset-collection-panel > .controls .title {
-    margin-top: 12px; }
-    .dataset-collection-panel > .controls .title .name {
-      font-weight: bold; }
+.dataset-collection-panel > .controls .navigation .back span {
+  font-weight: bold; }
+
+.dataset-collection-panel > .controls .title .name {
+  font-weight: bold; }
 
 .dataset-collection-panel > .list-items {
   overflow-x: hidden;
   overflow-y: auto; }
-  .dataset-collection-panel > .list-items:not(:empty) {
-    border-top: 1px solid #bfbfbf; }
-  .dataset-collection-panel > .list-items .list-item {
-    border-width: 1px 0px 0px 0px; }
-    .dataset-collection-panel > .list-items .list-item:first-child {
-      border-top-width: 0px; }
-    .dataset-collection-panel > .list-items .list-item:last-child {
-      border-bottom-width: 1px; }
 
 .job.list-item {
   border: 1px solid #bfbfbf; }
