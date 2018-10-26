@@ -435,14 +435,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
             # This assumes jobs dependent on a single pod, single container
             if succeeded > 0:
-                try:
-                    self.__produce_log_file(job_state)
-                    error_file = open(job_state.error_file, 'w')
-                    error_file.write("")
-                    error_file.close()
-                except IOError as e:
-                    log.error("Couldn't produce log files for %s", job_state.job_id)
-                    log.exception(e)
+                self.__produce_log_file(job_state)
+                with open(job_state.error_file, 'w'):
+                    pass
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
@@ -555,11 +550,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                          " log file due to HTTPError " + str(detail))
 
         logs_file_path = job_state.output_file
-        logs_file = open(logs_file_path, mode="w")
-        if isinstance(logs, text_type):
-            logs = logs.encode('utf8')
-        logs_file.write(logs)
-        logs_file.close()
+        try:
+            with open(logs_file_path, mode="w") as logs_file:
+               if isinstance(log_string, text_type):
+                   log_string = log_string.encode('utf8')
+                logs_file.write(log_string)
+        except IOError as e:
+            log.error("Couldn't produce log files for %s", job_state.job_id)
+            log.exception(e)
+
         return logs_file_path
 
     def stop_job(self, job):
