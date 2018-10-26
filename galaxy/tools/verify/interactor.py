@@ -392,6 +392,9 @@ class GalaxyInteractorApi(object):
             else:
                 element = self.uploads[element_def["value"]].copy()
                 element["name"] = element_identifier
+                tags = element_def.get("attributes").get("tags")
+                if tags:
+                    element["tags"] = tags.split(",")
             element_identifiers.append(element)
         return element_identifiers
 

@@ -21,7 +21,7 @@ for assertion_module_name in assertion_module_names:
         __import__(full_assertion_module_name)
         assertion_module = sys.modules[full_assertion_module_name]
         assertion_modules.append(assertion_module)
-    except Exception as e:
+    except Exception:
         log.exception('Failed to load assertion module: %s', assertion_module_name)
 
 

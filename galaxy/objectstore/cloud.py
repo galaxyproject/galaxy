@@ -23,6 +23,7 @@ from ..objectstore import convert_bytes, ObjectStore
 
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
+    from cloudbridge.cloud.interfaces.exceptions import InvalidNameException
 except ImportError:
     CloudProviderFactory = None
     ProviderList = None
@@ -171,16 +172,19 @@ class Cloud(ObjectStore):
 
     def _get_bucket(self, bucket_name):
         try:
-            bucket = self.conn.object_store.get(bucket_name)
+            bucket = self.conn.storage.buckets.get(bucket_name)
             if bucket is None:
                 log.debug("Bucket not found, creating a bucket with handle '%s'", bucket_name)
-                bucket = self.conn.object_store.create(bucket_name)
+                bucket = self.conn.storage.buckets.create(bucket_name)
             log.debug("Using cloud ObjectStore with bucket '%s'", bucket.name)
             return bucket
+        except InvalidNameException:
+            log.exception("Invalid bucket name -- unable to continue")
+            raise
         except Exception:
             # These two generic exceptions will be replaced by specific exceptions
             # once proper exceptions are exposed by CloudBridge.
-            log.exception("Could not get bucket '%s'.", bucket_name)
+            log.exception("Could not get bucket '{}'".format(bucket_name))
         raise Exception
 
     def _fix_permissions(self, rel_path):
@@ -239,7 +243,7 @@ class Cloud(ObjectStore):
 
     def _get_size_in_cloud(self, rel_path):
         try:
-            obj = self.bucket.get(rel_path)
+            obj = self.bucket.objects.get(rel_path)
             if obj:
                 return obj.size
         except Exception:
@@ -252,13 +256,13 @@ class Cloud(ObjectStore):
             # A hackish way of testing if the rel_path is a folder vs a file
             is_dir = rel_path[-1] == '/'
             if is_dir:
-                keyresult = self.bucket.list(prefix=rel_path)
+                keyresult = self.bucket.objects.list(prefix=rel_path)
                 if len(keyresult) > 0:
                     exists = True
                 else:
                     exists = False
             else:
-                exists = True if self.bucket.get(rel_path) is not None else False
+                exists = True if self.bucket.objects.get(rel_path) is not None else False
         except Exception:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
@@ -288,7 +292,7 @@ class Cloud(ObjectStore):
     def _download(self, rel_path):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
-            key = self.bucket.get(rel_path)
+            key = self.bucket.objects.get(rel_path)
             # Test if cache is large enough to hold the new file
             if self.cache_size > 0 and key.size > self.cache_size:
                 log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
@@ -322,27 +326,27 @@ class Cloud(ObjectStore):
         try:
             source_file = source_file if source_file else self._get_cache_path(rel_path)
             if os.path.exists(source_file):
-                if os.path.getsize(source_file) == 0 and (self.bucket.get(rel_path) is not None):
+                if os.path.getsize(source_file) == 0 and (self.bucket.objects.get(rel_path) is not None):
                     log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file,
                               rel_path)
                     return True
                 if from_string:
-                    if not self.bucket.get(rel_path):
-                        created_obj = self.bucket.create_object(rel_path)
+                    if not self.bucket.objects.get(rel_path):
+                        created_obj = self.bucket.objects.create(rel_path)
                         created_obj.upload(source_file)
                     else:
-                        self.bucket.get(rel_path).upload(source_file)
+                        self.bucket.objects.get(rel_path).upload(source_file)
                     log.debug("Pushed data from string '%s' to key '%s'", from_string, rel_path)
                 else:
                     start_time = datetime.now()
                     log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file,
                               os.path.getsize(source_file), rel_path)
                     self.transfer_progress = 0  # Reset transfer progress counter
-                    if not self.bucket.get(rel_path):
-                        created_obj = self.bucket.create_object(rel_path)
+                    if not self.bucket.objects.get(rel_path):
+                        created_obj = self.bucket.objects.create(rel_path)
                         created_obj.upload_from_file(source_file)
                     else:
-                        self.bucket.get(rel_path).upload_from_file(source_file)
+                        self.bucket.objects.get(rel_path).upload_from_file(source_file)
 
                     end_time = datetime.now()
                     log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
@@ -468,7 +472,7 @@ class Cloud(ObjectStore):
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
                 shutil.rmtree(self._get_cache_path(rel_path))
-                results = self.bucket.list(prefix=rel_path)
+                results = self.bucket.objects.list(prefix=rel_path)
                 for key in results:
                     log.debug("Deleting key %s", key.name)
                     key.delete()
@@ -478,7 +482,7 @@ class Cloud(ObjectStore):
                 os.unlink(self._get_cache_path(rel_path))
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
-                    key = self.bucket.get(rel_path)
+                    key = self.bucket.objects.get(rel_path)
                     log.debug("Deleting key %s", key.name)
                     key.delete()
                     return True
@@ -566,7 +570,7 @@ class Cloud(ObjectStore):
         if self.exists(obj, **kwargs):
             rel_path = self._construct_path(obj, **kwargs)
             try:
-                key = self.bucket.get(rel_path)
+                key = self.bucket.objects.get(rel_path)
                 return key.generate_url(expires_in=86400)  # 24hrs
             except Exception:
                 log.exception("Trouble generating URL for dataset '%s'", rel_path)
