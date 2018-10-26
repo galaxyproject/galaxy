@@ -65,7 +65,7 @@ class OutputsDict(OrderedDict):
             return item
 
 
-def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
+def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history, force_path_paste=False):
     # Upload any needed files
     upload_waits = []
 
@@ -73,12 +73,12 @@ def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
 
     if UPLOAD_ASYNC:
         for test_data in all_test_data:
-            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id))
+            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste))
         for upload_wait in upload_waits:
             upload_wait()
     else:
         for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id)
+            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste)
             upload_wait()
 
 
@@ -265,7 +265,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, tool_id, async=True):
+    def stage_data_async(self, test_data, history_id, tool_id, async=True, force_path_paste=False):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
@@ -282,7 +282,12 @@ class GalaxyInteractorApi(object):
             files = {}
             for i, file_name in enumerate(composite_data):
                 file_name = self.test_data_path(tool_id, file_name)
-                files["files_%s|file_data" % i] = open(file_name, 'rb')
+                if force_path_paste:
+                    tool_input.update({
+                        "files_%d|url_paste" % i: "file://" + file_name
+                    })
+                else:
+                    files["files_%s|file_data" % i] = open(file_name, 'rb')
                 tool_input.update({
                     "files_%d|type" % i: "upload_dataset",
                 })
@@ -297,16 +302,20 @@ class GalaxyInteractorApi(object):
                 "files_0|NAME": name,
                 "files_0|type": "upload_dataset",
             })
-            # TODO: Option to upload by path since we are getting the paths from Galaxy now it makes more
-            # sense to move this there.
-            files = {
-                "files_0|file_data": open(file_name, 'rb')
-            }
+            files = {}
+            if force_path_paste:
+                tool_input.update({
+                    "files_0|url_paste": "file://" + file_name
+                })
+            else:
+                files = {
+                    "files_0|file_data": open(file_name, 'rb')
+                }
         submit_response_object = self.__submit_tool(history_id, "upload1", tool_input, extra_data={"type": "upload_dataset"}, files=files)
         if submit_response_object.status_code != 200:
             raise Exception("Request to upload dataset failed [%s]" % submit_response_object.content)
         submit_response = submit_response_object.json()
-        assert "outputs" in submit_response, "Invalid response from server [%s], expecteding outputs in response." % submit_response
+        assert "outputs" in submit_response, "Invalid response from server [%s], expecting outputs in response." % submit_response
         outputs = submit_response["outputs"]
         assert len(outputs) > 0, "Invalid response from server [%s], expecting an output dataset." % submit_response
         dataset = outputs[0]
@@ -651,7 +660,7 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
         _verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, test_data_path_builder=test_data_path_builder, keep_outputs_dir=keep_outputs_dir)
 
 
-def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job_data=None, test_index=0, tool_version=None, quiet=False):
+def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job_data=None, test_index=0, tool_version=None, quiet=False, force_path_paste=False):
     tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     testdef = ToolTestDescription(tool_test_dict)
@@ -660,7 +669,7 @@ def verify_tool(tool_id, galaxy_interactor, resource_parameters={}, register_job
 
     test_history = galaxy_interactor.new_history()
 
-    stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), test_history)
+    stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), test_history, force_path_paste)
 
     # Once data is ready, run the tool and check the outputs - record API
     # input, job info, tool run exception, as well as exceptions related to
