@@ -284,7 +284,7 @@ class GalaxyInteractorApi(object):
                 file_name = self.test_data_path(tool_id, file_name)
                 if force_path_paste:
                     tool_input.update({
-                        "files_%d|url_paste" % i:"file://" + file_name
+                        "files_%d|url_paste" % i: "file://" + file_name
                     })
                 else:
                     files["files_%s|file_data" % i] = open(file_name, 'rb')
@@ -305,7 +305,7 @@ class GalaxyInteractorApi(object):
             files = {}
             if force_path_paste:
                 tool_input.update({
-                    "files_0|url_paste":"file://" + file_name
+                    "files_0|url_paste": "file://" + file_name
                 })
             else:
                 files = {
