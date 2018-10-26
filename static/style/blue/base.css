@@ -5585,7 +5585,7 @@ button.bg-dark:focus {
 .m-1 {
   margin: 0.25rem !important; }
 
-.mt-1,
+.mt-1, .history-panel > .controls .history-size,
 .my-1 {
   margin-top: 0.25rem !important; }
 
@@ -5617,10 +5617,10 @@ button.bg-dark:focus {
 .errormessagesmall, .charts-client .charts-right
 .warningmessagesmall, .charts-client .charts-right
 .donemessagesmall, .charts-client .charts-right
-.infomessagesmall, .unified-panel-header {
+.infomessagesmall {
   margin: 0.5rem !important; }
 
-.mt-2,
+.mt-2, .list-item .primary-actions,
 .my-2 {
   margin-top: 0.5rem !important; }
 
@@ -5628,7 +5628,7 @@ button.bg-dark:focus {
 .mx-2 {
   margin-right: 0.5rem !important; }
 
-.mb-2, .ui-portlet-section,
+.mb-2, .ui-portlet-section, #tool-search,
 .my-2 {
   margin-bottom: 0.5rem !important; }
 
@@ -5636,7 +5636,7 @@ button.bg-dark:focus {
 .mx-2 {
   margin-left: 0.5rem !important; }
 
-.m-3 {
+.m-3, .history-panel > .empty-message, .toolMenuContainer {
   margin: 1rem !important; }
 
 .mt-3,
@@ -5644,7 +5644,9 @@ button.bg-dark:focus {
   margin-top: 1rem !important; }
 
 .mr-3,
-.mx-3 {
+.mx-3,
+.unified-panel-header,
+.list-item .primary-actions {
   margin-right: 1rem !important; }
 
 .mb-3,
@@ -5652,7 +5654,9 @@ button.bg-dark:focus {
   margin-bottom: 1rem !important; }
 
 .ml-3,
-.mx-3 {
+.mx-3,
+.unified-panel-header,
+.list-item .primary-actions {
   margin-left: 1rem !important; }
 
 .m-4 {
@@ -5732,10 +5736,10 @@ button.bg-dark:focus {
 .px-1 {
   padding-left: 0.25rem !important; }
 
-.p-2 {
+.p-2, .list-item .title-bar {
   padding: 0.5rem !important; }
 
-.pt-2,
+.pt-2, .list-item .selector,
 .py-2 {
   padding-top: 0.5rem !important; }
 
@@ -5743,7 +5747,7 @@ button.bg-dark:focus {
 .px-2 {
   padding-right: 0.5rem !important; }
 
-.pb-2,
+.pb-2, .list-item .details,
 .py-2 {
   padding-bottom: 0.5rem !important; }
 
@@ -5759,15 +5763,23 @@ button.bg-dark:focus {
   padding-top: 1rem !important; }
 
 .pr-3,
-.px-3 {
+.px-3,
+.unified-panel-controls,
+.list-item .title-bar,
+.list-item .details,
+.history-panel > .controls {
   padding-right: 1rem !important; }
 
 .pb-3,
 .py-3 {
   padding-bottom: 1rem !important; }
 
-.pl-3,
-.px-3 {
+.pl-3, .list-item .selector,
+.px-3,
+.unified-panel-controls,
+.list-item .title-bar,
+.list-item .details,
+.history-panel > .controls {
   padding-left: 1rem !important; }
 
 .p-4 {
@@ -10390,6 +10402,9 @@ html[dir="rtl"] .select2-container-multi .select2-search-choice-close {
   -o-transform: rotate(45deg);
   transform: rotate(45deg); }
 
+.card .card-body, .ui-portlet .card-body, .ui-portlet-section .card-body, .card .ui-portlet > .portlet-content, .ui-portlet > .portlet-content, .ui-portlet-section .ui-portlet > .portlet-content, .card .ui-portlet-section > .portlet-content, .ui-portlet .ui-portlet-section > .portlet-content, .ui-portlet-section > .portlet-content {
+  overflow: auto; }
+
 .ui-modal {
   display: none;
   overflow: auto; }
@@ -12204,9 +12219,6 @@ body {
       padding-right: 1.75em;
       background: url(../images/dropdownarrow.png) no-repeat right 7px; }
 
-.unified-panel-controls {
-  padding: 0 1.5rem; }
-
 .unified-panel-footer, .panel-collapse {
   position: relative;
   height: 25px;
@@ -12280,7 +12292,7 @@ div.unified-panel-body-background {
 
 #left > div.unified-panel-body,
 #right > div.unified-panel-body {
-  bottom: 25px;
+  padding-bottom: 25px;
   overflow: auto; }
 
 #dd-helper {
@@ -12618,8 +12630,7 @@ input[type="password"] {
   color: #888; }
 
 #tool-search {
-  position: relative;
-  margin: 10px 0; }
+  position: relative; }
   #tool-search #search-clear-btn {
     position: absolute;
     right: 6px;
@@ -13261,8 +13272,6 @@ div.permissionContainer {
 
 .list-item {
   border: 1px solid #bfbfbf; }
-  .list-item .padded, .list-item .title-bar {
-    padding: 6px 0.75rem 6px 0.75rem; }
   .list-item .warnings:not(:empty) {
     padding-top: 4px; }
   .list-item .warnings [class$="messagesmall"] {
@@ -13278,9 +13287,7 @@ div.permissionContainer {
   .list-item .selector {
     float: left;
     display: none;
-    width: 15px;
-    height: 32px;
-    margin: 9px;
+    width: 2.5rem;
     font-size: 80%;
     color: #333;
     cursor: pointer;
@@ -13315,13 +13322,11 @@ div.permissionContainer {
       .list-item .title-bar .state-description a {
         color: inherit; }
   .list-item .primary-actions {
-    float: right;
-    margin: 6px 0.75rem 0; }
+    float: right; }
     .list-item .primary-actions .icon-btn, .list-item .primary-actions .ui-button-icon-plain {
       margin-left: 2px; }
   .list-item .details {
-    display: none;
-    padding: 0px 0.75rem 6px 0.75rem; }
+    display: none; }
     .list-item .details label {
       margin: 0px;
       padding: 0px;
@@ -13717,37 +13722,21 @@ pre.peek {
     font-size: 10px; }
 
 .history-panel > .controls {
-  margin: 1rem 1.5rem;
-  padding: 0px;
   flex: 0 0 auto; }
-  .history-panel > .controls .title {
-    margin-bottom: 4px; }
-    .history-panel > .controls .title input {
-      width: 100%;
-      margin: -3px 0px -3px -3px;
-      font-weight: bold; }
-  .history-panel > .controls .subtitle:not(:empty) {
-    min-height: 15px;
-    margin: -4px 0px 8px; }
-    .history-panel > .controls .subtitle:not(:empty) span + span:before {
-      content: ", "; }
+  .history-panel > .controls .title .name {
+    margin-left: -1px; }
+  .history-panel > .controls .title input {
+    font-weight: bold; }
+  .history-panel > .controls .subtitle:not(:empty) span + span:before {
+    content: ", "; }
   .history-panel > .controls .history-size {
-    float: left;
-    margin: 4px 0 0; }
-  .history-panel > .controls .actions {
-    margin-bottom: 8px; }
-    .history-panel > .controls .actions:empty {
-      height: 22px; }
+    float: left; }
+  .history-panel > .controls .actions:empty {
+    height: 22px; }
   .history-panel > .controls .messages {
-    clear: both;
-    margin-bottom: 0px; }
-    .history-panel > .controls .messages > * {
-      cursor: pointer; }
-      .history-panel > .controls .messages > *:last-child {
-        margin-bottom: 8px; }
+    clear: both; }
     .history-panel > .controls .messages .quota-message {
-      display: none;
-      margin: 8px 0px 5px 0px; }
+      display: none; }
   .history-panel > .controls .tags-display,
   .history-panel > .controls .annotation-display {
     display: none;
@@ -13849,9 +13838,6 @@ pre.peek {
     flex-grow: 0 !important; }
   .history-panel > .list-items .list-item:first-child {
     border-top-width: 0px; }
-
-.history-panel > .empty-message {
-  margin: 0px 10px 0px 10px; }
 
 .history-panel .loading-indicator,
 .history-panel .contents-loading-indicator {
@@ -14817,8 +14803,7 @@ pre.peek {
 .toolMenuContainer {
   color: #212529;
   background: #f8f9fa;
-  min-height: 100%;
-  padding: 1rem 1.5rem; }
+  min-height: 100%; }
   .toolMenuContainer a {
     color: #212529; }
 

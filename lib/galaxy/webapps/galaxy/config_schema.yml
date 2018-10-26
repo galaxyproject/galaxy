@@ -277,6 +277,13 @@ mapping:
           conda channels to enable by default
           (https://conda.io/docs/user-guide/tasks/manage-channels.html)
 
+      conda_use_local:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Use locally-built conda packages.
+
       conda_auto_install:
         type: bool
         default: false
@@ -358,7 +365,7 @@ mapping:
 
       watch_job_rules:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of dynamic job rules. If changes are
@@ -1602,7 +1609,7 @@ mapping:
 
       sentry_sloreq_threshold:
         type: float
-        default: 0
+        default: 0.0
         required: false
         desc: |
           Sentry slow request logging.  Requests slower than the threshold

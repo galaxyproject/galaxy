@@ -145,10 +145,15 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_workflows_published: function() {
+            var userFilter = QueryStringParsing.get("f-username");
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}workflow/list_published`,
-                    active_tab: "shared"
+                    active_tab: "shared",
+                    url_data:
+                        {
+                            'f-username': ( userFilter == null ) ? "" : userFilter
+                        }
                 })
             );
         },

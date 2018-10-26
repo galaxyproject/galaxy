@@ -69,7 +69,7 @@ class AuthnzManager(object):
         except ImportError:
             raise
         except ParseError as e:
-            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e.message))
+            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
     def _parse_oidc_backends_config(self, config_file):
         self.oidc_backends_config = {}
@@ -95,9 +95,7 @@ class AuthnzManager(object):
         except ImportError:
             raise
         except ParseError as e:
-            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e.message))
-        # except Exception as e:
-        #     raise Exception("Malformed OIDC Configuration XML -- unable to continue. {}".format(e.message))
+            raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
     def _parse_google_config(self, config_xml):
         rtv = {
@@ -121,7 +119,7 @@ class AuthnzManager(object):
             try:
                 return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
             except Exception as e:
-                log.exception('An error occurred when loading PSAAuthnz: ', str(e))
+                log.exception('An error occurred when loading PSAAuthnz')
                 return False, str(e), None
         else:
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider'.format(provider)
@@ -204,8 +202,8 @@ class AuthnzManager(object):
             if success is False:
                 return False, message, None
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
-        except Exception as e:
-            msg = 'An error occurred when authenticating a user on `{}` identity provider: {}'.format(provider, str(e))
+        except Exception:
+            msg = 'An error occurred when authenticating a user on `{}` identity provider'.format(provider)
             log.exception(msg)
             return False, msg, None
 
@@ -215,8 +213,8 @@ class AuthnzManager(object):
             if success is False:
                 return False, message, (None, None)
             return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
-        except Exception as e:
-            msg = 'An error occurred when handling callback from `{}` identity provider; {}'.format(provider, str(e))
+        except Exception:
+            msg = 'An error occurred when handling callback from `{}` identity provider'.format(provider)
             log.exception(msg)
             return False, msg, (None, None)
 
@@ -226,9 +224,9 @@ class AuthnzManager(object):
             if success is False:
                 return False, message, None
             return backend.disconnect(provider, trans, disconnect_redirect_url)
-        except Exception as e:
-            msg = 'An error occurred when disconnecting authentication with `{}` identity provider for user `{}`; ' \
-                  '{}'.format(provider, trans.user.username, str(e))
+        except Exception:
+            msg = 'An error occurred when disconnecting authentication with `{}` identity provider for user `{}`' \
+                  .format(provider, trans.user.username)
             log.exception(msg)
             return False, msg, None
 

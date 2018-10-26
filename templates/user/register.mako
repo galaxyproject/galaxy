@@ -79,12 +79,12 @@ def inherit(context):
             }
 
             function renderError(message) {
-                if (!$(".errormessage").size()) {
-                    $('<div/>').addClass('errormessage').insertBefore('#registrationForm');
+                if (!$(".alert-danger").size()) {
+                    $('<div/>').addClass('alert alert-danger').insertBefore('#registrationForm');
                 }
                 console.debug( $( '#registrationForm' ) );
-                console.debug( '.errormessage:', $( '.errormessage' ) );
-                $(".errormessage").html(message);
+                console.debug( '.alert-danger:', $( '.alert-danger' ) );
+                $(".alert-danger").html(message);
             }
 
             $("[name='password']").complexify({'minimumChars':6}, function(valid, complexity){

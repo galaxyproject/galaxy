@@ -193,7 +193,7 @@ class BaseJobRunner(object):
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail(e.message if hasattr(e, 'message') else "Job preparation failed", exception=True)
+            job_wrapper.fail(str(e), exception=True)
             return False
 
         if not job_wrapper.runner_command_line:

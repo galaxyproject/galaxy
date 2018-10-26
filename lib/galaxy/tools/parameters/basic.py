@@ -270,7 +270,7 @@ class TextToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(TextToolParameter, self).__init__(tool, input_source)
         self.datalist = []
         for (title, value, selected) in input_source.parse_static_options():
             self.datalist.append({'label' : title, 'value': value})
@@ -320,8 +320,7 @@ class IntegerToolParameter(TextToolParameter):
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        TextToolParameter.__init__(self, tool, input_source)
+        super(IntegerToolParameter, self).__init__(tool, input_source)
         if self.value:
             try:
                 int(self.value)
@@ -394,8 +393,7 @@ class FloatToolParameter(TextToolParameter):
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        TextToolParameter.__init__(self, tool, input_source)
+        super(FloatToolParameter, self).__init__(tool, input_source)
         self.min = input_source.get('min')
         self.max = input_source.get('max')
         if self.value:
@@ -470,7 +468,7 @@ class BooleanToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(BooleanToolParameter, self).__init__(tool, input_source)
         self.truevalue = input_source.get('truevalue', 'true')
         self.falsevalue = input_source.get('falsevalue', 'false')
         self.checked = input_source.get_bool('checked', False)
@@ -521,8 +519,7 @@ class FileToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(FileToolParameter, self).__init__(tool, input_source)
 
     def from_json(self, value, trans=None, other_values={}):
         # Middleware or proxies may encode files in special ways (TODO: this
@@ -589,7 +586,7 @@ class FTPFileToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(FTPFileToolParameter, self).__init__(tool, input_source)
         self.multiple = input_source.get_bool('multiple', True)
         self.optional = input_source.parse_optional(True)
         self.user_ftp_dir = ''
@@ -653,8 +650,7 @@ class GenomespaceFileToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(GenomespaceFileToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value')
 
     def get_initial_value(self, trans, other_values):
@@ -674,8 +670,7 @@ class HiddenToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(HiddenToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value')
         self.hidden = True
 
@@ -708,8 +703,7 @@ class ColorToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(ColorToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value', '#fdeada')
         self.rgb = input_source.get('rgb', False)
 
@@ -739,7 +733,6 @@ class BaseURLToolParameter(HiddenToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
         super(BaseURLToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value', '')
 
@@ -797,7 +790,7 @@ class SelectToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(SelectToolParameter, self).__init__(tool, input_source)
         self.multiple = input_source.get_bool('multiple', False)
         # Multiple selects are optional by default, single selection is the inverse.
         self.optional = input_source.parse_optional(self.multiple)
@@ -1038,7 +1031,7 @@ class SelectTagParameter(SelectToolParameter):
     """
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        SelectToolParameter.__init__(self, tool, input_source)
+        super(SelectTagParameter, self).__init__(tool, input_source)
         self.tool = tool
         self.tag_key = input_source.get("group", False)
         self.optional = input_source.get("optional", False)
@@ -1152,7 +1145,7 @@ class ColumnListParameter(SelectToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        SelectToolParameter.__init__(self, tool, input_source)
+        super(ColumnListParameter, self).__init__(tool, input_source)
         self.numerical = input_source.get_bool("numerical", False)
         self.optional = input_source.parse_optional(False)
         self.accept_default = input_source.get_bool("accept_default", False)
@@ -1273,7 +1266,7 @@ class ColumnListParameter(SelectToolParameter):
     def get_initial_value(self, trans, other_values):
         if self.default_value is not None:
             return self.default_value
-        return SelectToolParameter.get_initial_value(self, trans, other_values)
+        return super(ColumnListParameter, self).get_initial_value(trans, other_values)
 
     def get_legal_values(self, trans, other_values):
         if self.data_ref not in other_values:
@@ -1335,13 +1328,13 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     """
 
     def __init__(self, tool, input_source, context=None):
-        input_source = ensure_input_source(input_source)
-
         def recurse_option_elems(cur_options, option_elems):
             for option_elem in option_elems:
                 selected = string_as_bool(option_elem.get('selected', False))
                 cur_options.append({'name': option_elem.get('name'), 'value': option_elem.get('value'), 'options': [], 'selected': selected})
                 recurse_option_elems(cur_options[-1]['options'], option_elem.findall('option'))
+
+        input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
         # TODO: abstract XML out of here - so non-XML InputSources can
         # specify DrillDown parameters.
@@ -2162,7 +2155,7 @@ class LibraryDatasetToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(LibraryDatasetToolParameter, self).__init__(tool, input_source)
         self.multiple = input_source.get_bool('multiple', True)
 
     def from_json(self, value, trans, other_values={}):

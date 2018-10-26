@@ -1,7 +1,8 @@
 import logging
-import threading
-from xml.etree import cElementTree as XmlET
+from xml.etree import ElementTree as XmlET
 
+from galaxy.util import xml_to_string
+from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from tool_shed.util import basic_util
 from tool_shed.util import common_util
 from tool_shed.util import repository_util
@@ -79,19 +80,14 @@ class ToolPanelManager(object):
         Persist the current in-memory list of config_elems to a file named by the
         value of config_filename.
         """
-        lock = threading.Lock()
-        lock.acquire(True)
         try:
-            fh = open(config_filename, 'w')
-            fh.write('<?xml version="1.0"?>\n<toolbox tool_path="%s">\n' % str(tool_path))
+            root = XmlET.fromstring('<?xml version="1.0"?>\n<toolbox tool_path="%s"></toolbox>' % str(tool_path))
             for elem in config_elems:
-                fh.write(xml_util.xml_to_string(elem, use_indent=True))
-            fh.write('</toolbox>\n')
-            fh.close()
+                root.append(elem)
+            with RenamedTemporaryFile(config_filename, mode='w') as fh:
+                fh.write(xml_to_string(root, pretty=True))
         except Exception:
             log.exception("Exception in ToolPanelManager.config_elems_to_xml_file")
-        finally:
-            lock.release()
 
     def generate_tool_elem(self, tool_shed, repository_name, changeset_revision, owner, tool_file_path,
                            tool, tool_section):

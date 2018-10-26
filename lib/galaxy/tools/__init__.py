@@ -1969,9 +1969,9 @@ class Tool(Dictifiable):
                     tool_dict['value'] = input.value_to_basic(state_inputs.get(input.name, initial_value), self.app, use_security=True)
                     tool_dict['default_value'] = input.value_to_basic(initial_value, self.app, use_security=True)
                     tool_dict['text_value'] = input.value_to_display_text(tool_dict['value'])
-                except Exception as e:
+                except Exception:
                     tool_dict = input.to_dict(request_context)
-                    log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % (input.name, e))
+                    log.exception("tools::to_json() - Skipping parameter expansion '%s'", input.name)
                     pass
             if input_index >= len(group_inputs):
                 group_inputs.append(tool_dict)

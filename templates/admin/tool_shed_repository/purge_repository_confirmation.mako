@@ -25,8 +25,8 @@ ${render_galaxy_repository_actions( repository )}
     </p>
 </div>
 
-<div class="toolForm">
-    <div class="toolFormTitle">Purge tool shed repository <b>${repository.name|h}</b></div>
+<div class="card">
+    <div class="card-header">Purge tool shed repository <b>${repository.name|h}</b></div>
         <form name="purge_repository" id="purge_repository" action="${h.url_for( controller='admin_toolshed', action='purge_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <%
                 tool_versions = 0

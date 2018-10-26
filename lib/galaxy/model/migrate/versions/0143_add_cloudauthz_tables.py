@@ -32,8 +32,8 @@ def upgrade(migrate_engine):
 
     try:
         cloudauthz.create()
-    except Exception as e:
-        log.exception("Failed to create cloudauthz table: {}".format(str(e)))
+    except Exception:
+        log.exception("Failed to create cloudauthz table")
 
 
 def downgrade(migrate_engine):
@@ -42,5 +42,5 @@ def downgrade(migrate_engine):
 
     try:
         cloudauthz.drop()
-    except Exception as e:
-        log.exception("Failed to drop cloudauthz table: {}".format(str(e)))
+    except Exception:
+        log.exception("Failed to drop cloudauthz table")

@@ -872,9 +872,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Dataset id %s marked as deleted" % str(id))
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
-        except Exception as e:
+        except Exception:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % (dataset_id, id)
-            log.exception(msg + ': ' + str(e))
+            log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
             status = 'error'
@@ -966,8 +966,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 except Exception:
                     log.exception('Unable to purge dataset (%s) on purge of HDA (%s):' % (hda.dataset.id, hda.id))
             trans.sa_session.flush()
-        except Exception as exc:
-            msg = 'HDA purge failed (encoded: %s, decoded: %s): %s' % (dataset_id, id, exc)
+        except Exception:
+            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % (dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'

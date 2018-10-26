@@ -3,6 +3,7 @@ import unittest
 from xml.etree.ElementTree import XML
 
 from galaxy import model
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
@@ -116,6 +117,14 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
     def test_handler_set(self):
         job, _ = self._simple_execute()
         assert job.handler == TEST_HANDLER_NAME
+
+    def test_inactive_user_job_create_failure(self):
+        self.trans.user_is_active = False
+        try:
+            self._simple_execute()
+        except UserActivationRequiredException:
+            return
+        assert False, "Tool execution succeeded for inactive user!"
 
     def __add_dataset(self, state='ok'):
         hda = model.HistoryDatasetAssociation()
@@ -237,6 +246,20 @@ class MockTrans(object):
         self.user = user
         self.sa_session = self.app.model.context
         self.model = app.model
+        self._user_is_active = True
+
+    def get_user_is_active(self):
+        # NOTE: the real user_is_active also checks whether activation is enabled in the config
+        return self._user_is_active
+
+    def set_user_is_active(self, active):
+        self._user_is_active = active
+
+    user_is_active = property(get_user_is_active, set_user_is_active)
+
+    def check_user_activation(self):
+        if not self.user_is_active:
+            raise UserActivationRequiredException()
 
     def db_dataset_for(self, input_db_key):
         return None

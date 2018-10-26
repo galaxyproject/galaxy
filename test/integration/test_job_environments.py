@@ -21,6 +21,7 @@ JobEnviromentProperties = collections.namedtuple("JobEnvironmentProperties", [
     "pwd",
     "home",
     "tmp",
+    "some_env",
 ])
 
 
@@ -38,8 +39,8 @@ class RunsEnvironmentJobs(object):
         pwd = self.dataset_populator.get_history_dataset_content(history_id, hid=3).strip()
         home = self.dataset_populator.get_history_dataset_content(history_id, hid=4).strip()
         tmp = self.dataset_populator.get_history_dataset_content(history_id, hid=5).strip()
-
-        return JobEnviromentProperties(user_id, group_id, pwd, home, tmp)
+        some_env = self.dataset_populator.get_history_dataset_content(history_id, hid=6).strip()
+        return JobEnviromentProperties(user_id, group_id, pwd, home, tmp, some_env)
 
 
 class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs):

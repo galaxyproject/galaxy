@@ -207,7 +207,7 @@ body {
 
 .unified-panel-header {
     @extend .unselectable;
-    @extend .m-2;
+    @extend .mx-3;
     height: $panel_header_height;
     z-index: 1000;
     font-size: 1rem;
@@ -257,7 +257,7 @@ body {
 }
 
 .unified-panel-controls {
-    padding: 0 $margin-v;
+    @extend .px-3;
 }
 
 .unified-panel-footer {
@@ -354,7 +354,7 @@ div.unified-panel-body-background {
 
 #left > div.unified-panel-body,
 #right > div.unified-panel-body {
-    bottom: $panel_footer_height;
+    padding-bottom: $panel_footer_height;
     overflow: auto;
 }
 
@@ -786,8 +786,7 @@ button {
 
 #tool-search {
     position: relative;
-    margin: 10px 0;
-
+    @extend .mb-2;
     #search-clear-btn {
         position: absolute;
         right: 6px;
@@ -1611,7 +1610,7 @@ div.permissionContainer {
     }
     background: $panel-bg-color;
     min-height: 100%;
-    padding: $margin-h $margin-v;
+    @extend .m-3;
 }
 
 div.toolSectionPad {
