@@ -3,13 +3,9 @@ import logging
 from collections import namedtuple
 
 from galaxy import (
+    exceptions,
     util,
     web
-)
-from galaxy.exceptions import (
-    ConfigDoesNotAllowException,
-    NotImplemented,
-    RequestParameterInvalidException
 )
 from galaxy.tools.parameters import params_to_strings
 from galaxy.tools.repositories import ValidationContext
@@ -62,7 +58,7 @@ class ToolsController(BaseAPIController):
         """
         q = kwd.get('q', '')
         if not q:
-            raise NotImplemented('Listing of all the tools is not implemented. Provide parameter "q" to search instead.')
+            raise exceptions.NotImplemented('Listing of all the tools is not implemented. Provide parameter "q" to search instead.')
         else:
             page = kwd.get('page', 1)
             page_size = kwd.get('page_size', 10)
@@ -70,7 +66,7 @@ class ToolsController(BaseAPIController):
                 page = int(page)
                 page_size = int(page_size)
             except ValueError:
-                raise RequestParameterInvalidException('The "page" and "page_size" have to be integers.')
+                raise exceptions.RequestParameterInvalidException('The "page" and "page_size" have to be integers.')
             return_jsonp = util.asbool(kwd.get('jsonp', False))
             callback = kwd.get('callback', 'callback')
             search_results = self._search(trans, q, page, page_size)
@@ -90,12 +86,12 @@ class ToolsController(BaseAPIController):
         """
         conf = self.app.config
         if not conf.toolshed_search_on:
-            raise ConfigDoesNotAllowException('Searching the TS through the API is turned off for this instance.')
+            raise exceptions.ConfigDoesNotAllowException('Searching the TS through the API is turned off for this instance.')
         if not conf.whoosh_index_dir:
-            raise ConfigDoesNotAllowException('There is no directory for the search index specified. Please contact the administrator.')
+            raise exceptions.ConfigDoesNotAllowException('There is no directory for the search index specified. Please contact the administrator.')
         search_term = q.strip()
         if len(search_term) < 3:
-            raise RequestParameterInvalidException('The search term has to be at least 3 characters long.')
+            raise exceptions.RequestParameterInvalidException('The search term has to be at least 3 characters long.')
 
         tool_search = ToolSearch()
 

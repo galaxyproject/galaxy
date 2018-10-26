@@ -1390,7 +1390,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in
         # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy
         # admin_toolshed controller.
-        install_parameters = re.search('initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html)
+        install_parameters = re.search(r'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html)
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"

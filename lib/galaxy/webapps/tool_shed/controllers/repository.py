@@ -2380,7 +2380,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                         if os.path.isdir(absolute_selected_file):
                             try:
                                 os.rmdir(absolute_selected_file)
-                            except OSError as e:
+                            except OSError:
                                 # The directory is not empty
                                 pass
                         elif os.path.isfile(absolute_selected_file):
@@ -2388,7 +2388,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                             dir = os.path.split(absolute_selected_file)[0]
                             try:
                                 os.rmdir(dir)
-                            except OSError as e:
+                            except OSError:
                                 # The directory is not empty
                                 pass
                 # Commit the change set.

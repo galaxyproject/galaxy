@@ -2,11 +2,10 @@
 ISA datatype
 
 See https://github.com/ISA-tools
-
 """
-
 from __future__ import print_function
 
+import io
 import json
 import logging
 import os
@@ -16,14 +15,14 @@ import shutil
 import sys
 import tempfile
 from cgi import escape
-from json import dumps  # noqa: F401
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
-from isatools import isajson
-from isatools import isatab_meta
+from isatools import (
+    isajson,
+    isatab_meta
+)
 
-from galaxy import model
 from galaxy import util
 from galaxy.datatypes import data
 from galaxy.util.compression_utils import CompressedFile
@@ -89,22 +88,9 @@ class _Isa(data.Data):
     ################################################################
 
     def _get_isa_folder_path(self, dataset):
-
-        isa_folder = None
-
-        if dataset:
-            if isinstance(dataset, model.Dataset):
-                isa_folder = dataset.extra_files_path
-            if isinstance(dataset, model.HistoryDatasetAssociation):
-                # XXX With this loop the dataset name is reset inside the history to the ISA archive ID. Why?
-                for attr, value in dataset.__dict__.iteritems():
-                    if str(attr) == '_metadata_collection':
-                        datatype = value.parent.datatype  # noqa: F841
-                isa_folder = dataset.dataset.extra_files_path
-
-        if isa_folder is None:
+        isa_folder = dataset.extra_files_path
+        if not isa_folder:
             raise Exception('Unvalid dataset object, or no extra files path found for this dataset.')
-
         return isa_folder
 
     # Get main file {{{2
@@ -176,7 +162,7 @@ class _Isa(data.Data):
             raise RuntimeError("Unable to find the main file within the 'files_path' folder")
 
         # Read first lines of main file
-        with open(main_file, "r") as f:
+        with io.open(main_file, encoding='utf-8') as f:
             data = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:

@@ -1124,12 +1124,12 @@ class ConnectivityTable(Tabular):
                     if not self.header_regexp.match(line):
                         return False
                     else:
-                        length = int(re.split('\W+', line, 1)[0])
+                        length = int(re.split(r'\W+', line, 1)[0])
                 else:
                     if not self.structure_regexp.match(line.upper()):
                         return False
                     else:
-                        if j != int(re.split('\W+', line, 1)[0]):
+                        if j != int(re.split(r'\W+', line, 1)[0]):
                             return False
                         elif j == length:  # Last line of first sequence has been recheached
                             return True

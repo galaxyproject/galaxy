@@ -626,7 +626,7 @@ def get_first_sentence(message):
 
 def process_sentence(message):
     # Strip tags like [15.07].
-    message = re.sub("^\s*\[.*\]\s*", "", message)
+    message = re.sub(r"^\s*\[.*\]\s*", r"", message)
     # Link issues and pull requests...
     issue_url = "https://github.com/%s/%s/issues" % (PROJECT_OWNER, PROJECT_NAME)
     message = re.sub(r'#(\d+)', r'`#\1 <%s/\1>`__' % issue_url, message)

@@ -174,15 +174,15 @@ class Velvet(Html):
             log_path = os.path.join(efp, 'Log')
             with open(log_path, 'r') as f:
                 log_content = f.read(1000)
-            log_msg = re.sub('/\S*/', '', log_content)
+            log_msg = re.sub(r'/\S*/', '', log_content)
             log.debug("Velveth log info  %s" % log_msg)
-            paired_end_reads = re.search('-(short|long)Paired', log_msg) is not None
+            paired_end_reads = re.search(r'-(short|long)Paired', log_msg) is not None
             dataset.metadata.paired_end_reads = paired_end_reads
-            long_reads = re.search('-long', log_msg) is not None
+            long_reads = re.search(r'-long', log_msg) is not None
             dataset.metadata.long_reads = long_reads
-            short2_reads = re.search('-short(Paired)?2', log_msg) is not None
+            short2_reads = re.search(r'-short(Paired)?2', log_msg) is not None
             dataset.metadata.short2_reads = short2_reads
-            dataset.info = re.sub('.*velveth \S+', 'hash_length', re.sub('\n', ' ', log_msg))
+            dataset.info = re.sub(r'.*velveth \S+', 'hash_length', re.sub(r'\n', ' ', log_msg))
             if paired_end_reads:
                 gen_msg = gen_msg + ' Paired-End Reads'
             if long_reads:
