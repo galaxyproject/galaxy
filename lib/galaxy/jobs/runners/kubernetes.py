@@ -456,7 +456,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # We should not get here
             log.debug(
                 "Reaching unexpected point for Kubernetes job name %s where it is not classified as succ., active nor failed.", job.name)
-            log.debug("Here's the full job object\n========================================\n%s\n========================================", job.obj)
+            log.debug("k8s full job object:\n%s", job.obj)
             return job_state
 
         elif len(jobs.response['items']) == 0:
