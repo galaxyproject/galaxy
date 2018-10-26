@@ -283,6 +283,7 @@ class BaseDatasetPopulator(object):
     def new_history(self, **kwds):
         name = kwds.get("name", "API Test History")
         create_history_response = self._post("histories", data=dict(name=name))
+        assert "id" in create_history_response.json(), create_history_response.json()
         history_id = create_history_response.json()["id"]
         return history_id
 
@@ -1187,7 +1188,7 @@ class GiPostGetMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
     def _get(self, route, data={}):
-        return self._gi.make_get_request(self.__url(route), data)
+        return self._gi.make_get_request(self.__url(route), data=data)
 
     def _post(self, route, data={}):
         data = data.copy()
