@@ -54,32 +54,6 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
         workflow_as_format2 = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False, style="format2")
         assert workflow_as_format2["doc"].startswith("Simple workflow that")
 
-
-# FIXME:  This test fails on some machines due to (we're guessing) yaml.safe_loading
-# order being not guaranteed and inconsistent across platforms.  The workflow
-# yaml.safe_loader probably needs to enforce order using something like the
-# approach described here:
-# https://stackoverflow.com/questions/13297744/pyyaml-control-ordering-of-items-called-by-yaml.safe_load
-#     def test_multiple_input( self ):
-#         history_id = self.dataset_populator.new_history()
-#         self._run_jobs("""
-# steps:
-#   - type: input
-#     label: input1
-#   - type: input
-#     label: input2
-#   - tool_id: cat_list
-#     state:
-#       input1:
-#       - $link: input1
-#       - $link: input2
-# test_data:
-#   input1: "hello world"
-#   input2: "123"
-# """, history_id=history_id)
-#         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
-#         assert contents1 == "hello world\n123\n"
-
     def test_simple_output_actions(self):
         history_id = self.dataset_populator.new_history()
         self._run_jobs(WORKFLOW_WITH_OUTPUT_ACTIONS, test_data="""
