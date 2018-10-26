@@ -425,7 +425,7 @@ class Configuration(object):
         self.use_heartbeat = string_as_bool(kwargs.get('use_heartbeat', 'False'))
         self.heartbeat_interval = int(kwargs.get('heartbeat_interval', 20))
         self.heartbeat_log = kwargs.get('heartbeat_log', None)
-        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 5))
+        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 30))
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.log_events = string_as_bool(kwargs.get('log_events', 'False'))
         self.sanitize_all_html = string_as_bool(kwargs.get('sanitize_all_html', True))

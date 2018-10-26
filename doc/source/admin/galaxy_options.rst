@@ -2097,9 +2097,15 @@
 :Description:
     When stopping Galaxy cleanly, how much time to give various
     monitoring/polling threads to finish before giving up on joining
-    them. Set to 0 to disable this and restore the pre-18.01 default
-    behavior.
-:Default: ``5``
+    them. Set to 0 to disable this and terminate without waiting.
+    Among others, these threads include the job handler workers, which
+    are responsible for preparing/submitting and collecting/finishing
+    jobs, and which can cause job errors if not shut down cleanly. If
+    using supervisord, consider also increasing the value of
+    `stopwaitsecs`. If using job handler mules, consider also setting
+    the `mule-reload-mercy` uWSGI option. See the Galaxy Admin
+    Documentation for more.
+:Default: ``30``
 :Type: int
 
 
