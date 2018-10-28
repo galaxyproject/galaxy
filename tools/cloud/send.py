@@ -33,7 +33,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 
 
 def load_credential(credentials_file):
-    print("[1/5 @{}] Reading cloud authorization.".format(datetime.datetime.now()))
+    print("[1/5 {}] Reading cloud authorization.".format(datetime.datetime.now().replace(microsecond=0)))
     with open(credentials_file, "r") as f:
         credentials = f.read()
     os.remove(credentials_file)
@@ -46,17 +46,17 @@ def send(provider, credentials, bucket, object_label, filename, overwrite_existi
         raise Exception("The file `{}` does not exist.".format(filename))
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
-    print("[2/5 @{}] Establishing a connection to {}.".format(datetime.datetime.now(), provider))
+    print("[2/5 {}] Establishing a connection to {}.".format(datetime.datetime.now().replace(microsecond=0), provider))
     connection = CloudManager.configure_provider(provider, credentials)
-    print("[3/5 @{}] Accessing bucket {}.".format(datetime.datetime.now(), bucket))
+    print("[3/5 {}] Accessing bucket {}.".format(datetime.datetime.now().replace(microsecond=0), bucket))
     bucket_obj = connection.storage.buckets.get(bucket)
     if bucket_obj is None:
         raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
     if overwrite_existing is False and bucket_obj.objects.get(object_label) is not None:
         object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
-    print("[4/5 @{}] Creating object {}.".format(datetime.datetime.now(), object_label))
+    print("[4/5 {}] Creating object {}.".format(datetime.datetime.now().replace(microsecond=0), object_label))
     created_obj = bucket_obj.objects.create(object_label)
-    print("[5/5 @{}] Sending dataset.".format(datetime.datetime.now()))
+    print("[5/5 {}] Sending dataset.".format(datetime.datetime.now().replace(microsecond=0)))
     transfer_start_time = time.time()
     created_obj.upload_from_file(filename)
     print("Finished successfully.")
