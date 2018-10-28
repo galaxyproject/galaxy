@@ -7,9 +7,10 @@ from __future__ import print_function
 
 import os
 import sys
-import urllib
 from shutil import move
 from xml.etree import ElementTree
+
+from six.moves.urllib.request import urlopen
 
 
 def __main__():
@@ -24,29 +25,29 @@ def __main__():
         this_base_dir, sub_dirs, files = result
         for file in files:
             if file[-5:] == ".info":
-                dict = {}
+                tmp_dict = {}
                 info_file = open(os.path.join(this_base_dir, file), 'r')
                 info = info_file.readlines()
                 info_file.close()
                 for line in info:
                     fields = line.replace("\n", "").split("=")
-                    dict[fields[0]] = "=".join(fields[1:])
-                if 'genome project id' in dict.keys():
-                    if dict['genome project id'] not in organisms.keys():
-                        organisms[dict['genome project id']] = {'chrs': {}, 'base_dir': this_base_dir}
-                    for key in dict.keys():
-                        organisms[dict['genome project id']][key] = dict[key]
+                    tmp_dict[fields[0]] = "=".join(fields[1:])
+                if 'genome project id' in tmp_dict.keys():
+                    if tmp_dict['genome project id'] not in organisms.keys():
+                        organisms[tmp_dict['genome project id']] = {'chrs': {}, 'base_dir': this_base_dir}
+                    for key in tmp_dict.keys():
+                        organisms[tmp_dict['genome project id']][key] = tmp_dict[key]
                 else:
-                    if dict['organism'] not in organisms.keys():
-                        organisms[dict['organism']] = {'chrs': {}, 'base_dir': this_base_dir}
-                    organisms[dict['organism']]['chrs'][dict['chromosome']] = dict
+                    if tmp_dict['organism'] not in organisms.keys():
+                        organisms[tmp_dict['organism']] = {'chrs': {}, 'base_dir': this_base_dir}
+                    organisms[tmp_dict['organism']]['chrs'][tmp_dict['chromosome']] = tmp_dict
 
     # get UCSC data
 
     URL = "http://archaea.ucsc.edu/cgi-bin/das/dsn"
 
     try:
-        page = urllib.urlopen(URL)
+        page = urlopen(URL)
     except Exception:
         print("#Unable to open " + URL)
         print("?\tunspecified (?)")
@@ -65,7 +66,7 @@ def __main__():
     for dsn in tree:
         build = dsn.find("SOURCE").attrib['id']
         try:
-            org_page = urllib.urlopen("http://archaea.ucsc.edu/cgi-bin/hgGateway?db=" + build).read().replace("\n", "").split("<table border=2 cellspacing=2 cellpadding=2>")[1].split("</table>")[0].split("</tr>")
+            org_page = urlopen("http://archaea.ucsc.edu/cgi-bin/hgGateway?db=" + build).read().replace("\n", "").split("<table border=2 cellspacing=2 cellpadding=2>")[1].split("</table>")[0].split("</tr>")
         except Exception:
             print("NO CHROMS FOR", build)
             continue

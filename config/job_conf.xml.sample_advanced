@@ -121,7 +121,7 @@
             <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
 
                  This requires installing pykube. Install pykube by activating Galaxy's virtual
-                 and then executing the following pip command:
+                 environment and then executing the following pip command:
 
                  pip install pykube==0.15.0
 
@@ -218,6 +218,22 @@
                  zero (no execution) and the stderr/stdout of the k8s job is reported in galaxy (and the galaxy job set
                  to failed) -->
 
+            <!-- <param id="k8s_galaxy_instance_id">my-instance</param> -->
+            <!-- Identifies the Galaxy instance where this runner belongs. Setting this variable means that the runner
+                 will trust k8s Jobs with the structure galaxy-my-instance-<number> to be its own. This variable needs
+                 to be DNS friendly, and up to 20 characters, as it will go in the k8s Jobs and Pods names. An instance
+                 in this context is understood as a running Galaxy setup that is bound to a particular database stored
+                 state. This is mostly relevant for long term running instances. When resetting a long term running
+                 instance to zero (database and files deleted), one would want to change this instance id to avoid
+                 clashing with previous jobs in the same k8s cluster where the older setup run. -->
+
+            <!-- <param id="k8s_timeout_seconds_job_deletion">30</param> -->
+            <!-- If the above `k8s_galaxy_instance_id` is not set, when finding an existing k8s job with the same
+                 id as a new job being generated, the runner will attempt to delete that existing job first, to proceed
+                 then to create the new job (the old job is not trusted to have been instructed to do the same as the
+                 new one). This variables controls the timeout for waiting for that job deletion. If the timeout is
+                 exceeded and the existing job is not deleted, the new job won't be added to the Galaxy queue. -->
+
             <!-- <param id="k8s_supplemental_group_id">0</param> -->
             <!-- <param id="k8s_fs_group_id">0</param> -->
             <!-- If mounting an NFS / GlusterFS or other shared file system which is administered to ONLY provide access
@@ -248,6 +264,31 @@
                  a requirement of the other.
 
                  -->
+            <!-- <param id="requests_cpu">500m</param> -->
+            <!-- <param id="requests_memory">500Mi</param> -->
+            <!-- <param id="limits_cpu">2</param> -->
+            <!-- <param id="limits_memory">2Gi</param> -->
+            <!-- Kubernetes resource Requests and Limits
+                 Parameters above (requests_* and limits_*) set default minimal (requests) and
+                 maximal (limits) CPU and memory resources to be allocated to all containers in
+                 Kubernetes jobs by default.
+
+                 Limits and requests for CPU resources are measured in cpu units. Fractional requests are allowed. A
+                 Container with requests_cpu of 0.5 is guaranteed half as much CPU as one that asks for 1 CPU. The
+                 expression 0.1 is equivalent to the expression 100m, which can be read as “one hundred millicpu”. Some
+                 people say “one hundred millicores”, and this is understood to mean the same thing. A request with a
+                 decimal point, like 0.1, is converted to 100m by the API, and precision finer than 1m is not allowed.
+                 For this reason, the form 100m might be preferred.
+
+                 You can express memory as a plain integer or as a fixed-point integer using one of these suffixes: E,
+                 P, T, G, M, K. You can also use the power-of-two equivalents: Ei, Pi, Ti, Gi, Mi, Ki.
+                 For instance, "1Gi" stands for 1 Gigabyte, and "500Mi" stands for 500 megabytes. Using other formats
+                 will make the jobs fail as Kubernetes won't recognize the assignment.
+
+                 For more details on the Kubernetes resources management, see:
+                 https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/
+                 -->
+
         </plugin>
         <plugin id="godocker" type="runner" load="galaxy.jobs.runners.godocker:GodockerJobRunner">
             <!-- Go-Docker is a batch computing/cluster management tool using Docker
@@ -516,6 +557,23 @@
                clusters. These don't need to be available on the Galaxy server
                itself.
           -->
+        </destination>
+        <!-- Following three destinations demonstrate setting up per-job temp directory handling.
+             In these cases TEMP, TMP, and TMPDIR will be set for each job dispatched to these
+             destinations.
+             The first simply tells Galaxy to create a temp directory in the job directory, the
+             other forms can be used to issue shell commands before the job runs on the worker node to
+             allocate a temp directory. In these other cases, Galaxy will not clean up these
+             directories so either use directories managed by the job resource manager or setup
+             tooling to clean old temp directories up outside of Galaxy. -->
+        <destination id="clean_tmp_by_job" runner="drmma">
+          <param id="tmp_dir">True</param>
+        </destination>
+        <destination id="clean_tmp_drm" runner="drmma">
+          <param id="tmp_dir">"$DRM_SET_VARIABLES_FOR_THIS_JOB"</param>
+        </destination>
+        <destination id="clean_tmp_fast_scratch" runner="drmma">
+          <param id="tmp_dir">$(mktemp -d /mnt/scratch/fastest/gxyjobXXXXXXXXXXX)</param>
         </destination>
         <destination id="real_user_cluster" runner="drmaa">
             <!-- Make sure to setup 3 real user parameters in galaxy.ini. -->

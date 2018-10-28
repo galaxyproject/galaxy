@@ -13,13 +13,14 @@ name = "pypi"
 [packages]
 
 NoseHTML = "*"
-twill = "==0.9.1"
+twill = {version = "==0.9.1", markers = "python_version < '3'"}
 mock = "*"
 selenium = "*"
 testfixtures = "*"
 watchdog = "*"
-"pygithub3" = "*"
-Sphinx = "*"
+pygithub3 = {version = "*", markers = "python_version < '3'"}
+Sphinx = "<1.7"  # Docs do not build with sphinx 1.7 for some reason, can't find issue.
 sphinx_rtd_theme = "*"
 lxml = "*"
 recommonmark = "*"
+nodeenv = "*"

@@ -6,9 +6,7 @@
 export function append_notebook(url) {
     clear_main_area();
     $("#main").append(
-        `<iframe frameBorder="0" seamless="seamless" style="width: 100%; height: 100%; overflow:hidden;" scrolling="no" src="${
-            url
-        }"></iframe>`
+        `<iframe frameBorder="0" seamless="seamless" style="width: 100%; height: 100%; overflow:hidden;" scrolling="no" src="${url}"></iframe>`
     );
 }
 
@@ -21,9 +19,7 @@ export function clear_main_area() {
 
 export function display_spinner() {
     $("#main").append(
-        `<img id="spinner" src="${
-            galaxy_root
-        }static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">`
+        `<img id="spinner" src="${galaxy_root}static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">`
     );
 }
 

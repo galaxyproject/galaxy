@@ -1,15 +1,11 @@
-import json
 import logging
 import os
-import struct
 import subprocess
 import tempfile
 from datetime import datetime
 from time import gmtime
 
 from mercurial import cmdutil, commands, hg, ui
-from mercurial.changegroup import readexactly
-from mercurial.exchange import readbundle
 
 from tool_shed.util import basic_util
 
@@ -25,28 +21,14 @@ def add_changeset(repo_ui, repo, path_to_filename_in_archive):
 def archive_repository_revision(app, repository, archive_dir, changeset_revision):
     '''Create an un-versioned archive of a repository.'''
     repo = get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
-    options_dict = get_mercurial_default_options_dict('archive')
-    options_dict['rev'] = changeset_revision
-    error_message = ''
-    return_code = None
     try:
-        return_code = commands.archive(get_configured_ui, repo, archive_dir, **options_dict)
+        subprocess.check_output(['hg', 'archive', '-r', changeset_revision, archive_dir], stderr=subprocess.STDOUT, cwd=repo.root)
     except Exception as e:
-        error_message = "Error attempting to archive revision <b>%s</b> of repository %s: %s\nReturn code: %s\n" % \
-            (str(changeset_revision), str(repository.name), str(e), str(return_code))
+        error_message = "Error attempting to archive revision '%s' of repository '%s': %s" % (changeset_revision, repository.name, e)
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
         log.exception(error_message)
-    return return_code, error_message
-
-
-def bundle_to_json(fh):
-    """
-    Convert the received HG10xx data stream (a mercurial 1.0 bundle created using hg push from the
-    command line) to a json object.
-    """
-    # See http://www.wstein.org/home/wstein/www/home/was/patches/hg_json
-    hg_unbundle10_obj = readbundle(get_configured_ui(), fh, None)
-    groups = [group for group in unpack_groups(hg_unbundle10_obj)]
-    return json.dumps(groups, indent=4)
+        raise Exception(error_message)
 
 
 def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
@@ -55,13 +37,13 @@ def clone_repository(repository_clone_url, repository_file_dir, ctx_rev):
     present in the cloned repository.
     """
     try:
-        stdouterr = subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
+        subprocess.check_output(['hg', 'clone', '-r', ctx_rev, repository_clone_url, repository_file_dir], stderr=subprocess.STDOUT)
         return True, None
     except Exception as e:
         error_message = 'Error cloning repository: %s' % e
         if isinstance(e, subprocess.CalledProcessError):
-            error_message += "\nOutput was:\n%s" % stdouterr
-        log.debug(error_message)
+            error_message += "\nOutput was:\n%s" % e.output
+        log.error(error_message)
         return False, error_message
 
 
@@ -114,18 +96,6 @@ def get_changectx_for_changeset(repo, changeset_revision, **kwd):
         ctx = repo.changectx(changeset)
         if str(ctx) == changeset_revision:
             return ctx
-    return None
-
-
-def get_config(config_file, repo, ctx, dir):
-    """Return the latest version of config_filename from the repository manifest."""
-    config_file = basic_util.strip_path(config_file)
-    for changeset in reversed_upper_bounded_changelog(repo, ctx):
-        changeset_ctx = repo.changectx(changeset)
-        for ctx_file in changeset_ctx.files():
-            ctx_file_name = basic_util.strip_path(ctx_file)
-            if ctx_file_name == config_file:
-                return get_named_tmpfile_from_ctx(changeset_ctx, ctx_file, dir)
     return None
 
 
@@ -378,68 +348,6 @@ def reversed_upper_bounded_changelog(repo, included_upper_bounds_changeset_revis
     return reversed_lower_upper_bounded_changelog(repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision)
 
 
-def unpack_chunks(hg_unbundle10_obj):
-    """
-    This method provides a generator of parsed chunks of a "group" in a mercurial unbundle10 object which
-    is created when a changeset that is pushed to a Tool Shed repository using hg push from the command line
-    is read using readbundle.
-    """
-    while True:
-        length, = struct.unpack('>l', readexactly(hg_unbundle10_obj, 4))
-        if length <= 4:
-            # We found a "null chunk", which ends the group.
-            break
-        if length < 84:
-            raise Exception("negative data length")
-        node, p1, p2, cs = struct.unpack('20s20s20s20s', readexactly(hg_unbundle10_obj, 80))
-        yield {'node': node.encode('hex'),
-               'p1': p1.encode('hex'),
-               'p2': p2.encode('hex'),
-               'cs': cs.encode('hex'),
-               'data': [patch for patch in unpack_patches(hg_unbundle10_obj, length - 84)]}
-
-
-def unpack_groups(hg_unbundle10_obj):
-    """
-    This method provides a generator of parsed groups from a mercurial unbundle10 object which is
-    created when a changeset that is pushed to a Tool Shed repository using hg push from the command
-    line is read using readbundle.
-    """
-    # Process the changelog group.
-    yield [chunk for chunk in unpack_chunks(hg_unbundle10_obj)]
-    # Process the manifest group.
-    yield [chunk for chunk in unpack_chunks(hg_unbundle10_obj)]
-    while True:
-        length, = struct.unpack('>l', readexactly(hg_unbundle10_obj, 4))
-        if length <= 4:
-            # We found a "null meta chunk", which ends the changegroup.
-            break
-        filename = readexactly(hg_unbundle10_obj, length - 4).encode('string_escape')
-        # Process the file group.
-        yield (filename, [chunk for chunk in unpack_chunks(hg_unbundle10_obj)])
-
-
-def unpack_patches(hg_unbundle10_obj, remaining):
-    """
-    This method provides a generator of patches from the data field in a chunk. As there is no delimiter
-    for this data field, a length argument is required.
-    """
-    while remaining >= 12:
-        start, end, blocklen = struct.unpack('>lll', readexactly(hg_unbundle10_obj, 12))
-        remaining -= 12
-        if blocklen > remaining:
-            raise Exception("unexpected end of patch stream")
-        block = readexactly(hg_unbundle10_obj, blocklen)
-        remaining -= blocklen
-        yield {'start': start,
-               'end': end,
-               'blocklen': blocklen,
-               'block': block.encode('string_escape')}
-    if remaining > 0:
-        log.error("Unexpected end of patch stream, %s remaining", remaining)
-        raise Exception("unexpected end of patch stream")
-
-
 def update_repository(repo, ctx_rev=None):
     """
     Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired
@@ -456,4 +364,13 @@ def update_repository(repo, ctx_rev=None):
     # I = ignored
     # It would be nice if we could use mercurial's purge extension to remove untracked files.  The problem is that
     # purging is not supported by the mercurial API.
-    commands.update(get_configured_ui(), repo, rev=ctx_rev)
+    cmd = ['hg', 'update']
+    if ctx_rev:
+        cmd.extend(['-r', ctx_rev])
+    try:
+        subprocess.check_output(cmd, stderr=subprocess.STDOUT, cwd=repo.root)
+    except Exception as e:
+        error_message = 'Error updating repository: %s' % e
+        if isinstance(e, subprocess.CalledProcessError):
+            error_message += "\nOutput was:\n%s" % e.output
+        raise Exception(error_message)

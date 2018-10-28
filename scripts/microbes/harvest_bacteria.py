@@ -12,7 +12,10 @@ import time
 from ftplib import FTP
 
 import requests
-from BeautifulSoup import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    raise Exception("BeautifulSoup4 library not found, please install it, e.g. with 'pip install BeautifulSoup4'")
 from six.moves.urllib.request import urlretrieve
 
 from util import (  # noqa: I202

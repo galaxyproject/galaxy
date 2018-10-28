@@ -1,8 +1,9 @@
-from ConfigParser import ConfigParser
 from os import listdir
 from os.path import join
 from re import match
 from sys import argv
+
+from six.moves.configparser import ConfigParser
 
 
 def merge():

@@ -149,7 +149,7 @@ def get_func_list(stats, sel_list):
         list = stats.fcn_list[:]
         order_message = "Ordered by: " + stats.sort_type
     else:
-        list = stats.stats.keys()
+        list = list(stats.stats.keys())
         order_message = "Random listing order was used"
     # Do the selection and accumulate messages
     select_message = ""

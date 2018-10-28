@@ -1,4 +1,6 @@
-AGalaxy contains a plugin infrastructure for collecting and displaying metrics for job execution (see the original [pull request](https://bitbucket.org/galaxy/galaxy-central/pull-request/352) for implementation details).
+# Job Metrics
+
+Galaxy contains a plugin infrastructure for collecting and displaying metrics for job execution (see the original [pull request](https://bitbucket.org/galaxy/galaxy-central/pull-request/352) for implementation details).
 
 ## Configuration
 

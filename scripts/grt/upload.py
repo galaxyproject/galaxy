@@ -20,7 +20,7 @@ def main(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-r', '--report-directory', help='Directory in which reports are stored',
                         default=os.path.abspath(os.path.join('.', 'reports')))
-    parser.add_argument('-c', '--config', help='Path to GRT config file',
+    parser.add_argument('-g', '--grt-config', help='Path to GRT config file',
                         default=default_config)
     parser.add_argument("-l", "--loglevel", choices=['debug', 'info', 'warning', 'error', 'critical'],
                         help="Set the logging level", default='warning')
@@ -28,7 +28,7 @@ def main(argv):
 
     logging.info('Loading GRT configuration...')
     try:
-        with open(args.config) as handle:
+        with open(args.grt_config) as handle:
             config = yaml.safe_load(handle)
     except Exception:
         logging.info('Using default GRT configuration')
@@ -42,7 +42,7 @@ def main(argv):
 
     # Contact the server and check auth details.
     headers = {
-        'AUTHORIZATION': GRT_INSTANCE_ID + ':' + GRT_API_KEY
+        'AUTHORIZATION': '%s:%s' % (GRT_INSTANCE_ID, GRT_API_KEY)
     }
     r = requests.post(GRT_URL + 'api/whoami', headers=headers)
     data = r.json()

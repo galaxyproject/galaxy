@@ -29,6 +29,7 @@ class SentryPlugin(ErrorPlugin):
 
     def __init__(self, **kwargs):
         self.app = kwargs['app']
+        self.redact_user_details_in_bugreport = self.app.config.redact_user_details_in_bugreport
         self.verbose = string_as_bool(kwargs.get('verbose', False))
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
         self.custom_dsn = kwargs.get('custom_dsn', None)
@@ -61,8 +62,11 @@ class SentryPlugin(ErrorPlugin):
                 'tool_version': unicodify(job.tool_version),
                 'tool_xml': unicodify(tool.config_file) if tool else None
             }
-            if 'email' in kwargs:
-                extra['email'] = unicodify(kwargs['email'])
+            if self.redact_user_details_in_bugreport:
+                extra['email'] = 'redacted'
+            else:
+                if 'email' in kwargs:
+                    extra['email'] = unicodify(kwargs['email'])
 
             # User submitted message
             extra['message'] = unicodify(kwargs.get('message', ''))
@@ -73,23 +77,37 @@ class SentryPlugin(ErrorPlugin):
             error_message = ERROR_TEMPLATE.format(**extra)
 
             # Update context with user information in a sentry-specific manner
-            self.sentry_client.context.merge({
-                # User information here also places email links + allows seeing
-                # a list of affected users in the tags/filtering.
-                'user': {
-                    'name': user.username,
-                    'email': user.email,
-                },
-                # This allows us to link to the dataset info page in case
-                # anything is missing from this report.
-                'request': {
-                    'url': web.url_for(
-                        controller="dataset", action="show_params",
-                        dataset_id=self.app.security.encode_id(dataset.id),
-                        qualified=True
-                    )
-                }
-            })
+            context = {}
+
+            # Getting the url allows us to link to the dataset info page in case
+            # anything is missing from this report.
+            try:
+                url = web.url_for(controller="dataset",
+                                  action="show_params",
+                                  dataset_id=self.app.security.encode_id(dataset.id),
+                                  qualified=True)
+            except AttributeError:
+                # The above does not work when handlers are separate from the web handlers
+                url = None
+
+            if self.redact_user_details_in_bugreport:
+                if user:
+                    # Opauqe identifier
+                    context['user'] = {
+                        'id': user.id
+                    }
+            else:
+                if user:
+                    # User information here also places email links + allows seeing
+                    # a list of affected users in the tags/filtering.
+                    context['user'] = {
+                        'name': user.username,
+                        'email': user.email,
+                    }
+
+            context['request'] = {'url': url}
+
+            self.sentry_client.context.merge(context)
 
             # Send the message, using message because
             response = self.sentry_client.capture(

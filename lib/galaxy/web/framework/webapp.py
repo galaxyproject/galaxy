@@ -24,16 +24,16 @@ from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
-from galaxy.exceptions import MessageException
+from galaxy.exceptions import ConfigurationError, MessageException
 from galaxy.managers import context
 from galaxy.util import (
     asbool,
+    safe_makedirs,
     safe_str_cmp
 )
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.framework import (
     base,
-    formbuilder,
     helpers,
     url_for
 )
@@ -103,8 +103,6 @@ class WebApplication(base.WebApplication):
             return trans.show_message(sanitize_html(e.err_msg), e.type)
 
     def make_body_iterable(self, trans, body):
-        if isinstance(body, formbuilder.FormBuilder):
-            body = trans.show_form(body)
         return base.WebApplication.make_body_iterable(self, trans, body)
 
     def transaction_chooser(self, environ, galaxy_app, session_cookie):
@@ -429,11 +427,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         galaxy_session_requires_flush = False
         if secure_id:
             # Decode the cookie value to get the session_key
-            session_key = self.security.decode_guid(secure_id)
             try:
-                # Make sure we have a valid UTF-8 string
-                session_key = session_key.encode('utf8')
-            except UnicodeDecodeError:
+                session_key = self.security.decode_guid(secure_id)
+            except Exception:
                 # We'll end up creating a new galaxy_session
                 session_key = None
             if session_key:
@@ -605,7 +601,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             username = remote_user_email.split('@', 1)[0].lower()
             random.seed()
             user = self.app.model.User(email=remote_user_email)
-            user.set_password_cleartext(''.join(random.sample(string.ascii_letters + string.digits, 12)))
+            user.set_random_password(length=12)
             user.external = True
             # Replace invalid characters in the username
             for char in [x for x in username if x not in string.ascii_lowercase + string.digits + '-']:
@@ -633,16 +629,31 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
                         name=name, path=self.app.config.cookie_path)
 
+    def check_user_library_import_dir(self, user):
+        if getattr(self.app.config, "user_library_import_dir_auto_creation", False):
+            # try to create a user library import directory
+            try:
+                safe_makedirs(os.path.join(self.app.config.user_library_import_dir, user.email))
+            except ConfigurationError as e:
+                self.log_event(str(e))
+
+    def user_checks(self, user):
+        """
+        This could contain more checks around a user upon login
+        """
+        self.check_user_library_import_dir(user)
+
     def handle_user_login(self, user):
         """
         Login a new user (possibly newly created)
-
+           - do some 'system' checks (if any) for this user
            - create a new session
            - associate new session with user
            - if old session had a history and it was not associated with a user, associate it with the new session,
              otherwise associate the current session's history with the user
            - add the disk usage of the current session to the user's total disk usage
         """
+        self.user_checks(user)
         # Set the previous session
         prev_galaxy_session = self.galaxy_session
         prev_galaxy_session.is_valid = False
@@ -874,15 +885,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Convenience method for displaying an warn message. See `show_message`.
         """
         return self.show_message(message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view)
-
-    def show_form(self, form, header=None, template="form.mako", use_panels=False, active_view=""):
-        """
-        Convenience method for displaying a simple page with a single HTML
-        form.
-        """
-        return self.fill_template(template, form=form, header=header,
-                                  use_panels=(form.use_panels or use_panels),
-                                  active_view=active_view)
 
     @property
     def session_csrf_token(self):

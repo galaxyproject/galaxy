@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE visualization SYSTEM "../../visualization.dtd">
+<visualization name="PV Protein Viewer">
+    <description>PV is a pdb/protein viewer hosted at https://biasmv.github.io/pv/.</description>
+    <data_sources>
+        <data_source>
+            <model_class>HistoryDatasetAssociation</model_class>
+            <test type="isinstance" test_attr="datatype" result_type="datatype">molecules.PDB</test>
+            <to_param param_attr="id">dataset_id</to_param>
+        </data_source>
+    </data_sources>
+    <params>
+        <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
+    </params>
+    <entry_point entry_point_type="chart" src="pv.js"/>
+    <settings>
+        <input>
+            <label>Quality</label>
+            <name>quality</name>
+            <help>Select the rendering quality</help>
+            <type>select</type>
+            <display>radio</display>
+            <value>medium</value>
+            <data>
+                <data>
+                    <label>High</label>
+                    <value>high</value>
+                </data>
+                <data>
+                    <label>Medium</label>
+                    <value>medium</value>
+                </data>
+                <data>
+                    <label>Low</label>
+                    <value>low</value>
+                </data>
+            </data>
+        </input>
+        <input>
+            <name>viewer</name>
+            <type>conditional</type>
+            <test_param>
+                <name>mode</name>
+                <label>Display mode</label>
+                <type>select</type>
+                <display>radio</display>
+                <value>cartoon</value>
+                <help>Select the rendering mode.</help>
+                <data>
+                    <data>
+                        <value>cartoon</value>
+                        <label>Cartoon</label>
+                    </data>
+                    <data>
+                        <value>lines</value>
+                        <label>Lines</label>
+                    </data>
+                    <data>
+                        <value>points</value>
+                        <label>Points</label>
+                    </data>
+                    <data>
+                        <value>trace</value>
+                        <label>Trace</label>
+                    </data>
+                    <data>
+                        <value>lineTrace</value>
+                        <label>Trace (line)'</label>
+                    </data>
+                    <data>
+                        <value>sline</value>
+                        <label>Trace (smooth)</label>
+                    </data>
+                    <data>
+                        <value>tube</value>
+                        <label>Tube</label>
+                    </data>
+                </data>
+            </test_param>
+            <cases>
+                <cases>
+                    <value>cartoon</value>
+                    <inputs>
+                        <inputs>
+                            <name>radius</name>
+                            <label>Radius</label>
+                            <help>Radius of tube profile. Also influences the profile thickness for helix and strand profiles.</help>
+                            <type>float</type>
+                            <value>0.3</value>
+                            <min>0.1</min>
+                            <max>3</max>
+                        </inputs>
+                    </inputs>
+                </cases>
+                <cases>
+                    <value>lines</value>
+                    <inputs>
+                        <inputs>
+                            <name>lineWidth</name>
+                            <label>Line width</label>
+                            <help>Specify the line width.</help>
+                            <type>float</type>
+                            <value>0.1</value>
+                            <min>10</min>
+                            <max>4</max>
+                        </inputs>
+                    </inputs>
+                </cases>
+                <cases>
+                    <value>points</value>
+                    <inputs>
+                        <inputs>
+                            <name>pointSize</name>
+                            <label>Point size</label>
+                            <help>Specify the point size.</help>
+                            <type>float</type>
+                            <value>0.1</value>
+                            <min>10</min>
+                            <max>1</max>
+                        </inputs>
+                    </inputs>
+                </cases>
+                <cases>
+                    <value>spheres</value>
+                </cases>
+                <cases>
+                    <value>trace</value>
+                    <inputs>
+                        <inputs>
+                            <name>radius</name>
+                            <label>Radius</label>
+                            <help>Specify the tube radius.</help>
+                            <type>float</type>
+                            <value>0.1</value>
+                            <min>3</min>
+                            <max>0.3</max>
+                        </inputs>
+                    </inputs>
+                </cases>
+                <cases>
+                    <value>lineTrace</value>
+                    <inputs>
+                        <inputs>
+                            <name>lineWidth</name>
+                            <label>Line width</label>
+                            <help>Specify the line width.</help>
+                            <type>float</type>
+                            <value>0.1</value>
+                            <min>10</min>
+                            <max>4</max>
+                        </inputs>
+                    </inputs>
+                </cases>
+                <cases>
+                    <value>sline</value>
+                    <inputs>
+                        <inputs>
+                            <name>lineWidth</name>
+                            <label>Line width</label>
+                            <help>Specify the line width.</help>
+                            <type>float</type>
+                            <value>0.1</value>
+                            <min>10</min>
+                            <max>4</max>
+                        </inputs>
+                    </inputs>
+                </cases>
+                <cases>
+                    <value>tube</value>
+                    <inputs>
+                        <inputs>
+                            <name>radius</name>
+                            <label>Radius</label>
+                            <help>Specify the tube radius.</help>
+                            <type>float</type>
+                            <value>0.1</value>
+                            <min>3</min>
+                            <max>0.3</max>
+                        </inputs>
+                    </inputs>
+                </cases>
+            </cases>
+        </input>
+    </settings>
+</visualization>

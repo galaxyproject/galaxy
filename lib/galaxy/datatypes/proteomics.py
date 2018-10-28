@@ -7,6 +7,7 @@ import re
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
@@ -97,16 +98,16 @@ class ProteomicsXml(GenericXml):
     edam_data = "data_2536"
     edam_format = "format_2032"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """ Determines whether the file is the correct XML type. """
-        with open(filename, 'r') as contents:
-            while True:
-                line = contents.readline()
-                if line is None or not line.startswith('<?'):
-                    break
-            # pattern match <root or <ns:root for any ns string
-            pattern = '^<(\w*:)?%s' % self.root
-            return line is not None and re.match(pattern, line) is not None
+        contents = file_prefix.string_io()
+        while True:
+            line = contents.readline()
+            if line is None or not line.startswith('<?'):
+                break
+        # pattern match <root or <ns:root for any ns string
+        pattern = '^<(\w*:)?%s' % self.root
+        return line is not None and re.match(pattern, line) is not None
 
     def set_peek(self, dataset, is_multi_byte=False):
         """Set the peek and blurb text"""
@@ -300,6 +301,7 @@ class ThermoRAW(Binary):
             return "Thermo Finnigan RAW file (%s)" % (nice_size(dataset.get_size()))
 
 
+@build_sniff_from_prefix
 class Msp(Text):
     """ Output of NIST MS Search Program chemdata.nist.gov/mass-spc/ftp/mass-spc/PepLib.pdf """
     file_ext = "msp"
@@ -309,16 +311,15 @@ class Msp(Text):
         next_line = contents.readline()
         return next_line is not None and next_line.startswith(prefix)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """ Determines whether the file is a NIST MSP output file."""
-        with open(filename, 'r') as f:
-            begin_contents = f.read(1024)
-            if "\n" not in begin_contents:
-                return False
-            lines = begin_contents.splitlines()
-            if len(lines) < 2:
-                return False
-            return lines[0].startswith("Name:") and lines[1].startswith("MW:")
+        begin_contents = file_prefix.contents_header
+        if "\n" not in begin_contents:
+            return False
+        lines = begin_contents.splitlines()
+        if len(lines) < 2:
+            return False
+        return lines[0].startswith("Name:") and lines[1].startswith("MW:")
 
 
 class SPLibNoIndex(Text):
@@ -335,6 +336,7 @@ class SPLibNoIndex(Text):
             dataset.blurb = 'file purged from disk'
 
 
+@build_sniff_from_prefix
 class SPLib(Msp):
     """SpectraST Spectral Library. Closely related to msp format"""
     file_ext = "splib"
@@ -374,29 +376,29 @@ class SPLib(Msp):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """ Determines whether the file is a SpectraST generated file.
         """
-        with open(filename, 'r') as contents:
-            return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "LibID:")
+        contents = file_prefix.string_io()
+        return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "LibID:")
 
 
+@build_sniff_from_prefix
 class Ms2(Text):
     file_ext = "ms2"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """ Determines whether the file is a valid ms2 file."""
-
-        with open(filename, 'r') as contents:
-            header_lines = []
-            while True:
-                line = contents.readline()
-                if line is None or len(line) == 0:
-                    pass
-                elif line.startswith('H\t'):
-                    header_lines.append(line)
-                else:
-                    break
+        contents = file_prefix.string_io()
+        header_lines = []
+        while True:
+            line = contents.readline()
+            if line is None or len(line) == 0:
+                pass
+            elif line.startswith('H\t'):
+                header_lines.append(line)
+            else:
+                break
 
         for header_field in ['CreationDate', 'Extractor', 'ExtractorVersion', 'ExtractorOptions']:
             found_header = False
@@ -449,7 +451,7 @@ class ImzML(Binary):
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>imzML Composite Dataset </title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.get('description'):
@@ -493,7 +495,7 @@ class Analyze75(Binary):
     def generate_primary_file(self, dataset=None):
         rval = ['<html><head><title>Analyze75 Composite Dataset.</title></head><p/>']
         rval.append('<div>This composite dataset is composed of the following files:<p/><ul>')
-        for composite_name, composite_file in self.get_composite_files(dataset=dataset).iteritems():
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
             opt_text = ''
             if composite_file.optional:

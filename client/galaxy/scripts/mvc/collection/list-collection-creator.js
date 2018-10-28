@@ -5,6 +5,9 @@ import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
 import naturalSort from "utils/natural-sort";
 import _l from "utils/localization";
+import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
+import Vue from "vue";
+
 import "ui/hoverhighlight";
 
 var logNamespace = "collections";
@@ -278,8 +281,8 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
         /** describe what is wrong with a particular element if anything */
         _isElementInvalid: function(element) {
-            if (element.history_content_type !== "dataset") {
-                return _l("is not a dataset");
+            if (element.history_content_type === "dataset_collection") {
+                return _l("is a collection, this is not allowed");
             }
             var validState = element.state === STATES.OK || _.contains(STATES.NOT_READY_STATES, element.state);
             if (!validState) {
@@ -826,30 +829,30 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                 [
                     '<div class="attributes clear">',
                     '<div class="clear">',
-                    '<label class="setting-prompt pull-right">',
+                    '<label class="setting-prompt float-right">',
                     _l("Hide original elements"),
                     "?",
-                    '<input class="hide-originals pull-right" type="checkbox" />',
+                    '<input class="hide-originals float-right" type="checkbox" />',
                     "</label>",
                     "</div>",
                     '<div class="clear">',
-                    '<input class="collection-name form-control pull-right" ',
+                    '<input class="collection-name form-control float-right" ',
                     'placeholder="',
                     _l("Enter a name for your new collection"),
                     '" />',
-                    '<div class="collection-name-prompt pull-right">',
+                    '<div class="collection-name-prompt float-right">',
                     _l("Name"),
                     ":</div>",
                     "</div>",
                     "</div>",
 
                     '<div class="actions clear vertically-spaced">',
-                    '<div class="other-options pull-left">',
+                    '<div class="other-options float-left">',
                     '<button class="cancel-create btn" tabindex="-1">',
                     _l("Cancel"),
                     "</button>",
                     '<div class="create-other btn-group dropup">',
-                    '<button class="btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    '<button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
                     _l("Create a different kind of collection"),
                     ' <span class="caret"></span>',
                     "</button>",
@@ -864,7 +867,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     "</div>",
                     "</div>",
 
-                    '<div class="main-options pull-right">',
+                    '<div class="main-options float-right">',
                     '<button class="create-collection btn btn-primary">',
                     _l("Create list"),
                     "</button>",
@@ -992,7 +995,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
                     "</div>",
                     '<div class="footer flex-row no-flex">',
                     '<div class="actions clear vertically-spaced">',
-                    '<div class="other-options pull-left">',
+                    '<div class="other-options float-left">',
                     '<button class="cancel-create btn" tabindex="-1">',
                     _l("Cancel"),
                     "</button>",
@@ -1011,17 +1014,11 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         }
     });
 
-//=============================================================================
-/** Create a modal and load its body with the given CreatorClass creator type
- *  @returns {Deferred} resolved when creator has built a collection.
- */
-var collectionCreatorModal = function _collectionCreatorModal(elements, options, CreatorClass) {
-    var deferred = jQuery.Deferred();
-    var modal = Galaxy.modal || new UI_MODAL.View();
-    var creator;
+const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
+    const deferred = jQuery.Deferred();
+    const modal = Galaxy.modal || new UI_MODAL.View();
 
-    options = _.defaults(options || {}, {
-        elements: elements,
+    const creatorOptions = _.defaults(options || {}, {
         oncancel: function() {
             modal.hide();
             deferred.reject("cancelled");
@@ -1032,18 +1029,74 @@ var collectionCreatorModal = function _collectionCreatorModal(elements, options,
         }
     });
 
-    creator = new CreatorClass(options);
-    modal.show({
-        title: options.title || _l("Create a collection"),
-        body: creator.$el,
-        width: "80%",
-        height: "100%",
-        closing_events: true
-    });
-    creator.render();
-    window._collectionCreator = creator;
+    const showEl = function(el) {
+        modal.show({
+            title: options.title || _l("Create a collection"),
+            body: el,
+            width: "85%",
+            height: "100%",
+            xlarge: true,
+            closing_events: true
+        });
+    };
 
-    //TODO: remove modal header
+    return { deferred, creatorOptions, showEl };
+};
+
+//=============================================================================
+/** Create a modal and load its body with the given CreatorClass creator type
+ *  @returns {Deferred} resolved when creator has built a collection.
+ */
+var collectionCreatorModal = function _collectionCreatorModal(elements, options, CreatorClass) {
+    options = _.defaults(options || {}, {
+        elements: elements
+    });
+    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
+    var creator = new CreatorClass(creatorOptions);
+    showEl(creator.$el);
+    creator.render();
+    return deferred;
+};
+
+var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
+    elements,
+    elementsType,
+    importType,
+    options
+) {
+    // importType in [datasets, collection]
+    // elementsType in [raw, ftp, datasets]
+    let title;
+    if (importType == "datasets") {
+        title = _l("Build Rules for Uploading Datasets");
+    } else if (elementsType == "collection_contents") {
+        title = _l("Build Rules for Applying to Existing Collection");
+    } else if (elementsType == "datasets" || elementsType == "library_datasets") {
+        title = _l("Build Rules for Creating Collection(s)");
+    } else {
+        title = _l("Build Rules for Uploading Collections");
+    }
+    options = _.defaults(options || {}, {
+        title: title
+    });
+    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
+    var ruleCollectionBuilderInstance = Vue.extend(RuleCollectionBuilder);
+    var vm = document.createElement("div");
+    showEl(vm);
+    new ruleCollectionBuilderInstance({
+        propsData: {
+            initialElements: elements,
+            elementsType: elementsType,
+            importType: importType,
+            ftpUploadSite: options.ftpUploadSite,
+            creationFn: options.creationFn,
+            oncancel: options.oncancel,
+            oncreate: options.oncreate,
+            defaultHideSourceItems: options.defaultHideSourceItems,
+            saveRulesFn: options.saveRulesFn,
+            initialRules: options.initialRules
+        }
+    }).$mount(vm);
     return deferred;
 };
 
@@ -1059,15 +1112,14 @@ var listCollectionCreatorModal = function _listCollectionCreatorModal(elements, 
  *  @returns {Deferred} resolved when the collection is added to the history.
  */
 function createListCollection(contents, defaultHideSourceItems) {
-    var elements = contents.toJSON();
+    const elements = contents.toJSON();
 
-    var promise = listCollectionCreatorModal(elements, {
+    const promise = listCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
         creationFn: function(elements, name, hideSourceItems) {
             elements = elements.map(element => ({
                 id: element.id,
                 name: element.name,
-
                 //TODO: this allows for list:list even if the filter above does not - reconcile
                 src: element.history_content_type === "dataset" ? "hda" : "hdca"
             }));
@@ -1078,12 +1130,56 @@ function createListCollection(contents, defaultHideSourceItems) {
     return promise;
 }
 
+function createCollectionViaRules(selection, defaultHideSourceItems) {
+    let elements, elementsType, importType;
+    const selectionType = selection.selectionType;
+    if (!selectionType) {
+        // Have HDAs from the history panel.
+        elements = selection.toJSON();
+        elementsType = "datasets";
+        importType = "collections";
+    } else if (selection.elements) {
+        elementsType = selection.selectionType;
+        importType = selection.dataType || "collections";
+        elements = selection.elements;
+    } else {
+        const hasNonWhitespaceChars = RegExp(/[^\s]/);
+        // Have pasted data, data from a history dataset, or FTP list.
+        const lines = selection.content
+            .split(/[\n\r]/)
+            .filter(line => line.length > 0 && hasNonWhitespaceChars.exec(line));
+
+        // Really poor tabular parser - we should get a library for this or expose options? I'm not
+        // sure.
+        let hasTabs = false;
+        if (lines.length > 0) {
+            const firstLine = lines[0];
+            if (firstLine.indexOf("\t") >= 0) {
+                hasTabs = true;
+            }
+        }
+        const regex = hasTabs ? /\t/ : /\s+/;
+        elements = lines.map(line => line.split(regex));
+        elementsType = selection.selectionType;
+        importType = selection.dataType || "collections";
+    }
+    const promise = ruleBasedCollectionCreatorModal(elements, elementsType, importType, {
+        ftpUploadSite: selection.ftpUploadSite,
+        defaultHideSourceItems: defaultHideSourceItems,
+        creationFn: function(elements, collectionType, name, hideSourceItems) {
+            return selection.createHDCA(elements, collectionType, name, hideSourceItems);
+        }
+    });
+    return promise;
+}
+
 //==============================================================================
 export default {
     DatasetCollectionElementView: DatasetCollectionElementView,
     ListCollectionCreator: ListCollectionCreator,
-
     collectionCreatorModal: collectionCreatorModal,
     listCollectionCreatorModal: listCollectionCreatorModal,
-    createListCollection: createListCollection
+    createListCollection: createListCollection,
+    createCollectionViaRules: createCollectionViaRules,
+    ruleBasedCollectionCreatorModal: ruleBasedCollectionCreatorModal
 };

@@ -301,11 +301,11 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             var $newMenu = $(
                 [
                     '<div class="list-action-menu btn-group">',
-                    '<button class="list-action-menu-btn btn btn-default dropdown-toggle" data-toggle="dropdown">',
+                    '<button class="list-action-menu-btn btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
                     _l("For all selected"),
                     "...",
                     "</button>",
-                    '<ul class="dropdown-menu pull-right" role="menu">',
+                    '<ul class="dropdown-menu float-right" role="menu">',
                     "</ul>",
                     "</div>"
                 ].join("")
@@ -791,7 +791,7 @@ var ListPanel = Backbone.View.extend(BASE_MVC.LoggableMixin).extend(
             this.debug("_showLoadingIndicator", this.indicator, msg, speed, callback);
             speed = speed !== undefined ? speed : this.fxSpeed;
             if (!this.indicator) {
-                this.indicator = new LoadingIndicator(this.$el);
+                this.indicator = new LoadingIndicator.LoadingIndicator(this.$el);
                 this.debug("\t created", this.indicator);
             }
             if (!this.$el.is(":visible")) {
@@ -887,11 +887,11 @@ ListPanel.prototype.templates = (() => {
         // show when selectors are shown
         '<div class="list-actions">',
         '<div class="btn-group">',
-        '<button class="select-all btn btn-default"',
+        '<button class="select-all btn btn-secondary"',
         'data-mode="select">',
         _l("All"),
         "</button>",
-        '<button class="deselect-all btn btn-default"',
+        '<button class="deselect-all btn btn-secondary"',
         'data-mode="select">',
         _l("None"),
         "</button>",
@@ -1036,11 +1036,11 @@ ModelListPanel.prototype.templates = (() => {
 
         '<div class="list-actions">',
         '<div class="btn-group">',
-        '<button class="select-all btn btn-default"',
+        '<button class="select-all btn btn-secondary"',
         'data-mode="select">',
         _l("All"),
         "</button>",
-        '<button class="deselect-all btn btn-default"',
+        '<button class="deselect-all btn btn-secondary"',
         'data-mode="select">',
         _l("None"),
         "</button>",

@@ -1,5 +1,5 @@
 """
-This script will start up its own web application which includes a ToolMigrationManager (~/lib/galaxy/tool_shed/tool_migration_manager.py).
+This script will start up its own web application which includes a ToolMigrationManager (~/lib/tool_shed/galaxy_install/tool_migration_manager.py).
 For each tool discovered missing, the tool shed repository that contains it will be installed on disk and a new entry will be
 created for it in the migrated_tools_conf.xml file.  These entries will be made so that the tool panel will be displayed the same
 as it was before the tools were eliminated from the Galaxy distribution.  The ToolMigrationManager will properly handle entries in

@@ -1,0 +1,34 @@
+##fileformat=VCFv4.1
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##INFO=<ID=DP,Number=1,Type=Integer,Description="Approximate read depth; some reads may have been filtered">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	wgs2
+chr1	500	.	C	T	.	.	DP=10	GT	1/1
+chr1	1000	.	A	G	.	.	DP=10	GT	0/1
+chr1	1500	.	G	A	.	.	DP=10	GT	1/0
+chr1	2000	.	G	A	.	.	DP=10	GT	1/1
+chr1	2500	.	A	G	.	.	DP=10	GT	0/1
+chr1	3000	.	G	C	.	.	DP=10	GT	1/0
+chr1	3500	.	G	T	.	.	DP=10	GT	1/1
+chr1	4000	.	A	G	.	.	DP=10	GT	0/1
+chr1	4500	.	A	C	.	.	DP=10	GT	1/0
+chr1	5000	.	A	G	.	.	DP=10	GT	1/1
+chr1	5500	.	C	T	.	.	DP=10	GT	0/1
+chr1	6000	.	C	A	.	.	DP=10	GT	1/0
+chr1	6500	.	C	T	.	.	DP=10	GT	1/1
+chr1	7000	.	G	T	.	.	DP=10	GT	0/1
+chr1	7500	.	G	C	.	.	DP=10	GT	1/0
+chr1	8000	.	T	G	.	.	DP=10	GT	1/1
+chr1	8500	.	T	A	.	.	DP=10	GT	0/1
+chr1	9000	.	C	T	.	.	DP=10	GT	1/0
+chr1	9500	.	G	A	.	.	DP=10	GT	1/1
+chr1	10000	.	A	G	.	.	DP=10	GT	0/1
+chr1	10500	.	T	C	.	.	DP=10	GT	1/0
+chr1	11000	.	A	G	.	.	DP=10	GT	1/1
+chr1	11500	.	C	T	.	.	DP=10	GT	0/1
+chr1	12000	.	A	G	.	.	DP=10	GT	1/0
+chr1	12500	.	C	G	.	.	DP=10	GT	1/1
+chr1	13000	.	T	C	.	.	DP=10	GT	0/1
+chr1	13500	.	G	T	.	.	DP=10	GT	1/0
+chr1	14000	.	A	C	.	.	DP=10	GT	1/1
+chr1	14500	.	A	G	.	.	DP=10	GT	0/1
+chr1	15000	.	T	G	.	.	DP=10	GT	1/0

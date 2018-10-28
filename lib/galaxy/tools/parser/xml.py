@@ -126,6 +126,27 @@ class XmlToolSource(ToolSource):
             )
         return environment_variables
 
+    def parse_home_target(self):
+        target = "job_home" if self.parse_profile() >= "18.01" else "shared_home"
+        command_el = self._command_el
+        command_legacy = (command_el is not None) and command_el.get("use_shared_home", None)
+        if command_legacy is not None:
+            target = "shared_home" if string_as_bool(command_legacy) else "job_home"
+        return target
+
+    def parse_tmp_target(self):
+        # Default to not touching TMPDIR et. al. but if job_tmp is set
+        # in job_conf then do. This is a very conservative approach that shouldn't
+        # break or modify any configurations by default.
+        return "job_tmp_if_explicit"
+
+    def parse_docker_env_pass_through(self):
+        if self.parse_profile() < "18.01":
+            return ["GALAXY_SLOTS"]
+        else:
+            # Pass home, etc...
+            return super(XmlToolSource, self).parse_docker_env_pass_through()
+
     def parse_interpreter(self):
         interpreter = None
         command_el = self._command_el
@@ -239,6 +260,7 @@ class XmlToolSource(ToolSource):
             default_format = collection_elem.get("format", "data")
             collection_type = collection_elem.get("type", None)
             collection_type_source = collection_elem.get("type_source", None)
+            collection_type_from_rules = collection_elem.get("type_from_rules", None)
             structured_like = collection_elem.get("structured_like", None)
             inherit_format = False
             inherit_metadata = False
@@ -255,6 +277,7 @@ class XmlToolSource(ToolSource):
             structure = ToolOutputCollectionStructure(
                 collection_type=collection_type,
                 collection_type_source=collection_type_source,
+                collection_type_from_rules=collection_type_from_rules,
                 structured_like=structured_like,
                 dataset_collector_descriptions=dataset_collector_descriptions,
             )
@@ -327,9 +350,15 @@ class XmlToolSource(ToolSource):
         detect_errors = None
         if command_el is not None:
             detect_errors = command_el.get("detect_errors")
+
         if detect_errors and detect_errors != "default":
             if detect_errors == "exit_code":
-                return error_on_exit_code()
+                oom_exit_code = None
+                if command_el is not None:
+                    oom_exit_code = command_el.get("oom_exit_code", None)
+                if oom_exit_code is not None:
+                    int(oom_exit_code)
+                return error_on_exit_code(out_of_memory_exit_code=oom_exit_code)
             elif detect_errors == "aggressive":
                 return aggressive_error_checks()
             else:
@@ -364,8 +393,6 @@ class XmlToolSource(ToolSource):
             for i, test_elem in enumerate(tests_elem.findall("test")):
                 tests.append(_test_elem_to_dict(test_elem, i))
 
-            _copy_to_dict_if_present(tests_elem, rval, ["interactor"])
-
         return rval
 
     def parse_profile(self):
@@ -391,7 +418,7 @@ def _test_elem_to_dict(test_elem, i):
         expect_failure=string_as_bool(test_elem.get("expect_failure", False)),
         maxseconds=test_elem.get("maxseconds", None),
     )
-    _copy_to_dict_if_present(test_elem, rval, ["interactor", "num_outputs"])
+    _copy_to_dict_if_present(test_elem, rval, ["num_outputs"])
     return rval
 
 
@@ -404,7 +431,7 @@ def __parse_output_elems(test_elem):
     outputs = []
     for output_elem in test_elem.findall("output"):
         name, file, attributes = __parse_output_elem(output_elem)
-        outputs.append((name, file, attributes))
+        outputs.append({"name": name, "value": file, "attributes": attributes})
     return outputs
 
 
@@ -437,7 +464,7 @@ def __parse_output_collection_elem(output_collection_elem):
     if name is None:
         raise Exception("Test output collection does not have a 'name'")
     element_tests = __parse_element_tests(output_collection_elem)
-    return TestCollectionOutputDef(name, attrib, element_tests)
+    return TestCollectionOutputDef(name, attrib, element_tests).to_dict()
 
 
 def __parse_element_tests(parent_element):
@@ -538,7 +565,12 @@ def __parse_extra_files_elem(extra):
     assert extra_type == 'directory' or extra_name is not None, \
         'extra_files type (%s) requires a name attribute' % extra_type
     extra_value, extra_attributes = __parse_test_attributes(extra, attrib)
-    return extra_type, extra_value, extra_name, extra_attributes
+    return {
+        "value": extra_value,
+        "name": extra_name,
+        "type": extra_type,
+        "attributes": extra_attributes
+    }
 
 
 def __expand_input_elems(root_elem, prefix=""):
@@ -601,8 +633,8 @@ def _copy_to_dict_if_present(elem, rval, attributes):
 def __parse_inputs_elems(test_elem, i):
     raw_inputs = []
     for param_elem in test_elem.findall("param"):
-        name, value, attrib = __parse_param_elem(param_elem, i)
-        raw_inputs.append((name, value, attrib))
+        raw_inputs.append(__parse_param_elem(param_elem, i))
+
     return raw_inputs
 
 
@@ -614,40 +646,43 @@ def __parse_param_elem(param_elem, i=0):
         value = attrib['value']
     else:
         value = None
-    attrib['children'] = param_elem
-    if attrib['children'] is not None:
+    children_elem = param_elem
+    if children_elem is not None:
         # At this time, we can assume having children only
         # occurs on DataToolParameter test items but this could
         # change and would cause the below parsing to change
         # based upon differences in children items
-        attrib['metadata'] = []
+        attrib['metadata'] = {}
         attrib['composite_data'] = []
         attrib['edit_attributes'] = []
         # Composite datasets need to be renamed uniquely
         composite_data_name = None
-        for child in attrib['children']:
+        for child in children_elem:
             if child.tag == 'composite_data':
-                attrib['composite_data'].append(child)
+                file_name = child.get("value")
+                attrib['composite_data'].append(file_name)
                 if composite_data_name is None:
                     # Generate a unique name; each test uses a
                     # fresh history.
                     composite_data_name = '_COMPOSITE_RENAMED_t%d_%s' \
                         % (i, uuid.uuid1().hex)
             elif child.tag == 'metadata':
-                attrib['metadata'].append(child)
-            elif child.tag == 'metadata':
-                attrib['metadata'].append(child)
+                attrib['metadata'][child.get("name")] = child.get("value")
             elif child.tag == 'edit_attributes':
                 attrib['edit_attributes'].append(child)
             elif child.tag == 'collection':
-                attrib['collection'] = TestCollectionDef(child, __parse_param_elem)
+                attrib['collection'] = TestCollectionDef.from_xml(child, __parse_param_elem)
         if composite_data_name:
             # Composite datasets need implicit renaming;
             # inserted at front of list so explicit declarations
             # take precedence
             attrib['edit_attributes'].insert(0, {'type': 'name', 'value': composite_data_name})
     name = attrib.pop('name')
-    return (name, value, attrib)
+    return {
+        "name": name,
+        "value": value,
+        "attributes": attrib
+    }
 
 
 class StdioParser(object):
@@ -830,6 +865,8 @@ class StdioParser(object):
                     return_level = StdioErrorLevel.LOG
                 elif (re.search("warning", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.WARNING
+                elif (re.search("fatal_oom", err_level, re.IGNORECASE)):
+                    return_level = StdioErrorLevel.FATAL_OOM
                 elif (re.search("fatal", err_level, re.IGNORECASE)):
                     return_level = StdioErrorLevel.FATAL
                 else:

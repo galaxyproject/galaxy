@@ -18,7 +18,7 @@ class Facts(MutableMapping):
     def __set_defaults(self, config):
         # config here may be a Galaxy config object, or it may just be a dict
         defaults = {
-            'server_name': config.base_server_name,
+            'server_name': lambda: config.get('base_server_name', 'main'),
             'server_id': None,
             'instance_id': None,
             'pool_name': None,

@@ -96,7 +96,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         contents_kwds = {'types': types}
         if ids:
-            ids = map(lambda id: self.decode_id(id), ids.split(','))
+            ids = [self.decode_id(id) for id in ids.split(',')]
             contents_kwds['ids'] = ids
             # If explicit ids given, always used detailed result.
             details = 'all'
@@ -209,7 +209,7 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             ids = util.listify(ids)
             types = util.listify(types)
-        return map(lambda s: self.encode_all_ids(trans, s), fetch_job_states(self.app, trans.sa_session, ids, types))
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(self.app, trans.sa_session, ids, types)]
 
     @expose_api_anonymous
     def show_jobs_summary(self, trans, id, history_id, **kwd):
@@ -509,21 +509,22 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         :raises: RequestParameterInvalidException, RequestParameterMissingException
         """
         source = kwd.get("source", payload.get("source", "new_collection"))
+
+        def convert_lddas(element_identifiers):
+            for ei in element_identifiers:
+                src = ei.get("src")
+                if src == "ldda":
+                    # Convert lddas to hdas since there is no direct representation of library items in history.
+                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
+                    ei["id"] = trans.security.encode_id(hda.id)
+                    ei["src"] = "hda"
+                elif src == "new_collection" and "element_identifiers" in ei:
+                    convert_lddas(ei["element_identifiers"])
+
         service = trans.app.dataset_collections_service
         if source == "new_collection":
             create_params = api_payload_to_create_params(payload)
-            converted_identifiers = []
-            changed = False
-            for ei in payload.get('element_identifiers'):
-                # Convert lddas to hdas since there is no direct representation of library items in history.
-                if ei['src'] == 'ldda':
-                    hda = self.__create_hda_from_ldda(trans, ei['id'], history)
-                    converted_identifiers.append({"name": ei["name"], "src": "hda", "id": trans.security.encode_id(hda.id)})
-                    changed = True
-                else:
-                    converted_identifiers.append(ei)
-            if changed:
-                create_params['element_identifiers'] = converted_identifiers
+            convert_lddas(payload.get("element_identifiers", []))
             dataset_collection_instance = service.create(
                 trans,
                 parent=history,
@@ -624,22 +625,26 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
     # TODO: allow anonymous del/purge and test security on this
     @expose_api
-    def delete(self, trans, history_id, id, purge=False, **kwd):
+    def delete(self, trans, history_id, id, purge=False, recursive=False, **kwd):
         """
         delete( self, trans, history_id, id, **kwd )
         * DELETE /api/histories/{history_id}/contents/{id}
-            delete the HDA with the given ``id``
+        * DELETE /api/histories/{history_id}/contents/{type}s/{id}
+            delete the history content with the given ``id`` and specified type (defaults to dataset)
         .. note:: Currently does not stop any active jobs for which this dataset is an output.
 
         :type   id:     str
         :param  id:     the encoded id of the history to delete
+        :type   recursive:  bool
+        :param  recursive:  if True, and deleted an HDCA also delete containing HDAs
         :type   purge:  bool
-        :param  purge:  if True, purge the HDA
+        :param  purge:  if True, purge the target HDA or child HDAs of the target HDCA
         :type   kwd:    dict
         :param  kwd:    (optional) dictionary structure containing:
 
             * payload:     a dictionary itself containing:
                 * purge:   if True, purge the HDA
+                * recursive: if True, see above.
 
         .. note:: that payload optionally can be placed in the query string of the request.
             This allows clients that strip the request body to still purge the dataset.
@@ -654,7 +659,14 @@ class HistoryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         if contents_type == "dataset":
             return self.__delete_dataset(trans, history_id, id, purge=purge, **kwd)
         elif contents_type == "dataset_collection":
-            trans.app.dataset_collections_service.delete(trans, "history", id)
+            purge = util.string_as_bool(purge)
+            recursive = util.string_as_bool(recursive)
+            if kwd.get('payload', None):
+                # payload takes priority
+                purge = util.string_as_bool(kwd['payload'].get('purge', purge))
+                recursive = util.string_as_bool(kwd['payload'].get('recursive', recursive))
+
+            trans.app.dataset_collections_service.delete(trans, "history", id, recursive=recursive, purge=purge)
             return {'id' : id, "deleted": True}
         else:
             return self.__handle_unknown_contents_type(trans, contents_type)

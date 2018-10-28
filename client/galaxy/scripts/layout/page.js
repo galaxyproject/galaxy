@@ -2,6 +2,7 @@ import Masthead from "layout/masthead";
 import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
 import Utils from "utils/utils";
+
 var View = Backbone.View.extend({
     el: "body",
     className: "full-content",
@@ -14,11 +15,18 @@ var View = Backbone.View.extend({
             message_box_content: "",
             message_box_class: "info",
             show_inactivity_warning: false,
-            inactivity_box_content: ""
+            inactivity_box_content: "",
+            hide_panels: false,
+            hide_masthead: false
         });
 
         // attach global objects, build mastheads
         Galaxy.modal = this.modal = new Modal.View();
+        Galaxy.router = this.router = options.Router && new options.Router(self, options);
+        this.masthead = new Masthead.View(this.config);
+        this.center = new Panel.CenterPanel();
+
+        // display helper
         Galaxy.display = this.display = view => {
             if (view.title) {
                 Utils.setWindowTitle(view.title);
@@ -27,53 +35,71 @@ var View = Backbone.View.extend({
                 Utils.setWindowTitle();
                 view.allow_title_display = true;
             }
+            if (view.active_tab) {
+                self.masthead.highlight(view.active_tab);
+            }
             self.center.display(view);
         };
-        Galaxy.router = this.router = options.Router && new options.Router(self, options);
-        this.masthead = new Masthead.View(this.config);
-        this.center = new Panel.CenterPanel();
 
         // build page template
         this.$el.attr("scroll", "no");
         this.$el.html(this._template());
-        this.$("#masthead").replaceWith(this.masthead.$el);
-        this.$("#center").append(this.center.$el);
-        this.$el.append(this.masthead.frame.$el);
-        this.$el.append(this.modal.$el);
+        this.$masthead = this.$("#masthead");
+        this.$center = this.$("#center");
         this.$messagebox = this.$("#messagebox");
         this.$inactivebox = this.$("#inactivebox");
 
+        // build components
+        if (this.config.hide_masthead) {
+            this.$masthead.remove();
+            this.$center.css("top", 0);
+        } else {
+            this.$masthead.replaceWith(this.masthead.$el);
+        }
+        this.$center.append(this.center.$el);
+        this.$el.append(this.masthead.frame.$el);
+        this.$el.append(this.modal.$el);
+
         // build panels
         this.panels = {};
-        _.each(this._panelids, panel_id => {
-            var panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
-            var panel_class = options[panel_class_name];
-            if (panel_class) {
-                var panel_instance = new panel_class(self, options);
-                self[panel_instance.toString()] = panel_instance;
-                self.panels[panel_id] = new Panel.SidePanel({
-                    id: panel_id,
-                    el: self.$(`#${panel_id}`),
-                    view: panel_instance
-                });
-            }
-        });
+        if (!this.config.hide_panels) {
+            _.each(this._panelids, panel_id => {
+                var panel_class_name = panel_id.charAt(0).toUpperCase() + panel_id.slice(1);
+                var panel_class = options[panel_class_name];
+                if (panel_class) {
+                    var panel_instance = new panel_class(self, options);
+                    var panel_el = self.$(`#${panel_id}`);
+                    self[panel_instance.toString()] = panel_instance;
+                    self.panels[panel_id] = new Panel.SidePanel({
+                        id: panel_id,
+                        el: panel_el,
+                        view: panel_instance
+                    });
+                    if (this.config.hide_masthead) {
+                        panel_el.css("top", 0);
+                    }
+                }
+            });
+        }
         this.render();
 
         // start the router
-        this.router &&
+        if (this.router) {
             Backbone.history.start({
                 root: Galaxy.root,
                 pushState: true
             });
+        }
     },
 
     render: function() {
         // TODO: Remove this line after select2 update
         $(".select2-hidden-accessible").remove();
-        this.masthead.render();
-        this.renderMessageBox();
-        this.renderInactivityBox();
+        if (!this.config.hide_masthead) {
+            this.masthead.render();
+            this.renderMessageBox();
+            this.renderInactivityBox();
+        }
         this.renderPanels();
         this._checkCommunicationServerOnline();
         return this;
@@ -125,7 +151,7 @@ var View = Backbone.View.extend({
             if (panel) {
                 panel.render();
             } else {
-                self.$("#center").css(panel_id, 0);
+                self.$center.css(panel_id, 0);
                 self.$(`#${panel_id}`).hide();
             }
         });
@@ -135,16 +161,16 @@ var View = Backbone.View.extend({
     /** body template */
     _template: function() {
         return [
-            '<div id="everything">',
-            '<div id="background"/>',
-            '<div id="masthead"/>',
-            '<div id="messagebox"/>',
-            '<div id="inactivebox" class="panel-warning-message" />',
-            '<div id="left" />',
-            '<div id="center" />',
-            '<div id="right" />',
-            "</div>",
-            '<div id="dd-helper" />'
+            `<div id="everything">
+                <div id="background"/>
+                <div id="masthead"/>
+                <div id="messagebox"/>
+                <div id="inactivebox" class="panel-warning-message" />
+                <div id="left" />
+                <div id="center" />
+                <div id="right" />
+            </div>
+            <div id="dd-helper" />`
         ].join("");
     },
 

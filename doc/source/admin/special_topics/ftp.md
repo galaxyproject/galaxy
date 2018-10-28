@@ -10,7 +10,7 @@ Although there is no specific required server, we use [ProFTPD](http://proftpd.o
 
 ## Configure Galaxy
 
-The first step is to choose a directory into which your users will upload files.  Preferably this will be on the same filesystem as Galaxy's datasets (by default, `galaxy_dist/database/files/`).  The FTP server will create subdirectories inside of this directory which match the user's email address.  Likewise, Galaxy will expect to find email-named subdirectories at that path.  This directory should be set in the config file (`galaxy.ini`) as `ftp_upload_dir`.
+The first step is to choose a directory into which your users will upload files.  Preferably this will be on the same filesystem as Galaxy's datasets (by default, `galaxy_dist/database/files/`).  The FTP server will create subdirectories inside of this directory which match the user's email address.  Likewise, Galaxy will expect to find email-named subdirectories at that path.  This directory should be set in the config file (`galaxy.yml`) as `ftp_upload_dir`.
 
 In the config file, you'll also want to set `ftp_upload_site` to the hostname your users should connect to via FTP.  This will be provided in the help text on the Upload File form.
 
@@ -38,7 +38,7 @@ GRANT
 
 ## Configuring ProFTPD
 
-By default, Galaxy stores passwords using [PBKDF2](http://en.wikipedia.org/wiki/PBKDF2). It's possible to disable this using the `use_pbkdf2 = False` setting in `galaxy.ini`. Once disabled, any new passwords created will be stored in an older hex-encoded SHA1 format. Because of this, it's possible to have both PBKDF2 and SHA1 passwords in your database (especially if your server has been around since before PBKDF2 support was added). Although this is fine (Galaxy can read passwords in either format), ProFTPD will expect them in one format or the other (although with some amount of hackery it could probably be made to read both).
+By default, Galaxy stores passwords using [PBKDF2](http://en.wikipedia.org/wiki/PBKDF2). It's possible to disable this using the `use_pbkdf2: false` setting in the `galaxy` section of `galaxy.yml`. Once disabled, any new passwords created will be stored in an older hex-encoded SHA1 format. Because of this, it's possible to have both PBKDF2 and SHA1 passwords in your database (especially if your server has been around since before PBKDF2 support was added). Although this is fine (Galaxy can read passwords in either format), ProFTPD will expect them in one format or the other (although with some amount of hackery it could probably be made to read both).
 
 Because of this, you'll need to choose one or the other in your Galaxy config (PBKDF2 is more secure and therefore preferred) and configure ProFTPD accordingly. If users cannot log in because their password is stored in the wrong format, they can simply use Galaxy's password change form to set their password, which will rewrite their password using the currently configured algorithm.
 

@@ -52,6 +52,7 @@ OPTIONAL_TEMPLATE_PARAMS = {
     'integrity_injection': INTEGRITY_INJECTION,
     'shell': DEFAULT_SHELL,
     'preserve_python_environment': True,
+    'tmp_dir_creation_statement': '""',
 }
 
 

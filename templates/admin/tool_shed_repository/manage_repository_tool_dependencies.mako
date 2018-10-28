@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
-<%namespace file="/webapps/tool_shed/common/common.mako" import="common_misc_javascripts" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -69,11 +69,11 @@ ${render_galaxy_repository_actions( repository )}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAllUninstalled" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllUninstalledToolDependencyIdFields(1);"/><input type="hidden" name="select_all_uninstalled_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllUninstalled" name="select_all_uninstalled_tool_dependencies_checkbox" value="true" onclick="checkAllUninstalledToolDependencyIdFields(1);"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    ${uninstalled_tool_dependencies_select_field.get_html()}
+                    ${render_select(uninstalled_tool_dependencies_select_field)}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
@@ -90,11 +90,11 @@ ${render_galaxy_repository_actions( repository )}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    <input type="checkbox" id="checkAllInstalled" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllInstalledToolDependencyIdFields(1);"/><input type="hidden" name="select_all_installed_tool_dependencies_checkbox" value="true"/><b>Select/unselect all tool dependencies</b>
+                    <input type="checkbox" id="checkAllInstalled" name="select_all_installed_tool_dependencies_checkbox" value="true" onclick="checkAllInstalledToolDependencyIdFields(1);"/><b>Select/unselect all tool dependencies</b>
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">
-                    ${installed_tool_dependencies_select_field.get_html()}
+                    ${render_select(installed_tool_dependencies_select_field)}
                 </div>
                 <div style="clear: both"></div>
                 <div class="form-row">

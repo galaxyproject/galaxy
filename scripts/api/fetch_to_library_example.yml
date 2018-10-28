@@ -1,0 +1,42 @@
+destination:
+  type: library
+  name: Training Material
+  description: Data for selected tutorials from https://training.galaxyproject.org.
+items:
+  - name: Quality Control
+    description: |
+      Data for sequence quality control tutorial at http://galaxyproject.github.io/training-material/topics/sequence-analysis/tutorials/quality-control/tutorial.html.
+
+      10.5281/zenodo.61771
+    items:
+      - src: url
+        url: https://zenodo.org/record/61771/files/GSM461178_untreat_paired_subset_1.fastq
+        name: GSM461178_untreat_paired_subset_1
+        ext: fastqsanger
+        info: Untreated subseq of GSM461178 from 10.1186/s12864-017-3692-8
+      - src: url
+        url: https://zenodo.org/record/61771/files/GSM461182_untreat_single_subset.fastq
+        name: GSM461182_untreat_single_subset
+        ext: fastqsanger
+        info: Untreated subseq of GSM461182 from 10.1186/s12864-017-3692-8
+  - name: Small RNA-Seq
+    description: |
+      Data for small RNA-seq tutorial available at http://galaxyproject.github.io/training-material/topics/transcriptomics/tutorials/srna/tutorial.html
+
+      10.5281/zenodo.826906
+    items:
+      - src: url
+        url: https://zenodo.org/record/826906/files/Symp_RNAi_sRNA-seq_rep1_downsampled.fastqsanger.gz
+        name: Symp RNAi sRNA Rep1
+        ext: fastqsanger.gz
+        info: Downsample rep1 from 10.1186/s12864-017-3692-8
+      - src: url
+        url: https://zenodo.org/record/826906/files/Symp_RNAi_sRNA-seq_rep2_downsampled.fastqsanger.gz
+        name: Symp RNAi sRNA Rep2
+        ext: fastqsanger.gz
+        info: Downsample rep2 from 10.1186/s12864-017-3692-8
+      - src: url
+        url: https://zenodo.org/record/826906/files/Symp_RNAi_sRNA-seq_rep3_downsampled.fastqsanger.gz
+        name: Symp RNAi sRNA Rep3
+        ext: fastqsanger.gz
+        info: Downsample rep3 from 10.1186/s12864-017-3692-8

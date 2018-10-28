@@ -12,6 +12,7 @@ from sqlalchemy import or_
 from galaxy import exceptions
 from galaxy import model
 from galaxy import util
+from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
@@ -26,6 +27,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
     def __init__(self, app):
         super(JobController, self).__init__(app)
+        self.dataset_manager = DatasetManager(app)
         self.job_search = JobSearch(app)
 
     @expose_api
@@ -111,7 +113,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
 
         return out
 
-    @expose_api
+    @expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
         show( trans, id )
@@ -134,7 +136,10 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         if full_output:
             job_dict.update(dict(stderr=job.stderr, stdout=job.stdout))
             if is_admin:
-                job_dict['user_email'] = job.user.email
+                if job.user:
+                    job_dict['user_email'] = job.user.email
+                else:
+                    job_dict['user_email'] = None
 
                 def metric_to_dict(metric):
                     metric_name = metric.metric_name
@@ -231,7 +236,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
     def __dictify_associations(self, trans, *association_lists):
         rval = []
         for association_list in association_lists:
-            rval.extend(map(lambda a: self.__dictify_association(trans, a), association_list))
+            rval.extend(self.__dictify_association(trans, a) for a in association_list)
         return rval
 
     def __dictify_association(self, trans, job_dataset_association):
@@ -252,7 +257,9 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise exceptions.ObjectNotFound()
-        if not trans.user_is_admin() and job.user != trans.user:
+        belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
+        if not trans.user_is_admin() and not belongs_to_user:
+            # Check access granted via output datasets.
             if not job.output_datasets:
                 raise exceptions.ItemAccessibilityException("Job has no output datasets.")
             for data_assoc in job.output_datasets:
@@ -293,7 +300,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             raise exceptions.ObjectAttributeMissingException("No inputs defined")
         inputs = payload.get('inputs', {})
         # Find files coming in as multipart file data and add to inputs.
-        for k, v in payload.iteritems():
+        for k, v in payload.items():
             if k.startswith('files_') or k.startswith('__files_'):
                 inputs[k] = v
         request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
@@ -302,9 +309,11 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
             return []
         params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
         jobs = []
-        for param_dump in params_dump:
+        for param_dump, param in zip(params_dump, all_params):
             job = self.job_search.by_tool_input(trans=trans,
                                                 tool_id=tool_id,
+                                                tool_version=tool.version,
+                                                param=param,
                                                 param_dump=param_dump,
                                                 job_state=payload.get('state'))
             if job:

@@ -286,47 +286,39 @@ var DatasetListItemView = _super.extend(
                 return this._renderMetaFileDownloadButton();
             }
 
-            return $(
-                [
-                    '<a class="download-btn icon-btn" ',
-                    'href="',
-                    this.model.urls.download,
-                    `" title="${_l("Download")}" download>`,
-                    '<span class="fa fa-floppy-o"></span>',
-                    "</a>"
-                ].join("")
-            );
+            return $(`
+                <a class="download-btn icon-btn" href="${this.model.urls.download}" title="${_l("Download")}">
+                    <span class="fa fa-floppy-o"></span>
+                </a>`);
         },
 
-        /** Render the download button which opens a dropdown with links to download assoc. meta files (indeces, etc.) */
+        /** Render the download button which opens a dropdown with links to download assoc. meta files (indices, etc.) */
         _renderMetaFileDownloadButton: function() {
             var urls = this.model.urls;
-            return $(
-                [
-                    '<div class="metafile-dropdown dropdown">',
-                    '<a class="download-btn icon-btn" href="javascript:void(0)" data-toggle="dropdown"',
-                    ` title="${_l("Download")}">`,
-                    '<span class="fa fa-floppy-o"></span>',
-                    "</a>",
-                    '<ul class="dropdown-menu" role="menu" aria-labelledby="dLabel">',
-                    `<li><a href="${urls.download}" download>`,
-                    _l("Download dataset"),
-                    "</a></li>",
-                    _.map(this.model.get("meta_files"), meta_file =>
-                        [
-                            '<li><a href="',
-                            urls.meta_download + meta_file.file_type,
-                            '">',
-                            _l("Download"),
-                            " ",
-                            meta_file.file_type,
-                            "</a></li>"
-                        ].join("")
-                    ).join("\n"),
-                    "</ul>",
-                    "</div>"
-                ].join("\n")
-            );
+            return $(`
+                <div class="metafile-dropdown dropdown">
+                    <a class="download-btn icon-btn" href="${urls.download}" data-toggle="dropdown" title="${_l(
+                "Download"
+            )}">
+                        <span class="fa fa-floppy-o"></span>
+                    </a>
+                    <ul class="dropdown-menu" role="menu">
+                        <li>
+                            <a href="${urls.download}">
+                                ${_l("Download dataset")}
+                            </a>
+                        </li>
+                        ${_.map(
+                            this.model.get("meta_files"),
+                            meta_file =>
+                                `<li>
+                                    <a href="${urls.meta_download + meta_file.file_type}">
+                                        ${_l("Download")} ${meta_file.file_type}
+                                    </a>
+                                </li>`
+                        )}
+                    </ul>
+                </div>`);
         },
 
         _renderNametags: function() {
@@ -334,7 +326,7 @@ var DatasetListItemView = _super.extend(
                 [
                     "<% _.each(_.sortBy(_.uniq(tags), function(x) { return x }), function(tag){ %>",
                     '<% if (tag.indexOf("name:") == 0){ %>',
-                    '<span class="label label-info"><%- tag.slice(5) %></span>',
+                    '<span class="badge badge-primary badge-tags"><%- tag.slice(5) %></span>',
                     "<% } %>",
                     "<% }); %>"
                 ].join("")
@@ -510,7 +502,8 @@ DatasetListItemView.prototype.templates = (() => {
         "dataset"
     );
     summaryTemplates[STATES.PAUSED] = BASE_MVC.wrapTemplate(
-        ["<div>", _l('This job is paused. Use the "Resume Paused Jobs" in the history menu to resume'), "</div>"],
+        ["<div>", _l('This job is paused. Use the "Resume Paused Jobs" in the history menu to resume'), "</div>",
+        '<div class="info"><%- dataset.misc_info %></div>'],
         "dataset"
     );
     summaryTemplates[STATES.ERROR] = BASE_MVC.wrapTemplate(

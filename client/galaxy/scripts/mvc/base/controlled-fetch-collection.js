@@ -2,6 +2,9 @@ import * as _ from "libs/underscore";
 import * as Backbone from "libs/backbone";
 import BASE_MVC from "mvc/base-mvc";
 
+/* global Galaxy */
+/* global jQuery */
+
 //=============================================================================
 /**
  * A Collection that can be limited/offset/re-ordered/filtered.
@@ -35,7 +38,6 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         // note: we normally want options passed in to override the defaults built here
         // so most of these fns will generate defaults
         options = _.clone(options) || {};
-        var self = this;
 
         // jquery ajax option; allows multiple q/qv for filters (instead of 'q[]')
         options.traditional = true;
@@ -47,7 +49,7 @@ var ControlledFetchCollection = Backbone.Collection.extend({
         //   to the pagination options too
         //      (i.e. this.on( 'sync', function( options ){ if( options.limit ){ ... } }))
         // however, when we send to xhr/jquery we copy them to data also so that they become API query params
-        options.data = options.data || self._buildFetchData(options);
+        options.data = options.data || this._buildFetchData(options);
         Galaxy.debug("data:", options.data);
 
         // options.data.filters --> options.data.q, options.data.qv

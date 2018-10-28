@@ -147,6 +147,7 @@ class MockJobWrapper(object):
         self.galaxy_virtual_env = None
         self.shell = "/bin/bash"
         self.cleanup_job = "never"
+        self.tmp_dir_creation_statement = ""
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(
@@ -155,6 +156,9 @@ class MockJobWrapper(object):
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(
             build_dependency_shell_commands=lambda: []
         )
+
+    def check_tool_output(*args, **kwds):
+        return "ok"
 
     def wait_for_external_id(self):
         """Test method for waiting til an external id has been registered."""
@@ -203,7 +207,16 @@ class MockJobWrapper(object):
         self.fail_message = message
         self.fail_exception = exception
 
-    def finish(self, stdout, stderr, exit_code):
+    def finish(self, stdout, stderr, exit_code, **kwds):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_code = exit_code
+
+    def tmp_directory(self):
+        return None
+
+    def home_directory(self):
+        return None
+
+    def reclaim_ownership(self):
+        pass

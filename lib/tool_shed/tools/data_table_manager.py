@@ -169,3 +169,7 @@ class ShedToolDataTableManager(object):
     def reset_tool_data_tables(self):
         # Reset the tool_data_tables to an empty dictionary.
         self.app.tool_data_tables.data_tables = {}
+
+
+# For backwards compatibility with exisiting data managers
+ToolDataTableManager = ShedToolDataTableManager

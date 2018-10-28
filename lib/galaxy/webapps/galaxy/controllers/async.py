@@ -5,9 +5,9 @@ Upload class
 from __future__ import absolute_import
 
 import logging
-import urllib
 
 import requests
+from six.moves.urllib.parse import urlencode
 
 from galaxy import jobs, web
 from galaxy.util import Params
@@ -75,10 +75,10 @@ class ASync(BaseUIController):
 
                 # Assume there is exactly one output file possible
                 TOOL_OUTPUT_TYPE = None
-                for idx, obj in enumerate(tool.outputs.values()):
+                for key, obj in tool.outputs.items():
                     try:
                         TOOL_OUTPUT_TYPE = obj.format
-                        params[tool.outputs.keys()[idx]] = data.id
+                        params[key] = data.id
                         break
                     except Exception:
                         # exclude outputs different from ToolOutput (e.g. collections) from the previous assumption
@@ -163,7 +163,7 @@ class ASync(BaseUIController):
                     url_join_char = '&'
                 else:
                     url_join_char = '?'
-                url = "%s%s%s" % (url, url_join_char, urllib.urlencode(params.flatten()))
+                url = "%s%s%s" % (url, url_join_char, urlencode(params.flatten()))
                 log.debug("connecting to -> %s" % url)
                 trans.log_event("Async connecting to -> %s" % url)
                 text = requests.get(url).text.strip()

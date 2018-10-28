@@ -53,20 +53,20 @@ galaxy_user@node1%
 ```
 
 
-If your cluster nodes have Internet access (NAT is okay) and you want to run the data source tools (upload, ucsc, etc.) on the cluster (doing so is highly recommended), set `new_file_path` in `galaxy.ini` to a directory somewhere in your shared filesystem:
+If your cluster nodes have Internet access (NAT is okay) and you want to run the data source tools (upload, ucsc, etc.) on the cluster (doing so is highly recommended), set `new_file_path` in `galaxy.yml` to a directory somewhere in your shared filesystem:
 
-```ini
-new_file_path = /clusterfs/galaxy/tmp
+```yaml
+new_file_path: /clusterfs/galaxy/tmp
 ```
 
 
 Additionally some of the runners including DRMAA may use the ``cluster_files_directory`` for sharing files with the cluster, which defaults to ``database/pbs``. You may need to create this folder.
 
-```ini
-cluster_files_directory = database/pbs
+```yaml
+cluster_files_directory: database/pbs
 ```
 
-You may also find that attribute caching in your filesystem causes problems with job completion since it interferes with Galaxy detecting the presence and correct sizes of output files. In NFS caching can be disabled with the `-noac` mount option on Linux (on the Galaxy server), but this may have a significant impact on performance since all attributes will have to be read from the file server upon every file access. You should try the `retry_output_collection` option in `galaxy.ini` first to see if this solves the problem.
+You may also find that attribute caching in your filesystem causes problems with job completion since it interferes with Galaxy detecting the presence and correct sizes of output files. In NFS caching can be disabled with the `-noac` mount option on Linux (on the Galaxy server), but this may have a significant impact on performance since all attributes will have to be read from the file server upon every file access. You should try the `retry_job_output_collection` option in `galaxy.yml` first to see if this solves the problem.
 
 ## Runner Configuration
 
@@ -195,7 +195,7 @@ Most options available to `qsub(1b)` and `pbs_submit(3b)` are supported.  Except
 ```
 
 
-The value of *ppn=* is used by PBS to define the environment variable $PBS_NCPUS which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
+The value of *ppn=* is used by PBS to define the environment variable `$PBS_NCPUS` which in turn is used by galaxy for [GALAXY_SLOTS](https://galaxyproject.org/admin/config/galaxy_slots/).
 
 ### Condor
 
@@ -336,9 +336,9 @@ The directory specified in `new_file_path` in the Galaxy config should be world-
 
 The `outputs_to_working_directory` option in the Galaxy config **must** be set to `True`. This ensures that a tool/job's outputs are written to the temporary working directory, which (when using the real user system) is owned by the real user who submitted the job. If left set to the default (`False`), the tool will attempt to write directly to the directory specified in `file_path` (by default, `galaxy-app/database/files/`), which must be owned by the Galaxy user (and thus will not be writable by the real user).
 
-For releases later than 17.05 you can configure the method how the system user is determined in `config/galaxy.ini` via the variable `real_system_username`. For determining the system user from the email adress stored in Galaxy set it to `user_email`, otherwise for determining the system user from the Galaxy user name set it to `username`.  
+For releases later than 17.05 you can configure the method how the system user is determined in `config/galaxy.yml` via the variable `real_system_username`. For determining the system user from the email adress stored in Galaxy set it to `user_email`, otherwise for determining the system user from the Galaxy user name set it to `username`.  
 
-Once these are set, you must set the `drmaa_external_*` and `external_chown_script` settings in the Galaxy config and configure `sudo(8)` to allow them to be run. A sudo config using the three scripts set in the sample `galaxy.ini` would be:
+Once these are set, you must set the `drmaa_external_*` and `external_chown_script` settings in the Galaxy config and configure `sudo(8)` to allow them to be run. A sudo config using the three scripts set in the sample `galaxy.yml` would be:
 
 ```
 galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/drmaa_external_runner.py
@@ -348,12 +348,41 @@ galaxy  ALL = (root) NOPASSWD: SETENV: /opt/galaxy/scripts/external_chown_script
 
 If your sudo config contains `Defaults    requiretty`, this option must be disabled.
 
-For Galaxy releases > 17.05 the sudo call has been moved to `galaxy.ini` and is thereby configurable by the Galaxy admin. This can be of interest because sudo removes `PATH`, `LD_LIBRARY_PATH`, etc. variables per default in some installations. In such cases the sudo calls in the three variables in galaxy.ini can be adapted, e.g., `sudo -E PATH=... LD_LIBRARY_PATH=... /PATH/TO/GALAXY/scripts/drmaa_external_runner.py`. In order to allow setting the variables this way adaptions to the sudo configuration might be necessary. 
-Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directorries `job_working_directory` and `new_file_path` as configured in `galaxy.ini`.
+For Galaxy releases > 17.05, the sudo call has been moved to `galaxy.yml` and is thereby configurable by the Galaxy admin. This can be of interest because sudo removes `PATH`, `LD_LIBRARY_PATH`, etc. variables per default in some installations. In such cases the sudo calls in the three variables in galaxy.yml can be adapted, e.g., `sudo -E PATH=... LD_LIBRARY_PATH=... /PATH/TO/GALAXY/scripts/drmaa_external_runner.py`. In order to allow setting the variables this way adaptions to the sudo configuration might be necessary. For example, the path to the python inside the galaxy's python virtualenv may have to be inserted before the script call to make sure the virtualenv is used for drmaa submissions of real user jobs.
+
+```
+drmaa_external_runjob_script: sudo -E .venv/bin/python scripts/drmaa_external_runner.py --assign_all_groups
+```
+
+Also for Galaxy releases > 17.05: In order to allow `external_chown_script.py` to chown only path below certain entry points the variable `ALLOWED_PATHS` in the python script can be adapted. It is sufficient to include the directorries `job_working_directory` and `new_file_path` as configured in `galaxy.yml`.
 
 It is also a good idea to make sure that only trusted users, e.g. root, have write access to all three scripts.
 
 Some maintenance and support of this code will be provided via the usual [Support](https://galaxyproject.org/support/) channels, but improvements and fixes would be greatly welcomed, as this is a complex feature which is not used by the Galaxy Development Team.
+
+## Special environment variables for job resources
+
+Galaxy *tries* to define special environment variables for each job that contain
+the information on the number of available slots and the amount of available
+memory: 
+
+* `GALAXY_SLOTS`: number of available slots 
+* `GALAXY_MEMORY_MB`: total amount of available memory in MB
+* `GALAXY_MEMORY_MB_PER_SLOT`: amount of memory that is available for each slot in MB
+
+More precisely Galaxy inserts bash code in the job submit script that 
+tries to determine these values. This bash code is defined here: 
+
+* lib/galaxy/jobs/runners/util/job_script/CLUSTER_SLOTS_STATEMENT.sh
+* lib/galaxy/jobs/runners/util/job_script/MEMORY_STATEMENT.sh
+
+If this code is unable to determine the variables, then they will not be set. 
+Therefore in the tool XML files the variables should be used with a default, 
+e.g. `\${GALAXY_SLOTS:-1}` (see also https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage). 
+
+In particular `GALAXY_MEMORY_MB` and `GALAXY_MEMORY_MB_PER_SLOT` are currently
+defined only for a few cluster types. Contributions are very welcome, e.g. let
+the Galaxy developers know how to modify that file to support your cluster.
 
 ## Contributors
 

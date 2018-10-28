@@ -1,3 +1,7 @@
+import os
+
+from selenium.webdriver.common.keys import Keys
+
 from .framework import (
     selenium_test,
     SeleniumTestCase,
@@ -104,3 +108,218 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         # Make sure source items are hidden when the collection is created.
         self.history_panel_wait_for_hid_hidden(1)
         self.history_panel_wait_for_hid_hidden(2)
+
+    @selenium_test
+    def test_rules_example_1_datasets(self):
+        # Test case generated for:
+        #   https://www.ebi.ac.uk/ena/data/view/PRJDA60709
+        self.home()
+        self.upload_rule_start()
+        self.screenshot("rules_example_1_1_rules_landing")
+        self.components.upload.rule_source_content.wait_for_and_send_keys("""study_accession sample_accession    experiment_accession    fastq_ftp
+PRJDA60709  SAMD00016379    DRX000475   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000770/DRR000770.fastq.gz
+PRJDA60709  SAMD00016383    DRX000476   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000771/DRR000771.fastq.gz
+PRJDA60709  SAMD00016380    DRX000477   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000772/DRR000772.fastq.gz
+PRJDA60709  SAMD00016378    DRX000478   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000773/DRR000773.fastq.gz
+PRJDA60709  SAMD00016381    DRX000479   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000774/DRR000774.fastq.gz
+PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR000775/DRR000775.fastq.gz""")
+        self.screenshot("rules_example_1_2_paste")
+        self.upload_rule_build()
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_and_click()
+        self.screenshot("rules_example_1_3_initial_rules")
+        rule_builder.menu_button_filter.wait_for_and_click()
+        self.screenshot("rule_builder_filters")
+        rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
+        filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
+        filter_editor_element = filter_editor.wait_for_visible()
+        filter_input = filter_editor_element.find_element_by_css_selector("input[type='number']")
+        filter_input.clear()
+        filter_input.send_keys("1")
+        self.screenshot("rules_example_1_4_filter_header")
+        rule_builder.rule_editor_ok.wait_for_and_click()
+        self.rule_builder_set_mapping("url", "D")
+        self.rule_builder_set_mapping("name", "C", screenshot_name="rules_example_1_5_mapping_edit")
+        self.screenshot("rules_example_1_6_mapping_set")
+        self.rule_builder_set_extension("fastqsanger.gz")
+        self.screenshot("rules_example_1_7_extension_set")
+        # rule_builder.main_button_ok.wait_for_and_click()
+        # self.history_panel_wait_for_hid_ok(6)
+        # self.screenshot("rules_example_1_6_download_complete")
+
+    @selenium_test
+    def test_rules_example_2_list(self):
+        self.perform_upload(self.get_filename("rules/PRJDA60709.tsv"))
+        self.history_panel_wait_for_hid_ok(1)
+        self.upload_rule_start()
+        self.upload_rule_set_data_type("Collection")
+        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_dataset("1:")
+        self.screenshot("rules_example_2_1_inputs")
+        self.upload_rule_build()
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_and_click()
+        self.screenshot("rules_example_2_2_initial_rules")
+        # Filter header.
+        self.rule_builder_filter_count(1)
+        self.rule_builder_set_mapping("url", "D")
+        self.rule_builder_set_mapping("list-identifiers", "C")
+        self.rule_builder_set_extension("fastqsanger.gz")
+        self.screenshot("rules_example_2_3_rules")
+        self.rule_builder_set_collection_name("PRJDA60709")
+        self.screenshot("rules_example_2_4_name")
+        # rule_builder.main_buton_ok.wait_for_and_click()
+        # self.history_panel_wait_for_hid_ok(2)
+        # self.screenshot("rules_example_2_5_download_complete")
+
+    @selenium_test
+    def test_rules_example_3_list_pairs(self):
+        self.perform_upload(self.get_filename("rules/PRJDB3920.tsv"))
+        self.history_panel_wait_for_hid_ok(1)
+        self.upload_rule_start()
+        self.upload_rule_set_data_type("Collection")
+        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_dataset("1:")
+        self.screenshot("rules_example_3_1_inputs")
+        self.upload_rule_build()
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_and_click()
+        self.screenshot("rules_example_3_2_initial_rules")
+        # Filter header.
+        self.rule_builder_filter_count(1)
+        self.rule_builder_set_mapping("list-identifiers", "C")
+        self.rule_builder_set_extension("fastqsanger.gz")
+        self.screenshot("rules_example_3_3_old_rules")
+        self.rule_builder_add_regex_groups("D", 2, "(.*);(.*)", screenshot_name="rules_example_3_4_regex")
+        self.screenshot("rules_example_3_6_with_regexes")
+        # Remove A also?
+        self.rule_builder_remove_columns(["D"], screenshot_name="rules_example_3_7_removed_column")
+        self.rule_builder_split_columns(["D"], ["E"], screenshot_name="rules_example_3_8_split_columns")
+        self.screenshot("rules_example_3_9_columns_are_split")
+        self.rule_builder_add_regex_groups("D", 1, ".*_(\d).fastq.gz", screenshot_name="rules_example_3_10_regex_paired")
+        self.screenshot("rules_example_3_11_has_paired_id")
+        self.rule_builder_swap_columns("D", "E", screenshot_name="rules_example_3_12_swap_columns")
+        self.screenshot("rules_example_3_13_swapped_columns")
+        self.rule_builder_set_mapping("paired-identifier", "D")
+        self.rule_builder_set_mapping("url", "E")
+        self.rule_builder_set_collection_name("PRJDB3920")
+        self.screenshot("rules_example_3_14_paired_identifier_set")
+
+    @selenium_test
+    def test_rules_example_4_accessions(self):
+        # http://www.uniprot.org/uniprot/?query=proteome:UP000052092+AND+proteomecomponent:%22Genome%22
+        self._setup_uniprot_example()
+        self.screenshot("rules_example_4_1_inputs")
+        self.upload_rule_build()
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_and_click()
+        self.screenshot("rules_example_4_2_initial_rules")
+        self.rule_builder_filter_count(1)
+        self.rule_builder_remove_columns(["B", "C", "E", "F", "G"])
+        self.rule_builder_set_mapping("info", "B")
+        self.screenshot("rules_example_4_3_basic_rules")
+        self.rule_builder_sort("A", screenshot_name="rules_example_4_4_sort")
+
+        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/\\0.fasta", screenshot_name="rules_example_4_5_url")
+        self.screenshot("rules_example_4_6_url_built")
+        self.rule_builder_set_mapping("list-identifiers", "A")
+        self.rule_builder_set_mapping("url", "C")
+        self.rule_builder_set_extension("fasta")
+        self.rule_builder_set_collection_name("UP000052092")
+        self.screenshot("rules_example_4_7_mapping_extension_and_name")
+
+        rule_builder.view_source.wait_for_and_click()
+        text_area_elem = rule_builder.source.wait_for_visible()
+
+        self.screenshot("rules_example_4_8_source")
+        self.write_screenshot_directory_file("rules_example_4_8_text", text_area_elem.get_attribute("value"))
+
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+
+    @selenium_test
+    def test_rules_example_5_matching_collections(self):
+        self._setup_uniprot_example()
+        self.screenshot("rules_example_5_1_inputs")
+        self.upload_rule_build()
+
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+
+        content = self._read_rules_test_data_file("uniprot.json")
+        self.rule_builder_enter_source_text(content)
+        self.screenshot("rules_example_5_2_source")
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+        self.screenshot("rules_example_5_3_initial_rules")
+        self.rule_builder_add_value("fasta", screenshot_name="rules_example_5_4_fasta")
+        self.rule_builder_add_value("UP000052092 FASTA")
+        self.rule_builder_add_regex_replacement("A", ".*", "http://www.uniprot.org/uniprot/\\0.gff", screenshot_name="rules_example_5_5_url")
+        self.rule_builder_add_value("gff3")
+        self.rule_builder_add_value("UP000052092 GFF3")
+        self._scroll_to_end_of_table()
+        self.screenshot("rules_example_5_6_presplit")
+        self.rule_builder_split_columns(["C", "D", "E"], ["F", "G", "H"], screenshot_name="rules_example_5_7_split_columns")
+        self.screenshot("rules_example_5_8_split")
+        self.rule_builder_set_mapping("file-type", "D")
+        self.rule_builder_set_mapping("collection-name", "E")
+        self.screenshot("rules_example_5_9_mapping")
+
+    @selenium_test
+    def test_rules_example_6_nested_lists(self):
+        self.home()
+        self.perform_upload(self.get_filename("rules/PRJNA355367.tsv"))
+        self.history_panel_wait_for_hid_ok(1)
+        self.upload_rule_start()
+        self.upload_rule_set_data_type("Collection")
+        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_dataset("1:")
+        self.screenshot("rules_example_6_1_paste")
+        self.upload_rule_build()
+
+        rule_builder = self.components.rule_builder
+        rule_builder._.wait_for_and_click()
+
+        self.screenshot("rules_example_6_2_rules_landing")
+
+        self.rule_builder_filter_count(1)
+
+        self.rule_builder_set_mapping("url", "J")
+        self.rule_builder_set_extension("sra")
+        self._scroll_to_end_of_table()
+        self.screenshot("rules_example_6_3_end_of_table")
+        self.rule_builder_add_regex_groups("L", 1, "([^\d]+)\d+", screenshot_name="rules_example_6_4_regex")
+        self.rule_builder_set_mapping("list-identifiers", ["M", "A"], screenshot_name="rules_example_6_5_multiple_identifiers_edit")
+        self._scroll_to_end_of_table()
+        self.screenshot("rules_example_6_6_multiple_identifiers")
+        self.rule_builder_set_collection_name("PRJNA355367")
+        self.screenshot("rules_example_6_7_named")
+
+    def _read_rules_test_data_file(self, name):
+        with open(self.test_data_resolver.get_filename(os.path.join("rules", name)), "r") as f:
+            return f.read()
+
+    def _scroll_to_end_of_table(self):
+        rule_builder = self.components.rule_builder
+        table_elem = rule_builder.table.wait_for_visible()
+        first_cell = table_elem.find_elements_by_css_selector("td")[0]
+        action_chains = self.action_chains()
+        action_chains.move_to_element(first_cell)
+        action_chains.click(first_cell)
+        for i in range(15):
+            action_chains.send_keys(Keys.ARROW_RIGHT)
+        action_chains.perform()
+
+    def _setup_uniprot_example(self):
+        self.perform_upload(self.get_filename("rules/uniprot.tsv"))
+        self.history_panel_wait_for_hid_ok(1)
+        self.upload_rule_start()
+        self.upload_rule_set_data_type("Collection")
+        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_set_dataset("1:")
+
+    # @selenium_test
+    # def test_rules_example_5_matching_collections(self):
+    #    self.rule_builder_add_value("Protein FASTA")
+    #     self.rule_builder_add_value("gff")
+    #    self.rule_builder_add_value("Protein GFF")

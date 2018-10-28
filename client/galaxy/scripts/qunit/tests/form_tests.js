@@ -151,7 +151,7 @@ QUnit.test("input", function(assert) {
         input.$field
             .children()
             .first()
-            .css("color") == "rgb(85, 85, 85)",
+            .css("color") == "rgb(73, 80, 87)",
         "Shows correct old color"
     );
     input.model.set("collapsible_value", "_collapsible_value");

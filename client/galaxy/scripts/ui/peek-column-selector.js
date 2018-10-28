@@ -1,7 +1,8 @@
-// from: https://raw.githubusercontent.com/umdjs/umd/master/jqueryPlugin.js
-// Uses AMD or browser globals to create a jQuery plugin.
-import jQuery from "jquery";
-var $ = jQuery;
+//import $ from "jquery";
+// TODO:  This manipulates whatever jquery is available -- needs restructuring,
+// or removal (jquery plugins are a bad design choice for us at this point)
+// It is *only* used in the scatterplot viz, so this is safe.
+/* global $ */
 
 //==============================================================================
 /** Column selection using the peek display as the control.
@@ -63,38 +64,38 @@ var defaults = {
     topLeftContent: "Columns:"
 };
 
-var /** class added to the pre.peek element (to allow css on just the control) */
-PEEKCONTROL_CLASS = "peek-column-selector";
+/** class added to the pre.peek element (to allow css on just the control) */
+const PEEKCONTROL_CLASS = "peek-column-selector";
 
-var /** the string of the event fired when a control row changes */
-CHANGE_EVENT = "peek-column-selector.change";
+/** the string of the event fired when a control row changes */
+const CHANGE_EVENT = "peek-column-selector.change";
 
-var /** the string of the event fired when a column is renamed */
-RENAME_EVENT = "peek-column-selector.rename";
+/** the string of the event fired when a column is renamed */
+const RENAME_EVENT = "peek-column-selector.rename";
 
-var /** class added to the control rows */
-ROW_CLASS = "control";
+/** class added to the control rows */
+const ROW_CLASS = "control";
 
-var /** class added to the left-hand cells that serve as row prompts */
-PROMPT_CLASS = "control-prompt";
+/** class added to the left-hand cells that serve as row prompts */
+const PROMPT_CLASS = "control-prompt";
 
-var /** class added to selected _cells_/tds */
-SELECTED_CLASS = "selected";
+/** class added to selected _cells_/tds */
+const SELECTED_CLASS = "selected";
 
-var /** class added to disabled/un-clickable cells/tds */
-DISABLED_CLASS = "disabled";
+/** class added to disabled/un-clickable cells/tds */
+const DISABLED_CLASS = "disabled";
 
-var /** class added to the clickable surface within a cell to select it */
-BUTTON_CLASS = "button";
+/** class added to the clickable surface within a cell to select it */
+const BUTTON_CLASS = "button";
 
-var /** class added to peek table header (th) cells to indicate they can be clicked and are renamable */
-RENAMABLE_HEADER_CLASS = "renamable-header";
+/** class added to peek table header (th) cells to indicate they can be clicked and are renamable */
+const RENAMABLE_HEADER_CLASS = "renamable-header";
 
-var /** the data key used for each cell to store the column index ('data-...') */
-COLUMN_INDEX_DATA_KEY = "column-index";
+/** the data key used for each cell to store the column index ('data-...') */
+const COLUMN_INDEX_DATA_KEY = "column-index";
 
-var /** renamable header data key used to store the column name (w/o the number and dot: '1.Bler') */
-COLUMN_NAME_DATA_KEY = "column-name";
+/** renamable header data key used to store the column name (w/o the number and dot: '1.Bler') */
+const COLUMN_NAME_DATA_KEY = "column-name";
 
 //TODO: not happy with pure functional here - rows should polymorph (multi, single, etc.)
 //TODO: needs clean up, move handlers to outer scope
@@ -102,10 +103,10 @@ COLUMN_NAME_DATA_KEY = "column-name";
 // ........................................................................
 /** validate the control data sent in for each row */
 function validateControl(control) {
-    if (control.disabled && jQuery.type(control.disabled) !== "array") {
+    if (control.disabled && $.type(control.disabled) !== "array") {
         throw new Error(`"disabled" must be defined as an array of indeces: ${JSON.stringify(control)}`);
     }
-    if (control.multiselect && control.selected && jQuery.type(control.selected) !== "array") {
+    if (control.multiselect && control.selected && $.type(control.selected) !== "array") {
         throw new Error(`Mulitselect rows need an array for "selected": ${JSON.stringify(control)}`);
     }
     if (!control.label || !control.id) {
@@ -212,7 +213,7 @@ function buildMultiSelectCell(control, columnIndex) {
             var eventData = {};
 
             var key = $cell.parent().attr("id");
-            var val = jQuery.makeArray(selectedColumnIndeces);
+            var val = $.makeArray(selectedColumnIndeces);
             eventData[key] = val;
             $cell.parents(".peek").trigger(CHANGE_EVENT, eventData);
         });
@@ -252,7 +253,7 @@ function buildControlRow(cellCount, control, includePrompts) {
 // ........................................................................
 /** add to the peek, using options for configuration, return the peek */
 function peekColumnSelector(options) {
-    options = jQuery.extend(true, {}, defaults, options);
+    options = $.extend(true, {}, defaults, options);
 
     var $peek = $(this).addClass(PEEKCONTROL_CLASS);
     var $peektable = $peek.find("table");
@@ -312,7 +313,7 @@ function peekColumnSelector(options) {
 
             var index = $this.index() + (options.includePrompts ? 0 : 1);
             var prevName = $this.data(COLUMN_NAME_DATA_KEY);
-            var newColumnName = prompt("New column name:", prevName);
+            var newColumnName = window.prompt("New column name:", prevName);
             if (newColumnName !== null && newColumnName !== prevName) {
                 // set the new text and data
                 $this
@@ -320,7 +321,7 @@ function peekColumnSelector(options) {
                     .data(COLUMN_NAME_DATA_KEY, newColumnName)
                     .attr("data-", COLUMN_NAME_DATA_KEY, newColumnName);
                 // fire event for new column names
-                var columnNames = jQuery.makeArray(
+                var columnNames = $.makeArray(
                     $this
                         .parent()
                         .children("th:not(.top-left)")
@@ -344,7 +345,7 @@ function peekColumnSelector(options) {
 
 // ........................................................................
 // as jq plugin
-jQuery.fn.extend({
+$.fn.extend({
     peekColumnSelector: function $peekColumnSelector(options) {
         return this.map(function() {
             return peekColumnSelector.call(this, options);

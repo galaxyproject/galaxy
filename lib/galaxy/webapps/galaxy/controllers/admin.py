@@ -1,6 +1,7 @@
 import imp
 import logging
 import os
+import time
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
@@ -22,6 +23,7 @@ from galaxy.util import (
     sanitize_text,
     url_get
 )
+from galaxy.util.hash_util import new_secure_hash
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.base import controller
@@ -37,6 +39,7 @@ from tool_shed.util.web_util import escape
 
 
 log = logging.getLogger(__name__)
+compliance_log = logging.getLogger('COMPLIANCE')
 
 
 class UserListGrid(grids.Grid):
@@ -96,6 +99,7 @@ class UserListGrid(grids.Grid):
 
     # Grid definition
     title = "Users"
+    title_id = "users-grid"
     model_class = model.User
     default_sort_key = "email"
     columns = [
@@ -154,7 +158,6 @@ class UserListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def get_current_item(self, trans, **kwargs):
@@ -197,6 +200,7 @@ class RoleListGrid(grids.Grid):
 
     # Grid definition
     title = "Roles"
+    title_id = "roles-grid"
     model_class = model.Role
     default_sort_key = "name"
     columns = [
@@ -255,7 +259,6 @@ class RoleListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def apply_query_filter(self, trans, query, **kwargs):
@@ -288,6 +291,7 @@ class GroupListGrid(grids.Grid):
 
     # Grid definition
     title = "Groups"
+    title_id = "groups-grid"
     model_class = model.Group
     default_sort_key = "name"
     columns = [
@@ -335,7 +339,6 @@ class GroupListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -447,7 +450,6 @@ class QuotaListGrid(grids.Grid):
         grids.GridColumnFilter("All", args=dict(deleted='All'))
     ]
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
 
@@ -499,7 +501,6 @@ class ToolVersionListGrid(grids.Grid):
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def build_initial_query(self, trans, **kwd):
@@ -532,6 +533,32 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.json
     @web.require_admin
+    def data_tables_list(self, trans, **kwd):
+        data = []
+        message = kwd.get('message', '')
+        status = kwd.get('status', 'done')
+        sorted_data_tables = sorted(
+            trans.app.tool_data_tables.get_tables().items()
+        )
+
+        for data_table_elem_name, data_table in sorted_data_tables:
+            for filename, file_dict in data_table.filenames.iteritems():
+                file_missing = ['file missing'] \
+                    if not file_dict.get('found') else []
+                data.append({
+                    'name': data_table.name,
+                    'filename': filename,
+                    'tool_data_path': file_dict.get('tool_data_path'),
+                    'errors': ', '.join(file_missing + [
+                        error for error in file_dict.get('errors', [])
+                    ]),
+                })
+
+        return {'data': data, 'message': message, 'status': status}
+
+    @web.expose
+    @web.json
+    @web.require_admin
     def users_list(self, trans, **kwd):
         message = kwd.get('message', '')
         status = kwd.get('status', '')
@@ -559,7 +586,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message and status:
             kwd['message'] = util.sanitize_text(message)
             kwd['status'] = status
-        kwd['dict_format'] = True
         return self.user_list_grid(trans, **kwd)
 
     @web.expose_api
@@ -592,7 +618,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if message:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status or 'done'
-        kwargs['dict_format'] = True
         return self.quota_list_grid(trans, **kwargs)
 
     @web.expose_api
@@ -858,13 +883,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def view_tool_data_tables(self, trans, **kwd):
-        message = escape(util.restore_text(kwd.get('message', '')))
-        status = util.restore_text(kwd.get('status', 'done'))
-        return trans.fill_template('admin/view_data_tables_registry.mako', message=message, status=status)
-
-    @web.expose
-    @web.require_admin
     def display_applications(self, trans, **kwd):
         return trans.fill_template('admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications)
 
@@ -902,7 +920,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose_api
     @web.require_admin
     def tool_versions_list(self, trans, **kwd):
-        kwd['dict_format'] = True
         return self.tool_version_list_grid(trans, **kwd)
 
     @web.expose
@@ -923,7 +940,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_role(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_role(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status
@@ -1168,7 +1184,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 message, status = self._undelete_group(trans, ids)
             elif operation == 'purge':
                 message, status = self._purge_group(trans, ids)
-        kwargs['dict_format'] = True
         if message and status:
             kwargs['message'] = util.sanitize_text(message)
             kwargs['status'] = status
@@ -1260,7 +1275,8 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                         .order_by(trans.app.model.Role.table.c.name):
                 all_roles.append((role.name, trans.security.encode_id(role.id)))
             return {
-                'title'  : 'Create Group',
+                'title'    : 'Create Group',
+                'title_id' : 'create-group',
                 'inputs' : [{
                     'name'  : 'name',
                     'label' : 'Name'
@@ -1368,7 +1384,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         if users:
             if trans.request.method == 'GET':
                 return {
-                    'message': 'Changes password(s) for: %s.' % ', '.join([user.email for user in users.itervalues()]),
+                    'message': 'Changes password(s) for: %s.' % ', '.join(user.email for user in users.values()),
                     'status' : 'info',
                     'inputs' : [{'name' : 'password', 'label' : 'New password', 'type' : 'password'},
                                 {'name' : 'confirm', 'label' : 'Confirm password', 'type' : 'password'}]
@@ -1380,7 +1396,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     return self.message_exception(trans, 'Use a password of at least 6 characters.')
                 elif password != confirm:
                     return self.message_exception(trans, 'Passwords do not match.')
-                for user in users.itervalues():
+                for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
                     trans.sa_session.flush()
@@ -1393,6 +1409,58 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         for user_id in ids:
             user = get_user(trans, user_id)
             user.deleted = True
+
+            compliance_log.info('delete-user-event: %s' % user_id)
+
+            # Maybe there is some case in the future where an admin needs
+            # to prove that a user was using a server for some reason (e.g.
+            # a court case.) So we make this painfully hard to recover (and
+            # not immediately reversable) in line with GDPR, but still
+            # leave open the possibility to prove someone was part of the
+            # server just in case. By knowing the exact email + approximate
+            # time of deletion, one could run through hashes for every
+            # second of the surrounding days/weeks.
+            pseudorandom_value = str(int(time.time()))
+            # Replace email + username with a (theoretically) unreversable
+            # hash. If provided with the username we can probably re-hash
+            # to identify if it is needed for some reason.
+            #
+            # Deleting multiple times will re-hash the username/email
+            email_hash = new_secure_hash(user.email + pseudorandom_value)
+            uname_hash = new_secure_hash(user.username + pseudorandom_value)
+
+            # We must also redact username
+            for role in user.all_roles():
+                if self.app.config.redact_username_during_deletion:
+                    role.name = role.name.replace(user.username, uname_hash)
+                    role.description = role.description.replace(user.username, uname_hash)
+
+                if self.app.config.redact_email_during_deletion:
+                    role.name = role.name.replace(user.email, email_hash)
+                    role.description = role.description.replace(user.email, email_hash)
+
+            if self.app.config.redact_email_during_deletion:
+                user.email = email_hash
+            if self.app.config.redact_username_during_deletion:
+                user.username = uname_hash
+
+            # Redact user addresses as well
+            if self.app.config.redact_user_address_during_deletion:
+                user_addresses = trans.sa_session.query(trans.app.model.UserAddress) \
+                    .filter(trans.app.model.UserAddress.user_id == user.id).all()
+
+                for addr in user_addresses:
+                    addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
+                    addr.name = new_secure_hash(addr.name + pseudorandom_value)
+                    addr.institution = new_secure_hash(addr.institution + pseudorandom_value)
+                    addr.address = new_secure_hash(addr.address + pseudorandom_value)
+                    addr.city = new_secure_hash(addr.city + pseudorandom_value)
+                    addr.state = new_secure_hash(addr.state + pseudorandom_value)
+                    addr.postal_code = new_secure_hash(addr.postal_code + pseudorandom_value)
+                    addr.country = new_secure_hash(addr.country + pseudorandom_value)
+                    addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
+                    trans.sa_session.add(addr)
+
             trans.sa_session.add(user)
             trans.sa_session.flush()
             message += ' %s ' % user.email

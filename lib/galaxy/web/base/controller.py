@@ -7,8 +7,7 @@ import re
 from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPInternalServerError,
-    HTTPNotImplemented,
-    HTTPRequestRangeNotSatisfiable
+    HTTPNotImplemented
 )
 from six import string_types
 from sqlalchemy import true
@@ -36,7 +35,6 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.security.validate_user_input import validate_publicname
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
@@ -341,7 +339,7 @@ class Datatype(object):
 #
 
 
-class CreatesUsersMixin:
+class CreatesUsersMixin(object):
     """
     Mixin centralizing logic for user creation between web and API controller.
 
@@ -367,7 +365,7 @@ class CreatesUsersMixin:
         return user
 
 
-class CreatesApiKeysMixin:
+class CreatesApiKeysMixin(object):
     """
     Mixing centralizing logic for creating API keys for user objects.
 
@@ -378,7 +376,7 @@ class CreatesApiKeysMixin:
         return api_keys.ApiKeyManager(trans.app).create_api_key(user)
 
 
-class SharableItemSecurityMixin:
+class SharableItemSecurityMixin(object):
     """ Mixin for handling security for sharable items. """
 
     def security_check(self, trans, item, check_ownership=False, check_accessible=False):
@@ -386,7 +384,7 @@ class SharableItemSecurityMixin:
         return managers_base.security_check(trans, item, check_ownership=check_ownership, check_accessible=check_accessible)
 
 
-class ExportsHistoryMixin:
+class ExportsHistoryMixin(object):
 
     def serve_ready_history_export(self, trans, jeha):
         assert jeha.ready
@@ -419,7 +417,7 @@ class ExportsHistoryMixin:
         history_exp_tool.execute(trans, incoming=params, history=history, set_output_hid=True)
 
 
-class ImportsHistoryMixin:
+class ImportsHistoryMixin(object):
 
     def queue_history_import(self, trans, archive_type, archive_source):
         # Run job to do import.
@@ -428,7 +426,7 @@ class ImportsHistoryMixin:
         history_imp_tool.execute(trans, incoming=incoming)
 
 
-class UsesLibraryMixin:
+class UsesLibraryMixin(object):
 
     def get_library(self, trans, id, check_ownership=False, check_accessible=True):
         l = self.get_object(trans, id, 'Library')
@@ -517,7 +515,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
-            ldda_message = util.sanitize_html.sanitize_html(ldda_message, 'utf-8')
+            ldda_message = sanitize_html(ldda_message)
 
         # check permissions on (all three?) resources: hda, library, folder
         # TODO: do we really need the library??
@@ -955,17 +953,12 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             def pack_track(track_dict):
                 dataset_id = track_dict['dataset_id']
                 hda_ldda = track_dict.get('hda_ldda', 'hda')
-                if hda_ldda == 'ldda':
-                    # HACK: need to encode library dataset ID because get_hda_or_ldda
-                    # only works for encoded datasets.
-                    dataset_id = trans.security.encode_id(dataset_id)
+                dataset_id = trans.security.encode_id(dataset_id)
                 dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
-
                 try:
                     prefs = track_dict['prefs']
                 except KeyError:
                     prefs = {}
-
                 track_data_provider = trans.app.data_provider_registry.get_data_provider(trans,
                                                                                          original_dataset=dataset,
                                                                                          source='data')
@@ -1062,20 +1055,21 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         Get an HDA object by id performing security checks using
         the current transaction.
+
+        Deprecated in lieu to galaxy.managers.hdas.HDAManager.get_accessible(decoded_id, user)
         """
         try:
             dataset_id = trans.security.decode_id(dataset_id)
         except (AttributeError, TypeError):
-            # DEPRECATION: We still support unencoded ids for backward compatibility
-            try:
-                dataset_id = int(dataset_id)
-            except ValueError:
-                raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
 
         try:
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
         except Exception:
-            raise HTTPRequestRangeNotSatisfiable("Invalid dataset id: %s." % str(dataset_id))
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
+
+        if not data:
+            raise HTTPBadRequest("Invalid dataset id: %s." % str(dataset_id))
 
         if check_ownership:
             # Verify ownership.
@@ -1121,7 +1115,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         else:
             self.create_item_slug(trans.sa_session, visualization)
         if annotation:
-            annotation = sanitize_html(annotation, 'utf-8', 'text/html')
+            annotation = sanitize_html(annotation)
             # TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
             #   right now this is depending on the classes that include this mixin to have UsesAnnotations
             self.add_item_annotation(trans.sa_session, trans.user, visualization, annotation)
@@ -1242,7 +1236,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         session.flush()
         return imported_stored
 
-    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=False):
+    def _workflow_from_dict(self, trans, data, source=None, add_to_menu=False, publish=False, exact_tools=True):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
@@ -1269,7 +1263,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         )
 
 
-class UsesFormDefinitionsMixin:
+class UsesFormDefinitionsMixin(object):
     """Mixin for controllers that use Galaxy form objects."""
 
     def get_all_forms(self, trans, all_versions=False, filter=None, form_type='All'):
@@ -1288,21 +1282,6 @@ class UsesFormDefinitionsMixin:
             return [fdc.latest_form for fdc in fdc_list]
         else:
             return [fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type]
-
-    def field_param_values_ok(self, widget_name, widget_type, **kwd):
-        # Make sure required fields have contents, etc
-        params = util.Params(kwd)
-        if widget_type == 'AddressField':
-            if not util.restore_text(params.get('%s_short_desc' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_name' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_institution' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_address' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_city' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_state' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_postal_code' % widget_name, '')) \
-                    or not util.restore_text(params.get('%s_country' % widget_name, '')):
-                return False
-        return True
 
     def save_widget_field(self, trans, field_obj, widget_name, **kwd):
         # Save a form_builder field object
@@ -1352,28 +1331,17 @@ class UsesFormDefinitionsMixin:
         return values
 
 
-class SharableMixin:
+class SharableMixin(object):
     """ Mixin for a controller that manages an item that can be shared. """
+
+    manager = None
+    serializer = None
 
     # -- Implemented methods. --
 
     def _is_valid_slug(self, slug):
         """ Returns true if slug is valid. """
         return _is_valid_slug(slug)
-
-    @web.expose
-    @web.require_login("share Galaxy items")
-    def set_public_username(self, trans, id, username, **kwargs):
-        """ Set user's public username and delegate to sharing() """
-        user = trans.get_user()
-        # message from validate_publicname does not contain input, no need
-        # to escape.
-        message = validate_publicname(trans, username, user)
-        if message:
-            return trans.fill_template('/sharing_base.mako', item=self.get_item(trans, id), message=message, status='error')
-        user.username = username
-        trans.sa_session.flush()
-        return self.sharing(trans, id, **kwargs)
 
     @web.expose
     @web.require_login("modify Galaxy items")
@@ -1428,13 +1396,47 @@ class SharableMixin:
         item.slug = new_slug
         return item.slug == cur_slug
 
-    # -- Abstract methods. --
+    @web.expose_api
+    def sharing(self, trans, id, payload=None, **kwd):
+        class_name = self.manager.model_class.__name__
+        item = self.get_object(trans, id, class_name, check_ownership=True, check_accessible=True, deleted=False)
+        if payload and payload.get("action"):
+            action = payload.get("action")
+            if action == "make_accessible_via_link":
+                self._make_item_accessible(trans.sa_session, item)
+            elif action == "make_accessible_and_publish":
+                self._make_item_accessible(trans.sa_session, item)
+                item.published = True
+            elif action == "publish":
+                if item.importable:
+                    item.published = True
+                else:
+                    raise exceptions.MessageException("%s not importable." % class_name)
+            elif action == "disable_link_access":
+                item.importable = False
+            elif action == "unpublish":
+                item.published = False
+            elif action == "disable_link_access_and_unpublish":
+                item.importable = item.published = False
+            elif action == "unshare_user":
+                user = trans.sa_session.query(trans.app.model.User).get(self.decode_id(payload.get("user_id")))
+                class_name_lc = class_name.lower()
+                ShareAssociation = getattr(trans.app.model, "%sUserShareAssociation" % class_name)
+                usas = trans.sa_session.query(ShareAssociation).filter_by(**{"user": user, class_name_lc: item}).all()
+                if not usas:
+                    raise exceptions.MessageException("%s was not shared with user." % class_name)
+                for usa in usas:
+                    trans.sa_session.delete(usa)
+            trans.sa_session.add(item)
+            trans.sa_session.flush()
+        if item.importable and not item.slug:
+            self._make_item_accessible(trans.sa_session, item)
+        item_dict = self.serializer.serialize_to_view(item,
+            user=trans.user, trans=trans, default_view="sharing")
+        item_dict["users_shared_with"] = [{"id": self.app.security.encode_id(a.user.id), "email": a.user.email} for a in item.users_shared_with]
+        return item_dict
 
-    @web.expose
-    @web.require_login("share Galaxy items")
-    def sharing(self, trans, id, **kwargs):
-        """ Handle item sharing. """
-        raise NotImplementedError()
+    # -- Abstract methods. --
 
     @web.expose
     @web.require_login("share Galaxy items")

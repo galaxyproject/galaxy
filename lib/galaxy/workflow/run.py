@@ -136,6 +136,7 @@ class WorkflowInvoker(object):
             self.workflow_invocation = workflow_invocation
 
         self.workflow_invocation.copy_inputs_to_history = workflow_run_config.copy_inputs_to_history
+        self.workflow_invocation.use_cached_job = workflow_run_config.use_cached_job
         self.workflow_invocation.replacement_dict = workflow_run_config.replacement_dict
 
         module_injector = modules.WorkflowModuleInjector(trans)
@@ -255,7 +256,10 @@ class WorkflowInvoker(object):
                 pass
 
     def _invoke_step(self, invocation_step):
-        incomplete_or_none = invocation_step.workflow_step.module.execute(self.trans, self.progress, invocation_step)
+        incomplete_or_none = invocation_step.workflow_step.module.execute(self.trans,
+                                                                          self.progress,
+                                                                          invocation_step,
+                                                                          use_cached_job=self.workflow_invocation.use_cached_job)
         return incomplete_or_none
 
 
@@ -437,7 +441,7 @@ class WorkflowProgress(object):
             raise Exception("Failed to find persisted workflow invocation for step [%s]" % step.id)
         return subworkflow_invocation
 
-    def subworkflow_invoker(self, trans, step):
+    def subworkflow_invoker(self, trans, step, use_cached_job=False):
         subworkflow_progress = self.subworkflow_progress(step)
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         workflow_run_config = WorkflowRunConfig(
@@ -446,6 +450,7 @@ class WorkflowProgress(object):
             inputs={},
             param_map={},
             copy_inputs_to_history=False,
+            use_cached_job=use_cached_job
         )
         return WorkflowInvoker(
             trans,

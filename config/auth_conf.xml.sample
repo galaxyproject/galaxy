@@ -26,6 +26,22 @@
                  False. -->
 <!--        <allow-password-change>False</allow-password-change>
 -->
+            <!-- Whether roles should be automatically created if
+                 the attribute specified under auto-register-roles can be found.
+                 Default is False. -->
+<!--        <auto-create-roles>False</auto-create-roles>
+-->
+            <!-- Whether groups should be automatically created if
+                 the attribute specified under auto-register-roles can be found.
+                 Can be used in combination with auto-create-roles
+                 Default is False. -->
+<!--        <auto-create-groups>False</auto-create-groups>
+-->
+            <!-- If set, roles will be assigned to the auto generated groups,
+            not to the individual users. Can only be used if auto-create-roles and
+            auto-create-groups are True. Default is False. -->
+<!--        <auto-assign-roles-to-groups-only>False</auto-assign-roles-to-groups-only>
+-->
 
             <!-- LDAP-specific options -->
 <!--        <server>ldap://dc1.example.com</server>
@@ -88,12 +104,14 @@
             <bind-password>{password}</bind-password>
             <auto-register-username>{sAMAccountName}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
+            <auto-register-roles>{gidNumber}</auto-register-roles>
 -->
             <!-- For OpenLDAP: -->
 <!--        <bind-user>{dn}</bind-user>
             <bind-password>{password}</bind-password>
             <auto-register-username>{uid}</auto-register-username>
             <auto-register-email>{mail}</auto-register-email>
+            <auto-register-roles>{gid}</auto-register-roles>
 -->
 <!--    </options>
     </authenticator>

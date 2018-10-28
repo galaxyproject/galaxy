@@ -1,6 +1,26 @@
 """
 Kind of fail save job control via the DRMAA API.
 Tested for UNIVA grid engine
+
+known bugs/problems: 
+- if a job runs longer than the time limits of the queue two things happen 
+  1. at the soft limit (s_rt) SIGUSR1 is sent to the job
+  2. at the hard limit (h_rt) SIGKILL is sent to the job
+  The second case is covered by the runner -- it's the same mechanism that
+  kills a job when the job time limit is reached. The first case is currently
+  not covered. The good thing is that most programs ignore SIGUSR1. For the 
+  others it seems that jobs are marked as failed (killed by the DRM) at random. 
+
+  Possible solutions: 
+  - configure the job destinations such that the queue limits are never reached. 
+    the time limits can be determined with 
+    `for i in `qconf -sql`; do qconf -sq $i | grep -E '(h|s)_rt'; done`
+
+  - extend the job runner to cover s_rt cases (some ideas):
+    * I'm unsure if the programs reaction to SIGUSR1 can be determined easily 
+      because it depends on the program. It seems that exit code is in most 
+      cases 10.
+    * The sheduler logs contains quite useful information.
 """
 import logging
 import re
@@ -13,7 +33,7 @@ from galaxy.jobs.runners.drmaa import DRMAAJobRunner
 
 log = logging.getLogger(__name__)
 
-__all__ = ('UnivaJobRunner', )
+__all__ = ('UnivaJobRunner',)
 
 MEMORY_LIMIT_SCAN_SIZE = 1024 * 1024  # 1MB
 
@@ -49,6 +69,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             time_granted, mem_granted = _parse_native_specs(ajs.job_id, native_spec)
             time_wasted = extinfo["time_wasted"]
             mem_wasted = extinfo["memory_wasted"]
+            slots = extinfo["slots"]
 
             # check if the output contains indicators for a memory violation these are
             # 1 general programming language dependent messages
@@ -74,7 +95,8 @@ class UnivaJobRunner(DRMAAJobRunner):
                 ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
                 ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 drmaa_state = self.drmaa.JobState.FAILED
-            elif memviolation or mem_wasted > mem_granted:
+            # test wasted>granted memory only if failed != 0 and exit_status != 0, ie if marked as failed
+            elif memviolation or (state == self.drmaa.JobState.FAILED and mem_wasted > mem_granted * slots):
                 log.info('({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted))
                 ajs.fail_message = "This job was terminated because it used more than the maximum allowed memory."
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
@@ -196,8 +218,22 @@ class UnivaJobRunner(DRMAAJobRunner):
     def _get_drmaa_state_qacct(self, job_id, extinfo):
         '''
         get the job (drmaa) state with qacct.
-        extinfo dict where signal, exit_status, deleted = True, time_wasted, and memory_wasted can be stored
+
+        extinfo: dict where signal, exit_status, deleted = True, time_wasted, and memory_wasted can be stored: 
+        - signal signal as reported in exit state from qstat (see below)  
+        - exit_status set to exit status if returned (ie if qstat returns an exits state 
+            larger 0 and less 129 (for exit states > 128 signal is set)
+            in any case (exit state > 0) state FAILED is returned
+        - deleted set to true if the job was deleted (otherwise not set at all), 
+        - time_wasted time used in seconds (taken from wallclock)
+        - memory_wasted memory used by the program in byte (taken from maxvmem)
+
         return state
+        - first initalised with UNDETERMINED and changed in the following case 
+        - DONE if exit state == 0
+        - FAILED if exit state != 0
+        - RUNNING if failed in 24,25
+        - FAILED if failed not in [0,24,25,100]
         '''
         # log.debug("UnivaJobRunner._get_drmaa_state_qacct ({jobid})".format(jobid=job_id))
         signals = dict((k, v) for v, k in reversed(sorted(signal.__dict__.items()))
@@ -235,13 +271,14 @@ class UnivaJobRunner(DRMAAJobRunner):
         # mem-limit  0       2
         # python --------------------------------------------------------------
         # time-limit
-        # mem-limit
+        # mem-limit  0       1
         # C -------------------------------------------------------------------
         # time-limit
-        # mem-limit
+        # mem-limit  0       C programm either have segfault (139) or allocated memory is checked for NULL (then a programmer defined message/exit code is given)
+        #                    note that max_vmem might not be reliable, since the program never gets the memory.
         # C++ -----------------------------------------------------------------
         # time-limit
-        # mem-limit
+        # mem-limit  0       same as for C programs
         # JAVA ----------------------------------------------------------------
         # time-limit
         # mem-limit
@@ -253,12 +290,7 @@ class UnivaJobRunner(DRMAAJobRunner):
 
         extinfo["time_wasted"] = _parse_time(qacct["wallclock"])
         extinfo["memory_wasted"] = util.size_to_bytes(qacct["maxvmem"])
-
-        # log.debug("DRMAAUniva: ({job_id}) qacct {qacct}".format(job_id=job_id, qacct=qacct))
-
-        # for q in qacct:
-        #     log.debug("%s : %s"%(q, qacct[q]))
-        #
+        extinfo["slots"] = int(qacct["slots"])
 
         # deleted_by
         # If the job (the array task) has been deleted via qdel, "<username>@<hostname>", else
@@ -304,7 +336,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             # both cases are covered already
             if code in [0, 100]:
                 pass
-            # these seem to be OK to
+            # these seem to be OK as well
             elif code in [24, 25]:
                 state = self.drmaa.JobState.RUNNING
             else:
@@ -405,7 +437,8 @@ class UnivaJobRunner(DRMAAJobRunner):
         # get the used time and memory
         extinfo["time_wasted"] = float(rv.resourceUsage['wallclock'])
         extinfo["memory_wasted"] = float(rv.resourceUsage['maxvmem'])
-
+        # TODO unsure if the resourceUsage key is really slots -> test in submit as galaxy user setting
+        extinfo["slots"] = float(rv.resourceUsage['slots'])
         # log.debug("wait -> \texitStatus {0}\thasCoreDump {1}\thasExited {2}\thasSignal {3}\tjobId {4}\t\tterminatedSignal {5}\twasAborted {6}\tresourceUsage {7}".format(rv.exitStatus, rv.hasCoreDump, rv.hasExited, rv.hasSignal, rv.jobId, rv.terminatedSignal, rv.wasAborted, rv.resourceUsage))
         if rv.wasAborted:
             log.error("DRMAAUniva: job {job_id} was aborted according to wait()".format(job_id=job_id))
@@ -449,9 +482,9 @@ class UnivaJobRunner(DRMAAJobRunner):
             state = ds.job_status(job_id)
         except self.drmaa.errors.DrmaaException:
             state = self._get_drmaa_state_qstat(job_id, extinfo)
-
         # if the job is finished (in whatever state) get (additional) infos
-        # drmaa.wait or qacct
+        # drmaa.wait or qacct (oposed to job_status/qstat these methods work 
+        # only for finished jobs)
         if waitqacct and state in [self.drmaa.JobState.UNDETERMINED, self.drmaa.JobState.DONE, self.drmaa.JobState.FAILED]:
             try:
                 wstate = self._get_drmaa_state_wait(job_id, ds, extinfo)
@@ -461,7 +494,6 @@ class UnivaJobRunner(DRMAAJobRunner):
             if self._drmaa_state_is_refined(state, wstate):
                 # log.debug("DRMAAUniva: job {job_id} wait/qacct {qacct} refines qacct {qstat}".format(job_id=job_id, qacct=self.drmaa_job_state_strings[wstate], qstat=self.drmaa_job_state_strings[state]))
                 state = wstate
-
         return state
 
     def _map_qstat_drmaa_states(self, job_id, state, extinfo):

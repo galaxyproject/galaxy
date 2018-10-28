@@ -23,10 +23,10 @@ import io
 import json
 import logging
 import re
-from urlparse import urlparse
 
 import routes
 from paste import httpexceptions
+from six.moves.urllib.parse import urlparse
 
 log = logging.getLogger(__name__)
 

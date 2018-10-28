@@ -1,16 +1,66 @@
 import abc
 import logging
 import os
+import re
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.util import generic_util
 from galaxy.util import nice_size
 
 log = logging.getLogger(__name__)
 
+STOCKHOLM_SEARCH_PATTERN = re.compile(r'#\s+STOCKHOLM\s+1\.0')
 
+
+@build_sniff_from_prefix
+class InfernalCM(Text):
+    file_ext = "cm"
+
+    MetadataElement(name="number_of_models", default=0, desc="Number of covariance models",
+                    readonly=True, visible=True, optional=True, no_value=0)
+
+    MetadataElement(name="cm_version", default="1/a", desc="Infernal Covariance Model version",
+                    readonly=True, visible=True, optional=True, no_value=0)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            if dataset.metadata.number_of_models == 1:
+                dataset.blurb = "1 model"
+            else:
+                dataset.blurb = "%s models" % dataset.metadata.number_of_models
+            dataset.peek = get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disc'
+
+    def sniff_prefix(self, file_prefix):
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'infernal_model.cm' )
+        >>> InfernalCM().sniff( fname )
+        True
+        >>> fname = get_test_fname( '2.txt' )
+        >>> InfernalCM().sniff( fname )
+        False
+        """
+        return file_prefix.startswith("INFERNAL")
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Set the number of models and the version of CM file in dataset.
+        """
+        dataset.metadata.number_of_models = generic_util.count_special_lines('^INFERNAL', dataset.file_name)
+        with open(dataset.file_name, 'r') as f:
+            first_line = f.readline()
+            if first_line.startswith("INFERNAL"):
+                dataset.metadata.cm_version = (first_line.split()[0]).replace('INFERNAL', '')
+
+
+@build_sniff_from_prefix
 class Hmmer(Text):
     edam_data = "data_1364"
     edam_format = "format_1370"
@@ -30,7 +80,7 @@ class Hmmer(Text):
             return "HMMER database (%s)" % (nice_size(dataset.get_size()))
 
     @abc.abstractmethod
-    def sniff(self, filename):
+    def sniff_prefix(self, filename):
         raise NotImplementedError
 
 
@@ -38,24 +88,20 @@ class Hmmer2(Hmmer):
     edam_format = "format_3328"
     file_ext = "hmm2"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """HMMER2 files start with HMMER2.0
         """
-        with open(filename, 'r') as handle:
-            return handle.read(8) == 'HMMER2.0'
-        return False
+        return file_prefix.startswith('HMMER2.0')
 
 
 class Hmmer3(Hmmer):
     edam_format = "format_3329"
     file_ext = "hmm3"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """HMMER3 files start with HMMER3/f
         """
-        with open(filename, 'r') as handle:
-            return handle.read(8) == 'HMMER3/f'
-        return False
+        return file_prefix.startswith('HMMER3/f')
 
 
 class HmmerPress(Binary):
@@ -92,6 +138,7 @@ class HmmerPress(Binary):
         self.add_composite_file('model.hmm.h3p', is_binary=True)
 
 
+@build_sniff_from_prefix
 class Stockholm_1_0(Text):
     edam_data = "data_0863"
     edam_format = "format_1961"
@@ -110,11 +157,8 @@ class Stockholm_1_0(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff(self, filename):
-        if generic_util.count_special_lines('^#[[:space:]+]STOCKHOLM[[:space:]+]1.0', filename) > 0:
-            return True
-        else:
-            return False
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.search(STOCKHOLM_SEARCH_PATTERN)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -155,9 +199,8 @@ class Stockholm_1_0(Text):
         def _write_part_stockholm_file(accumulated_lines):
             part_dir = subdir_generator_function()
             part_path = os.path.join(part_dir, os.path.basename(input_files[0]))
-            part_file = open(part_path, 'w')
-            part_file.writelines(accumulated_lines)
-            part_file.close()
+            with open(part_path, 'w') as part_file:
+                part_file.writelines(accumulated_lines)
 
         try:
 
@@ -176,6 +219,7 @@ class Stockholm_1_0(Text):
     split = classmethod(split)
 
 
+@build_sniff_from_prefix
 class MauveXmfa(Text):
     file_ext = "xmfa"
 
@@ -192,10 +236,8 @@ class MauveXmfa(Text):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disc'
 
-    def sniff(self, filename):
-        with open(filename, 'r') as handle:
-            return handle.read(21) == '#FormatVersion Mauve1'
-        return False
+    def sniff_prefix(self, file_prefix):
+        return file_prefix.startswith('#FormatVersion Mauve1')
 
     def set_meta(self, dataset, **kwd):
         dataset.metadata.number_of_models = generic_util.count_special_lines('^#Sequence([[:digit:]]+)Entry', dataset.file_name)

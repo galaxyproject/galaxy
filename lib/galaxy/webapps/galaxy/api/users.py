@@ -296,28 +296,28 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """
         if not preferences:
             return []
-        data = []
-        # Get data if present
-        data_key = "extra_user_preferences"
-        if data_key in user.preferences:
-            data = json.loads(user.preferences[data_key])
         extra_pref_inputs = list()
         # Build sections for different categories of inputs
         for item, value in preferences.items():
             if value is not None:
                 for input in value["inputs"]:
-                    input['help'] = 'Required' if input['required'] else ''
+                    help = input.get('help', '')
+                    required = 'Required' if util.string_as_bool(input.get('required')) else ''
+                    if help:
+                        input['help'] = "%s %s" % (help, required)
+                    else:
+                        input['help'] = required
                     field = item + '|' + input['name']
-                    for data_item in data:
+                    for data_item in user.extra_preferences:
                         if field in data_item:
-                            input['value'] = data[data_item]
+                            input['value'] = user.extra_preferences[data_item]
                 extra_pref_inputs.append({'type': 'section', 'title': value['description'], 'name': item, 'expanded': True, 'inputs': value['inputs']})
         return extra_pref_inputs
 
     @expose_api
     def get_information(self, trans, id, **kwd):
         """
-        GET /api/users/{id}/information
+        GET /api/users/{id}/information/inputs
         Return user details such as username, email, addresses etc.
 
         :param id: the encoded id of the user
@@ -400,7 +400,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
     @expose_api
     def set_information(self, trans, id, payload={}, **kwd):
         """
-        POST /api/users/{id}/information
+        PUT /api/users/{id}/information/inputs
         Save a user's email, username, addresses etc.
 
         :param id: the encoded id of the user
@@ -410,12 +410,10 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         :type  payload: dict
         """
         user = self._get_user(trans, id)
-        email = payload.get('email')
-        username = payload.get('username')
-        if email or username:
-            message = self._validate_email_publicname(email, username) or validate_email(trans, email, user)
-            if not message and username:
-                message = validate_publicname(trans, username, user)
+        # Update email
+        if 'email' in payload:
+            email = payload.get('email')
+            message = self._validate_email(email) or validate_email(trans, email, user)
             if message:
                 raise MessageException(message)
             if user.email != email:
@@ -437,8 +435,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                         if trans.app.config.error_email_to is not None:
                             message += ' Contact: %s' % trans.app.config.error_email_to
                         raise MessageException(message)
+        # Update public name
+        if 'username' in payload:
+            username = payload.get('username')
+            message = self._validate_publicname(username) or validate_publicname(trans, username, user)
+            if message:
+                raise MessageException(message)
             if user.username != username:
-                # Update public name
                 user.username = username
         # Update user custom form
         user_info_form_id = payload.get('info|form_id')
@@ -455,9 +458,9 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
 
         # Update values for extra user preference items
         extra_user_pref_data = dict()
-        get_extra_pref_keys = self._get_extra_user_preferences(trans)
-        if get_extra_pref_keys is not None:
-            for key in get_extra_pref_keys:
+        extra_pref_keys = self._get_extra_user_preferences(trans)
+        if extra_pref_keys is not None:
+            for key in extra_pref_keys:
                 key_prefix = key + '|'
                 for item in payload:
                     if item.startswith(key_prefix):
@@ -465,7 +468,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                         if payload[item] == "":
                             # Raise an exception when a required field is empty while saving the form
                             keys = item.split("|")
-                            section = get_extra_pref_keys[keys[0]]
+                            section = extra_pref_keys[keys[0]]
                             for input in section['inputs']:
                                 if input['name'] == keys[1] and input['required']:
                                     raise MessageException("Please fill the required field")
@@ -561,16 +564,18 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             trans.sa_session.flush()
         return activation_token
 
-    def _validate_email_publicname(self, email, username):
+    def _validate_email(self, email):
         ''' Validate email and username using regex '''
         if email == '' or not isinstance(email, six.string_types):
             return 'Please provide your email address.'
-        if not re.match('^[a-z0-9\-]{3,255}$', username):
-            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
         if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
             return 'Please provide your valid email address.'
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length.'
+
+    def _validate_publicname(self, username):
+        if not re.match('^[a-z0-9\-]{3,255}$', username):
+            return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
 
     @expose_api
     def get_password(self, trans, id, payload={}, **kwd):
@@ -708,11 +713,22 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             function = factory.build_filter_function(filter_name)
             if function is None:
                 errors['%s|%s' % (filter_type, filter_name)] = 'Filter function not found.'
+
+            short_description, description = None, None
+            doc_string = docstring_trim(function.__doc__)
+            split = doc_string.split('\n\n')
+            if split:
+                short_description = split[0]
+                if len(split) > 1:
+                    description = split[1]
+            else:
+                log.warning('No description specified in the __doc__ string for %s.' % filter_name)
+
             filter_inputs.append({
                 'type': 'boolean',
                 'name': filter_name,
-                'label': filter_name,
-                'help': docstring_trim(function.__doc__) or 'No description available.',
+                'label': short_description or filter_name,
+                'help': description or 'No description available.',
                 'value': 'true' if filter_name in filter_values else 'false'
             })
         if filter_inputs:

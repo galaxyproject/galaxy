@@ -830,7 +830,7 @@ var templates = {
             '<a class="<%- id %> tool-link" href="<%= link %>" target="<%- target %>" minsizehint="<%- min_width %>">',
             '<span class="labels">',
             "<% _.each( labels, function( label ){ %>",
-            '<span class="label label-default label-<%- label %>">',
+            '<span class="badge badge-default badge-<%- label %>">',
             "<%- label %>",
             "</span>",
             "<% }); %>",

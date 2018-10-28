@@ -1,12 +1,12 @@
 import json
 import logging
 import os
-import StringIO
 import tarfile
 from cgi import FieldStorage
 from collections import namedtuple
 from time import strftime
 
+from six import StringIO
 from sqlalchemy import and_, false
 
 from galaxy import (
@@ -1075,7 +1075,7 @@ class RepositoriesController(BaseAPIController):
         file_data = payload.get('file')
         # Code stolen from gx's upload_common.py
         if isinstance(file_data, FieldStorage):
-            assert not isinstance(file_data.file, StringIO.StringIO)
+            assert not isinstance(file_data.file, StringIO)
             assert file_data.file.name != '<fdopen>'
             local_filename = util.mkstemp_ln(file_data.file.name, 'upload_file_data_')
             file_data.file.close()

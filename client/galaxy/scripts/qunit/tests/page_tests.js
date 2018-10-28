@@ -1,8 +1,7 @@
-/* global define */
+/* global QUnit */
 
 import testApp from "qunit/test-app";
 import Page from "layout/page";
-import Panel from "layout/panel";
 
 QUnit.module("Page test", {
     beforeEach: function() {

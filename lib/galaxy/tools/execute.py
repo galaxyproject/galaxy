@@ -12,7 +12,7 @@ import six
 from six.moves.queue import Queue
 
 from galaxy import model
-from galaxy.dataset_collections.structure import tool_output_to_structure
+from galaxy.dataset_collections.structure import get_structure, tool_output_to_structure
 from galaxy.tools.actions import filter_output, on_text_for_names, ToolExecutionCache
 from galaxy.tools.parser import ToolOutputCollectionPart
 from galaxy.util import ExecutionTimer
@@ -31,7 +31,7 @@ class PartialJobExecution(Exception):
 MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
 
 
-def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None):
+def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, collection_info=None, workflow_invocation_uuid=None, invocation_step=None, max_num_jobs=None, job_callback=None, completed_jobs=None, workflow_resource_parameters=None):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
@@ -49,7 +49,7 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     app = trans.app
     execution_cache = ToolExecutionCache(trans)
 
-    def execute_single_job(execution_slice):
+    def execute_single_job(execution_slice, completed_job):
         job_timer = ExecutionTimer()
         params = execution_slice.param_combination
         if workflow_invocation_uuid:
@@ -58,8 +58,13 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             # Only workflow invocation code gets to set this, ignore user supplied
             # values or rerun parameters.
             del params['__workflow_invocation_uuid__']
-
-        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache)
+        if workflow_resource_parameters:
+            params['__workflow_resource_params__'] = workflow_resource_parameters
+        elif '__workflow_resource_params__' in params:
+            # Only workflow invocation code gets to set this, ignore user supplied
+            # values or rerun parameters.
+            del params['__workflow_resource_params__']
+        job, result = tool.handle_single_execution(trans, rerun_remap_job_id, execution_slice, history, execution_cache, completed_job)
         if job:
             message = EXECUTION_SUCCESS_MESSAGE % (tool.id, job.id, job_timer)
             log.debug(message)
@@ -89,13 +94,12 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
     has_remaining_jobs = False
 
     if (job_count < burst_at or burst_threads < 2):
-        for execution_slice in execution_tracker.new_execution_slices():
+        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
             if max_num_jobs and jobs_executed >= max_num_jobs:
                 has_remaining_jobs = True
                 break
             else:
-                execute_single_job(execution_slice)
-                jobs_executed += 1
+                execute_single_job(execution_slice, completed_jobs[i])
     else:
         # TODO: re-record success...
         q = Queue()
@@ -111,12 +115,12 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
             t.daemon = True
             t.start()
 
-        for execution_slice in execution_tracker.new_execution_slices():
+        for i, execution_slice in enumerate(execution_tracker.new_execution_slices()):
             if max_num_jobs and jobs_executed >= max_num_jobs:
                 has_remaining_jobs = True
                 break
             else:
-                q.put(execution_slice)
+                q.put(execution_slice, completed_jobs[i])
                 jobs_executed += 1
 
         q.join()
@@ -211,13 +215,38 @@ class ExecutionTracker(object):
 
         return output_collection_name
 
-    def sliced_input_collection_type(self, input_name):
+    def sliced_input_collection_structure(self, input_name):
+        unqualified_recurse = self.tool.profile < 18.09 and "|" not in input_name
+
+        def find_collection(input_dict, input_name):
+            for key, value in input_dict.items():
+                if key == input_name:
+                    return value
+                if isinstance(value, dict):
+                    if "|" in input_name:
+                        prefix, rest_input_name = input_name.split("|", 1)
+                        if key == prefix:
+                            return find_collection(value, rest_input_name)
+                    elif unqualified_recurse:
+                        # Looking for "input1" instead of "cond|input1" for instance.
+                        # See discussion on https://github.com/galaxyproject/galaxy/issues/6157.
+                        unqualified_match = find_collection(value, input_name)
+                        if unqualified_match:
+                            return unqualified_match
+
+        input_collection = find_collection(self.example_params, input_name)
+        if input_collection is None:
+            raise Exception("Failed to find referenced collection in inputs.")
+
+        if not hasattr(input_collection, "collection"):
+            raise Exception("Referenced input parameter is not a collection.")
+
+        collection_type_description = self.trans.app.dataset_collections_service.collection_type_descriptions.for_collection_type(input_collection.collection.collection_type)
+        subcollection_mapping_type = None
         if self.is_implicit_input(input_name):
             subcollection_mapping_type = self.collection_info.subcollection_mapping_type(input_name)
-            return subcollection_mapping_type
-            # return self.collection_info.structure.sliced_input_collection_type(self.implicit_inputs[input_name])
-        else:
-            return self.mapping_params.param_template[input_name].collection.collection_type
+
+        return get_structure(input_collection, collection_type_description, leaf_subcollection_type=subcollection_mapping_type)
 
     def _structure_for_output(self, trans, tool_output):
         structure = self.collection_info.structure
@@ -234,19 +263,16 @@ class ExecutionTracker(object):
 
         return structure
 
-    def _element_identifiers_for_output(self, trans, tool_output, outputs):
-        output_structure = self._structure_for_output(trans, tool_output)
-        element_identifiers = output_structure.element_identifiers_for_outputs(trans, outputs)
-        return element_identifiers
-
     def _mapped_output_structure(self, trans, tool_output):
         collections_manager = trans.app.dataset_collections_service
-        output_structure = tool_output_to_structure(self.sliced_input_collection_type, tool_output, collections_manager)
+        output_structure = tool_output_to_structure(self.sliced_input_collection_structure, tool_output, collections_manager)
+        # self.collection_info.structure - the mapping structure with default_identifier_source
+        # used to determine the identifiers to use.
         mapping_structure = self._structure_for_output(trans, tool_output)
         # Output structure may not be known, but input structure must be,
         # otherwise this step of the workflow shouldn't have been scheduled
         # or the tool should not have been executable on this input.
-        mapped_output_structure = mapping_structure.multiply(output_structure, uninitialized=True)
+        mapped_output_structure = mapping_structure.multiply(output_structure)
         return mapped_output_structure
 
     def ensure_implicit_collections_populated(self, history, params):
@@ -278,9 +304,9 @@ class ExecutionTracker(object):
                 trans=trans,
                 parent=history,
                 name=output_collection_name,
+                structure=effective_structure,
                 implicit_inputs=implicit_inputs,
                 implicit_output_name=output_name,
-                structure=effective_structure,
             )
             collection_instance.implicit_collection_jobs = implicit_collection_jobs
             collection_instances[output_name] = collection_instance

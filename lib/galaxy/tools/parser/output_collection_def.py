@@ -63,6 +63,7 @@ class DatasetCollectionDescription(object):
         self.default_visible = asbool(kwargs.get("visible", None))
         self.assign_primary_output = asbool(kwargs.get('assign_primary_output', False))
         self.directory = kwargs.get("directory", None)
+        self.recurse = False
 
 
 class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
@@ -77,6 +78,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
     def __init__(self, **kwargs):
         super(FilePatternDatasetCollectionDescription, self).__init__(**kwargs)
         pattern = kwargs.get("pattern", "__default__")
+        self.recurse = asbool(kwargs.get("recurse", False))
         if pattern in NAMED_PATTERNS:
             pattern = NAMED_PATTERNS.get(pattern)
         self.pattern = pattern

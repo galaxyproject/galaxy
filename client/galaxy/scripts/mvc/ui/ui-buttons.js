@@ -1,5 +1,9 @@
 /** This module contains all button views. */
 import Utils from "utils/utils";
+import * as Backbone from "backbone";
+
+/* global $ */
+
 /** This renders the default button which is used e.g. at the bottom of the upload modal. */
 var ButtonDefault = Backbone.View.extend({
     initialize: function(options) {
@@ -9,12 +13,13 @@ var ButtonDefault = Backbone.View.extend({
                 id: Utils.uid(),
                 title: "",
                 icon: "",
-                cls: "btn btn-default",
+                cls: "btn btn-secondary",
                 wait: false,
                 wait_text: "Sending...",
                 wait_cls: "btn btn-info",
                 disabled: false,
-                percentage: -1
+                percentage: -1,
+                visible: true
             }).set(options);
         this.setElement(
             $("<button/>")
@@ -28,7 +33,6 @@ var ButtonDefault = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -36,12 +40,13 @@ var ButtonDefault = Backbone.View.extend({
             .addClass(options.disabled && "disabled")
             .attr("id", options.id)
             .attr("disabled", options.disabled)
+            .css("display", options.visible ? "inline-block" : "none")
             .off("click")
             .on("click", () => {
                 $(".tooltip").hide();
-                options.onclick && !self.disabled && options.onclick();
+                options.onclick && !this.disabled && options.onclick();
             })
-            .tooltip({ title: options.tooltip, placement: "bottom" });
+            .tooltip({ title: options.tooltip || "", placement: "bottom" });
         this.$progress.addClass("progress").css("display", options.percentage !== -1 ? "block" : "none");
         this.$progress_bar.addClass("progress-bar").css({ width: `${options.percentage}%` });
         this.$icon.removeClass().addClass("icon fa");
@@ -60,12 +65,12 @@ var ButtonDefault = Backbone.View.extend({
 
     /** Show button */
     show: function() {
-        this.$el.show();
+        this.model.set("visible", true);
     },
 
     /** Hide button */
     hide: function() {
-        this.$el.hide();
+        this.model.set("visible", false);
     },
 
     /** Disable button */
@@ -101,6 +106,7 @@ var ButtonLink = ButtonDefault.extend({
             (options && options.model) ||
             new Backbone.Model({
                 id: Utils.uid(),
+                visible: true,
                 title: "",
                 icon: "",
                 cls: ""
@@ -122,6 +128,7 @@ var ButtonLink = ButtonDefault.extend({
                 target: options.target || "_top",
                 disabled: options.disabled
             })
+            .css("display", options.visible ? "inline-block" : "none")
             .tooltip({ placement: "bottom" })
             .off("click")
             .on("click", () => {
@@ -141,6 +148,7 @@ var ButtonCheck = Backbone.View.extend({
                 title: "Select/Unselect all",
                 icons: ["fa-square-o", "fa-minus-square-o", "fa-check-square-o"],
                 value: 0,
+                visible: true,
                 onchange: function() {}
             }).set(options);
         this.setElement(
@@ -153,13 +161,13 @@ var ButtonCheck = Backbone.View.extend({
     },
 
     render: function(options) {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .addClass("ui-button-check")
+            .css("display", options.visible ? "inline-block" : "none")
             .off("click")
             .on("click", () => {
-                self.model.set("value", (self.model.get("value") === 0 && 2) || 0);
+                this.model.set("value", (this.model.get("value") === 0 && 2) || 0);
                 options.onclick && options.onclick();
             });
         this.$title.html(options.title);
@@ -196,6 +204,7 @@ var ButtonIcon = ButtonDefault.extend({
                 id: Utils.uid(),
                 title: "",
                 icon: "",
+                visible: true,
                 cls: "ui-button-icon",
                 disabled: false
             }).set(options);
@@ -211,12 +220,12 @@ var ButtonIcon = ButtonDefault.extend({
     },
 
     render: function(options) {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .removeClass()
             .addClass(options.cls)
             .addClass(options.disabled && "disabled")
+            .css("display", options.visible ? "inline-block" : "none")
             .attr("disabled", options.disabled)
             .attr("id", options.id)
             .off("click")
@@ -224,7 +233,7 @@ var ButtonIcon = ButtonDefault.extend({
                 $(".tooltip").hide();
                 !options.disabled && options.onclick && options.onclick();
             });
-        this.$button.addClass("button").tooltip({ title: options.tooltip, placement: "bottom" });
+        this.$button.addClass("button").tooltip({ title: options.tooltip || "", placement: "bottom" });
         this.$icon
             .removeClass()
             .addClass("icon fa")
@@ -268,7 +277,6 @@ var ButtonMenu = ButtonDefault.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .removeClass()
@@ -281,7 +289,7 @@ var ButtonMenu = ButtonDefault.extend({
         this.$root
             .addClass("root button dropdown-toggle")
             .attr("data-toggle", "dropdown")
-            .tooltip({ title: options.tooltip, placement: "bottom" })
+            .tooltip({ title: options.tooltip || "", placement: "bottom" })
             .off("click")
             .on("click", e => {
                 $(".tooltip").hide();
@@ -300,8 +308,8 @@ var ButtonMenu = ButtonDefault.extend({
         this.$menu && this.$menu.remove();
         if (this.collection.length > 0) {
             this.$menu = $("<ul/>")
-                .addClass("menu dropdown-menu")
-                .addClass(`pull-${self.model.get("pull")}`)
+                .addClass("menu dropdown-menu dropdown-menu-right")
+                .addClass(`pull-${this.model.get("pull")}`)
                 .attr("role", "menu");
             this.$el.append(this.$menu);
         }
@@ -327,8 +335,8 @@ var ButtonMenu = ButtonDefault.extend({
                             suboptions.onclick();
                         }
                     });
-                self.$menu.append($("<li/>").append($link));
-                suboptions.divider && self.$menu.append($("<li/>").addClass("divider"));
+                this.$menu.append($("<li/>").append($link));
+                suboptions.divider && this.$menu.append($("<li/>").addClass("divider"));
             }
         });
     },

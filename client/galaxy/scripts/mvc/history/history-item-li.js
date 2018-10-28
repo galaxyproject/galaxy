@@ -1,15 +1,14 @@
-function _labelIfName(tag) {
-    if (tag.indexOf("name:") == 0) {
-        return `<span class="label label-info">${_.escape(tag.slice(5))}</span>`;
-    } else {
-        return "";
-    }
+function _templateNametag(tag) {
+    return `<span class="badge badge-primary badge-tags">${_.escape(tag.slice(5))}</span>`;
 }
 
 function nametagTemplate(historyItem) {
-    return `<span class="nametags">${_.sortBy(_.uniq(historyItem.tags))
-        .map(_labelIfName)
-        .join("")}</span>`;
+    let uniqueNametags = _.filter(_.uniq(historyItem.tags), t => t.indexOf("name:") === 0);
+    let nametagsDisplay = _.sortBy(uniqueNametags).map(_templateNametag);
+    return `
+        <div class="nametags" title="${uniqueNametags.length} nametags">
+            ${nametagsDisplay.join("")}
+        </div>`;
 }
 
 export default {

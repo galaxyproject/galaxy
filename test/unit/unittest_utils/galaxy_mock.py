@@ -123,12 +123,16 @@ class MockAppConfig(Bunch):
 
         self.umask = 0o77
 
+        # Compliance related config
+        self.redact_email_in_job_name = False
+
         # Follow two required by GenomeBuilds
         self.len_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'chrom')
         self.builds_file_path = os.path.join('tool-data', 'shared', 'ucsc', 'builds.txt.sample')
 
         self.migrated_tools_config = "/tmp/migrated_tools_conf.xml"
         self.preserve_python_environment = "always"
+        self.enable_beta_gdpr = False
 
         # set by MockDir
         self.root = root
@@ -188,6 +192,7 @@ class MockTrans(object):
 
 
 class MockVisualizationsRegistry(object):
+    BUILT_IN_VISUALIZATIONS = ['trackster']
 
     def get_visualizations(self, trans, target):
         return []

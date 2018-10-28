@@ -43,7 +43,7 @@ WAIT_TYPES = Bunch(
     # Fade in, fade out, etc...
     UX_TRANSITION=WaitType("ux_transition", 5),
     # Toastr popup and dismissal, etc...
-    UX_POPUP=WaitType("ux_popup", 10),
+    UX_POPUP=WaitType("ux_popup", 15),
     # Creating a new history and loading it into the panel.
     DATABASE_OPERATION=WaitType("database_operation", 10),
     # Wait time for jobs to complete in default environment.
@@ -170,7 +170,8 @@ class NavigatesGalaxy(HasDriver):
         finally:
             self.driver.switch_to.default_content()
 
-    def api_get(self, endpoint, data={}, raw=False):
+    def api_get(self, endpoint, data=None, raw=False):
+        data = data or {}
         full_url = self.build_url("api/" + endpoint, for_selenium=False)
         response = requests.get(full_url, data=data, cookies=self.selenium_to_requests_cookies())
         if raw:
@@ -422,16 +423,16 @@ class NavigatesGalaxy(HasDriver):
             # /api/histories/cfc05ccec54895e2/contents?keys=type_id%2Celement_count&order=hid&v=dev&q=history_content_type&q=deleted&q=purged&q=visible&qv=dataset_collection&qv=False&qv=False&qv=True HTTP/1.1" 403 - "http://localhost:8080/"
             # Like the logged in user doesn't have permission to the previously anonymous user's
             # history, it is odd but I cannot replicate this outside of Selenium.
-            time.sleep(.35)
+            time.sleep(1.35)
 
         if assert_valid:
             # self.wait_for_selector_visible(".donemessage")
             self.home()
             self.click_masthead_user()
             # Make sure the user menu was dropped down
-            user_menu = self.wait_for_selector_visible("ul.nav#user .dropdown-menu")
+            user_menu = self.components.masthead.user_menu.wait_for_visible()
             try:
-                user_email_element = self.wait_for_visible(self.navigation.masthead.selectors.user_email)
+                user_email_element = self.components.masthead.user_email.wait_for_visible()
             except self.TimeoutException as e:
                 menu_items = user_menu.find_elements_by_css_selector("li a")
                 menu_text = [mi.text for mi in menu_items]
@@ -531,11 +532,10 @@ class NavigatesGalaxy(HasDriver):
         self.upload_build()
 
     def upload_tab_click(self, tab):
-        tab_tag_id = "#tab-title-link-%s" % tab
-        self.wait_for_and_click_selector(tab_tag_id)
+        self.components.upload.tab(tab=tab).wait_for_and_click()
 
     def upload_start_click(self):
-        self.wait_for_and_click_selector(".upload-button")
+        self.components.upload.start.wait_for_and_click()
 
     @retry_during_transitions
     def upload_set_footer_extension(self, ext, tab_id="regular"):
@@ -560,8 +560,8 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_and_click_selector("div#%s button#btn-start" % tab_id)
 
     @retry_during_transitions
-    def upload_build(self):
-        build_selector = "div#collection button#btn-build"
+    def upload_build(self, tab="collection"):
+        build_selector = "div#%s button#btn-build" % tab
         # Pause a bit to let the callback on the build button be registered.
         time.sleep(.5)
         # Click the Build button and make sure it disappears.
@@ -580,6 +580,204 @@ class NavigatesGalaxy(HasDriver):
 
         file_upload = self.wait_for_selector('div#%s input[type="file"]' % tab_id)
         file_upload.send_keys(test_path)
+
+    def upload_rule_start(self):
+        self.upload_start_click()
+        self.upload_tab_click("rule-based")
+
+    def upload_rule_build(self):
+        self.upload_build(tab="rule-based")
+
+    def upload_rule_set_data_type(self, type_description):
+        upload = self.components.upload
+        data_type_element = upload.rule_select_data_type.wait_for_visible()
+        self.select2_set_value(data_type_element, type_description)
+
+    def upload_rule_set_input_type(self, input_description):
+        upload = self.components.upload
+        input_type_element = upload.rule_select_input_type.wait_for_visible()
+        self.select2_set_value(input_type_element, input_description)
+
+    def upload_rule_set_dataset(self, dataset_description="1:"):
+        upload = self.components.upload
+        rule_dataset_element = upload.rule_dataset_selector.wait_for_visible()
+        self.select2_set_value(rule_dataset_element, dataset_description)
+
+    def rule_builder_set_collection_name(self, name):
+        rule_builder = self.components.rule_builder
+        name_element = rule_builder.collection_name_input.wait_for_and_click()
+        name_element.send_keys(name)
+
+    def rule_builder_set_extension(self, extension):
+        self.select2_set_value(self.navigation.rule_builder.selectors.extension_select, extension)
+
+    def rule_builder_filter_count(self, count=1):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_filter.wait_for_and_click()
+        with self.rule_builder_rule_editor("add-filter-count") as editor_element:
+            filter_input = editor_element.find_element_by_css_selector("input[type='number']")
+            filter_input.clear()
+            filter_input.send_keys("%s" % count)
+
+    def rule_builder_sort(self, column_label, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_rules.wait_for_and_click()
+        with self.rule_builder_rule_editor("sort") as editor_element:
+            column_elem = editor_element.find_element_by_css_selector(".rule-column-selector")
+            self.select2_set_value(column_elem, column_label)
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    def rule_builder_add_regex_groups(self, column_label, group_count, regex, screenshot_name):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_column.wait_for_and_click()
+        with self.rule_builder_rule_editor("add-column-regex") as editor_element:
+
+            column_elem = editor_element.find_element_by_css_selector(".rule-column-selector")
+            self.select2_set_value(column_elem, column_label)
+
+            groups_elem = editor_element.find_element_by_css_selector("input[type='radio'][value='groups']")
+            groups_elem.click()
+
+            regex_elem = editor_element.find_element_by_css_selector("input.rule-regular-expression")
+            regex_elem.clear()
+            regex_elem.send_keys(regex)
+
+            filter_input = editor_element.find_element_by_css_selector("input[type='number']")
+            filter_input.clear()
+            filter_input.send_keys("%s" % group_count)
+
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    def rule_builder_add_regex_replacement(self, column_label, regex, replacement, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_column.wait_for_and_click()
+        with self.rule_builder_rule_editor("add-column-regex") as editor_element:
+
+            column_elem = editor_element.find_element_by_css_selector(".rule-column-selector")
+            self.select2_set_value(column_elem, column_label)
+
+            groups_elem = editor_element.find_element_by_css_selector("input[type='radio'][value='replacement']")
+            groups_elem.click()
+
+            regex_elem = editor_element.find_element_by_css_selector("input.rule-regular-expression")
+            regex_elem.clear()
+            regex_elem.send_keys(regex)
+
+            filter_input = editor_element.find_element_by_css_selector("input.rule-replacement")
+            filter_input.clear()
+            filter_input.send_keys("%s" % replacement)
+
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    def rule_builder_add_value(self, value, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_column.wait_for_and_click()
+        with self.rule_builder_rule_editor("add-column-value") as editor_element:
+            filter_input = editor_element.find_element_by_css_selector("input[type='text']")
+            filter_input.clear()
+            filter_input.send_keys(value)
+
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    def rule_builder_remove_columns(self, column_labels, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_rules.wait_for_and_click()
+        with self.rule_builder_rule_editor("remove-columns") as filter_editor_element:
+            column_elem = filter_editor_element.find_element_by_css_selector(".rule-column-selector")
+            for column_label in column_labels:
+                self.select2_set_value(column_elem, column_label)
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    def rule_builder_concatenate_columns(self, column_label_1, column_label_2, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_column.wait_for_and_click()
+        with self.rule_builder_rule_editor("add-column-concatenate") as filter_editor_element:
+            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            self.select2_set_value(column_elems[0], column_label_1)
+            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            self.select2_set_value(column_elems[1], column_label_2)
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    def rule_builder_split_columns(self, column_labels_1, column_labels_2, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_rules.wait_for_and_click()
+        with self.rule_builder_rule_editor("split-columns") as filter_editor_element:
+            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            clear = True
+            for column_label_1 in column_labels_1:
+                self.select2_set_value(column_elems[0], column_label_1, clear_value=clear)
+                clear = False
+
+            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            clear = True
+            for column_label_2 in column_labels_2:
+                self.select2_set_value(column_elems[1], column_label_2, clear_value=clear)
+                clear = False
+
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    def rule_builder_swap_columns(self, column_label_1, column_label_2, screenshot_name):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_rules.wait_for_and_click()
+        with self.rule_builder_rule_editor("swap-columns") as filter_editor_element:
+            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            self.select2_set_value(column_elems[0], column_label_1)
+            column_elems = filter_editor_element.find_elements_by_css_selector(".rule-column-selector")
+            self.select2_set_value(column_elems[1], column_label_2)
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+
+    @contextlib.contextmanager
+    def rule_builder_rule_editor(self, rule_type):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_item_rule_type(rule_type=rule_type).wait_for_and_click()
+        filter_editor = rule_builder.rule_editor(rule_type=rule_type)
+        filter_editor_element = filter_editor.wait_for_visible()
+        yield filter_editor_element
+        rule_builder.rule_editor_ok.wait_for_and_click()
+
+    def rule_builder_set_mapping(self, mapping_type, column_label, screenshot_name=None):
+        rule_builder = self.components.rule_builder
+        rule_builder.menu_button_rules.wait_for_and_click()
+        rule_builder.menu_item_rule_type(rule_type="mapping").wait_for_and_click()
+        rule_builder.add_mapping_menu.wait_for_and_click()
+        rule_builder.add_mapping_button(mapping_type=mapping_type).wait_for_and_click()
+        if mapping_type != "list-identifiers" or not isinstance(column_label, list):
+            mapping_elem = rule_builder.mapping_edit(mapping_type=mapping_type).wait_for_visible()
+            self.select2_set_value(mapping_elem, column_label)
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+        else:
+            assert len(column_label) > 0
+            column_labels = column_label
+            for i, column_label in enumerate(column_labels):
+                if i > 0:
+                    rule_builder.mapping_add_column(mapping_type=mapping_type).wait_for_and_click()
+                mapping_elem = rule_builder.mapping_edit(mapping_type=mapping_type).wait_for_visible()
+                self.select2_set_value(mapping_elem, column_label)
+            if screenshot_name:
+                self.screenshot(screenshot_name)
+        rule_builder.mapping_ok.wait_for_and_click()
+
+    def rule_builder_set_source(self, json):
+        rule_builder = self.components.rule_builder
+        rule_builder.view_source.wait_for_and_click()
+        self.rule_builder_enter_source_text(json)
+        rule_builder.main_button_ok.wait_for_and_click()
+        rule_builder.view_source.wait_for_visible()
+
+    def rule_builder_enter_source_text(self, json):
+        rule_builder = self.components.rule_builder
+        text_area_elem = rule_builder.source.wait_for_visible()
+        text_area_elem.clear()
+        text_area_elem.send_keys(json)
 
     def workflow_editor_click_option(self, option_label):
         self.workflow_editor_click_options()
@@ -606,11 +804,19 @@ class NavigatesGalaxy(HasDriver):
     def workflow_editor_options_menu_element(self):
         return self.wait_for_selector_visible("#workflow-options-button-menu")
 
+    def admin_open(self):
+        self.components.masthead.admin.wait_for_and_click()
+
     def libraries_open(self):
         self.home()
         self.click_masthead_shared_data()
         self.components.masthead.libraries.wait_for_and_click()
         self.components.libraries.selector.wait_for_visible()
+
+    def libraries_open_with_name(self, name):
+        self.libraries_open()
+        self.libraries_index_search_for(name)
+        self.libraries_index_table_elements()[0].find_element_by_css_selector("td a").click()
 
     @retry_during_transitions
     def libraries_index_table_elements(self):
@@ -657,8 +863,7 @@ class NavigatesGalaxy(HasDriver):
         self.driver.execute_script("$(arguments[0]).keyup();", search_box)
 
     def libraries_folder_create(self, name):
-        create_folder_button = self.wait_for_selector_clickable("#toolbtn_create_folder")
-        create_folder_button.click()
+        self.components.libraries.folder.add_folder.wait_for_and_click()
 
         name_text_box = self.wait_for_selector_clickable("input[name='Name']")
         name_text_box.send_keys(name)
@@ -681,14 +886,34 @@ class NavigatesGalaxy(HasDriver):
         self.wait_for_visible(self.navigation.libraries.folder.selectors.add_items_menu)
         self.wait_for_and_click(self.navigation.libraries.folder.labels.from_path)
 
+    def libraries_dataset_import_from_history_select(self, to_select_items):
+        self.wait_for_visible(self.navigation.libraries.folder.selectors.import_history_content)
+        history_elements = self.find_elements(self.navigation.libraries.folder.selectors.import_history_contents_items)
+        for to_select_item in to_select_items:
+            found = False
+            for history_element in history_elements:
+                if to_select_item in history_element.text:
+                    history_element.find_element_by_css_selector("input").click()
+                    found = True
+                    break
+
+            if not found:
+                raise Exception("Failed to find history item [%s] to select" % to_select_item)
+
+    def libraries_dataset_import_from_history_click_ok(self, wait=True):
+        self.wait_for_and_click(self.navigation.libraries.folder.selectors.import_datasets_ok_button)
+        if wait:
+            # Let the progress bar disappear...
+            self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_progress_bar)
+
     def libraries_table_elements(self):
         tbody_element = self.wait_for_selector_visible("#folder_list_body")
         return tbody_element.find_elements_by_css_selector("tr")[1:]
 
     def wait_for_overlays_cleared(self):
         """Wait for modals and Toast notifications to disappear."""
-        self.wait_for_selector_absent_or_hidden(".ui-modal")
-        self.wait_for_selector_absent_or_hidden(".toast")
+        self.wait_for_selector_absent_or_hidden(".ui-modal", wait_type=WAIT_TYPES.UX_POPUP)
+        self.wait_for_selector_absent_or_hidden(".toast", wait_type=WAIT_TYPES.UX_POPUP)
 
     def workflow_index_open(self):
         self.home()
@@ -730,7 +955,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_name(self, workflow_index=0):
         """Get workflow name for workflow_index'th row."""
         row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element_by_css_selector(".menubutton")
+        workflow_button = row_element.find_element_by_css_selector("a.btn.btn-secondary")
         return workflow_button.text
 
     def workflow_index_click_option(self, option_title, workflow_index=0):
@@ -738,13 +963,13 @@ class NavigatesGalaxy(HasDriver):
         @retry_during_transitions
         def click_option():
             workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
-            workflow_button = workflow_row.find_element_by_css_selector(".menubutton")
+            workflow_button = workflow_row.find_element_by_css_selector("button.dropdown-toggle")
             workflow_button.click()
 
         click_option()
 
-        menu_element = self.wait_for_selector_visible("ul.action-dpd")
-        menu_options = menu_element.find_elements_by_css_selector("li a")
+        menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
+        menu_options = menu_element.find_elements_by_css_selector("a.dropdown-item")
         found_option = False
         for menu_option in menu_options:
             if option_title in menu_option.text:
@@ -764,17 +989,17 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.label")
+        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
         return tags
 
     def workflow_import_submit_url(self, url):
-        form_element = self.wait_for_selector_visible("#center form")
-        url_element = form_element.find_element_by_css_selector("input[type='text']")
+        form_button = self.wait_for_selector_visible("#center input[type='button']")
+        url_element = self.wait_for_selector_visible("#center input[type='text']")
         url_element.send_keys(url)
-        self.click_submit(form_element)
+        form_button.click()
 
     def workflow_sharing_click_publish(self):
         self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
@@ -793,11 +1018,20 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_submit(self):
         self.wait_for_and_click_selector("button.btn-primary")
 
-    def tool_open(self, tool_id):
-        self.wait_for_and_click_selector('a[href$="tool_runner?tool_id=%s"]' % tool_id)
+    def tool_open(self, tool_id, outer=False):
+        if outer:
+            tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
+        else:
+            tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
+        tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.wait_for_selector("div.ui-form-element[tour_id$='%s']" % expanded_parameter_id)
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+
+    def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
+        rules_div_element = self.tool_parameter_div("rules")
+        edit_button_element = rules_div_element.find_element_by_css_selector("i.fa-edit")
+        edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None, test_data_resolver=None):
         div_element = self.tool_parameter_div(expanded_parameter_id)
@@ -1009,7 +1243,9 @@ class NavigatesGalaxy(HasDriver):
             self.click_label('go to the home page')
             assert not self.is_logged_in()
 
-    def run_tour(self, path, skip_steps=[], sleep_on_steps={}, tour_callback=None):
+    def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
+        skip_steps = skip_steps or []
+        sleep_on_steps = sleep_on_steps or {}
         if tour_callback is None:
             tour_callback = NullTourCallback()
 
@@ -1036,12 +1272,20 @@ class NavigatesGalaxy(HasDriver):
 
     def tour_wait_for_clickable_element(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_selector_clickable(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become clickable" % selector)
+        element = wait.until(
+            sizzle.sizzle_selector_clickable(selector),
+            timeout_message,
+        )
         return element
 
     def tour_wait_for_element_present(self, selector):
         wait = self.wait()
-        element = wait.until(sizzle.sizzle_presence_of_selector(selector))
+        timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become present" % selector)
+        element = wait.until(
+            sizzle.sizzle_presence_of_selector(selector),
+            timeout_message,
+        )
         return element
 
     def get_tooltip_text(self, element, sleep=0, click_away=True):
@@ -1142,7 +1386,7 @@ class NavigatesGalaxy(HasDriver):
         element.click()
         return element
 
-    def select2_set_value(self, container_selector, value, with_click=True):
+    def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -
         #   with_click=True: This simulates the mouse click after the suggestion contains
         #                    only the selected value.
@@ -1150,8 +1394,17 @@ class NavigatesGalaxy(HasDriver):
         #                     why.
         # with_click seems to work in all situtations - the enter methods
         # doesn't seem to work with the tool form for some reason.
-        container_elem = self.wait_for_selector(container_selector)
+        if hasattr(container_selector_or_elem, "selector"):
+            container_selector_or_elem = container_selector_or_elem.selector
+        if not hasattr(container_selector_or_elem, "find_element_by_css_selector"):
+            container_elem = self.wait_for_selector(container_selector_or_elem)
+        else:
+            container_elem = container_selector_or_elem
+
         text_element = container_elem.find_element_by_css_selector("input[type='text']")
+        if clear_value:
+            self.send_backspace(text_element)
+            self.send_backspace(text_element)
         text_element.send_keys(value)
         # Wait for select2 options to load and then click to add this one.
         drop_elem = self.wait_for_selector_visible("#select2-drop")

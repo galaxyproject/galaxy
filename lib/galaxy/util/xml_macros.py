@@ -228,9 +228,7 @@ def _imported_macro_paths_from_el(macros_el):
         macro_import_els = macros_el.findall("import")
     for macro_import_el in macro_import_els:
         raw_import_path = macro_import_el.text
-        tool_relative_import_path = \
-            os.path.basename(raw_import_path)  # Sanitize this
-        imported_macro_paths.append(tool_relative_import_path)
+        imported_macro_paths.append(raw_import_path)
     return imported_macro_paths
 
 

@@ -28,20 +28,6 @@
     </head>
 
     <body scroll="no" class="full-content">
-        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-            ## TODO: needed?
-            <div id="background"></div>
-
-            %if masthead:
-            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
-            ## a div below the masthead to show server messages set in galaxy.ini
-            <div id="messagebox" style="display: none;"></div>
-            ## a message displayed when the user has been inactive and needs to reactivate their account
-            <div id="inactivebox" class="panel-warning-message" style="display: none;"></div>
-            %endif
-
-        </div><!--end everything-->
-        <div id='dd-helper' style="display: none;"></div>
         ${ js_disabled_warning() }
 
         ## js libraries and bundled js app

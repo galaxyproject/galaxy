@@ -74,9 +74,9 @@ def main(options):
                     if latest_revision_only:
                         latest_revision = repository_dict.get('latest_revision', hg_util.INITIAL_CHANGELOG_HASH)
                         if changeset_revision == latest_revision:
-                            repository_dicts.append(dict(repository_dict.items() + baseline_repository_dict.items()))
+                            repository_dicts.append(dict(list(repository_dict.items()) + list(baseline_repository_dict.items())))
                     else:
-                        repository_dicts.append(dict(repository_dict.items() + baseline_repository_dict.items()))
+                        repository_dicts.append(dict(list(repository_dict.items()) + list(baseline_repository_dict.items())))
         print('\n\n', repository_dicts)
         print('\nThe url:\n\n', api_url, '\n\nreturned ', len(repository_dicts), ' repository dictionaries...')
 

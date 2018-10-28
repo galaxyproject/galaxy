@@ -1,0 +1,19 @@
+<tool id="compressed_neostorezip_neostore_cat" name="Confirm neostorezip is not uncompressed">
+    <command>
+        cat '$input1' > '$out_file1'
+    </command>
+    <inputs>
+        <param name="input1" type="data" format="neostore.zip" label="Compressed Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="neostore.zip"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input1" value="neostore.zip"/>
+            <output name="out_file1" file="neostore.zip" ftype="neostore.zip"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

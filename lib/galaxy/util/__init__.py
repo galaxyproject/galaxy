@@ -383,14 +383,17 @@ def shrink_string_by_size(value, size, join_by="..", left_larger=True, beginning
     return value
 
 
-def pretty_print_time_interval(time=False, precise=False):
+def pretty_print_time_interval(time=False, precise=False, utc=False):
     """
     Get a datetime object or a int() Epoch timestamp and return a
     pretty string like 'an hour ago', 'Yesterday', '3 months ago',
     'just now', etc
     credit: http://stackoverflow.com/questions/1551382/user-friendly-time-format-in-python
     """
-    now = datetime.now()
+    if utc:
+        now = datetime.utcnow()
+    else:
+        now = datetime.now()
     if type(time) is int:
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):
@@ -625,7 +628,7 @@ def in_directory(file, directory, local_path_module=os.path):
     >>> safe_dir = os.path.join(base_dir, "user")
     >>> os.mkdir(safe_dir)
     >>> good_file = os.path.join(safe_dir, "1")
-    >>> with open(good_file, "w") as f: f.write("hello")
+    >>> with open(good_file, "w") as f: _ = f.write("hello")
     >>> in_directory(good_file, safe_dir)
     True
     >>> in_directory("/other/file/is/here.txt", safe_dir)
@@ -817,6 +820,22 @@ def xml_text(root, name=None):
     return ''
 
 
+def parse_resource_parameters(resource_param_file):
+    """Code shared between jobs and workflows for reading resource parameter configuration files.
+
+    TODO: Allow YAML in addition to XML.
+    """
+    resource_parameters = {}
+    if os.path.exists(resource_param_file):
+        resource_definitions = parse_xml(resource_param_file)
+        resource_definitions_root = resource_definitions.getroot()
+        for parameter_elem in resource_definitions_root.findall("param"):
+            name = parameter_elem.get("name")
+            resource_parameters[name] = parameter_elem
+
+    return resource_parameters
+
+
 # asbool implementation pulled from PasteDeploy
 truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
 falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
@@ -919,6 +938,8 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     True
     >>> unicodify(3) == u'3'
     True
+    >>> unicodify(bytearray([115, 116, 114, 196, 169, 195, 177, 103])) == u'strĩñg'
+    True
     >>> unicodify(Exception('message')) == u'message'
     True
     >>> unicodify('cómplǐcḁtëd strĩñg') == u'cómplǐcḁtëd strĩñg'
@@ -933,7 +954,9 @@ def unicodify(value, encoding=DEFAULT_ENCODING, error='replace', default=None):
     if value is None:
         return None
     try:
-        if not isinstance(value, string_types) and not isinstance(value, binary_type):
+        if isinstance(value, bytearray):
+            value = bytes(value)
+        elif not isinstance(value, string_types) and not isinstance(value, binary_type):
             # In Python 2, value is not an instance of basestring
             # In Python 3, value is not an instance of bytes or str
             value = str(value)
@@ -1251,7 +1274,7 @@ def nice_size(size):
     >>> nice_size(100000000)
     '95.4 MB'
     """
-    words = ['bytes', 'KB', 'MB', 'GB', 'TB']
+    words = ['bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB']
     prefix = ''
     try:
         size = float(size)
@@ -1568,6 +1591,7 @@ def grep_tail( path, strings, scan_size ):
     except IOError:
         log.exception('Error reading end of %s:', path)
     return False
+
 
 class ExecutionTimer(object):
 

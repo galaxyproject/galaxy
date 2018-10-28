@@ -1,1 +1,0 @@
-define("mvc/history/history-item-li",["exports"],function(e){"use strict";function n(e){return 0==e.indexOf("name:")?'<span class="label label-info">'+_.escape(e.slice(5))+"</span>":""}Object.defineProperty(e,"__esModule",{value:!0}),e.default={nametagTemplate:function(e){return'<span class="nametags">'+_.sortBy(_.uniq(e.tags)).map(n).join("")+"</span>"}}});

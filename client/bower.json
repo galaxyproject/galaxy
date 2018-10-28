@@ -8,8 +8,6 @@
   ],
   "homepage": "usegalaxy.org",
   "dependencies": {
-    "bootstrap": "~3.3.2",
-    "bootstrap-tour": "~0.10.2",
     "farbtastic": "~2.0.0-alpha.1",
     "toastr": "~2.1.0",
     "jquery-form": "~3.46.0",

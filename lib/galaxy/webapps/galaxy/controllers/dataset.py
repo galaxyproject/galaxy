@@ -1,10 +1,13 @@
 import logging
 import os
-import urllib
 
 import paste.httpexceptions
 from markupsafe import escape
 from six import string_types, text_type
+from six.moves.urllib.parse import (
+    quote_plus,
+    unquote_plus
+)
 from sqlalchemy import false, true
 
 from galaxy import (
@@ -84,8 +87,6 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
     ]
     standard_filters = []
     default_filter = dict(name="All", deleted="False", tags="All")
-    preserve_state = False
-    use_async = True
     use_paging = True
     num_rows_per_page = 50
 
@@ -276,7 +277,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
             # let's not overwrite the imported datatypes module with the variable datatypes?
             # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
+            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.allow_datatype_change]
             ldatatypes.sort()
             all_roles = [(r.name, trans.security.encode_id(r.id)) for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')]
             data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
@@ -352,11 +353,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             permission_inputs = list()
             if trans.user:
                 if data.dataset.actions:
-                    permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                     in_roles = {}
                     for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
                         in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]
-                    for index, action in permitted_actions:
+                    for index, action in trans.app.model.Dataset.permitted_actions.items():
                         if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
                             help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
                         else:
@@ -415,6 +415,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
                     return False
             return True
+
         message = None
         status = 'success'
         dataset_id = payload.get('dataset_id')
@@ -434,7 +435,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 data.datatype.after_setting_metadata(data)
                 # Sanitize annotation before adding it.
                 if payload.get('annotation'):
-                    annotation = sanitize_html(payload.get('annotation'), 'utf-8', 'text/html')
+                    annotation = sanitize_html(payload.get('annotation'))
                     self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
                 # if setting metadata previously failed and all required elements have now been set, clear the failed state.
                 if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
@@ -483,9 +484,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if not trans.user:
                 return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
             if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
-                permitted_actions = trans.app.model.Dataset.permitted_actions.items()
                 payload_permissions = {}
-                for action, key in permitted_actions:
+                for action in trans.app.model.Dataset.permitted_actions.keys():
                     payload_permissions[action] = [trans.security.decode_id(role_id) for role_id in util.listify(payload.get(action))]
                 # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
                 # need to ensure that they did not associate roles that would cause accessibility problems.
@@ -570,7 +570,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     kwargs['refresh_frames'] = ['history']
 
         # Render the list view
-        kwargs['dict_format'] = True
         return self.stored_list_grid(trans, status=status, message=message, **kwargs)
 
     @web.expose
@@ -701,7 +700,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             web.httpexceptions.HTTPNotFound()
         if dataset and new_annotation:
             # Sanitize annotation before adding it.
-            new_annotation = sanitize_html(new_annotation, 'utf-8', 'text/html')
+            new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), dataset, new_annotation)
             trans.sa_session.flush()
             return new_annotation
@@ -730,7 +729,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if 'display_url' not in kwd or 'redirect_url' not in kwd:
             return trans.show_error_message('Invalid parameters specified for "display at" link, please contact a Galaxy administrator')
         try:
-            redirect_url = kwd['redirect_url'] % urllib.quote_plus(kwd['display_url'])
+            redirect_url = kwd['redirect_url'] % quote_plus(kwd['display_url'])
         except Exception:
             redirect_url = kwd['redirect_url']  # not all will need custom text
         if trans.app.security_agent.dataset_is_public(data.dataset):
@@ -746,7 +745,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         """Access to external display applications"""
         # Build list of parameters to pass in to display application logic (app_kwds)
         app_kwds = {}
-        for name, value in dict(kwds).iteritems():  # clone kwds because we remove stuff as we go.
+        for name, value in dict(kwds).items():  # clone kwds because we remove stuff as we go.
             if name.startswith("app_"):
                 app_kwds[name[len("app_"):]] = value
                 del kwds[name]
@@ -763,8 +762,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             user_roles = []
         # Decode application name and link name
-        app_name = urllib.unquote_plus(app_name)
-        link_name = urllib.unquote_plus(link_name)
+        app_name = unquote_plus(app_name)
+        link_name = unquote_plus(link_name)
         if None in [app_name, link_name]:
             return trans.show_error_message("A display application name and link name must be provided.")
         if self._can_access_dataset(trans, data, additional_roles=user_roles):
@@ -937,17 +936,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # Invalid HDA
             assert hda, 'Invalid history dataset ID'
 
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
             # If the user is anonymous, make sure the HDA is owned by the current session.
             if not user:
                 current_history_id = trans.galaxy_session.current_history_id
-                assert topmost_parent.history.id == current_history_id, 'Data does not belong to current user'
+                assert hda.history.id == current_history_id, 'Data does not belong to current user'
             # If the user is known, make sure the HDA is owned by the current user.
             else:
-                assert topmost_parent.history.user == user, 'Data does not belong to current user'
+                assert hda.history.user == user, 'Data does not belong to current user'
 
             # Ensure HDA is deleted
             hda.deleted = True
@@ -1143,7 +1138,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     target_histories = [history]
                 if len(target_histories) != len(target_history_ids):
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % (len(target_history_ids) - len(target_histories))
-                source_contents = map(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get, decoded_dataset_ids)
+                source_contents = list(map(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get, decoded_dataset_ids))
                 source_contents.extend(map(trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get, decoded_dataset_collection_ids))
                 source_contents.sort(key=lambda content: content.hid)
                 for content in source_contents:

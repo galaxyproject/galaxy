@@ -1,15 +1,75 @@
+import re
 from json import loads
 
 from markupsafe import escape
-from sqlalchemy import and_, desc, false, true
+from six.moves.html_entities import name2codepoint
+from six.moves.html_parser import HTMLParser
+from sqlalchemy import (
+    and_,
+    desc,
+    false,
+    true
+)
+from sqlalchemy.orm import (
+    eagerload,
+    undefer
+)
 
-from galaxy import managers, model, util, web
+from galaxy import (
+    managers,
+    model,
+    util,
+    web
+)
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.util import unicodify
-from galaxy.util.sanitize_html import _BaseHTMLProcessor, sanitize_html
-from galaxy.web import error, url_for
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
-from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web import (
+    error,
+    url_for
+)
+from galaxy.web.base.controller import (
+    BaseUIController,
+    SharableMixin,
+    UsesStoredWorkflowMixin,
+    UsesVisualizationMixin
+)
+from galaxy.web.framework.helpers import (
+    grids,
+    time_ago
+)
+
+
+# Copied from https://github.com/kurtmckee/feedparser
+_cp1252 = {
+    128: u'\u20ac',  # euro sign
+    130: u'\u201a',  # single low-9 quotation mark
+    131: u'\u0192',  # latin small letter f with hook
+    132: u'\u201e',  # double low-9 quotation mark
+    133: u'\u2026',  # horizontal ellipsis
+    134: u'\u2020',  # dagger
+    135: u'\u2021',  # double dagger
+    136: u'\u02c6',  # modifier letter circumflex accent
+    137: u'\u2030',  # per mille sign
+    138: u'\u0160',  # latin capital letter s with caron
+    139: u'\u2039',  # single left-pointing angle quotation mark
+    140: u'\u0152',  # latin capital ligature oe
+    142: u'\u017d',  # latin capital letter z with caron
+    145: u'\u2018',  # left single quotation mark
+    146: u'\u2019',  # right single quotation mark
+    147: u'\u201c',  # left double quotation mark
+    148: u'\u201d',  # right double quotation mark
+    149: u'\u2022',  # bullet
+    150: u'\u2013',  # en dash
+    151: u'\u2014',  # em dash
+    152: u'\u02dc',  # small tilde
+    153: u'\u2122',  # trade mark sign
+    154: u'\u0161',  # latin small letter s with caron
+    155: u'\u203a',  # single right-pointing angle quotation mark
+    156: u'\u0153',  # latin small ligature oe
+    158: u'\u017e',  # latin small letter z with caron
+    159: u'\u0178',  # latin capital letter y with diaeresis
+}
 
 
 def format_bool(b):
@@ -51,7 +111,7 @@ class PageListGrid(grids.Grid):
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
         grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action="edit_content")),
         grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
-        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(action="sharing")),
+        grids.GridOperation("Share or Publish", allow_multiple=False, condition=(lambda item: not item.deleted), url_args=dict(controller="", action="pages/sharing")),
         grids.GridOperation("Delete", confirm="Are you sure you want to delete this page?"),
     ]
 
@@ -62,7 +122,6 @@ class PageListGrid(grids.Grid):
 class PageAllPublishedGrid(grids.Grid):
     # Grid definition
     use_panels = True
-    use_async = True
     title = "Published Pages"
     model_class = model.Page
     default_sort_key = "update_time"
@@ -83,8 +142,8 @@ class PageAllPublishedGrid(grids.Grid):
     )
 
     def build_initial_query(self, trans, **kwargs):
-        # Join so that searching history.user makes sense.
-        return trans.sa_session.query(self.model_class).join(model.User.table)
+        # See optimization description comments and TODO for tags in matching public histories query.
+        return trans.sa_session.query(self.model_class).join("user").options(eagerload("user").load_only("username"), eagerload("annotations"), undefer("average_rating"))
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(self.model_class.deleted == false()).filter(self.model_class.published == true())
@@ -104,7 +163,6 @@ class ItemSelectionGrid(grids.Grid):
     show_item_checkboxes = True
     default_filter = {"deleted": "False", "sharing": "All"}
     default_sort_key = "-update_time"
-    use_async = True
     use_paging = True
     num_rows_per_page = 10
 
@@ -224,18 +282,52 @@ class VisualizationSelectionGrid(ItemSelectionGrid):
     )
 
 
-class _PageContentProcessor(_BaseHTMLProcessor):
-    """ Processes page content to produce HTML that is suitable for display. For now, processor renders embedded objects. """
+# Adapted from the _BaseHTMLProcessor class of https://github.com/kurtmckee/feedparser
+class _PageContentProcessor(HTMLParser, object):
+    """
+    Processes page content to produce HTML that is suitable for display.
+    For now, processor renders embedded objects.
+    """
+    bare_ampersand = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
+    elements_no_end_tag = set([
+        'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame',
+        'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
+        'source', 'track', 'wbr'
+    ])
 
-    def __init__(self, trans, encoding, type, render_embed_html_fn):
-        _BaseHTMLProcessor.__init__(self, encoding, type)
+    def __init__(self, trans, render_embed_html_fn):
+        HTMLParser.__init__(self)
         self.trans = trans
         self.ignore_content = False
         self.num_open_tags_for_ignore = 0
         self.render_embed_html_fn = render_embed_html_fn
 
-    def unknown_starttag(self, tag, attrs):
-        """ Called for each start tag; attrs is a list of (attr, value) tuples. """
+    def reset(self):
+        self.pieces = []
+        HTMLParser.reset(self)
+
+    def _shorttag_replace(self, match):
+        tag = match.group(1)
+        if tag in self.elements_no_end_tag:
+            return '<' + tag + ' />'
+        else:
+            return '<' + tag + '></' + tag + '>'
+
+    def feed(self, data):
+        data = re.compile(r'<!((?!DOCTYPE|--|\[))', re.IGNORECASE).sub(r'&lt;!\1', data)
+        data = re.sub(r'<([^<>\s]+?)\s*/>', self._shorttag_replace, data)
+        data = data.replace('&#39;', "'")
+        data = data.replace('&#34;', '"')
+        HTMLParser.feed(self, data)
+        HTMLParser.close(self)
+
+    def handle_starttag(self, tag, attrs):
+        """
+        Called for each start tag
+
+        attrs is a list of (attr, value) tuples, e.g. for <pre class='screen'>,
+        tag='pre', attrs=[('class', 'screen')]
+        """
 
         # If ignoring content, just increment tag count and ignore.
         if self.ignore_content:
@@ -265,17 +357,25 @@ class _PageContentProcessor(_BaseHTMLProcessor):
             return
 
         # Default behavior: not ignoring and no embedded content.
-        _BaseHTMLProcessor.unknown_starttag(self, tag, attrs)
+        uattrs = []
+        strattrs = ''
+        if attrs:
+            for key, value in attrs:
+                value = value.replace('>', '&gt;').replace('<', '&lt;').replace('"', '&quot;')
+                value = self.bare_ampersand.sub("&amp;", value)
+                uattrs.append((key, value))
+            strattrs = ''.join(' %s="%s"' % (k, v) for k, v in uattrs)
+        if tag in self.elements_no_end_tag:
+            self.pieces.append('<%s%s />' % (tag, strattrs))
+        else:
+            self.pieces.append('<%s%s>' % (tag, strattrs))
 
-    def handle_data(self, text):
-        """ Called for each block of plain text. """
-        if self.ignore_content:
-            return
-        _BaseHTMLProcessor.handle_data(self, text)
+    def handle_endtag(self, tag):
+        """
+        Called for each end tag
 
-    def unknown_endtag(self, tag):
-        """ Called for each end tag. """
-
+        E.g. for </pre>, tag will be 'pre'
+        """
         # If ignoring content, see if current tag is the end of content to ignore.
         if self.ignore_content:
             self.num_open_tags_for_ignore -= 1
@@ -284,8 +384,63 @@ class _PageContentProcessor(_BaseHTMLProcessor):
                 self.ignore_content = False
             return
 
-        # Default behavior:
-        _BaseHTMLProcessor.unknown_endtag(self, tag)
+        # Default behavior: reconstruct the original end tag.
+        if tag not in self.elements_no_end_tag:
+            self.pieces.append("</%s>" % tag)
+
+    def handle_charref(self, ref):
+        # called for each character reference, e.g. for '&#160;', ref will be '160'
+        # Reconstruct the original character reference.
+        ref = ref.lower()
+        if ref.startswith('x'):
+            value = int(ref[1:], 16)
+        else:
+            value = int(ref)
+
+        if value in _cp1252:
+            self.pieces.append('&#%s;' % hex(ord(_cp1252[value]))[1:])
+        else:
+            self.pieces.append('&#%s;' % ref)
+
+    def handle_entityref(self, ref):
+        # called for each entity reference, e.g. for '&copy;', ref will be 'copy'
+        # Reconstruct the original entity reference.
+        if ref in name2codepoint or ref == 'apos':
+            self.pieces.append('&%s;' % ref)
+        else:
+            self.pieces.append('&amp;%s' % ref)
+
+    def handle_data(self, text):
+        """
+        Called for each block of plain text
+
+        Called outside of any tag and not containing any character or entity
+        references. Store the original text verbatim.
+        """
+        if self.ignore_content:
+            return
+        self.pieces.append(text)
+
+    def handle_comment(self, text):
+        # called for each HTML comment, e.g. <!-- insert Javascript code here -->
+        # Reconstruct the original comment.
+        self.pieces.append('<!--%s-->' % text)
+
+    def handle_decl(self, text):
+        # called for the DOCTYPE, if present, e.g.
+        # <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+        #     "http://www.w3.org/TR/html4/loose.dtd">
+        # Reconstruct original DOCTYPE
+        self.pieces.append('<!%s>' % text)
+
+    def handle_pi(self, text):
+        # called for each processing instruction, e.g. <?instruction>
+        # Reconstruct original processing instruction.
+        self.pieces.append('<?%s>' % text)
+
+    def output(self):
+        '''Return processed HTML as a single string'''
+        return ''.join(self.pieces)
 
 
 class PageController(BaseUIController, SharableMixin,
@@ -322,7 +477,6 @@ class PageController(BaseUIController, SharableMixin,
             session.flush()
 
         # Build grid dictionary.
-        kwargs['dict_format'] = True
         grid = self._page_list(trans, *args, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -330,7 +484,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.expose
     @web.json
     def list_published(self, trans, *args, **kwargs):
-        kwargs['dict_format'] = True
         grid = self._all_published_list(trans, *args, **kwargs)
         grid['shared_by_others'] = self._get_shared(trans)
         return grid
@@ -390,7 +543,7 @@ class PageController(BaseUIController, SharableMixin,
                 p.slug = p_slug
                 p.user = user
                 if p_annotation:
-                    p_annotation = sanitize_html(p_annotation, 'utf-8', 'text/html')
+                    p_annotation = sanitize_html(p_annotation)
                     self.add_item_annotation(trans.sa_session, user, p, p_annotation)
                 # And the first (empty) page revision
                 p_revision = model.PageRevision()
@@ -452,7 +605,7 @@ class PageController(BaseUIController, SharableMixin,
                 p.title = p_title
                 p.slug = p_slug
                 if p_annotation:
-                    p_annotation = sanitize_html(p_annotation, 'utf-8', 'text/html')
+                    p_annotation = sanitize_html(p_annotation)
                     self.add_item_annotation(trans.sa_session, user, p, p_annotation)
                 trans.sa_session.add(p)
                 trans.sa_session.flush()
@@ -468,42 +621,6 @@ class PageController(BaseUIController, SharableMixin,
         page = trans.sa_session.query(model.Page).get(id)
         assert page.user == trans.user
         return trans.fill_template("page/editor.mako", page=page)
-
-    @web.expose
-    @web.require_login("use Galaxy pages")
-    def sharing(self, trans, id, **kwargs):
-        """ Handle page sharing. """
-
-        # Get session and page.
-        session = trans.sa_session
-        page = trans.sa_session.query(model.Page).get(self.decode_id(id))
-
-        # Do operation on page.
-        if 'make_accessible_via_link' in kwargs:
-            self._make_item_accessible(trans.sa_session, page)
-        elif 'make_accessible_and_publish' in kwargs:
-            self._make_item_accessible(trans.sa_session, page)
-            page.published = True
-        elif 'publish' in kwargs:
-            page.published = True
-        elif 'disable_link_access' in kwargs:
-            page.importable = False
-        elif 'unpublish' in kwargs:
-            page.published = False
-        elif 'disable_link_access_and_unpublish' in kwargs:
-            page.importable = page.published = False
-        elif 'unshare_user' in kwargs:
-            user = session.query(model.User).get(self.decode_id(kwargs['unshare_user']))
-            if not user:
-                error("User not found for provided id")
-            association = session.query(model.PageUserShareAssociation) \
-                                 .filter_by(user=user, page=page).one()
-            session.delete(association)
-
-        session.flush()
-
-        return trans.fill_template("/sharing_base.mako",
-                                   item=page, controller_list='pages', use_panels=True)
 
     @web.expose
     @web.require_login("use Galaxy pages")
@@ -537,7 +654,7 @@ class PageController(BaseUIController, SharableMixin,
                 page_title = escape(page.title)
                 other_email = escape(other.email)
                 trans.set_message("Page '%s' shared with user '%s'" % (page_title, other_email))
-                return trans.response.send_redirect(url_for(controller='page', action='sharing', id=id))
+                return trans.response.send_redirect(url_for("/pages/sharing?id=%s" % id))
         return trans.fill_template("/ind_share_base.mako",
                                    message=msg,
                                    messagetype=mtype,
@@ -553,7 +670,7 @@ class PageController(BaseUIController, SharableMixin,
         assert page.user == trans.user
 
         # Sanitize content
-        content = sanitize_html(content, 'utf-8', 'text/html')
+        content = sanitize_html(content)
 
         # Add a new revision to the page with the provided content.
         page_revision = model.PageRevision()
@@ -570,7 +687,7 @@ class PageController(BaseUIController, SharableMixin,
             item = trans.sa_session.query(item_class).filter_by(id=item_id).first()
             if not item:
                 raise RuntimeError("cannot find annotated item")
-            text = sanitize_html(annotation_dict['text'], 'utf-8', 'text/html')
+            text = sanitize_html(annotation_dict['text'])
 
             # Add/update annotation.
             if item_id and item_class and text:
@@ -618,8 +735,10 @@ class PageController(BaseUIController, SharableMixin,
         self.security_check(trans, page, False, True)
 
         # Process page content.
-        processor = _PageContentProcessor(trans, 'utf-8', 'text/html', self._get_embed_html)
+        processor = _PageContentProcessor(trans, self._get_embed_html)
         processor.feed(page.latest_revision.content)
+        # Output is string, so convert to unicode for display.
+        page_content = unicodify(processor.output(), 'utf-8')
 
         # Get rating data.
         user_item_rating = 0
@@ -631,8 +750,6 @@ class PageController(BaseUIController, SharableMixin,
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
 
-        # Output is string, so convert to unicode for display.
-        page_content = unicodify(processor.output(), 'utf-8')
         return trans.fill_template_mako("page/display.mako", item=page,
                                         item_data=page_content,
                                         user_item_rating=user_item_rating,
@@ -700,7 +817,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a history from saved histories")
     def list_histories_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more histories. """
-        kwargs['dict_format'] = True
         return self._history_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -708,7 +824,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a workflow from saved workflows")
     def list_workflows_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more workflows. """
-        kwargs['dict_format'] = True
         return self._workflow_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -716,7 +831,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a visualization from saved visualizations")
     def list_visualizations_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more visualizations. """
-        kwargs['dict_format'] = True
         return self._visualization_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -724,7 +838,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a page from saved pages")
     def list_pages_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more pages. """
-        kwargs['dict_format'] = True
         return self._page_selection_grid(trans, **kwargs)
 
     @web.expose
@@ -732,7 +845,6 @@ class PageController(BaseUIController, SharableMixin,
     @web.require_login("select a dataset from saved datasets")
     def list_datasets_for_selection(self, trans, **kwargs):
         """ Returns HTML that enables a user to select one or more datasets. """
-        kwargs['dict_format'] = True
         return self._datasets_selection_grid(trans, **kwargs)
 
     @web.expose

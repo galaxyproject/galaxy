@@ -22,7 +22,7 @@ class Action(object):
         self.model = model
 
 
-class RBACAgent:
+class RBACAgent(object):
     """Class that handles galaxy security"""
     permitted_actions = Bunch(
         DATASET_MANAGE_PERMISSIONS=Action("manage permissions", "Users having associated role can manage the roles associated with permissions on this dataset.", "grant"),
@@ -291,13 +291,13 @@ class GalaxyRBACAgent(RBACAgent):
             # If item has roles associated with the access permission, we need to start with them.
             access_roles = item.get_access_roles(trans)
             for role in access_roles:
-                if trans.user_is_admin() or self.ok_to_display(trans.user, role):
+                if self.ok_to_display(trans.user, role):
                     roles.append(role)
                     # Each role potentially has users.  We need to find all roles that each of those users have.
                     for ura in role.users:
                         user = ura.user
                         for ura2 in user.roles:
-                            if trans.user_is_admin() or self.ok_to_display(trans.user, ura2.role):
+                            if self.ok_to_display(trans.user, ura2.role):
                                 roles.append(ura2.role)
                     # Each role also potentially has groups which, in turn, have members ( users ).  We need to
                     # find all roles that each group's members have.
@@ -306,7 +306,7 @@ class GalaxyRBACAgent(RBACAgent):
                         for uga in group.users:
                             user = uga.user
                             for ura in user.roles:
-                                if trans.user_is_admin() or self.ok_to_display(trans.user, ura.role):
+                                if self.ok_to_display(trans.user, ura.role):
                                     roles.append(ura.role)
 
         # Omit duplicated roles by converting to set
@@ -775,6 +775,36 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 return None
         return role
+
+    def get_role(self, name, type=None):
+        type = type or self.model.Role.types.SYSTEM
+        # will raise exception if not found
+        return self.sa_session.query(self.model.Role) \
+            .filter(and_(self.model.Role.table.c.name == name,
+                     self.model.Role.table.c.type == type)) \
+            .one()
+
+    def create_role(self, name, description, in_users, in_groups, create_group_for_role=False, type=None):
+        type = type or self.model.Role.types.SYSTEM
+        role = self.model.Role(name=name, description=description, type=type)
+        self.sa_session.add(role)
+        # Create the UserRoleAssociations
+        for user in [self.sa_session.query(self.model.User).get(x) for x in in_users]:
+            self.associate_user_role(user, role)
+        # Create the GroupRoleAssociations
+        for group in [self.sa_session.query(self.model.Group).get(x) for x in in_groups]:
+            self.associate_group_role(group, role)
+        if create_group_for_role:
+            # Create the group
+            group = self.model.Group(name=name)
+            self.sa_session.add(group)
+            # Associate the group with the role
+            self.associate_group_role(group, role)
+            num_in_groups = len(in_groups) + 1
+        else:
+            num_in_groups = len(in_groups)
+        self.sa_session.flush()
+        return role, num_in_groups
 
     def get_sharing_roles(self, user):
         return self.sa_session.query(self.model.Role) \
@@ -1449,37 +1479,6 @@ class GalaxyRBACAgent(RBACAgent):
             else:
                 hidden_folder_ids = '%d' % sub_folder.id
         return False, hidden_folder_ids
-
-    def can_access_request_type(self, roles, request_type):
-        action = self.permitted_actions.REQUEST_TYPE_ACCESS
-        request_type_actions = []
-        for permission in request_type.actions:
-            if permission.action == action.action:
-                request_type_actions.append(permission)
-        if not request_type_actions:
-            return True
-        ret_val = False
-        for request_type_action in request_type_actions:
-            if request_type_action.role in roles:
-                ret_val = True
-                break
-        return ret_val
-
-    def set_request_type_permissions(self, request_type, permissions={}):
-        # Set new permissions on request_type, eliminating all current permissions
-        for role_assoc in request_type.actions:
-            self.sa_session.delete(role_assoc)
-        # Add the new permissions on request_type
-        permission_class = self.model.RequestTypePermissions
-        flush_needed = False
-        for action, roles in permissions.items():
-            if isinstance(action, Action):
-                action = action.action
-            for role_assoc in [permission_class(action, request_type, role) for role in roles]:
-                self.sa_session.add(role_assoc)
-                flush_needed = True
-        if flush_needed:
-            self.sa_session.flush()
 
 
 class HostAgent(RBACAgent):

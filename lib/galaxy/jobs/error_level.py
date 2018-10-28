@@ -8,12 +8,14 @@ class StdioErrorLevel(object):
     LOG = 1
     WARNING = 2
     FATAL = 3
-    MAX = 3
+    FATAL_OOM = 4
+    MAX = 4
     descs = {
         NO_ERROR: 'No error',
         LOG: 'Log',
         WARNING: 'Warning',
         FATAL: 'Fatal error',
+        FATAL_OOM: 'Out of memory error',
     }
 
     @staticmethod

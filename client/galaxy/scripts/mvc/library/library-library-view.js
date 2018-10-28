@@ -78,7 +78,7 @@ var LibraryView = Backbone.View.extend({
                 mod_toastr.error("An error occurred while attempting to fetch library permissions.");
             });
 
-        $("#center [data-toggle]").tooltip();
+        $('#center [data-toggle="tooltip"]').tooltip({ trigger: "hover" });
         //hack to show scrollbars
         $("#center").css("overflow", "auto");
     },
@@ -124,9 +124,9 @@ var LibraryView = Backbone.View.extend({
             placeholder: "Click to select a role",
             container: self.$el.find(`#${id}`),
             ajax: {
-                url: `${Galaxy.root}api/libraries/${self.id}/permissions?scope=available&is_library_access=${
-                    is_library_access
-                }`,
+                url: `${Galaxy.root}api/libraries/${
+                    self.id
+                }/permissions?scope=available&is_library_access=${is_library_access}`,
                 dataType: "json",
                 quietMillis: 100,
                 data: function(term, page) {
@@ -239,9 +239,9 @@ var LibraryView = Backbone.View.extend({
         return _.template(
             [
                 '<div class="library_style_container">',
-                '<div id="library_toolbar">',
+                "<div>",
                 '<a href="#">',
-                '<button data-toggle="tooltip" data-placement="top" title="Go back to the list of Libraries" class="btn btn-default primary-button" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Go back to the list of Libraries" class="btn btn-secondary primary-button" type="button">',
                 '<span class="fa fa-list"/>',
                 "&nbsp;Libraries",
                 "</button>",
@@ -279,7 +279,7 @@ var LibraryView = Backbone.View.extend({
                 '<div class="alert alert-info roles-selection">',
                 "User with <strong>any</strong> of these roles can modify this library (name, synopsis, etc.).",
                 "</div>",
-                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-default toolbtn_save_permissions primary-button" type="button">',
+                '<button data-toggle="tooltip" data-placement="top" title="Save modifications made on this page" class="btn btn-secondary toolbtn_save_permissions primary-button" type="button">',
                 '<span class="fa fa-floppy-o"/>',
                 "&nbsp;Save",
                 "</button>",

@@ -37,7 +37,7 @@ class BaseDataProvider(object):
         """
         raise Exception("Unimplemented Function")
 
-    def get_data(self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs):
+    def get_data(self, chrom, start, end, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Returns data as specified by kwargs. start_val is the first element to
         return and max_vals indicates the number of values to return.

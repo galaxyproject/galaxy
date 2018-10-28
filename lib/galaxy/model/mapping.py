@@ -14,23 +14,25 @@ from sqlalchemy import (
     desc,
     false,
     ForeignKey,
+    func,
     Integer,
     MetaData,
     not_,
     Numeric,
     select,
-    String,
-    Table,
+    String, Table,
     TEXT,
     Text,
     true,
     Unicode,
-    UniqueConstraint
+    UniqueConstraint,
+    VARCHAR
 )
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.ext.orderinglist import ordering_list
-from sqlalchemy.orm import backref, class_mapper, deferred, mapper, object_session, relation
+from sqlalchemy.orm import backref, class_mapper, column_property, deferred, mapper, object_session, relation
 from sqlalchemy.orm.collections import attribute_mapped_collection
+from sqlalchemy.sql import exists
 from sqlalchemy.types import BigInteger
 
 from galaxy import model
@@ -90,6 +92,47 @@ model.UserOpenID.table = Table(
     Column("openid", TEXT, index=True, unique=True),
     Column("provider", TrimmedString(255)))
 
+model.PSAAssociation.table = Table(
+    "psa_association", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('handle', VARCHAR(255)),
+    Column('secret', VARCHAR(255)),
+    Column('issued', Integer),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
+
+model.PSACode.table = Table(
+    "psa_code", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('email', VARCHAR(200)),
+    Column('code', VARCHAR(32)))
+
+model.PSANonce.table = Table(
+    "psa_nonce", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('server_url', VARCHAR(255)),
+    Column('timestamp', Integer),
+    Column('salt', VARCHAR(40)))
+
+model.PSAPartial.table = Table(
+    "psa_partial", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('token', VARCHAR(32)),
+    Column('data', TEXT),
+    Column('next_step', Integer),
+    Column('backend', VARCHAR(32)))
+
+model.UserAuthnzToken.table = Table(
+    "oidc_user_authnz_tokens", metadata,
+    Column('id', Integer, primary_key=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('uid', VARCHAR(255)),
+    Column('provider', VARCHAR(32)),
+    Column('extra_data', JSONType, nullable=True),
+    Column('lifetime', Integer),
+    Column('assoc_type', VARCHAR(64)))
+
 model.PasswordResetToken.table = Table(
     "password_reset_token", metadata,
     Column("token", String(32), primary_key=True, unique=True, index=True),
@@ -142,10 +185,25 @@ model.HistoryDatasetAssociation.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("visible", Boolean),
     Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+    Column("version", Integer, default=1, nullable=True, index=True),
     Column("hid", Integer),
     Column("purged", Boolean, index=True, default=False),
     Column("hidden_beneath_collection_instance_id",
            ForeignKey("history_dataset_collection_association.id"), nullable=True))
+
+
+model.HistoryDatasetAssociationHistory.table = Table(
+    "history_dataset_association_history", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("history_dataset_association_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("update_time", DateTime, default=now),
+    Column("version", Integer),
+    Column("name", TrimmedString(255)),
+    Column("extension", TrimmedString(64)),
+    Column("metadata", MetadataType(), key="_metadata"),
+    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+)
+
 
 model.Dataset.table = Table(
     "dataset", metadata,
@@ -464,6 +522,7 @@ model.Job.table = Table(
     Column("tool_version", TEXT, default="1.0.0"),
     Column("state", String(64), index=True),
     Column("info", TrimmedString(255)),
+    Column("copied_from_job_id", Integer, nullable=True),
     Column("command_line", TEXT),
     Column("dependencies", JSONType, nullable=True),
     Column("param_filename", String(1024)),
@@ -504,6 +563,7 @@ model.JobToInputDatasetAssociation.table = Table(
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("dataset_version", Integer),
     Column("name", String(255)))
 
 model.JobToOutputDatasetAssociation.table = Table(
@@ -605,16 +665,13 @@ model.JobImportHistoryArchive.table = Table(
     Column("history_id", Integer, ForeignKey("history.id"), index=True),
     Column("archive_dir", TEXT))
 
-
-JOB_METRIC_MAX_LENGTH = 1023
-
 model.JobMetricText.table = Table(
     "job_metric_text", metadata,
     Column("id", Integer, primary_key=True),
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(JOB_METRIC_MAX_LENGTH)))
+    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
 
 model.TaskMetricText.table = Table(
     "task_metric_text", metadata,
@@ -622,7 +679,7 @@ model.TaskMetricText.table = Table(
     Column("task_id", Integer, ForeignKey("task.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Unicode(JOB_METRIC_MAX_LENGTH)))
+    Column("metric_value", Unicode(model.JOB_METRIC_MAX_LENGTH)))
 
 model.JobMetricNumeric.table = Table(
     "job_metric_numeric", metadata,
@@ -630,7 +687,7 @@ model.JobMetricNumeric.table = Table(
     Column("job_id", Integer, ForeignKey("job.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(22, 7)))
+    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
 
 model.TaskMetricNumeric.table = Table(
     "task_metric_numeric", metadata,
@@ -638,7 +695,7 @@ model.TaskMetricNumeric.table = Table(
     Column("task_id", Integer, ForeignKey("task.id"), index=True),
     Column("plugin", Unicode(255)),
     Column("metric_name", Unicode(255)),
-    Column("metric_value", Numeric(22, 7)))
+    Column("metric_value", Numeric(model.JOB_METRIC_PRECISION, model.JOB_METRIC_SCALE)))
 
 
 model.GenomeIndexToolData.table = Table(
@@ -1403,6 +1460,20 @@ mapper(model.UserOpenID, model.UserOpenID.table, properties=dict(
         order_by=desc(model.UserOpenID.table.c.update_time))
 ))
 
+mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
+
+mapper(model.PSACode, model.PSACode.table, properties=None)
+
+mapper(model.PSANonce, model.PSANonce.table, properties=None)
+
+mapper(model.PSAPartial, model.PSAPartial.table, properties=None)
+
+mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
+    user=relation(model.User,
+                  primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
+                  backref='social_auth')
+))
+
 mapper(model.ValidationError, model.ValidationError.table)
 
 simple_mapping(model.HistoryDatasetAssociation,
@@ -1473,6 +1544,8 @@ simple_mapping(model.Dataset,
         order_by=model.DatasetTagAssociation.table.c.id,
         backref='datasets')
 )
+
+mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)
 
 mapper(model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table, properties=dict(
     history_dataset_association=relation(model.HistoryDatasetAssociation),
@@ -1549,7 +1622,15 @@ mapper(model.History, model.History.table, properties=dict(
         backref="histories"),
     ratings=relation(model.HistoryRatingAssociation,
         order_by=model.HistoryRatingAssociation.table.c.id,
-        backref="histories")
+        backref="histories"),
+    average_rating=column_property(
+        select([func.avg(model.HistoryRatingAssociation.table.c.rating)]).where(model.HistoryRatingAssociation.table.c.history_id == model.History.table.c.id),
+        deferred=True
+    ),
+    users_shared_with_count=column_property(
+        select([func.count(model.HistoryUserShareAssociation.table.c.id)]).where(model.History.table.c.id == model.HistoryUserShareAssociation.table.c.history_id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -1576,6 +1657,11 @@ mapper(model.User, model.User.table, properties=dict(
     galaxy_sessions=relation(model.GalaxySession,
         order_by=desc(model.GalaxySession.table.c.update_time)),
     stored_workflow_menu_entries=relation(model.StoredWorkflowMenuEntry,
+        primaryjoin=(
+            (model.StoredWorkflowMenuEntry.table.c.user_id == model.User.table.c.id) &
+            (model.StoredWorkflowMenuEntry.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id) &
+            not_(model.StoredWorkflow.table.c.deleted)
+        ),
         backref="user",
         cascade="all, delete-orphan",
         collection_class=ordering_list('order_index')),
@@ -1965,6 +2051,20 @@ mapper(model.Job, model.Job.table, properties=dict(
     input_datasets=relation(model.JobToInputDatasetAssociation),
     input_dataset_collections=relation(model.JobToInputDatasetCollectionAssociation, lazy=True),
     output_datasets=relation(model.JobToOutputDatasetAssociation, lazy=True),
+    any_output_dataset_deleted=column_property(
+        exists([model.HistoryDatasetAssociation],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetAssociation.table.c.job_id,
+                    model.HistoryDatasetAssociation.table.c.id == model.JobToOutputDatasetAssociation.table.c.dataset_id,
+                    model.HistoryDatasetAssociation.table.c.deleted == true())
+               )
+    ),
+    any_output_dataset_collection_instances_deleted=column_property(
+        exists([model.HistoryDatasetCollectionAssociation.table.c.id],
+               and_(model.Job.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.job_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.id == model.JobToOutputDatasetCollectionAssociation.table.c.dataset_collection_id,
+                    model.HistoryDatasetCollectionAssociation.table.c.deleted == true())
+               )
+    ),
     output_dataset_collection_instances=relation(model.JobToOutputDatasetCollectionAssociation, lazy=True),
     output_dataset_collections=relation(model.JobToImplicitOutputDatasetCollectionAssociation, lazy=True),
     post_job_actions=relation(model.PostJobActionAssociation, lazy=False),
@@ -2076,7 +2176,12 @@ mapper(model.Workflow, model.Workflow.table, properties=dict(
         primaryjoin=((model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id)),
         order_by=asc(model.WorkflowStep.table.c.order_index),
         cascade="all, delete-orphan",
-        lazy=False)
+        lazy=False),
+    step_count=column_property(
+        select([func.count(model.WorkflowStep.table.c.id)]).where(model.Workflow.table.c.id == model.WorkflowStep.table.c.workflow_id),
+        deferred=True
+    )
+
 ))
 
 mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
@@ -2139,7 +2244,11 @@ mapper(model.StoredWorkflow, model.StoredWorkflow.table, properties=dict(
         backref="stored_workflows"),
     ratings=relation(model.StoredWorkflowRatingAssociation,
         order_by=model.StoredWorkflowRatingAssociation.table.c.id,
-        backref="stored_workflows")
+        backref="stored_workflows"),
+    average_rating=column_property(
+        select([func.avg(model.StoredWorkflowRatingAssociation.table.c.rating)]).where(model.StoredWorkflowRatingAssociation.table.c.stored_workflow_id == model.StoredWorkflow.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2271,7 +2380,11 @@ mapper(model.Page, model.Page.table, properties=dict(
         backref="pages"),
     ratings=relation(model.PageRatingAssociation,
         order_by=model.PageRatingAssociation.table.c.id,
-        backref="pages")
+        backref="pages"),
+    average_rating=column_property(
+        select([func.avg(model.PageRatingAssociation.table.c.rating)]).where(model.PageRatingAssociation.table.c.page_id == model.Page.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2303,7 +2416,11 @@ mapper(model.Visualization, model.Visualization.table, properties=dict(
         backref="visualizations"),
     ratings=relation(model.VisualizationRatingAssociation,
         order_by=model.VisualizationRatingAssociation.table.c.id,
-        backref="visualizations")
+        backref="visualizations"),
+    average_rating=column_property(
+        select([func.avg(model.VisualizationRatingAssociation.table.c.rating)]).where(model.VisualizationRatingAssociation.table.c.visualization_id == model.Visualization.table.c.id),
+        deferred=True
+    )
 ))
 
 # Set up proxy so that
@@ -2446,10 +2563,12 @@ def _workflow_invocation_update(self):
 model.WorkflowInvocation.update = _workflow_invocation_update
 
 
-def init(file_path, url, engine_options={}, create_tables=False, map_install_models=False,
+def init(file_path, url, engine_options=None, create_tables=False, map_install_models=False,
         database_query_profiling_proxy=False, object_store=None, trace_logger=None, use_pbkdf2=True,
-        slow_query_log_threshold=0):
+        slow_query_log_threshold=0, thread_local_log=None):
     """Connect mappings to the database"""
+    if engine_options is None:
+        engine_options = {}
     # Connect dataset to the file path
     model.Dataset.file_path = file_path
     # Connect dataset to object store
@@ -2457,7 +2576,7 @@ def init(file_path, url, engine_options={}, create_tables=False, map_install_mod
     # Use PBKDF2 password hashing?
     model.User.use_pbkdf2 = use_pbkdf2
     # Load the appropriate db module
-    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold)
+    engine = build_engine(url, engine_options, database_query_profiling_proxy, trace_logger, slow_query_log_threshold, thread_local_log=thread_local_log)
 
     # Connect the metadata to the database.
     metadata.bind = engine
@@ -2478,4 +2597,5 @@ def init(file_path, url, engine_options={}, create_tables=False, map_install_mod
     result.create_tables = create_tables
     # load local galaxy security policy
     result.security_agent = GalaxyRBACAgent(result)
+    result.thread_local_log = thread_local_log
     return result

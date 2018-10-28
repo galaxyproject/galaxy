@@ -109,31 +109,13 @@
     ${h.js( "libs/jquery/jquery-ui" )}
 
     <script type="text/javascript">
-        // require.config({
-        //     baseUrl: "${h.url_for('/static/scripts') }",
-        //     shim: {
-        //         "libs/underscore": { exports: "_" },
-        //         "libs/backbone": {
-        //             deps: [ 'jquery', 'libs/underscore' ],
-        //             exports: "Backbone"
-        //         },
-        //         "libs/d3": { exports: "d3" },
-        //     },
-        //     // cache buster based on templated server (re)start time
-        //     urlArgs: 'v=${app.server_starttime}'
-        // });
-
-        require(["viz/sweepster"], function(sweepster) {
-
-            var viz;
-            $(function() {
-                // -- Viz set up. --
-                var viz = new sweepster.default.SweepsterVisualization(
-                    ${ h.dumps( config )}
-                );
-                var viz_view = new sweepster.default.SweepsterVisualizationView({ model: viz });
-                viz_view.render();
-            });
+        $(function() {
+            // -- Viz set up. --
+            var viz = new window.bundleEntries.SweepsterVisualization(
+                ${ h.dumps( config )}
+            );
+            var viz_view = new window.bundleEntries.SweepsterVisualizationView({ model: viz });
+            viz_view.render();
         });
     </script>
 </%def>

@@ -6,7 +6,7 @@ This document is a reference for the job configuration file.  [Detailed document
 
 **The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
 
-Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.ini`.  Sample configurations are provided at `galaxy-dist/config/job_conf.xml.sample_basic` and `galaxy-dist/config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
+Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations are provided at `galaxy-dist/config/job_conf.xml.sample_basic` and `galaxy-dist/config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
 
 ## job_conf.xml Syntax
 
@@ -46,8 +46,7 @@ The collection contains `<handler>` elements.
 
 ```eval_rst
 id
-    A server name (e.g. a ``[server:<name>]``</code> in <code>config/galaxy.ini</code> such as ``[server:main]``) that should be used to run jobs. </td>
-    <td> required </td>
+    A server name that should be used to run jobs. Server names are dependent on your application server deployment scenario and are explained in the :ref:`configuration section of the scaling documentation <scaling-configuration>`.
 
 tags
     A comma-separated set of strings that optional define tags to which this handler belongs. 
@@ -237,7 +236,7 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 ```eval_rst
 ``app``
-    Global Galaxy application object, has attributes such as config (the configuration parameters loaded from ``config/galaxy.ini``) and ``job_config`` (Galaxy representation of the data loaded in from ``job_conf.xml``).
+    Global Galaxy application object, has attributes such as config (the configuration parameters loaded from ``config/galaxy.yml``) and ``job_config`` (Galaxy representation of the data loaded in from ``job_conf.xml``).
 
 ``user_email``
     E-mail of user submitting this job.
@@ -295,7 +294,7 @@ As a natural extension to this, a dynamic job runner can be used as the default 
 The following example assumes the existence of a job destination with ids `short_pbs` and `long_pbs` and that a default dynamic job runner has been defined as follows in `job_conf.xml`:
 
 ```xml
-  <destination default="dynamic">
+  <destinations default="dynamic">
     <destination id="dynamic">
       <param id="type">python</param>
       <param id="function">default_runner</param>
@@ -318,7 +317,7 @@ def default_runner(tool_id):
 As another example, assume that a few tools should be only accessible to developers and all other users should receive a message indicating they are not authorized to use this tool. This can be accomplished with the following `job_conf.xml` fragment
 
 ```xml
-  <destination default="dynamic">
+  <destinations default="dynamic">
     <destination id="dev_dynamic">
       <param id="type">python</param>
       <param id="function">dev_only</param>

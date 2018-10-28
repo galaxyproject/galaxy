@@ -137,6 +137,11 @@ class JobRunnerMapper(object):
                 workflow_invocation_uuid = param_values.get("__workflow_invocation_uuid__", None)
                 actual_args["workflow_invocation_uuid"] = workflow_invocation_uuid
 
+            if "workflow_resource_params" in function_arg_names:
+                param_values = job.raw_param_dict()
+                workflow_resource_params = param_values.get("__workflow_resource_params__", None)
+                actual_args["workflow_resource_params"] = workflow_resource_params
+
         return expand_function(**actual_args)
 
     def __job_params(self, job):
@@ -219,6 +224,7 @@ class JobRunnerMapper(object):
             job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
         else:
             job_destination = raw_job_destination
+        log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
         self.cached_job_destination = job_destination
 
     def get_job_destination(self, params):

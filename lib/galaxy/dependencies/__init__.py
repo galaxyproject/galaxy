@@ -6,6 +6,7 @@ from xml.etree import ElementTree
 
 import pkg_resources
 
+from galaxy.containers import parse_containers_config
 from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
 
@@ -18,6 +19,7 @@ class ConditionalDependencies(object):
         self.authenticators = []
         self.object_stores = []
         self.conditional_reqs = []
+        self.container_interface_types = []
         self.parse_configs()
         self.get_conditional_requirements()
 
@@ -54,6 +56,13 @@ class ConditionalDependencies(object):
         except (OSError, IOError):
             pass
 
+        # Parse containers config
+        containers_conf_yml = self.config.get(
+            "containers_config_file",
+            join(dirname(self.config_file), 'containers_conf.yml'))
+        containers_conf = parse_containers_config(containers_conf_yml)
+        self.container_interface_types = [c.get('type', None) for c in containers_conf.values()]
+
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), 'conditional-requirements.txt')
         for req in pkg_resources.parse_requirements(open(crfile).readlines()):
@@ -66,7 +75,7 @@ class ConditionalDependencies(object):
         except Exception:
             return False
 
-    def check_psycopg2(self):
+    def check_psycopg2_binary(self):
         return self.config["database_connection"].startswith("postgres")
 
     def check_mysql_python(self):
@@ -95,9 +104,6 @@ class ConditionalDependencies(object):
     def check_statsd(self):
         return self.config.get("statsd_host", None) is not None
 
-    def check_graphite(self):
-        return self.config.get("graphite_host", None) is not None
-
     def check_weberror(self):
         return (asbool(self.config["debug"]) and
                 asbool(self.config["use_interactive"]))
@@ -110,8 +116,14 @@ class ConditionalDependencies(object):
         return ('ldap' in self.authenticators or
                 'activedirectory' in self.authenticators)
 
+    def check_python_pam(self):
+        return 'PAM' in self.authenticators
+
     def check_azure_storage(self):
         return 'azure_blob' in self.object_stores
+
+    def check_cloudbridge(self):
+        return 'cloud' in self.object_stores
 
     def check_kamaki(self):
         return 'pithos' in self.object_stores
@@ -120,6 +132,11 @@ class ConditionalDependencies(object):
         install_set = {'auto', 'True', 'true', 'polling'}
         return (self.config['watch_tools'] in install_set or
                 self.config['watch_tool_data_dir'] in install_set)
+
+    def check_docker(self):
+        return (self.config.get("enable_beta_containers_interface", False) and
+                ('docker' in self.container_interface_types or
+                 'docker_swarm' in self.container_interface_types))
 
 
 def optional(config_file):

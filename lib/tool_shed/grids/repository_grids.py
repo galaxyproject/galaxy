@@ -7,7 +7,7 @@ from sqlalchemy import and_, false, or_, true
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.web.framework.helpers import grids
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.util import hg_util, metadata_util, repository_util
 
@@ -62,7 +62,6 @@ class CategoryGrid(grids.Grid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -110,7 +109,11 @@ class RepositoryGrid(grids.Grid):
             # A repository's metadata revisions may not all be installable, as some may contain only invalid tools.
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=False)
             if len(select_field.options) > 1:
-                return select_field.get_html()
+                tmpl = "<select name='%s'>" % select_field.name
+                for o in select_field.options:
+                    tmpl += "<option value='%s'>%s</option>" % (o[1], o[0])
+                tmpl += "</select>"
+                return tmpl
             elif len(select_field.options) == 1:
                 option_items = select_field.options[0][0]
                 rev_label, rev_date = option_items.split(' ')
@@ -232,7 +235,6 @@ class RepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -354,7 +356,6 @@ class MatchedRepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -453,7 +454,6 @@ class RepositoriesByUserGrid(RepositoryGrid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -974,7 +974,6 @@ class RepositoryMetadataGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(malicious="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -1294,7 +1293,6 @@ class ValidCategoryGrid(CategoryGrid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -1331,7 +1329,11 @@ class ValidRepositoryGrid(RepositoryGrid):
             """Display a SelectField whose options are the changeset_revision strings of all download-able revisions of this repository."""
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=True)
             if len(select_field.options) > 1:
-                return select_field.get_html()
+                tmpl = "<select name='%s'>" % select_field.name
+                for o in select_field.options:
+                    tmpl += "<option value='%s'>%s</option>" % (o[1], o[0])
+                tmpl += "</select>"
+                return tmpl
             elif len(select_field.options) == 1:
                 return select_field.options[0][0]
             return ''

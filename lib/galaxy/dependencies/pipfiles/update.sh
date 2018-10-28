@@ -31,20 +31,24 @@ done
 
 THIS_DIRECTORY="$(cd "$(dirname "$0")" > /dev/null && pwd)"
 ENVS="develop
-flake8"
+flake8
+default"
 
-for env in $ENVS
-do
-        cd "$THIS_DIRECTORY/$env"
-        pipenv lock
-        pipenv lock -r > pinned-hashed-requirements.txt
-        # Strip out hashes and trailing whitespace for unhashed version
-        # of this requirements file.
-        sed 's/--hash[^[:space:]]*//g' pinned-hashed-requirements.txt | sed 's/[[:space:]]*$//' > pinned-requirements.txt
+for env in $ENVS; do
+    cd "$THIS_DIRECTORY/$env"
+    pipenv lock
+    # Strip out hashes and trailing whitespace for unhashed version
+    # of this requirements file, needed for pipenv < 11.1.2
+    pipenv lock -r | sed -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' > pinned-requirements.txt
+    # Fix oscillating environment markers
+    sed -i.orig -e "s/^cffi==\([^;]\+\).*$/cffi==\1/" \
+                -e "s/^enum34==\([^;]\+\).*$/enum34==\1; python_version < '3.4'/" \
+                -e "s/^funcsigs==\([^;]\+\).*$/funcsigs==\1; python_version < '3.3'/" \
+                -e "s/^py2-ipaddress==\([^;]\+\).*$/py2-ipaddress==\1; python_version < '3'/" pinned-requirements.txt
 done
 
 if [ "$commit" -eq "1" ];
 then
 	git add -u "$THIS_DIRECTORY"
-	git commit -m "Rev and re-lock Galaxy dependencies."
+	git commit -m "Rev and re-lock Galaxy dependencies"
 fi

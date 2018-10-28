@@ -59,7 +59,7 @@ galaxy_status() {
 	if [[ $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }') == 'main' ]]
 	then
 		echo -n "$SERVICE_NAME status: "
-		status -p $RUN_IN/paster.pid galaxy
+		status -p $RUN_IN/galaxy.pid galaxy
 	else
 		for proc in $(grep '\[server:' $RUN_IN/config/galaxy.ini|awk -F'(:)|(])' '{ print $2 }')
 		do

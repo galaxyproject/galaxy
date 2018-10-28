@@ -1,8 +1,7 @@
 // dependencies
-import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
-import Table from "mvc/ui/ui-table";
 import List from "mvc/ui/ui-list";
+
 // collection of libraries
 var Libraries = Backbone.Collection.extend({
     url: `${Galaxy.root}api/libraries?deleted=false`
@@ -63,7 +62,7 @@ var View = Backbone.View.extend({
                     label: model.get("name")
                 });
             });
-            self.library_select.update(data);
+            self.library_select.update({data: data});
         });
 
         // add reset handler for fetched library datasets
@@ -80,12 +79,14 @@ var View = Backbone.View.extend({
                     }
                 });
             }
-            self.dataset_list.update(data);
+            self.dataset_list.update({data: data});
         });
 
         // add change event. fires on trigger
         this.on("change", () => {
-            options.onchange && options.onchange(self.value());
+            if (options.onchange) {
+                options.onchange(self.value());
+            }
         });
 
         // create elements

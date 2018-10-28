@@ -4,8 +4,7 @@ import os.path
 import shutil
 import tempfile
 
-from base.interactor import stage_data_in_history
-
+from galaxy.tools.verify.interactor import stage_data_in_history
 from .test_toolbox import ToolTestCase
 
 log = logging.getLogger(__name__)
@@ -19,7 +18,7 @@ class DataManagerToolTestCase(ToolTestCase):
         """
         Run through a tool test case.
         """
-        shed_tool_id = self.shed_tool_id
+        tool_id = self.tool_id
 
         self._handle_test_def_errors(testdef)
 
@@ -27,7 +26,7 @@ class DataManagerToolTestCase(ToolTestCase):
 
         test_history = galaxy_interactor.new_history()  # history where inputs will be put, if any
 
-        stage_data_in_history(galaxy_interactor, testdef.test_data(), test_history, shed_tool_id)
+        stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), test_history)
 
         galaxy_interactor.run_tool(testdef, test_history)  # test_history will have inputs only, outputs are placed in the specialized data manager history
 
@@ -43,7 +42,7 @@ class DataManagerToolTestCase(ToolTestCase):
 
         self.assertTrue(data_list)
 
-        self._verify_outputs(testdef, data_manager_history, shed_tool_id, data_list, galaxy_interactor)
+        self._verify_outputs(testdef, data_manager_history, tool_id, data_list, galaxy_interactor)
 
         self.switch_history(id=self.security.encode_id(test_history.id))
 
@@ -89,7 +88,7 @@ def build_tests(tmp_dir=None, testing_shed_tools=False, master_api_key=None, use
             log.warning("No Tool has been specified for Data Manager: %s", data_manager_id)
         if tool.tests:
             # fixme data_manager.tool_shed_repository_info_dict should be filled when is toolshed based
-            shed_tool_id = None if not testing_shed_tools else tool.id
+            tool_id = tool.id
             # Create a new subclass of ToolTestCase, dynamically adding methods
             # named test_tool_XXX that run each test defined in the tool config.
             name = "TestForDataManagerTool_" + data_manager_id.replace(' ', '_')
@@ -103,7 +102,7 @@ def build_tests(tmp_dir=None, testing_shed_tools=False, master_api_key=None, use
                 test_method = make_test_method(testdef)
                 test_method.__doc__ = "%s ( %s ) > %s" % (tool.name, tool.id, testdef.name)
                 namespace['test_tool_%06d' % j] = test_method
-                namespace['shed_tool_id'] = shed_tool_id
+                namespace['tool_id'] = tool_id
                 namespace['master_api_key'] = master_api_key
                 namespace['user_api_key'] = user_api_key
             # The new.classobj function returns a new class object, with name name, derived

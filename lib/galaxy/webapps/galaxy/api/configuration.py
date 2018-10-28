@@ -36,7 +36,10 @@ class ConfigurationController(BaseAPIController):
         :rtype:   dict
         """
         current_user = self.user_manager.current_user(trans)
-        return current_user.to_dict()
+        rval = None
+        if current_user:  # None for master API key for instance
+            rval = current_user.to_dict()
+        return rval
 
     @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -87,8 +90,11 @@ class ConfigurationController(BaseAPIController):
     @expose_api
     @require_admin
     def dynamic_tool_confs(self, trans):
+        # WARNING: If this method is ever changed so as not to require admin privileges, update the nginx proxy
+        # documentation, since this path is used as an authentication-by-proxy method for securing other paths on the
+        # server. A dedicated endpoint should probably be added to do that instead.
         confs = self.app.toolbox.dynamic_confs(include_migrated_tool_conf=True)
-        return map(_tool_conf_to_dict, confs)
+        return list(map(_tool_conf_to_dict, confs))
 
     @expose_api
     @require_admin

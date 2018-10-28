@@ -31,10 +31,7 @@ import threading
 from argparse import ArgumentParser
 from logging.config import fileConfig
 
-try:
-    import ConfigParser as configparser
-except ImportError:
-    import configparser
+from six.moves.configparser import ConfigParser
 
 try:
     from daemonize import Daemonize
@@ -55,7 +52,7 @@ GALAXY_ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(real_file), os.pa
 GALAXY_LIB_DIR = os.path.join(GALAXY_ROOT_DIR, "lib")
 DEFAULT_INI_APP = "main"
 DEFAULT_CONFIG_SECTION = "galaxy"
-DEFAULT_INIS = ["config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.ini.sample"]
+DEFAULT_INIS = ["config/galaxy.yml", "config/galaxy.ini", "universe_wsgi.ini", "config/galaxy.yml.sample"]
 
 DEFAULT_PID = "galaxy.pid"
 DEFAULT_VERBOSE = True
@@ -97,6 +94,7 @@ def load_galaxy_app(
         **kwds
     )
     app.control_worker.bind_and_start()
+    app.application_stack.log_startup()
     return app
 
 
@@ -186,7 +184,7 @@ class GalaxyConfigBuilder(object):
     def populate_options(cls, arg_parser):
         arg_parser.add_argument("-c", "--config-file", default=None, help="Galaxy config file (defaults to config/galaxy.ini)")
         arg_parser.add_argument("--ini-path", default=None, help="DEPRECATED: use -c/--config-file")
-        arg_parser.add_argument("--app", default=None, help="app section in ini file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI")
+        arg_parser.add_argument("--app", default=None, help="app section in config file (defaults to 'galaxy' for YAML/JSON, 'main' (w/ 'app:' prepended) for INI")
         arg_parser.add_argument("-d", "--daemonize", default=False, help="Daemonzie process", action="store_true")
         arg_parser.add_argument("--daemon-log-file", default=None, help="log file for daemon script ")
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
@@ -219,7 +217,7 @@ class GalaxyConfigBuilder(object):
         if not self.config_file:
             return
         if self.config_is_ini:
-            raw_config = configparser.ConfigParser()
+            raw_config = ConfigParser()
             raw_config.read([self.config_file])
             if raw_config.has_section('loggers'):
                 config_file = os.path.abspath(self.config_file)

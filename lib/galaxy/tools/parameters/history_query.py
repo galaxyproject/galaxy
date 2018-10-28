@@ -11,6 +11,11 @@ class HistoryQuery(object):
         self.collection_type_descriptions = kwargs.get("collection_type_descriptions", None)
 
     @staticmethod
+    def from_collection_type(collection_type, collection_type_descriptions):
+        kwargs = dict(collection_type_descriptions=[collection_type_descriptions.for_collection_type(collection_type)])
+        return HistoryQuery(**kwargs)
+
+    @staticmethod
     def from_parameter(param, collection_type_descriptions):
         """ Take in a tool parameter element.
         """
@@ -21,7 +26,7 @@ class HistoryQuery(object):
             # (until we expose it to the user) will default to providing tool as much
             # data as possible. So a list:list:paired mapped to a tool that takes
             # list,paired,list:paired - will map over list:paired and create a flat list.
-            collection_type_descriptions = sorted(collection_type_descriptions, lambda t: t.dimension, reverse=True)
+            collection_type_descriptions = sorted(collection_type_descriptions, key=lambda t: t.dimension, reverse=True)
         else:
             collection_type_descriptions = None
 

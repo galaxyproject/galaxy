@@ -1,15 +1,12 @@
 <?xml version="1.0"?>
 
-<tool name="Upload File" id="upload1" version="1.1.4" workflow_compatible="false">
+<tool name="Upload File" id="upload1" version="1.1.6" workflow_compatible="false" profile="16.04">
   <description>
     from your computer  
   </description>
   <action module="galaxy.tools.actions.upload" class="UploadToolAction"/>
-  <requirements>
-      <requirement type="package">samtools</requirement>
-  </requirements>
-  <command interpreter="python">
-      upload.py $GALAXY_ROOT_DIR $GALAXY_DATATYPES_CONF_FILE $paramfile
+  <command>
+    python '$__tool_directory__/upload.py' $GALAXY_ROOT_DIR $GALAXY_DATATYPES_CONF_FILE $paramfile
     #set $outnum = 0
     #while $varExists('output%i' % $outnum):
         #set $output = $getVar('output%i' % $outnum)
@@ -31,7 +28,6 @@
         <filter type="add_value" name="Auto-detect" value="auto" index="0"/>
       </options>
     </param>
-    <param name="async_datasets" type="hidden" value="None"/>
     <param name="file_count" type="hidden" value="auto" />
     <upload_dataset name="files" title="Specify Files for Dataset" file_type_name="file_type" metadata_ref="files_metadata">
         <param name="file_data" type="file" size="30" label="File" ajax-upload="true" help="TIP: Due to browser limitations, uploading files larger than 2GB is guaranteed to fail.  To upload large files, use the URL method (below) or FTP (if enabled by the site administrator).">

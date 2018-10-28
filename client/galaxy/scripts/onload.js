@@ -19,13 +19,14 @@ import layout_modal from "layout/modal";
 _.extend(window, layout_modal);
 import async_save_text from "utils/async-save-text";
 window.async_save_text = async_save_text;
-import POPUPMENU from "ui/popupmenu";
-window.make_popupmenu = POPUPMENU.make_popupmenu;
-window.make_popup_menus = POPUPMENU.make_popup_menus;
+import Popupmenu from "ui/popupmenu";
+window.make_popupmenu = Popupmenu.make_popupmenu;
+window.make_popup_menus = Popupmenu.make_popup_menus;
 import init_tag_click_function from "ui/autocom_tagging";
 window.init_tag_click_function = init_tag_click_function;
-import TOURS from "mvc/tours";
-import QUERY_STRING from "utils/query-string-parsing";
+import Tours from "mvc/tours";
+import Webhooks from "mvc/webhooks";
+import Utils from "utils/utils";
 // console.debug( 'galaxy globals loaded' );
 
 // ============================================================================
@@ -89,10 +90,7 @@ function init_refresh_on_change() {
         .change(function() {
             var select_field = $(this);
             var select_val = select_field.val();
-            var refresh = false;
-
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
-
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
                 var last_selected_value = select_field.attr("last_selected_value");
@@ -114,10 +112,7 @@ function init_refresh_on_change() {
         .click(function() {
             var select_field = $(this);
             var select_val = select_field.val();
-            var refresh = false;
-
             var ref_on_change_vals = select_field.attr("refresh_on_change_values");
-
             if (ref_on_change_vals) {
                 ref_on_change_vals = ref_on_change_vals.split(",");
                 var last_selected_value = select_field.attr("last_selected_value");
@@ -156,7 +151,7 @@ $(document).ready(() => {
         $("[title]").tooltip();
     }
     // Make popup menus.
-    make_popup_menus();
+    Popupmenu.make_popup_menus();
 
     // Replace big selects.
     replace_big_select_inputs(20, 1500);
@@ -165,7 +160,7 @@ $(document).ready(() => {
     // add use_panels=True and set target to self.
     $("a").click(function() {
         var anchor = $(this);
-        var galaxy_main_exists = parent.frames && parent.frames.galaxy_main;
+        var galaxy_main_exists = window.parent.frames && window.parent.frames.galaxy_main;
         if (anchor.attr("target") == "galaxy_main" && !galaxy_main_exists) {
             var href = anchor.attr("href");
             if (href.indexOf("?") == -1) {
@@ -180,44 +175,24 @@ $(document).ready(() => {
         return anchor;
     });
 
-    var et = JSON.parse(sessionStorage.getItem("activeGalaxyTour"));
-    if (et) {
-        et = TOURS.hooked_tour_from_data(et);
-        if (et && et.steps) {
-            if (window && window.self === window.top) {
-                // Only kick off a new tour if this is the toplevel window (non-iframe).  This
-                // functionality actually *could* be useful, but we'd need to handle it better and
-                // come up with some design guidelines for tours jumping between windows.
-                // Disabling for now.
-                var tour = new Tour(
-                    _.extend(
-                        {
-                            steps: et.steps
-                        },
-                        TOURS.tour_opts
-                    )
-                );
-                tour.init();
-                tour.restart();
-            }
-        }
-    }
+    Tours.activeGalaxyTourRunner();
 
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {
-            // Load all webhooks with the type 'onload'
-            $.getJSON(`${Galaxy.root}api/webhooks/onload/all`, webhooks => {
-                _.each(webhooks, webhook => {
-                    if (webhook.activate && webhook.script) {
-                        $("<script/>", { type: "text/javascript" })
-                            .text(webhook.script)
-                            .appendTo("head");
-                        $("<style/>", { type: "text/css" })
-                            .text(webhook.styles)
-                            .appendTo("head");
+            if (Galaxy.config.enable_webhooks) {
+                // Load all webhooks with the type 'onload'
+                Webhooks.load({
+                    type: "onload",
+                    callback: function(webhooks) {
+                        webhooks.each(model => {
+                            var webhook = model.toJSON();
+                            if (webhook.activate && webhook.script) {
+                                Utils.appendScriptStyle(webhook);
+                            }
+                        });
                     }
                 });
-            });
+            }
         } else {
             setTimeout(onloadWebhooks, 100);
         }

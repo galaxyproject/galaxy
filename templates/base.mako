@@ -61,6 +61,7 @@
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
         'libs/require',
+        'bundled/extended.bundled'
     )}
 
     <script type="text/javascript">

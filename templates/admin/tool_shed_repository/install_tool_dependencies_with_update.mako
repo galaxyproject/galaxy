@@ -1,6 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/admin/tool_shed_repository/repository_actions_menu.mako" import="*" />
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <% import os %>
 
@@ -31,7 +32,7 @@ ${render_galaxy_repository_actions( repository )}
                     <div class="form-row">
                         <label>Handle tool dependencies?</label>
                         <% disabled = trans.app.config.tool_dependency_dir is None %>
-                        ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+                        ${render_checkbox(install_tool_dependencies_check_box, disabled=disabled)}
                         <div class="toolParamHelp" style="clear: both;">
                             %if disabled:
                                 Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.

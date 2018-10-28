@@ -8,7 +8,8 @@ import string
 import subprocess
 import threading
 import time
-from Queue import (
+
+from six.moves.queue import (
     Empty,
     Queue
 )
@@ -16,6 +17,7 @@ from Queue import (
 import galaxy.jobs
 from galaxy import model
 from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.output_checker import DETECTED_JOB_STATE
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
@@ -64,6 +66,7 @@ class BaseJobRunner(object):
         """Start the job runner
         """
         self.app = app
+        self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
         self.sa_session = app.model.context
         self.nworkers = nworkers
         runner_param_specs = self.DEFAULT_SPECS.copy()
@@ -325,7 +328,9 @@ class BaseJobRunner(object):
         for env in envs:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
+        tmp_dir_creation_statement = job_wrapper.tmp_dir_creation_statement
         options = dict(
+            tmp_dir_creation_statement=tmp_dir_creation_statement,
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
             galaxy_virtual_env=job_wrapper.galaxy_virtual_env,
@@ -351,6 +356,7 @@ class BaseJobRunner(object):
         compute_working_directory=None,
         compute_tool_directory=None,
         compute_job_directory=None,
+        compute_tmp_directory=None,
     ):
         job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
@@ -362,13 +368,17 @@ class BaseJobRunner(object):
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir
 
+        if not compute_tmp_directory:
+            compute_tmp_directory = job_wrapper.tmp_directory()
+
         tool = job_wrapper.tool
         from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
+        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
         job_info = containers.JobInfo(
             compute_working_directory,
             compute_tool_directory,
             compute_job_directory,
+            compute_tmp_directory,
             job_directory_type,
         )
 
@@ -406,6 +416,23 @@ class BaseJobRunner(object):
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
+    def _finish_or_resubmit_job(self, job_state, stdout, stderr, exit_code):
+        job = job_state.job_wrapper.get_job()
+        check_output_detected_state = job_state.job_wrapper.check_tool_output(stdout, stderr, exit_code, job)
+        # Flush with streams...
+        self.sa_session.add(job)
+        self.sa_session.flush()
+        if check_output_detected_state != DETECTED_JOB_STATE.OK:
+            job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
+            if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
+                job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+            job_state.runner_state = job_runner_state
+            self._handle_runner_state('failure', job_state)
+            # Was resubmitted or something - I think we are done with it.
+            if job_state.runner_state_handled:
+                return
+        job_state.job_wrapper.finish(stdout, stderr, exit_code, check_output_detected_state=check_output_detected_state)
+
 
 class JobState(object):
     """
@@ -417,13 +444,18 @@ class JobState(object):
         JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER='Job output not returned from cluster',
         UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
-        OUTPUT_SIZE_LIMIT='output_size_limit'
+        OUTPUT_SIZE_LIMIT='output_size_limit',
+        TOOL_DETECT_ERROR='tool_detected',  # job runner interaction worked fine but the tool indicated error
     )
 
     def __init__(self, job_wrapper, job_destination):
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
+
+        self.redact_email_in_job_name = True
+        if self.job_wrapper:
+            self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
 
         self.cleanup_file_attributes = ['job_file', 'output_file', 'error_file', 'exit_code_file']
 
@@ -438,9 +470,9 @@ class JobState(object):
             job_name = 'g%s' % id_tag
             if self.job_wrapper.tool.old_id:
                 job_name += '_%s' % self.job_wrapper.tool.old_id
-            if self.job_wrapper.user:
+            if not self.redact_email_in_job_name and self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join(map(lambda x: x if x in (string.ascii_letters + string.digits + '_') else '_', job_name))
+            self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
 
     @staticmethod
     def default_job_file(files_dir, id_tag):
@@ -521,7 +553,7 @@ class AsynchronousJobState(JobState):
             self.cleanup_file_attributes.append(attribute)
 
 
-class AsynchronousJobRunner(Monitors, BaseJobRunner):
+class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
     a distributed resource manager).  Provides general methods for having a
     thread to monitor the state of asynchronous jobs and submitting those jobs
@@ -656,7 +688,7 @@ class AsynchronousJobRunner(Monitors, BaseJobRunner):
             job_state.cleanup()
 
         try:
-            job_state.job_wrapper.finish(stdout, stderr, exit_code)
+            self._finish_or_resubmit_job(job_state, stdout, stderr, exit_code)
         except Exception:
             log.exception("(%s/%s) Job wrapper finish method failed" % (galaxy_id_tag, external_job_id))
             job_state.job_wrapper.fail("Unable to finish job", exception=True)

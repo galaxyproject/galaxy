@@ -1,3 +1,6 @@
+import json
+import unittest
+
 from base import api
 from base.populators import (
     DatasetCollectionPopulator,
@@ -13,7 +16,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         super(LibrariesApiTestCase, self).setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
-        self.library_populator = LibraryPopulator(self)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def test_create(self):
         data = dict(name="CreateTestLibrary")
@@ -31,7 +34,7 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         self._assert_has_keys(library, "deleted")
         assert library["deleted"] is True
         # Test undeleting
-        data = dict(undelete='true')
+        data = dict(undelete=True)
         create_response = self._delete("libraries/%s" % library["id"], data=data, admin=True)
         library = create_response.json()
         self._assert_status_code_is(create_response, 200)
@@ -94,6 +97,95 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
         self._assert_has_keys(library_dataset, "peek", "data_type")
         assert library_dataset["peek"].find("create_test") >= 0
         assert library_dataset["file_ext"] == "txt", library_dataset["file_ext"]
+
+    def test_fetch_upload_to_folder(self):
+        history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
+        items = [{"src": "files", "dbkey": "hg19", "info": "my cool bed"}]
+        targets = [{
+            "destination": destination,
+            "items": items
+        }]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(self.test_data_resolver.get_filename("4.bed"))},
+        }
+        self.dataset_populator.fetch(payload)
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["file_size"] == 61, dataset
+        assert dataset["genome_build"] == "hg19", dataset
+        assert dataset["misc_info"] == "my cool bed", dataset
+        assert dataset["file_ext"] == "bed", dataset
+
+    def test_fetch_zip_to_folder(self):
+        history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
+        bed_test_data_path = self.test_data_resolver.get_filename("4.bed.zip")
+        targets = [{
+            "destination": destination,
+            "items_from": "archive", "src": "files",
+        }]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(bed_test_data_path)}
+        }
+        self.dataset_populator.fetch(payload)
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["file_size"] == 61, dataset
+
+    def test_fetch_single_url_to_folder(self):
+        history_id, library, destination = self._setup_fetch_to_folder("single_url")
+        items = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"}]
+        targets = [{
+            "destination": destination,
+            "items": items
+        }]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": json.dumps(targets),
+        }
+        self.dataset_populator.fetch(payload)
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["file_size"] == 61, dataset
+
+    def test_fetch_url_archive_to_folder(self):
+        history_id, library, destination = self._setup_fetch_to_folder("single_url")
+        targets = [{
+            "destination": destination,
+            "items_from": "archive",
+            "src": "url",
+            "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed.zip",
+        }]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": json.dumps(targets),
+        }
+        self.dataset_populator.fetch(payload)
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
+        assert dataset["file_size"] == 61, dataset
+
+    @unittest.skip  # reference URLs changed, checksums now invalid.
+    def test_fetch_bagit_archive_to_folder(self):
+        history_id, library, destination = self._setup_fetch_to_folder("bagit_archive")
+        example_bag_path = self.test_data_resolver.get_filename("example-bag.zip")
+        targets = [{
+            "destination": destination,
+            "items_from": "bagit_archive", "src": "files",
+        }]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": json.dumps(targets),
+            "__files": {"files_0|file_data": open(example_bag_path)},
+        }
+        self.dataset_populator.fetch(payload)
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/README.txt")
+        assert dataset["file_size"] == 66, dataset
+
+        dataset = self.library_populator.get_library_contents_with_path(library["id"], "/bdbag-profile.json")
+        assert dataset["file_size"] == 723, dataset
+
+    def _setup_fetch_to_folder(self, test_name):
+        return self.library_populator.setup_fetch_to_folder(test_name)
 
     def test_create_dataset_in_folder(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")

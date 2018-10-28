@@ -11,7 +11,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from distutils.version import LooseVersion
+
+import packaging.version
 
 CHUNK_SIZE = 2 ** 20  # 1mb
 
@@ -74,21 +75,20 @@ def __main__():
         stderr_target = sys.stderr
     else:
         stderr_target = sys.stdout
-    stderr = open(unsorted_stderr_filename)
-    while True:
-        chunk = stderr.read(CHUNK_SIZE)
-        if chunk:
-            stderr_target.write(chunk)
-        else:
-            break
-    stderr.close()
+    with open(unsorted_stderr_filename) as stderr:
+        while True:
+            chunk = stderr.read(CHUNK_SIZE)
+            if chunk:
+                stderr_target.write(chunk)
+            else:
+                break
 
     # sort sam, so indexing will not fail
     sorted_stderr_filename = os.path.join(tmp_dir, 'sorted.stderr')
     sorting_prefix = os.path.join(tmp_dir, 'sorted_bam')
     # samtools changed sort command arguments (starting from version 1.3)
-    samtools_version = LooseVersion(_get_samtools_version())
-    if samtools_version < LooseVersion('1.0'):
+    samtools_version = packaging.version.parse(_get_samtools_version())
+    if samtools_version < packaging.version.parse('1.0'):
         sort_args = ['-o', unsorted_bam_filename, sorting_prefix]
     else:
         sort_args = ['-T', sorting_prefix, unsorted_bam_filename]
@@ -102,14 +102,13 @@ def __main__():
         stderr_target = sys.stderr
     else:
         stderr_target = sys.stdout
-    stderr = open(sorted_stderr_filename)
-    while True:
-        chunk = stderr.read(CHUNK_SIZE)
-        if chunk:
-            stderr_target.write(chunk)
-        else:
-            break
-    stderr.close()
+    with open(sorted_stderr_filename) as stderr:
+        while True:
+            chunk = stderr.read(CHUNK_SIZE)
+            if chunk:
+                stderr_target.write(chunk)
+            else:
+                break
 
     cleanup_before_exit(tmp_dir)
 

@@ -1,27 +1,27 @@
 #!/usr/bin/env python
 from __future__ import print_function
 
+import argparse
 import logging
 import os
 import shutil
 import sys
 import time
 from datetime import datetime, timedelta
-from optparse import OptionParser
 from time import strftime
 
 import sqlalchemy as sa
-from six.moves import configparser
 from sqlalchemy import and_, false, null, true
 from sqlalchemy.orm import eagerload
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
 
 import galaxy.config
-import galaxy.model.mapping
+from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import ObjectNotFound
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import unicodify
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 log = logging.getLogger()
 log.setLevel(logging.INFO)
@@ -68,68 +68,65 @@ def main():
     Another way of stating it is: LibraryDatasetDatasetAssociation objects map LibraryDataset objects to Dataset objects,
     and Dataset objects may be mapped to History objects via HistoryDatasetAssociation objects.
     """
-    usage = "usage: %prog [options] galaxy.ini"
-    parser = OptionParser(usage=usage)
-    parser.add_option("-d", "--days", dest="days", action="store", type="int", help="number of days (60)", default=60)
-    parser.add_option("-r", "--remove_from_disk", action="store_true", dest="remove_from_disk", help="remove datasets from disk when purged", default=False)
-    parser.add_option("-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False)
-    parser.add_option("-f", "--force_retry", action="store_true", dest="force_retry", help="performs the requested actions, but ignores whether it might have been done before. Useful when -r wasn't used, but should have been", default=False)
-    parser.add_option("-1", "--delete_userless_histories", action="store_true", dest="delete_userless_histories", default=False, help="delete userless histories and datasets")
-    parser.add_option("-2", "--purge_histories", action="store_true", dest="purge_histories", default=False, help="purge deleted histories")
-    parser.add_option("-3", "--purge_datasets", action="store_true", dest="purge_datasets", default=False, help="purge deleted datasets")
-    parser.add_option("-4", "--purge_libraries", action="store_true", dest="purge_libraries", default=False, help="purge deleted libraries")
-    parser.add_option("-5", "--purge_folders", action="store_true", dest="purge_folders", default=False, help="purge deleted library folders")
-    parser.add_option("-6", "--delete_datasets", action="store_true", dest="delete_datasets", default=False, help="mark deletable datasets as deleted and purge associated dataset instances")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('legacy_config', metavar='CONFIG', type=str,
+                        default=None,
+                        nargs='?',
+                        help='config file (legacy, use --config instead)')
+    parser.add_argument("-d", "--days", dest="days", action="store", type=int, help="number of days (60)", default=60)
+    parser.add_argument("-r", "--remove_from_disk", action="store_true", dest="remove_from_disk", help="remove datasets from disk when purged", default=False)
+    parser.add_argument("-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False)
+    parser.add_argument("-f", "--force_retry", action="store_true", dest="force_retry", help="performs the requested actions, but ignores whether it might have been done before. Useful when -r wasn't used, but should have been", default=False)
+    parser.add_argument("-1", "--delete_userless_histories", action="store_true", dest="delete_userless_histories", default=False, help="delete userless histories and datasets")
+    parser.add_argument("-2", "--purge_histories", action="store_true", dest="purge_histories", default=False, help="purge deleted histories")
+    parser.add_argument("-3", "--purge_datasets", action="store_true", dest="purge_datasets", default=False, help="purge deleted datasets")
+    parser.add_argument("-4", "--purge_libraries", action="store_true", dest="purge_libraries", default=False, help="purge deleted libraries")
+    parser.add_argument("-5", "--purge_folders", action="store_true", dest="purge_folders", default=False, help="purge deleted library folders")
+    parser.add_argument("-6", "--delete_datasets", action="store_true", dest="delete_datasets", default=False, help="mark deletable datasets as deleted and purge associated dataset instances")
+    populate_config_args(parser)
 
-    (options, args) = parser.parse_args()
-    if len(args) != 1:
-        parser.print_help()
-        sys.exit()
-    ini_file = args[0]
+    args = parser.parse_args()
+    config_override = None
+    if args.legacy_config:
+        config_override = args.legacy_config
 
-    if not (options.purge_folders ^ options.delete_userless_histories ^
-            options.purge_libraries ^ options.purge_histories ^
-            options.purge_datasets ^ options.delete_datasets):
+    if not (args.purge_folders ^ args.delete_userless_histories ^
+            args.purge_libraries ^ args.purge_histories ^
+            args.purge_datasets ^ args.delete_datasets):
         parser.print_help()
         sys.exit(0)
 
-    if options.remove_from_disk and options.info_only:
+    if args.remove_from_disk and args.info_only:
         parser.error("remove_from_disk and info_only are mutually exclusive")
 
-    config_parser = configparser.ConfigParser({'here': os.getcwd()})
-    config_parser.read(ini_file)
-    config_dict = {}
-    for key, value in config_parser.items("app:main"):
-        config_dict[key] = value
-
-    config = galaxy.config.Configuration(**config_dict)
-
+    app_properties = app_properties_from_args(args, legacy_config_override=config_override)
+    config = galaxy.config.Configuration(**app_properties)
     app = CleanupDatasetsApplication(config)
-    cutoff_time = datetime.utcnow() - timedelta(days=options.days)
+    cutoff_time = datetime.utcnow() - timedelta(days=args.days)
     now = strftime("%Y-%m-%d %H:%M:%S")
 
     print("##########################################")
-    print("\n# %s - Handling stuff older than %i days" % (now, options.days))
+    print("\n# %s - Handling stuff older than %i days" % (now, args.days))
 
-    if options.info_only:
+    if args.info_only:
         print("# Displaying info only ( --info_only )\n")
-    elif options.remove_from_disk:
+    elif args.remove_from_disk:
         print("Datasets will be removed from disk.\n")
     else:
         print("Datasets will NOT be removed from disk.\n")
 
-    if options.delete_userless_histories:
-        delete_userless_histories(app, cutoff_time, info_only=options.info_only, force_retry=options.force_retry)
-    elif options.purge_histories:
-        purge_histories(app, cutoff_time, options.remove_from_disk, info_only=options.info_only, force_retry=options.force_retry)
-    elif options.purge_datasets:
-        purge_datasets(app, cutoff_time, options.remove_from_disk, info_only=options.info_only, force_retry=options.force_retry)
-    elif options.purge_libraries:
-        purge_libraries(app, cutoff_time, options.remove_from_disk, info_only=options.info_only, force_retry=options.force_retry)
-    elif options.purge_folders:
-        purge_folders(app, cutoff_time, options.remove_from_disk, info_only=options.info_only, force_retry=options.force_retry)
-    elif options.delete_datasets:
-        delete_datasets(app, cutoff_time, options.remove_from_disk, info_only=options.info_only, force_retry=options.force_retry)
+    if args.delete_userless_histories:
+        delete_userless_histories(app, cutoff_time, info_only=args.info_only, force_retry=args.force_retry)
+    elif args.purge_histories:
+        purge_histories(app, cutoff_time, args.remove_from_disk, info_only=args.info_only, force_retry=args.force_retry)
+    elif args.purge_datasets:
+        purge_datasets(app, cutoff_time, args.remove_from_disk, info_only=args.info_only, force_retry=args.force_retry)
+    elif args.purge_libraries:
+        purge_libraries(app, cutoff_time, args.remove_from_disk, info_only=args.info_only, force_retry=args.force_retry)
+    elif args.purge_folders:
+        purge_folders(app, cutoff_time, args.remove_from_disk, info_only=args.info_only, force_retry=args.force_retry)
+    elif args.delete_datasets:
+        delete_datasets(app, cutoff_time, args.remove_from_disk, info_only=args.info_only, force_retry=args.force_retry)
 
     app.shutdown()
     sys.exit(0)
@@ -340,7 +337,7 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
         deleted_dataset_count += 1
         for dataset_instance in dataset.history_associations + dataset.library_associations:
             # Mark each associated HDA as deleted
-            _purge_dataset_instance(dataset_instance, app, remove_from_disk, include_children=True, info_only=info_only, is_deletable=True)
+            _purge_dataset_instance(dataset_instance, app, remove_from_disk, info_only=info_only, is_deletable=True)
             deleted_instance_count += 1
     stop = time.time()
     print("Examined %d datasets, marked %d datasets and %d dataset instances (HDA) as deleted" % (len(skip), deleted_dataset_count, deleted_instance_count))
@@ -381,13 +378,13 @@ def purge_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_re
     print("##########################################")
 
 
-def _purge_dataset_instance(dataset_instance, app, remove_from_disk, include_children=True, info_only=False, is_deletable=False):
+def _purge_dataset_instance(dataset_instance, app, remove_from_disk, info_only=False, is_deletable=False):
     # A dataset_instance is either a HDA or an LDDA.  Purging a dataset instance marks the instance as deleted,
     # and marks the associated dataset as deleted if it is not associated with another active DatsetInstance.
     if not info_only:
         print("Marking as deleted: %s id %d (for dataset id %d)" %
               (dataset_instance.__class__.__name__, dataset_instance.id, dataset_instance.dataset.id))
-        dataset_instance.mark_deleted(include_children=include_children)
+        dataset_instance.mark_deleted()
         dataset_instance.clear_associated_files()
         app.sa_session.add(dataset_instance)
         app.sa_session.flush()
@@ -403,10 +400,6 @@ def _purge_dataset_instance(dataset_instance, app, remove_from_disk, include_chi
             print("Not deleting dataset ", dataset_instance.dataset.id, " (will be possibly deleted without 'info_only' mode)")
         else:
             print("Not deleting dataset %d (shared between multiple histories/libraries, at least one not deleted)" % dataset_instance.dataset.id)
-    # need to purge children here
-    if include_children:
-        for child in dataset_instance.children:
-            _purge_dataset_instance(child, app, remove_from_disk, include_children=include_children, info_only=info_only)
 
 
 def _dataset_is_deletable(dataset):
@@ -525,11 +518,12 @@ def _purge_folder(folder, app, remove_from_disk, info_only=False):
 class CleanupDatasetsApplication(object):
     """Encapsulates the state of a Universe application"""
     def __init__(self, config):
-        if config.database_connection is False:
-            config.database_connection = "sqlite:///%s?isolation_level=IMMEDIATE" % config.database
         self.object_store = build_object_store_from_config(config)
         # Setup the database engine and ORM
-        self.model = galaxy.model.mapping.init(config.file_path, config.database_connection, engine_options={}, create_tables=False, object_store=self.object_store)
+        self.model = galaxy.config.init_models_from_config(config, object_store=self.object_store)
+        registry = Registry()
+        registry.load_datatypes()
+        galaxy.model.set_datatypes_registry(registry)
 
     @property
     def sa_session(self):

@@ -24,12 +24,18 @@ class SchemaLoader(object):
     @property
     def raw_document_loader(self):
         ensure_cwltool_available()
-        return schema_salad.ref_resolver.Loader({"cwl": "https://w3id.org/cwl/cwl#", "id": "@id"})
+        from cwltool.load_tool import jobloaderctx
+        return schema_salad.ref_resolver.Loader(jobloaderctx)
 
     def raw_process_reference(self, path):
         uri = "file://" + os.path.abspath(path)
         fileuri, _ = urldefrag(uri)
         return RawProcessReference(self.raw_document_loader.fetch(fileuri), uri)
+
+    def raw_process_reference_for_object(self, object, uri=None):
+        if uri is None:
+            uri = "galaxy://"
+        return RawProcessReference(object, uri)
 
     def process_definition(self, raw_reference):
         document_loader, avsc_names, process_object, metadata, uri = load_tool.validate_document(

@@ -19,7 +19,8 @@ var Node = Backbone.Model.extend({
     },
     removeWorkflowOutput: function(outputName) {
         while (this.isWorkflowOutput(outputName)) {
-            this.workflow_outputs.splice(this.getWorkflowOutput(outputName), 1);
+            const target = this.getWorkflowOutput(outputName);
+            this.workflow_outputs.splice(_.indexOf(this.workflow_outputs, target), 1);
         }
     },
     addWorkflowOutput: function(outputName, label) {
@@ -145,7 +146,7 @@ var Node = Backbone.Model.extend({
             data: {
                 type: this.type,
                 tool_id: this.content_id,
-                inputs: this.tool_state
+                tool_state: this.tool_state
             },
             success: data => {
                 var newData = Object.assign({}, data, copiedData);
@@ -179,13 +180,19 @@ var Node = Backbone.Model.extend({
         // Remove active class
         $(element).removeClass("toolForm-active");
     },
+    set_tool_version: function() {
+        if (this.type === "tool" && this.config_form) {
+            this.tool_version = this.config_form.version;
+            this.content_id = this.config_form.id;
+        }
+    },
     init_field_data: function(data) {
         if (data.type) {
             this.type = data.type;
         }
         this.name = data.name;
         this.config_form = data.config_form;
-        this.tool_version = this.config_form && this.config_form.version;
+        this.set_tool_version();
         this.tool_state = data.tool_state;
         this.errors = data.errors;
         this.tooltip = data.tooltip ? data.tooltip : "";
@@ -263,7 +270,7 @@ var Node = Backbone.Model.extend({
         });
         this.tool_state = data.tool_state;
         this.config_form = data.config_form;
-        this.tool_version = this.config_form && this.config_form.version;
+        this.set_tool_version();
         this.errors = data.errors;
         this.annotation = data.annotation;
         this.label = data.label;

@@ -1,6 +1,7 @@
 import _l from "utils/localization";
 import * as _ from "libs/underscore";
-import * as d3 from "libs/d3";
+import * as d3 from "d3";
+import { event as currentEvent } from "d3";
 import visualization from "viz/visualization";
 import mod_utils from "utils/utils";
 import config from "utils/config";
@@ -193,7 +194,6 @@ var CircsterView = Backbone.View.extend({
         tracks_start_radii = d3.range(radius_start, min_dimension / 2, dataset_arc_height + track_gap);
 
         // Map from track start to bounds.
-        var self = this;
         return _.map(tracks_start_radii, radius => [radius, radius + dataset_arc_height]);
     },
 
@@ -221,8 +221,8 @@ var CircsterView = Backbone.View.extend({
             .call(
                 d3.behavior.zoom().on("zoom", () => {
                     // Do zoom, drag.
-                    var scale = d3.event.scale;
-                    svg.attr("transform", `translate(${d3.event.translate}) scale(${scale})`);
+                    var scale = currentEvent.scale;
+                    svg.attr("transform", `translate(${currentEvent.translate}) scale(${scale})`);
 
                     // Propagate scale changes to views.
                     if (self.scale !== scale) {
@@ -628,7 +628,6 @@ var CircsterTrackView = Backbone.View.extend({
      * default data bounds.
      */
     _update_data_bounds: function(new_bounds) {
-        var old_bounds = this.data_bounds;
         this.data_bounds =
             new_bounds || this.get_data_bounds(this.track.get("data_manager").get_genome_wide_data(this.genome));
         this._transition_chrom_data();
@@ -962,7 +961,6 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     _data_bounds_ticks_fn: function() {
         // Closure vars.
         var self = this;
-        visibleChroms = 0;
 
         // Return function for locating ticks based on chrom arc data.
         return (
@@ -1101,9 +1099,9 @@ var Circster = Backbone.View.extend({
         // load css
         mod_utils.cssLoadFile("static/style/circster.css");
         // -- Configure visualization --
-        var genome = new visualization.Genome(galaxy_config.app.genome);
+        var genome = new visualization.Genome(window.galaxy_config.app.genome);
 
-        var vis = new visualization.GenomeVisualization(galaxy_config.app.viz_config);
+        var vis = new visualization.GenomeVisualization(window.galaxy_config.app.viz_config);
 
         // Add Circster-specific config options.
         vis.get("config").add([
@@ -1143,7 +1141,7 @@ var Circster = Backbone.View.extend({
 
         // setup title
         $("#center .unified-panel-header-inner").append(
-            `${galaxy_config.app.viz_config.title} ${galaxy_config.app.viz_config.dbkey}`
+            `${window.galaxy_config.app.viz_config.title} ${window.galaxy_config.app.viz_config.dbkey}`
         );
 
         // setup menu
@@ -1213,7 +1211,7 @@ var Circster = Backbone.View.extend({
                     icon_class: "cross-circle",
                     title: _l("Close"),
                     on_click: function() {
-                        window.location = `${Galaxy.root}visualizations/list`;
+                        window.top.location = `${Galaxy.root}visualizations/list`;
                     }
                 }
             ],

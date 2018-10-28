@@ -4,6 +4,10 @@ API for updating Galaxy Pages
 import logging
 
 from galaxy import exceptions
+from galaxy.managers.pages import (
+    PageManager,
+    PageSerializer
+)
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
@@ -17,6 +21,14 @@ log = logging.getLogger(__name__)
 
 
 class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotations, SharableMixin):
+    """
+    RESTful controller for interactions with pages.
+    """
+
+    def __init__(self, app):
+        super(PagesController, self).__init__(app)
+        self.manager = PageManager(app)
+        self.serializer = PageSerializer(app)
 
     @expose_api
     def index(self, trans, deleted=False, **kwd):
@@ -81,13 +93,13 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
             raise exceptions.DuplicatedSlugException("Page slug must be unique")
 
         content = payload.get("content", "")
-        content = sanitize_html(content, 'utf-8', 'text/html')
+        content = sanitize_html(content)
 
         # Create the new stored page
         page = trans.app.model.Page()
         page.title = payload['title']
         page.slug = payload['slug']
-        page_annotation = sanitize_html(payload.get("annotation", ""), 'utf-8', 'text/html')
+        page_annotation = sanitize_html(payload.get("annotation", ""))
         self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
         page.user = user
         # And the first (empty) page revision

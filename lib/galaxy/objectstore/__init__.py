@@ -10,6 +10,7 @@ import os
 import random
 import shutil
 import threading
+import time
 from xml.etree import ElementTree
 
 try:
@@ -358,7 +359,7 @@ class DiskObjectStore(ObjectStore):
 
     def empty(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by checking file size on disk."""
-        return os.path.getsize(self.get_filename(obj, **kwargs)) == 0
+        return self.size(obj, **kwargs) == 0
 
     def size(self, obj, **kwargs):
         """Override `ObjectStore`'s stub by return file size on disk.
@@ -367,7 +368,14 @@ class DiskObjectStore(ObjectStore):
         """
         if self.exists(obj, **kwargs):
             try:
-                return os.path.getsize(self.get_filename(obj, **kwargs))
+                filepath = self.get_filename(obj, **kwargs)
+                for _ in range(0, 2):
+                    size = os.path.getsize(filepath)
+                    if size != 0:
+                        break
+                    # May be legitimately 0, or there may be an issue with the FS / kernel, so we try again
+                    time.sleep(0.01)
+                return size
             except OSError:
                 return 0
         else:
@@ -425,7 +433,9 @@ class DiskObjectStore(ObjectStore):
                 if preserve_symlinks and os.path.islink(file_name):
                     force_symlink(os.readlink(file_name), self.get_filename(obj, **kwargs))
                 else:
-                    shutil.copy(file_name, self.get_filename(obj, **kwargs))
+                    path = self.get_filename(obj, **kwargs)
+                    shutil.copy(file_name, path)
+                    umask_fix_perms(path, self.config.umask, 0o666)
             except IOError as ex:
                 log.critical('Error copying %s to %s: %s' % (file_name, self._get_filename(obj, **kwargs), ex))
                 raise ex
@@ -648,21 +658,22 @@ class DistributedObjectStore(NestedObjectStore):
             return default
 
     def __get_store_id_for(self, obj, **kwargs):
-        if obj.object_store_id is not None and obj.object_store_id in self.backends:
-            return obj.object_store_id
-        else:
-            # if this instance has been switched from a non-distributed to a
-            # distributed object store, or if the object's store id is invalid,
-            # try to locate the object
-            log.warning('The backend object store ID (%s) for %s object with ID %s is invalid'
-                        % (obj.object_store_id, obj.__class__.__name__, obj.id))
-            for id, store in self.backends.items():
-                if store.exists(obj, **kwargs):
-                    log.warning('%s object with ID %s found in backend object store with ID %s'
-                                % (obj.__class__.__name__, obj.id, id))
-                    obj.object_store_id = id
-                    _create_object_in_session(obj)
-                    return id
+        if obj.object_store_id is not None:
+            if obj.object_store_id in self.backends:
+                return obj.object_store_id
+            else:
+                log.warning('The backend object store ID (%s) for %s object with ID %s is invalid'
+                            % (obj.object_store_id, obj.__class__.__name__, obj.id))
+        # if this instance has been switched from a non-distributed to a
+        # distributed object store, or if the object's store id is invalid,
+        # try to locate the object
+        for id, store in self.backends.items():
+            if store.exists(obj, **kwargs):
+                log.warning('%s object with ID %s found in backend object store with ID %s'
+                            % (obj.__class__.__name__, obj.id, id))
+                obj.object_store_id = id
+                _create_object_in_session(obj)
+                return id
         return None
 
 
@@ -723,6 +734,9 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     elif store == 's3':
         from .s3 import S3ObjectStore
         return S3ObjectStore(config=config, config_xml=config_xml)
+    elif store == 'cloud':
+        from .cloud import Cloud
+        return Cloud(config=config, config_xml=config_xml)
     elif store == 'swift':
         from .s3 import SwiftObjectStore
         return SwiftObjectStore(config=config, config_xml=config_xml)

@@ -6,60 +6,47 @@ returns the disk path of a dataset.
 """
 from __future__ import print_function
 
+import argparse
 import os
 import sys
-from ConfigParser import ConfigParser
-from optparse import OptionParser
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, 'lib'))
 
-from galaxy.model import mapping
+import galaxy.config
+from galaxy.util.script import app_properties_from_args, populate_config_args
 from galaxy.web import security
 
-default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'config/galaxy.ini'))
+parser = argparse.ArgumentParser()
+populate_config_args(parser)
+parser.add_argument('-e', '--encode-id', dest='encode_id', help='Encode an ID')
+parser.add_argument('-d', '--decode-id', dest='decode_id', help='Decode an ID')
+parser.add_argument('--hda', dest='hda_id', help='Display HistoryDatasetAssociation info')
+parser.add_argument('--ldda', dest='ldda_id', help='Display LibraryDatasetDatasetAssociation info')
+args = parser.parse_args()
 
-parser = OptionParser()
-parser.add_option('-c', '--config', dest='config', help='Path to Galaxy config file (config/galaxy.ini)', default=default_config)
-parser.add_option('-e', '--encode-id', dest='encode_id', help='Encode an ID')
-parser.add_option('-d', '--decode-id', dest='decode_id', help='Decode an ID')
-parser.add_option('--hda', dest='hda_id', help='Display HistoryDatasetAssociation info')
-parser.add_option('--ldda', dest='ldda_id', help='Display LibraryDatasetDatasetAssociation info')
-(options, args) = parser.parse_args()
+app_properties = app_properties_from_args(args)
+config = galaxy.config.Configuration(**app_properties)
+helper = security.SecurityHelper(id_secret=app_properties.get('id_secret'))
+model = galaxy.config.init_models_from_config(config)
 
-try:
-    assert options.encode_id or options.decode_id or options.hda_id or options.ldda_id
-except Exception:
-    parser.print_help()
-    sys.exit(1)
+if args.encode_id:
+    print('Encoded "%s": %s' % (args.encode_id, helper.encode_id(args.encode_id)))
 
-options.config = os.path.abspath(options.config)
+if args.decode_id:
+    print('Decoded "%s": %s' % (args.decode_id, helper.decode_id(args.decode_id)))
 
-config = ConfigParser(dict(file_path='database/files',
-                           id_secret='USING THE DEFAULT IS NOT SECURE!',
-                           database_connection='sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE'))
-config.read(options.config)
-
-helper = security.SecurityHelper(id_secret=config.get('app:main', 'id_secret'))
-model = mapping.init(config.get('app:main', 'file_path'), config.get('app:main', 'database_connection'), create_tables=False)
-
-if options.encode_id:
-    print('Encoded "%s": %s' % (options.encode_id, helper.encode_id(options.encode_id)))
-
-if options.decode_id:
-    print('Decoded "%s": %s' % (options.decode_id, helper.decode_id(options.decode_id)))
-
-if options.hda_id:
+if args.hda_id:
     try:
-        hda_id = int(options.hda_id)
+        hda_id = int(args.hda_id)
     except Exception:
-        hda_id = int(helper.decode_id(options.hda_id))
+        hda_id = int(helper.decode_id(args.hda_id))
     hda = model.context.current.query(model.HistoryDatasetAssociation).get(hda_id)
     print('HDA "%s" is Dataset "%s" at: %s' % (hda.id, hda.dataset.id, hda.file_name))
 
-if options.ldda_id:
+if args.ldda_id:
     try:
-        ldda_id = int(options.ldda_id)
+        ldda_id = int(args.ldda_id)
     except Exception:
-        ldda_id = int(helper.decode_id(options.ldda_id))
+        ldda_id = int(helper.decode_id(args.ldda_id))
     ldda = model.context.current.query(model.HistoryDatasetAssociation).get(ldda_id)
     print('LDDA "%s" is Dataset "%s" at: %s' % (ldda.id, ldda.dataset.id, ldda.file_name))

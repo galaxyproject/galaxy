@@ -3,7 +3,6 @@ API Controller providing Galaxy Webhooks
 """
 import imp
 import logging
-import random
 
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as \
     expose_api_anonymous_and_sessionless
@@ -17,7 +16,7 @@ class WebhooksController(BaseAPIController):
         super(WebhooksController, self).__init__(app)
 
     @expose_api_anonymous_and_sessionless
-    def get_all(self, trans, **kwd):
+    def all_webhooks(self, trans, **kwd):
         """
         *GET /api/webhooks/
         Returns all webhooks
@@ -28,35 +27,9 @@ class WebhooksController(BaseAPIController):
         ]
 
     @expose_api_anonymous_and_sessionless
-    def get_random(self, trans, webhook_type, **kwd):
+    def webhook_data(self, trans, webhook_id, **kwd):
         """
-        *GET /api/webhooks/{webhook_type}
-        Returns a random webhook for a given type
-        """
-        webhooks = [
-            webhook
-            for webhook in self.app.webhooks_registry.webhooks
-            if webhook_type in webhook.type and
-            webhook.activate is True
-        ]
-        return random.choice(webhooks).to_dict() if webhooks else {}
-
-    @expose_api_anonymous_and_sessionless
-    def get_all_by_type(self, trans, webhook_type, **kwd):
-        """
-        *GET /api/webhooks/{webhook_type}/all
-        Returns all webhooks for a given type
-        """
-        return [
-            webhook.to_dict()
-            for webhook in self.app.webhooks_registry.webhooks
-            if webhook_type in webhook.type
-        ]
-
-    @expose_api_anonymous_and_sessionless
-    def get_data(self, trans, webhook_name, **kwd):
-        """
-        *GET /api/webhooks/{webhook_name}/get_data/{params}
+        *GET /api/webhooks/{webhook_id}/data/{params}
         Returns the result of executing helper function
         """
         params = {}
@@ -64,14 +37,12 @@ class WebhooksController(BaseAPIController):
         for key, value in kwd.items():
             params[key] = value
 
-        webhook = [
+        webhook = (
             webhook
             for webhook in self.app.webhooks_registry.webhooks
-            if webhook.name == webhook_name
-        ]
+            if webhook.id == webhook_id
+        ).next()
 
-        return imp.load_source('helper', webhook[0].helper).main(
-            trans,
-            webhook[0],
-            params,
-        ) if webhook and webhook[0].helper != '' else {}
+        return imp.load_source(webhook.path, webhook.helper).main(
+            trans, webhook, params,
+        ) if webhook and webhook.helper != '' else {}

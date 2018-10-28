@@ -41,7 +41,7 @@ following (and more):
 Configuration
 ----------------------------
 
-- Configure ``config/reports.yml`` in the same manner as your main galaxy instance (i.e., same database connection, but different port). This is a uwsgi YAML configuration file and should contain a reports section with app-specific configuration (options described below).
+- Configure ``config/reports.yml`` in the same manner as your main galaxy instance (i.e., same database connection, but different web server port). This is a uWSGI YAML configuration file and should contain a ``reports`` section with app-specific configuration (options described below).
 
     - The default port for the reports application is ``9001``, and like Galaxy it only binds to localhost by default.
     - ``database_connection`` should match the value used in your Galaxy configuration

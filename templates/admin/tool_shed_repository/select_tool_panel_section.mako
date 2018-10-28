@@ -3,6 +3,7 @@
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_dependencies_section" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_readme_section" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -149,7 +150,7 @@ or manually satisfy the dependencies listed below.</p>
                 %>
                 <div class="form-row">
                     <label>Shed tool configuration file:</label>
-                    ${shed_tool_conf_select_field.get_html()}
+                    ${render_select(shed_tool_conf_select_field)}
                     <div class="toolParamHelp" style="clear: both;">
                         ${select_help|h}
                     </div>
@@ -169,7 +170,7 @@ or manually satisfy the dependencies listed below.</p>
                 </div>
                 <div class="form-row">
                     <label>Select existing tool panel section:</label>
-                    ${tool_panel_section_select_field.get_html()}
+                    ${render_select(tool_panel_section_select_field)}
                     <div class="toolParamHelp" style="clear: both;">
                         Choose an existing section in your tool panel to contain the installed tools (optional).
                     </div>

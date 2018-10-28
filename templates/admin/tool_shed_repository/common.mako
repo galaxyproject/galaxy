@@ -1,3 +1,4 @@
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
 <%def name="browse_files(title_text, directory_path)">
@@ -148,7 +149,7 @@
                 %else:
                     <label>Handle repository dependencies?</label>
                 %endif
-                ${repository_dependencies_check_box.get_html()}
+                ${render_checkbox(repository_dependencies_check_box)}
                 <div class="toolParamHelp" style="clear: both;">
                     %if export:
                         Select to export the following additional repositories that are required by this repository.
@@ -185,7 +186,7 @@
             <div class="form-row">
                 <label>When available, install Tool Shed managed tool dependencies?</label>
                 <% disabled = trans.app.config.tool_dependency_dir is None %>
-                ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+                ${render_checkbox(install_tool_dependencies_check_box, disabled=disabled)}
                 <div class="toolParamHelp" style="clear: both;">
                     %if disabled:
                         Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
@@ -221,7 +222,7 @@
     %if requirements_status and install_resolver_dependencies_check_box:
     <div class="form-row">
         <label>When available, install <a href="https://docs.galaxyproject.org/en/master/admin/conda_faq.html" target="_blank">Conda</a> managed tool dependencies?</label>
-        ${install_resolver_dependencies_check_box.get_html()}
+        ${render_checkbox(install_resolver_dependencies_check_box)}
         <div class="toolParamHelp" style="clear: both;">
             Select to automatically install tool dependencies via Conda.
         </div>

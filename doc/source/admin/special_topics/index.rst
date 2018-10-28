@@ -5,8 +5,6 @@ Special Topics
 .. toctree::
    :maxdepth: 2
 
-   nginx
-   apache
    ftp
    interactive_environments
    mulled_containers
@@ -16,3 +14,4 @@ Special Topics
    webhooks
    performance_tracking
    bug_reports
+   gdpr_compliance

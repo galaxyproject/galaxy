@@ -35,9 +35,7 @@ $.extend(Workflow.prototype, {
         }
         if (!this.canLabelOutputWith(toLabel)) {
             Toastr.warning(
-                `Workflow contains duplicate workflow output labels ${
-                    toLabel
-                }. This must be fixed before it can be saved.`
+                `Workflow contains duplicate workflow output labels ${toLabel}. This must be fixed before it can be saved.`
             );
         }
         if (toLabel) {
@@ -64,6 +62,7 @@ $.extend(Workflow.prototype, {
     add_node: function(node) {
         node.id = this.id_counter;
         node.element.attr("id", `wf-node-step-${node.id}`);
+        node.element.attr("node-label", node.label);
         this.id_counter++;
         this.nodes[node.id] = node;
         this.has_changes = true;
@@ -231,6 +230,8 @@ $.extend(Workflow.prototype, {
                 });
             }
             node.id = parseInt(step.id) + offset;
+            node.element.attr("id", `wf-node-step-${node.id}`);
+            node.element.attr("node-label", step.label);
             wf.nodes[node.id] = node;
             max_id = Math.max(max_id, parseInt(id) + offset);
             // For older workflows, it's possible to have HideDataset PJAs, but not WorkflowOutputs.

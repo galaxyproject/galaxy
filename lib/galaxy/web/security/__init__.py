@@ -1,43 +1,21 @@
+import codecs
 import collections
 import logging
-import os
-import os.path
 
 from Crypto.Cipher import Blowfish
-from Crypto.Util import number
-from Crypto.Util.randpool import RandomPool
+from Crypto.Random import get_random_bytes
 
 import galaxy.exceptions
-from galaxy.util import smart_str
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 
 log = logging.getLogger(__name__)
 
 MAXIMUM_ID_SECRET_BITS = 448
 MAXIMUM_ID_SECRET_LENGTH = MAXIMUM_ID_SECRET_BITS / 8
 KIND_TOO_LONG_MESSAGE = "Galaxy coding error, keep encryption 'kinds' smaller to utilize more bites of randomness from id_secret values."
-
-
-if os.path.exists("/dev/urandom"):
-    # We have urandom, use it as the source of random data
-    random_fd = os.open("/dev/urandom", os.O_RDONLY)
-
-    def get_random_bytes(nbytes):
-        value = os.read(random_fd, nbytes)
-        # Normally we should get as much as we need
-        if len(value) == nbytes:
-            return value.encode("hex")
-        # If we don't, keep reading (this is slow and should never happen)
-        while len(value) < nbytes:
-            value += os.read(random_fd, nbytes - len(value))
-        return value.encode("hex")
-else:
-    def get_random_bytes(nbytes):
-        nbits = nbytes * 8
-        random_pool = RandomPool(1064)
-        while random_pool.entropy < nbits:
-            random_pool.add_event()
-        random_pool.stir()
-        return str(number.getRandomNumber(nbits, random_pool.get_bytes))
 
 
 class SecurityHelper(object):
@@ -54,12 +32,12 @@ class SecurityHelper(object):
         if obj_id is None:
             raise galaxy.exceptions.MalformedId("Attempted to encode None id")
         id_cipher = self.__id_cipher(kind)
-        # Convert to string
-        s = str(obj_id)
+        # Convert to bytes
+        s = smart_str(obj_id)
         # Pad to a multiple of 8 with leading "!"
-        s = ("!" * (8 - len(s) % 8)) + s
+        s = (b"!" * (8 - len(s) % 8)) + s
         # Encrypt
-        return id_cipher.encrypt(s).encode('hex')
+        return unicodify(codecs.encode(id_cipher.encrypt(s), 'hex'))
 
     def encode_dict_ids(self, a_dict, kind=None, skip_startswith=None):
         """
@@ -98,27 +76,29 @@ class SecurityHelper(object):
                 if recursive and isinstance(v, dict):
                     rval[k] = self.encode_all_ids(v, recursive)
                 elif recursive and isinstance(v, list):
-                    rval[k] = map(lambda el: self.encode_all_ids(el, True), v)
+                    rval[k] = [self.encode_all_ids(el, True) for el in v]
         return rval
 
     def decode_id(self, obj_id, kind=None):
         id_cipher = self.__id_cipher(kind)
-        return int(id_cipher.decrypt(obj_id.decode('hex')).lstrip("!"))
+        return int(unicodify(id_cipher.decrypt(codecs.decode(obj_id, 'hex'))).lstrip("!"))
 
     def encode_guid(self, session_key):
         # Session keys are strings
         # Pad to a multiple of 8 with leading "!"
-        s = ("!" * (8 - len(session_key) % 8)) + session_key
+        session_key = smart_str(session_key)
+        s = (b"!" * (8 - len(session_key) % 8)) + session_key
         # Encrypt
-        return self.id_cipher.encrypt(s).encode('hex')
+        return codecs.encode(self.id_cipher.encrypt(s), 'hex')
 
     def decode_guid(self, session_key):
         # Session keys are strings
-        return self.id_cipher.decrypt(session_key.decode('hex')).lstrip("!")
+        decoded_session_key = codecs.decode(session_key, 'hex')
+        return unicodify(self.id_cipher.decrypt(decoded_session_key)).lstrip('!')
 
     def get_new_guid(self):
         # Generate a unique, high entropy 128 bit random number
-        return get_random_bytes(16)
+        return unicodify(codecs.encode(get_random_bytes(16), 'hex'))
 
     def __id_cipher(self, kind):
         if not kind:

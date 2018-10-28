@@ -69,14 +69,19 @@ var TerminalView = Backbone.View.extend({
 var BaseInputTerminalView = TerminalView.extend({
     className: "terminal input-terminal",
     initialize: function(options) {
-        var node = options.node;
-        var input = options.input;
-        var name = input.name;
-        var terminal = this.terminalForInput(input);
+        const node = options.node;
+        const input = options.input;
+        const name = input.name;
+        const id = `node-${node.cid}-input-${name}`;
+        const terminal = this.terminalForInput(input);
         if (!terminal.multiple) {
             this.setupMappingView(terminal);
         }
         this.el.terminal = terminal;
+        this.$el.attr("input-name", name);
+        this.$el.attr("id", id);
+        this.id = id;
+
         terminal.node = node;
         terminal.name = name;
         node.input_terminals[name] = terminal;
@@ -171,12 +176,15 @@ var InputCollectionTerminalView = BaseInputTerminalView.extend({
 var BaseOutputTerminalView = TerminalView.extend({
     className: "terminal output-terminal",
     initialize: function(options) {
-        var node = options.node;
-        var output = options.output;
-        var name = output.name;
-        var terminal = this.terminalForOutput(output);
+        const node = options.node;
+        const output = options.output;
+        const name = output.name;
+        const id = `node-${node.cid}-output-${name}`;
+        const terminal = this.terminalForOutput(output);
         this.setupMappingView(terminal);
         this.el.terminal = terminal;
+        this.$el.attr("output-name", name);
+        this.$el.attr("id", id);
         terminal.node = node;
         terminal.name = name;
         node.output_terminals[name] = terminal;

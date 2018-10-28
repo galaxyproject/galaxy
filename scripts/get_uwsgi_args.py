@@ -20,9 +20,10 @@ ALIASES = {
     'virtualenv': ('home', 'venv', 'pyhome'),
     'pythonpath': ('python-path', 'pp'),
     'http': ('httprouter', 'socket', 'uwsgi-socket', 'suwsgi-socket', 'ssl-socket'),
+    'module': ('mount',),   # mount is not actually an alias for module, but we don't want to set module if mount is set
 }
 DEFAULT_ARGS = {
-    '_all_': ('virtualenv', 'pythonpath', 'master', 'threads', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
+    '_all_': ('pythonpath', 'threads', 'buffer-size', 'http', 'static-map', 'die-on-term', 'hook-master-start', 'enable-threads'),
     'galaxy': ('py-call-osafterfork',),
     'reports': (),
     'tool_shed': (),
@@ -77,7 +78,6 @@ def __add_config_file_arg(args, config_file, app):
             __add_arg(args, ext, config_file)
             if has_logging:
                 __add_arg(args, 'paste-logger', True)
-    __add_arg(args, 'module', 'galaxy.webapps.{app}.buildapp:uwsgi_app()'.format(app=app))
 
 
 def _get_uwsgi_args(cliargs, kwargs):
@@ -85,12 +85,10 @@ def _get_uwsgi_args(cliargs, kwargs):
     config_file = cliargs.config_file or kwargs.get('__file__')
     uwsgi_kwargs = load_app_properties(config_file=config_file, config_section='uwsgi')
     args = []
-    __add_config_file_arg(args, config_file, cliargs.app)
     defaults = {
-        'virtualenv': os.environ.get('VIRTUAL_ENV', './.venv'),
         'pythonpath': 'lib',
-        'master': True,
         'threads': '4',
+        'buffer-size': '16384',  # https://github.com/galaxyproject/galaxy/issues/1530
         'http': 'localhost:{port}'.format(port=DEFAULT_PORTS[cliargs.app]),
         'static-map': ('/static/style={here}/static/style/blue'.format(here=os.getcwd()),
                        '/static={here}/static'.format(here=os.getcwd())),
@@ -100,6 +98,12 @@ def _get_uwsgi_args(cliargs, kwargs):
                               'unix_signal:15 gracefully_kill_them_all'),
         'py-call-osafterfork': True,
     }
+    __add_config_file_arg(args, config_file, cliargs.app)
+    if not __arg_set('module', uwsgi_kwargs):
+        __add_arg(args, 'module', 'galaxy.webapps.{app}.buildapp:uwsgi_app()'.format(app=cliargs.app))
+    # only include virtualenv if it's set/exists, otherwise this breaks conda-env'd Galaxy
+    if not __arg_set('virtualenv', uwsgi_kwargs) and ('VIRTUAL_ENV' in os.environ or os.path.exists('.venv')):
+        __add_arg(args, 'virtualenv', os.environ.get('VIRTUAL_ENV', '.venv'))
     for arg in DEFAULT_ARGS['_all_'] + DEFAULT_ARGS[cliargs.app]:
         if not __arg_set(arg, uwsgi_kwargs):
             __add_arg(args, arg, defaults[arg])

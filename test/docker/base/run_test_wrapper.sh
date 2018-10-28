@@ -3,20 +3,8 @@ set -e
 
 if [ ! -z "$USE_SELENIUM" ];
 then
-    sudo -E -u seluser /opt/bin/entry_point.sh &
-    # TODO:...
-    while ! curl -s "http://localhost:4444";
-    do
-        printf "."
-        sleep 4;
-    done;
-    GALAXY_TEST_SELENIUM_REMOTE=1
-    GALAXY_TEST_SELENIUM_REMOTE_HOST=localhost
-    GALAXY_TEST_SELENIUM_REMOTE_PORT=4444
-
-    export GALAXY_TEST_SELENIUM_REMOTE
-    export GALAXY_TEST_SELENIUM_REMOTE_HOST
-    export GALAXY_TEST_SELENIUM_REMOTE_PORT
+    # Start Selenium.
+    sudo -H -E -u seluser /opt/bin/entry_point.sh &
 fi
 
 echo "Deleting galaxy user - it may not exist and this is fine."
@@ -75,6 +63,22 @@ sudo -E -u "#${GALAXY_TEST_UID}" GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GA
 echo "Upgrading tool shed database... $TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION"
 sudo -E -u "#${GALAXY_TEST_UID}" TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI" sh manage_db.sh upgrade tool_shed
 
+# Ensure Selenium is running before starting tests.
+if [ ! -z "$USE_SELENIUM" ];
+then
+    while ! curl -s "http://localhost:4444";
+    do
+        printf "."
+        sleep 4;
+    done;
+    GALAXY_TEST_SELENIUM_REMOTE=1
+    GALAXY_TEST_SELENIUM_REMOTE_HOST=localhost
+    GALAXY_TEST_SELENIUM_REMOTE_PORT=4444
+
+    export GALAXY_TEST_SELENIUM_REMOTE
+    export GALAXY_TEST_SELENIUM_REMOTE_HOST
+    export GALAXY_TEST_SELENIUM_REMOTE_PORT
+fi
 
 if [ -z "$GALAXY_NO_TESTS" ];
 then
@@ -83,8 +87,16 @@ else
     GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION="$GALAXY_TEST_DBURI"
     TOOL_SHED_CONFIG_OVERRIDE_DATABASE_CONNECTION="$TOOL_SHED_TEST_DBURI"
     GALAXY_CONFIG_MASTER_API_KEY=${GALAXY_CONFIG_MASTER_API_KEY:-"testmasterapikey"}
+    # This is a path baked inside of Docker it seems, so we should support both ini and
+    # YAML for some time.
     GALAXY_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/galaxy.ini.sample}
+    if [ ! -f "$GALAXY_CONFIG_FILE" ]; then
+        GALAXY_CONFIG_FILE=config/galaxy.yml.sample
+    fi
     TOOL_SHED_CONFIG_FILE=${GALAXY_CONFIG_FILE:-config/tool_shed.ini.sample}
+    if [ ! -f "$TOOL_SHED_CONFIG_FILE" ]; then
+        TOOL_SHED_CONFIG_FILE=config/tool_shed.yml.sample
+    fi
     GALAXY_CONFIG_CHECK_MIGRATE_TOOLS=false
     GALAXY_CONFIG_JOB_CONFIG_FILE=${GALAXY_CONFIG_JOB_CONFIG_FILE:-config/job_conf.xml.sample}
     GALAXY_CONFIG_FILE_PATH=${GALAXY_CONFIG_FILE_PATH:-/tmp/gx1}

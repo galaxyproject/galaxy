@@ -14,8 +14,8 @@ import os.path
 import struct
 import sys
 import tempfile
+from collections import Mapping
 from math import isnan
-from UserDict import DictMixin
 
 import bx.wiggle
 from bx.binned_array import BinnedArray, FileBinnedArray
@@ -68,7 +68,7 @@ class PositionalScoresOnDisk:
         return "%s ]" % (repr)
 
 
-class FileBinnedArrayDir(DictMixin):
+class FileBinnedArrayDir(Mapping):
     """
     Adapter that makes a directory of FileBinnedArray files look like
     a regular dict of BinnedArray objects.
@@ -84,11 +84,18 @@ class FileBinnedArrayDir(DictMixin):
         else:
             fname = os.path.join(self.dir, "%s.ba" % key)
             if os.path.exists(fname):
-                value = FileBinnedArray(open(fname))
+                with open(fname) as fh:
+                    value = FileBinnedArray(fh)
                 self.cache[key] = value
         if value is None:
             raise KeyError("File does not exist: " + fname)
         return value
+
+    def __iter__(self):
+        raise NotImplementedError()
+
+    def __len__(self):
+        raise NotImplementedError()
 
 
 def stop_err(msg):

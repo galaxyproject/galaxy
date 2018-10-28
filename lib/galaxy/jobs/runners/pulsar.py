@@ -8,9 +8,9 @@ import errno
 import logging
 import os
 import subprocess
-from distutils.version import LooseVersion
 from time import sleep
 
+import packaging.version
 import pulsar.core
 import yaml
 from pulsar.client import (
@@ -53,8 +53,8 @@ __all__ = (
 )
 
 MINIMUM_PULSAR_VERSIONS = {
-    '_default_': LooseVersion("0.7.0.dev3"),
-    'remote_metadata': LooseVersion("0.8.0"),
+    '_default_': packaging.version.parse("0.7.0.dev3"),
+    'remote_metadata': packaging.version.parse("0.8.0"),
 }
 
 NO_REMOTE_GALAXY_FOR_METADATA_MESSAGE = "Pulsar misconfiguration - Pulsar client configured to set metadata remotely, but remote Pulsar isn't properly configured with a galaxy_home directory."
@@ -251,7 +251,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_state = self._update_job_state_for_status(job_state, status)
         return job_state
 
-    def _update_job_state_for_status(self, job_state, pulsar_status):
+    def _update_job_state_for_status(self, job_state, pulsar_status, full_status=None):
         if pulsar_status == "complete":
             self.mark_as_finished(job_state)
             return None
@@ -261,7 +261,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             else:
                 message = LOST_REMOTE_ERROR
             if not job_state.job_wrapper.get_job().finished:
-                self.fail_job(job_state, message)
+                self.fail_job(job_state, message, full_status=full_status)
             return None
         if pulsar_status == "running" and not job_state.running:
             job_state.running = True
@@ -517,10 +517,15 @@ class PulsarJobRunner(AsynchronousJobRunner):
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
-    def fail_job(self, job_state, message=GENERIC_REMOTE_ERROR):
+    def fail_job(self, job_state, message=GENERIC_REMOTE_ERROR, full_status=None):
         """Seperated out so we can use the worker threads for it."""
         self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
-        job_state.job_wrapper.fail(getattr(job_state, "fail_message", message))
+        stdout = ""
+        stderr = ""
+        if full_status:
+            stdout = full_status.get("stdout", "")
+            stderr = full_status.get("stderr", "")
+        job_state.job_wrapper.fail(getattr(job_state, "fail_message", message), stdout=stdout, stderr=stderr)
 
     def check_pid(self, pid):
         try:
@@ -608,8 +613,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def check_job_config(remote_job_config, check_features=None):
         check_features = check_features or {}
         # 0.6.0 was newest Pulsar version that did not report it's version.
-        pulsar_version = LooseVersion(remote_job_config.get('pulsar_version', "0.6.0"))
-        needed_version = LooseVersion("0.0.0")
+        pulsar_version = packaging.version.parse(remote_job_config.get('pulsar_version', "0.6.0"))
+        needed_version = packaging.version.parse("0.0.0")
         log.info("pulsar_version is %s" % pulsar_version)
         for feature in list(check_features.keys()) + ['_default_']:
             if pulsar_version < MINIMUM_PULSAR_VERSIONS[feature]:
@@ -744,7 +749,7 @@ class PulsarMQJobRunner(PulsarJobRunner):
             job_id = full_status["job_id"]
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(job_id)
             job_state = self._job_state(job, job_wrapper)
-            self._update_job_state_for_status(job_state, full_status["status"])
+            self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
             log.exception("Failed to update Pulsar job status for job_id %s", job_id)
             raise
@@ -870,6 +875,16 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def tool_directory(self):
         return self._tool_dir
+
+    def home_directory(self):
+        # TODO: revisit and implement this, won't break anything working in the
+        # meantime.
+        return None
+
+    def tmp_directory(self):
+        # TODO: revisit and implement this, won't break anything working in the
+        # meantime.
+        return None
 
 
 class UnsupportedPulsarException(Exception):

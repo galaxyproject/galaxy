@@ -13,7 +13,7 @@ import random
 log = logging.getLogger(__name__)
 
 
-class ConfiguresHandlers:
+class ConfiguresHandlers(object):
 
     def _init_handlers(self, config_element):
         # Parse handlers

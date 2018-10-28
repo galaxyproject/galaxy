@@ -54,6 +54,7 @@
         ## TODO: remove when all libs are required directly in modules
         'bundled/libs.bundled',
         'libs/require',
+        'bundled/extended.bundled'
     )}
 
     <script type="text/javascript">
@@ -98,13 +99,13 @@
 
     %if self.has_left_panel:
         var lp = new panels.LeftPanel({ el: '#left' });
-        force_left_panel = function( x ) { lp.force_panel( x ) };
+        window.force_left_panel = function( x ) { lp.force_panel( x ) };
     %endif
 
     %if self.has_right_panel:
         var rp = new panels.RightPanel({ el: '#right' });
         window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-        force_right_panel = function( x ) { rp.force_panel( x ) };
+        window.force_right_panel = function( x ) { rp.force_panel( x ) };
     %endif
 
     %if t.webapp.name == 'galaxy' and app.config.ga_code:
@@ -137,7 +138,7 @@
         overlay_class = ""
     %>
 
-    <div id="top-modal" class="modal fade ${overlay_class}" ${display}>
+    <div id="top-modal" class="modal ${overlay_class}" ${display}>
         <div id="top-modal-backdrop" class="modal-backdrop fade ${overlay_class}" style="z-index: -1"></div>
         <div id="top-modal-dialog" class="modal-dialog">
             <div class="modal-content">
@@ -222,8 +223,8 @@
                 <div id="left">
                     ${self.left_panel()}
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse"></div>
-                        <div class="drag"></div>
+                        <div id="left-panel-collapse" class="panel-collapse"></div>
+                        <div id="left-panel-drag" class="drag"></div>
                     </div>
                 </div><!--end left-->
             %endif
@@ -234,8 +235,8 @@
                 <div id="right">
                     ${self.right_panel()}
                     <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></div>
-                        <div class="drag"></div>
+                        <div id="right-panel-collapse" class="panel-collapse right"></div>
+                        <div id="right-panel-drag" class="drag"></div>
                     </div>
                 </div><!--end right-->
             %endif

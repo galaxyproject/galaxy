@@ -278,6 +278,7 @@ class RepositoryReviewController(BaseUIController, ratings_util.ItemRatings):
                 # The star rating form field is a radio button list, so it will not be received if it was not clicked in the form.
                 # Due to this behavior, default the value to 0.
                 rating = 0
+                private = False
                 for k, v in kwd.items():
                     if k.startswith('%s%s' % (component_name, STRSEP)):
                         component_review_attr = k.replace('%s%s' % (component_name, STRSEP), '')

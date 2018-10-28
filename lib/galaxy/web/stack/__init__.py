@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import inspect
+import json
 import logging
 import os
 
@@ -14,10 +15,13 @@ try:
 except ImportError:
     uwsgi = None
 
+import yaml
 from six import string_types
 
+from galaxy.util import unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.facts import get_facts
+from galaxy.util.path import has_ext
 from galaxy.util.properties import nice_config_parser
 from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
 from .transport import ApplicationStackTransport, UWSGIFarmMessageTransport
@@ -72,6 +76,9 @@ class ApplicationStack(object):
         self.app = app
         self.config = config or (app and app.config)
         self.running = False
+
+    def log_startup(self):
+        log.info("Galaxy server instance '%s' is running" % self.app.config.server_name)
 
     def start(self):
         # TODO: with a stack config the pools could be parsed here
@@ -174,6 +181,64 @@ class UWSGIApplicationStack(MessageApplicationStack):
 
     postfork_functions = []
 
+    localhost_addrs = ('127.0.0.1', '[::1]')
+    bind_all_addrs = ('', '0.0.0.0', '[::]')
+
+    @staticmethod
+    def _get_config_file(confs, loader, section):
+        """uWSGI allows config merging, in which case the corresponding config file option will be a list.
+        """
+        conf = None
+        if isinstance(confs, list):
+            gconfs = [_ for _ in confs if os.path.exists(_) and section in loader(open(_))]
+            if len(gconfs) == 1:
+                conf = gconfs[0]
+            elif len(gconfs) == 0:
+                log.warning('Could not locate a config file containing a Galaxy config from: %s',
+                            ', '.join(confs))
+            else:
+                log.warning('Multiple config files contain Galaxy configs, merging is not supported: %s',
+                            ', '.join(gconfs))
+        else:
+            conf = confs
+        return conf
+
+    @staticmethod
+    def _socket_opt_to_str(opt, val):
+        try:
+            opt = unicodify(opt)
+            val = unicodify(val)
+            if val.startswith('='):
+                val = unicodify(uwsgi.opt.get('shared-socket', [])[int(val.split('=')[1])])
+            proto = opt if opt != 'socket' else 'uwsgi'
+            if proto == 'uwsgi' and ':' not in val:
+                return 'uwsgi://' + val
+            else:
+                proto = proto + '://'
+                host, port = val.rsplit(':', 1)
+                port = ':' + port.split(',', 1)[0]
+            if host in UWSGIApplicationStack.bind_all_addrs:
+                host = UWSGIApplicationStack.localhost_addrs[0]
+            return proto + host + port
+        except (IndexError, AttributeError):
+            return '%s %s' % (opt, val)
+
+    @staticmethod
+    def _socket_opts():
+        for opt in ('https', 'http', 'socket'):
+            if opt in uwsgi.opt:
+                val = uwsgi.opt[opt]
+                if isinstance(val, list):
+                    for v in val:
+                        yield (opt, v)
+                else:
+                    yield (opt, val)
+
+    @staticmethod
+    def _serving_on():
+        for opt, val in UWSGIApplicationStack._socket_opts():
+            yield UWSGIApplicationStack._socket_opt_to_str(opt, val)
+
     @classmethod
     def get_app_kwds(cls, config_section, app_name=None):
         kwds = {
@@ -181,21 +246,26 @@ class UWSGIApplicationStack(MessageApplicationStack):
             'config_section': config_section,
         }
         uwsgi_opt = uwsgi.opt
-        # check for --yaml or --json uWSGI config options first
-        config_file = uwsgi_opt.get("yaml") or uwsgi_opt.get("json")
-        # --ini and --ini-paste don't behave the same way, but this method will only be called by mules if the main
-        # application was loaded with --ini-paste, so we can make some assumptions, most notably, uWSGI does not have
-        # any way to set the app name when loading with paste.deploy:loadapp(), so hardcoding the alternate section
-        # name to `app:main` is fine.
-        if config_file is None and uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste"):
-            config_file = uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
-            parser = nice_config_parser(config_file)
-            if not parser.has_section(config_section) and parser.has_section('app:main'):
-                kwds['config_section'] = 'app:main'
+        config_file = None
         # check for --set galaxy_config_file=<path>, this overrides whatever config file uWSGI was loaded with (which
         # may not actually include a Galaxy config)
         if uwsgi_opt.get("galaxy_config_file"):
             config_file = uwsgi_opt.get("galaxy_config_file")
+        # check for --yaml or --json uWSGI config options next
+        if config_file is None:
+            config_file = (UWSGIApplicationStack._get_config_file(uwsgi_opt.get("yaml"), yaml.safe_load, config_section)
+                           or UWSGIApplicationStack._get_config_file(uwsgi_opt.get("json"), json.load, config_section))
+        # --ini and --ini-paste don't behave the same way, but this method will only be called by mules if the main
+        # application was loaded with --ini-paste, so we can make some assumptions, most notably, uWSGI does not have
+        # any way to set the app name when loading with paste.deploy:loadapp(), so hardcoding the alternate section
+        # name to `app:main` is fine.
+        has_ini_config = config_file is None and uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
+        has_ini_config = has_ini_config or (config_file and has_ext(config_file, "ini", aliases=True, ignore="sample"))
+        if has_ini_config:
+            config_file = config_file or uwsgi_opt.get("ini") or uwsgi_opt.get("ini-paste")
+            parser = nice_config_parser(config_file)
+            if not parser.has_section(config_section) and parser.has_section('app:main'):
+                kwds['config_section'] = 'app:main'
         kwds['config_file'] = config_file
         return kwds
 
@@ -266,6 +336,24 @@ class UWSGIApplicationStack(MessageApplicationStack):
         else:
             instance_id = uwsgi.mule_id()
         return instance_id
+
+    def log_startup(self):
+        msg = ["Galaxy server instance '%s' is running" % self.app.config.server_name]
+        # Log the next messages when the first worker finishes starting. This
+        # may not be the first to finish (so Galaxy could be serving already),
+        # but it's a good approximation and gives the correct root_pid below
+        # when there is no master process.
+        if not self._is_mule and self.instance_id == 1:
+            # We use the same text printed by Paste to not break scripts
+            # grepping for this line. Here root_pid is the same that gets
+            # written to file when using the --pidfile option of uwsgi
+            root_pid = uwsgi.masterpid() or os.getpid()
+            msg.append('Starting server in PID %d.' % root_pid)
+            for s in UWSGIApplicationStack._serving_on():
+                msg.append('serving on ' + s)
+            if len(msg) == 1:
+                msg.append('serving on unknown URL')
+        log.info('\n'.join(msg))
 
     def start(self):
         # Does a generalized `is_worker` attribute make sense? Hard to say w/o other stack paradigms.
@@ -370,8 +458,8 @@ def _do_uwsgi_postfork():
 
 
 def _mule_fixup():
-    import urllib2
-    urllib2._opener = None
+    from six.moves.urllib.request import install_opener
+    install_opener(None)
 
 
 if uwsgi:

@@ -4,12 +4,12 @@ Galaxy includes a report tool that is separate from the main process but which g
 
 ## Setup on localhost
 
-The report tool takes its configuration settings from a file called reports.ini, which is located in the config subdirectory of the Galaxy distribution.
+The report tool takes its configuration settings from a file called `reports.yml`, which is located in the ``config/` subdirectory of the Galaxy distribution.
 
 Configuring the reports for your local setup is a case of:
 
-* Making a copy of `reports.ini.sample` called `reports.ini`.
-* Editing the `database_connection` parameter to match the one in your `galaxy.ini` file
+* Making a copy of ``reports.yml.sample`` called `reports.yml`.
+* Editing the `database_connection` parameter to match the one in your `galaxy.yml` file
 * Optionally, editing the `port` parameter (by default the tool uses port 9001)
 
 You should also set the 'salt' parameter `session_secret` if you intend to expose the reports via the web proxy (see below).

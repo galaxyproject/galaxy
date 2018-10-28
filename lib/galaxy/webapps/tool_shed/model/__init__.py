@@ -27,7 +27,7 @@ class APIKeys(object):
     pass
 
 
-class User(object, Dictifiable):
+class User(Dictifiable):
     dict_collection_visible_keys = ['id', 'username']
     dict_element_visible_keys = ['id', 'username']
 
@@ -79,7 +79,7 @@ class PasswordResetToken(object):
         self.expiration_time = now() + timedelta(hours=24)
 
 
-class Group(object, Dictifiable):
+class Group(Dictifiable):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name']
 
@@ -88,7 +88,7 @@ class Group(object, Dictifiable):
         self.deleted = False
 
 
-class Role(object, Dictifiable):
+class Role(Dictifiable):
     dict_collection_visible_keys = ['id', 'name']
     dict_element_visible_keys = ['id', 'name', 'description', 'type']
     private_id = None
@@ -163,7 +163,7 @@ class GalaxySession(object):
         self.last_action = last_action or datetime.now()
 
 
-class Repository(object, Dictifiable):
+class Repository(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'user_id', 'private', 'deleted',
                                     'times_downloaded', 'deprecated']
     dict_element_visible_keys = ['id', 'name', 'type', 'remote_repository_url', 'homepage_url', 'description', 'long_description', 'user_id', 'private',
@@ -308,7 +308,7 @@ class Repository(object, Dictifiable):
         return rval
 
 
-class RepositoryMetadata(object, Dictifiable):
+class RepositoryMetadata(Dictifiable):
     dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'missing_test_components',
                                     'has_repository_dependencies', 'includes_datatypes', 'includes_tools', 'includes_tool_dependencies',
                                     'includes_tools_for_display_in_tool_panel', 'includes_workflows']
@@ -351,7 +351,7 @@ class RepositoryMetadata(object, Dictifiable):
         return []
 
 
-class RepositoryReview(object, Dictifiable):
+class RepositoryReview(Dictifiable):
     dict_collection_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     dict_element_visible_keys = ['id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes')
@@ -364,7 +364,7 @@ class RepositoryReview(object, Dictifiable):
         self.deleted = deleted
 
 
-class ComponentReview(object, Dictifiable):
+class ComponentReview(Dictifiable):
     dict_collection_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     dict_element_visible_keys = ['id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted']
     approved_states = Bunch(NO='no', YES='yes', NA='not_applicable')
@@ -406,7 +406,7 @@ class RepositoryRatingAssociation(ItemRatingAssociation):
         self.repository = repository
 
 
-class Category(object, Dictifiable):
+class Category(Dictifiable):
     dict_collection_visible_keys = ['id', 'name', 'description', 'deleted']
     dict_element_visible_keys = ['id', 'name', 'description', 'deleted']
 

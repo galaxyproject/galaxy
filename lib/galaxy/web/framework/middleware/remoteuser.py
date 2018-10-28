@@ -192,7 +192,7 @@ class RemoteUser(object):
             return self.app(environ, start_response)
         else:
             log.debug("Unable to identify user.  %s not found" % self.remote_user_header)
-            for k, v in environ.iteritems():
+            for k, v in environ.items():
                 log.debug("%s = %s", k, v)
 
             title = "Access to Galaxy is denied"

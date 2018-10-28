@@ -3,24 +3,21 @@ import _l from "utils/localization";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import Tabs from "mvc/ui/ui-tabs";
+import UploadUtils from "mvc/upload/upload-utils";
 import UploadButton from "mvc/upload/upload-button";
 import UploadViewDefault from "mvc/upload/default/default-view";
 import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
+import UploadViewRuleBased from "mvc/upload/collection/rules-input-view";
+
 export default Backbone.View.extend({
     options: {
-        nginx_upload_path: "",
         ftp_upload_site: "n/a",
-        default_genome: "?",
-        default_extension: "auto",
+        default_genome: UploadUtils.DEFAULT_GENOME,
+        default_extension: UploadUtils.DEFAULT_EXTENSION,
         height: 500,
         width: 900,
-        auto: {
-            id: "auto",
-            text: "Auto-detect",
-            description:
-                "This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed."
-        }
+        auto: UploadUtils.AUTO_EXTENSION
     },
 
     // contains all available dataset extensions/types
@@ -30,17 +27,16 @@ export default Backbone.View.extend({
     list_genomes: [],
 
     initialize: function(options) {
-        var self = this;
         this.options = Utils.merge(options, this.options);
 
         // create view for upload/progress button
         this.ui_button = new UploadButton.View({
-            onclick: function(e) {
+            onclick: e => {
                 e.preventDefault();
-                self.show();
+                this.show();
             },
-            onunload: function() {
-                var percentage = self.ui_button.model.get("percentage", 0);
+            onunload: () => {
+                var percentage = this.ui_button.model.get("percentage", 0);
                 if (percentage > 0 && percentage < 100) {
                     return "Several uploads are queued.";
                 }
@@ -51,51 +47,18 @@ export default Backbone.View.extend({
         this.setElement(this.ui_button.$el);
 
         // load extensions
-        var self = this;
-        Utils.get({
-            url: `${Galaxy.root}api/datatypes?extension_only=False`,
-            success: function(datatypes) {
-                for (var key in datatypes) {
-                    self.list_extensions.push({
-                        id: datatypes[key].extension,
-                        text: datatypes[key].extension,
-                        description: datatypes[key].description,
-                        description_url: datatypes[key].description_url,
-                        composite_files: datatypes[key].composite_files
-                    });
-                }
-                self.list_extensions.sort((a, b) => {
-                    var a_text = a.text && a.text.toLowerCase();
-                    var b_text = b.text && b.text.toLowerCase();
-                    return a_text > b_text ? 1 : a_text < b_text ? -1 : 0;
-                });
-                if (!self.options.datatypes_disable_auto) {
-                    self.list_extensions.unshift(self.options.auto);
-                }
-            }
-        });
+        UploadUtils.getUploadDatatypes(
+            list_extensions => {
+                this.list_extensions = list_extensions;
+            },
+            this.options.datatypes_disable_auto,
+            this.options.auto
+        );
 
         // load genomes
-        Utils.get({
-            url: `${Galaxy.root}api/genomes`,
-            success: function(genomes) {
-                for (var key in genomes) {
-                    self.list_genomes.push({
-                        id: genomes[key][1],
-                        text: genomes[key][0]
-                    });
-                }
-                self.list_genomes.sort((a, b) => {
-                    if (a.id == self.options.default_genome) {
-                        return -1;
-                    }
-                    if (b.id == self.options.default_genome) {
-                        return 1;
-                    }
-                    return a.text > b.text ? 1 : a.text < b.text ? -1 : 0;
-                });
-            }
-        });
+        UploadUtils.getUploadGenomes(list_genomes => {
+            this.list_genomes = list_genomes;
+        }, this.default_genome);
     },
 
     /** Show/hide upload dialog */
@@ -127,6 +90,12 @@ export default Backbone.View.extend({
                 id: "collection",
                 title: _l("Collection"),
                 $el: this.collection_view.$el
+            });
+            this.rule_based_view = new UploadViewRuleBased(this);
+            this.tabs.add({
+                id: "rule-based",
+                title: _l("Rule-based"),
+                $el: this.rule_based_view.$el
             });
             this.modal = new Modal.View({
                 title: _l("Download from web or upload from disk"),
@@ -170,7 +139,9 @@ export default Backbone.View.extend({
             var inputs = {
                 file_count: items.length,
                 dbkey: items[0].get("genome", "?"),
-                file_type: items[0].get("extension", "auto")
+                // sometimes extension set to "" in automated testing after first upload of
+                // a session. https://github.com/galaxyproject/galaxy/issues/5169
+                file_type: items[0].get("extension") || "auto"
             };
             for (var index in items) {
                 var it = items[index];

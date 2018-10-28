@@ -24,12 +24,12 @@ FILL_CHAR = '-'
 PASSWORD_MIN_LEN = 6
 
 
-def validate_email(trans, email, user=None, check_dup=True):
+def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
     """
     Validates the email format, also checks whether the domain is blacklisted in the disposable domains configuration.
     """
     message = ''
-    if user and user.email == email:
+    if (user and user.email == email) or (email == "" and allow_empty):
         return message
     if not(VALID_EMAIL_RE.match(email)):
         message = "The format of the email address is not correct."

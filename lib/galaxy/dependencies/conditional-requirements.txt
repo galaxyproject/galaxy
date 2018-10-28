@@ -1,7 +1,7 @@
 # These dependencies are only required when certain config options are set
-psycopg2==2.6.1
+psycopg2-binary==2.7.4
 WebError==0.10.3
-Pygments==2.0.2
+Pygments==2.2.0
 python-openid
 MySQL-python
 fluent-logger
@@ -9,10 +9,12 @@ raven
 pbs_python
 drmaa
 statsd
-graphitesend
+docker
 azure-storage==0.32.0
 # PyRods not in PyPI
 python-ldap==2.4.44
+python-pam
+cloudbridge==0.3.3
 
 # Chronos client
 chronos-python==0.38.0

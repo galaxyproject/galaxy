@@ -27,7 +27,7 @@ from galaxy.util.expressions import ExpressionContext
 log = logging.getLogger(__name__)
 
 
-class Group(object, Dictifiable):
+class Group(Dictifiable):
 
     dict_collection_visible_keys = ['name', 'type']
 
@@ -92,7 +92,8 @@ class Repeat(Group):
             if '__index__' in d:
                 rval_dict['__index__'] = d['__index__']
             for input in self.inputs.values():
-                rval_dict[input.name] = input.value_to_basic(d[input.name], app)
+                if input.name in d:
+                    rval_dict[input.name] = input.value_to_basic(d[input.name], app)
             rval.append(rval_dict)
         return rval
 
@@ -160,7 +161,8 @@ class Section(Group):
     def value_to_basic(self, value, app):
         rval = {}
         for input in self.inputs.values():
-            rval[input.name] = input.value_to_basic(value[input.name], app)
+            if input.name in value:  # parameter might be absent in unverified workflow
+                rval[input.name] = input.value_to_basic(value[input.name], app)
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
@@ -214,7 +216,10 @@ class UploadDataset(Group):
         if dataset_name is None:
             filenames = list()
             for composite_file in context.get('files', []):
-                filenames.append(composite_file.get('file_data', {}).get('filename', ''))
+                if not composite_file.get('ftp_files', ''):
+                    filenames.append(composite_file.get('file_data', {}).get('filename', ''))
+                else:
+                    filenames.append(composite_file.get('ftp_files', [])[0])
             dataset_name = os.path.commonprefix(filenames).rstrip('.') or None
         if dataset_name is None:
             dataset_name = 'Uploaded Composite Dataset (%s)' % self.get_file_type(context)
@@ -279,24 +284,29 @@ class UploadDataset(Group):
             if '__index__' in d:
                 rval_dict['__index__'] = d['__index__']
             for input in self.inputs.values():
-                rval_dict[input.name] = input.value_to_basic(d[input.name], app)
+                if input.name in d:
+                    rval_dict[input.name] = input.value_to_basic(d[input.name], app)
             rval.append(rval_dict)
         return rval
 
     def value_from_basic(self, value, app, ignore_errors=False):
         rval = []
         for i, d in enumerate(value):
-            rval_dict = {}
-            # If the special __index__ key is not set, create it (for backward
-            # compatibility)
-            rval_dict['__index__'] = d.get('__index__', i)
-            # Restore child inputs
-            for input in self.inputs.values():
-                if ignore_errors and input.name not in d:  # this wasn't tested
-                    rval_dict[input.name] = input.get_initial_value(None, d)
-                else:
-                    rval_dict[input.name] = input.value_from_basic(d[input.name], app, ignore_errors)
-            rval.append(rval_dict)
+            try:
+                rval_dict = {}
+                # If the special __index__ key is not set, create it (for backward
+                # compatibility)
+                rval_dict['__index__'] = d.get('__index__', i)
+                # Restore child inputs
+                for input in self.inputs.values():
+                    if ignore_errors and input.name not in d:  # this wasn't tested
+                        rval_dict[input.name] = input.get_initial_value(None, d)
+                    else:
+                        rval_dict[input.name] = input.value_from_basic(d[input.name], app, ignore_errors)
+                rval.append(rval_dict)
+            except Exception as e:
+                if not ignore_errors:
+                    raise e
         return rval
 
     def get_file_count(self, trans, context):
@@ -338,7 +348,7 @@ class UploadDataset(Group):
         def get_url_paste_urls_or_filename(group_incoming, override_name=None, override_info=None):
             url_paste_file = group_incoming.get('url_paste', None)
             if url_paste_file is not None:
-                url_paste = open(url_paste_file, 'r').read(1024)
+                url_paste = open(url_paste_file, 'r').read()
 
                 def start_of_url(content):
                     start_of_url_paste = content.lstrip()[0:8].lower()
@@ -562,7 +572,7 @@ class UploadDataset(Group):
                         if meta_name in metadata_name_substition_default_dict:
                             meta_value = sanitize_for_filename(meta_value, default=metadata_name_substition_default_dict[meta_name])
                         dataset.metadata[meta_name] = meta_value
-            dataset.precreated_name = dataset.name = self.get_composite_dataset_name(context)
+            dataset.name = self.get_composite_dataset_name(context)
             if dataset.datatype.composite_type == 'auto_primary_file':
                 # replace sniff here with just creating an empty file
                 temp_name = sniff.stream_to_file(StringIO(d_type.generate_primary_file(dataset)), prefix='upload_auto_primary_file')
@@ -693,7 +703,7 @@ class Conditional(Group):
         return cond_dict
 
 
-class ConditionalWhen(object, Dictifiable):
+class ConditionalWhen(Dictifiable):
     dict_collection_visible_keys = ['value']
 
     def __init__(self):

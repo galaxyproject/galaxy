@@ -1,13 +1,18 @@
 <?xml version="1.0"?>
-<tool name="GenomeSpace Importer" id="genomespace_importer" require_login="False" version="0.0.5">
+<tool name="GenomeSpace Importer" id="genomespace_importer" require_login="True" version="0.0.6">
     <description> - receive data from GenomeSpace</description>
+    <environment_variables>
+        <environment_variable name="GS_TOKEN">
+            #set $token = $__user__.preferences.get('genomespace_token', None)
+            #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID.')
+            $token
+        </environment_variable>
+    </environment_variables>
     <command><![CDATA[
         python $__tool_directory__/genomespace_importer.py
         #set $input_file = $URL.split('^')[0] if '^' in $URL else $URL
-        #set $token = $URL.split('^')[1] if '^' in $URL and $URL.split('^')[1] else $__user__.preferences.get('genomespace_token', None)
 
         #assert $input_file, Exception('You must select a valid input file.')
-        #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID.')
         --json_parameter_file '${output_file1}'
         --galaxy_root $__root_dir__
         --data_conf $__datatypes_config__
@@ -21,11 +26,9 @@
         <data format="auto" name="output_file1" />
     </outputs>
     <help>
-This tool allows you to import data from GenomeSpace. Click the Browse button to select a file to import. The tool will automatically
-fetch your GenomeSpace token when you select a file from the import dialog.
+This tool allows you to import data from GenomeSpace. Click the Browse button to select a file to import.
 
-Alternatively, you can be logged in using your GenomeSpace OpenID, and the tool will use this ID if no token is entered.
-This allows you to simply paste the filepath into the location box and leave the token empty. 
+To use this tool, you must have logged in using your GenomeSpace OpenID. 
 You can associate your OpenID credentials under the User Preferences panel.
 Click here_ to refresh your GenomeSpace token.
   

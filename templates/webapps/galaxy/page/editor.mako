@@ -22,8 +22,8 @@
             iframe_base_path = "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
             save_url = "${h.url_for(controller='page', action='save' )}";
 
-        require(['galaxy.pages'], function(Pages){
-            Pages.default();
+        $(function(){
+            bundleEntries.pages()
         });
 
     </script>

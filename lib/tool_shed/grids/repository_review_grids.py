@@ -3,7 +3,7 @@ import logging
 from markupsafe import escape
 from sqlalchemy import and_, false, null, or_, true
 
-from galaxy.web.framework.helpers import grids
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.grids.repository_grids import RepositoryGrid
 from tool_shed.util import hg_util, metadata_util
@@ -45,7 +45,6 @@ class ComponentGrid(grids.Grid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -349,7 +348,6 @@ class RepositoryReviewsByUserGrid(grids.Grid):
     ]
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):

@@ -649,7 +649,7 @@ class HistoryDeserializerTestCase(BaseTestCase):
         self.assertEqual(len(user_shares), 0)
 
         self.log('adding a bad user id should error')
-        self.assertRaises(AttributeError,
+        self.assertRaises(TypeError,
             deserializer.deserialize, item, {'users_shared_with': [None]}, user=user2)
 
         self.log('adding a non-existing user id should do nothing')

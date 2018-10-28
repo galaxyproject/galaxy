@@ -7,6 +7,8 @@ tessting configuration.
 import os
 from unittest import skip, TestCase
 
+from galaxy.tools.deps.commands import which
+from galaxy.tools.verify.test_data import TestDataResolver
 from .api import UsesApiTestCaseMixin
 from .driver_util import GalaxyTestDriver
 
@@ -19,6 +21,16 @@ def skip_if_jenkins(cls):
         return skip
 
     return cls
+
+
+def skip_unless_executable(executable):
+    if which(executable):
+        return lambda func: func
+    return skip("PATH doesn't contain executable %s" % executable)
+
+
+def skip_unless_docker():
+    return skip_unless_executable("docker")
 
 
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
@@ -45,6 +57,7 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
         cls._app_available = False
 
     def setUp(self):
+        self.test_data_resolver = TestDataResolver()
         # Setup attributes needed for API testing...
         server_wrapper = self._test_driver.server_wrappers[0]
         host = server_wrapper.host

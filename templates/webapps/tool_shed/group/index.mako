@@ -41,14 +41,7 @@
     <script type="text/javascript">
         window.globalTS = new Object();
         $( function(){
-            require.config({
-                paths: {
-                    'toolshed': '../toolshed'
-            }
-            });
-            require([ '${config.get( "app" ).get( "jscript" )}' ], function( groups ){
-                app = new groups.default.ToolshedGroups();
-            });
+            new window.bundleEntries.ToolshedGroups.ToolshedGroups();
         });
     </script>
     <div id="groups_element" style="width: 95%; margin:auto; margin-top:2em; "></div>

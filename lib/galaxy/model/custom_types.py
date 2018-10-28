@@ -16,6 +16,7 @@ from sqlalchemy.types import (
     TypeDecorator
 )
 
+from galaxy.util import unicodify
 from galaxy.util.aliaspickler import AliasPickleModule
 
 log = logging.getLogger(__name__)
@@ -63,7 +64,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
 
     def process_result_value(self, value, dialect):
         if value is not None:
-            value = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
+            value = json_decoder.decode(unicodify(_sniffnfix_pg9_hex(value)))
         return value
 
     def load_dialect_impl(self, dialect):

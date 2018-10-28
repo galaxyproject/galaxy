@@ -1,12 +1,16 @@
-// This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
-// not appended to the identifier of a nested array.
-jQuery.ajaxSettings.traditional = true;
-
-// dependencies
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import Utils from "utils/utils";
 import GridModel from "mvc/grid/grid-model";
 import Templates from "mvc/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
+import LoadingIndicator from "ui/loading-indicator";
+
+/* global $ */
+// This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
+// not appended to the identifier of a nested array.
+$.ajaxSettings.traditional = true;
+
 // grid view
 export default Backbone.View.extend({
     // model
@@ -15,8 +19,8 @@ export default Backbone.View.extend({
     // Initialize
     initialize: function(grid_config) {
         this.grid = new GridModel();
-        this.dict_format = grid_config.dict_format;
         this.title = grid_config.title;
+        this.active_tab = grid_config.active_tab;
         var self = this;
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
@@ -29,27 +33,23 @@ export default Backbone.View.extend({
             self.add_filter_condition("tags", tag);
         };
 
-        // set element
-        if (this.dict_format) {
-            this.setElement("<div/>");
-            if (grid_config.url_base && !grid_config.items) {
-                var url_data = grid_config.url_data || {};
-                _.each(grid_config.filters, (v, k) => {
-                    url_data[`f-${k}`] = v;
-                });
-                $.ajax({
-                    url: `${grid_config.url_base}?${$.param(url_data)}`,
-                    success: function(response) {
-                        response.embedded = grid_config.embedded;
-                        response.filters = grid_config.filters || {};
-                        self.init_grid(response);
-                    }
-                });
-            } else {
-                this.init_grid(grid_config);
-            }
+        if (grid_config.url_base && !grid_config.items) {
+            LoadingIndicator.markViewAsLoading(this);
+            var url_data = grid_config.url_data || {};
+            _.each(grid_config.filters, (v, k) => {
+                url_data[`f-${k}`] = v;
+            });
+            $.ajax({
+                url: `${grid_config.url_base}?${$.param(url_data)}`,
+                success: function(response) {
+                    response.embedded = grid_config.embedded;
+                    response.filters = grid_config.filters || {};
+                    self.init_grid(response);
+                }
+            });
         } else {
-            this.setElement("#grid-container");
+            // set element
+            this.setElement("<div>");
             this.init_grid(grid_config);
         }
 
@@ -104,7 +104,7 @@ export default Backbone.View.extend({
             this.$el.find("#grid-message").html(Templates.message(options));
             var self = this;
             if (options.use_hide_message) {
-                setTimeout(() => {
+                window.setTimeout(() => {
                     self.$el.find("#grid-message").html("");
                 }, 5000);
             }
@@ -116,7 +116,9 @@ export default Backbone.View.extend({
 
         // attach global event handler
         // TODO: redundant (the onload/standard page handlers do this) - but needed because these are constructed after page ready
-        init_refresh_on_change();
+        if (window.init_refresh_on_change) {
+            window.init_refresh_on_change();
+        }
     },
 
     // Initialize grid controls
@@ -236,7 +238,7 @@ export default Backbone.View.extend({
         //
         // add page click events
         //
-        this.$el.find(".page-link > a").each(function() {
+        this.$el.find(".page-link-grid > a").each(function() {
             $(this).click(function() {
                 self.set_page($(this).attr("page_num"));
                 return false;
@@ -247,7 +249,7 @@ export default Backbone.View.extend({
         // add inbound/outbound events
         //
         this.$el.find(".use-target").each(function() {
-            $(this).click(function(e) {
+            $(this).click(function() {
                 self.execute({
                     href: $(this).attr("href"),
                     target: $(this).attr("target")
@@ -258,22 +260,22 @@ export default Backbone.View.extend({
 
         // empty grid?
         var items_length = options.items.length;
-        if (items_length == 0) {
+        if (items_length === 0) {
             return;
         }
 
         // add operation popup menus
         _.each(options.items, (item, index) => {
-            var button = self.$(`#grid-${index}-popup`).off();
+            var button = self.$(`#grid-${item.encode_id}-popup`).off();
             var popup = new PopupMenu(button);
-            _.each(options["operations"], operation => {
-                self._add_operation(popup, operation, item);
+            _.each(options.operations, operation => {
+                self.add_operation(popup, operation, item);
             });
         });
     },
 
     /** Add an operation to the items menu */
-    _add_operation: function(popup, operation, item) {
+    add_operation: function(popup, operation, item) {
         var self = this;
         var settings = item.operation_config[operation.label];
         if (settings.allowed && operation.allow_popup) {
@@ -448,9 +450,9 @@ export default Backbone.View.extend({
         // identify operation
         var operation_name = $(operation_button).val();
 
-        // verify in any item is selected
+        // verify any item is selected
         var number_of_checked_ids = this.$el.find('input[name="id"]:checked').length;
-        if (!number_of_checked_ids > 0) {
+        if (number_of_checked_ids < 1) {
             return false;
         }
 
@@ -548,11 +550,11 @@ export default Backbone.View.extend({
             // show confirmation box
             if (
                 confirmation_text &&
-                confirmation_text != "" &&
+                confirmation_text !== "" &&
                 confirmation_text != "None" &&
                 confirmation_text != "null"
             )
-                if (!confirm(confirmation_text)) return false;
+                if (!window.confirm(confirmation_text)) return false;
 
             // use small characters for operation?!
             operation = operation.toLowerCase();
@@ -568,10 +570,8 @@ export default Backbone.View.extend({
                 window.top.location = `${href}?${$.param(this.grid.get_url_data())}`;
             } else if (target == "center") {
                 $("#galaxy_main").attr("src", `${href}?${$.param(this.grid.get_url_data())}`);
-            } else if (this.grid.can_async_op(operation) || this.dict_format) {
-                this.update_grid();
             } else {
-                this.go_to(target, href);
+                this.update_grid();
             }
 
             // done
@@ -585,11 +585,7 @@ export default Backbone.View.extend({
         }
 
         // refresh grid
-        if (this.grid.get("async") || this.dict_format) {
-            this.update_grid();
-        } else {
-            this.go_to(target, href);
-        }
+        this.update_grid();
 
         // done
         return false;
@@ -597,10 +593,6 @@ export default Backbone.View.extend({
 
     // go to url
     go_to: function(target, href) {
-        // get aysnc status
-        var async = this.grid.get("async");
-        this.grid.set("async", false);
-
         // get slide status
         var advanced_search = this.$el.find("#advanced-search").is(":visible");
         this.grid.set("advanced_search", advanced_search);
@@ -613,8 +605,7 @@ export default Backbone.View.extend({
         // clear grid of transient request attributes.
         this.grid.set({
             operation: undefined,
-            item_ids: undefined,
-            async: async
+            item_ids: undefined
         });
         switch (target) {
             case "center":
@@ -640,7 +631,7 @@ export default Backbone.View.extend({
             type: method,
             url: self.grid.get("url_base"),
             data: self.grid.get_url_data(),
-            error: function(response) {
+            error: function() {
                 alert("Grid refresh failed");
             },
             success: function(response_text) {
@@ -650,7 +641,7 @@ export default Backbone.View.extend({
                 var advanced_search = self.$el.find("#advanced-search").is(":visible");
 
                 // request new configuration
-                var json = self.dict_format ? response_text : $.parseJSON(response_text);
+                var json = response_text;
 
                 // update
                 json.embedded = embedded;

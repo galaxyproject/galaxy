@@ -7,6 +7,7 @@ from galaxy import (
 )
 from galaxy.managers import histories
 from galaxy.tools.parameters.meta import expand_workflow_inputs
+from galaxy.workflow.resources import get_resource_mapper_function
 
 INPUT_STEP_TYPES = ['data_input', 'data_collection_input', 'parameter_input']
 
@@ -41,13 +42,22 @@ class WorkflowRunConfig(object):
     :type param_map: dict
     """
 
-    def __init__(self, target_history, replacement_dict, copy_inputs_to_history=False, inputs={}, param_map={}, allow_tool_state_corrections=False):
+    def __init__(self, target_history,
+                 replacement_dict,
+                 copy_inputs_to_history=False,
+                 inputs=None,
+                 param_map=None,
+                 allow_tool_state_corrections=False,
+                 use_cached_job=False,
+                 resource_params=None):
         self.target_history = target_history
         self.replacement_dict = replacement_dict
         self.copy_inputs_to_history = copy_inputs_to_history
-        self.inputs = inputs
-        self.param_map = param_map
+        self.inputs = inputs or {}
+        self.param_map = param_map or {}
+        self.resource_params = resource_params or {}
         self.allow_tool_state_corrections = allow_tool_state_corrections
+        self.use_cached_job = use_cached_job
 
 
 def _normalize_inputs(steps, inputs, inputs_by):
@@ -161,7 +171,8 @@ def _flatten_step_params(param_dict, prefix=""):
     return new_params
 
 
-def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
+def _get_target_history(trans, workflow, payload, param_keys=None, index=0):
+    param_keys = param_keys or []
     history_name = payload.get('new_history_name', None)
     history_id = payload.get('history_id', None)
     history_param = payload.get('history', None)
@@ -197,6 +208,7 @@ def _get_target_history(trans, workflow, payload, param_keys=[], index=0):
 def build_workflow_run_configs(trans, workflow, payload):
     app = trans.app
     allow_tool_state_corrections = payload.get('allow_tool_state_corrections', False)
+    use_cached_job = payload.get('use_cached_job', False)
 
     # Sanity checks.
     if len(workflow.steps) == 0:
@@ -296,12 +308,43 @@ def build_workflow_run_configs(trans, workflow, payload):
                 normalized_inputs[key] = value['content']
             else:
                 normalized_inputs[key] = value
+        resource_params = payload.get('resource_params', {})
+        if resource_params:
+            # quick attempt to validate parameters, just handle select options now since is what
+            # is needed for DTD - arbitrary plugins can define arbitrary logic at runtime in the
+            # destination function. In the future this should be extended to allow arbitrary
+            # pluggable validation.
+            resource_mapper_function = get_resource_mapper_function(trans.app)
+            # TODO: Do we need to do anything with the stored_workflow or can this be removed.
+            resource_parameters = resource_mapper_function(trans=trans, stored_workflow=None, workflow=workflow)
+            for resource_parameter in resource_parameters:
+                if resource_parameter.get("type") == "select":
+                    name = resource_parameter.get("name")
+                    if name in resource_params:
+                        value = resource_params[name]
+                        valid_option = False
+                        # TODO: How should be handle the case where no selection is made by the user
+                        # This can happen when there is a select on the page but the user has no options to select
+                        # Here I have the validation pass it through. An alternative may be to remove the parameter if
+                        # it is None.
+                        if value is None:
+                            valid_option = True
+                        else:
+                            for option_elem in resource_parameter.get('data'):
+                                option_value = option_elem.get("value")
+                                if value == option_value:
+                                    valid_option = True
+                        if not valid_option:
+                            raise exceptions.RequestParameterInvalidException("Invalid value for parameter '%s' found." % name)
+
         run_configs.append(WorkflowRunConfig(
             target_history=history,
             replacement_dict=payload.get('replacement_params', {}),
             inputs=normalized_inputs,
             param_map=param_map,
-            allow_tool_state_corrections=allow_tool_state_corrections
+            allow_tool_state_corrections=allow_tool_state_corrections,
+            use_cached_job=use_cached_job,
+            resource_params=resource_params,
         ))
 
     return run_configs
@@ -338,9 +381,11 @@ def workflow_run_config_to_request(trans, run_config, workflow):
                 target_history=run_config.target_history,
                 replacement_dict=run_config.replacement_dict,
                 copy_inputs_to_history=False,
+                use_cached_job=run_config.use_cached_job,
                 inputs={},
                 param_map={},
-                allow_tool_state_corrections=run_config.allow_tool_state_corrections
+                allow_tool_state_corrections=run_config.allow_tool_state_corrections,
+                resource_params=run_config.resource_params
             )
             subworkflow_invocation = workflow_run_config_to_request(
                 trans,
@@ -362,7 +407,11 @@ def workflow_run_config_to_request(trans, run_config, workflow):
     for step_id, content in run_config.inputs.items():
         workflow_invocation.add_input(content, step_id)
 
+    resource_parameters = run_config.resource_params
+    for key, value in resource_parameters.items():
+        add_parameter(key, value, param_types.RESOURCE_PARAMETERS)
     add_parameter("copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS)
+    add_parameter("use_cached_job", "true" if run_config.use_cached_job else "false", param_types.META_PARAMETERS)
     return workflow_invocation
 
 
@@ -372,7 +421,9 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
     replacement_dict = {}
     inputs = {}
     param_map = {}
+    resource_params = {}
     copy_inputs_to_history = None
+    use_cached_job = False
     for parameter in workflow_invocation.input_parameters:
         parameter_type = parameter.type
 
@@ -381,6 +432,10 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         elif parameter_type == param_types.META_PARAMETERS:
             if parameter.name == "copy_inputs_to_history":
                 copy_inputs_to_history = (parameter.value == "true")
+            if parameter.name == 'use_cached_job':
+                use_cached_job = (parameter.value == 'true')
+        elif parameter_type == param_types.RESOURCE_PARAMETERS:
+            resource_params[parameter.name] = parameter.value
     for input_association in workflow_invocation.input_datasets:
         inputs[input_association.workflow_step_id] = input_association.dataset
     for input_association in workflow_invocation.input_dataset_collections:
@@ -395,6 +450,8 @@ def workflow_request_to_run_config(work_request_context, workflow_invocation):
         inputs=inputs,
         param_map=param_map,
         copy_inputs_to_history=copy_inputs_to_history,
+        use_cached_job=use_cached_job,
+        resource_params=resource_params,
     )
     return workflow_run_config
 

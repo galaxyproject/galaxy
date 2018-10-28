@@ -30,6 +30,9 @@ def convert_and_import_workflow(has_workflow, **kwds):
     else:
         workflow = yaml_to_workflow(has_workflow, galaxy_interface, workflow_directory)
 
+    name = kwds.get("name", None)
+    if name is not None:
+        workflow["name"] = name
     publish = kwds.get("publish", False)
     exact_tools = kwds.get("exact_tools", False)
     import_kwds = {}

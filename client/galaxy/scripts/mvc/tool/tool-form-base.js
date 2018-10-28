@@ -6,8 +6,9 @@ import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
+import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
-import Vue from "libs/vue";
+import Vue from "vue";
 export default FormBase.extend({
     initialize: function(options) {
         var self = this;
@@ -200,19 +201,23 @@ export default FormBase.extend({
         }
 
         // add tool menu webhooks
-        $.getJSON("/api/webhooks/tool-menu/all", webhooks => {
-            _.each(webhooks, webhook => {
-                if (webhook.activate && webhook.config.function) {
-                    menu_button.addMenu({
-                        icon: webhook.config.icon,
-                        title: webhook.config.title,
-                        onclick: function() {
-                            var func = new Function("options", webhook.config.function);
-                            func(options);
-                        }
-                    });
-                }
-            });
+        Webhooks.load({
+            type: "tool-menu",
+            callback: function(webhooks) {
+                webhooks.each(model => {
+                    var webhook = model.toJSON();
+                    if (webhook.activate && webhook.config.function) {
+                        menu_button.addMenu({
+                            icon: webhook.config.icon,
+                            title: webhook.config.title,
+                            onclick: function() {
+                                var func = new Function("options", webhook.config.function);
+                                func(options);
+                            }
+                        });
+                    }
+                });
+            }
         });
 
         return {
@@ -245,6 +250,12 @@ export default FormBase.extend({
             .addClass("ui-form-help")
             .append(options.help);
         $tmpl.find("a").attr("target", "_blank");
+        $tmpl.find("img").each(function() {
+            var img_src = $(this).attr("src");
+            if (img_src.indexOf("admin_toolshed") !== -1) {
+                $(this).attr("src", Galaxy.root + img_src);
+            }
+        });
         return $tmpl;
     },
 

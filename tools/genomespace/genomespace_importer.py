@@ -54,7 +54,7 @@ def _prepare_json_param_dict(param_dict):
     JSON serialization Support functions for exec_before_job hook
     """
     rval = {}
-    for key, value in param_dict.iteritems():
+    for key, value in param_dict.items():
         if isinstance(value, dict):
             rval[key] = _prepare_json_param_dict(value)
         elif isinstance(value, list):
@@ -83,7 +83,7 @@ def exec_before_job(app, inp_data, out_data, param_dict=None, tool=None):
                                      GALAXY_ROOT_DIR=param_dict.get('GALAXY_ROOT_DIR'),
                                      TOOL_PROVIDED_JOB_METADATA_FILE=galaxy.jobs.TOOL_PROVIDED_JOB_METADATA_FILE)
     json_filename = None
-    for i, (out_name, data) in enumerate(out_data.iteritems()):
+    for i, (out_name, data) in enumerate(out_data.items()):
         file_name = data.get_file_name()
         data_dict = dict(out_data_name=out_name,
                          ext=data.ext,

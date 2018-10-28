@@ -252,6 +252,10 @@ class LocFileEventHandler(FileSystemEventHandler):
                 if self.loc_watcher.path_hash.get(path) == cur_hash:
                     return
                 else:
+                    time.sleep(0.5)
+                    if cur_hash != md5_hash_file(path):
+                        # We're still modifying the file, it'll be picked up later
+                        return
                     self.loc_watcher.path_hash[path] = cur_hash
                     self.loc_watcher.tool_data_tables.reload_tables(path=path)
 

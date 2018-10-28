@@ -92,7 +92,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
                 if content_item.description:
                     return_item.update(dict(description=content_item.description))
 
-            if content_item.api_type == 'file':
+            elif content_item.api_type == 'file':
                 #  Is the dataset public or private?
                 #  When both are False the dataset is 'restricted'
                 #  Access rights are checked on the dataset level, not on the ld or ldda level to maintain consistency
@@ -275,7 +275,7 @@ class FolderContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryM
         from_hdca_id = payload.pop('from_hdca_id', None)
         ldda_message = payload.pop('ldda_message', '')
         if ldda_message:
-            ldda_message = util.sanitize_html.sanitize_html(ldda_message, 'utf-8')
+            ldda_message = util.sanitize_html.sanitize_html(ldda_message)
         try:
             if from_hda_id:
                 decoded_hda_id = self.decode_id(from_hda_id)

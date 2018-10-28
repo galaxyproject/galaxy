@@ -136,16 +136,46 @@ var View = Backbone.View.extend({
 
         // remap feature
         if (options.job_id && options.job_remap) {
+            if (options.job_remap === "job_produced_collection_elements") {
+                var label = "Replace elements in collection ?";
+                var help =
+                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
+            } else {
+                var label = "Resume dependencies from this job ?";
+                var help =
+                    "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
+            }
             options.inputs.push({
-                label: "Resume dependencies from this job",
+                label: label,
                 name: "rerun_remap_job_id",
                 type: "select",
                 display: "radio",
                 ignore: "__ignore__",
                 value: "__ignore__",
                 options: [["Yes", options.job_id], ["No", "__ignore__"]],
-                help:
-                    "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run."
+                help: help
+            });
+        }
+
+        // Job Re-use Options
+        var extra_user_preferences = {};
+        if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
+            extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
+        }
+        var use_cached_job =
+            "use_cached_job|use_cached_job_checkbox" in extra_user_preferences
+                ? extra_user_preferences["use_cached_job|use_cached_job_checkbox"]
+                : false;
+        if (use_cached_job === "true") {
+            options.inputs.push({
+                label: "BETA: Attempt to re-use jobs with identical parameters ?",
+                help: "This may skip executing jobs that you have already run",
+                name: "use_cached_job",
+                type: "select",
+                display: "radio",
+                ignore: "__ignore__",
+                value: "__ignore__",
+                options: [["No", false], ["Yes", true]]
             });
         }
     },
@@ -197,7 +227,7 @@ var View = Backbone.View.extend({
                 if (response.jobs && response.jobs.length > 0) {
                     self.$el.append($("<div/>", { id: "webhook-view" }));
                     var WebhookApp = new Webhooks.WebhookView({
-                        urlRoot: `${Galaxy.root}api/webhooks/tool`,
+                        type: "tool",
                         toolId: job_def.tool_id
                     });
                 }
@@ -250,6 +280,17 @@ var View = Backbone.View.extend({
                 this.form.highlight(input_id);
                 return false;
             }
+            if (input_field.validate) {
+                // wish there was a way to just reset this input field
+                const reset = () => {
+                    this.form.trigger("reset");
+                };
+                const validateObject = input_field.validate(reset);
+                if (!validateObject.valid) {
+                    this.form.highlight(input_id, validateObject.message);
+                    return false;
+                }
+            }
             if (input_value && input_value.batch) {
                 var n = input_value.values.length;
                 var src = n > 0 && input_value.values[0] && input_value.values[0].src;
@@ -269,9 +310,7 @@ var View = Backbone.View.extend({
                 } else if (batch_n !== n) {
                     this.form.highlight(
                         input_id,
-                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${
-                            n
-                        }</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
+                        `Please make sure that you select the same number of inputs for all batch mode fields. This field contains <b>${n}</b> selection(s) while a previous field contains <b>${batch_n}</b>.`
                     );
                     return false;
                 }

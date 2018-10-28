@@ -4,6 +4,11 @@
 Conda for Tool Dependencies
 ===========================
 
+.. note:: This document describes configuring Galaxy using YAML based configuraiton
+  options. For Galaxy instances before version 18.01, `this variant
+  <https://docs.galaxyproject.org/en/release_17.09/admin/conda_faq.html>`__ of this
+  document will be more directly relatable.
+
 Galaxy tools (also called wrappers) have tradionally used Tool Shed package
 recipes to install their dependencies. These were too tightly tied to Galaxy
 and to the Tool Shed and so have been replaced with Conda as the package
@@ -63,19 +68,19 @@ entry should remain first. This means that tools that have specified Tool Shed p
 as their dependencies will work without a change.
 
 The most common configuration settings related to Conda are listed in Table 1.
-See `galaxy.ini.sample`_ for the complete list.
+See `galaxy.yml.sample`_ for the complete list.
 
 +-------------------------+------------------------------------+---------------------------+
 | Setting                 | Default setting                    | Meaning                   |
 +-------------------------+------------------------------------+---------------------------+
-| ``conda_auto_init``     | ``True``                           | If ``True``, Galaxy will  |
+| ``conda_auto_init``     | ``true``                           | If ``true``, Galaxy will  |
 |                         |                                    | try to install Conda      |
 |                         |                                    | (the package manager)     |
 |                         |                                    | automatically if it       |
 |                         |                                    | cannot find a local copy  |
 |                         |                                    | already on the system     |
 +-------------------------+------------------------------------+---------------------------+
-| ``conda_auto_install``  | ``False``                          | If ``True``, Galaxy will  |
+| ``conda_auto_install``  | ``false``                          | If ``true``, Galaxy will  |
 |                         |                                    | look for and install      |
 |                         |                                    | Conda packages for        |
 |                         |                                    | missing tool dependencies |
@@ -99,8 +104,8 @@ admin to install and manage packages without touching Galaxy at all. Galaxy can
 handle these dependencies for you, but admins are not required to use Galaxy for
 dependency management.
 
-There are a few new config options in the ``galaxy.ini`` file (see Table 1 or
-`galaxy.ini.sample`_ for more information), but by default Galaxy will install
+There are a few new config options in the ``galaxy.yml`` file (see Table 1 or
+`galaxy.yml.sample`_ for more information), but by default Galaxy will install
 Conda (the package manager) and the required packages in the
 ``<tool_dependency_dir>/_conda/`` directory. In this directory, Galaxy will
 create an ``envs`` folder with all of the environments managed by Galaxy. Each
@@ -111,7 +116,7 @@ available before the tool is executed on your system.
 
 To summarize, there are four ways to manage Conda dependencies for use
 with Galaxy. For all of these options, Conda dependency management must
-be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` file.
+be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.yml`` file.
 
 #. Galaxy Admin Interface (>= 16.07) - Galaxy will install Conda tool
    dependencies when tools are installed from the Tool Shed if the
@@ -121,7 +126,7 @@ be configured in the ``dependency_resolvers_conf.xml`` and the ``galaxy.ini`` fi
 #. Manual Install - Conda dependencies may be installed by
    administrators from the command line. Conda (and thus the Conda
    environments) should be installed in the location specified by the
-   ``conda_prefix`` path (defined in ``galaxy.ini`` and by default
+   ``conda_prefix`` path (defined in ``galaxy.yml`` and by default
    ``<tool_dependency_dir>/_conda/`` directory). Galaxy will search
    these environments for required packages when tools are run. Conda
    environment names have to follow a specific naming pattern. As an
@@ -157,11 +162,11 @@ will run on all major \*nix operating systems newer than 2007.
 4. If I have Conda enabled, what do I need to do to install tools using it? For example, how can I install the latest Trinity? And how will I know the dependencies are installed?
 **********************************************************************************************************************************************************************************
 
-This depends on your ``galaxy.ini`` setting. Starting with release 16.07, Galaxy
+This depends on your ``galaxy.yml`` settings. Starting with release 16.07, Galaxy
 can automatically install the Conda package manager for you if you have enabled
 ``conda_auto_init``. Galaxy can then install Trinity along with its dependencies
 using one of the methods listed in question 2 above. In particular, if
-``conda_auto_install`` is ``True`` and Trinity is not installed yet, Galaxy will
+``conda_auto_install`` is ``true`` and Trinity is not installed yet, Galaxy will
 try to install it via Conda when a Trinity job is launched.
 
 With release 16.07 you can see which dependencies are being used
@@ -176,7 +181,7 @@ dependency resolvers configuration with regards to what will actually be used du
 the tool execution.
 
 To check if Galaxy has created a Trinity environment, have a look at folders under
-``<tool_dependency_dir>/_conda/envs/`` (or ``<conda_prefix>/envs`` if you have changed ``conda_prefix`` in your galaxy.ini file).
+``<tool_dependency_dir>/_conda/envs/`` (or ``<conda_prefix>/envs`` if you have changed ``conda_prefix`` in your ``galaxy.yml`` file).
 
 We recommend to use Conda on a tool-per-tool basis, by unchecking the checkbox
 for TS dependencies during the tool installation, and for tools where there
@@ -224,7 +229,7 @@ The simple answer is: you don't need to do much to make Conda work for a tool.
 The ``<requirement>`` tag in the tool XML file is enough. The name and the
 version should correspond to a Conda package in the ``default``, ``r``,
 ``bioconda`` or ``iuc`` Conda channel (you can extend this list if you
-like in your ``galaxy.ini`` ). If this is the case you are ready to go. Read
+like in your ``galaxy.yml`` ). If this is the case you are ready to go. Read
 more about `Conda channels`_  and browse their packages on https://anaconda.org/ url followed by the channel name (e.g.
 `https://anaconda.org/bioconda <https://anaconda.org/bioconda>`__
 ).
@@ -328,14 +333,14 @@ message appears in your logs:
        You can also use: $ conda clean --lock
 
 First, you may wish to enable cached dependencies. This can be done by setting
-``use_cached_dependency_manager`` to ``True`` in ``galaxy.ini``. Without this
+``use_cached_dependency_manager`` to ``true`` in ``galaxy.yml``. Without this
 option, many jobs will create a per-job Conda environment with just the
 dependencies needed for that job installed.
 This will be placed on the filesystem containg the job working directory. This
 is an expensive operation and Conda doesn't always link environments correctly
 across filesystems. Enabling this dependency caching will create a cache
 directory for each required combination of requirements inside the directory
-specified by ``tool_dependency_cache_dir`` in ``galaxy.ini`` (defaulting to
+specified by ``tool_dependency_cache_dir`` in ``galaxy.yml`` (defaulting to
 ``<tool_dependency_dir>/_cache``).
 
 The cached dependency manager was added to the 16.10 release of Galaxy (see
@@ -364,8 +369,8 @@ newer version of Conda than shipped with Galaxy as of 17.01. See the question be
 on upgrading Conda if you must use this trick.
 
 Alternatively, copying can be used when creating environments instead of links (either
-symbolic or hard). To enable this set ``conda_copy_dependencies`` to ``True`` in
-``galaxy.ini``. This requires at least version 16.07 of Galaxy.
+symbolic or hard). To enable this set ``conda_copy_dependencies`` to ``true`` in
+``galaxy.yml``. This requires at least version 16.07 of Galaxy.
 
 More reading on this can be found at `Conda Pull Request #3870`_, `Conda Issue #3308`,
 and Galaxy `Issue #3193`_.
@@ -409,7 +414,7 @@ The command can obviously be adapted to install any version of Conda.
 .. _submit: https://bioconda.github.io/#step-4-join-the-team
 .. _BioConda: https://bioconda.github.io
 .. _contact with the IUC: https://gitter.im/galaxy-iuc/iuc
-.. _galaxy.ini.sample: https://github.com/galaxyproject/galaxy/blob/dev/config/galaxy.ini.sample
+.. _galaxy.yml.sample: https://docs.galaxyproject.org/en/master/admin/options.html
 .. _Pull Request #3106: https://github.com/galaxyproject/galaxy/pull/3106
 .. _Pull Request #3348: https://github.com/galaxyproject/galaxy/pull/3348
 .. _Pull Request #3391: https://github.com/galaxyproject/galaxy/pull/3391

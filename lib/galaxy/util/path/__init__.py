@@ -4,30 +4,65 @@ from __future__ import absolute_import
 
 import errno
 import imp
+import logging
 from functools import partial
+try:
+    from grp import getgrgid
+except ImportError:
+    getgrgid = None
 from itertools import starmap
 from operator import getitem
 from os import (
     extsep,
     makedirs,
-    walk,
+    stat,
+    walk
 )
 from os.path import (
     abspath,
+    basename,
+    dirname,
     exists,
     isabs,
+    islink,
     join,
     normpath,
     pardir,
     realpath,
     relpath,
+    sep as separator,
 )
+try:
+    from pwd import getpwuid
+except ImportError:
+    getpwuid = None
 
 from six import iteritems, string_types
-from six.moves import filterfalse, map, zip
+from six.moves import filter, map, zip
+
+import galaxy.util
+
+WALK_MAX_DIRS = 10000
+
+log = logging.getLogger(__name__)
 
 
-def safe_contains(prefix, path, whitelist=None):
+def safe_path(path, whitelist=None):
+    """Ensure that a the absolute location of the path (after following symlinks) is either itself or on the whitelist
+    of acceptable locations.
+
+    This function does not perform an existence check, thus, if the path does not exist, ``True`` is returned.
+
+    :type path:         string
+    :param path:        a path to check
+    :type whitelist:    comma separated list of strings
+    :param whitelist:   list of acceptable locations
+    :return:            ``True`` if ``path`` resolves to itself or a whitelisted location
+    """
+    return any(__contains(dirname(path), path, whitelist=whitelist))
+
+
+def safe_contains(prefix, path, whitelist=None, real=None):
     """Ensure a path is contained within another path.
 
     Given any two filesystem paths, ensure that ``path`` is contained in ``prefix``. If ``path`` exists (either as an
@@ -48,7 +83,23 @@ def safe_contains(prefix, path, whitelist=None):
     :rtype:             bool
     :returns:           ``True`` if ``path`` is contained within ``prefix`` or ``whitelist``, ``False`` otherwise.
     """
-    return any(__contains(prefix, path, whitelist=whitelist))
+    return any(__contains(prefix, path, whitelist=whitelist, real=real))
+
+
+class _SafeContainsDirectoryChecker(object):
+
+    def __init__(self, dirpath, prefix, whitelist=None):
+        self.whitelist = whitelist
+        self.dirpath = dirpath
+        self.prefix = prefix
+        self.real_dirpath = realpath(join(prefix, dirpath))
+
+    def check(self, filename):
+        dirpath_path = join(self.real_dirpath, filename)
+        if islink(dirpath_path):
+            return safe_contains(self.prefix, filename, whitelist=self.whitelist)
+        else:
+            return safe_contains(self.prefix, filename, whitelist=self.whitelist, real=dirpath_path)
 
 
 def safe_makedirs(path):
@@ -82,20 +133,128 @@ def safe_relpath(path):
     return not (isabs(path) or normpath(path).startswith(pardir))
 
 
-def unsafe_walk(path, whitelist=None):
-    """Walk a path and ensure that none of its contents are symlinks outside the path.
+def safe_walk(path, whitelist=None):
+    """Walk a path and return only the contents that are not symlinks outside the path.
 
-    It is assumed that ``path`` itself has already been validated e.g. with :func:`safe_relpath` or
-    :func:`safe_contains`.
+    Symbolic links are followed if a whitelist is provided. The path itself cannot be a symbolic link unless the pointed
+    to location is in the whitelist.
 
     :type path:         string
     :param path:        a directory to check for unsafe contents
     :type whitelist:    list of strings
     :param whitelist:   list of additional paths under which contents may be located
     :rtype:             iterator
-    :returns:           Iterator of "bad" files found under ``path``
+    :returns:           Iterator of "safe" ``os.walk()`` tuples found under ``path``
     """
-    return filterfalse(partial(safe_contains, path, whitelist=whitelist), __walk(abspath(path)))
+    for i, elems in enumerate(walk(path, followlinks=bool(whitelist)), start=1):
+        dirpath, dirnames, filenames = elems
+        _check = _SafeContainsDirectoryChecker(dirpath, path, whitelist=None).check
+
+        if whitelist and i % WALK_MAX_DIRS == 0:
+            raise RuntimeError(
+                'Breaking out of walk of %s after %s iterations (most likely infinite symlink recursion) at: %s' %
+                (path, WALK_MAX_DIRS, dirpath))
+        _prefix = partial(join, dirpath)
+
+        prune = False
+        for index, dname in enumerate(dirnames):
+            if not _check(join(dirpath, dname)):
+                prune = True
+                break
+        if prune:
+            dirnames = map(basename, filter(_check, map(_prefix, dirnames)))
+
+        prune = False
+        for index, filename in enumerate(filenames):
+            if not _check(join(dirpath, filename)):
+                prune = True
+                break
+        if prune:
+            filenames = map(basename, filter(_check, map(_prefix, filenames)))
+
+        yield (dirpath, dirnames, filenames)
+
+
+def unsafe_walk(path, whitelist=None, username=None):
+    """Walk a path and ensure that none of its contents are symlinks outside the path.
+
+    It is assumed that ``path`` itself has already been validated e.g. with :func:`safe_relpath` or
+    :func:`safe_contains`. This function is most useful for the case where you want to test whether a directory contains
+    safe paths, but do not want to actually walk the safe contents.
+
+    :type path:         string
+    :param path:        a directory to check for unsafe contents
+    :type whitelist:    list of strings
+    :param whitelist:   list of additional paths under which contents may be located
+    :rtype:             list of strings
+    :returns:           A list of "bad" files found under ``path``
+    """
+    unsafe_paths = []
+    for walked_path in __walk(abspath(path)):
+        is_safe = safe_contains(path, walked_path, whitelist=whitelist)
+        if username and is_safe:
+            is_safe = full_path_permission_for_user(path, walked_path, username=username, skip_prefix=True)
+        if not is_safe:
+            unsafe_paths.append(walked_path)
+    return unsafe_paths
+
+
+def __path_permission_for_user(path, username):
+    """
+    :type path:         string
+    :param path:        a directory or file to check
+    :type username:     string
+    :param username:    a username matching the systems username
+    """
+    if getpwuid is None:
+        raise NotImplementedError("This functionality is not implemented for Windows.")
+
+    group_id_of_file = stat(path).st_gid
+    file_owner = getpwuid(stat(path).st_uid)
+    group_members = getgrgid(group_id_of_file).gr_mem
+
+    oct_mode = oct(stat(path).st_mode)
+    owner_permissions = int(oct_mode[-3])
+    group_permissions = int(oct_mode[-2])
+    other_permissions = int(oct_mode[-1])
+    if other_permissions >= 4 or \
+            (file_owner == username and owner_permissions >= 4) or \
+            (username in group_members and group_permissions >= 4):
+        return True
+    return False
+
+
+def full_path_permission_for_user(prefix, path, username, skip_prefix=False):
+    """
+    Assuming username is identical to the os username, this checks that the
+    given user can read the specified path by checking the file permission
+    and each parent directory permission.
+
+    :type prefix:       string
+    :param prefix:      a directory under which ``path`` is to be checked
+    :type path:         string
+    :param path:        a filename to check
+    :type username:     string
+    :param username:    a username matching the systems username
+    :type skip_prefix:  bool
+    :param skip_prefix: skip the given prefix from being checked for permissions
+
+    """
+    full_path = realpath(join(prefix, path))
+    top_path = realpath(prefix) if skip_prefix else None
+    can_read = __path_permission_for_user(full_path, username)
+    if can_read:
+        depth = 0
+        max_depth = full_path.count(separator)
+        parent_path = dirname(full_path)
+        while can_read and depth != max_depth:
+            if parent_path in [separator, top_path]:
+                break
+            if not __path_permission_for_user(parent_path, username):
+                can_read = False
+            depth += 1
+            parent_path = dirname(parent_path)
+    return can_read
 
 
 def joinext(root, ext):
@@ -200,14 +359,17 @@ def __listify(item):
 
 def __walk(path):
     for dirpath, dirnames, filenames in walk(path):
-        for name in dirnames + filenames:
+        for name in dirnames:
+            yield join(dirpath, name)
+        for name in filenames:
             yield join(dirpath, name)
 
 
-def __contains(prefix, path, whitelist=None):
-    real = realpath(join(prefix, path))
+def __contains(prefix, path, whitelist=None, real=None):
+    real = real or realpath(join(prefix, path))
     yield not relpath(real, prefix).startswith(pardir)
     for wldir in whitelist or []:
+        # a path is under the whitelist if the relative path between it and the whitelist does not have to go up (..)
         yield not relpath(real, wldir).startswith(pardir)
 
 
@@ -216,6 +378,7 @@ def __ext_strip_sep(ext):
 
 
 def __splitext_no_sep(path):
+    path = galaxy.util.unicodify(path)
     return (path.rsplit(extsep, 1) + [''])[0:2]
 
 
@@ -224,7 +387,9 @@ def __splitext_ignore(path, ignore=None):
     ignore = map(__ext_strip_sep, __listify(ignore))
     root, ext = __splitext_no_sep(path)
     if ext in ignore:
-        root, ext = __splitext_no_sep(path)
+        new_path = path[0:(-len(ext) - 1)]
+        root, ext = __splitext_no_sep(new_path)
+
     return (root, ext)
 
 
@@ -248,7 +413,7 @@ def __copy_self(names=__name__, parent=None):
     if isinstance(names, string_types):
         names = iter(names.split('.'))
     try:
-        name = names.next()
+        name = next(names)
     except StopIteration:
         return parent
     path = parent and parent.__path__
@@ -272,6 +437,7 @@ def __set_fxns_on(target, path_module):
 
 __pathfxns__ = (
     'abspath',
+    'basename',
     'exists',
     'isabs',
     'join',
@@ -289,5 +455,6 @@ __all__ = (
     'safe_contains',
     'safe_makedirs',
     'safe_relpath',
+    'safe_walk',
     'unsafe_walk',
 )

@@ -17,6 +17,7 @@
   <tool file="multi_output.xml" />
   <tool file="multi_output_configured.xml" />
   <tool file="multi_output_assign_primary.xml" />
+  <tool file="multi_output_recurse.xml" />
   <tool file="tool_provided_metadata_1.xml" />
   <tool file="tool_provided_metadata_2.xml" />
   <tool file="tool_provided_metadata_3.xml" />
@@ -51,9 +52,13 @@
   <tool file="maxseconds.xml" />
   -->
   <tool file="job_properties.xml" />
+  <tool file="job_environment_default.xml" />
+  <tool file="job_environment_default_legacy.xml" />
+  <tool file="job_environment_explicit_shared_home.xml" />
   <tool file="version_command_plain.xml" />
   <tool file="version_command_interpreter.xml" />
   <tool file="version_command_tool_dir.xml" />
+  <tool file="exit_code_oom.xml" />
   <tool file="exit_code_from_file.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
@@ -81,6 +86,7 @@
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
+  <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
@@ -91,15 +97,20 @@
   <tool file="explicit_conversion.xml" />
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
+  <tool file="identifier_single_in_repeat.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
   <tool file="identifier_in_actions.xml" />
+  <tool file="fail_identifier.xml" />
+  <tool file="fail_writing_work_dir_file.xml" />
   <tool file="tool_directory.xml" />
   <tool file="output_action_change_format.xml" />
+  <tool file="output_action_change_format_paired.xml" />
   <tool file="collection_paired_test.xml" />
-  <tool file="paired_collection_map_over_structured_like.xml" />
+  <tool file="collection_paired_structured_like.xml" />
+  <tool file="collection_paired_conditional_structured_like.xml" />
   <tool file="collection_nested_test.xml" />
   <tool file="collection_mixed_param.xml" />
   <tool file="collection_two_paired.xml" />
@@ -157,6 +168,8 @@
   <tool file="mulled_example_multi_versionless.xml" />
   <tool file="mulled_example_multi_incomplete.xml" />
   <tool file="mulled_example_conflict.xml" />
+  <tool file="mulled_example_simple.xml" />
+  <tool file="mulled_example_explicit.xml" />
 
   <tool file="simple_constructs.yml" />
 
@@ -174,5 +187,7 @@
   <tool file="${model_tools_path}/merge_collection.xml" />
   <tool file="${model_tools_path}/relabel_from_file.xml" />
   <tool file="${model_tools_path}/filter_from_file.xml" />
+  <tool file="${model_tools_path}/tag_collection_from_file.xml" />
+  <tool file="${model_tools_path}/apply_rules.xml" />
 
 </toolbox>

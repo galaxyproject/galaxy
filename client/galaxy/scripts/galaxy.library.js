@@ -176,7 +176,7 @@ var GalaxyLibrary = Backbone.View.extend({
                 mod_toastr.info("You must select at least one dataset to download");
                 Galaxy.libraries.library_router.navigate(`folders/${folder_id}`, { trigger: true, replace: true });
             } else {
-                Galaxy.libraries.folderToolbarView.download(folder_id, format);
+                Galaxy.libraries.folderToolbarView.download(format);
                 Galaxy.libraries.library_router.navigate(`folders/${folder_id}`, { trigger: false, replace: true });
             }
         });

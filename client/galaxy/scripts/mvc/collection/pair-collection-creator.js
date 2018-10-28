@@ -227,7 +227,7 @@ var PairCollectionCreator = _super.extend({
                 "</div>",
                 '<div class="footer flex-row no-flex">',
                 '<div class="actions clear vertically-spaced">',
-                '<div class="other-options pull-left">',
+                '<div class="other-options float-left">',
                 '<button class="cancel-create btn" tabindex="-1">',
                 _l("Cancel"),
                 "</button>",

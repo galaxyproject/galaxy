@@ -4,6 +4,7 @@ import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
 import UploadSettings from "mvc/upload/upload-settings";
 import Popover from "mvc/ui/ui-popover";
+import UploadExtension from "mvc/upload/upload-extension";
 import Select from "mvc/ui/ui-select";
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */
@@ -11,6 +12,7 @@ export default Backbone.View.extend({
         init: "upload-icon-button fa fa-trash-o",
         queued: "upload-icon fa fa-spinner fa-spin",
         running: "upload-icon fa fa-spinner fa-spin",
+        warning: "upload-icon fa fa-spinner fa-spin",
         success: "upload-icon-button fa fa-check",
         error: "upload-icon-button fa fa-exclamation-triangle"
     },
@@ -18,6 +20,7 @@ export default Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
         this.app = app;
+        this.list_extensions = app.list_extensions;
         this.model = options.model;
         this.setElement(this._template(options.model));
         this.$mode = this.$(".upload-mode");
@@ -57,7 +60,7 @@ export default Backbone.View.extend({
         // create select extension
         this.select_extension = new Select.View({
             css: "upload-extension",
-            data: self.app.list_extensions,
+            data: _.filter(this.list_extensions, ext => !ext.composite_files),
             container: this.$(".upload-extension"),
             value: default_extension,
             onchange: function(extension) {
@@ -79,11 +82,17 @@ export default Backbone.View.extend({
         // handle extension info popover
         this.$(".upload-extension-info")
             .on("click", e => {
-                self.app.showExtensionInfo({
-                    $el: $(e.target),
-                    title: self.select_extension.text(),
-                    extension: self.select_extension.value()
-                });
+                let upload_ext = this.upload_extension;
+                if (upload_ext) {
+                    if (upload_ext.extension_popup.visible) {
+                        upload_ext.extension_popup.hide();
+                    } else {
+                        upload_ext.extension_popup.remove();
+                        this._makeUploadExtensionsPopover(e);
+                    }
+                } else {
+                    this._makeUploadExtensionsPopover(e);
+                }
             })
             .on("mousedown", e => {
                 e.preventDefault();
@@ -183,7 +192,7 @@ export default Backbone.View.extend({
     _refreshInfo: function() {
         var info = this.model.get("info");
         if (info) {
-            this.$info_text.html(`<strong>Failed: </strong>${info}`).show();
+            this.$info_text.html(`<strong>Warning: </strong>${info}`).show();
         } else {
             this.$info_text.hide();
         }
@@ -213,12 +222,16 @@ export default Backbone.View.extend({
             this.select_genome.disable();
             this.select_extension.disable();
         }
+        this.$info_progress.show();
+        this.$el.removeClass().addClass("upload-row");
         if (status == "success") {
-            this.$el.addClass("success");
+            this.$el.addClass("table-success");
             this.$percentage.html("100%");
-        }
-        if (status == "error") {
-            this.$el.addClass("danger");
+        } else if (status == "error") {
+            this.$el.addClass("table-danger");
+            this.$info_progress.hide();
+        } else if (status == "warning") {
+            this.$el.addClass("table-warning");
             this.$info_progress.hide();
         }
     },
@@ -244,6 +257,16 @@ export default Backbone.View.extend({
         } else {
             this.settings.hide();
         }
+    },
+
+    /** Make extension popover */
+    _makeUploadExtensionsPopover: function(e) {
+        this.upload_extension = new UploadExtension({
+            $el: $(e.target),
+            title: this.select_extension.text(),
+            extension: this.select_extension.value(),
+            list: this.list_extensions
+        });
     },
 
     /** View template */

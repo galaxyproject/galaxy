@@ -25,30 +25,28 @@ def stop_err(msg):
 
 def __main__():
     infile_name = sys.argv[1]
-    outfile = open(sys.argv[2], 'w')
     fastq_block_lines = 0
     seq_title_startswith = ''
 
-    for i, line in enumerate(open(infile_name)):
-        line = line.rstrip()  # eliminate trailing space and new line characters
-        if not line or line.startswith('#'):
-            continue
-        fastq_block_lines = (fastq_block_lines + 1) % 4
-        line_startswith = line[0:1]
-        if fastq_block_lines == 1:
-            # line 1 is sequence title
-            if not seq_title_startswith:
-                seq_title_startswith = line_startswith
-            if seq_title_startswith != line_startswith:
-                stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
-            outfile.write('>%s\n' % line[1:])
-        elif fastq_block_lines == 2:
-            # line 2 is nucleotides
-            outfile.write('%s\n' % line)
-        else:
-            pass
-
-    outfile.close()
+    with open(infile_name) as fh, open(sys.argv[2], 'w') as outfile:
+        for i, line in enumerate(fh):
+            line = line.rstrip()  # eliminate trailing space and new line characters
+            if not line or line.startswith('#'):
+                continue
+            fastq_block_lines = (fastq_block_lines + 1) % 4
+            line_startswith = line[0:1]
+            if fastq_block_lines == 1:
+                # line 1 is sequence title
+                if not seq_title_startswith:
+                    seq_title_startswith = line_startswith
+                if seq_title_startswith != line_startswith:
+                    stop_err('Invalid fastqsolexa format at line %d: %s.' % (i + 1, line))
+                outfile.write('>%s\n' % line[1:])
+            elif fastq_block_lines == 2:
+                # line 2 is nucleotides
+                outfile.write('%s\n' % line)
+            else:
+                pass
 
 
 if __name__ == "__main__":

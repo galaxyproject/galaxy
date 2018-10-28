@@ -134,7 +134,7 @@ def expose_api(func, to_json=True, user_required=True):
         trans.response.headers['Cache-Control'] = "max-age=0,no-cache,no-store"
 
         # Perform api_run_as processing, possibly changing identity
-        if 'payload' in kwargs and 'run_as' in kwargs['payload']:
+        if 'payload' in kwargs and isinstance(kwargs['payload'], dict) and 'run_as' in kwargs['payload']:
             if not trans.user_can_do_run_as():
                 error_message = 'User does not have permissions to run jobs as another user'
                 return error

@@ -16,131 +16,14 @@ from galaxy.util import (
     asbool,
     download_to_file
 )
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.template import fill_template
 from tool_shed.galaxy_install.tool_dependencies.env_manager import EnvManager
 from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)
 
-VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
-
-
-class CompressedFile(object):
-
-    def __init__(self, file_path, mode='r'):
-        if tarfile.is_tarfile(file_path):
-            self.file_type = 'tar'
-        elif zipfile.is_zipfile(file_path) and not file_path.endswith('.jar'):
-            self.file_type = 'zip'
-        self.file_name = os.path.splitext(os.path.basename(file_path))[0]
-        if self.file_name.endswith('.tar'):
-            self.file_name = os.path.splitext(self.file_name)[0]
-        self.type = self.file_type
-        method = 'open_%s' % self.file_type
-        if hasattr(self, method):
-            self.archive = getattr(self, method)(file_path, mode)
-        else:
-            raise NameError('File type %s specified, no open method found.' % self.file_type)
-
-    def extract(self, path):
-        '''Determine the path to which the archive should be extracted.'''
-        contents = self.getmembers()
-        extraction_path = path
-        common_prefix = ''
-        if len(contents) == 1:
-            # The archive contains a single file, return the extraction path.
-            if self.isfile(contents[0]):
-                extraction_path = os.path.join(path, self.file_name)
-                if not os.path.exists(extraction_path):
-                    os.makedirs(extraction_path)
-                self.archive.extractall(extraction_path)
-        else:
-            # Get the common prefix for all the files in the archive. If the common prefix ends with a slash,
-            # or self.isdir() returns True, the archive contains a single directory with the desired contents.
-            # Otherwise, it contains multiple files and/or directories at the root of the archive.
-            common_prefix = os.path.commonprefix([self.getname(item) for item in contents])
-            if len(common_prefix) >= 1 and not common_prefix.endswith(os.sep) and self.isdir(self.getmember(common_prefix)):
-                common_prefix += os.sep
-            if not common_prefix.endswith(os.sep):
-                common_prefix = ''
-                extraction_path = os.path.join(path, self.file_name)
-                if not os.path.exists(extraction_path):
-                    os.makedirs(extraction_path)
-            self.archive.extractall(extraction_path)
-        # Since .zip files store unix permissions separately, we need to iterate through the zip file
-        # and set permissions on extracted members.
-        if self.file_type == 'zip':
-            for zipped_file in contents:
-                filename = self.getname(zipped_file)
-                absolute_filepath = os.path.join(extraction_path, filename)
-                external_attributes = self.archive.getinfo(filename).external_attr
-                # The 2 least significant bytes are irrelevant, the next two contain unix permissions.
-                unix_permissions = external_attributes >> 16
-                if unix_permissions != 0:
-                    if os.path.exists(absolute_filepath):
-                        os.chmod(absolute_filepath, unix_permissions)
-                    else:
-                        log.warning("Unable to change permission on extracted file '%s' as it does not exist" % absolute_filepath)
-        return os.path.abspath(os.path.join(extraction_path, common_prefix))
-
-    def getmembers_tar(self):
-        return self.archive.getmembers()
-
-    def getmembers_zip(self):
-        return self.archive.infolist()
-
-    def getname_tar(self, item):
-        return item.name
-
-    def getname_zip(self, item):
-        return item.filename
-
-    def getmember(self, name):
-        for member in self.getmembers():
-            if self.getname(member) == name:
-                return member
-
-    def getmembers(self):
-        return getattr(self, 'getmembers_%s' % self.type)()
-
-    def getname(self, member):
-        return getattr(self, 'getname_%s' % self.type)(member)
-
-    def isdir(self, member):
-        return getattr(self, 'isdir_%s' % self.type)(member)
-
-    def isdir_tar(self, member):
-        return member.isdir()
-
-    def isdir_zip(self, member):
-        if member.filename.endswith(os.sep):
-            return True
-        return False
-
-    def isfile(self, member):
-        if not self.isdir(member):
-            return True
-        return False
-
-    def open_tar(self, filepath, mode):
-        return tarfile.open(filepath, mode, errorlevel=0)
-
-    def open_zip(self, filepath, mode):
-        return zipfile.ZipFile(filepath, mode)
-
-    def zipfile_ok(self, path_to_archive):
-        """
-        This function is a bit pedantic and not functionally necessary.  It checks whether there is
-        no file pointing outside of the extraction, because ZipFile.extractall() has some potential
-        security holes.  See python zipfile documentation for more details.
-        """
-        basename = os.path.realpath(os.path.dirname(path_to_archive))
-        zip_archive = zipfile.ZipFile(path_to_archive)
-        for member in zip_archive.namelist():
-            member_path = os.path.realpath(os.path.join(basename, member))
-            if not member_path.startswith(basename):
-                return False
-        return True
+VIRTUALENV_URL = 'https://pypi.python.org/packages/d4/0c/9840c08189e030873387a73b90ada981885010dd9aea134d6de30cd24cb8/virtualenv-15.1.0.tar.gz'
 
 
 class Download(object):

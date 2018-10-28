@@ -17,7 +17,7 @@ class Action(object):
         self.model = model
 
 
-class RBACAgent:
+class RBACAgent(object):
     """Handle Galaxy Tool Shed security"""
     permitted_actions = Bunch()
 
@@ -32,7 +32,7 @@ class RBACAgent:
         When getting permitted actions from an untrusted source like a
         form, ensure that they match our actual permitted actions.
         """
-        return filter(lambda x: x is not None, [self.permitted_actions.get(action_string) for action_string in permitted_action_strings])
+        return [x for x in [self.permitted_actions.get(action_string) for action_string in permitted_action_strings] if x is not None]
 
     def create_private_user_role(self, user):
         raise Exception("Unimplemented Method")
@@ -46,7 +46,7 @@ class RBACAgent:
 
     def get_actions(self):
         """Get all permitted actions as a list of Action objects"""
-        return self.permitted_actions.__dict__.values()
+        return list(self.permitted_actions.__dict__.values())
 
     def get_item_actions(self, action, item):
         raise Exception('No valid method of retrieving action (%s) for item %s.' % (action, item))

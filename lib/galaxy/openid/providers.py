@@ -4,6 +4,8 @@ Contains OpenID provider functionality
 import logging
 import os
 
+import six
+
 from galaxy.util import parse_xml, string_as_bool
 from galaxy.util.odict import odict
 
@@ -87,7 +89,7 @@ class OpenIDProvider(object):
 
     def post_authentication(self, trans, openid_manager, info):
         sreg_attributes = openid_manager.get_sreg(info)
-        for store_pref_name, store_pref_value_name in self.store_user_preference.iteritems():
+        for store_pref_name, store_pref_value_name in self.store_user_preference.items():
             if store_pref_value_name in (self.sreg_optional + self.sreg_required):
                 trans.user.preferences[store_pref_name] = sreg_attributes.get(store_pref_value_name)
             else:
@@ -129,10 +131,10 @@ class OpenIDProviders(object):
             self.providers = providers
         else:
             self.providers = odict()
-        self._banned_identifiers = [provider.op_endpoint_url for provider in self.providers.itervalues() if provider.never_associate_with_user]
+        self._banned_identifiers = [provider.op_endpoint_url for provider in self.providers.values() if provider.never_associate_with_user]
 
     def __iter__(self):
-        for provider in self.providers.itervalues():
+        for provider in six.itervalues(self.providers):
             yield provider
 
     def get(self, name, default=None):

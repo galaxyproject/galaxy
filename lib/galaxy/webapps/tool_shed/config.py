@@ -134,13 +134,24 @@ class Configuration(object):
         global_conf = kwargs.get('global_conf', None)
         global_conf_parser = configparser.ConfigParser()
         self.global_conf_parser = global_conf_parser
-        if global_conf and "__file__" in global_conf:
+        if global_conf and "__file__" in global_conf and ".yml" not in global_conf["__file__"]:
             global_conf_parser.read(global_conf['__file__'])
         self.running_functional_tests = string_as_bool(kwargs.get('running_functional_tests', False))
         self.citation_cache_type = kwargs.get("citation_cache_type", "file")
         self.citation_cache_data_dir = resolve_path(kwargs.get("citation_cache_data_dir", "database/tool_shed_citations/data"), self.root)
         self.citation_cache_lock_dir = resolve_path(kwargs.get("citation_cache_lock_dir", "database/tool_shed_citations/locks"), self.root)
         self.password_expiration_period = timedelta(days=int(kwargs.get("password_expiration_period", 0)))
+
+        # Security/Policy Compliance
+        self.redact_username_during_deletion = False
+        self.redact_email_during_deletion = False
+        self.redact_username_in_logs = False
+        self.enable_beta_gdpr = string_as_bool(kwargs.get("enable_beta_gdpr", False))
+        if self.enable_beta_gdpr:
+            self.redact_username_during_deletion = True
+            self.redact_email_during_deletion = True
+            self.redact_username_in_logs = True
+            self.allow_user_deletion = True
 
     @property
     def shed_tool_data_path(self):

@@ -8,6 +8,11 @@ import os.path
 from markupsafe import escape
 
 from galaxy import util
+from galaxy.exceptions import (
+    AdminRequiredException,
+    ConfigDoesNotAllowException,
+    RequestParameterInvalidException,
+)
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -17,6 +22,47 @@ from galaxy.util.path import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def validate_server_directory_upload(trans, server_dir):
+    if server_dir in [None, 'None', '']:
+        raise RequestParameterInvalidException("Invalid or unspecified server_dir parameter")
+
+    if trans.user_is_admin():
+        import_dir = trans.app.config.library_import_dir
+        import_dir_desc = 'library_import_dir'
+        if not import_dir:
+            raise ConfigDoesNotAllowException('"library_import_dir" is not set in the Galaxy configuration')
+    else:
+        import_dir = trans.app.config.user_library_import_dir
+        if not import_dir:
+            raise ConfigDoesNotAllowException('"user_library_import_dir" is not set in the Galaxy configuration')
+        if server_dir != trans.user.email:
+            import_dir = os.path.join(import_dir, trans.user.email)
+        import_dir_desc = 'user_library_import_dir'
+
+    full_dir = os.path.join(import_dir, server_dir)
+    unsafe = None
+    if safe_relpath(server_dir):
+        username = trans.user.username if trans.app.config.user_library_import_check_permissions else None
+        if import_dir_desc == 'user_library_import_dir' and safe_contains(import_dir, full_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist, username=username):
+            for unsafe in unsafe_walk(full_dir, whitelist=[import_dir] + trans.app.config.user_library_import_symlink_whitelist):
+                log.error('User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe))
+    else:
+        log.error('User attempted to import a directory path that resolves to a path outside of their import dir: %s -> %s', server_dir, os.path.realpath(full_dir))
+        unsafe = True
+    if unsafe:
+        raise RequestParameterInvalidException("Invalid server_dir specified")
+
+    return full_dir, import_dir_desc
+
+
+def validate_path_upload(trans):
+    if not trans.app.config.allow_library_path_paste:
+        raise ConfigDoesNotAllowException('"allow_path_paste" is not set to True in the Galaxy configuration file')
+
+    if not trans.user_is_admin():
+        raise AdminRequiredException('Uploading files via filesystem paths can only be performed by administrators')
 
 
 class LibraryActions(object):
@@ -42,37 +88,11 @@ class LibraryActions(object):
         upload_option = kwd.get('upload_option', 'upload_file')
         response_code = 200
         if upload_option == 'upload_directory':
-            if server_dir in [None, 'None', '']:
-                response_code = 400
-            if trans.user_is_admin():
-                import_dir = trans.app.config.library_import_dir
-                import_dir_desc = 'library_import_dir'
-            else:
-                import_dir = trans.app.config.user_library_import_dir
-                if server_dir != trans.user.email:
-                    import_dir = os.path.join(import_dir, trans.user.email)
-                import_dir_desc = 'user_library_import_dir'
-            full_dir = os.path.join(import_dir, server_dir)
-            unsafe = None
-            if safe_relpath(server_dir):
-                if import_dir_desc == 'user_library_import_dir' and safe_contains(import_dir, full_dir, whitelist=trans.app.config.user_library_import_symlink_whitelist):
-                    for unsafe in unsafe_walk(full_dir, whitelist=[import_dir] + trans.app.config.user_library_import_symlink_whitelist):
-                        log.error('User attempted to import a path that resolves to a path outside of their import dir: %s -> %s', unsafe, os.path.realpath(unsafe))
-            else:
-                log.error('User attempted to import a directory path that resolves to a path outside of their import dir: %s -> %s', server_dir, os.path.realpath(full_dir))
-                unsafe = True
-            if unsafe:
-                response_code = 403
-                message = 'Invalid server_dir'
-            if import_dir:
-                message = 'Select a directory'
-            else:
-                response_code = 403
-                message = '"%s" is not defined in the Galaxy configuration file' % import_dir_desc
+            full_dir, import_dir_desc = validate_server_directory_upload(trans, server_dir)
+            message = 'Select a directory'
         elif upload_option == 'upload_paths':
-            if not trans.app.config.allow_library_path_paste:
-                response_code = 403
-                message = '"allow_library_path_paste" is not defined in the Galaxy configuration file'
+            # Library API already checked this - following check isn't actually needed.
+            validate_path_upload(trans)
         # Some error handling should be added to this method.
         try:
             # FIXME: instead of passing params here ( which have been processed by util.Params(), the original kwd
@@ -83,15 +103,13 @@ class LibraryActions(object):
             message = "Unable to parse upload parameters, please report this error."
         # Proceed with (mostly) regular upload processing if we're still errorless
         if response_code == 200:
-            precreated_datasets = upload_common.get_precreated_datasets(trans, tool_params, trans.app.model.LibraryDatasetDatasetAssociation, controller=cntrller)
             if upload_option == 'upload_file':
                 tool_params = upload_common.persist_uploads(tool_params, trans)
-                uploaded_datasets = upload_common.get_uploaded_datasets(trans, cntrller, tool_params, precreated_datasets, dataset_upload_inputs, library_bunch=library_bunch)
+                uploaded_datasets = upload_common.get_uploaded_datasets(trans, cntrller, tool_params, dataset_upload_inputs, library_bunch=library_bunch)
             elif upload_option == 'upload_directory':
                 uploaded_datasets, response_code, message = self._get_server_dir_uploaded_datasets(trans, kwd, full_dir, import_dir_desc, library_bunch, response_code, message)
             elif upload_option == 'upload_paths':
                 uploaded_datasets, response_code, message = self._get_path_paste_uploaded_datasets(trans, kwd, library_bunch, response_code, message)
-            upload_common.cleanup_unused_precreated_datasets(precreated_datasets)
             if upload_option == 'upload_file' and not uploaded_datasets:
                 response_code = 400
                 message = 'Select a file, enter a URL or enter text'
@@ -117,6 +135,43 @@ class LibraryActions(object):
                 name = os.path.basename(file)
                 uploaded_datasets.append(self._make_library_uploaded_dataset(trans, params, name, file, 'server_dir', library_bunch))
             return uploaded_datasets, 200, None
+
+    def _get_server_dir_files(self, params, full_dir, import_dir_desc):
+        files = []
+        try:
+            for entry in os.listdir(full_dir):
+                # Only import regular files
+                path = os.path.join(full_dir, entry)
+                link_data_only = params.get('link_data_only', 'copy_files')
+                if os.path.islink(full_dir) and link_data_only == 'link_to_files':
+                    # If we're linking instead of copying and the
+                    # sub-"directory" in the import dir is actually a symlink,
+                    # dereference the symlink, but not any of its contents.
+                    link_path = os.readlink(full_dir)
+                    if os.path.isabs(link_path):
+                        path = os.path.join(link_path, entry)
+                    else:
+                        path = os.path.abspath(os.path.join(link_path, entry))
+                elif os.path.islink(path) and os.path.isfile(path) and link_data_only == 'link_to_files':
+                    # If we're linking instead of copying and the "file" in the
+                    # sub-directory of the import dir is actually a symlink,
+                    # dereference the symlink (one dereference only, Vasili).
+                    link_path = os.readlink(path)
+                    if os.path.isabs(link_path):
+                        path = link_path
+                    else:
+                        path = os.path.abspath(os.path.join(os.path.dirname(path), link_path))
+                if os.path.isfile(path):
+                    files.append(path)
+        except Exception as e:
+            message = "Unable to get file list for configured %s, error: %s" % (import_dir_desc, str(e))
+            response_code = 500
+            return None, response_code, message
+        if not files:
+            message = "The directory '%s' contains no valid files" % full_dir
+            response_code = 400
+            return None, response_code, message
+        return files, None, None
 
     def _get_path_paste_uploaded_datasets(self, trans, params, library_bunch, response_code, message):
         preserve_dirs = util.string_as_bool(params.get('preserve_dirs', False))
@@ -194,16 +249,14 @@ class LibraryActions(object):
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
         uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', True)
+        uploaded_dataset.purge_source = getattr(trans.app.config, 'ftp_upload_purge', True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload(trans, 'api', uploaded_dataset, library_bunch)
         uploaded_dataset.link_data_only = link_data_only
         uploaded_dataset.uuid = uuid_str
         if link_data_only == 'link_to_files':
-            uploaded_dataset.data.file_name = os.path.abspath(path)
-            # Since we are not copying the file into Galaxy's managed
-            # default file location, the dataset should never be purgable.
-            uploaded_dataset.data.dataset.purgable = False
+            uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
             trans.sa_session.flush()
         return uploaded_dataset

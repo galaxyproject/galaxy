@@ -25,10 +25,14 @@ SLURM_MEMORY_LIMIT_EXCEEDED_MSG = 'slurmstepd: error: Exceeded job memory limit'
 # https://github.com/SchedMD/slurm/
 SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at some point.',
                                                 ': Exceeded step memory limit at some point.']
-SLURM_MEMORY_ERRORS = { SLURM_MEMORY_LIMIT_EXCEEDED_MSG: 'This job was terminated because it used more memory than it was allocated.'}
-for w in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS: 
+SLURM_MEMORY_ERRORS = {SLURM_MEMORY_LIMIT_EXCEEDED_MSG: 'This job was terminated because it used more memory than it was allocated.'}
+for w in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS:
     SLURM_MEMORY_ERRORS[w] = 'This job was cancelled probably because it used more memory than it was allocated.'
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
+
+# These messages are returned to the user
+OUT_OF_MEMORY_MSG = 'This job was terminated because it used more memory than it was allocated.'
+PROBABLY_OUT_OF_MEMORY_MSG = 'This job was cancelled probably because it used more memory than it was allocated.'
 
 
 class SlurmJobRunner(DRMAAJobRunner):
@@ -37,7 +41,7 @@ class SlurmJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         def _get_slurm_state_with_sacct(job_id, cluster):
-            cmd = ['sacct', '-n', '-o state']
+            cmd = ['sacct', '-n', '-o', 'state%-32']
             if cluster:
                 cmd.extend(['-M', cluster])
             cmd.extend(['-j', job_id])
@@ -53,8 +57,8 @@ class SlurmJobRunner(DRMAAJobRunner):
             # Second line is for 'job_id.batch' (only available after the batch job is complete)
             # Following lines are for the steps 'job_id.0', 'job_id.1', ... (but Galaxy does not use steps)
             first_line = stdout.splitlines()[0]
-            # Strip whitespaces and the final '+' (if present)
-            return first_line.strip().rstrip('+')
+            # Strip whitespaces and the final '+' (if present), only return the first word
+            return first_line.strip().rstrip('+').split()[0]
 
         def _get_slurm_state():
             cmd = ['scontrol', '-o']
@@ -77,7 +81,20 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return job_state
                     return 'NOT_FOUND'
                 raise Exception('`%s` returned %s, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-            job_info_dict = dict([out_param.split('=', 1) for out_param in stdout.split()])
+            stdout = stdout.strip()
+            # stdout is a single line in format "key1=value1 key2=value2 ..."
+            job_info_keys = []
+            job_info_values = []
+            for job_info in stdout.split():
+                try:
+                    # Some value may contain `=` (e.g. `StdIn=StdIn=/dev/null`)
+                    k, v = job_info.split('=', 1)
+                    job_info_keys.append(k)
+                    job_info_values.append(v)
+                except ValueError:
+                    # Some value may contain spaces (e.g. `Comment=** time_limit (60m) min_nodes (1) **`)
+                    job_info_values[-1] += ' ' + job_info
+            job_info_dict = dict(zip(job_info_keys, job_info_values))
             return job_info_dict['JobState']
 
         try:
@@ -110,13 +127,16 @@ class SlurmJobRunner(DRMAAJobRunner):
                         return
                     except Exception:
                         ajs.fail_message = "This job failed due to a cluster node failure, and an attempt to resubmit the job failed."
+                elif slurm_state == 'OUT_OF_MEMORY':
+                    log.info('(%s/%s) Job hit memory limit (SLURM state: OUT_OF_MEMORY)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                    ajs.fail_message = OUT_OF_MEMORY_MSG
+                    ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
-#                     check_memory_limit_msg = self.__check_memory_limit( ajs.error_file )
                     check_memory_limit_msg = util.grep_tail(ajs.error_file, SLURM_MEMORY_ERRORS, 2048)
                     if check_memory_limit_msg:
-                        log.info( '(%s/%s) Job hit memory limit', ajs.job_wrapper.get_id_tag(), ajs.job_id )
-                        ajs.fail_message = SLURM_MEMORY_ERRORS[check_memory_limit_msg]
+                        log.info('(%s/%s) Job hit memory limit (SLURM state: CANCELLED)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
+                        ajs.fail_message = check_memory_limit_msg
                         ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                     else:
                         log.info('(%s/%s) Job was cancelled via SLURM (e.g. with scancel(1))', ajs.job_wrapper.get_id_tag(), ajs.job_id)

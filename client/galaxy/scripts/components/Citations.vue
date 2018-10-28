@@ -2,11 +2,11 @@
     <div class="toolForm">
         <div class="toolFormTitle">
             Citations
-            <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-xs citations-to-bibtex" title="Show all in BibTeX format.">
+            <button v-if="viewRender" v-on:click="toggleViewRender" type="button" class="btn btn-sm btn-secondary citations-to-bibtex" title="Show all in BibTeX format.">
                 <i class="fa fa-pencil-square-o"></i>
                 Show BibTeX
             </button>
-            <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-xs citations-to-formatted" title="Return to formatted citation list.">
+            <button v-else type="button" v-on:click="toggleViewRender" class="btn btn-sm btn-secondary citations-to-formatted" title="Return to formatted citation list.">
                 <i class="fa fa-times"></i>
                 Hide BibTeX
             </button>
@@ -57,7 +57,10 @@ export default {
     },
     computed: {
         formattedReferences: function() {
-            return this.citations.reduce((a, b) => a.concat(`<p class="formatted-reference">${this.formattedReference(b)}</p>`), "");
+            return this.citations.reduce(
+                (a, b) => a.concat(`<p class="formatted-reference">${this.formattedReference(b)}</p>`),
+                ""
+            );
         }
     },
     created: function() {
@@ -140,7 +143,7 @@ export default {
             }
             var doiUrl = "";
             if (fields.doi) {
-                doiUrl = `http://dx.doi.org/${fields.doi}`;
+                doiUrl = `https://doi.org/${fields.doi}`;
                 ref += `[<a href="${doiUrl}" target="_blank">doi:${fields.doi}</a>]`;
             }
             var url = fields.url || doiUrl;
@@ -187,16 +190,16 @@ export default {
 };
 </script>
 <style>
-.citations-formatted{
+.citations-formatted {
     word-wrap: break-word;
 }
 
-.citations-bibtex-text{
+.citations-bibtex-text {
     width: 100%;
     height: 500px;
 }
 
-.citation-padding{
-    padding:5px 10px;
+.citation-padding {
+    padding: 5px 10px;
 }
 </style>

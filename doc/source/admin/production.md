@@ -7,7 +7,7 @@ The [basic installation instructions](https://getgalaxy.org) are suitable for de
 By default, Galaxy:
 
 * Uses [SQLite](http://www.sqlite.org/) (a serverless database), so you don't have to run/configure a database server for quick or basic development.  However, while SQLite [supports concurrent access](https://sqlite.org/lockingv3.html) it does not support multiple concurrent writes, which can reduce system throughput.
-* Uses a built-in HTTP server, written in Python.  Much of the work performed by this server can be moved to [nginx](special_topics/nginx.html) or Apache, which will increase performance.
+* Uses a built-in HTTP server, written in Python.  Much of the work performed by this server can be moved to [nginx](nginx.html) or Apache, which will increase performance.
 * Runs all tools locally.  Moving to a [cluster](cluster.html) will greatly increase capacity.
 * Runs in a single process, which is a performance problem in [CPython](http://en.wikipedia.org/wiki/CPython).
 
@@ -21,7 +21,7 @@ Many of the following instructions are best practices for any production applica
 
 * Create a **NON-ROOT** user called galaxy.  Running as an existing user will cause problems down the line when you want to grant or restrict access to data.
 * Start with a fresh checkout of Galaxy, don't try to convert one previously used for development.  Download and install it in the galaxy user home directory.
-* Galaxy should be a managed system service (like Apache, mail servers, database servers, *etc.*) run by the galaxy user.  Init scripts, OS X launchd definitions and Solaris SMF manifests are provided in the `contrib/` directory of the distribution.  You can also use the `--daemon` and `--stop-daemon` arguments to `run.sh` to start and stop by hand, but still run detached.  When running as a daemon the server's output log will be written to `paster.log` instead of the terminal, unless instructed otherwise with the `--log-file` argument.
+* Galaxy should be a managed system service (like Apache, mail servers, database servers, *etc.*) run by the galaxy user.  Init scripts, OS X launchd definitions and Solaris SMF manifests are provided in the `contrib/` directory of the distribution.  You can also use the `--daemon` and `--stop-daemon` arguments to `run.sh` to start and stop by hand, but still run detached.  When running as a daemon the server's output log will be written to `galaxy.log` instead of the terminal, unless instructed otherwise with the `--log-file` argument.
 * Give Galaxy its own database user and database to prevent Galaxy's schema from conflicting with other tables in your database.  Also, restrict Galaxy's database user so it only has access to its own database.
 * Make sure Galaxy is using a clean Python interpreter.  Conflicts in $PYTHONPATH or the interpreter's `site-packages/` directory could cause problems.  Galaxy manages its own dependencies for the framework, so you do not need to worry about these.  The easiest way to do this is with a [virtualenv](http://pypi.python.org/pypi/virtualenv):
 
@@ -37,17 +37,17 @@ nate@weyerbacher% sh run.sh
 
 ## Basic configuration
 
-The steps to install Galaxy mostly follow those of the regular instructions at [Admin/GetGalaxy](https://getgalaxy.org).  The difference is that after performing the groundwork above, you should initialize the configuration file (`cp config/galaxy.ini.sample config/galaxy.ini`) and modify it as outlined below before starting the server. If you make any changes to this configuration file while the server is running, you will have to restart the server for the changes to take effect.
+The steps to install Galaxy mostly follow those of the [regular instructions](http://getgalaxy.org).  The difference is that after performing the groundwork above, you should initialize the configuration file (`cp config/galaxy.yml.sample config/galaxy.yml`) and modify it as outlined below before starting the server. If you make any changes to this configuration file while the server is running, you will have to restart the server for the changes to take effect.
 
 ### Disable the developer settings
 
-Two options are set in the sample `config/galaxy.ini` which should not be enabled on a production server. You should set both to `False`:
+Two options are set in the sample `config/galaxy.yml` which should not be enabled on a production server. You should set both to `false`:
 
-* `debug = False` - Disable middleware that loads the entire response in memory for displaying debugging information in the page.  If left enabled, the proxy server may timeout waiting for a response or your Galaxy process may run out of memory if it's serving large files.
-* `use_interactive = False` - Disables displaying and live debugging of tracebacks via the web.  Leaving it enabled will expose your configuration (database password, id_secret, etc.).
-* Disable `filter-with = gzip`.  Leaving the gzip filter enabled will cause UI failures because of the way templates are streamed once `debug` is set to `False`.  You will still be able (and are encouraged) to enable gzip in the proxy server.
+* `debug: false` - Disable middleware that loads the entire response in memory for displaying debugging information in the page.  If left enabled, the proxy server may timeout waiting for a response or your Galaxy process may run out of memory if it's serving large files.
+* `use_interactive: false` - Disables displaying and live debugging of tracebacks via the web.  Leaving it enabled will expose your configuration (database password, id_secret, etc.).
+* Disable `filter-with: gzip`.  Leaving the gzip filter enabled will cause UI failures because of the way templates are streamed once `debug` is set to `False`.  You will still be able (and are encouraged) to enable gzip in the proxy server.
 
-During deployment, you may run into problems with failed jobs.  By default, Galaxy removes files related to job execution. You can instruct Galaxy to keep files of failed jobs with: `cleanup_job = onsuccess`
+During deployment, you may run into problems with failed jobs.  By default, Galaxy removes files related to job execution. You can instruct Galaxy to keep files of failed jobs with: `cleanup_job: onsuccess`
 
 ### Switching to a database server
 
@@ -61,7 +61,7 @@ To use an external database, you'll need to set one up.  That process is outside
 
 Once installed, create a new database user and new database which the new user is the owner of.  No further setup is required, since Galaxy manages its own schema.  If you are using a UNIX socket to connect the application to the database (this is the standard case if Galaxy and the database are on the same system), you'll want to name the database user the same as the system user under which you run the Galaxy process.
 
-To configure Galaxy, set `database_connection` in Galaxy's config file, `config/galaxy.ini`.  The syntax for a database URL is explained in the [SQLAlchemy documentation](http://docs.sqlalchemy.org/en/latest/core/engines.html).
+To configure Galaxy, set `database_connection` in Galaxy's config file, `config/galaxy.yml`.  The syntax for a database URL is explained in the [SQLAlchemy documentation](http://docs.sqlalchemy.org/en/latest/core/engines.html).
 
 Here follow two example database URLs with username and password:
 
@@ -81,7 +81,7 @@ mysql:///mydatabase?unix_socket=/var/run/mysqld/mysqld.sock
 
 For more hints on available options for the database URL, see the [SQLAlchemy documentation](http://docs.sqlalchemy.org/en/latest/core/engines.html#database-urls).
 
-If you are using [MySQL](http://dev.mysql.com/) and encounter the "MySQL server has gone away" error, please note the `database_engine_option_pool_recycle` option in `config/galaxy.ini`.  If this does not solve your problem, see [this post](http://gmod.827538.n3.nabble.com/template/NamlServlet.jtp?macro=print_post&node=2354941) on the Galaxy Development [mailing list](/src/mailing-lists/index.md).
+If you are using [MySQL](http://dev.mysql.com/) and encounter the "MySQL server has gone away" error, please note the `database_engine_option_pool_recycle` option in `config/galaxy.yml`.  If this does not solve your problem, see [this post](http://gmod.827538.n3.nabble.com/template/NamlServlet.jtp?macro=print_post&node=2354941) on the Galaxy Development [mailing list](/src/mailing-lists/index.md).
 
 If you are using [MySQL](http://dev.mysql.com/) please make sure the database output is in UTF-8, otherwise you may encounter python TypeErrors.
 
@@ -95,8 +95,8 @@ Downloading and uploading data can also be moved to the proxy server.  This is e
 
 Virtually any server that proxies HTTP should work, although we provide configuration examples for:
 
-* [Apache](special_topics/apache.html), and
-* [nginx](special_topics/nginx.html), a high performance reverse proxy, used by our public Galaxy sites
+* [Apache](apache.html), and
+* [nginx](nginx.html), a high performance reverse proxy, used by our public Galaxy sites
 
 ### Using a compute cluster
 
@@ -155,12 +155,12 @@ For those readers who've already been running Galaxy on a cluster, a bit of info
 
 ### Tune the database
 
-[PostgreSQL](http://www.postgresql.org/) can store results more efficiently than Galaxy, and as a result, reduce Galaxy's memory footprint.  When a query is made, the result will remain on the Postgres server and Galaxy can retrieve only the rows it needs.  To enable this, set `database_engine_option_server_side_cursors = True` in the Galaxy config.
+[PostgreSQL](http://www.postgresql.org/) can store results more efficiently than Galaxy, and as a result, reduce Galaxy's memory footprint.  When a query is made, the result will remain on the Postgres server and Galaxy can retrieve only the rows it needs.  To enable this, set `database_engine_option_server_side_cursors: true` in the Galaxy config.
 
 If your server logs errors about the database connection pool size, you may need to increase the default minimum and maximum number of pool connections, 5 and 10.  These config file options are `database_engine_option_pool_size` and `database_engine_option_max_overflow`.
 
-Finally, if you are using Galaxy <= release_2014.06.02, we recommend that you instruct Galaxy to use one database connection per thread, to avoid connection overhead and overuse.  This can be enabled with `database_engine_option_strategy = threadlocal`.
+Finally, if you are using Galaxy <= release_2014.06.02, we recommend that you instruct Galaxy to use one database connection per thread, to avoid connection overhead and overuse.  This can be enabled with `database_engine_option_strategy: threadlocal`.
 
 ### Make the proxy handle uploads and downloads
 
-By default, Galaxy receives file uploads as a stream from the proxy server and then writes this file to disk.  Likewise, it sends files as a stream to the proxy server.  This occupies the GIL in that Galaxy process and will decrease responsiveness for other operations in that process.  To solve this problem, you can configure your proxy server to serve downloads directly, involving Galaxy only for the task of authorizing that the user has permission to read the dataset.  If using nginx as the proxy, you can configure it to receive uploaded files and write them to disk itself, only notifying Galaxy of the upload once it's completed.  All the details on how to configure these can be found on the [Apache](special_topics/apache.html) and [nginx](special_topics/nginx.html) proxy instruction pages.
+By default, Galaxy receives file uploads as a stream from the proxy server and then writes this file to disk.  Likewise, it sends files as a stream to the proxy server.  This occupies the GIL in that Galaxy process and will decrease responsiveness for other operations in that process.  To solve this problem, you can configure your proxy server to serve downloads directly, involving Galaxy only for the task of authorizing that the user has permission to read the dataset.  If using nginx as the proxy, you can configure it to receive uploaded files and write them to disk itself, only notifying Galaxy of the upload once it's completed.  All the details on how to configure these can be found on the [Apache](apache.html) and [nginx](nginx.html) proxy instruction pages.

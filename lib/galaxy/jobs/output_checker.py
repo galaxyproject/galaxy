@@ -2,28 +2,33 @@ import re
 import traceback
 from logging import getLogger
 
+from galaxy.util.bunch import Bunch
 from .error_level import StdioErrorLevel
 
 log = getLogger(__name__)
+
+DETECTED_JOB_STATE = Bunch(
+    OK='ok',
+    OUT_OF_MEMORY_ERROR='oom_error',
+    GENERIC_ERROR='generic_error',
+)
 
 
 def check_output(tool, stdout, stderr, tool_exit_code, job):
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
-    exit code, return True if the tool exited succesfully and False
-    otherwise. No exceptions should be thrown. If this code encounters
-    an exception, it returns True so that the workflow can continue;
+    exit code, return DETECTED_JOB_STATE.OK if the tool exited succesfully or
+    error type otherwise. No exceptions should be thrown. If this code encounters
+    an exception, it returns OK so that the workflow can continue;
     otherwise, a bug in this code could halt workflow progress.
 
     Note that, if the tool did not define any exit code handling or
     any stdio/stderr handling, then it reverts back to previous behavior:
     if stderr contains anything, then False is returned.
-
-    Note that the job id is just for messages.
     """
     # By default, the tool succeeded. This covers the case where the code
     # has a bug but the tool was ok, and it lets a workflow continue.
-    success = True
+    state = DETECTED_JOB_STATE.OK
 
     try:
         # Check exit codes and match regular expressions against stdout and
@@ -57,7 +62,7 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
                         stderr = tool_msg + "\n" + stderr
                         max_error_level = max(max_error_level,
                                               stdio_exit_code.error_level)
-                        if max_error_level >= StdioErrorLevel.FATAL:
+                        if max_error_level >= StdioErrorLevel.MAX:
                             break
 
             if max_error_level < StdioErrorLevel.FATAL:
@@ -105,11 +110,13 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
 
             # If we encountered a fatal error, then we'll need to set the
             # job state accordingly. Otherwise the job is ok:
-            if max_error_level >= StdioErrorLevel.FATAL:
+            if max_error_level == StdioErrorLevel.FATAL_OOM:
+                state = DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
+            elif max_error_level >= StdioErrorLevel.FATAL:
                 log.debug("Tool exit code indicates an error, failing job.")
-                success = False
+                state = DETECTED_JOB_STATE.GENERIC_ERROR
             else:
-                success = True
+                state = DETECTED_JOB_STATE.OK
 
         # When there are no regular expressions and no exit codes to check,
         # default to the previous behavior: when there's anything on stderr
@@ -121,22 +128,22 @@ def check_output(tool, stdout, stderr, tool_exit_code, job):
             if stderr:
                 peak = stderr[0:250]
                 log.debug("Tool produced standard error failing job - [%s]" % peak)
-                success = False
+                state = DETECTED_JOB_STATE.GENERIC_ERROR
             else:
-                success = True
+                state = DETECTED_JOB_STATE.OK
 
     # On any exception, return True.
     except Exception:
         tb = traceback.format_exc()
         log.warning("Tool check encountered unexpected exception; " +
                     "assuming tool was successful: " + tb)
-        success = True
+        state = DETECTED_JOB_STATE.OK
 
     # Store the modified stdout and stderr in the job:
     if job is not None:
         job.set_streams(stdout, stderr)
 
-    return success
+    return state
 
 
 def __regex_err_msg(match, regex):

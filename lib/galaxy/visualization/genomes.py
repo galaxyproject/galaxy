@@ -4,6 +4,7 @@ import re
 import sys
 from json import loads
 
+import six
 from bx.seq.twobit import TwoBitFile
 
 from galaxy.util.bunch import Bunch
@@ -26,7 +27,7 @@ messages = Bunch(
 
 def decode_dbkey(dbkey):
     """ Decodes dbkey and returns tuple ( username, dbkey )"""
-    if isinstance(dbkey, str) and ':' in dbkey:
+    if isinstance(dbkey, six.string_types) and ':' in dbkey:
         return dbkey.split(':')
     else:
         return None, dbkey

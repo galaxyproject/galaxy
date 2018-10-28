@@ -1,0 +1,18 @@
+# STOCKHOLM 1.0
+#=GF ID    UPSK
+#=GF SE    Predicted; Infernal 
+#=GF SS    Published; PMID 9223489
+#=GF RN    [1]
+#=GF RM    9223489
+#=GF RT    The role of the pseudoknot at the 3' end of turnip yellow mosaic
+#=GF RT    virus RNA in minus-strand synthesis by the viral RNA-dependent RNA
+#=GF RT    polymerase.
+#=GF RA    Deiman BA, Kortlever RM, Pleij CW;
+#=GF RL    J Virol 1997;71:5990-5996.
+
+AF035635.1/619-641             UGAGUUCUCGAUCUCUAAAAUCG
+M24804.1/82-104                UGAGUUCUCUAUCUCUAAAAUCG
+J04373.1/6212-6234             UAAGUUCUCGAUCUUUAAAAUCG
+M24803.1/1-23                  UAAGUUCUCGAUCUCUAAAAUCG
+#=GC SS_cons                   .AAA....<<<<aaa....>>>>
+//

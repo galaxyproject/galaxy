@@ -29,7 +29,7 @@ class ConfigurationApiTestCase(api.ApiTestCase):
 
     def setUp(self):
         super(ConfigurationApiTestCase, self).setUp()
-        self.library_populator = LibraryPopulator(self)
+        self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
     def test_normal_user_configuration(self):
         config = self._get_configuration()

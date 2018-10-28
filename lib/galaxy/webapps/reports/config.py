@@ -4,8 +4,6 @@ import os
 import re
 import sys
 
-from six.moves import configparser
-
 from galaxy.util import string_as_bool
 
 log = logging.getLogger(__name__)
@@ -53,11 +51,15 @@ class Configuration(object):
         self.cookie_path = kwargs.get("cookie_path", "/")
         # Error logging with sentry
         self.sentry_dsn = kwargs.get('sentry_dsn', None)
-        # Parse global_conf
-        global_conf = kwargs.get('global_conf', None)
-        global_conf_parser = configparser.ConfigParser()
-        if global_conf and "__file__" in global_conf:
-            global_conf_parser.read(global_conf['__file__'])
+
+        # Security/Policy Compliance
+        self.redact_username_in_logs = False
+        self.redact_email_in_job_name = False
+        self.enable_beta_gdpr = string_as_bool(kwargs.get("enable_beta_gdpr", False))
+        if self.enable_beta_gdpr:
+            self.redact_username_in_logs = True
+            self.redact_email_in_job_name = True
+            self.allow_user_deletion = True
 
     def get(self, key, default):
         return self.config_dict.get(key, default)

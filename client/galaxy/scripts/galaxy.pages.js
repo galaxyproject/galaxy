@@ -5,6 +5,8 @@ import "libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.autocomplete";
 import GridView from "mvc/grid/grid-view";
 
+var WYMeditor = window.WYMeditor;
+
 var CONTROLS = {
     // Item types.
     ITEM_HISTORY: "item_history",
@@ -154,11 +156,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         }
         show_modal(
             "Create Link",
-            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${
-                curURL
-            }' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${
-                curTitle
-            }' size='40' /></div><div>`,
+            `<div><div><label id='link_attribute_label'>URL <span style='float: right; font-size: 90%'><a href='#' id='set_link_id'>Create in-page anchor</a></span></label><br><input type='text' class='wym_href' value='${curURL}' size='40' /></div><div><label>Title</label><br><input type='text' class='wym_title' value='${curTitle}' size='40' /></div><div>`,
             {
                 "Make link": function() {
                     // Get URL, name/title.
@@ -332,7 +330,6 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
 
         var grid = new GridView({
             url_base: item_info.list_ajax_url,
-            dict_format: true,
             embedded: true
         });
         Galaxy.modal.show({
@@ -426,7 +423,6 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
 
         var grid = new GridView({
             url_base: item_info.list_ajax_url,
-            dict_format: true,
             embedded: true
         });
         Galaxy.modal.show({
@@ -493,7 +489,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
     }
 };
 
-export default function editor_onload() {
+export default function pagesEditorOnload() {
     // Generic error handling
     $(document).ajaxError((e, x) => {
         // console.log( e, x );

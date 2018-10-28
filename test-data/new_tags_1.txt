@@ -1,0 +1,2 @@
+forward	orientation:forward	alias:r1	alias:f
+reverse	orientation:reverse	alias:r2	alias:r

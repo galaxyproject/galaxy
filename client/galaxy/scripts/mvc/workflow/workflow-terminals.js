@@ -1,5 +1,7 @@
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
+import * as Toastr from "libs/toastr";
+
 function CollectionTypeDescription(collectionType) {
     this.collectionType = collectionType;
     this.isCollection = true;
@@ -8,10 +10,10 @@ function CollectionTypeDescription(collectionType) {
 
 var NULL_COLLECTION_TYPE_DESCRIPTION = {
     isCollection: false,
-    canMatch: function(other) {
+    canMatch: function() {
         return false;
     },
-    canMapOver: function(other) {
+    canMapOver: function() {
         return false;
     },
     toString: function() {
@@ -30,14 +32,14 @@ var ANY_COLLECTION_TYPE_DESCRIPTION = {
     canMatch: function(other) {
         return NULL_COLLECTION_TYPE_DESCRIPTION !== other;
     },
-    canMapOver: function(other) {
+    canMapOver: function() {
         return false;
     },
     toString: function() {
         return "AnyCollectionType[]";
     },
-    append: function(otherCollectionType) {
-        throw "Cannot append to ANY_COLLECTION_TYPE_DESCRIPTION";
+    append: function() {
+        return ANY_COLLECTION_TYPE_DESCRIPTION;
     },
     equal: function(other) {
         return other === this;
@@ -50,7 +52,7 @@ $.extend(CollectionTypeDescription.prototype, {
             return this;
         }
         if (otherCollectionTypeDescription === ANY_COLLECTION_TYPE_DESCRIPTION) {
-            return otherCollectionType;
+            return otherCollectionTypeDescription;
         }
         return new CollectionTypeDescription(`${this.collectionType}:${otherCollectionTypeDescription.collectionType}`);
     },
@@ -143,7 +145,9 @@ var Terminal = Backbone.Model.extend({
     },
     destroyInvalidConnections: function() {
         _.each(this.connectors, connector => {
-            connector && connector.destroyIfInvalid();
+            if (connector) {
+                connector.destroyIfInvalid();
+            }
         });
     },
     setMapOver: function(val) {
@@ -258,7 +262,7 @@ var BaseInputTerminal = Terminal.extend({
                 if (this._collectionAttached()) {
                     // Can only attach one collection to multiple input
                     // data parameter.
-                    inputsFilled = true;
+                    inputFilled = true;
                 } else {
                     inputFilled = false;
                 }
@@ -317,17 +321,17 @@ var BaseInputTerminal = Terminal.extend({
             if (thisDatatype == "input") {
                 return true;
             }
-            var cat_outputs = new Array();
+            var cat_outputs = [];
             cat_outputs = cat_outputs.concat(other.datatypes);
             if (other.node.post_job_actions) {
                 for (var pja_i in other.node.post_job_actions) {
                     var pja = other.node.post_job_actions[pja_i];
                     if (
                         pja.action_type == "ChangeDatatypeAction" &&
-                        (pja.output_name == "" || pja.output_name == other.name) &&
+                        (pja.output_name === "" || pja.output_name == other.name) &&
                         pja.action_arguments
                     ) {
-                        cat_outputs.push(pja.action_arguments["newtype"]);
+                        cat_outputs.push(pja.action_arguments.newtype);
                     }
                 }
             }
@@ -522,6 +526,7 @@ var OutputCollectionTerminal = Terminal.extend({
         if (newCollectionType.collectionType != this.collectionType.collectionType) {
             _.each(this.connectors, connector => {
                 // TODO: consider checking if connection valid before removing...
+                Toastr.warning("Destroying a connection because collection type has changed.");
                 connector.destroy();
             });
         }
