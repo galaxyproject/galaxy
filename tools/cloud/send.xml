@@ -26,7 +26,7 @@
     <inputs>
         <param name="filename" type="data" label="Datasets to be sent to a cloud-based storage:" />
         <param name="bucket" type="text" label="Bucket" />
-        <param name="authz_id" type="text" label="Authz ID" />
+        <param name="authz_id" type="text" label="Cloud Authorization ID" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
         <param name="overwrite_existing" type="boolean" label="Overwrite Existing" />
     </inputs>
@@ -37,7 +37,14 @@
 
 **What it does**
 
-Sends a dataset from Galaxy to a cloud-based storage.
+        Sends dataset(s) from Galaxy to a cloud-based storage that is defined by a *Cloud Authorization*
+        given the ID.
+
+**Remarks**
+        This tool leverages OpenID Connect protocol and CloudAuthz (https://github.com/galaxyproject/cloudauthz)
+        to access cloud-based resources without requiring user credentials.
+
+        To get a list of CloudAuthz configurations available for your account, visit `api/cloud/authz`.
 
     </help>
 </tool>
