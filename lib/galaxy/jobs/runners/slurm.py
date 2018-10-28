@@ -133,7 +133,6 @@ class SlurmJobRunner(DRMAAJobRunner):
                     ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 elif slurm_state == 'CANCELLED':
                     # Check to see if the job was killed for exceeding memory consumption
-                    # check_memory_limit_msg = self.__check_memory_limit( ajs.error_file )
                     check_memory_limit_msg = util.grep_tail(ajs.error_file, SLURM_MEMORY_ERRORS, 2048)
                     if check_memory_limit_msg:
                         log.info('(%s/%s) Job hit memory limit (SLURM state: CANCELLED)', ajs.job_wrapper.get_id_tag(), ajs.job_id)
@@ -172,25 +171,3 @@ class SlurmJobRunner(DRMAAJobRunner):
             log.exception('(%s/%s) Failure in SLURM _complete_terminal_job(), job final state will be: %s', ajs.job_wrapper.get_id_tag(), ajs.job_id, drmaa_state)
         # by default, finish the job with the state from drmaa
         return super(SlurmJobRunner, self)._complete_terminal_job(ajs, drmaa_state=drmaa_state)
-
-    def __check_memory_limit(self, efile_path):
-        """
-        A very poor implementation of tail, but it doesn't need to be fancy
-        since we are only searching the last 2K
-        """
-        try:
-            log.debug('Checking %s for exceeded memory message from SLURM', efile_path)
-            with open(efile_path) as f:
-                if os.path.getsize(efile_path) > 2048:
-                    f.seek(-2048, os.SEEK_END)
-                    f.readline()
-                for line in f.readlines():
-                    stripped_line = line.strip()
-                    if stripped_line == SLURM_MEMORY_LIMIT_EXCEEDED_MSG:
-                        return OUT_OF_MEMORY_MSG
-                    elif any(_ in stripped_line for _ in SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS):
-                        return PROBABLY_OUT_OF_MEMORY_MSG
-        except Exception:
-            log.exception('Error reading end of %s:', efile_path)
-
-        return False
