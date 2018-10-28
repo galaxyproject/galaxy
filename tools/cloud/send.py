@@ -53,7 +53,7 @@ def send(provider, credentials, bucket, object_label, filename, overwrite_existi
     if bucket_obj is None:
         raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
     if overwrite_existing is False and bucket_obj.objects.get(object_label) is not None:
-        object_label += "-" + datetime.datetime.now().strftime("%y-%m-%d-%H-%M-%S")
+        object_label += "_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
     print("[4/5 {}] Creating object {}.".format(datetime.datetime.now().replace(microsecond=0), object_label))
     created_obj = bucket_obj.objects.create(object_label)
     print("[5/5 {}] Sending dataset.".format(datetime.datetime.now().replace(microsecond=0)))
