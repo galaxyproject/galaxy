@@ -28,7 +28,7 @@
         <param name="authz_id" type="text" label="Authz ID" />
         <param name="bucket" type="text" label="Bucket" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
-        <param name="overwrite_existing" type="boolean" label="overwrite_existing" />
+        <param name="overwrite_existing" type="boolean" label="Overwrite Existing" />
     </inputs>
     <outputs>
         <data name="output" type="data" label="Send to cloud log" hidden="false"/>
