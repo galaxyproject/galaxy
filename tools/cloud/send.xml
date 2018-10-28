@@ -25,8 +25,8 @@
     ]]></command>
     <inputs>
         <param name="filename" type="data" label="Datasets to be sent to a cloud-based storage:" />
-        <param name="authz_id" type="text" label="Authz ID" />
         <param name="bucket" type="text" label="Bucket" />
+        <param name="authz_id" type="text" label="Authz ID" />
         <param name="object_label" type="text" hidden="true" label="Object Label" />
         <param name="overwrite_existing" type="boolean" label="Overwrite Existing" />
     </inputs>
