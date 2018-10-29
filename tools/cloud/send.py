@@ -46,19 +46,33 @@ def send(provider, credentials, bucket, object_label, filename, overwrite_existi
         raise Exception("The file `{}` does not exist.".format(filename))
     if CloudProviderFactory is None:
         raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
+
     print("[2/5 {}] Establishing a connection to {}.".format(datetime.datetime.now().replace(microsecond=0), provider))
-    connection = CloudManager.configure_provider(provider, credentials)
+    try:
+        connection = CloudManager.configure_provider(provider, credentials)
+    except Exception:
+        print("Failed to establish the connection.")
+
     print("[3/5 {}] Accessing bucket {}.".format(datetime.datetime.now().replace(microsecond=0), bucket))
     bucket_obj = connection.storage.buckets.get(bucket)
     if bucket_obj is None:
         raise ObjectNotFound("Could not find the specified bucket `{}`.".format(bucket))
     if overwrite_existing is False and bucket_obj.objects.get(object_label) is not None:
         object_label += "_" + datetime.datetime.now().strftime("%y%m%d_%H%M%S")
+
     print("[4/5 {}] Creating object {}.".format(datetime.datetime.now().replace(microsecond=0), object_label))
-    created_obj = bucket_obj.objects.create(object_label)
+    try:
+        created_obj = bucket_obj.objects.create(object_label)
+    except Exception:
+        print("Failed to create the object.")
+
     print("[5/5 {}] Sending dataset.".format(datetime.datetime.now().replace(microsecond=0)))
     transfer_start_time = time.time()
-    created_obj.upload_from_file(filename)
+    try:
+        created_obj.upload_from_file(filename)
+    except Exception:
+        print("Failed to send the dataset.")
+
     print("Finished successfully.")
     print("Job runtime:\t{}".format(time.time() - start_time))
     print("Transfer ET:\t{}\tSpeed:\t{}MB/sec".format(
