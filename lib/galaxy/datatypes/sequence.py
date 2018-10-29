@@ -549,7 +549,7 @@ class BaseFastq(Sequence):
     """Base class for FastQ sequences"""
     edam_format = "format_1930"
     file_ext = "fastq"
-    bases_regexp = re.compile("^[NGTAC 0123\.]*")
+    bases_regexp = re.compile(r"^[NGTAC 0123\.]*$", re.IGNORECASE)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -713,7 +713,7 @@ class FastqSanger(Fastq):
     """Class representing a FASTQ sequence ( the Sanger variant )"""
     edam_format = "format_1932"
     file_ext = "fastqsanger"
-    bases_regexp = re.compile("^[NGTAC]*")
+    bases_regexp = re.compile("^[NGTAC]*$", re.IGNORECASE)
 
     @staticmethod
     def quality_check(lines):
@@ -739,7 +739,7 @@ class FastqIllumina(Fastq):
 class FastqCSSanger(Fastq):
     """Class representing a Color Space FASTQ sequence ( e.g a SOLiD variant )"""
     file_ext = "fastqcssanger"
-    bases_regexp = re.compile("^[NGTAC][0123\.]*")
+    bases_regexp = re.compile(r"^[NGTAC][0123\.]*$", re.IGNORECASE)
 
 
 @build_sniff_from_prefix
