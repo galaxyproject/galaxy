@@ -41,11 +41,11 @@ var commonLibs = [
 let buildconfig = {
     entry: {
         libs: commonLibs,
-        login: "./galaxy/scripts/apps/login.js",
-        analysis: "./galaxy/scripts/apps/analysis.js",
-        admin: "./galaxy/scripts/apps/admin.js",
-        chart: "./galaxy/scripts/apps/chart.js",
-        extended: "./galaxy/scripts/apps/extended.js"
+        login: "apps/login",
+        analysis: "apps/analysis",
+        admin: "apps/admin",
+        chart: "apps/chart",
+        extended: "apps/extended"
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
@@ -120,7 +120,8 @@ let buildconfig = {
             jQuery: "jquery",
             "window.jQuery": "jquery",
             _: "underscore",
-            Backbone: "libs/backbone"
+            Backbone: "libs/backbone",
+            Galaxy: ["galaxy.monitor", "default"]
         }),
         // new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 })
         new VueLoaderPlugin()

@@ -29,6 +29,8 @@ import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 // console.debug( 'galaxy globals loaded' );
 
+import { installMonitor } from "utils/installMonitor";
+
 // ============================================================================
 // jquery on document ready
 // ============================================================================
@@ -199,3 +201,17 @@ $(document).ready(() => {
     }
     onloadWebhooks();
 });
+
+
+// add monitors for all the horrible little global variables
+
+let watchme = [
+    ...Object.keys(layout_modal),
+    "panels",
+    "async_save_text",
+    "make_popupmenu",
+    "make_popup_menus",
+    "init_tag_click_function"
+];
+
+watchme.forEach(prop => installMonitor(prop));
