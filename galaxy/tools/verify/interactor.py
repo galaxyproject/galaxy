@@ -73,12 +73,12 @@ def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history, fo
 
     if UPLOAD_ASYNC:
         for test_data in all_test_data:
-            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste))
+            upload_waits.append(galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste))
         for upload_wait in upload_waits:
             upload_wait()
     else:
         for test_data in all_test_data:
-            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste)
+            upload_wait = galaxy_interactor.stage_data_async(test_data, history, tool_id, force_path_paste=force_path_paste)
             upload_wait()
 
 
@@ -265,7 +265,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, tool_id, async=True, force_path_paste=False):
+    def stage_data_async(self, test_data, history_id, tool_id, force_path_paste=False):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
@@ -392,6 +392,9 @@ class GalaxyInteractorApi(object):
             else:
                 element = self.uploads[element_def["value"]].copy()
                 element["name"] = element_identifier
+                tags = element_def.get("attributes").get("tags")
+                if tags:
+                    element["tags"] = tags.split(",")
             element_identifiers.append(element)
         return element_identifiers
 

@@ -30,11 +30,11 @@ def check_html(file_path, chunk=None):
         temp = chunk.splitlines()
     else:
         temp = chunk
-    regexp1 = re.compile("<A\s+[^>]*HREF[^>]+>", re.I)
-    regexp2 = re.compile("<IFRAME[^>]*>", re.I)
-    regexp3 = re.compile("<FRAMESET[^>]*>", re.I)
-    regexp4 = re.compile("<META[\W][^>]*>", re.I)
-    regexp5 = re.compile("<SCRIPT[^>]*>", re.I)
+    regexp1 = re.compile(r"<A\s+[^>]*HREF[^>]+>", re.I)
+    regexp2 = re.compile(r"<IFRAME[^>]*>", re.I)
+    regexp3 = re.compile(r"<FRAMESET[^>]*>", re.I)
+    regexp4 = re.compile(r"<META[\W][^>]*>", re.I)
+    regexp5 = re.compile(r"<SCRIPT[^>]*>", re.I)
     lineno = 0
     # TODO: Potentially reading huge lines into string here, this should be
     # reworked.

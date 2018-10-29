@@ -75,7 +75,7 @@ def mock_tool(require_login=False, hidden=False, trackster_conf=False, allow_acc
 
 
 def mock_trans(has_user=True, is_admin=False):
-    trans = Bunch(user_is_admin=lambda: is_admin)
+    trans = Bunch(user_is_admin=is_admin)
     if has_user:
         trans.user = Bunch(preferences={})
     else:

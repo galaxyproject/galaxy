@@ -744,8 +744,8 @@ class StdioParser(object):
                 # Also note that whitespace is eliminated.
                 # TODO: Turn this into a single match - it should be
                 # more efficient.
-                code_range = re.sub("\s", "", code_range)
-                code_ranges = re.split(":", code_range)
+                code_range = re.sub(r"\s", "", code_range)
+                code_ranges = re.split(r":", code_range)
                 if (len(code_ranges) == 2):
                     if (code_ranges[0] is None or '' == code_ranges[0]):
                         exit_code.range_start = float("-inf")
@@ -827,8 +827,8 @@ class StdioParser(object):
                     output_srcs = regex_elem.get("sources")
                 if output_srcs is None:
                     output_srcs = "output,error"
-                output_srcs = re.sub("\s", "", output_srcs)
-                src_list = re.split(",", output_srcs)
+                output_srcs = re.sub(r"\s", "", output_srcs)
+                src_list = re.split(r",", output_srcs)
                 # Just put together anything to do with "out", including
                 # "stdout", "output", etc. Repeat for "stderr", "error",
                 # and anything to do with "err". If neither stdout nor
