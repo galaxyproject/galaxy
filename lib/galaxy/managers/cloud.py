@@ -233,6 +233,12 @@ class CloudManager(sharable.SharableModelManager):
         if input_args is None:
             input_args = {}
 
+        if not hasattr(trans.app, 'authnz_manager'):
+            err_msg = "The OpenID Connect protocol, a required feature for getting data from cloud, " \
+                      "is not enabled on this Galaxy instance."
+            log.debug(err_msg)
+            raise MessageException(err_msg)
+
         cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
         credentials = trans.app.authnz_manager.get_cloud_access_credentials(cloudauthz, trans.sa_session, trans.user.id, trans.request)
         connection = self.configure_provider(cloudauthz.provider, credentials)
@@ -312,6 +318,12 @@ class CloudManager(sharable.SharableModelManager):
         """
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
+
+        if not hasattr(trans.app, 'authnz_manager'):
+            err_msg = "The OpenID Connect protocol, a required feature for sending data to cloud, " \
+                      "is not enabled on this Galaxy instance."
+            log.debug(err_msg)
+            raise MessageException(err_msg)
 
         cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
 
