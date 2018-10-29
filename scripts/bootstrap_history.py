@@ -228,6 +228,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
     - [ ] Tweet docs news *highlights* link as @galaxyproject on twitter. [An Example](https://twitter.com/galaxyproject/status/973646125633695744).
     - [ ] Post *highlights* as type 'News' to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/27118/).
     - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
+    - [ ] Adjust http://getgalaxy.org text and links to match current master branch by opening a PR for https://github.com/galaxyproject/galaxy-hub/
 
 - [ ] **Prepare for next release**
 
