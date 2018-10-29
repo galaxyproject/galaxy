@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 import os
+import re
 import subprocess
 
 from galaxy.datatypes import (
@@ -478,6 +479,7 @@ class PDB(GenericMolFile):
     http://www.wwpdb.org/documentation/format33/v3.3.html
     """
     file_ext = "pdb"
+    MetadataElement(name="chain_ids", default=[], desc="Chain IDs", readonly=False, visible=True)
 
     def sniff_prefix(self, file_prefix):
         """
@@ -513,12 +515,29 @@ class PDB(GenericMolFile):
         else:
             return False
 
+    def set_meta(self, dataset, **kwd):
+        """
+        Find Chain_IDs for metadata.
+        """
+        try:
+            chain_ids = set()
+            with open(dataset.file_name, 'r') as fh:
+                for line in fh:
+                    if line.startswith('ATOM  ') or line.startswith('HETATM'):
+                        if line[21] != ' ':
+                            chain_ids.add(line[21])
+            dataset.metadata.chain_ids = list(chain_ids)
+        except Exception as e:
+            log.error('Error finding chain_ids: %s' % str(e))
+            raise
+
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
             atom_numbers = count_special_lines("^ATOM", dataset.file_name)
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
+            chain_ids = ','.join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else 'None'
             dataset.peek = get_file_peek(dataset.file_name)
-            dataset.blurb = "%s atoms and %s HET-atoms" % (atom_numbers, hetatm_numbers)
+            dataset.blurb = "%s atoms and %s HET-atoms\nchain_ids: %s" % (atom_numbers, hetatm_numbers, chain_ids)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -570,6 +589,108 @@ class PDBQT(GenericMolFile):
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "%s roots and %s branches" % (root_numbers, branch_numbers)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+
+@build_sniff_from_prefix
+class PQR(GenericMolFile):
+    """
+    Protein Databank format.
+    https://apbs-pdb2pqr.readthedocs.io/en/latest/formats/pqr.html
+    """
+    file_ext = "pqr"
+    MetadataElement(name="chain_ids", default=[], desc="Chain IDs", readonly=False, visible=True)
+
+    def get_matcher(self):
+        """
+        Atom and HETATM line fields are space separated, match group:
+          0: Field_name
+              A string which specifies the type of PQR entry: ATOM or HETATM.
+          1: Atom_number
+              An integer which provides the atom index.
+          2: Atom_name
+              A string which provides the atom name.
+          3: Residue_name
+              A string which provides the residue name.
+          5: Chain_ID   (Optional, group 4 is whole field)
+              An optional string which provides the chain ID of the atom.
+              Note that chain ID support is a new feature of APBS 0.5.0 and later versions.
+          6: Residue_number
+              An integer which provides the residue index.
+          7: X 8: Y 9: Z
+              3 floats which provide the atomic coordinates (in angstroms)
+          10: Charge
+              A float which provides the atomic charge (in electrons).
+          11: Radius
+              A float which provides the atomic radius (in angstroms).
+        """
+        pat = '(ATOM|HETATM)\s+' +\
+              '(\d+)\s+' +\
+              '([A-Z0-9]+)\s+' +\
+              '([A-Z0-9]+)\s+' +\
+              '(([A-Z]?)\s+)?' +\
+              '([-+]?\d*\.\d+|\d+)\s+' +\
+              '([-+]?\d*\.\d+|\d+)\s+' +\
+              '([-+]?\d*\.\d+|\d+)\s+' +\
+              '([-+]?\d*\.\d+|\d+)\s+' +\
+              '([-+]?\d*\.\d+|\d+)\s+'
+        return re.compile(pat)
+
+    def sniff_prefix(self, file_prefix):
+        """
+        Try to guess if the file is a PQR file.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('5e5z.pqr')
+        >>> PQR().sniff(fname)
+        True
+        >>> fname = get_test_fname('drugbank_drugs.cml')
+        >>> PQR().sniff(fname)
+        False
+        """
+        prog = self.get_matcher()
+        headers = iter_headers(file_prefix, sep=None, comment_designator='REMARK   5', count=3000)
+        h = a = False
+        for line in headers:
+            section_name = line[0].strip()
+            if section_name == 'REMARK':
+                h = True
+            elif section_name == 'ATOM' or section_name == 'HETATM':
+                if prog.match(' '.join(line)):
+                    a = True
+                    break
+        if h * a:
+            return True
+        else:
+            return False
+
+    def set_meta(self, dataset, **kwd):
+        """
+        Find Optional Chain_IDs for metadata.
+        """
+        try:
+            prog = self.get_matcher()
+            chain_ids = set()
+            with open(dataset.file_name, 'r') as fh:
+                for line in fh:
+                    if line.startswith('REMARK'):
+                        continue
+                    match = prog.match(line.rstrip())
+                    if match and match.groups()[5]:
+                        chain_ids.add(match.groups()[5])
+            dataset.metadata.chain_ids = list(chain_ids)
+        except Exception as e:
+            log.error('Error finding chain_ids: %s' % str(e))
+            raise
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            atom_numbers = count_special_lines("^ATOM", dataset.file_name)
+            hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
+            chain_ids = ','.join(dataset.metadata.chain_ids) if len(dataset.metadata.chain_ids) > 0 else 'None'
+            dataset.peek = get_file_peek(dataset.file_name)
+            dataset.blurb = "%s atoms and %s HET-atoms\nchain_ids: %s" % (atom_numbers, hetatm_numbers, str(chain_ids))
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
