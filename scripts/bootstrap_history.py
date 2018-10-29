@@ -223,7 +223,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
     - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
     - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
-    - [ ] Stage announcement content (Hub, Biostars, etc.) on annouce date to capture date tags. Note: all final content does not need to be completed to do this.
+    - [ ] Stage announcement content (Hub, Biostars, etc.) on announce date to capture date tags. Note: all final content does not need to be completed to do this.
     - [ ] Create hub *highlights* and post as a new "news" content item. [An Example](https://galaxyproject.org/news/2018-9-galaxy-release/).
     - [ ] Tweet docs news *highlights* link as @galaxyproject on twitter. [An Example](https://twitter.com/galaxyproject/status/973646125633695744).
     - [ ] Post *highlights* as type 'News' to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/27118/).
@@ -308,7 +308,7 @@ def do_release(argv):
     open(next_release_file, "w").write(next_announce.encode("utf-8"))
     releases_index = _release_file("index.rst")
     releases_index_contents = open(releases_index, "r").read()
-    releases_index_contents = releases_index_contents.replace(".. annoucements\n", ".. annoucements\n   " + next_version + "_announce\n")
+    releases_index_contents = releases_index_contents.replace(".. announcements\n", ".. announcements\n   " + next_version + "_announce\n")
     with open(releases_index, "w") as f:
         f.write(releases_index_contents)
 
