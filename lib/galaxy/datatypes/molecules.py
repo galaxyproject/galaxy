@@ -626,16 +626,16 @@ class PQR(GenericMolFile):
           11: Radius
               A float which provides the atomic radius (in angstroms).
         """
-        pat = '(ATOM|HETATM)\s+' +\
-              '(\d+)\s+' +\
-              '([A-Z0-9]+)\s+' +\
-              '([A-Z0-9]+)\s+' +\
-              '(([A-Z]?)\s+)?' +\
-              '([-+]?\d*\.\d+|\d+)\s+' +\
-              '([-+]?\d*\.\d+|\d+)\s+' +\
-              '([-+]?\d*\.\d+|\d+)\s+' +\
-              '([-+]?\d*\.\d+|\d+)\s+' +\
-              '([-+]?\d*\.\d+|\d+)\s+'
+        pat = r'(ATOM|HETATM)\s+' +\
+              r'(\d+)\s+' +\
+              r'([A-Z0-9]+)\s+' +\
+              r'([A-Z0-9]+)\s+' +\
+              r'(([A-Z]?)\s+)?' +\
+              r'([-+]?\d*\.\d+|\d+)\s+' +\
+              r'([-+]?\d*\.\d+|\d+)\s+' +\
+              r'([-+]?\d*\.\d+|\d+)\s+' +\
+              r'([-+]?\d*\.\d+|\d+)\s+' +\
+              r'([-+]?\d*\.\d+|\d+)\s+'
         return re.compile(pat)
 
     def sniff_prefix(self, file_prefix):
