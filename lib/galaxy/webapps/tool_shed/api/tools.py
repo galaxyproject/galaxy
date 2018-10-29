@@ -162,10 +162,10 @@ class ToolsController(BaseAPIController):
 
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
-            repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
-                                                                             changeset,
-                                                                             found_tool.tool_config)
-        if message:
+            repository, tool, valid, message = tv.load_tool_from_changeset_revision(tsr_id,
+                                                                                    changeset,
+                                                                                    found_tool.tool_config)
+        if message or not valid:
             status = 'error'
             return dict(message=message, status=status)
         tool_help = ''
