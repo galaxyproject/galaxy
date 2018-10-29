@@ -207,7 +207,7 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
     - [ ] Add the branch `*/release_{version}` to Jenkins documentation build [configuration matrix](https://jenkins.galaxyproject.org/job/galaxy-sphinx-by-branch/configure).
     - [ ] Trigger the [branch documentation build](https://jenkins.galaxyproject.org/job/galaxy-sphinx-by-branch/)
-    - [ ] Ensure everything is merged forward, and then trigger the ['latest' documentation build](https://jenkins.galaxyproject.org/job/latest-Sphinx-Docs/)
+    - [ ] Verify that everything is merged from ${version}->master, and then trigger the ['latest' documentation build](https://jenkins.galaxyproject.org/job/latest-Sphinx-Docs/)
 
 - [ ] **Do Docker Release**
 
