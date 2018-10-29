@@ -842,6 +842,9 @@ Fixes
   `Pull Request 6908`_
 * Fix stopping DRMAA jobs
   `Pull Request 6912`_
+* Fix toolshed error in display_tool if tool is invalid
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 6932`_
 
 .. github_links
 .. _Pull Request 5457: https://github.com/galaxyproject/galaxy/pull/5457
@@ -1192,4 +1195,5 @@ Fixes
 .. _Pull Request 6904: https://github.com/galaxyproject/galaxy/pull/6904
 .. _Pull Request 6908: https://github.com/galaxyproject/galaxy/pull/6908
 .. _Pull Request 6912: https://github.com/galaxyproject/galaxy/pull/6912
+.. _Pull Request 6932: https://github.com/galaxyproject/galaxy/pull/6932
 
