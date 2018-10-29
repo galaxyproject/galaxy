@@ -43,10 +43,10 @@ class RepoToolModule(ToolModule):
                 tv = tool_validator.ToolValidator(validation_context)
                 for tool_dict in tools_metadata:
                     if self.tool_id in [tool_dict['id'], tool_dict['guid']]:
-                        repository, self.tool, message = tv.load_tool_from_changeset_revision(repository_id,
-                                                                                              changeset_revision,
-                                                                                              tool_dict['tool_config'])
-                        if message and self.tool is None:
+                        repository, self.tool, valid, message = tv.load_tool_from_changeset_revision(repository_id,
+                                                                                                     changeset_revision,
+                                                                                                     tool_dict['tool_config'])
+                        if self.tool is None and message or not valid:
                             self.errors = 'unavailable'
                         break
         else:

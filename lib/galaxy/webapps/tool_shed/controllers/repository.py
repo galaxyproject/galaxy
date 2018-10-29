@@ -875,17 +875,16 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def display_tool(self, trans, repository_id, tool_config, changeset_revision, **kwd):
-        message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
         render_repository_actions_for = kwd.get('render_repository_actions_for', 'tool_shed')
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
-            repository, tool, message = tv.load_tool_from_changeset_revision(repository_id,
+            repository, tool, valid, message = tv.load_tool_from_changeset_revision(repository_id,
                                                                              changeset_revision,
                                                                              tool_config)
-        if message:
+        if message or not valid:
             status = 'error'
-        tool_state = tool_util.new_state(trans, tool, invalid=False)
+        tool_state = tool_util.new_state(trans, tool, invalid=not valid)
         metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
                                                                                              repository_id,
                                                                                              changeset_revision,
@@ -1772,7 +1771,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
-            repository, tool, error_message = tv.load_tool_from_changeset_revision(repository_id,
+            repository, tool, valid, error_message = tv.load_tool_from_changeset_revision(repository_id,
                                                                                    changeset_revision,
                                                                                    tool_config)
             tool_state = tool_util.new_state(trans, tool, invalid=True)
