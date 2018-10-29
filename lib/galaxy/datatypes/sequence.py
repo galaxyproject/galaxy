@@ -697,9 +697,11 @@ class BaseFastq(Sequence):
         headers = get_headers(file_prefix, sep='\n', count=4)
         if len(headers) == 4 and headers[0][0] and headers[0][0][0] == "@" and headers[2][0] and headers[2][0][0] == "+" and headers[1][0]:
             # Check the sequence line, make sure it contains only G/C/A/T/N
-            start, end = cls.bases_regexp.match(headers[1][0]).span()
-            if (end - start) == len(headers[1][0]):
-                return True
+            match = cls.bases_regexp.match(headers[1][0])
+            if match:
+                start, end = match.span()
+                if (end - start) == len(headers[1][0]):
+                    return True
         return False
 
 
