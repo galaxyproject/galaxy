@@ -1,8 +1,9 @@
 /**
  * Diagnostic utility, can be setup to monitor globally assigned resources. For
  * instance if some legacy script set a variable called window.Bob, call
- * installMonitor("Bob", true), to get console.log messages and a traceroute
- * every time some random script actually accesses window.Bob.
+ * installMonitor("Bob"). Then open the chrome console and type
+ * toggleMonitorMessages("Bob", true) to receive console.log messages and a
+ * traceroute every time some random script actually accesses window.Bob.
  */
 
 import { mock } from "utils/mock";
