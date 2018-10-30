@@ -382,6 +382,8 @@ class Configuration(object):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
+        # Enable use of gxformat2 workflows.
+        self.enable_beta_workflow_format = string_as_bool(kwargs.get('enable_beta_workflow_format', 'False'))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
@@ -423,7 +425,7 @@ class Configuration(object):
         self.use_heartbeat = string_as_bool(kwargs.get('use_heartbeat', 'False'))
         self.heartbeat_interval = int(kwargs.get('heartbeat_interval', 20))
         self.heartbeat_log = kwargs.get('heartbeat_log', None)
-        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 5))
+        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 30))
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.log_events = string_as_bool(kwargs.get('log_events', 'False'))
         self.sanitize_all_html = string_as_bool(kwargs.get('sanitize_all_html', True))

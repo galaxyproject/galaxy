@@ -227,11 +227,9 @@ body {
         align-items: center;
         justify-content: space-between;
     }
-
     .panel-header-buttons {
         order: 9999;
     }
-
     .panel-header-button {
         text-decoration: none;
         display: inline-block;
@@ -242,7 +240,6 @@ body {
         &:not(:last-child) {
             margin-right: 2px;
         }
-
         // Fade to maroon on hover
         &:hover {
             color: maroon;
@@ -273,12 +270,10 @@ body {
     z-index: 1000; // Above #dd-helper
     border-top: $layout-border;
     background: $navbar-default-bg;
-
     color: #555;
     a {
         color: #555;
     }
-
     .drag {
         position: absolute;
         top: 0;
@@ -290,7 +285,7 @@ body {
         background-image: url(../../images/visualization/draggable_horizontal.png);
         background-repeat: no-repeat;
         background-position: 50% 50%;
-        cursor: w-resize;
+        cursor: col-resize;
     }
 }
 
@@ -350,16 +345,11 @@ div.unified-panel-body {
     height: 100%;
     padding: 0px;
     flex: 1;
+    overflow: auto;
 }
 
 div.unified-panel-body-background {
     background: none repeat scroll 0 0 $panel-bg-color;
-}
-
-#left > div.unified-panel-body,
-#right > div.unified-panel-body {
-    padding-bottom: $panel_footer_height;
-    overflow: auto;
 }
 
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes

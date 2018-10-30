@@ -155,6 +155,11 @@
       <display file="rviewer/bed.xml" inherit="true"/>
       <display file="igv/interval_as_bed.xml" inherit="true"/>
     </datatype>
+
+    <!-- ISA data types -->
+    <datatype extension="isa-tab" type="galaxy.datatypes.isa:IsaTab" mimetype="application/isa-tools" display_in_upload="true" description="ISA-Tab data type." description_url="https://isa-tools.org"/>
+    <datatype extension="isa-json" type="galaxy.datatypes.isa:IsaJson" mimetype="application/isa-tools" display_in_upload="true" description="ISA-JSON data type." description_url="https://isa-tools.org"/>
+
     <datatype extension="picard_interval_list" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true">
       <converter file="picard_interval_list_to_bed6_converter.xml" target_datatype="bed6"/>
     </datatype>
@@ -209,6 +214,7 @@
     <datatype extension="tandem" type="galaxy.datatypes.proteomics:TandemXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="thermo.raw" type="galaxy.datatypes.proteomics:ThermoRAW" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="nmrml" type="galaxy.datatypes.proteomics:NmrML" mimetype="application/xml" display_in_upload="true" description="nmrML is an open mark-up language for NMR data." description_url="http://nmrml.org/schema/"/>
     <datatype extension="mgf" type="galaxy.datatypes.proteomics:Mgf" display_in_upload="true"/>
     <datatype extension="wiff" type="galaxy.datatypes.proteomics:Wiff" display_in_upload="true"/>
     <datatype extension="mzxml" type="galaxy.datatypes.proteomics:MzXML" mimetype="application/xml" display_in_upload="true"/>
@@ -378,7 +384,8 @@
     <datatype extension="rgenetics" type="galaxy.datatypes.genetics:Rgenetics"/>
     <datatype extension="snptest" type="galaxy.datatypes.genetics:Snptest" display_in_upload="true"/>
     <datatype extension="snpmatrix" type="galaxy.datatypes.genetics:SNPMatrix" display_in_upload="true"/>
-    <datatype extension="xls" type="galaxy.datatypes.tabular:Tabular"/>
+    <!-- deprecated, should use excel.xls -->
+    <datatype extension="xls" type="galaxy.datatypes.binary:ExcelXls"/>
     <!-- End RGenetics Datatypes -->
     <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true"/>
     <datatype extension="json" type="galaxy.datatypes.text:Json" display_in_upload="true"/>
@@ -575,11 +582,10 @@
     <datatype extension="phar" type="galaxy.datatypes.molecules:PHAR" display_in_upload="false"/>
     <datatype extension="pdb" type="galaxy.datatypes.molecules:PDB" display_in_upload="true"/>
     <datatype extension="pdbqt" type="galaxy.datatypes.molecules:PDBQT" display_in_upload="true"/>
+    <datatype extension="pqr" type="galaxy.datatypes.molecules:PQR" display_in_upload="true" />
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true"/>
     <datatype extension="dcd" type="galaxy.datatypes.binary:Dcd" display_in_upload="true"/>
     <datatype extension="top" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
-    <datatype extension="itp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
-    <datatype extension="mdp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xtc" type="galaxy.datatypes.binary:Xtc" display_in_upload="true"/>
     <datatype extension="cpt" type="galaxy.datatypes.binary:Cpt" display_in_upload="true"/>
     <datatype extension="gro" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
@@ -747,6 +753,7 @@
     <sniffer type="galaxy.datatypes.xml:Owl"/>
     <sniffer type="galaxy.datatypes.xml:Sbml"/>
     <sniffer type="galaxy.datatypes.proteomics:MzML"/>
+    <sniffer type="galaxy.datatypes.proteomics:NmrML"/>
     <sniffer type="galaxy.datatypes.proteomics:TandemXML"/>
     <sniffer type="galaxy.datatypes.proteomics:PepXml"/>
     <sniffer type="galaxy.datatypes.proteomics:Mgf"/>
@@ -777,9 +784,11 @@
     <sniffer type="galaxy.datatypes.molecules:MOL2"/>
     <sniffer type="galaxy.datatypes.molecules:InChI"/>
     <sniffer type="galaxy.datatypes.molecules:FPS"/>
+    <sniffer type="galaxy.datatypes.molecules:PQR"/>
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqCSSanger"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>
@@ -837,6 +846,7 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.

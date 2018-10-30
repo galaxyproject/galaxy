@@ -494,7 +494,7 @@ class JobHandlerQueue(Monitors):
                     usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
                     if usage > quota:
                         return JOB_USER_OVER_QUOTA, job_destination
-                except AssertionError as e:
+                except AssertionError:
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
         if (state == JOB_READY and
@@ -965,8 +965,12 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.values():
+        failures = []
+        for name, runner in self.job_runners.items():
             try:
                 runner.shutdown()
             except Exception:
-                raise Exception("Failed to shutdown runner %s" % runner)
+                failures.append(name)
+                log.exception("Failed to shutdown runner %s", name)
+        if failures:
+            raise Exception("Failed to shutdown runners: %s" % ', '.join(failures))

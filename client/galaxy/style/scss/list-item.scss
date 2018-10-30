@@ -145,7 +145,7 @@ $vertical-gap: 8px;
 
     .controls {
         & > *:not(:empty) {
-            margin-bottom: 8px;
+            @extend .mb-2;
         }
         .name {
             word-wrap: break-word;

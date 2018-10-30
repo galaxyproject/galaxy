@@ -57,7 +57,7 @@ SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 def _is_valid_slug(slug):
     """ Returns true if slug is valid. """
 
-    VALID_SLUG_RE = re.compile("^[a-z0-9\-]+$")
+    VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
     return VALID_SLUG_RE.match(slug)
 
 

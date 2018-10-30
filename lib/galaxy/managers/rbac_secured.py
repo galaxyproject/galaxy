@@ -16,7 +16,7 @@ class RBACPermissionFailedException(galaxy.exceptions.InsufficientPermissionsExc
 
 class RBACPermission(object):
     """
-    Base class for wrangling/controlling the permissions ORM models (\*Permissions, Roles)
+    Base class for wrangling/controlling the permissions ORM models (*Permissions, Roles)
     that control which users can perform certain actions on their associated models
     (Libraries, Datasets).
     """

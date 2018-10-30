@@ -84,9 +84,9 @@
         item_name = get_item_name(item)
     %>
     
-    <div class="toolForm">
-        <div class="toolFormTitle">Share ${item_class_name} '${item_name | h}' with Another User</div>
-            <div class="toolFormBody">
+    <div class="card">
+        <div class="card-header">Share ${item_class_name} '${item_name | h}' with Another User</div>
+            <div class="card-body">
                 <form action="${h.url_for(controller=item_controller, action='share', id=trans.security.encode_id( item.id ) )}" method="POST">
                     <div class="form-row">
                         <label>

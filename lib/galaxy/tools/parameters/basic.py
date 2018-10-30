@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 
 workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
 
-WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile('''\$\{.+?\}''')
+WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 
 
 def contains_workflow_parameter(value, search=False):
@@ -529,7 +529,7 @@ class FileToolParameter(ToolParameter):
                 # handle api upload
                 session_id = value["session_id"]
                 upload_store = trans.app.config.new_file_path
-                if re.match('^[\w-]+$', session_id) is None:
+                if re.match(r'^[\w-]+$', session_id) is None:
                     raise ValueError("Invald session id format.")
                 local_filename = os.path.abspath(os.path.join(upload_store, session_id))
             else:

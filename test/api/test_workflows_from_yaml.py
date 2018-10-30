@@ -22,13 +22,17 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
     def setUp(self):
         super(WorkflowsFromYamlApiTestCase, self).setUp()
 
-    def _upload_and_download(self, yaml_workflow):
-        workflow_id = self._upload_yaml_workflow(yaml_workflow)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
-        return workflow
+    def _upload_and_download(self, yaml_workflow, **kwds):
+        style = None
+        if "style" in kwds:
+            style = kwds.pop("style")
+        workflow_id = self._upload_yaml_workflow(yaml_workflow, **kwds)
+        return self.workflow_populator.download_workflow(workflow_id, style=style)
 
     def test_simple_upload(self):
-        workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES)
+        workflow = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False)
+
+        assert workflow["annotation"].startswith("Simple workflow that ")
 
         tool_count = {'random_lines1': 0, 'cat1': 0}
         input_found = False
@@ -47,30 +51,8 @@ class WorkflowsFromYamlApiTestCase(BaseWorkflowsApiTestCase):
         assert tool_count['random_lines1'] == 1
         assert tool_count['cat1'] == 2
 
-# FIXME:  This test fails on some machines due to (we're guessing) yaml.safe_loading
-# order being not guaranteed and inconsistent across platforms.  The workflow
-# yaml.safe_loader probably needs to enforce order using something like the
-# approach described here:
-# https://stackoverflow.com/questions/13297744/pyyaml-control-ordering-of-items-called-by-yaml.safe_load
-#     def test_multiple_input( self ):
-#         history_id = self.dataset_populator.new_history()
-#         self._run_jobs("""
-# steps:
-#   - type: input
-#     label: input1
-#   - type: input
-#     label: input2
-#   - tool_id: cat_list
-#     state:
-#       input1:
-#       - $link: input1
-#       - $link: input2
-# test_data:
-#   input1: "hello world"
-#   input2: "123"
-# """, history_id=history_id)
-#         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
-#         assert contents1 == "hello world\n123\n"
+        workflow_as_format2 = self._upload_and_download(WORKFLOW_SIMPLE_CAT_AND_RANDOM_LINES, client_convert=False, style="format2")
+        assert workflow_as_format2["doc"].startswith("Simple workflow that")
 
     def test_simple_output_actions(self):
         history_id = self.dataset_populator.new_history()
@@ -86,15 +68,16 @@ input1: "hello world"
 
     def test_inputs_to_steps(self):
         history_id = self.dataset_populator.new_history()
-        self._run_jobs(WORKFLOW_SIMPLE_CAT_TWICE, test_data={"input1": "hello world"}, history_id=history_id)
+        self._run_jobs(WORKFLOW_SIMPLE_CAT_TWICE, test_data={"input1": "hello world"}, history_id=history_id, round_trip_format_conversion=True)
         contents1 = self.dataset_populator.get_history_dataset_content(history_id)
         self.assertEqual(contents1.strip(), "hello world\nhello world")
 
     def test_outputs(self):
-        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS)
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_OUTPUTS, round_trip_format_conversion=True)
         workflow = self._get("workflows/%s/download" % workflow_id).json()
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["output_name"], "out_file1")
         self.assertEqual(workflow["steps"]["1"]["workflow_outputs"][0]["label"], "wf_output_1")
+        workflow = self.workflow_populator.download_workflow(workflow_id, style="format2")
 
     def test_runtime_inputs(self):
         workflow = self._upload_and_download(WORKFLOW_RUNTIME_PARAMETER_SIMPLE)
@@ -116,11 +99,12 @@ class: GalaxyWorkflow
 inputs:
   outer_input: data
 steps:
-  - tool_id: cat1
-    label: first_cat
+  first_cat:
+    tool_id: cat1
     in:
       input1: outer_input
-  - run:
+  nested_workflow:
+    run:
       class: GalaxyWorkflow
       inputs:
         inner_input: data
@@ -133,16 +117,10 @@ steps:
             seed_source:
               seed_source_selector: set_seed
               seed: asdf
-    label: nested_workflow
     in:
       inner_input: first_cat/out_file1
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
-""")
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
+""", client_convert=False)
+        workflow = self.workflow_populator.download_workflow(workflow_id)
         by_label = self._steps_by_label(workflow)
         if "nested_workflow" not in by_label:
             template = "Workflow [%s] does not contain label 'nested_workflow'."
@@ -173,50 +151,88 @@ test_data:
         # content = self.dataset_populator.get_history_dataset_content( history_id )
         # self.assertEqual("chr5\t131424298\t131424460\tCCDS4149.1_cds_0_0_chr5_131424299_f\t0\t+\n", content)
 
+    def test_subworkflow_duplicate(self):
+        duplicate_subworkflow_invocate_wf = """
+format-version: "v2.0"
+$graph:
+- id: nested
+  class: GalaxyWorkflow
+  inputs:
+    inner_input: data
+  outputs:
+    inner_output:
+      outputSource: inner_cat/out_file1
+  steps:
+    inner_cat:
+      tool_id: cat
+      in:
+        input1: inner_input
+        queries_0|input2: inner_input
+
+- id: main
+  class: GalaxyWorkflow
+  inputs:
+    outer_input: data
+  steps:
+    outer_cat:
+      tool_id: cat
+      in:
+        input1: outer_input
+    nested_workflow_1:
+      run: '#nested'
+      in:
+        inner_input: outer_cat/out_file1
+    nested_workflow_2:
+      run: '#nested'
+      in:
+        inner_input: nested_workflow_1/inner_output
+"""
+        history_id = self.dataset_populator.new_history()
+        self._run_jobs(duplicate_subworkflow_invocate_wf, test_data={"outer_input": "hello world"}, history_id=history_id, client_convert=False)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        assert content == "hello world\nhello world\nhello world\nhello world\n"
+
     def test_pause(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
 steps:
-  - label: test_input
+  test_input:
     type: input
-  - label: first_cat
+  first_cat:
     tool_id: cat1
     state:
       input1:
         $link: test_input
-  - label: the_pause
+  the_pause:
     type: pause
     in:
       input: first_cat/out_file1
-  - label: second_cat
+  second_cat:
     tool_id: cat1
     in:
       input1: the_pause
 """)
-        print(self._get("workflows/%s/download" % workflow_id).json())
+        self.workflow_populator.dump_workflow(workflow_id)
 
     def test_implicit_connections(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
+inputs:
+  test_input: data
 steps:
-  - label: test_input
-    type: input
-  - label: first_cat
+  first_cat:
     tool_id: cat1
-    state:
-      input1:
-        $link: test_input
-  - label: the_pause
+    in:
+      input1: test_input
+  the_pause:
     type: pause
-    connect:
-      input:
-      - first_cat#out_file1
-  - label: second_cat
+    in:
+      input: first_cat/out_file1
+  second_cat:
     tool_id: cat1
-    state:
-      input1:
-        $link: the_pause
-  - label: third_cat
+    in:
+      input1: the_pause
+  third_cat:
     tool_id: cat1
     connect:
       $step: second_cat
@@ -224,22 +240,21 @@ steps:
       input1:
         $link: test_input
 """)
-        workflow = self._get("workflows/%s/download" % workflow_id).json()
-        print(workflow)
+        self.workflow_populator.dump_workflow(workflow_id)
 
     @uses_test_history()
     def test_conditional_ints(self, history_id):
         self._run_jobs("""
 class: GalaxyWorkflow
 steps:
-  - label: test_input
+  test_input:
     tool_id: disambiguate_cond
     state:
       p3:
         use: true
       files:
         attach_files: false
-""", test_data={}, history_id=history_id)
+""", test_data={}, history_id=history_id, round_trip_format_conversion=True)
         content = self.dataset_populator.get_history_dataset_content(history_id)
         assert "no file specified" in content
         assert "7 7 4" in content
@@ -247,7 +262,7 @@ steps:
         self._run_jobs("""
 class: GalaxyWorkflow
 steps:
-  - label: test_input
+  test_input:
     tool_id: disambiguate_cond
     state:
       p3:
@@ -255,7 +270,7 @@ steps:
         p3v: 5
       files:
         attach_files: false
-""", test_data={}, history_id=history_id)
+""", test_data={}, history_id=history_id, round_trip_format_conversion=True)
         content = self.dataset_populator.get_history_dataset_content(history_id)
         assert "no file specified" in content
         assert "7 7 5" in content

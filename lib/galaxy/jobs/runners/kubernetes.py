@@ -188,7 +188,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         :rtype:
         """
         if "k8s_galaxy_instance_id" in self.runner_params:
-            if re.match("(?!-)[a-z\d-]{1,20}(?<!-)$", self.runner_params['k8s_galaxy_instance_id']):
+            if re.match(r"(?!-)[a-z\d-]{1,20}(?<!-)$", self.runner_params['k8s_galaxy_instance_id']):
                 return self.runner_params['k8s_galaxy_instance_id']
             else:
                 log.error("Galaxy instance '" + self.runner_params['k8s_galaxy_instance_id'] + "' is either too long "

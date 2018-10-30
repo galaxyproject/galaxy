@@ -42,7 +42,7 @@
 
 <%def name="render_item_links( visualization )">
     <a href="${h.url_for( controller='/visualization', action='imp', id=trans.security.encode_id( visualization.id ) )}"
-        class="btn btn-secondary fa fa-plus"
+        class="btn btn-secondary fa fa-plus float-right"
         title="Import visualization"></a>
 </%def>
 

@@ -41,6 +41,7 @@ bdbag = "*"
 bleach = "*"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
+isa-rwval = "*"
 boltons = "*"
 Paste = "*"
 docutils = "*"

@@ -9,6 +9,7 @@
 
     # Use root for resource loading.
     root = h.url_for( '/static/' )
+    root_api = h.url_for( '/' )
 %>
 ## ----------------------------------------------------------------------------
 
@@ -24,7 +25,7 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 
 ## ----------------------------------------------------------------------------
 <script type="text/javascript">
-window.Galaxy = { root: '${ root }' };
+window.Galaxy = { root: '${ root }', root_api: '${ root_api }' };
 </script>
 ${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.js' )}
 
