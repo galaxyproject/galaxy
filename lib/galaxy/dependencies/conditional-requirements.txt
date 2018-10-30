@@ -17,6 +17,9 @@ galaxycloudrunner
 # Chronos client
 chronos-python==0.38.0
 
+# Kubernetes job runner
+pykube==0.15.0
+
 # Synnefo / Pithos+ object store client
 kamaki
 

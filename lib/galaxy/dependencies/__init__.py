@@ -104,6 +104,9 @@ class ConditionalDependencies(object):
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
 
+    def check_pykube(self):
+        return "galaxy.jobs.runners.kubernetes:KubernetesJobRunner" in self.job_runners
+
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
 

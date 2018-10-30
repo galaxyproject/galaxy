@@ -120,11 +120,6 @@
         <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
             <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
 
-                 This requires installing pykube. Install pykube by activating Galaxy's virtual
-                 environment and then executing the following pip command:
-
-                 pip install pykube==0.15.0
-
                  The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
                  Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
                  path are relevant) (persistent_volume.yaml):
