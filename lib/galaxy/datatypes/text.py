@@ -85,15 +85,17 @@ class Json(Text):
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.
             try:
-                json.loads(file_prefix.contents_header)
+                item = json.loads(file_prefix.contents_header)
+                # exclude simple types, must set format in these cases
+                assert isinstance(item, (list, dict))
                 return True
             except Exception:
                 return False
         else:
             start = file_prefix.string_io().read(100).strip()
             if start:
-                # simple types are valid JSON as well - but would such a file
-                # be interesting as JSON in Galaxy?
+                # simple types are valid JSON as well,
+                # but if necessary format has to be set explicitly
                 return start.startswith("[") or start.startswith("{")
             return False
 

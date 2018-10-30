@@ -384,7 +384,8 @@
     <datatype extension="rgenetics" type="galaxy.datatypes.genetics:Rgenetics"/>
     <datatype extension="snptest" type="galaxy.datatypes.genetics:Snptest" display_in_upload="true"/>
     <datatype extension="snpmatrix" type="galaxy.datatypes.genetics:SNPMatrix" display_in_upload="true"/>
-    <datatype extension="xls" type="galaxy.datatypes.tabular:Tabular"/>
+    <!-- deprecated, should use excel.xls -->
+    <datatype extension="xls" type="galaxy.datatypes.binary:ExcelXls"/>
     <!-- End RGenetics Datatypes -->
     <datatype extension="ipynb" type="galaxy.datatypes.text:Ipynb" display_in_upload="true"/>
     <datatype extension="json" type="galaxy.datatypes.text:Json" display_in_upload="true"/>
@@ -787,6 +788,7 @@
     <!-- TODO: see molecules.py <sniffer type="galaxy.datatypes.molecules:SMILES"/>-->
     <sniffer type="galaxy.datatypes.phylip:Phylip"/>
     <sniffer type="galaxy.datatypes.sequence:Fasta"/>
+    <sniffer type="galaxy.datatypes.sequence:FastqCSSanger"/>
     <sniffer type="galaxy.datatypes.sequence:FastqSanger"/>
     <sniffer type="galaxy.datatypes.sequence:Fastq"/>
     <sniffer type="galaxy.datatypes.interval:Wiggle"/>

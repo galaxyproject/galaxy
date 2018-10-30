@@ -839,6 +839,7 @@ class Registry(object):
                 qualityscore.QualityScore454(),
                 sequence.Fasta(),
                 sequence.FastqSanger(),
+                sequence.FastqCSSanger(),
                 sequence.Fastq(),
                 interval.Wiggle(),
                 text.Html(),

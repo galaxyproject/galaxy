@@ -383,6 +383,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
                     else:
                         try:
                             sequence_count = int(''.join(line))
+                            assert sequence_count > 0
                         except ValueError:
                             return False
                 else:
@@ -444,6 +445,7 @@ class SquareDistanceMatrix(DistanceMatrix):
                     else:
                         try:
                             sequence_count = int(''.join(line))
+                            assert sequence_count > 0
                         except ValueError:
                             return False
                 else:
@@ -736,6 +738,10 @@ class LaneMask(Text):
         """
         headers = get_headers(file_prefix, sep='\t', count=2)
         if len(headers) != 1 or len(headers[0]) != 1:
+            return False
+
+        if len(headers[0][0]) < 1000:
+            # these filter files should be relatively big
             return False
 
         if not re.match('^[01]+$', headers[0][0]):

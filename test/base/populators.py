@@ -352,14 +352,19 @@ class BaseDatasetPopulator(object):
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def get_history_dataset_content(self, history_id, wait=True, filename=None, **kwds):
+    def get_history_dataset_content(self, history_id, wait=True, filename=None, type='text', raw=False, **kwds):
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
             data["filename"] = filename
+        if raw:
+            data['raw'] = True
         display_response = self._get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
         assert display_response.status_code == 200, display_response.text
-        return display_response.text
+        if type == 'text':
+            return display_response.text
+        else:
+            return display_response.content
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
