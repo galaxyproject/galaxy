@@ -3,6 +3,8 @@
     and polyfill for non-standard features.
  */
 
+import "@babel/polyfill";
+
 (() => {
     /* TODO: move to modernizr or something besides us doing this...
      * These are across all of our apps (reports, tool shed), but:
