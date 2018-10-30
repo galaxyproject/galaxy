@@ -39,7 +39,7 @@ export function installMonitor(globalProp, fallbackValue = null) {
                     logger.groupEnd();
                     return val;
                 } catch(err) {
-                    debugger;
+                    logger.warn("Unable to retrieve", globalProp, err);
                 }
                 return null;
             },
@@ -51,8 +51,7 @@ export function installMonitor(globalProp, fallbackValue = null) {
             }
         });
     } catch (err) {
-        console.log("err", err);
-        debugger;
+        logger.warn("Unable to install facade", err);
     }
 
     // Proxies the above object definition so we can watch changes to
