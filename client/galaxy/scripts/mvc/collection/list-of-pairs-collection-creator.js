@@ -554,6 +554,15 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 revName.replace(new RegExp(this.filters[1]), "")
             );
 
+            /** remove url prefix if files were uploaded by url */
+            var lastSlashIndex = lcs.lastIndexOf("/");
+            if (lastSlashIndex > 0) {
+                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                lcs = lcs.replace(urlprefix, "");
+                fwdName = fwdName.replace(extension, "");
+                revName = revName.replace(extension, "");
+            }
+
             if (removeExtensions) {
                 var lastDotIndex = lcs.lastIndexOf(".");
                 if (lastDotIndex > 0) {
