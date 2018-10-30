@@ -256,6 +256,9 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             this.removeExtensions = true;
             //this.removeExtensions = false;
 
+             /** remove file extensions (\.*) from created pair names? */
+            this.removeUrlPrefix = true;
+
             /** fn to call when the cancel button is clicked (scoped to this) - if falsy, no btn is displayed */
             this.oncancel = attributes.oncancel;
             /** fn to call when the collection is created (scoped to this) */
@@ -544,8 +547,9 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
         },
 
         /** try to find a good pair name for the given fwd and rev datasets */
-        _guessNameForPair: function(fwd, rev, removeExtensions) {
+        _guessNameForPair: function(fwd, rev, removeExtensions, removeUrlPrefix) {
             removeExtensions = removeExtensions !== undefined ? removeExtensions : this.removeExtensions;
+            removeUrlPrefix = removeUrlPrefix !== undefined ? removeUrlPrefix : this.removeUrlPrefix;
             var fwdName = fwd.name;
             var revName = rev.name;
 
@@ -559,6 +563,15 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 if (lastDotIndex > 0) {
                     var extension = lcs.slice(lastDotIndex, lcs.length);
                     lcs = lcs.replace(extension, "");
+                    fwdName = fwdName.replace(extension, "");
+                    revName = revName.replace(extension, "");
+                }
+            }
+            if (removeUrlPrefix) {
+                var lastSlashIndex = lcs.lastIndexOf("/");
+                if (lastSlashIndex > 0) {
+                    var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                    lcs = lcs.replace(urlprefix, "");
                     fwdName = fwdName.replace(extension, "");
                     revName = revName.replace(extension, "");
                 }
@@ -891,7 +904,8 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 
         footerSettings: {
             ".hide-originals": "hideOriginals",
-            ".remove-extensions": "removeExtensions"
+            ".remove-extensions": "removeExtensions",
+            ".remove-urlprefix": "removeUrlPrefix"
         },
 
         /** add any jQuery/bootstrap/custom plugins to elements rendered */
@@ -1081,6 +1095,9 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             // footer
             "change .remove-extensions": function(ev) {
                 this.toggleExtensions();
+            },
+            "change .remove-urlprefix": function(ev) {
+                this.toggleUrlPrefix();
             },
             "change .collection-name": "_changeName",
             "keydown .collection-name": "_nameCheckForEnter",
@@ -1492,7 +1509,20 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
         toggleExtensions: function(force) {
             var self = this;
             self.removeExtensions = force !== undefined ? force : !self.removeExtensions;
+            _.each(self.paired, pair => {
+                // don't overwrite custom names
+                if (pair.customizedName) {
+                    return;
+                }
+                pair.name = self._guessNameForPair(pair.forward, pair.reverse);
+            });
 
+            self._renderPaired();
+            self._renderFooter();
+        },
+        toggleUrlPrefix: function(force) {
+            var self = this;
+            self.removeUrlPrefix = force !== undefined ? force : !self.removeUrlPrefix;
             _.each(self.paired, pair => {
                 // don't overwrite custom names
                 if (pair.customizedName) {
@@ -1638,6 +1668,11 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                     _l("Hide original elements"),
                     "?",
                     '<input class="hide-originals float-right" type="checkbox" />',
+                    "</label>",
+                    '<label class="setting-prompt float-right">',
+                    _l("Remove url prefix from pair names"),
+                    "?",
+                    '<input class="remove-urlprefix float-right" type="checkbox" />',
                     "</label>",
                     '<label class="setting-prompt float-right">',
                     _l("Remove file extensions from pair names"),
