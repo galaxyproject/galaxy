@@ -128,7 +128,6 @@ tool-data/shared/jars/
 static/maps
 static/plugins
 static/scripts
-static/style
 node_modules
 bower_components
 client/galaxy/scripts/libs/*
