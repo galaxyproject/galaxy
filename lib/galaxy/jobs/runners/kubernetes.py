@@ -3,8 +3,8 @@ Offload jobs to a Kubernetes cluster.
 """
 
 import logging
+import os
 import re
-from os import environ as os_environ
 from time import sleep
 
 
@@ -46,7 +46,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # Check if pykube was importable, fail if not
         assert KubeConfig is not None, K8S_IMPORT_MESSAGE
         runner_param_specs = dict(
-            k8s_config_path=dict(map=str, default=os_environ.get('KUBECONFIG', None)),
+            k8s_config_path=dict(map=str, default=os.environ.get('KUBECONFIG', None)),
             k8s_use_service_account=dict(map=bool, default=False),
             k8s_persistent_volume_claim_name=dict(map=str),
             k8s_persistent_volume_claim_mount_path=dict(map=str),
