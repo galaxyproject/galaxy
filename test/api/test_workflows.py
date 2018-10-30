@@ -896,14 +896,11 @@ test_data:
 
     def test_run_subworkflow_simple(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow_run_description = """%s
-
-test_data:
-  outer_input:
-    value: 1.bed
-    type: File
-""" % WORKFLOW_NESTED_SIMPLE
-            self._run_jobs(workflow_run_description, history_id=history_id)
+            self._run_jobs(WORKFLOW_NESTED_SIMPLE, test_data="""
+outer_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id)
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             self.assertEqual("chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n", content)
@@ -911,17 +908,14 @@ test_data:
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
         with self.dataset_populator.test_history() as history_id:
-            workflow_run_description = """%s
-
-test_data:
-  step_parameters:
-    '1':
-      '1|num_lines': 2
-  outer_input:
-    value: 1.bed
-    type: File
-""" % WORKFLOW_NESTED_RUNTIME_PARAMETER
-            self._run_jobs(workflow_run_description, history_id=history_id)
+            self._run_jobs(WORKFLOW_NESTED_RUNTIME_PARAMETER, test_data="""
+step_parameters:
+  '1':
+    '1|num_lines': 2
+outer_input:
+  value: 1.bed
+  type: File
+""", history_id=history_id)
 
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len([x for x in content.split("\n") if x]) == 2
