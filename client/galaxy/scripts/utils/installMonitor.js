@@ -11,7 +11,7 @@ import { mock } from "utils/mock";
 const fakeLogger = mock(console);
 
 // stores values that are returned when somebody asks for window.Something
-window._monitorStorage = {};
+window._monitorStorage = window._monitorStorage || {};
 
 export function installMonitor(globalProp, fallbackValue = null) {
 
