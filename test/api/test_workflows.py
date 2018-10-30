@@ -2834,6 +2834,23 @@ steps:
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         self.assertEqual("2\n", self.dataset_populator.get_history_dataset_content(history_id))
 
+    @skip_without_tool("random_lines1")
+    def test_run_replace_params_nested_normalized(self):
+        workflow_request, history_id, steps = self._setup_random_x2_workflow_steps("test_for_replace_step_normalized_params_nested")
+        parameters = {
+            "num_lines": 1,
+            "seed_source|seed_source_selector": "set_seed",
+            "seed_source|seed": "moo",
+        }
+        params = dumps({str(steps[0]["id"]): parameters,
+                        str(steps[1]["id"]): parameters})
+        workflow_request["parameters"] = params
+        workflow_request["parameters_normalized"] = False
+        run_workflow_response = self._post("workflows", data=workflow_request)
+        self._assert_status_code_is(run_workflow_response, 200)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        self.assertEqual("2\n", self.dataset_populator.get_history_dataset_content(history_id))
+
     def test_pja_import_export(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_pja_import", add_pja=True)
         uploaded_workflow_id = self.workflow_populator.create_workflow(workflow)
