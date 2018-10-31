@@ -9,7 +9,7 @@
     <div class="card-header">There are currently ${len( display_applications )} <a class="icon-btn" href="${ h.url_for( controller='admin', action='reload_display_application' ) }" title="Reload all display applications" data-placement="bottom">
                         <span class="fa fa-refresh"></span>
                     </a> display applications loaded.</div>
-    <div class="card-body">
+    <div class="card-body overflow-auto">
         <table class="manage-table colored">
             <tr>
                 <th>Reload</th>
