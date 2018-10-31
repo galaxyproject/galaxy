@@ -61,7 +61,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_default_requests_memory=dict(map=str, default=None),
             k8s_default_limits_cpu=dict(map=str, default=None),
             k8s_default_limits_memory=dict(map=str, default=None),
-            k8s_pod_retrials=dict(map=int, valid=lambda x: int > 0, default=3))
+            k8s_pod_retrials=dict(map=int, valid=lambda x: int >= 0, default=3))
 
         if 'runner_param_specs' not in kwargs:
             kwargs['runner_param_specs'] = dict()
