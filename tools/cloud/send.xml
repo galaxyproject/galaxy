@@ -41,7 +41,7 @@
         This tool leverages OpenID Connect protocol and CloudAuthz (https://github.com/galaxyproject/cloudauthz)
         to access cloud-based resources without requiring user credentials.
 
-        To get a list of CloudAuthz configurations available for your account, visit `api/cloud/authz`.
+        To get a list of Cloud Authorization IDs  available for your account, visit `/api/cloud/authz`.
 
     </help>
 </tool>
