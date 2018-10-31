@@ -96,7 +96,18 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
             return
 
-        job_destination = job_wrapper.job_destination
+        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
+                                   job_wrapper=job_wrapper,
+                                   job_destination=job_wrapper.job_destination)
+
+        # fill in the DRM's job run template
+        script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell)
+        try:
+            self.write_executable_script(ajs.job_file, script)
+        except Exception:
+            job_wrapper.fail("failure preparing job script", exception=True)
+            log.exception("(%s) failure writing job script" % job_wrapper.get_id_tag())
+            return
 
         # Construction of the Kubernetes Job object follows: http://kubernetes.io/docs/user-guide/persistent-volumes/
         k8s_job_name = self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())
@@ -110,7 +121,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     "namespace": self.runner_params['k8s_namespace'],
                     "labels": {"app": k8s_job_name}
             },
-            "spec": self.__get_k8s_job_spec(job_wrapper)
+            "spec": self.__get_k8s_job_spec(ajs)
         }
 
         # Checks if job exists and is trusted, or if it needs re-creation.
@@ -140,8 +151,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             job.create()
 
         # define job attributes in the AsyncronousJobState for follow-up
-        ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper,
-                                   job_id=k8s_job_name, job_destination=job_destination)
+        ajs.job_id = k8s_job_name
         self.monitor_queue.put(ajs)
 
         # external_runJob_script can be None, in which case it's not used.
@@ -202,23 +212,23 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             instance_id = self._galaxy_instance_id + "-"
         return "galaxy-" + instance_id + galaxy_internal_job_id
 
-    def __get_k8s_job_spec(self, job_wrapper):
+    def __get_k8s_job_spec(self, ajs):
         """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template."""
-        k8s_job_spec = {"template": self.__get_k8s_job_spec_template(job_wrapper)}
+        k8s_job_spec = {"template": self.__get_k8s_job_spec_template(ajs)}
         return k8s_job_spec
 
-    def __get_k8s_job_spec_template(self, job_wrapper):
+    def __get_k8s_job_spec_template(self, ajs):
         """The k8s spec template is nothing but a Pod spec, except that it is nested and does not have an apiversion
         nor kind. In addition to required fields for a Pod, a pod template in a job must specify appropriate labels
         (see pod selector) and an appropriate restart policy."""
         k8s_spec_template = {
             "metadata": {
-                "labels": {"app": self.__produce_unique_k8s_job_name(job_wrapper.get_id_tag())}
+                "labels": {"app": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag())}
             },
             "spec": {
-                "volumes": self.__get_k8s_mountable_volumes(job_wrapper),
-                "restartPolicy": self.__get_k8s_restart_policy(job_wrapper),
-                "containers": self.__get_k8s_containers(job_wrapper)
+                "volumes": self.__get_k8s_mountable_volumes(ajs.job_wrapper),
+                "restartPolicy": self.__get_k8s_restart_policy(ajs.job_wrapper),
+                "containers": self.__get_k8s_containers(ajs)
             }
         }
         # TODO include other relevant elements that people might want to use from
@@ -252,26 +262,26 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         }
         return [k8s_mountable_volume]
 
-    def __get_k8s_containers(self, job_wrapper):
+    def __get_k8s_containers(self, ajs):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
            this has been set.
         """
         k8s_container = {
-            "name": self.__get_k8s_container_name(job_wrapper),
-            "image": self._find_container(job_wrapper).container_id,
+            "name": self.__get_k8s_container_name(ajs.job_wrapper),
+            "image": self._find_container(ajs.job_wrapper).container_id,
             # this form of command overrides the entrypoint and allows multi command
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
-            # TODO possibly shell needs to be set by job_wrapper
-            "command": ["/bin/bash", "-c", job_wrapper.runner_command_line],
-            "workingDir": job_wrapper.working_directory,
+            "command": [ajs.job_wrapper.shell],
+            "args": ["-c", ajs.job_file],
+            "workingDir": ajs.job_wrapper.working_directory,
             "volumeMounts": [{
                 "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
                 "name": self._galaxy_vol_name
             }]
         }
 
-        resources = self.__get_resources(job_wrapper)
+        resources = self.__get_resources(ajs.job_wrapper)
         if resources:
             k8s_container['resources'] = resources
 
