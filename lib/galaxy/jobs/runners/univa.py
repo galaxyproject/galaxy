@@ -30,7 +30,7 @@ import time
 
 from galaxy import util
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-
+from galaxy.model import Job
 log = logging.getLogger(__name__)
 
 __all__ = ('UnivaJobRunner',)
@@ -55,6 +55,13 @@ class UnivaJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         extinfo = dict()
+        log.error("AJS %s %s"%(str(type(ajs)), str(dir(ajs))))
+        log.error("JOB_WRAPPER %s %s"%(str(type(ajs.job_wrapper)), str(ajs.job_wrapper)))
+        if ajs.job_wrapper.get_state() in [Job.states.DELETED, Job.states.DELETED_NEW]:
+            log.error("JOB DELETED")
+        else:
+            log.error("JOB NOT DELETED")
+
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
         # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
@@ -71,18 +78,6 @@ class UnivaJobRunner(DRMAAJobRunner):
             mem_wasted = extinfo["memory_wasted"]
             slots = extinfo["slots"]
 
-            # check if the output contains indicators for a memory violation these are
-            # 1 general programming language dependent messages
-            # 2 tool specific errors
-            # TODO 1 should be moved to runners/util and 2 should be implemented via the stdio tag of the tools
-            memerrors = set(["xrealloc: cannot allocate",
-                 "MemoryError",
-                 "std::bad_alloc",
-                 "java.lang.OutOfMemoryError: Java heap space",
-                 "Out of memory!"])
-            toolmemerrors = set(["Out of memory"])
-            memviolation = util.grep_tail(ajs.error_file, memerrors | toolmemerrors, MEMORY_LIMIT_SCAN_SIZE)
-
             # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
 
             # check job for run time or memory violation
@@ -96,7 +91,7 @@ class UnivaJobRunner(DRMAAJobRunner):
                 ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 drmaa_state = self.drmaa.JobState.FAILED
             # test wasted>granted memory only if failed != 0 and exit_status != 0, ie if marked as failed
-            elif memviolation or (state == self.drmaa.JobState.FAILED and mem_wasted > mem_granted * slots):
+            elif state == self.drmaa.JobState.FAILED and mem_wasted > mem_granted * slots:
                 log.info('({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted))
                 ajs.fail_message = "This job was terminated because it used more than the maximum allowed memory."
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
@@ -131,7 +126,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         }
         return drmaa_job_state_order[staten] > drmaa_job_state_order[statep]
 
-    def _get_drmaa_state_qstat(self, job_id, extinfo=set()):
+    def _get_drmaa_state_qstat(self, job_id, extinfo):
         """
         get a (drmaa) job state with qstat. qstat only returns infos for jobs that
         are queued, suspended, ..., or just finished (i.e. jobs are still
@@ -144,10 +139,15 @@ class UnivaJobRunner(DRMAAJobRunner):
         returns the drmaa state
         """
         # log.debug("UnivaJobRunner._get_drmaa_state_qstat ({jobid})".format(jobid=job_id))
-        # TODO using -u "*" is the simplest way to query the jobs of all users which
+        # using -u "*" is the simplest way to query the jobs of all users which
         # allows to treat the case where jobs are submitted as real user it would
         # be more efficient to specify the user (or in case that the galaxy user
         # submits the job -> to ommit the -u option)
+
+        # note that, this is preferred over using `qstat -j JOBID` which returns a non-zero
+        # exit code in case of error as well as if the jobid is not found (if job is finished).
+        # even if this could be disambiguated by the stderr message the `qstat -u "*"`
+        # way seems more generic
         cmd = ['qstat', '-u', '"*"']
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, stderr = p.communicate()
@@ -163,56 +163,6 @@ class UnivaJobRunner(DRMAAJobRunner):
         if state is None:
             state = self.drmaa.JobState.DONE
         # log.debug("UnivaJobRunner._get_drmaa_state_qstat ({jobid}) -> {state}".format(jobid=job_id, state=self.drmaa_job_state_strings[state]))
-        return state
-
-    def _get_drmaa_state_qstatj(self, job_id, extinfo):
-        """
-        get the drmaa job status for a specific job using qstat -j.
-        - For finished jobs an error message is given:
-          Following jobs do not exist or permissions are not sufficient:
-          JOBID
-          Hence we can not determine with qstat if the job is in DONE (successfully) or FAILED state
-          and assume UNDETERMINED
-        - For queued jobs there is no output of the job_state
-          This could be obtained using qstat without the -j option and grepping for the jobID
-        - unfortunatelly also for jobs that have been submitted but did
-          not find the way to the data source that qstat is using the same error
-          as for finished jobs is printed.
-        """
-        cmd = ['qstat', '-j', job_id]
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = p.communicate()
-        # the return code of qstat or stderr is not checked directly
-        # because if an invalid jobid is given (e.g. for a finished job)
-        # return code is 1 and stderr is
-        # "Following jobs do not exist or permissions are not sufficient:
-        # 264210"
-        # hence it is checked if the stderr contains the job_id
-        jobnumber = None
-        se = []
-        # try to get jobid from stderr
-        for line in stderr.split('\n'):
-            se.append(line)
-            if str(job_id) in line:
-                jobnumber = str(job_id)
-        stderr = "\n".join(se)
-        # check sanity of qstat output
-        state = None
-        if len(stderr) > 0:
-            if jobnumber is not None and jobnumber == str(job_id):
-                state = self.drmaa.JobState.UNDETERMINED
-            else:
-                stderr = stderr.strip()
-                log.exception('`%s` returned %d, stderr: %s' % (' '.join(cmd), p.returncode, stderr))
-                raise self.drmaa.InternalException()
-        for line in stdout.split('\n'):
-            if not line.startswith("job_state"):
-                continue
-            log.exception("DRMAAUniva: job {job_id} qstat -j job_state line '{line}".format(job_id=job_id, linee=line))
-            line = line.split()
-            extinfo["state"] = self._map_qstat_drmaa_states(job_id, line[-1], extinfo)
-        if state is None:
-            state = self.drmaa.JobState.UNDETERMINED
         return state
 
     def _get_drmaa_state_qacct(self, job_id, extinfo):
@@ -236,7 +186,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         - FAILED if failed not in [0,24,25,100]
         '''
         # log.debug("UnivaJobRunner._get_drmaa_state_qacct ({jobid})".format(jobid=job_id))
-        signals = dict((k, v) for v, k in reversed(sorted(signal.__dict__.items()))
+        signals = dict((k, v) for v, k in reversed(sorted(signal.__dict__.items()))\
            if v.startswith('SIG') and not v.startswith('SIG_'))
         cmd = ['qacct', '-j', job_id]
         slp = 1
