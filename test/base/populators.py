@@ -352,14 +352,19 @@ class BaseDatasetPopulator(object):
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def get_history_dataset_content(self, history_id, wait=True, filename=None, **kwds):
+    def get_history_dataset_content(self, history_id, wait=True, filename=None, type='text', raw=False, **kwds):
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
             data["filename"] = filename
+        if raw:
+            data['raw'] = True
         display_response = self._get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
         assert display_response.status_code == 200, display_response.text
-        return display_response.text
+        if type == 'text':
+            return display_response.text
+        else:
+            return display_response.content
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
@@ -415,7 +420,9 @@ class BaseDatasetPopulator(object):
                 history_content_id = history_contents[-1]["id"]
         return history_content_id
 
-    def _get_contents_request(self, history_id, suffix="", data={}):
+    def _get_contents_request(self, history_id, suffix="", data=None):
+        if data is None:
+            data = {}
         url = "histories/%s/contents" % history_id
         if suffix:
             url = "%s%s" % (url, suffix)
@@ -487,17 +494,26 @@ class DatasetPopulator(BaseDatasetPopulator):
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
 
-    def _post(self, route, data={}, files=None):
+    def _post(self, route, data=None, files=None):
+        if data is None:
+            data = {}
+
         files = data.get("__files", None)
         if files is not None:
             del data["__files"]
 
         return self.galaxy_interactor.post(route, data, files=files)
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.get(route, data=data)
 
-    def _delete(self, route, data={}):
+    def _delete(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.delete(route, data=data)
 
     def _summarize_history(self, history_id):
@@ -576,7 +592,13 @@ class BaseWorkflowPopulator(object):
         invocation_response = self._post(url, data=request)
         return invocation_response
 
-    def invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
+    def invoke_workflow(self, history_id, workflow_id, inputs=None, request=None, assert_ok=True):
+        if inputs is None:
+            inputs = {}
+
+        if request is None:
+            request = {}
+
         request["history"] = "hist_id=%s" % history_id,
         if inputs:
             request["inputs"] = json.dumps(inputs)
@@ -676,10 +698,16 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    def _post(self, route, data={}):
+    def _post(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.post(route, data)
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.get(route, data=data)
 
     # Required for ImporterGalaxyInterface interface - so we can recurisvely import
@@ -780,7 +808,10 @@ class LibraryPopulator(object):
         wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
-    def raw_library_contents_create(self, library_id, payload, files={}):
+    def raw_library_contents_create(self, library_id, payload, files=None):
+        if files is None:
+            files = {}
+
         url_rel = "libraries/%s/contents" % library_id
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
@@ -1187,7 +1218,10 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
 class GiPostGetMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self._gi.make_get_request(self.__url(route), data=data)
 
     def _post(self, route, data={}):

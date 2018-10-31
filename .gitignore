@@ -127,9 +127,6 @@ client/**/jsconfig.json
 # Jars
 tool-data/shared/jars/
 
-# CSS build artifacts.
-sprite-*.scss
-
 # JS, Local node_modules, and bower_components directories
 static/maps
 static/plugins
@@ -147,9 +144,13 @@ doc/source/api/api.rst
 doc/source/api/ts_api.rst
 doc/source/dev/schema.rst
 
+# webpack stats
+client/webpack-stats.json
+
 # Misc
 *.orig
 .DS_Store
 *.rej
 *~
 .idea
+.vscode

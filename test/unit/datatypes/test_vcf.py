@@ -13,7 +13,7 @@ from .util import (
 def test_vcf_sniff():
     vcf = Vcf()
     vcf_gz = VcfGz()
-    with get_input_files('1.vcf.gz', '1.vcf') as input_files:
+    with get_input_files('1.vcf_bgzip', '1.vcf') as input_files:
         compressed, uncompressed = input_files
         assert vcf_gz.sniff(compressed) is True
         assert vcf_gz.sniff(uncompressed) is False
@@ -23,7 +23,7 @@ def test_vcf_sniff():
 
 def test_vcf_gz_set_meta():
     vcf_gz = VcfGz()
-    with get_input_files('1.vcf.gz') as input_files, get_dataset(input_files[0], index_attr='tabix_index') as dataset:
+    with get_input_files('1.vcf_bgzip') as input_files, get_dataset(input_files[0], index_attr='tabix_index') as dataset:
         vcf_gz.set_meta(dataset)
         f = pysam.VariantFile(dataset.file_name, index_filename=dataset.metadata.tabix_index.file_name)
         assert isinstance(f.index, pysam.libcbcf.TabixIndex) is True

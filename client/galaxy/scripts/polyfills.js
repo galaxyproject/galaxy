@@ -25,6 +25,8 @@ import "@babel/polyfill";
         assert: function() {}
     };
 
+    console.debug("Polyfills are running");
+
     // phantomjs: does not have the native extend fn assign
     Object.assign = Object.assign || _.extend;
 
@@ -74,7 +76,7 @@ import "@babel/polyfill";
     var incompatibilities = features.filter(feature => !feature.compatible()).map(feature => feature.name);
 
     // if there are needed features missing, follow the index link to the static incompat warning
-    if (!!incompatibilities.length) {
+    if (incompatibilities.length) {
         var root = document.querySelectorAll('link[rel="index"]').item(0);
         if (root) {
             window.location = `${root.href}static/incompatible-browser.html`;

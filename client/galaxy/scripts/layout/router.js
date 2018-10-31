@@ -1,3 +1,5 @@
+/* global Galaxy */
+/* global Backbone */
 import jQuery from "jquery";
 var $ = jQuery;
 import QUERY_STRING from "utils/query-string-parsing";

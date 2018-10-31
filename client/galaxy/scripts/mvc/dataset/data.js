@@ -1,6 +1,10 @@
+/* global Backbone */
+/* global Galaxy */
+/* global _ */
+/* global $ */
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
-// Additional dependencies: jQuery, underscore.
+
 /**
  * Dataset metedata.
  */
@@ -10,7 +14,7 @@ var DatasetMetadata = Backbone.Model.extend({});
  * A dataset. In Galaxy, datasets are associated with a history, so
  * this object is also known as a HistoryDatasetAssociation.
  */
-var Dataset = Backbone.Model.extend({
+export var Dataset = Backbone.Model.extend({
     defaults: {
         id: "",
         type: "",
@@ -64,7 +68,7 @@ var Dataset = Backbone.Model.extend({
 /**
  * A tabular dataset. This object extends dataset to provide incremental chunked data.
  */
-var TabularDataset = Dataset.extend({
+export var TabularDataset = Dataset.extend({
     defaults: _.extend({}, Dataset.prototype.defaults, {
         chunk_url: null,
         first_data_chunk: null,
@@ -116,7 +120,7 @@ var TabularDataset = Dataset.extend({
     }
 });
 
-var DatasetCollection = Backbone.Collection.extend({
+export var DatasetCollection = Backbone.Collection.extend({
     model: Dataset
 });
 
@@ -561,31 +565,11 @@ var TabularButtonTracksterView = Backbone.View.extend({
     }
 });
 
-// -- Utility functions. --
-
-/**
- * Create a model, attach it to a view, render view, and attach it to a parent element.
- */
-var createModelAndView = (model, view, model_config, parent_elt) => {
-    // Create model, view.
-    var a_view = new view({
-        model: new model(model_config)
-    });
-
-    // Render view and add to parent element.
-    a_view.render();
-    if (parent_elt) {
-        parent_elt.append(a_view.$el);
-    }
-
-    return a_view;
-};
-
 /**
  * Create a tabular dataset chunked view (and requisite tabular dataset model)
  * and appends to parent_elt.
  */
-var createTabularDatasetChunkedView = options => {
+export var createTabularDatasetChunkedView = options => {
     // If no model, create and set model from dataset config.
     if (!options.model) {
         options.model = new TabularDataset(options.dataset_config);
@@ -614,12 +598,4 @@ var createTabularDatasetChunkedView = options => {
     }
 
     return view;
-};
-
-export default {
-    Dataset: Dataset,
-    TabularDataset: TabularDataset,
-    DatasetCollection: DatasetCollection,
-    TabularDatasetChunkedView: TabularDatasetChunkedView,
-    createTabularDatasetChunkedView: createTabularDatasetChunkedView
 };

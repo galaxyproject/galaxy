@@ -1,14 +1,34 @@
-// ============================================================================
-// Globals (temporary)
-// ============================================================================
-// HACK: add these to global scope until we stop asking for them there...
-// Via webpack: these are required here automatically by the provider plugin
-// Via script tag: these are redundant (identities) since they're already global
-window["jQuery"] = jQuery; // a weird form to prevent webpack from sub'ing 'window.jQuery' in the provider plugin
-window.$ = jQuery;
-window._ = _;
-window.Backbone = Backbone;
-// console.debug('globals loaded:', window.jQuery, window.Backbone, '...');
+/* global $, _, Galaxy */
+
+import "polyfills";
+
+// Jquery and all its horrible plugins
+import "jquery-migrate";
+/* we really need to get rid of these jquery plugins */
+import "libs/jquery/jquery.autocomplete";
+import "libs/jquery/jquery.event.hover";
+import "libs/jquery/jquery.event.drag";
+import "libs/jquery/jquery.event.drop";
+import "jquery-mousewheel";
+import "libs/jquery/jquery.form";
+import "libs/jquery/jquery.rating";
+import "libs/jquery/select2";
+import "libs/jquery/jquery-ui";
+import "libs/jquery/jstorage";
+import "libs/farbtastic";
+import "jquery.cookie";
+import "libs/jquery/jquery.dynatree";
+import "jquery.complexify";
+
+// Bootstrap overwrites .tooltip() method, so load it after jquery-ui
+import "bootstrap";
+import "bootstrap-tour";
+
+// Galaxy core styles
+import "scss/base.scss";
+
+// window.bundleEntries
+import "apps/extended";
 
 // these are galaxy globals not defined in the provider (although they could be - but why encourage that?)
 import Panel from "layout/panel";
@@ -27,7 +47,6 @@ window.init_tag_click_function = init_tag_click_function;
 import Tours from "mvc/tours";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
-// console.debug( 'galaxy globals loaded' );
 
 import { installMonitor } from "utils/installMonitor";
 
@@ -48,7 +67,8 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
     }
 
     // To do replace, the select2 plugin must be loaded.
-    if (!jQuery.fn.select2) {
+    if (!$.fn.select2) {
+        console.warn("No select 2");
         return;
     }
 
@@ -178,6 +198,8 @@ $(document).ready(() => {
     });
 
     Tours.activeGalaxyTourRunner();
+
+    Galaxy.giveTourWithData = Tours.giveTourWithData;
 
     function onloadWebhooks() {
         if (Galaxy.root !== undefined) {

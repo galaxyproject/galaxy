@@ -1,5 +1,5 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
