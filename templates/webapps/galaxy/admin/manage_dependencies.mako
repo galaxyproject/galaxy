@@ -149,15 +149,15 @@
     <input type="submit" name="viewkey" value="Switch to unused dependencies view"/>
     <div class="card mt-2 mb-2">
         <div class="card-header">Tool-centric dependencies</div>
-        <div class="card-body">
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 ${render_tool_centric_table(tools, requirements_status)}
 %elif viewkey == "Switch to unused dependencies view":
     <input type="submit" name="viewkey" value="Switch to details view"/>
     <input type="submit" name="viewkey" value="Switch to tool-centric view"/>
-        <div class="card">
+        <div class="card mt-2 mb-2">
         <div class="card-header">Unused dependency environments</div>
-        <div class="card-body">
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 ${render_unused_dependencies(unused_environments)}
 %else:
@@ -165,7 +165,7 @@
     <input type="submit" name="viewkey" value="Switch to unused dependencies view"/>
     <div class="card mt-2 mb-2">
         <div class="card-header">Dependency details</div>
-        <div class="card-body">
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 ${render_dependencies_details(tools, requirements_status, tool_ids_by_requirements)}
 %endif
