@@ -1,10 +1,10 @@
-import HISTORY_CONTENTS from "mvc/history/history-contents";
+import _ from "underscore";
+import Backbone from "backbone";
+import { HistoryContents } from "mvc/history/history-contents";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import UTILS from "utils/utils";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
 
 /* global jQuery */
 /* global Galaxy */
@@ -15,7 +15,7 @@ import * as Backbone from "libs/backbone";
  *  @name History
  *  @augments Backbone.Model
  */
-var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
+export var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
     BASE_MVC.mixin(
         BASE_MVC.SearchableModelMixin,
         /** @lends History.prototype */ {
@@ -36,7 +36,7 @@ var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 contents_states: {}
             },
 
-            contentsClass: HISTORY_CONTENTS.HistoryContents,
+            contentsClass: HistoryContents,
 
             /** What model fields to search with */
             searchAttributes: ["name", "annotation", "tags"],
@@ -375,7 +375,7 @@ var _collectionSuper = CONTROLLED_FETCH_COLLECTION.InfinitelyScrollingCollection
  *      that maintains the current history as the first in the collection.
  *  New or copied histories become the current history.
  */
-var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
+export var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
     _logNamespace: "history",
 
     model: History,
@@ -535,9 +535,3 @@ var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).extend({
         return `HistoryCollection(${this.length},current:${this.currentHistoryId})`;
     }
 });
-
-//==============================================================================
-export default {
-    History: History,
-    HistoryCollection: HistoryCollection
-};

@@ -1,3 +1,6 @@
+/* global $ */
+/* global _ */
+/* global Galaxy */
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";

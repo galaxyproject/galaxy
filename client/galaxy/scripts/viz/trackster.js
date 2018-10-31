@@ -1,9 +1,10 @@
 /**
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
+import $ from "jquery";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
 import IconButton from "mvc/ui/icon-button";
@@ -12,7 +13,7 @@ import GridView from "mvc/grid/grid-view";
 import Utils from "utils/utils";
 import "libs/jquery/jquery.event.drag";
 import "libs/jquery/jquery.event.hover";
-import "libs/jquery/jquery.mousewheel";
+import "jquery-mousewheel";
 import "libs/jquery/jquery-ui";
 import "libs/jquery/select2";
 import "libs/farbtastic";
@@ -20,24 +21,23 @@ import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
 
+//import "style/scss/autocomplete_tagging.scss";
+//import "static/style/jquery-ui/smoothness/jquery-ui.css";
+//import "static/style/library.css";
+//import "static/style/trackster.css";
+
 /* global Galaxy */
-/* global $ */
 
 /**
  * User interface controls for trackster
  */
-class TracksterUI extends Backbone.Model {
+export class TracksterUI extends Backbone.Model {
     constructor(options) {
         super(options);
     }
 
     initialize(baseURL) {
         this.baseURL = baseURL;
-        Utils.cssLoadFile("static/style/jquery.rating.css");
-        Utils.cssLoadFile("static/style/autocomplete_tagging.css");
-        Utils.cssLoadFile("static/style/jquery-ui/smoothness/jquery-ui.css");
-        Utils.cssLoadFile("static/style/library.css");
-        Utils.cssLoadFile("static/style/trackster.css");
     }
 
     /**
@@ -369,7 +369,7 @@ class TracksterUI extends Backbone.Model {
     }
 }
 
-class TracksterUIView extends Backbone.View {
+export class TracksterUIView extends Backbone.View {
     constructor(options) {
         super(options);
     }
@@ -623,8 +623,3 @@ class TracksterUIView extends Backbone.View {
         this.ui.view.editor = true;
     }
 }
-
-export default {
-    TracksterUI: TracksterUI,
-    GalaxyApp: TracksterUIView
-};

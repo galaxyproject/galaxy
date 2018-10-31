@@ -37,21 +37,12 @@
 
     ${parent.javascripts()}
 
-    ${h.js(
-        "libs/jquery/jquery.event.drag",
-        "libs/jquery/jquery.event.drop",
-        "libs/jquery/jquery.event.hover",
-        "libs/jquery/jquery.form",
-        "libs/jquery/jstorage",
-        "libs/jquery/jquery.autocomplete",
-        "bundled/extended.bundled"
-    )}
-
     <script type='text/javascript'>
         $( function() {
             window.bundleEntries.workflow(${h.dumps(self.editor_config)});
         });
     </script>
+
 </%def>
 
 <%def name="stylesheets()">
@@ -90,10 +81,6 @@
 
     canvas { position: absolute; z-index: 10; }
     canvas.dragging { position: absolute; z-index: 1000; }
-    .input-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; left: -6px; z-index: 1500; }
-    .output-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_open.png')}); position: absolute; top: 50%; margin-top: -6px; right: -6px; z-index: 1500; }
-    .drag-terminal { width: 12px; height: 12px; background: url(${h.url_for('/static/style/workflow_circle_drag.png')}); position: absolute; z-index: 1500; }
-    .input-terminal-active { background: url(${h.url_for('/static/style/workflow_circle_green.png')}); }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
     .unselectable { -moz-user-select: none; -khtml-user-select: none; user-select: none; }
     img { border: 0; }
@@ -364,7 +351,7 @@
         </div>
     </div>
     <div class="unified-panel-body" id="workflow-canvas-body">
-        <div id="canvas-viewport" style="width: 100%; height: 100%; position: absolute; overflow: hidden; background: #EEEEEE; background: white url(${h.url_for('/static/images/light_gray_grid.gif')}) repeat;">
+        <div id="canvas-viewport">
             <div id="canvas-container" style="position: absolute; width: 100%; height: 100%;"></div>
         </div>
         <div id='workflow-parameters-box' style="display:none; position: absolute; right:0px; border: solid grey 1px; padding: 5px; background: #EEEEEE; z-index: 20000; overflow: auto; max-width: 300px; max-height: 300px;">
@@ -374,7 +361,7 @@
             <div id="workflow-parameters-container">
             </div>
         </div>
-        <div id="overview-border" style="position: absolute; width: 150px; height: 150px; right: 20000px; bottom: 0px; border-top: solid gray 1px; border-left: solid grey 1px; padding: 7px 0 0 7px; background: #EEEEEE no-repeat url(${h.url_for('/static/images/resizable.png')}); z-index: 20000; overflow: hidden; max-width: 300px; max-height: 300px; min-width: 50px; min-height: 50px">
+        <div id="overview-border">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
@@ -382,7 +369,7 @@
                 </div>
             </div>
         </div>
-        <div id="close-viewport" style="border-left: 1px solid #999; border-top: 1px solid #999; background: #ddd url(${h.url_for('/static/images/overview_arrows.png')}) 12px 0px; position: absolute; right: 0px; bottom: 0px; width: 12px; height: 12px; z-index: 25000;"></div>
+        <div id="close-viewport"></div>
     </div>
 
 </%def>

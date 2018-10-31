@@ -1,11 +1,11 @@
 import jQuery from "jquery";
 var $ = jQuery;
-import GalaxyApp from "galaxy";
+import { GalaxyApp } from "galaxy";
 import _l from "utils/localization";
 import Page from "layout/page";
 
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp(options, bootstrapped);
     Galaxy.debug("login app");
     var redirect = encodeURI(options.redirect);
 

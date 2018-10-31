@@ -1,11 +1,15 @@
 /**
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
+/* global Backbone */
+/* global d3 */
+/* global $ */
+/* global ga */
+/* global Galaxy */
 
 import * as _ from "libs/underscore";
 import util from "viz/trackster/util";
-import data from "mvc/dataset/data";
-import ToolForm from "mvc/tool/tool-form";
+import { DatasetCollection } from "mvc/dataset/data";
 
 /**
  * Mixin for tracking model visibility.
@@ -270,17 +274,12 @@ var Tool = Backbone.Model.extend({
 
         // Run job and resolve run_deferred to tool outputs.
         $.when(ss_deferred.go()).then(result => {
-            run_deferred.resolve(new data.DatasetCollection(result));
+            run_deferred.resolve(new DatasetCollection(result));
         });
         return run_deferred;
     }
 });
 _.extend(Tool.prototype, VisibilityMixin);
-
-/**
- * Tool view.
- */
-var ToolView = Backbone.View.extend({});
 
 /**
  * Wrap collection of tools for fast access/manipulation.
@@ -749,53 +748,6 @@ var ToolFormView = Backbone.View.extend({
     render: function() {
         this.$el.children().remove();
         this.$el.append(templates.tool_form(this.model.toJSON()));
-    }
-});
-
-/**
- * Integrated tool menu + tool execution.
- */
-var IntegratedToolMenuAndView = Backbone.View.extend({
-    className: "toolMenuAndView",
-
-    initialize: function() {
-        this.tool_panel_view = new ToolPanelView({
-            collection: this.collection
-        });
-        this.tool_form_view = new ToolFormView();
-    },
-
-    render: function() {
-        // Render and append tool panel.
-        this.tool_panel_view.render();
-        this.tool_panel_view.$el.css("float", "left");
-        this.$el.append(this.tool_panel_view.$el);
-
-        // Append tool form view.
-        this.tool_form_view.$el.hide();
-        this.$el.append(this.tool_form_view.$el);
-
-        // On tool link click, show tool.
-        var self = this;
-        this.tool_panel_view.on("tool_link_click", (e, tool) => {
-            // Prevents click from activating link:
-            e.preventDefault();
-            // Show tool that was clicked on:
-            self.show_tool(tool);
-        });
-    },
-
-    /**
-     * Fetch and display tool.
-     */
-    show_tool: function(tool) {
-        var self = this;
-        tool.fetch().done(() => {
-            self.tool_form_view.model = tool;
-            self.tool_form_view.render();
-            self.tool_form_view.$el.show();
-            $("#left").width("650px");
-        });
     }
 });
 
