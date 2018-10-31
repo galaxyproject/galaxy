@@ -726,7 +726,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
                     if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
                         raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
-        return {'message': 'History \'%s\' dataset permissions have been changed.' % history.name}
+        return {'message': 'Success, requested permissions have been changed in %s.' % ("all histories" if all_histories else history.name)}
 
     @web.expose
     @web.require_login("share histories with other users")
