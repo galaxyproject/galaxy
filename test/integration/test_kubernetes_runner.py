@@ -125,6 +125,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config.path
+        config["default_job_shell"] = '/bin/sh'
 
     @skip_without_tool("job_environment_default")
     def test_running_cli_job(self):
