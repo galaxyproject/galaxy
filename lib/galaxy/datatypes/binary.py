@@ -223,7 +223,6 @@ class BamNative(CompressedArchive):
     file_ext = "unsorted.bam"
     sort_flag = None
 
-    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
@@ -396,6 +395,8 @@ class Bam(BamNative):
     file_ext = "bam"
     track_type = "ReadTrack"
     data_sources = {"data": "bai", "index": "bigwig"}
+
+    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
 
     def dataset_content_needs_grooming(self, file_name):
         """

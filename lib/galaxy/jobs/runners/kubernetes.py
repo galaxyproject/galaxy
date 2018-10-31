@@ -436,9 +436,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # This assumes jobs dependent on a single pod, single container
             if succeeded > 0:
                 self.__produce_log_file(job_state)
-                error_file = open(job_state.error_file, 'w')
-                error_file.write("")
-                error_file.close()
+                with open(job_state.error_file, 'w'):
+                    pass
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
@@ -451,38 +450,36 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return self._handle_job_failure(job, job_state)
             # We should not get here
             log.debug(
-                "Reaching unexpected point for Kubernetes job, where it is not classified as succ., active nor failed.")
+                "Reaching unexpected point for Kubernetes job name %s where it is not classified as succ., active nor failed.", job.name)
+            log.debug("k8s full job object:\n%s", job.obj)
             return job_state
 
         elif len(jobs.response['items']) == 0:
             # there is no job responding to this job_id, it is either lost or something happened.
             log.error("No Jobs are available under expected selector app=" + job_state.job_id)
-            error_file = open(job_state.error_file, 'w')
-            error_file.write("No Kubernetes Jobs are available under expected selector app=" + job_state.job_id + "\n")
-            error_file.close()
+            with open(job_state.error_file, 'w') as error_file:
+                error_file.write("No Kubernetes Jobs are available under expected selector app=" + job_state.job_id + "\n")
             self.mark_as_failed(job_state)
             return job_state
         else:
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("There is more than one Kubernetes Job associated to job id " + job_state.job_id)
             self.__produce_log_file(job_state)
-            error_file = open(job_state.error_file, 'w')
-            error_file.write("There is more than one Kubernetes Job associated to job id " + job_state.job_id + "\n")
-            error_file.close()
+            with open(job_state.error_file, 'w') as error_file:
+                error_file.write("There is more than one Kubernetes Job associated to job id " + job_state.job_id + "\n")
             self.mark_as_failed(job_state)
             return job_state
 
     def _handle_job_failure(self, job, job_state, reason=None):
         self.__produce_log_file(job_state)
-        error_file = open(job_state.error_file, 'w')
-        if reason == "OOM":
-            error_file.write("Job killed after running out of memory. Try with more memory.\n")
-            job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
-            job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-        else:
-            error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
-            job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
-        error_file.close()
+        with open(job_state.error_file, 'w') as error_file:
+            if reason == "OOM":
+                error_file.write("Job killed after running out of memory. Try with more memory.\n")
+                job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
+                job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+            else:
+                error_file.write("Exceeded max number of Kubernetes pod retrials allowed for job\n")
+                job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
         job_state.running = False
         self.mark_as_failed(job_state)
         job.scale(replicas=0)
@@ -515,8 +512,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """
 
         # First we rescue the pods logs
-        with open(job_state.output_file, 'r') as outfile:
-            stdout_content = outfile.read()
+        try:
+            with open(job_state.output_file, 'r') as outfile:
+                stdout_content = outfile.read()
+        except IOError as e:
+            stdout_content = "<Failed to recuperate log for job {} >".format(job_state.job_id)
+            log.error("Failed to get stdout for job %s", job_state.job_id)
+            log.exception(e)
 
         if getattr(job_state, 'stop_job', True):
             self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
@@ -533,23 +535,27 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __produce_log_file(self, job_state):
         pod_r = Pod.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
-        logs = ""
+        log_string = ""
         for pod_obj in pod_r.response['items']:
             try:
                 pod = Pod(self._pykube_api, pod_obj)
-                logs += "\n\n==== Pod " + pod.name + " log start ====\n\n"
-                logs += pod.logs(timestamps=True)
-                logs += "\n\n==== Pod " + pod.name + " log end   ===="
+                log_string += "\n\n==== Pod " + pod.name + " log start ====\n\n"
+                log_string += pod.logs(timestamps=True)
+                log_string += "\n\n==== Pod " + pod.name + " log end   ===="
             except Exception as detail:
-                log.info("Could not write pod\'s " + pod_obj['metadata']['name'] +
-                         " log file due to HTTPError " + str(detail))
+                log.info("Could not write log file for pod %s due to HTTPError %s",
+                         pod_obj['metadata']['name'], detail)
+        if isinstance(log_string, text_type):
+            log_string = log_string.encode('utf8')
 
         logs_file_path = job_state.output_file
-        logs_file = open(logs_file_path, mode="w")
-        if isinstance(logs, text_type):
-            logs = logs.encode('utf8')
-        logs_file.write(logs)
-        logs_file.close()
+        try:
+            with open(logs_file_path, mode="w") as logs_file:
+                logs_file.write(log_string)
+        except IOError as e:
+            log.error("Couldn't produce log files for %s", job_state.job_id)
+            log.exception(e)
+
         return logs_file_path
 
     def stop_job(self, job):
