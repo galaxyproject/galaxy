@@ -556,7 +556,7 @@ class BamQuerynameSorted(BamInputSorted):
     file_ext = "qname_sorted.bam"
 
     def sniff(self, file_name):
-        return super(BamQuerynameSorted, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
+        return BamNative().sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
 
     def dataset_content_needs_grooming(self, file_name):
         """
