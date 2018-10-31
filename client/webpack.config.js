@@ -13,10 +13,10 @@ const imageBase = path.join(__dirname, "../static/style");
 
 let buildconfig = {
     entry: {
-        login: ["onload", "./galaxy/scripts/apps/login.js"],
-        analysis: ["onload", "./galaxy/scripts/apps/analysis.js"],
-        admin: ["onload", "./galaxy/scripts/apps/admin.js"],
-        extended: ["onload", "./galaxy/scripts/apps/extended.js"]
+        login: ["onload", "apps/login"],
+        analysis: ["onload", "apps/analysis"],
+        admin: ["onload", "apps/admin"],
+        extended: ["onload", "apps/extended"]
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
@@ -152,7 +152,8 @@ let buildconfig = {
             $: "jquery",
             jQuery: "jquery",
             _: "underscore",
-            Backbone: "backbone"
+            Backbone: "backbone",
+            Galaxy: ["galaxy.monitor", "default"]
         }),
         new VueLoaderPlugin(),
         new MiniCssExtractPlugin({
