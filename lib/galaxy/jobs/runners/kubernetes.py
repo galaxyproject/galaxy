@@ -151,10 +151,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         ajs.job_id = k8s_job_name
         self.monitor_queue.put(ajs)
 
-        # external_runJob_script can be None, in which case it's not used.
-        external_runjob_script = None
-        return external_runjob_script
-
     def __get_pull_policy(self):
         if "k8s_pull_policy" in self.runner_params:
             if self.runner_params['k8s_pull_policy'] in ["Always", "IfNotPresent", "Never"]:
