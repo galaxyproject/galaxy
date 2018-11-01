@@ -147,6 +147,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         # define job attributes in the AsyncronousJobState for follow-up
         ajs.job_id = k8s_job_name
+        # store runner information for tracking if Galaxy restarts
+        job_wrapper.set_job_destination(job_wrapper.job_destination, k8s_job_name)
         self.monitor_queue.put(ajs)
 
     def __get_pull_policy(self):
@@ -438,7 +440,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             elif failed > 0 and self.__job_failed_due_to_low_memory(job_state):
                 return self._handle_job_failure(job, job_state, reason="OOM")
             elif active > 0 and failed <= max_pod_retrials:
-                job_state.running = True
+                if not job_state.running:
+                    job_state.running = True
+                    job_state.job_wrapper.change_state(model.Job.states.RUNNING)
                 return job_state
             elif failed > max_pod_retrials:
                 return self._handle_job_failure(job, job_state)
