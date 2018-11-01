@@ -927,6 +927,10 @@ class Text(Data):
         return dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
 
 
+class Directory(Data):
+    """Class representing a directory of files."""
+
+
 class GenericAsn1(Text):
     """Class for generic ASN.1 text format"""
     edam_data = "data_0849"

@@ -42,5 +42,12 @@
     <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
     <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true">
+    </datatype>
+    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
+      <converter file="tar_to_directory.xml" target_datatype="directory"/>
+    </datatype>
+    <datatype extension="directory" type="galaxy.datatypes.data:Directory">
+    </datatype>
   </registration>
 </datatypes>
