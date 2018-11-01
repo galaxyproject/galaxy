@@ -4,6 +4,7 @@ Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 import datetime
 import logging
 import os
+import threading
 import time
 from collections import defaultdict
 
@@ -11,6 +12,8 @@ from six.moves.queue import (
     Empty,
     Queue
 )
+from sqlalchemy import create_engine
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
     and_,
     func,
@@ -59,6 +62,41 @@ class JobHandler(object):
         self.job_stop_queue.shutdown()
 
 
+class JobAssigner(threading.Thread):
+    # is this safe?
+    sql = "UPDATE job SET handler = %(handler)s WHERE id = (SELECT id FROM job WHERE handler IN %(tags)s AND state = 'new' ORDER BY ID LIMIT 1) AND handler IN %(tags)s AND state = 'new' RETURNING id"
+
+    def __init__(self, *args, **kwargs):
+            server_name = kwargs.pop('server_name')
+            url = kwargs.pop('url')
+            handler_tags = kwargs.pop('handler_tags')
+            log.debug('######## ASSIGNER INITIALIZING %s %s', str(args), str(kwargs))
+            super(JobAssigner, self).__init__(*args, **kwargs)
+            self.server_name = server_name
+            self.handler_tags = handler_tags
+            self.stop = False
+            self.engine = create_engine(url, isolation_level='SERIALIZABLE')
+            self.conn = self.engine.connect()
+
+    def run(self):
+        log.debug('######## ASSIGNER STARTING')
+        args = {'handler': self.server_name, 'tags': tuple(self.handler_tags)}
+        while not self.stop:
+            with self.conn.begin() as trans:
+                try:
+                    r = self.conn.execute(JobAssigner.sql, args)
+                    row = r.fetchone()
+                    if row:
+                        log.debug('######## RESULT %s' % row)
+                        trans.commit()
+                        log.debug('######## COMMIT OK')
+                    else:
+                        trans.rollback()
+                except OperationalError as e:
+                    log.warning('######## EXCEPT: %s', str(e))
+                    trans.rollback()
+
+
 class JobHandlerQueue(Monitors):
     """
     Job Handler's Internal Queue, this is what actually implements waiting for
@@ -88,6 +126,11 @@ class JobHandlerQueue(Monitors):
         self.job_wrappers = {}
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
+        name = "JobHandlerQueue.job_assignment_thread"
+        self._assigner = JobAssigner(name=name, url=self.app.config.database_connection,
+                server_name=self.app.config.server_name, handler_tags=self.app.job_config.handler_tags())
+        self._assigner.daemon = True
+        self._assigner.start()
 
     def start(self):
         """

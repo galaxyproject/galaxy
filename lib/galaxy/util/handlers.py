@@ -214,6 +214,15 @@ class ConfiguresHandlers(object):
         else:
             return collection[index % len(collection)]
 
+    def handler_tags(self):
+        rval = []
+        for tag, handlers in self.handlers.items():
+            for handler in handlers:
+                if self.app.config.server_name == handler and tag != self.app.config.server_name:
+                    rval.append(tag)
+                    break
+        return rval
+
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class
 
     def _assign_handler_direct(self, obj, configured):
