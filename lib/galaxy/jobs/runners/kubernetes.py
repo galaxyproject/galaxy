@@ -67,8 +67,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Start the job runner parent object """
         super(KubernetesJobRunner, self).__init__(app, nworkers, **kwargs)
 
-        # self.cli_interface = CliInterface()
-
         if "k8s_use_service_account" in self.runner_params and self.runner_params["k8s_use_service_account"]:
             self._pykube_api = HTTPClient(KubeConfig.from_service_account())
         else:
@@ -280,15 +278,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         if self._default_pull_policy:
             k8s_container["imagePullPolicy"] = self._default_pull_policy
-        # if self.__requires_ports(job_wrapper):
-        #    k8s_container['ports'] = self.__get_k8s_containers_ports(job_wrapper)
 
         return [k8s_container]
-
-    # def __get_k8s_containers_ports(self, job_wrapper):
-
-    #    for k,v self.runner_params:
-    #        if k.startswith("container_port_"):
 
     def __get_resources(self, job_wrapper):
         mem_request = self.__get_memory_request(job_wrapper)
