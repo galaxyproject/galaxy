@@ -7,9 +7,6 @@ import os
 import re
 from time import sleep
 
-
-from six import text_type
-
 from galaxy import model
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
@@ -555,8 +552,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             except Exception as detail:
                 log.info("Could not write log file for pod %s due to HTTPError %s",
                          pod_obj['metadata']['name'], detail)
-        if isinstance(log_string, text_type):
-            log_string = log_string.encode('utf8')
 
         logs_file_path = job_state.output_file
         try:
@@ -586,7 +581,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        # TODO this needs to be implemented to override unimplemented base method
         job_id = job.get_job_runner_external_id()
         log.debug("k8s trying to recover job: " + job_id)
         if job_id is None:
