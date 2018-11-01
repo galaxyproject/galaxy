@@ -25,7 +25,7 @@
     <form name="sanitize_whitelist" method="post" action="${h.url_for( controller='admin', action='sanitize_whitelist' )}">
     <div class="card mb-3">
         <div class="card-header">Tool Sanitization Whitelist</div>
-        <div class="card-body">
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 <tr>
                     <th>Whitelist</th>
