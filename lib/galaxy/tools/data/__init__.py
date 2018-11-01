@@ -597,7 +597,6 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 fields.append(field_value)
         else:
             fields = entry
-        log.error("FIELDS %s"%(str(fields)))
         is_error = False
         if self.largest_index < len(fields):
             fields = self._replace_field_separators(fields)
@@ -613,7 +612,6 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
 
         if persist and (not is_error or persist_on_error):
             filename = self.get_filename_for_source(entry_source)
-            log.error("FILENAME %s"%(str(filename)))
             if filename is None:
                 # should we default to using any filename here instead?
                 log.error("Unable to determine filename for persisting data table '%s' values: '%s'.", self.name, fields)
