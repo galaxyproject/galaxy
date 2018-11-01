@@ -443,24 +443,22 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             elif failed > max_pod_retrials:
                 return self._handle_job_failure(job, job_state)
             # We should not get here
-            log.debug(
-                "Reaching unexpected point for Kubernetes job name %s where it is not classified as succ., active nor failed.", job.name)
-            log.debug("k8s full job object:\n%s", job.obj)
+            log.error("Kubernetes job '%s' not classified as succ., active or failed. Full Job object: \n%s", job.name, job.obj)
             return job_state
 
         elif len(jobs.response['items']) == 0:
             # there is no job responding to this job_id, it is either lost or something happened.
-            log.error("No Jobs are available under expected selector app=" + job_state.job_id)
+            log.error("No Jobs are available under expected selector app=%s", job_state.job_id)
             with open(job_state.error_file, 'w') as error_file:
-                error_file.write("No Kubernetes Jobs are available under expected selector app=" + job_state.job_id + "\n")
+                error_file.write("No Kubernetes Jobs are available under expected selector app=%s\n" % job_state.job_id)
             self.mark_as_failed(job_state)
             return job_state
         else:
             # there is more than one job associated to the expected unique job id used as selector.
-            log.error("There is more than one Kubernetes Job associated to job id " + job_state.job_id)
+            log.error("More than one Kubernetes Job associated to job id '%s'", job_state.job_id)
             self.__produce_log_file(job_state)
             with open(job_state.error_file, 'w') as error_file:
-                error_file.write("There is more than one Kubernetes Job associated to job id " + job_state.job_id + "\n")
+                error_file.write("More than one Kubernetes Job associated to job id '%s'\n" % job_state.job_id)
             self.mark_as_failed(job_state)
             return job_state
 
@@ -486,7 +484,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         marks the job for resubmission (resubmit logic is part of destinations).
         """
 
-        pods = Pod.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
+        pods = Pod.objects(self._pykube_api).filter(selector="app=%s" % job_state.job_id)
         pod = Pod(self._pykube_api, pods.response['items'][0])
 
         if pod.obj['status']['phase'] == "Failed" and \
@@ -509,10 +507,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         try:
             with open(job_state.output_file, 'r') as outfile:
                 stdout_content = outfile.read()
-        except IOError as e:
+        except IOError:
             stdout_content = "<Failed to recuperate log for job {} >".format(job_state.job_id)
-            log.error("Failed to get stdout for job %s", job_state.job_id)
-            log.exception(e)
+            log.exception("Failed to get stdout for job %s", job_state.job_id)
 
         if getattr(job_state, 'stop_job', True):
             self.stop_job(job_state.job_wrapper)
@@ -544,9 +541,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         try:
             with open(logs_file_path, mode="w") as logs_file:
                 logs_file.write(log_string)
-        except IOError as e:
-            log.error("Couldn't produce log files for %s", job_state.job_id)
-            log.exception(e)
+        except IOError:
+            log.exception("Couldn't produce log files for %s", job_state.job_id)
 
         return logs_file_path
 
