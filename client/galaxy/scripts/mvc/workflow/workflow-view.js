@@ -735,7 +735,7 @@ export default Backbone.View.extend({
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
                             if (typeof action_argument === "string") {
-                                var arg_matches = action_argument.match(parameter_re);
+                                let arg_matches = action_argument.match(parameter_re);
                                 if (arg_matches) {
                                     matches = matches.concat(arg_matches);
                                 }
