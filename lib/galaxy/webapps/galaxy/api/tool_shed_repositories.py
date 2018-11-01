@@ -38,8 +38,8 @@ def get_message_for_no_shed_tool_config():
     message = 'The tool_config_file setting in galaxy.ini must include at least one shed tool configuration file name with a <toolbox> '
     message += 'tag that includes a tool_path attribute value which is a directory relative to the Galaxy installation directory in order to '
     message += 'automatically install tools from a tool shed into Galaxy (e.g., the file name shed_tool_conf.xml whose <toolbox> tag is '
-    message += '<toolbox tool_path="../shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a local '
-    message += 'Galaxy instance" section of the Galaxy tool shed wiki at https://galaxyproject.org/installing-repositories-to-galaxy/'
+    message += '<toolbox tool_path="database/shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a '
+    message += 'local Galaxy instance" section of the Galaxy tool shed wiki at https://galaxyproject.org/installing-repositories-to-galaxy/'
     return message
 
 
@@ -517,8 +517,8 @@ class ToolShedRepositoriesController(BaseAPIController):
                                           (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
-                                          (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
-                                          file will be selected automatically.
+                                          (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
+                                          configuration file will be selected automatically.
         """
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload(payload, include_changeset=True)
@@ -573,8 +573,8 @@ class ToolShedRepositoriesController(BaseAPIController):
                                           (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
-                                          (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
-                                          file will be selected automatically.
+                                          (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
+                                          configuration file will be selected automatically.
         """
         self.__ensure_can_install_repos(trans)
         # Get the information about all of the repositories to be installed.

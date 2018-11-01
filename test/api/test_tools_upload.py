@@ -463,6 +463,27 @@ class ToolsUploadTestCase(api.ApiTestCase):
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[2])
             assert content == ONE_TO_SIX_WITH_TABS
 
+    def test_upload_force_composite(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                extra_inputs={
+                    "files_1|url_paste": "CompositeContent",
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            dataset = run_response.json()["outputs"][0]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
+            assert content.strip() == "Test123"
+            extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
+            assert len(extra_files) == 1, extra_files  # [{u'path': u'1', u'class': u'File'}]
+            extra_file = extra_files[0]
+            assert extra_file["path"] == "composite"
+            assert extra_file["class"] == "File"
+
     def test_upload_from_invalid_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=new_dataset["id"], assert_ok=False)
