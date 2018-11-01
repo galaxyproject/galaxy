@@ -452,7 +452,9 @@ class Data(object):
         def escape(raw_identifier):
             return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
 
-        if not to_ext:
+        if not to_ext or to_ext == "data":
+            # If a client requests to_ext with the extension 'data', they are
+            # deferring to the server, set it based on datatype.
             to_ext = dataset.extension
 
         template_values = {
