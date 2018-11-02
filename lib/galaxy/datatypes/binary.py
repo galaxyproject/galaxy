@@ -2173,10 +2173,10 @@ class RMA6(Binary):
     Class describing an RMA6 (MEGAN6 read-match archive) file
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('diamond.rma')
-    >>> DAA().sniff(fname)
+    >>> RMA6().sniff(fname)
     True
     >>> fname = get_test_fname('interval.interval')
-    >>> DAA().sniff(fname)
+    >>> RMA6().sniff(fname)
     False
     """
     file_ext = "rma6"
