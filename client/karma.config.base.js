@@ -6,6 +6,7 @@ module.exports = {
     webpack: webpackConfig,
     webpackMiddleware: { noInfo: false },
     browsers: ["ChromeHeadlessNoSandbox"],
+    singleRun: true,
     client: {
         captureConsole: true
     },
