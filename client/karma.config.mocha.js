@@ -14,7 +14,7 @@ const testBundles = [
 
 const separateTests = [
     "galaxy/scripts/**/*.test.js",
-    "galaxy/**/mocha/tests/_tests.js"
+    "galaxy/**/mocha/tests/*_tests.js"
 ];
 
 module.exports = function (config) {

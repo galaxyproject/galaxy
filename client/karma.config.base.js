@@ -1,10 +1,10 @@
-var webpackConfig = require("./webpack.config.test");
+var webpackConfig = require("./webpack.config.unittest");
 
 module.exports = {
     basepath: ".",
     failOnEmptyTestSuite: false,
     webpack: webpackConfig,
-    webpackMiddleware: { noInfo: false },
+    webpackMiddleware: { noInfo: true },
     browsers: ["ChromeHeadlessNoSandbox"],
     singleRun: true,
     client: {

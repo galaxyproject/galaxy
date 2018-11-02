@@ -1,9 +1,11 @@
 /**
- * Take the fun parts out of the webpack config so the unit-tests run
+ * So the legacy QUnit tests have to perform some gymastics that should not be
+ * required because unit tests do not need access to css or images.
+ *
+ * TODO: replace or re-implement these tests so that they are actual unit tests,
+ * remove all style checks to selenium or another more appropriate venue.
  */
-
 let wpConfig = require("./webpack.config");
-
 
 const switchPlugin = (reMatcher, replacement) => {
 
@@ -21,12 +23,6 @@ const switchPlugin = (reMatcher, replacement) => {
 }
 
 
-// set mode?
-wpConfig.mode = "development";
-
-// Don't build Galaxy bundles - build per-test bundles.
-wpConfig.entry = () => ({});
-
 // Remove MiniCssExtractPlugin loader references
 // replace mini-css-extract plugin with basic style loader
 // Honestly I'm not clear on why we process css at all for unit tests
@@ -34,6 +30,5 @@ let rePluginMatch = /mini-css-extract-plugin/;
 let styleLoader = { loader: "style-loader" };
 let processor = switchPlugin(rePluginMatch, styleLoader);
 wpConfig.module.rules = wpConfig.module.rules.map(processor);
-
 
 module.exports = wpConfig;

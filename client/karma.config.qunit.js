@@ -1,4 +1,5 @@
 const baseKarmaConfig = require("./karma.config.base");
+const qunitWpConfig = require("./webpack.config.qunit");
 
 // NOTE: tests currently fail in single pack mode because of select2,
 // need to fix jquery bundle, so we never run them that way until
@@ -70,6 +71,7 @@ module.exports = function (config) {
     }, {});
 
     let settings = Object.assign({}, baseKarmaConfig, {
+        webpack: qunitWpConfig, // need bent webpack config for qunit
         frameworks: ["qunit"],
         files: testFiles.concat(assets),
         preprocessors: preprocessors

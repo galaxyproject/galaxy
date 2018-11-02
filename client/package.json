@@ -85,6 +85,7 @@
     "file-loader": "^2.0.0",
     "gulp": "^3.9.1",
     "gulp-sourcemaps": "^2.6.4",
+    "ignore-loader": "^0.1.2",
     "jshint": "^2.9.6",
     "karma": "^1.7.1",
     "karma-chai": "^0.1.0",
@@ -111,6 +112,7 @@
     "vue-template-compiler": "2.5.17",
     "webpack": "^4.23.0",
     "webpack-cli": "^3.1.2",
+    "webpack-merge": "^4.1.4",
     "yaml-loader": "^0.5.0"
   }
 }
