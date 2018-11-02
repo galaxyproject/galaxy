@@ -12,8 +12,6 @@ from base.populators import skip_without_tool
 from .test_dockerized_jobs import MulledJobTestCases  # noqa: I201
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase  # noqa: I201
 
-integration_util.skip_unless_kubernetes()
-
 PERSISTENT_VOLUME_NAME = 'pv-galaxy-integration-test'
 PERSISTENT_VOLUME_CLAIM_NAME = 'galaxy-pvc-integration-test'
 Config = collections.namedtuple('ConfigTuple', 'path')
@@ -112,6 +110,7 @@ def job_config(path):
     return Config(job_conf.name)
 
 
+@integration_util.skip_unless_kubernetes()
 class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
 
     def setUp(self):
