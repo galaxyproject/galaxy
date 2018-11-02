@@ -5,8 +5,14 @@ module.exports = {
     failOnEmptyTestSuite: false,
     webpack: webpackConfig,
     webpackMiddleware: { noInfo: false },
-    browsers: ["ChromeHeadless"],
+    browsers: ["ChromeHeadlessNoSandbox"],
     client: {
         captureConsole: true
+    },
+    customLaunchers: {
+        ChromeHeadlessNoSandbox: {
+            base: "ChromeHeadless",
+            flags: ["--no-sandbox"]
+        }
     }
 }
