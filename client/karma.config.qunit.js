@@ -4,7 +4,7 @@ const baseKarmaConfig = require("./karma.config.base");
 // need to fix jquery bundle, so we never run them that way until
 // they can be fixed.
 // (process.env.GALAXY_TEST_AS_SINGLE_PACK || false);
-const single_pack_mode = true; 
+const single_pack_mode = true;
 
 const QUNIT_TESTS_SEPARATE_PACKS = [
     "galaxy/scripts/qunit/tests/galaxy_app_base_tests.js",
@@ -22,7 +22,7 @@ const QUNIT_TESTS_SEPARATE_PACKS = [
     "galaxy/scripts/qunit/tests/metrics_logger_tests.js",
     "galaxy/scripts/qunit/tests/popover_tests.js",
     "galaxy/scripts/qunit/tests/utils_tests.js",
-    "galaxy/scripts/qunit/tests/page_tests.js",
+    // "galaxy/scripts/qunit/tests/page_tests.js",
     "galaxy/scripts/qunit/tests/workflow_editor_tests.js",
     "galaxy/scripts/qunit/tests/modal_tests.js"
     // The following tests don't work for state reasons:
@@ -56,12 +56,12 @@ const assets = [
 ];
 
 
-module.exports = function(config) {
+module.exports = function (config) {
 
-    let testFiles = single_pack_mode 
-        ? QUNIT_TESTS_AS_SINGLE_PACK 
+    let testFiles = single_pack_mode
+        ? QUNIT_TESTS_AS_SINGLE_PACK
         : QUNIT_TESTS_SEPARATE_PACKS;
-    
+
     let preprocessors = testFiles.reduce((result, file) => {
         result[file] = ["webpack"];
         return result;
