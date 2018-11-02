@@ -7,6 +7,12 @@
  */
 let wpConfig = require("./webpack.config");
 
+// set mode?
+wpConfig.mode = "development";
+
+// Don't build Galaxy bundles - build per-test bundles.
+wpConfig.entry = () => ({});
+
 const switchPlugin = (reMatcher, replacement) => {
 
     let scrubLoader = (obj) =>
@@ -21,7 +27,6 @@ const switchPlugin = (reMatcher, replacement) => {
         return rule;
     }
 }
-
 
 // Remove MiniCssExtractPlugin loader references
 // replace mini-css-extract plugin with basic style loader
