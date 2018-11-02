@@ -8,11 +8,13 @@ const baseKarmaConfig = require("./karma.config.base");
 const single_pack = (process.env.GALAXY_TEST_AS_SINGLE_PACK || false);
 
 const testBundles = [
-    "galaxy/**/unitTestBundle.js"
+    "galaxy/**/unitTestBundle.js",
+    "galaxy/**/mocha/test.js"
 ];
 
 const separateTests = [
-    "galaxy/scripts/**/*.test.js"  
+    "galaxy/scripts/**/*.test.js",
+    "galaxy/**/mocha/tests/_tests.js"
 ];
 
 module.exports = function (config) {
