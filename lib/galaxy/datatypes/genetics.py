@@ -32,8 +32,8 @@ gal_Log = logging.getLogger(__name__)
 verbose = False
 
 # https://genome.ucsc.edu/goldenpath/help/hgGenomeHelp.html
-VALID_GENOME_GRAPH_MARKERS = re.compile('^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
-VALID_GENOTYPES_LINE = re.compile('^([a-zA-Z0-9]+)(\\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\\s*$')
+VALID_GENOME_GRAPH_MARKERS = re.compile(r'^(chr.*|RH.*|rs.*|SNP_.*|CN.*|A_.*)')
+VALID_GENOTYPES_LINE = re.compile(r'^([a-zA-Z0-9]+)(\s([0-9]{2}|[A-Z]{2}|NC|\?\?))+\s*$')
 
 
 @build_sniff_from_prefix

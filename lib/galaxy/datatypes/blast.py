@@ -68,7 +68,7 @@ class BlastXml(GenericXml):
         >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
         >>> BlastXml().sniff(fname)
         True
-        >>> fname = get_test_fname('tblastn_four_human_vs_rhodopsin.xml')
+        >>> fname = get_test_fname('tblastn_four_human_vs_rhodopsin.blastxml')
         >>> BlastXml().sniff(fname)
         True
         >>> fname = get_test_fname('interval.interval')

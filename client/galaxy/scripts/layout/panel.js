@@ -1,6 +1,6 @@
 import $ from "jquery";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 
 var MIN_PANEL_WIDTH = 160;
 var MAX_PANEL_WIDTH = 800;

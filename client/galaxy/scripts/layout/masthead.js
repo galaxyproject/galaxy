@@ -1,10 +1,7 @@
-import * as Backbone from "backbone";
+/* global Backbone, $, Galaxy */
 import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
-
-/* global Galaxy */
-/* global $ */
 
 /** Masthead **/
 var View = Backbone.View.extend({

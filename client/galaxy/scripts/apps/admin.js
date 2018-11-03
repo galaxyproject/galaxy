@@ -1,9 +1,9 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+/* global Galaxy */
+/* global $ */
+/* global _ */
+
 import _l from "utils/localization";
-import jQuery from "jquery";
-var $ = jQuery;
-import GalaxyApp from "galaxy";
+import { GalaxyApp } from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
@@ -17,10 +17,8 @@ import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Vue from "vue";
 
-/* global Galaxy */
-
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
 
     /** Routes */
@@ -108,17 +106,17 @@ window.app = function app(options, bootstrapped) {
                 })
             );
         },
-
-        show_data_tables: function() {
-            var vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            new Vue(DataTables).$mount(vueMount);
+        _display_vue_helper: function(component, props) {
+            let instance = Vue.extend(component);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance(props).$mount(vm);
         },
-
+        show_data_tables: function() {
+            this._display_vue_helper(DataTables);
+        },
         show_data_types: function() {
-            var vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            new Vue(DataTypes).$mount(vueMount);
+            this._display_vue_helper(DataTypes);
         },
 
         show_data_manager: function() {

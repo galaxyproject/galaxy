@@ -57,9 +57,9 @@
         "autocomplete_tagging",
         "jquery.rating"
     )}
-    ${h.js(
-        "libs/jquery/jquery.autocomplete",
-    )}
+    ## ${h.js(
+    ##     "libs/jquery/jquery.autocomplete",
+    ## )}
 
     ## grid container
     <div id="grid-container"></div>

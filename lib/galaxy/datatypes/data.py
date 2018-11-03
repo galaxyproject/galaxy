@@ -248,7 +248,7 @@ class Data(object):
             try:
                 if params.do_action == 'zip':
                     # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp()
+                    tmpd = tempfile.mkdtemp(dir=trans.app.config.new_file_path, prefix='gx_composite_archive_')
                     util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, trans.app.config.gid)
                     tmpf = os.path.join(tmpd, 'library_download.' + params.do_action)
                     archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
@@ -374,7 +374,7 @@ class Data(object):
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_fh:
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=trans.app.config.new_file_path, prefix='gx_html_autocreate_') as tmp_fh:
                         tmp_file_name = tmp_fh.name
                         dir_items = sorted(os.listdir(file_path))
                         base_path, item_name = os.path.split(file_path)
@@ -925,6 +925,10 @@ class Text(Data):
         """
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
+
+
+class Directory(Data):
+    """Class representing a directory of files."""
 
 
 class GenericAsn1(Text):

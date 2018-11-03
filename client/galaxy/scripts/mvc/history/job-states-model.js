@@ -1,4 +1,4 @@
-import * as Backbone from "libs/backbone";
+import Backbone from "backbone";
 import AJAX_QUEUE from "utils/ajax-queue";
 
 /** ms between fetches when checking running jobs/datasets for updates */

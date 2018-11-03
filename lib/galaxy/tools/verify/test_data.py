@@ -23,7 +23,7 @@ UPDATE_FAILED_TEMPLATE = Template(
 )
 
 
-LIST_SEP = re.compile("\s*,\s*")
+LIST_SEP = re.compile(r"\s*,\s*")
 
 
 class TestDataResolver(object):

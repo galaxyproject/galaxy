@@ -1,7 +1,4 @@
-from galaxy.exceptions import (
-    NotImplemented,
-    RequestParameterMissingException
-)
+from galaxy import exceptions
 
 
 class DependencyResolversView(object):
@@ -34,7 +31,7 @@ class DependencyResolversView(object):
         requirements = []
         resolver = self._dependency_resolver(index)
         if not hasattr(resolver, "list_dependencies"):
-            raise NotImplemented()
+            raise exceptions.NotImplemented()
         for requirement in resolver.list_dependencies():
             requirements.append(requirement.to_dict())
         return requirements
@@ -128,7 +125,7 @@ class DependencyResolversView(object):
         """
         resolver = self._dependency_resolver(index)
         if not hasattr(resolver, "install_dependency"):
-            raise NotImplemented()
+            raise exceptions.NotImplemented()
 
         name, version, type, extra_kwds = self._parse_dependency_info(payload)
         return resolver.install_dependency(
@@ -157,7 +154,7 @@ class DependencyResolversView(object):
         extra_kwds = kwds.copy()
         name = extra_kwds.pop("name", None)
         if name is None:
-            raise RequestParameterMissingException("Missing 'name' parameter required for resolution.")
+            raise exceptions.RequestParameterMissingException("Missing 'name' parameter required for resolution.")
         version = extra_kwds.pop("version", None)
         type = extra_kwds.pop("type", "package")
         return name, version, type, extra_kwds
@@ -227,7 +224,7 @@ class DependencyResolversView(object):
         if index:
             resolver = self._dependency_resolver(index)
             if not hasattr(resolver, "clean"):
-                raise NotImplemented()
+                raise exceptions.NotImplemented()
             else:
                 resolver.clean()
                 return "OK"

@@ -568,13 +568,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         ''' Validate email and username using regex '''
         if email == '' or not isinstance(email, six.string_types):
             return 'Please provide your email address.'
-        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
+        if not re.match(r'^(([^<>()[\]\.,;:\s@"]+(\.[^<>()[\]\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
             return 'Please provide your valid email address.'
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length.'
 
     def _validate_publicname(self, username):
-        if not re.match('^[a-z0-9\-]{3,255}$', username):
+        if not re.match(r'^[a-z0-9\-]{3,255}$', username):
             return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
 
     @expose_api

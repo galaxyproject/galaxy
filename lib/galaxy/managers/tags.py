@@ -281,7 +281,7 @@ class TagManager(object):
         if not value:
             return None
         # Remove whitespace from value.
-        reg_exp = re.compile('\s')
+        reg_exp = re.compile(r'\s')
         scrubbed_value = re.sub(reg_exp, "", value)
         return scrubbed_value
 
@@ -291,7 +291,7 @@ class TagManager(object):
         if not name:
             return None
         # Remove whitespace from name.
-        reg_exp = re.compile('\s')
+        reg_exp = re.compile(r'\s')
         scrubbed_name = re.sub(reg_exp, "", name)
         # Ignore starting ':' char.
         if scrubbed_name.startswith(self.hierarchy_separator):

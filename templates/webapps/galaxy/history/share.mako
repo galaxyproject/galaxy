@@ -52,7 +52,7 @@
                 %if send_to_err:
                     <div style="clear: both"></div>
                     <div class="form-row">
-                        <div class="errormessage">${send_to_err}</div>
+                        <div class="alert alert-danger">${send_to_err}</div>
                     </div>
                 %endif
                 <div style="clear: both"></div>
@@ -157,7 +157,7 @@
                     %if send_to_err:
                         <div style="clear: both"></div>
                         <div class="form-row">
-                            <div class="errormessage">${send_to_err}</div>
+                            <div class="alert alert-danger">${send_to_err}</div>
                         </div>
                     %endif
                     ## Needed for rebuilding dicts
@@ -223,7 +223,7 @@
                         ## cannot_change looks like: {historyX : [hda, hda], historyY : [hda] }
                         <div style="clear: both"></div>
                         <div class="form-row">
-                            <div class="errormessage">
+                            <div class="alert alert-danger">
                                 The following datasets cannot be shared with ${email} because you are not authorized to 
                                 change the permissions on them
                             </div>

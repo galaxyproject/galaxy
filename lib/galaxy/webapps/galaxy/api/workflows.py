@@ -492,6 +492,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_workflow(trans, id)
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
+            workflow_dict = self.__normalize_workflow(workflow_dict)
             new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
             if new_workflow_name and new_workflow_name != stored_workflow.name:
                 sanitized_name = sanitize_html(new_workflow_name)
@@ -572,6 +573,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
+        data = self.__normalize_workflow(data)
         workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
         workflow = workflow.latest_workflow
         if workflow.has_errors:
@@ -584,6 +586,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
+        data = self.__normalize_workflow(data)
         import_tools = util.string_as_bool(payload.get("import_tools", False))
         if import_tools and not trans.user_is_admin:
             raise exceptions.AdminRequiredException()
@@ -650,6 +653,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'exact_tools': exact_tools,
             'fill_defaults': fill_defaults,
         }
+
+    def __normalize_workflow(self, as_dict):
+        return self.workflow_contents_manager.normalize_workflow_format(as_dict)
 
     @expose_api
     def import_shared_workflow_deprecated(self, trans, payload, **kwd):

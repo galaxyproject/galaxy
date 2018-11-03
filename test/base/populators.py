@@ -223,7 +223,7 @@ class BaseDatasetPopulator(object):
             wait_on(has_active_jobs, "active jobs", timeout=timeout)
         except TimeoutAssertionError as e:
             jobs = self.history_jobs(history_id)
-            message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e.message)
+            message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e)
             raise TimeoutAssertionError(message)
 
         if assert_ok:
@@ -283,11 +283,12 @@ class BaseDatasetPopulator(object):
     def new_history(self, **kwds):
         name = kwds.get("name", "API Test History")
         create_history_response = self._post("histories", data=dict(name=name))
+        assert "id" in create_history_response.json(), create_history_response.json()
         history_id = create_history_response.json()["id"]
         return history_id
 
     def upload_payload(self, history_id, content=None, **kwds):
-        name = kwds.get("name", "Test Dataset")
+        name = kwds.get("name", "Test_Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", 'txt')
         upload_params = {
@@ -351,19 +352,30 @@ class BaseDatasetPopulator(object):
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def get_history_dataset_content(self, history_id, wait=True, filename=None, **kwds):
+    def get_history_dataset_content(self, history_id, wait=True, filename=None, type='text', raw=False, **kwds):
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
             data["filename"] = filename
+        if raw:
+            data['raw'] = True
         display_response = self._get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
         assert display_response.status_code == 200, display_response.text
-        return display_response.text
+        if type == 'text':
+            return display_response.text
+        else:
+            return display_response.content
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
         details_response = self._get_contents_request(history_id, "/datasets/%s" % dataset_id)
         assert details_response.status_code == 200
+        return details_response.json()
+
+    def get_history_dataset_extra_files(self, history_id, **kwds):
+        dataset_id = self.__history_content_id(history_id, **kwds)
+        details_response = self._get_contents_request(history_id, "/%s/extra_files" % dataset_id)
+        assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
     def get_history_collection_details(self, history_id, **kwds):
@@ -414,7 +426,9 @@ class BaseDatasetPopulator(object):
                 history_content_id = history_contents[-1]["id"]
         return history_content_id
 
-    def _get_contents_request(self, history_id, suffix="", data={}):
+    def _get_contents_request(self, history_id, suffix="", data=None):
+        if data is None:
+            data = {}
         url = "histories/%s/contents" % history_id
         if suffix:
             url = "%s%s" % (url, suffix)
@@ -486,17 +500,26 @@ class DatasetPopulator(BaseDatasetPopulator):
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
 
-    def _post(self, route, data={}, files=None):
+    def _post(self, route, data=None, files=None):
+        if data is None:
+            data = {}
+
         files = data.get("__files", None)
         if files is not None:
             del data["__files"]
 
         return self.galaxy_interactor.post(route, data, files=files)
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.get(route, data=data)
 
-    def _delete(self, route, data={}):
+    def _delete(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.delete(route, data=data)
 
     def _summarize_history(self, history_id):
@@ -547,8 +570,18 @@ class BaseWorkflowPopulator(object):
         return upload_response
 
     def upload_yaml_workflow(self, has_yaml, **kwds):
+        round_trip_conversion = kwds.get("round_trip_format_conversion", False)
+        client_convert = kwds.pop("client_convert", not round_trip_conversion)
+        kwds["convert"] = client_convert
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow["id"]
+        workflow_id = workflow["id"]
+        if round_trip_conversion:
+            workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
+            assert "yaml_content" in workflow_yaml_wrapped, workflow_yaml_wrapped
+            round_trip_converted_content = workflow_yaml_wrapped["yaml_content"]
+            workflow_id = self.upload_yaml_workflow(round_trip_converted_content, client_convert=False, round_trip_conversion=False)
+
+        return workflow_id
 
     def wait_for_invocation(self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT):
         url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
@@ -565,7 +598,13 @@ class BaseWorkflowPopulator(object):
         invocation_response = self._post(url, data=request)
         return invocation_response
 
-    def invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
+    def invoke_workflow(self, history_id, workflow_id, inputs=None, request=None, assert_ok=True):
+        if inputs is None:
+            inputs = {}
+
+        if request is None:
+            request = {}
+
         request["history"] = "hist_id=%s" % history_id,
         if inputs:
             request["inputs"] = json.dumps(inputs)
@@ -578,7 +617,15 @@ class BaseWorkflowPopulator(object):
         else:
             return invocation_response
 
-    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True):
+    def download_workflow(self, workflow_id, style=None):
+        params = {}
+        if style is not None:
+            params["style"] = style
+        response = self._get("workflows/%s/download" % workflow_id, data=params)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
         workflow_populator = self
 
@@ -588,7 +635,10 @@ class BaseWorkflowPopulator(object):
             content = open(filename, "r").read()
             return content
 
-        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type)
+        if client_convert is None:
+            client_convert = not round_trip_format_conversion
+
+        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type, client_convert=client_convert, round_trip_format_conversion=round_trip_format_conversion, raw_yaml=raw_yaml)
 
         if test_data is None:
             if jobs_descriptions is None:
@@ -636,6 +686,13 @@ class BaseWorkflowPopulator(object):
                 workflow_request=workflow_request
             )
 
+    def dump_workflow(self, workflow_id, style=None):
+        raw_workflow = self.download_workflow(workflow_id, style=style)
+        if style == "format2_wrapped_yaml":
+            print(raw_workflow["yaml_content"])
+        else:
+            print(json.dumps(raw_workflow, sort_keys=True, indent=2))
+
 
 RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])
 
@@ -647,10 +704,16 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    def _post(self, route, data={}):
+    def _post(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.post(route, data)
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.get(route, data=data)
 
     # Required for ImporterGalaxyInterface interface - so we can recurisvely import
@@ -662,7 +725,7 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200, upload_response
+        assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
 
 
@@ -751,7 +814,10 @@ class LibraryPopulator(object):
         wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
-    def raw_library_contents_create(self, library_id, payload, files={}):
+    def raw_library_contents_create(self, library_id, payload, files=None):
+        if files is None:
+            files = {}
+
         url_rel = "libraries/%s/contents" % library_id
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
@@ -1152,14 +1218,17 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
         response = state_func()
-        raise TimeoutAssertionError("%s Current response containing state [%s]." % (str(e), response.json()))
+        raise TimeoutAssertionError("%s Current response containing state [%s]." % (e, response.json()))
 
 
 class GiPostGetMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
-    def _get(self, route, data={}):
-        return self._gi.make_get_request(self.__url(route), data)
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
+        return self._gi.make_get_request(self.__url(route), data=data)
 
     def _post(self, route, data={}):
         data = data.copy()

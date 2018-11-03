@@ -300,7 +300,7 @@ galaxy:
   # Set to True to enable monitoring of dynamic job rules. If changes
   # are found, rules are automatically reloaded. Takes the same values
   # as the 'watch_tools' option.
-  #watch_job_rules: false
+  #watch_job_rules: 'false'
 
   # As of 18.09, Galaxy defaults to setting up the object store
   # configuration for output datasets during the job queue step in job
@@ -1019,9 +1019,14 @@ galaxy:
 
   # When stopping Galaxy cleanly, how much time to give various
   # monitoring/polling threads to finish before giving up on joining
-  # them. Set to 0 to disable this and restore the pre-18.01 default
-  # behavior.
-  #monitor_thread_join_timeout: 5
+  # them. Set to 0 to disable this and terminate without waiting. Among
+  # others, these threads include the job handler workers, which are
+  # responsible for preparing/submitting and collecting/finishing jobs,
+  # and which can cause job errors if not shut down cleanly. If using
+  # supervisord, consider also increasing the value of `stopwaitsecs`.
+  # If using job handler mules, consider also setting the `mule-reload-
+  # mercy` uWSGI option. See the Galaxy Admin Documentation for more.
+  #monitor_thread_join_timeout: 30
 
   # Write thread status periodically to 'heartbeat.log',  (careful, uses
   # disk space rapidly!).  Useful to determine why your processes may be
@@ -1050,7 +1055,7 @@ galaxy:
   # server (above, sentry_dsn).  A value of '0' is disabled.  For
   # example, you would set this to .005 to log all queries taking longer
   # than 5 milliseconds.
-  #sentry_sloreq_threshold: 0
+  #sentry_sloreq_threshold: 0.0
 
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will

@@ -58,6 +58,20 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+Upgrade Warning for Admins
+==========================
+
+This release includes changes to the way that non-terminal jobs are handled that greatly improve performance and the
+user experience. As a result, when upgrading a Galaxy server with a large number of jobs in the ``new`` state, job
+handlers will block on first startup (jobs will not run) as these old ``new`` state jobs are migrated to a terminal
+state. This process will generate messages of the format::
+
+    galaxy.jobs DEBUG 2018-10-18 22:40:36,900 Pausing Job '995223', Execution of this dataset's job is paused because its input datasets are in an error state.
+
+Once migration is complete, job handlers will resume normal operation.
+
+For more details, see `Pull Request 6036`_ and `Issue 5944 <https://github.com/galaxyproject/galaxy/issues/5944>`__.
+
 Security
 ========
 
@@ -67,6 +81,37 @@ Unauthorized File System Operations via New Upload API
 Tracked as GX-2018-0006. Servers running Galaxy 18.05 should be updated as soon as possible.
 See `the public announcement for full details
 <http://announce.list.galaxyproject.org/GX-2018-0006-Unauthorized-File-System-Operations-via-New-Upload-API-td4639432.html>`__.
+
+
+Tool Vulnerabilities Discovered
+-------------------------------
+Older versions of certain repositories in the Tool Shed were identified as vulnerable. All of these are owned and maintained by the ``iuc``. The repository list follows:
+
+* ``gemini_query``
+* ``gemini_stats``
+* ``gemini_gene_wise``
+* ``iqtree``
+* ``shovill``
+* ``fastq_dump``
+* ``sam_dump``
+* ``sra_pileup``
+
+If you have any of these repositories installed in your Galaxy, please update them to the latest revision immediately and disable/uninstall all older versions.
+
+Galaxy Client Artifacts
+=======================
+
+New for 18.09, we no longer include pre-compiled JavaScript and other
+client-related artifacts in the GitHub repository.  Instead, Galaxy now
+includes in its dependencies all the components necessary to build on startup
+when it detects changes in the client code.  This will make it easier to
+integrate customizations to your local client, among other benefits moving
+forward with our continued client modernization.
+
+This client building code executes automatically via the 'common_startup.sh'
+script, but if you run Galaxy in a way that doesn't utilize that script, you
+should run it manually on deployment as documented in the `General Update
+Procedures <https://galaxyproject.org/admin/maintenance/>`__.
 
 Deprecation Notice
 ==================

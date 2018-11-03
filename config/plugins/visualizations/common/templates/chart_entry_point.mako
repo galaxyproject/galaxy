@@ -20,8 +20,7 @@
     </script>
     ${h.js('libs/jquery/jquery',
            'libs/jquery/jquery-ui',
-           'bundled/libs.bundled',
-           'bundled/chart.bundled')}
+           'bundled/libs.bundled')}
     <%src_path = script_attributes.get("src") %>
     <script type="text/javascript" src="${static_url}${src_path}"></script>
     <script type="text/javascript">

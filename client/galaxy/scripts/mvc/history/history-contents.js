@@ -1,3 +1,5 @@
+import _ from "underscore";
+import Backbone from "backbone";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDCA_MODEL from "mvc/history/hdca-model";
@@ -5,8 +7,6 @@ import HISTORY_PREFS from "mvc/history/history-preferences";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
 
 /* global Galaxy */
 /* global jQuery */
@@ -23,7 +23,7 @@ var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
  */
-var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
+export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     _logNamespace: "history",
 
     // ........................................................................ set up
@@ -517,8 +517,3 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         return ["HistoryContents(", [this.historyId, this.length].join(), ")"].join("");
     }
 });
-
-//==============================================================================
-export default {
-    HistoryContents: HistoryContents
-};
