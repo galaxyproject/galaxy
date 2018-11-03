@@ -4,12 +4,9 @@
  */
 
 let merge = require("webpack-merge");
-let wpConfig = require("./webpack.config");
+let wpConfig = require("../webpack.config");
 
-// set mode?
-wpConfig.mode = "development";
-
-// Don't build Galaxy bundles - build per-test bundles.
+wpConfig.mode = "production";
 wpConfig.entry = () => ({});
 
 // Don't need assets for unit testing, override those rules

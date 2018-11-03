@@ -1,20 +1,19 @@
 /**
  * Runs mocha tests
  */
+
 const baseKarmaConfig = require("./karma.config.base");
 
-// Single pack mode runs whole test suite much more quickly - but requires
-// running the whole test suite so it would be slower for one-off tests.
-const single_pack = (process.env.GALAXY_TEST_AS_SINGLE_PACK || false);
+const single_pack = (process.env.GALAXY_TEST_AS_SINGLE_PACK == "true");
 
 const testBundles = [
-    "galaxy/**/unitTestBundle.js",
-    "galaxy/**/mocha/test.js"
+    "**/unitTestBundle.js",
+    "**/mocha/test.js"
 ];
 
 const separateTests = [
-    "galaxy/scripts/**/*.test.js",
-    "galaxy/**/mocha/tests/*_tests.js"
+    "**/*.test.js",
+    "**/mocha/tests/*_tests.js"
 ];
 
 module.exports = function (config) {
@@ -33,10 +32,10 @@ module.exports = function (config) {
 
     let settings = Object.assign({}, baseKarmaConfig, {
         files: files,
-        exclude: ["galaxy/**/qunit/*"],
+        exclude: ["**/qunit/*"],
         preprocessors: preprocessors,
         reporters: ["mocha"],
-        frameworks: ["mocha", "chai"]
+        frameworks: ["polyfill", "mocha", "chai"]
     });
 
     config.set(settings);
