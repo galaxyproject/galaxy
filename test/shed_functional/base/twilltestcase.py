@@ -863,7 +863,7 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.visit_galaxy_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_installed_manage_data_manager_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
+    def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
         data_managers = installed_repository.metadata.get('data_manager', {}).get('data_managers', {})
         if data_manager_names:
             if not isinstance(data_manager_names, list):
@@ -876,7 +876,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             params = {
                 'id': data_managers[data_manager_name]['guid']
             }
-            self.visit_galaxy_url('/data_manager/manage_data_manager', params=params)
+            self.visit_galaxy_url('/data_manager/jobs_list', params=params)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_repository_manage_page(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
