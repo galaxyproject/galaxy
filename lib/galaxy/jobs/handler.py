@@ -2,7 +2,6 @@
 Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 import datetime
-import logging
 import os
 import threading
 import time
@@ -24,20 +23,38 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import model
+from galaxy.config import get_database_url
 from galaxy.jobs import (
     JobDestination,
     JobWrapper,
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util.logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.web.stack.message import JobHandlerMessage
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA, JOB_USER_OVER_TOTAL_WALLTIME = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota', 'user_over_total_walltime'
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
+
+# an excellent discussion on PostgreSQL concurrency safety:
+# https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
+JOB_GRAB_SQL = """
+   UPDATE job
+      SET handler = %(handler)s
+    WHERE id = (
+                SELECT id
+                  FROM job
+                 WHERE handler IN %(tags)s
+                       AND state = 'new'
+              ORDER BY id
+                  %(for_update)s
+                 LIMIT %(maxgrab)s)
+RETURNING id
+"""
 
 
 class JobHandler(object):
@@ -62,39 +79,62 @@ class JobHandler(object):
         self.job_stop_queue.shutdown()
 
 
-class JobAssigner(threading.Thread):
-    # is this safe?
-    sql = "UPDATE job SET handler = %(handler)s WHERE id = (SELECT id FROM job WHERE handler IN %(tags)s AND state = 'new' ORDER BY ID LIMIT 1) AND handler IN %(tags)s AND state = 'new' RETURNING id"
-
-    def __init__(self, *args, **kwargs):
-            server_name = kwargs.pop('server_name')
-            url = kwargs.pop('url')
-            handler_tags = kwargs.pop('handler_tags')
-            log.debug('######## ASSIGNER INITIALIZING %s %s', str(args), str(kwargs))
-            super(JobAssigner, self).__init__(*args, **kwargs)
-            self.server_name = server_name
-            self.handler_tags = handler_tags
-            self.stop = False
-            self.engine = create_engine(url, isolation_level='SERIALIZABLE')
-            self.conn = self.engine.connect()
+class JobGrabber(threading.Thread):
+    def __init__(self, server_name=None, url=None, handler_tags=None, mode=None, **kwargs):
+        super(JobGrabber, self).__init__(**kwargs)
+        log.debug('Handler job grabber initializing for handler %s, tags: %s', server_name,
+                  ', '.join([str(x) for x in handler_tags]))
+        self.server_name = server_name
+        self.handler_tags = handler_tags
+        self.url = url
+        self.mode = mode
+        if mode == 'db-skip-locked':
+            self.isolation_level = 'READ_COMMITTED'
+            self.for_update = 'FOR UPDATE SKIP LOCKED'
+        else:
+            self.isolation_level = 'SERIALIZABLE'
+            self.for_update = ''
+        self.stop = False
 
     def run(self):
-        log.debug('######## ASSIGNER STARTING')
-        args = {'handler': self.server_name, 'tags': tuple(self.handler_tags)}
+        log.trace('Handler job grabber loop starting')
+        args = {
+            'handler': self.server_name,
+            'tags': tuple(self.handler_tags) or (None,),  # FIXME: correct?
+            'maxgrab': 1,
+            'for_update': self.for_update,
+        }
+        log.trace('Grabber SQL is: %s', (JOB_GRAB_SQL % args))
+        self.engine = create_engine(self.url, isolation_level=self.isolation_level)
+        self.conn = self.engine.connect()
         while not self.stop:
+            self.__grab_until_none(args)
+            time.sleep(1)
+        log.info('Handler job grabber thread exiting')
+
+    def __grab_until_none(self, args):
+        log.debug('######## __grab_until_none() entered')
+        rows = True
+        while rows:
+            rows = False
             with self.conn.begin() as trans:
                 try:
-                    r = self.conn.execute(JobAssigner.sql, args)
-                    row = r.fetchone()
-                    if row:
-                        log.debug('######## RESULT %s' % row)
+                    rows = self.conn.execute(JOB_GRAB_SQL, args).fetchall()
+                    for row in rows:
+                        log.debug('Grabbed job: %s', row[0])
+                    if rows:
                         trans.commit()
-                        log.debug('######## COMMIT OK')
                     else:
                         trans.rollback()
                 except OperationalError as e:
-                    log.warning('######## EXCEPT: %s', str(e))
+                    # FIXME: can you pick out just serialization failures?
+                    log.trace('Grabbing job failed (serialization failures are ok): %s', str(e))
                     trans.rollback()
+            log.trace('######## rows is: %s', str(rows))
+        log.trace('######## __grab_until_none() return')
+
+    def shutdown(self):
+        self.stop = True
 
 
 class JobHandlerQueue(Monitors):
@@ -126,11 +166,20 @@ class JobHandlerQueue(Monitors):
         self.job_wrappers = {}
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
-        name = "JobHandlerQueue.job_assignment_thread"
-        self._assigner = JobAssigner(name=name, url=self.app.config.database_connection,
-                server_name=self.app.config.server_name, handler_tags=self.app.job_config.handler_tags())
-        self._assigner.daemon = True
-        self._assigner.start()
+        self.__initialize_job_grabber()
+
+    def __initialize_job_grabber(self):
+        if self.app.config.job_handler_assignment_method in ('db-transaction-isolation', 'db-skip-locked'):
+            name = "JobHandlerQueue.job_grabber_thread"
+            self._grabber = JobGrabber(
+                name=name,
+                url=get_database_url(self.app.config),
+                server_name=self.app.config.server_name,
+                handler_tags=self.app.job_config.handler_tags(),
+                mode=self.app.config.job_handler_assignment_method)
+            self._grabber.daemon = True
+        else:
+            self._grabber = None
 
     def start(self):
         """
@@ -141,6 +190,8 @@ class JobHandlerQueue(Monitors):
         self.__check_jobs_at_startup()
         # Start the queue
         self.monitor_thread.start()
+        if self._grabber:
+            self._grabber.start()
         # The stack code is initialized in the application
         JobHandlerMessage().bind_default_handler(self, '_handle_message')
         self.app.application_stack.register_message_handler(self._handle_message, name=JobHandlerMessage.target)
@@ -793,6 +844,9 @@ class JobHandlerQueue(Monitors):
             # We're not the real job queue, do nothing
             return
         else:
+            if self._grabber:
+                log.info("sending stop signal to job grabber thread")
+                self._grabber.shutdown()
             log.info("sending stop signal to worker thread")
             self.stop_monitoring()
             if not self.app.config.track_jobs_in_database:
