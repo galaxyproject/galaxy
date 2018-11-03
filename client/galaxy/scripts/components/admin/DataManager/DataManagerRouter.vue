@@ -9,6 +9,7 @@ import DataManagerTable from "./DataManagerTable.vue";
 Vue.use(VueRouter);
 
 export default new VueRouter({
+    mode: "history",
     base: `${Galaxy.root}admin/data_manager`,
     routes: [
         {
@@ -33,6 +34,10 @@ export default new VueRouter({
             name: "DataManagerTable",
             component: DataManagerTable,
             props: true
+        },
+        {
+            path: "*",
+            redirect: "/"
         }
     ]
 });

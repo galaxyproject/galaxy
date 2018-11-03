@@ -35,7 +35,7 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
             "(/)admin/data_types": "show_data_types",
-            "(/)admin/data_manager": "show_data_manager",
+            "(/)admin/data_manager*path": "show_data_manager",
             "*notFound": "not_found"
         },
 
@@ -119,12 +119,13 @@ window.app = function app(options, bootstrapped) {
             this._display_vue_helper(DataTypes);
         },
 
-        show_data_manager: function() {
+        show_data_manager: function(path) {
             let vueMount = document.createElement("div");
             this.page.display(vueMount);
             // always set the route back to the base, i.e.
             // `${Galaxy.root}admin/data_manager`
-            DataManagerRouter.replace("/");
+            Galaxy.debug("show_data_manager: path='" + path + "'");
+            DataManagerRouter.replace(path || "/");
             new Vue({ router: DataManagerRouter, render: h => h(DataManagerView) }).$mount(vueMount);
         },
 

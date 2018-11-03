@@ -43,7 +43,7 @@
                                         <i>{{ dataManager['description'] }}</i>
                                     </div>
                                 </b-button>
-                                <b-button :to="{name: 'DataManagerJobs', params: { id: dataManager['id'] }}" :id="kebabCase(dataManager['name']) + '-jobs'">
+                                <b-button :to="{name: 'DataManagerJobs', params: { id: encodeURIComponent(dataManager['id']) }}" :id="kebabCase(dataManager['name']) + '-jobs'">
                                     Jobs
                                 </b-button>
                             </b-button-group>

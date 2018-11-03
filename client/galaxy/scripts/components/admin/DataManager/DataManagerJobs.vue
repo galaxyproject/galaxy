@@ -156,7 +156,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/jobs_list?id=${this.id}`)
+            .get(`${Galaxy.root}data_manager/jobs_list?id=${decodeURIComponent(this.id)}`)
             .then(response => {
                 this.dataManager = response.data.dataManager;
                 this.jobs = response.data.jobs;
