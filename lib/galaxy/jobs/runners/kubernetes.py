@@ -5,7 +5,6 @@ Offload jobs to a Kubernetes cluster.
 import logging
 import os
 import re
-import string
 from time import sleep
 
 from galaxy import model
@@ -495,50 +494,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             return True
 
         return False
-
-    def fail_job(self, job_state):
-        """
-        Kubernetes runner overrides fail_job (called by mark_as_failed) to rescue the pod's log files which are left as
-        stdout (pods logs are the natural stdout and stderr of the running processes inside the pods) and are
-        deleted in the parent implementation as part of the failing the job process.
-
-        :param job_state:
-        :return:
-        """
-
-        # First we rescue the pods logs
-        try:
-            with open(job_state.output_file, 'r') as outfile:
-                stdout_content = outfile.read()
-        except IOError:
-            stdout_content = "<Failed to recuperate log for job {} >".format(job_state.job_id)
-            log.exception("Failed to get stdout for job %s", job_state.job_id)
-
-        if getattr(job_state, 'stop_job', True):
-            self.stop_job(job_state.job_wrapper)
-        self._handle_runner_state('failure', job_state)
-        # Not convinced this is the best way to indicate this state, but
-        # something necessary
-        if not job_state.runner_state_handled:
-            job_state.job_wrapper.fail(
-                message=getattr(job_state, 'fail_message', 'Job failed'),
-                stdout=stdout_content, stderr='See stdout for pod\'s stderr.'
-            )
-            if job_state.job_wrapper.cleanup_job == "always":
-                job_state.cleanup()
-
-    def __produce_log_file(self, job_state):
-        pod_r = Pod.objects(self._pykube_api).filter(selector="app=" + job_state.job_id)
-        log_string = ""
-        for pod_obj in pod_r.response['items']:
-            try:
-                pod = Pod(self._pykube_api, pod_obj)
-                log_string += "\n\n==== Pod " + pod.name + " log start ====\n\n"
-                log_string += pod.logs(timestamps=True)
-                log_string += "\n\n==== Pod " + pod.name + " log end   ===="
-            except Exception as detail:
-                log.info("Could not write log file for pod %s due to HTTPError %s",
-                         pod_obj['metadata']['name'], detail)
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""
