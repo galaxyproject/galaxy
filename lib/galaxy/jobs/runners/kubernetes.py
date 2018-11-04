@@ -5,6 +5,7 @@ Offload jobs to a Kubernetes cluster.
 import logging
 import os
 import re
+import string
 from time import sleep
 
 from galaxy import model
@@ -86,16 +87,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         """Create job script and submit it to Kubernetes cluster"""
         # prepare the job
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
-        # were galaxy will expect results.
+        # where galaxy will expect results.
         log.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
-        if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
+        if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False, yield_return_code=False):
             return
 
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
                                    job_wrapper=job_wrapper,
                                    job_destination=job_wrapper.job_destination)
 
-        # fill in the DRM's job run template
+
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell)
         try:
             self.write_executable_script(ajs.job_file, script)
@@ -431,9 +432,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
             # This assumes jobs dependent on a single pod, single container
             if succeeded > 0:
-                self.__produce_log_file(job_state)
-                with open(job_state.error_file, 'w'):
-                    pass
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
@@ -460,15 +458,13 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         else:
             # there is more than one job associated to the expected unique job id used as selector.
             log.error("More than one Kubernetes Job associated to job id '%s'", job_state.job_id)
-            self.__produce_log_file(job_state)
             with open(job_state.error_file, 'w') as error_file:
                 error_file.write("More than one Kubernetes Job associated to job id '%s'\n" % job_state.job_id)
             self.mark_as_failed(job_state)
             return job_state
 
     def _handle_job_failure(self, job, job_state, reason=None):
-        self.__produce_log_file(job_state)
-        with open(job_state.error_file, 'w') as error_file:
+        with open(job_state.error_file, 'a') as error_file:
             if reason == "OOM":
                 error_file.write("Job killed after running out of memory. Try with more memory.\n")
                 job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
@@ -540,15 +536,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             except Exception as detail:
                 log.info("Could not write log file for pod %s due to HTTPError %s",
                          pod_obj['metadata']['name'], detail)
-
-        logs_file_path = job_state.output_file
-        try:
-            with open(logs_file_path, mode="w") as logs_file:
-                logs_file.write(log_string)
-        except IOError:
-            log.exception("Couldn't produce log files for %s", job_state.job_id)
-
-        return logs_file_path
 
     def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""
