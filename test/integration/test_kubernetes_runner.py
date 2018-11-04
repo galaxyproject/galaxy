@@ -6,6 +6,7 @@ import os
 import string
 import subprocess
 import tempfile
+import time
 
 from base import integration_util  # noqa: I100,I202
 from base.populators import skip_without_tool
@@ -173,11 +174,14 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             # Not checking the state here allows the change from queued to running to overwrite
             # the change from queued to deleted_new in the API thread - this is a problem because
             # the job will still run. See issue https://github.com/galaxyproject/galaxy/issues/4960.
-            while external_id is None or state != app.model.Job.states.RUNNING:
+            max_tries = 60
+            while max_tries > 0 and external_id is None or state != app.model.Job.states.RUNNING:
                 sa_session.refresh(job)
                 assert not job.finished
                 external_id = job.job_runner_external_id
                 state = job.state
+                time.sleep(1)
+                max_tries -= 1
 
             status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
             assert status['status']['active'] == 1
@@ -185,5 +189,25 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             delete_response = self.dataset_populator.cancel_job(job_dict["id"])
             assert delete_response.json() is True
 
+            # Wait for job to be cancelled in kubernetes
+            time.sleep(2)
             status = json.loads(subprocess.check_output(['kubectl', 'get', 'job', external_id, '-o', 'json']))
             assert 'active' not in status['status']
+
+    @skip_without_tool('job_properties')
+    def test_exit_code_127(self):
+        inputs = {
+            'failbool': True
+        }
+        running_response = self.dataset_populator.run_tool(
+            "job_properties",
+            inputs,
+            self.history_id,
+            assert_ok=False,
+        )
+        result = self.dataset_populator.wait_for_tool_run(run_response=running_response, history_id=self.history_id, assert_ok=False).json()
+        details = self.dataset_populator.get_job_details(result['jobs'][0]['id'], full=True).json()
+
+        assert details['state'] == 'error', details
+        assert details['stdout'] == 'The bool is not true\n', details
+        assert details['stderr'] == 'Fatal error: Exit code 127 (Failing exit code.)\nThe bool is very not true\n'
