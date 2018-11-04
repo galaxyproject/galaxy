@@ -13,6 +13,7 @@ from galaxy.jobs.runners import (
     AsynchronousJobState,
     JobState
 )
+from galaxy.util.bytesize import ByteSize
 
 # pykube imports:
 try:
@@ -279,7 +280,15 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         resources = self.__get_resources(ajs.job_wrapper)
         if resources:
+            envs = []
+            if 'limits' in resources:
+                limits = resources['limits']
+                if 'memory' in limits:
+                    envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(limits['memory']).to_unit('M', as_string=False))})
+                if 'cpu' in limits:
+                    envs.append({'name': 'GALAXY_SLOTS', 'value': limits['cpu']})
             k8s_container['resources'] = resources
+            k8s_container['env'] = envs
 
         if self._default_pull_policy:
             k8s_container["imagePullPolicy"] = self._default_pull_policy
@@ -335,7 +344,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_destinantion = job_wrapper.job_destination
 
         if 'requests_cpu' in job_destinantion.params:
-            return self.__transform_cpu_value(job_destinantion.params['requests_cpu'])
+            return job_destinantion.params['requests_cpu']
         return None
 
     def __get_cpu_limit(self, job_wrapper):
@@ -343,40 +352,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_destinantion = job_wrapper.job_destination
 
         if 'limits_cpu' in job_destinantion.params:
-            return self.__transform_cpu_value(job_destinantion.params['limits_cpu'])
+            return job_destinantion.params['limits_cpu']
         return None
 
-    def __transform_cpu_value(self, cpu_value):
-        """Transforms cpu value
-
-           If the value is 0 and not a string, then None is returned.
-           If the value is a float, then it is multiplied by 1000 and expressed as mili cpus.
-           If the value is an integer, then it is and expressed as CPUs (no unit).
-           If it is an already formatted string, it is returned as it was.
-        """
-        if not isinstance(cpu_value, str) and float(cpu_value) == 0:
-            return None
-        if isinstance(cpu_value, float):
-            return str(int(cpu_value * 1000)) + "m"
-        elif isinstance(cpu_value, int):
-            return str(cpu_value)
-        return cpu_value
-
     def __transform_memory_value(self, mem_value):
-        """Transforms memory value
-
-           If the value is 0 and not a string, then None is returned.
-           If the value has a decimal part, then it is multiplied by 1000 and expressed as Megabytes.
-           If the value is an integer, then it is truncated and expressed as Gigabytes.
-           If it is an already formatted string, it is returned as it was.
         """
-        if not isinstance(mem_value, str) and float(mem_value) == 0:
-            return None
-        if isinstance(mem_value, float):
-            return str(int(mem_value * 1000)) + "M"
-        elif isinstance(mem_value, int):
-            return str(mem_value) + "G"
-        return mem_value
+        Transforms valid kubernetes memory value to bytes
+        """
+        return ByteSize(mem_value).value
 
     def __assemble_k8s_container_image_name(self, job_wrapper):
         """Assembles the container image name as repo/owner/image:tag, where repo, owner and tag are optional"""
