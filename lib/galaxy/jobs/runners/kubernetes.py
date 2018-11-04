@@ -446,9 +446,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 return job_state
             elif failed > max_pod_retrials:
                 return self._handle_job_failure(job, job_state)
-            # We should not get here
-            log.error("Kubernetes job '%s' not classified as succ., active or failed. Full Job object: \n%s", job.name, job.obj)
-            return job_state
+            elif job_state.job_wrapper.get_job().state == model.Job.states.DELETED:
+                # Job has been deleted via stop_job, cleanup and remove from watched_jobs by returning `None`
+                if job_state.job_wrapper.cleanup_job in ("always", "onsuccess"):
+                    job_state.job_wrapper.cleanup()
+                return None
+            else:
+                # We really shouldn't reach this point, but we might if the job has been killed by the kubernetes admin
+                log.info("Kubernetes job '%s' not classified as succ., active or failed. Full Job object: \n%s", job.name, job.obj)
 
         elif len(jobs.response['items']) == 0:
             # there is no job responding to this job_id, it is either lost or something happened.
