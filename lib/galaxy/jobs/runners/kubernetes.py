@@ -89,13 +89,16 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # where galaxy will expect results.
         log.debug("Starting queue_job for job " + job_wrapper.get_id_tag())
-        if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False, yield_return_code=False):
-            return
-
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory,
                                    job_wrapper=job_wrapper,
                                    job_destination=job_wrapper.job_destination)
 
+        if not self.prepare_job(job_wrapper,
+                                include_metadata=False,
+                                modify_command_for_container=False,
+                                stdout_file=ajs.output_file,
+                                stderr_file=ajs.error_file):
+            return
 
         script = self.get_job_file(job_wrapper, exit_code_path=ajs.exit_code_file, shell=job_wrapper.shell)
         try:
