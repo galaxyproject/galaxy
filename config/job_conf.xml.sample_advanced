@@ -135,7 +135,7 @@
                         storage: 10Gi
                       accessModes:
                         - ReadWriteMany
-                      persistentVolumeReclaimPolicy: Retained
+                      persistentVolumeReclaimPolicy: Retain
                       nfs:
                         path: /scratch1/galaxy_data
                         server: 192.168.64.1
