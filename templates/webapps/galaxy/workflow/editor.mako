@@ -119,11 +119,6 @@
         clear: both;
     }
 
-    .callout {
-        position: absolute;
-        z-index: 10000;
-    }
-
     .panel-header-button-group {
         margin-right: 5px;
         padding-right: 5px;
