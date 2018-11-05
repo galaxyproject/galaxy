@@ -161,10 +161,10 @@ client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 
 _client-test-mocha:  ## Run mocha tests via karma
-	cd client && GALAXY_TEST_FRAMEWORK=mocha yarn run test
+	cd client && yarn run test-mocha
 
 _client-test-qunit:  ## Run qunit tests via karma
-	cd client && GALAXY_TEST_FRAMEWORK=qunit yarn run test
+	cd client && yarn run test-qunit
 
 client-test: client _client-test-mocha _client-test-qunit ## Run JS unit tests via Karma
 

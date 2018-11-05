@@ -13,6 +13,9 @@ env:
 
 matrix:
   include:
+    - env: TOX_ENV=qunit
+      addons:
+        chrome: stable
     - env: TOX_ENV=py34-first_startup
       addons:
         &py3_addons
