@@ -4,7 +4,7 @@ function Connector(handle1, handle2) {
     this.canvas = null;
     this.dragging = false;
     this.inner_color = "#FFFFFF";
-    this.outer_color = "#6c6";
+    this.outer_color = "#25537b";
     if (handle1 && handle2) {
         this.connect(
             handle1,

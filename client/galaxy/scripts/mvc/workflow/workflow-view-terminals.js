@@ -80,6 +80,7 @@ var BaseInputTerminalView = TerminalView.extend({
         this.el.terminal = terminal;
         this.$el.attr("input-name", name);
         this.$el.attr("id", id);
+        this.$el.append($("<i/>"));
         this.id = id;
 
         terminal.node = node;
@@ -120,11 +121,11 @@ var BaseInputTerminalView = TerminalView.extend({
         // If connected, create a popup to allow disconnection
         if (terminal.connectors.length > 0) {
             // Create callout
-            var t = $("<div class='callout'></div>")
+            var t = $("<div class='callout'/>")
                 .css({ display: "none" })
                 .appendTo("body")
                 .append(
-                    $("<div class='button'></div>").append(
+                    $("<div class='button'/>").append(
                         $("<div/>")
                             .addClass("fa-icon-button fa fa-times")
                             .click(() => {
@@ -184,6 +185,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         this.el.terminal = terminal;
         this.$el.attr("output-name", name);
         this.$el.attr("id", id);
+        this.$el.append($("<i/>"))
         terminal.node = node;
         terminal.name = name;
         terminal.label = output.label;

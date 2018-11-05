@@ -635,6 +635,7 @@ div.toolFormRow {
         @extend .py-1;
         @extend .px-2;
         cursor: move;
+        background: lighten($brand-primary, 65%);
     }
     .toolFormBody {
         @extend .card-body;
@@ -2025,12 +2026,19 @@ div.toolTitleNoSection {
 }
 .base-terminal {
     @extend .fa;
-    @extend .fa-chevron-circle-right;
-    background: white;
-    position: absolute;
+    @extend .fa-circle;
     @extend .mt-2;
+    color: white;
+    position: absolute;
     z-index: 1500;
-    line-height: 10px;
+    > i {
+        @extend .fa;
+        @extend .fa-chevron-circle-right;
+        color: $brand-primary;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+    }
 }
 .input-terminal {
     @extend .base-terminal;
@@ -2039,9 +2047,12 @@ div.toolTitleNoSection {
 .output-terminal {
     @extend .base-terminal;
     right: -9px;
-    &:hover {
+    &:hover > i {
         color: $brand-success;
     }
+}
+.input-terminal-active > i {
+    color: $brand-success;
 }
 .drag-terminal {
     @extend .fa;
@@ -2049,9 +2060,6 @@ div.toolTitleNoSection {
     color: $brand-success;
     position: absolute;
     z-index: 1500;
-}
-.input-terminal-active {
-    color: $brand-success;
 }
 #overview-border {
     position: absolute;
