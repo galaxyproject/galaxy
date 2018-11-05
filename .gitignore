@@ -117,6 +117,9 @@ test/unit/**.log
 
 # Project files
 *.kpf
+.vscode
+client/**/jsconfig.json
+
 
 # Chrom len files
 *.len

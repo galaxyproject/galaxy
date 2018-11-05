@@ -293,7 +293,7 @@ GalaxyApp.prototype.toString = function toString() {
 };
 
 // This is not great.  Rework to be a singleton-style Galaxy app accessible/created by import
-window.Galaxy = window.Galaxy || new GalaxyApp();
+// window.Galaxy = window.Galaxy || new GalaxyApp();
 
 // ============================================================================
 export default {
