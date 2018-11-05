@@ -224,7 +224,6 @@ $(document).ready(() => {
     onloadWebhooks();
 });
 
-
 // add monitors for all the horrible little global variables
 
 let watchme = [

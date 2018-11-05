@@ -14,7 +14,6 @@ const fakeLogger = mock(console);
 window._monitorStorage = window._monitorStorage || {};
 
 export function installMonitor(globalProp, fallbackValue = null) {
-
     let label = `window.${globalProp}`;
     let debug = isPropMonitored(globalProp);
     let logger = debug ? console : fakeLogger;
@@ -47,7 +46,7 @@ export function installMonitor(globalProp, fallbackValue = null) {
                 logger.groupCollapsed(`${label} write...`, newValue);
                 logger.trace();
                 logger.groupEnd();
-                return window._monitorStorage[globalProp] = newValue;
+                return (window._monitorStorage[globalProp] = newValue);
             }
         });
     } catch (err) {
@@ -57,27 +56,30 @@ export function installMonitor(globalProp, fallbackValue = null) {
     // Proxies the above object definition so we can watch changes to
     // that object's properties (i.e. window.Thing.prop = "abc")
 
-    return new Proxy({}, {
-        get(o, prop) {
-            logger.groupCollapsed(`${label}.${prop} read`);
-            let target = window[globalProp];
-            logger.log("o?", o);
-            logger.log("target?", target);
-            logger.trace();
-            logger.groupEnd();
-            let val = target[prop];
-            return val;
-        },
-        set(o, prop, val) {
-            let target = window[globalProp];
-            logger.groupCollapsed(`${label}.${prop} write`, val);
-            logger.log("o?", o);
-            logger.log("target?", target);
-            logger.trace();
-            logger.groupEnd();
-            return (target[prop] = val);
+    return new Proxy(
+        {},
+        {
+            get(o, prop) {
+                logger.groupCollapsed(`${label}.${prop} read`);
+                let target = window[globalProp];
+                logger.log("o?", o);
+                logger.log("target?", target);
+                logger.trace();
+                logger.groupEnd();
+                let val = target[prop];
+                return val;
+            },
+            set(o, prop, val) {
+                let target = window[globalProp];
+                logger.groupCollapsed(`${label}.${prop} write`, val);
+                logger.log("o?", o);
+                logger.log("target?", target);
+                logger.trace();
+                logger.groupEnd();
+                return (target[prop] = val);
+            }
         }
-    });
+    );
 }
 
 // Shows which properties are actually being monitored
@@ -110,7 +112,6 @@ function getSessionToggles() {
 function setSessionToggles(toggleList) {
     sessionStorage.setItem("global_monitors", JSON.stringify(toggleList));
 }
-
 
 // Console utilities
 
