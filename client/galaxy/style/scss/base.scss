@@ -630,6 +630,14 @@ div.toolFormRow {
         font-size: $font-size-base;
         line-height: $line-height-base;
     }
+    .toolFormBody {
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted black 1px;
+            margin: 0 5px;
+        }
+    }
 }
 
 div.form,

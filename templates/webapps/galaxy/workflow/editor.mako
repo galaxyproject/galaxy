@@ -119,13 +119,6 @@
         clear: both;
     }
 
-    div.rule {
-        height: 0;
-        border: none;
-        border-bottom: dotted black 1px;
-        margin: 0 5px;
-    }
-
     .callout {
         position: absolute;
         z-index: 10000;
