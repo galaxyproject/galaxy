@@ -80,11 +80,6 @@
         margin: 3px;
     }
 
-    div.toolFormTitle {
-        cursor: move;
-        min-height: 16px;
-    }
-
     div.titleRow {
         font-weight: bold;
         border-bottom: dotted gray 1px;

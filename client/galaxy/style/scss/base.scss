@@ -629,6 +629,8 @@ div.toolFormRow {
     .toolFormTitle {
         font-size: $font-size-base;
         line-height: $line-height-base;
+        cursor: move;
+        min-height: 16px;
     }
     .toolFormBody {
         .rule {
