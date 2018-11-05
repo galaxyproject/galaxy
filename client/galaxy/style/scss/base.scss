@@ -613,6 +613,12 @@ div.toolFormRow {
 .callout {
     position: absolute;
     z-index: 10000;
+    div.buttons img {
+        border: none;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
 }
 
 .toolForm.toolFormInCanvas {

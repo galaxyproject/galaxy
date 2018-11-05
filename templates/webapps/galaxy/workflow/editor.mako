@@ -56,22 +56,12 @@
     <style type="text/css">
     canvas { position: absolute; z-index: 10; }
     canvas.dragging { position: absolute; z-index: 1000; }
-    ## .input-terminal-hover { background: yellow; border: solid black 1px; }
-    .unselectable { -moz-user-select: none; -khtml-user-select: none; user-select: none; }
-    img { border: 0; }
-
-    div.buttons img {
-    width: 16px; height: 16px;
-    cursor: pointer;
-    }
-
     #canvas-area {
         position: absolute;
         top: 0; left: 305px; bottom: 0; right: 0;
         border: solid red 1px;
         overflow: none;
     }
-
     </style>
 </%def>
 
