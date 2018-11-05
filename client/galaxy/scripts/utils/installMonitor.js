@@ -2,25 +2,22 @@
  * Diagnostic utility, can be setup to monitor globally assigned resources. For
  * instance if some legacy script set a variable called window.Bob, call
  * installMonitor("Bob"). Then open the chrome console and type
- * toggleMonitorMessages("Bob", true) to receive console.log messages and a
- * traceroute every time some random script actually accesses window.Bob.
+ * toggleGlobalMonitor("Bob", true) to receive console.log messages and a
+ * traceroute every time some random script accesses window.Bob or one of its
+ * properties.
  */
 
-// import { mock } from "utils/mock";
-// const fakeLogger = mock(console);
+import { mock } from "utils/mock";
+const fakeLogger = mock(console);
 
 // stores values that are returned when somebody asks for window.Something
 window._monitorStorage = window._monitorStorage || {};
 
 export function installMonitor(globalProp, fallbackValue = null) {
 
-    let debug = getMonitorToggle(globalProp);
-    if (!debug) {
-        return;
-    }
-
     let label = `window.${globalProp}`;
-    let logger = console;
+    let debug = isPropMonitored(globalProp);
+    let logger = debug ? console : fakeLogger;
 
     // initialize storage with existing value
     let existingValue = window[globalProp] || fallbackValue;
@@ -83,39 +80,44 @@ export function installMonitor(globalProp, fallbackValue = null) {
     });
 }
 
-
-// Shows a list of all monitored properties
-
+// Shows which properties are actually being monitored
 export function showMonitoredProperties() {
     return Object.keys(window._monitorStorage);
 }
 
+// sets a flag in sessionStorage to install a monitor for the
+// indicated prop on the next page refresh
 
-// Message Toggles
-
-export function toggleMonitorMessages(prop, bShow = false) {
-    sessionStorage.setItem(sessionKey(prop), Boolean(bShow));
+export function toggleGlobalMonitor(prop, bShow = false) {
+    let toggleList = getSessionToggles();
+    toggleList[prop] = Boolean(bShow);
+    setSessionToggles(toggleList);
+    return toggleList;
 }
 
-function sessionKey(prop) {
-    return `monitor_debug_${prop}`;
+// determines whether specified prop is toggled on or off by the user
+export function isPropMonitored(prop) {
+    let toggleList = getSessionToggles();
+    return toggleList[prop] == true;
 }
 
-function getMonitorToggle(prop) {
-    let toggle = sessionStorage.getItem(sessionKey(prop));
-    return (toggle == "true");
+function getSessionToggles() {
+    let json = sessionStorage.getItem("global_monitors");
+    let existinglist = json ? JSON.parse(json) : {};
+    return existinglist;
 }
 
+function setSessionToggles(toggleList) {
+    sessionStorage.setItem("global_monitors", JSON.stringify(toggleList));
+}
 
 
 // Console utilities
 
-// showMonitoredProperties() in console to list all
-// currently monitored properties
-
+// Type showMonitoredProperties in developer console to list which
+// global variables have actually been proxied
 window.showMonitoredProperties = showMonitoredProperties;
 
-// Type toggleMonitorMessages("variableName", true|false) in
+// Type toggleGlobalMonitor("variableName", true|false) in
 // the developer console to enable/disable
-
-window.toggleMonitorMessages = toggleMonitorMessages;
+window.toggleGlobalMonitor = toggleGlobalMonitor;
