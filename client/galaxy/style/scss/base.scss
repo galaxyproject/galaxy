@@ -610,6 +610,11 @@ div.toolFormRow {
     position: relative;
 }
 
+.callout {
+    position: absolute;
+    z-index: 10000;
+}
+
 .toolForm.toolFormInCanvas {
     border: solid $form-border 1px;
     @include border-radius(2px);
@@ -635,13 +640,9 @@ div.toolFormRow {
             border-bottom: dotted black 1px;
             margin: 0 5px;
         }
-        .callout {
-            position: absolute;
-            z-index: 10000;
-        }
     }
-
 }
+
 .toolForm.toolFormInCanvas.tool-node-error {
     border-color: #AA6666;
     .toolFormTitle {
