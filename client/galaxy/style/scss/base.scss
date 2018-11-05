@@ -637,8 +637,15 @@ div.toolFormRow {
             z-index: 10000;
         }
     }
-}
 
+}
+.toolForm.toolFormInCanvas.tool-node-error {
+    border-color: #AA6666;
+    .toolFormTitle {
+        background: #FFCCCC;
+        border-color: #AA6666;
+    }
+}
 div.form,
 div.toolForm {
     border: solid $form-border 1px;

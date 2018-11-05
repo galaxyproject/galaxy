@@ -84,14 +84,6 @@
       position: relative;
     }
 
-    div.tool-node-error div.toolFormTitle {
-        background: #FFCCCC;
-        border-color: #AA6666;
-    }
-    div.tool-node-error {
-        border-color: #AA6666;
-    }
-
     #canvas-area {
         position: absolute;
         top: 0; left: 305px; bottom: 0; right: 0;
