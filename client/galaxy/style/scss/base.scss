@@ -596,6 +596,16 @@ div.toolHelpBody {
 }
 
 // In workflow
+div.toolTitleDisabled {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: square outside;
+    font-style: italic;
+    color: gray;
+}
 
 .toolForm.toolFormInCanvas {
     border: solid $form-border 1px;

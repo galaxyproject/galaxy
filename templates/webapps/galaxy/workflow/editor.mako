@@ -56,16 +56,6 @@
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
 
-    div.toolTitleDisabled {
-        padding-top: 5px;
-        padding-bottom: 5px;
-        margin-left: 16px;
-        margin-right: 10px;
-        display: list-item;
-        list-style: square outside;
-        font-style: italic;
-        color: gray;
-    }
     div.toolTitleNoSectionDisabled {
       padding-bottom: 0px;
       font-style: italic;
