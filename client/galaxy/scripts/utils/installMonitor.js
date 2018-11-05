@@ -6,19 +6,22 @@
  * traceroute every time some random script actually accesses window.Bob.
  */
 
-import { mock } from "utils/mock";
-
-const fakeLogger = mock(console);
+// import { mock } from "utils/mock";
+// const fakeLogger = mock(console);
 
 // stores values that are returned when somebody asks for window.Something
 window._monitorStorage = window._monitorStorage || {};
 
 export function installMonitor(globalProp, fallbackValue = null) {
 
-    let label = `window.${globalProp}`;
     let debug = getMonitorToggle(globalProp);
-    let logger = debug ? console : fakeLogger;
-      
+    if (!debug) {
+        return;
+    }
+
+    let label = `window.${globalProp}`;
+    let logger = console;
+
     // initialize storage with existing value
     let existingValue = window[globalProp] || fallbackValue;
     window._monitorStorage[globalProp] = existingValue;
@@ -38,7 +41,7 @@ export function installMonitor(globalProp, fallbackValue = null) {
                     logger.trace();
                     logger.groupEnd();
                     return val;
-                } catch(err) {
+                } catch (err) {
                     logger.warn("Unable to retrieve", globalProp, err);
                 }
                 return null;
@@ -56,7 +59,7 @@ export function installMonitor(globalProp, fallbackValue = null) {
 
     // Proxies the above object definition so we can watch changes to
     // that object's properties (i.e. window.Thing.prop = "abc")
-    
+
     return new Proxy({}, {
         get(o, prop) {
             logger.groupCollapsed(`${label}.${prop} read`);
