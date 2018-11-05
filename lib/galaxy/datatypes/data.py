@@ -353,10 +353,11 @@ class Data(object):
         return zip(file_paths, rel_paths)
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
-        """ Old display method, for transition - though still used by API and
-        test framework. Datatypes should be very careful if overridding this
-        method and this interface between datatypes and Galaxy will likely
-        change.
+        """
+        Displays data in central pane if preview is `True`, else handles download.
+
+        Datatypes should be very careful if overridding this method and this interface
+        between datatypes and Galaxy will likely change.
 
         TOOD: Document alternatives to overridding this method (data
         providers?).
