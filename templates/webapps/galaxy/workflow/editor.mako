@@ -91,12 +91,6 @@
         overflow: none;
     }
 
-    div.toolFormInCanvas div.toolFormBody {
-        padding: 0;
-        margin-left: 6px;
-        margin-right: 6px;
-    }
-
     .panel-header-button-group {
         margin-right: 5px;
         padding-right: 5px;

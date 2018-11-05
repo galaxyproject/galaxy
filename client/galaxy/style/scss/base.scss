@@ -626,6 +626,9 @@ div.toolFormRow {
         min-height: 16px;
     }
     .toolFormBody {
+        padding: 0;
+        margin-left: 6px;
+        margin-right: 6px;
         .rule {
             height: 0;
             border: none;
