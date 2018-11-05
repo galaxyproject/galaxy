@@ -72,12 +72,6 @@
         overflow: none;
     }
 
-    .panel-header-button-group {
-        margin-right: 5px;
-        padding-right: 5px;
-        border-right: solid gray 1px;
-    }
-
     </style>
 </%def>
 
