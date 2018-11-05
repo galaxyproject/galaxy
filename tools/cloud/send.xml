@@ -31,17 +31,19 @@
         <data name="output" type="data" hidden="false"/>
     </outputs>
     <help>
-
 **What it does**
+        Send dataset(s) from Galaxy to cloud-based storage (e.g., AWS S3).
 
-        Sends dataset(s) from Galaxy to a cloud-based storage that is defined by a *Cloud Authorization*
-        given the ID.
+        Supply a name of the target bucket where the data will be sent along
+        with an id for the desired cloud authorization. To get the list of Cloud
+        Authorization IDs available for your account, visit `/api/cloud/authz`.
 
 **Remarks**
         This tool leverages OpenID Connect protocol and CloudAuthz (https://github.com/galaxyproject/cloudauthz)
         to access cloud-based resources without requiring user credentials.
 
-        To get a list of Cloud Authorization IDs  available for your account, visit `/api/cloud/authz`.
-
+        If selecting multiple datasets, make sure each dataset is named
+        differently; otherwise, only one copy of the selected datasets will be
+        copied.
     </help>
 </tool>
