@@ -33,7 +33,7 @@
         </span>
         <template slot="actions" slot-scope="row">
           <b-button-group>
-            <b-button v-b-tooltip.hover title="Rerun" :href="jobs[row.index]['runUrl']">
+            <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
               <span class="fa fa-refresh" />
             </b-button>
             <b-button v-b-tooltip.hover title="View Info" :to="{name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] }}" :id="'job-' + jobs[row.index]['encId']">
