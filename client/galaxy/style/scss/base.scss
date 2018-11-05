@@ -607,6 +607,16 @@ div.toolTitleDisabled {
     color: gray;
 }
 
+div.toolTitleNoSectionDisabled {
+      padding-bottom: 0px;
+      font-style: italic;
+      color: gray;
+}
+
+div.toolFormRow {
+    position: relative;
+}
+
 .toolForm.toolFormInCanvas {
     border: solid $form-border 1px;
     @include border-radius(2px);

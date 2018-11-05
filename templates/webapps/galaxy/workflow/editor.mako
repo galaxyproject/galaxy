@@ -56,15 +56,6 @@
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
 
-    div.toolTitleNoSectionDisabled {
-      padding-bottom: 0px;
-      font-style: italic;
-      color: gray;
-    }
-    div.toolFormRow {
-        position: relative;
-    }
-
     .right-content {
         margin: 3px;
     }
