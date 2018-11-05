@@ -54,6 +54,7 @@
       <converter file="len_to_linecount.xml" target_datatype="linecount"/>
     </datatype>
     <datatype extension="daa" type="galaxy.datatypes.binary:DAA" display_in_upload="true"/>
+    <datatype extension="rma6" type="galaxy.datatypes.binary:RMA6" display_in_upload="true"/>
     <datatype extension="dmnd" type="galaxy.datatypes.binary:DMND" display_in_upload="false"/>
     <datatype extension="idat" type="galaxy.datatypes.binary:Idat" display_in_upload="true"/>
     <datatype extension="bigbed" type="galaxy.datatypes.binary:BigBed" mimetype="application/octet-stream" display_in_upload="true">
@@ -197,7 +198,11 @@
     <datatype extension="nhdr" type="galaxy.datatypes.images:Nrrd" subclass="true"/>
     <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true"/>
-    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true"/>
+    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
+      <converter file="tar_to_directory.xml" target_datatype="directory"/>
+    </datatype>
+    <datatype extension="directory" type="galaxy.datatypes.data:Directory">
+    </datatype>
     <!-- Proteomics Datatypes -->
     <datatype extension="pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="raw_pepxml" type="galaxy.datatypes.proteomics:PepXml" mimetype="application/xml" subclass="true"/>
@@ -511,7 +516,7 @@
     <datatype extension="xmfa" type="galaxy.datatypes.msa:MauveXmfa" display_in_upload="true"/>
     <datatype extension="cel" type="galaxy.datatypes.binary:Cel" display_in_upload="true"/>
     <datatype extension="rdata" type="galaxy.datatypes.binary:RData" display_in_upload="true" description="Stored data from an R session"/>
-    <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" description="Stored RDS from a SingleCellObject" subclass="true" />
+    <datatype extension="rdata.sce" type="galaxy.datatypes.binary:RData" description="Stored RDS from a SingleCellObject" subclass="true" display_in_upload="true"/>
     <datatype extension="oxlicg" type="galaxy.datatypes.binary:OxliCountGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxling" type="galaxy.datatypes.binary:OxliNodeGraph" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="oxlits" type="galaxy.datatypes.binary:OxliTagSet" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -734,6 +739,7 @@
     <sniffer type="galaxy.datatypes.binary:Sra"/>
     <sniffer type="galaxy.datatypes.binary:NetCDF"/>
     <sniffer type="galaxy.datatypes.binary:DAA"/>
+    <sniffer type="galaxy.datatypes.binary:RMA6"/>
     <sniffer type="galaxy.datatypes.binary:DMND"/>
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveGz"/>
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2"/>

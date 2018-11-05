@@ -2168,6 +2168,29 @@ class DAA(Binary):
             return f.read(8) == self._magic
 
 
+class RMA6(Binary):
+    """
+    Class describing an RMA6 (MEGAN6 read-match archive) file
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('diamond.rma6')
+    >>> RMA6().sniff(fname)
+    True
+    >>> fname = get_test_fname('interval.interval')
+    >>> RMA6().sniff(fname)
+    False
+    """
+    file_ext = "rma6"
+
+    def __init__(self, **kwd):
+        Binary.__init__(self, **kwd)
+        self._magic = binascii.unhexlify("000003f600000006")
+
+    def sniff(self, filename):
+        # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
+        with open(filename, 'rb') as f:
+            return f.read(8) == self._magic
+
+
 class DMND(Binary):
     """
     Class describing an DMND file

@@ -16,6 +16,7 @@ from galaxy.exceptions import (
     ConfigDoesNotAllowException,
 )
 from galaxy.util import (
+    asbool,
     inflector,
     relpath,
     sanitize_for_filename
@@ -217,7 +218,7 @@ class UploadDataset(Group):
             filenames = list()
             for composite_file in context.get('files', []):
                 if not composite_file.get('ftp_files', ''):
-                    filenames.append(composite_file.get('file_data', {}).get('filename', ''))
+                    filenames.append((composite_file.get('file_data') or {}).get('filename', ''))
                 else:
                     filenames.append(composite_file.get('ftp_files', [])[0])
             dataset_name = os.path.commonprefix(filenames).rstrip('.') or None
@@ -543,13 +544,14 @@ class UploadDataset(Group):
         d_type = self.get_datatype(trans, context)
         dbkey = self.get_dbkey(context)
         tag_using_filenames = context.get('tag_using_filenames', False)
+        force_composite = asbool(context.get('force_composite', 'False'))
         writable_files = d_type.writable_files
         writable_files_offset = 0
         groups_incoming = [None for _ in range(file_count)]
         for group_incoming in context.get(self.name, []):
             i = int(group_incoming['__index__'])
             groups_incoming[i] = group_incoming
-        if d_type.composite_type is not None:
+        if d_type.composite_type is not None or force_composite:
             # handle uploading of composite datatypes
             # Only one Dataset can be created
             dataset = Bunch()
@@ -594,18 +596,23 @@ class UploadDataset(Group):
                 dataset.warnings.extend(warnings)
             if dataset.primary_file is None:  # remove this before finish, this should create an empty dataset
                 raise Exception('No primary dataset file was available for composite upload')
-            keys = [value.name for value in writable_files.values()]
-            for i, group_incoming in enumerate(groups_incoming[writable_files_offset :]):
+            if not force_composite:
+                keys = [value.name for value in writable_files.values()]
+            else:
+                keys = [str(index) for index in range(file_count)]
+            for i, group_incoming in enumerate(groups_incoming[writable_files_offset:]):
                 key = keys[i + writable_files_offset]
-                if group_incoming is None and not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
+                if not force_composite and group_incoming is None and not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
                     dataset.warnings.append("A required composite file (%s) was not specified." % (key))
                     dataset.composite_files[key] = None
                 else:
                     file_bunch, warnings = get_one_filename(group_incoming)
                     dataset.warnings.extend(warnings)
                     if file_bunch.path:
+                        if force_composite:
+                            key = group_incoming.get("NAME") or i
                         dataset.composite_files[key] = file_bunch.__dict__
-                    else:
+                    elif not force_composite:
                         dataset.composite_files[key] = None
                         if not writable_files[list(writable_files.keys())[keys.index(key)]].optional:
                             dataset.warnings.append("A required composite file (%s) was not specified." % (key))

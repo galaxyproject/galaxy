@@ -815,7 +815,7 @@ class AdminToolshed(AdminGalaxy):
             message += 'shed tool configuration file name with a <b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> '
             message += 'attribute value which is a directory relative to the Galaxy installation directory in order '
             message += 'to automatically install tools from a Galaxy Tool Shed (e.g., the file name <b>shed_tool_conf.xml</b> '
-            message += 'whose <b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
+            message += 'whose <b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="database/shed_tools"&gt;</b>).<p/>See the '
             message += '<a href="https://galaxyproject.org/installing-repositories-to-galaxy/" target="_blank">Installation '
             message += 'of Galaxy Tool Shed repository tools into a local Galaxy instance</a> section of the Galaxy Tool '
             message += 'Shed wiki for all of the details.'

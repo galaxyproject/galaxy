@@ -223,6 +223,11 @@ def populate_api_routes(webapp, app):
                           controller="history_contents",
                           action="update_permissions",
                           conditions=dict(method=["PUT"]))
+    webapp.mapper.connect("history_contents_extra_files",
+                          "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
+                          controller="datasets",
+                          action="extra_files",
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
