@@ -93,7 +93,7 @@ def job_config(path):
     </plugins>
     <destinations default="k8s_destination">
         <destination id="k8s_destination" runner="k8s">
-            <param id="limits_cpu">2</param>
+            <param id="limits_cpu">1.9</param>
             <param id="limits_memory">10M</param>
             <param id="docker_enabled">true</param>
             <param id="docker_default_container_id">busybox:ubuntu-14.04</param>

@@ -3,6 +3,7 @@ Offload jobs to a Kubernetes cluster.
 """
 
 import logging
+import math
 import os
 import re
 from time import sleep
@@ -286,7 +287,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 if 'memory' in limits:
                     envs.append({'name': 'GALAXY_MEMORY_MB', 'value': str(ByteSize(limits['memory']).to_unit('M', as_string=False))})
                 if 'cpu' in limits:
-                    envs.append({'name': 'GALAXY_SLOTS', 'value': limits['cpu']})
+                    envs.append({'name': 'GALAXY_SLOTS', 'value': str(int(math.ceil(float(limits['cpu']))))})
             k8s_container['resources'] = resources
             k8s_container['env'] = envs
 
