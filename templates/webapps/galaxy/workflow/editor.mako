@@ -74,12 +74,6 @@
         margin: 6px;
     }
 
-    div.toolForm-active {
-        z-index: 1001;
-        border: solid #8080FF 4px;
-        margin: 3px;
-    }
-
     div.form-row {
       position: relative;
     }

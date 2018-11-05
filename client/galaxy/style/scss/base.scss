@@ -621,6 +621,7 @@ div.toolFormRow {
     background: $white;
     margin: 0px;
     &.toolForm-active {
+        z-index: 1001;
         box-shadow: 0 0 0 3px $brand-primary;
         @include border-radius(1px);
     }
