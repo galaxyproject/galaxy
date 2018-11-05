@@ -65,19 +65,6 @@
     cursor: pointer;
     }
 
-    ## Extra styles for the representation of a tool on the canvas (looks like
-    ## a tiny tool form)
-    div.toolFormInCanvas {
-        z-index: 100;
-        position: absolute;
-        ## min-width: 130px;
-        margin: 6px;
-    }
-
-    div.form-row {
-      position: relative;
-    }
-
     #canvas-area {
         position: absolute;
         top: 0; left: 305px; bottom: 0; right: 0;

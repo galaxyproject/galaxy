@@ -616,6 +616,8 @@ div.toolFormRow {
 }
 
 .toolForm.toolFormInCanvas {
+    z-index: 100;
+    position: absolute;
     border: solid $form-border 1px;
     @include border-radius(2px);
     background: $white;
@@ -672,6 +674,7 @@ div.form-body {
 }
 
 div.form-row {
+    position: relative;
     padding: 5px 10px;
 }
 
