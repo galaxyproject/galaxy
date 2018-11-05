@@ -125,9 +125,6 @@
         overflow: none;
     }
 
-    .form-row {
-    }
-
     div.toolFormInCanvas div.toolFormBody {
         padding: 0;
         margin-left: 6px;
@@ -147,18 +144,6 @@
     .callout {
         position: absolute;
         z-index: 10000;
-    }
-
-    .pjaForm {
-        margin-bottom:10px;
-    }
-
-    .pjaForm .toolFormBody{
-        padding:10px;
-    }
-
-    .pjaForm .toolParamHelp{
-        padding:5px;
     }
 
     .panel-header-button-group {
