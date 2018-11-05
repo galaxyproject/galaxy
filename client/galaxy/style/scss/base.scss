@@ -625,27 +625,21 @@ div.toolFormRow {
     @extend .card;
     z-index: 100;
     position: absolute;
-    border: solid $form-border 1px;
-    @include border-radius(2px);
-    background: $white;
-    margin: 0px;
+    border-color: $brand-primary;
     &.toolForm-active {
         z-index: 1001;
-        box-shadow: 0 0 0 3px $brand-primary;
-        @include border-radius(1px);
+        box-shadow: 0 0 0 2px $brand-primary;
     }
     .toolFormTitle {
         @extend .card-header;
-        font-size: $font-size-base;
-        line-height: $line-height-base;
+        @extend .py-1;
+        @extend .px-2;
         cursor: move;
-        min-height: 16px;
     }
     .toolFormBody {
         @extend .card-body;
-        padding: 0;
-        margin-left: 6px;
-        margin-right: 6px;
+        @extend .p-0;
+        @extend .mx-2;
         .rule {
             height: 0;
             border: none;
@@ -2029,36 +2023,35 @@ div.toolTitleNoSection {
     height: 12px;
     z-index: 25000;
 }
-
-.input-terminal {
-    width: 12px;
-    height: 12px;
-    background: url("../../images/workflow_circle_open.png");
+.base-terminal {
+    @extend .fa;
+    @extend .fa-chevron-circle-right;
+    background: white;
     position: absolute;
-    top: 50%;
-    margin-top: -6px;
-    left: -6px;
+    @extend .mt-2;
     z-index: 1500;
+    line-height: 10px;
+}
+.input-terminal {
+    @extend .base-terminal;
+    left: -9px;
 }
 .output-terminal {
-    width: 12px;
-    height: 12px;
-    background: url("../../images/workflow_circle_open.png");
-    position: absolute;
-    top: 50%;
-    margin-top: -6px;
-    right: -6px;
-    z-index: 1500;
+    @extend .base-terminal;
+    right: -9px;
+    &:hover {
+        color: $brand-success;
+    }
 }
 .drag-terminal {
-    width: 12px;
-    height: 12px;
-    background: url("../../images/workflow_circle_drag.png");
+    @extend .fa;
+    @extend .fa-circle;
+    color: $brand-success;
     position: absolute;
     z-index: 1500;
 }
 .input-terminal-active {
-    background: url("../../images/workflow_circle_green.png");
+    color: $brand-success;
 }
 #overview-border {
     position: absolute;
