@@ -80,12 +80,6 @@
         margin: 3px;
     }
 
-    div.titleRow {
-        font-weight: bold;
-        border-bottom: dotted gray 1px;
-        margin-bottom: 0.5em;
-        padding-bottom: 0.25em;
-    }
     div.form-row {
       position: relative;
     }
