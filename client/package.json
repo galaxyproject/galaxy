@@ -43,7 +43,8 @@
     "raven-js": "^3.27.0",
     "requirejs": "2.3.6",
     "underscore": "^1.9.1",
-    "vue": "2.5.17"
+    "vue": "2.5.17",
+    "vue-router": "3.0.1"
   },
   "scripts": {
     "watch": "gulp staging && yarn run save-build-hash && concurrently -r \"yarn run webpack-watch\" \"yarn run gulp watch\"",
