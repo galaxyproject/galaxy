@@ -110,9 +110,6 @@
         margin-left: 6px;
         margin-right: 6px;
     }
-    .form-row-clear {
-        clear: both;
-    }
 
     .panel-header-button-group {
         margin-right: 5px;
