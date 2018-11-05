@@ -56,10 +56,6 @@
     <style type="text/css">
     body { margin: 0; padding: 0; overflow: hidden; }
 
-    .right-content {
-        margin: 3px;
-    }
-
     canvas { position: absolute; z-index: 10; }
     canvas.dragging { position: absolute; z-index: 1000; }
     ## .input-terminal-hover { background: yellow; border: solid black 1px; }
