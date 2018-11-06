@@ -254,17 +254,15 @@ class Biom1(Json):
                     try:
                         metadata_value = json_dict.get(b_name, None)
                         if b_name == "columns" and metadata_value:
-                            mks = list(metadata_value[0]['metadata'].keys())
-                            keep_columns = {}
-                            for mk in mks:
-                                keep_columns[mk] = None
+                            mks = metadata_value[0]['metadata'].keys()
+                            keep_columns = { mk: None for mk in mks }
                             for column in metadata_value:
                                 for k in column['metadata']:
-                                    if not column['metadata'][k] is None:
+                                    if column['metadata'][k] is not None:
                                         keep_columns[k] = 1
                             final_list = []
                             for k in keep_columns:
-                                if not keep_columns[k] is None:
+                                if keep_columns[k] is not None:
                                     final_list.append(k)
                             final_list.sort()
                             dataset.metadata.table_column_metadata_headers = final_list
@@ -272,7 +270,7 @@ class Biom1(Json):
                             metadata_value = b_transform[b_name](metadata_value)
                         setattr(dataset.metadata, m_name, metadata_value)
                     except Exception:
-                        log.exception("Something in the metadata detection for biom1 went wrong: " + str(Exception))
+                        log.exception("Something in the metadata detection for biom1 went wrong.")
                         pass
 
 
