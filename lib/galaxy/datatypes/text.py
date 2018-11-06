@@ -272,7 +272,7 @@ class Biom1(Json):
                             metadata_value = b_transform[b_name](metadata_value)
                         setattr(dataset.metadata, m_name, metadata_value)
                     except Exception:
-                        log.exception("Something in the metadata detection for biom1 went wrong: " + str(Exception))
+                        log.exception("Something in the metadata detection for biom1 went wrong")
                         pass
 
 
