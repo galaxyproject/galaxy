@@ -240,10 +240,8 @@ body {
         &:not(:last-child) {
             margin-right: 2px;
         }
-        // Fade to maroon on hover
         &:hover {
-            color: maroon;
-            @include transition(color 0.25s linear);
+            color: $brand-info;
         }
         // Bootstrap style span caret needs positioning
         .caret {
@@ -1569,10 +1567,8 @@ div.permissionContainer {
     cursor: pointer;
     width: 16px;
     height: 16px;
-    // Fade to maroon on hover
     &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
+        color: $brand-info;
     }
 }
 
