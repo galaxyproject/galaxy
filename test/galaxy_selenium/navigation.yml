@@ -236,7 +236,8 @@ workflows:
 workflow_run:
 
   selectors: 
-    input_div: "[step-label='${label}'] .select2-container"
+    input_div: "[step-label='${label}']"
+    input_data_div: "[step-label='${label}'] .select2-container"
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap + span"
 
