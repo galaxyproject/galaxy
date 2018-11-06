@@ -262,10 +262,10 @@ def populate_api_routes(webapp, app):
                           controller='cloud',
                           action='upload',
                           conditions=dict(method=["POST"]))
-    webapp.mapper.connect('cloud_storage_download',
-                          '/api/cloud/storage/download',
+    webapp.mapper.connect('cloud_storage_send',
+                          '/api/cloud/storage/send',
                           controller='cloud',
-                          action='download',
+                          action='send',
                           conditions=dict(method=["POST"]))
 
     _add_item_tags_controller(webapp,

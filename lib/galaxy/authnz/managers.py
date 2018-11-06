@@ -1,7 +1,11 @@
 
 import copy
 import importlib
+import json
 import logging
+import os
+import random
+import string
 import xml.etree.ElementTree as ET
 from xml.etree.ElementTree import ParseError
 
@@ -157,7 +161,7 @@ class AuthnzManager(object):
             raise exceptions.ItemAccessibilityException(msg)
 
     @staticmethod
-    def try_get_authz_config(trans, authz_id):
+    def try_get_authz_config(sa_session, user_id, authz_id):
         """
         It returns a cloudauthz config (see model.CloudAuthz) with the
         given ID; and raise an exception if either a config with given
@@ -174,12 +178,12 @@ class AuthnzManager(object):
         :rtype :            model.CloudAuthz
         :return:            a cloudauthz configuration.
         """
-        qres = trans.sa_session.query(model.CloudAuthz).get(authz_id)
+        qres = sa_session.query(model.CloudAuthz).get(authz_id)
         if qres is None:
             raise exceptions.ObjectNotFound("An authorization configuration with given ID not found.")
-        if trans.user.id != qres.user_id:
+        if user_id != qres.user_id:
             msg = "The request authorization configuration (with ID:`{}`) is not accessible for user with " \
-                  "ID:`{}`.".format(qres.id, trans.user.id)
+                  "ID:`{}`.".format(qres.id, user_id)
             log.warn(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
@@ -244,14 +248,14 @@ class AuthnzManager(object):
         :param cloudauthz:  an instance of CloudAuthz to be used for getting temporary
                             credentials.
 
-        :type   request:    galaxy.web.framework.base.Request
-        :param  request:    Encapsulated HTTP(S) request.
-
         :type   sa_session: sqlalchemy.orm.scoping.scoped_session
         :param  sa_session: SQLAlchemy database handle.
 
         :type   user_id:    int
         :param  user_id:    Decoded Galaxy user ID.
+
+        :type   request:    galaxy.web.framework.base.Request
+        :param  request:    Encapsulated HTTP(S) request.
 
         :rtype:             dict
         :return:            a dictionary containing credentials to access a cloud-based
@@ -261,7 +265,48 @@ class AuthnzManager(object):
         config = self._extend_cloudauthz_config(cloudauthz, request, sa_session, user_id)
         try:
             ca = CloudAuthz()
+            log.info("Requesting credentials using CloudAuthz with config id `{}` on be half of user `{}`.".format(
+                cloudauthz.id, user_id))
             return ca.authorize(cloudauthz.provider, config)
         except CloudAuthzBaseException as e:
-            log.exception("Error while requesting temporary access credentials")
-            raise exceptions.AuthenticationFailed(str(e))
+            log.info(e)
+            raise exceptions.AuthenticationFailed(e)
+
+    def get_cloud_access_credentials_in_file(self, new_file_path, cloudauthz, sa_session, user_id, request=None):
+        """
+        This method leverages CloudAuthz (https://github.com/galaxyproject/cloudauthz)
+        to request a cloud-based resource provider (e.g., Amazon AWS, Microsoft Azure)
+        for temporary access credentials to a given resource.
+
+        This method uses the `get_cloud_access_credentials` method to obtain temporary
+        credentials, and persists them to a (temporary) file, and returns the file path.
+
+        :type  new_file_path:   str
+        :param new_file_path:   Where dataset files are saved on temporary storage.
+                                See `app.config.new_file_path`.
+
+        :type  cloudauthz:      CloudAuthz
+        :param cloudauthz:      an instance of CloudAuthz to be used for getting temporary
+                                credentials.
+
+        :type  sa_session:      sqlalchemy.orm.scoping.scoped_session
+        :param sa_session:      SQLAlchemy database handle.
+
+        :type  user_id:         int
+        :param user_id:         Decoded Galaxy user ID.
+
+        :type  request:         galaxy.web.framework.base.Request
+        :param request:         [Optional] Encapsulated HTTP(S) request.
+
+        :rtype:                 str
+        :return:                The filename to which credentials are written.
+        """
+        filename = os.path.abspath(os.path.join(new_file_path,
+                                                "cd_" + ''.join(random.SystemRandom().choice(
+                                                    string.ascii_uppercase + string.digits) for _ in range(11))))
+        credentials = self.get_cloud_access_credentials(cloudauthz, sa_session, user_id, request)
+        log.info("Writting credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
+                 "".format(cloudauthz.id, filename))
+        with open(filename, "w") as f:
+            f.write(json.dumps(credentials))
+        return filename
