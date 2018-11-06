@@ -80,7 +80,7 @@ var BaseInputTerminalView = TerminalView.extend({
         this.el.terminal = terminal;
         this.$el.attr("input-name", name);
         this.$el.attr("id", id);
-        this.$el.append($("<i/>"));
+        this.$el.append($("<icon/>"));
         this.id = id;
 
         terminal.node = node;
@@ -185,7 +185,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         this.el.terminal = terminal;
         this.$el.attr("output-name", name);
         this.$el.attr("id", id);
-        this.$el.append($("<i/>"))
+        this.$el.append($("<icon/>"))
         terminal.node = node;
         terminal.name = name;
         terminal.label = output.label;

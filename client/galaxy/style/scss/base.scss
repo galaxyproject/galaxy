@@ -2025,7 +2025,7 @@ div.toolTitleNoSection {
     color: white;
     position: absolute;
     z-index: 1500;
-    > i {
+    > icon {
         @extend .fa;
         @extend .fa-chevron-circle-right;
         color: $brand-primary;
@@ -2041,11 +2041,11 @@ div.toolTitleNoSection {
 .output-terminal {
     @extend .base-terminal;
     right: -9px;
-    &:hover > i {
+    &:hover > icon {
         color: $brand-success;
     }
 }
-.input-terminal-active > i {
+.input-terminal-active > icon {
     color: $brand-success;
 }
 .drag-terminal {
