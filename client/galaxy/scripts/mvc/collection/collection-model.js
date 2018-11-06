@@ -149,7 +149,9 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             ),
 
             _downloadQueryParameters: function() {
-                var fileExt = this.get("file_ext");
+                // Setting the file extension to just 'data' defers that
+                // decision to the serverside, setting based on the datatype.
+                var fileExt = this.get("file_ext") || "data";
                 var elementIdentifier = this.get("element_identifier");
                 var parentHdcaId = this.get("parent_hdca_id");
                 return `?to_ext=${fileExt}&hdca_id=${parentHdcaId}&element_identifier=${elementIdentifier}`;
