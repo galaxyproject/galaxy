@@ -255,7 +255,7 @@ class Biom1(Json):
                         metadata_value = json_dict.get(b_name, None)
                         if b_name == "columns" and metadata_value:
                             mks = metadata_value[0]['metadata'].keys()
-                            keep_columns = { mk: None for mk in mks }
+                            keep_columns = {mk: None for mk in mks}
                             for column in metadata_value:
                                 for k in column['metadata']:
                                     if column['metadata'][k] is not None:
