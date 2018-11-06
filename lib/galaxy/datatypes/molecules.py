@@ -424,14 +424,6 @@ class OBFS(Binary):
         except Exception:
             return "OpenBabel Fastsearch Index"
 
-    def display_data(self, trans, data, preview=False, filename=None,
-                     to_ext=None, **kwd):
-        """Apparently an old display method, but still gets called.
-
-        This allows us to format the data shown in the central pane via the "eye" icon.
-        """
-        return b"This is a OpenBabel Fastsearch format. You can speed up your similarity and substructure search with it."
-
     def get_mime(self):
         """Returns the mime type of the datatype (pretend it is text for peek)"""
         return 'text/plain'
