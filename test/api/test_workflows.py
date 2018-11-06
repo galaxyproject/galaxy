@@ -1180,6 +1180,28 @@ input1:
             elements0 = elements[0]
             assert elements0["element_identifier"] == "el1"
 
+    def test_workflow_input_as_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+outputs:
+  wf_output_1:
+    outputSource: input1
+steps: []
+""", test_data={"input1": "hello world"}, history_id=history_id)
+            workflow_id = summary.workflow_id
+            invocation_id = summary.invocation_id
+            invocation_response = self._get("workflows/%s/invocations/%s" % (workflow_id, invocation_id))
+            self._assert_status_code_is(invocation_response, 200)
+            invocation = invocation_response.json()
+            self._assert_has_keys(invocation , "id", "outputs", "output_collections")
+            assert len(invocation["output_collections"]) == 0
+            assert len(invocation["outputs"]) == 1
+            output_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=invocation["outputs"]["wf_output_1"]["id"])
+            assert output_content == "hello world\n"
+
     @skip_without_tool("cat")
     def test_workflow_input_mapping(self):
         with self.dataset_populator.test_history() as history_id:
