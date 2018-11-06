@@ -4,6 +4,11 @@ import argparse
 import json
 import os
 import sys
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from bioblend import galaxy
 
@@ -13,15 +18,15 @@ from galaxy.tool_util.cwl.runnable import get_outputs
 from galaxy.version import VERSION
 from galaxy_test.base.populators import (  # noqa: I100,I202
     CwlPopulator,
+    CwlRun,
     GiDatasetPopulator,
-    GiHttpMixin,
     GiWorkflowPopulator,
 )
 
 DESCRIPTION = """Simple CWL runner script."""
 
 
-def collect_outputs(cwl_run, output_names, output_directory=None, outdir=os.getcwd()):
+def collect_outputs(cwl_run: CwlRun, output_names: List[str], outdir: str) -> Dict[str, Any]:
     outputs = {}
     for output_name in output_names:
         cwl_output = cwl_run.get_output_as_object(output_name, download_folder=outdir)
@@ -32,7 +37,7 @@ def collect_outputs(cwl_run, output_names, output_directory=None, outdir=os.getc
 def main(argv=None):
     """Entry point for workflow driving."""
     arg_parser = argparse.ArgumentParser(description=DESCRIPTION)
-    arg_parser.add_argument("--api_key", default="testmasterapikey")
+    arg_parser.add_argument("--api_key", required=True)
     arg_parser.add_argument("--host", default="http://localhost:8080/")
     arg_parser.add_argument("--outdir", default=".")
     arg_parser.add_argument("--quiet", action="store_true")
@@ -44,25 +49,6 @@ def main(argv=None):
     args = arg_parser.parse_args(argv)
 
     gi = galaxy.GalaxyInstance(args.host, args.api_key)
-    i = GiHttpMixin()
-    i._gi = gi
-    response = i._get("whoami")
-    if response.json() is None:
-        email = "cwluser@example.com"
-        all_users = i._get("users").json()
-        try:
-            test_user = [user for user in all_users if user["email"] == email][0]
-        except IndexError:
-            data = dict(
-                email=email,
-                password="testpass",
-                username="cwluser",
-            )
-            test_user = i._post("users", data).json()
-
-        api_key = i._post(f"users/{test_user['id']}/api_key").json()
-        gi = galaxy.GalaxyInstance(args.host, api_key)
-
     dataset_populator = GiDatasetPopulator(gi)
     workflow_populator = GiWorkflowPopulator(gi)
     cwl_populator = CwlPopulator(dataset_populator, workflow_populator)
@@ -77,7 +63,7 @@ def main(argv=None):
     if not os.path.isabs(job):
         job = os.path.join(abs_cwd, job)
 
-    run = cwl_populator.run_cwl_job(tool, job)
+    run = cwl_populator.run_cwl_job(tool, job, skip_input_staging=True)
 
     outputs = get_outputs(tool)
     output_names = [o.get_id() for o in outputs]
