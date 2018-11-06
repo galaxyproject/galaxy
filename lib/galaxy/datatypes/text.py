@@ -12,6 +12,8 @@ import tempfile
 
 from six.moves import shlex_quote
 
+from time import sleep
+
 from galaxy.datatypes.data import get_file_peek, Text
 from galaxy.datatypes.metadata import MetadataElement, MetadataParameter
 from galaxy.datatypes.sniff import build_sniff_from_prefix, iter_headers
@@ -85,17 +87,15 @@ class Json(Text):
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.
             try:
-                item = json.loads(file_prefix.contents_header)
-                # exclude simple types, must set format in these cases
-                assert isinstance(item, (list, dict))
+                json.loads(file_prefix.contents_header)
                 return True
             except Exception:
                 return False
         else:
             start = file_prefix.string_io().read(100).strip()
             if start:
-                # simple types are valid JSON as well,
-                # but if necessary format has to be set explicitly
+                # simple types are valid JSON as well - but would such a file
+                # be interesting as JSON in Galaxy?
                 return start.startswith("[") or start.startswith("{")
             return False
 
@@ -155,7 +155,7 @@ class Ipynb(Json):
             except subprocess.CalledProcessError:
                 ofilename = dataset.file_name
                 log.exception('Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.', ' '.join(map(shlex_quote, cmd)))
-            return open(ofilename, mode='rb')
+            return open(ofilename)
 
     def set_meta(self, dataset, **kwd):
         """
@@ -183,7 +183,9 @@ class Biom1(Json):
     MetadataElement(name="table_date", default="", desc="table_date", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
     MetadataElement(name="table_type", default="", desc="table_type", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value="")
     MetadataElement(name="table_id", default=None, desc="table_id", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=None)
-    MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
+    MetadataElement(name="table_columns", default=[], desc="table_columns", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="table_column_metadata_headers", default=[], desc="table_column_metadata_headers", param=MetadataParameter, readonly=True, visible=True, optional=True, no_value=[])
+
 
     def set_peek(self, dataset, is_multi_byte=False):
         super(Biom1, self).set_peek(dataset)
@@ -239,7 +241,8 @@ class Biom1(Json):
                     return []
 
                 b_transform = {'rows': _transform_dict_list_ids, 'columns': _transform_dict_list_ids}
-                for (m_name, b_name) in [('table_rows', 'rows'),
+                for (m_name, b_name) in [('table_columns', 'columns'),
+                                         ('table_rows', 'rows'),
                                          ('table_matrix_element_type', 'matrix_element_type'),
                                          ('table_format', 'format'),
                                          ('table_generated_by', 'generated_by'),
@@ -248,14 +251,29 @@ class Biom1(Json):
                                          ('table_format_url', 'format_url'),
                                          ('table_date', 'date'),
                                          ('table_type', 'type'),
-                                         ('table_id', 'id'),
-                                         ('table_columns', 'columns')]:
+                                         ('table_id', 'id')]:
                     try:
                         metadata_value = json_dict.get(b_name, None)
+                        if b_name == "columns" and metadata_value:
+                            mks = list(metadata_value[0]['metadata'].keys())
+                            keep_columns = {}
+                            for mk in mks:
+                                keep_columns[mk] = None
+                            for column in metadata_value:
+                                for k in column['metadata']:
+                                    if not column['metadata'][k] is None:
+                                        keep_columns[k] = 1
+                            final_list = []
+                            for k in keep_columns:
+                                if not keep_columns[k] is None:
+                                    final_list.append(k)
+                            final_list.sort()
+                            dataset.metadata.table_column_metadata_headers = final_list
                         if b_name in b_transform:
                             metadata_value = b_transform[b_name](metadata_value)
                         setattr(dataset.metadata, m_name, metadata_value)
                     except Exception:
+                        log.exception("Something in the metadata detection for biom1 went wrong: " + str(Exception))
                         pass
 
 
@@ -291,7 +309,7 @@ class Obo(Text):
         for line in handle:
             if stanza.match(line.strip()):
                 # a stanza needs to begin with an ID tag
-                if next(handle).startswith('id:'):
+                if handle.next().startswith('id:'):
                     return True
         return False
 
@@ -418,7 +436,7 @@ class SnpEffDb(Text):
             with gzip.open(path, 'rb') as fh:
                 buf = fh.read(100)
                 lines = buf.splitlines()
-                m = re.match(r'^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
+                m = re.match('^(SnpEff)\s+(\d+\.\d+).*$', lines[0].strip())
                 if m:
                     snpeff_version = m.groups()[0] + m.groups()[1]
         except Exception:
