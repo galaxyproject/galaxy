@@ -2200,6 +2200,7 @@ steps:
     state:
       produce_out_1: False
       filter_text_1: '1'
+      produce_collection: False
 test_data: {}
     """, history_id=history_id, wait=False)
             self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)

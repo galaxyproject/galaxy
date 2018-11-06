@@ -734,9 +734,11 @@ export default Backbone.View.extend({
                 $.each(node.post_job_actions, (k, pja) => {
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
-                            var arg_matches = action_argument.match(parameter_re);
-                            if (arg_matches) {
-                                matches = matches.concat(arg_matches);
+                            if (typeof action_argument === "string") {
+                                let arg_matches = action_argument.match(parameter_re);
+                                if (arg_matches) {
+                                    matches = matches.concat(arg_matches);
+                                }
                             }
                         });
                     }

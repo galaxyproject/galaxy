@@ -23,7 +23,7 @@ from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import DictParameter, ListParameter, MetadataElement, MetadataParameter
-from galaxy.util import FILENAME_VALID_CHARS, nice_size, sqlite
+from galaxy.util import nice_size, sqlite
 from galaxy.util.checkers import is_bz2, is_gzip
 from . import data, dataproviders
 
@@ -58,16 +58,6 @@ class Binary(data.Data):
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return 'application/octet-stream'
-
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
-        trans.response.set_content_type(dataset.get_mime())
-        trans.log_event("Display dataset id: %s" % str(dataset.id))
-        trans.response.headers['Content-Length'] = int(os.stat(dataset.file_name).st_size)
-        to_ext = dataset.extension
-        fname = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in dataset.name)[0:150]
-        trans.response.set_content_type("application/octet-stream")  # force octet-stream so Safari doesn't append mime extensions to filename
-        trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (dataset.hid, fname, to_ext)
-        return open(dataset.file_name, mode='rb')
 
 
 class Ab1(Binary):
@@ -223,7 +213,6 @@ class BamNative(CompressedArchive):
     file_ext = "unsorted.bam"
     sort_flag = None
 
-    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
     MetadataElement(name="bam_version", default=None, desc="BAM Version", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="sort_order", default=None, desc="Sort Order", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=None)
     MetadataElement(name="read_groups", default=[], desc="Read Groups", param=MetadataParameter, readonly=True, visible=False, optional=True, no_value=[])
@@ -397,6 +386,8 @@ class Bam(BamNative):
     track_type = "ReadTrack"
     data_sources = {"data": "bai", "index": "bigwig"}
 
+    MetadataElement(name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True)
+
     def dataset_content_needs_grooming(self, file_name):
         """
         Check if file_name is a coordinate-sorted BAM file
@@ -556,7 +547,7 @@ class BamQuerynameSorted(BamInputSorted):
     file_ext = "qname_sorted.bam"
 
     def sniff(self, file_name):
-        return super(BamQuerynameSorted, self).sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
+        return BamNative().sniff(file_name) and not self.dataset_content_needs_grooming(file_name)
 
     def dataset_content_needs_grooming(self, file_name):
         """
