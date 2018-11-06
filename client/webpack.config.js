@@ -24,7 +24,11 @@ let buildconfig = {
         chunkFilename: "[name].chunk.js"
     },
     resolve: {
-        modules: [scriptsBase, "node_modules", styleBase, imageBase]
+        modules: [scriptsBase, "node_modules", styleBase, imageBase],
+        alias: {
+            jquery$: `${libsBase}/jquery.custom.js`,
+            jqueryVendor$: `${libsBase}/jquery/jquery.js`
+        }
     },
     optimization: {
         splitChunks: {
@@ -61,7 +65,7 @@ let buildconfig = {
                 options: { babelrc: true }
             },
             {
-                test: require.resolve("jquery"),
+                test: `${libsBase}/jquery.custom.js`,
                 use: [
                     {
                         loader: "expose-loader",
@@ -149,8 +153,8 @@ let buildconfig = {
         // this plugin allows using the following keys/globals in scripts (w/o req'ing them first)
         // and webpack will automagically require them in the bundle for you
         new webpack.ProvidePlugin({
-            $: "jquery",
-            jQuery: "jquery",
+            $: `${libsBase}/jquery.custom.js`,
+            jQuery: `${libsBase}/jquery.custom.js`,
             _: "underscore",
             Backbone: "backbone",
             Galaxy: ["galaxy.monitor", "default"]
