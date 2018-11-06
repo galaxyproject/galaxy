@@ -279,7 +279,7 @@ class Workflow {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
                         var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
-                        callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                        callout.find("icon").addClass("mark-terminal-active");
                         wf.has_changes = true;
                     }
                 });

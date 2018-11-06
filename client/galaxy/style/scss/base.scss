@@ -613,12 +613,6 @@ div.toolFormRow {
 .callout {
     position: absolute;
     z-index: 10000;
-    div.buttons img {
-        border: none;
-        width: 16px;
-        height: 16px;
-        cursor: pointer;
-    }
 }
 
 .toolForm.toolFormInCanvas {
@@ -2027,7 +2021,7 @@ div.toolTitleNoSection {
 .base-terminal {
     @extend .fa;
     @extend .fa-circle;
-    @extend .mt-2;
+    @extend .mt-1;
     color: white;
     position: absolute;
     z-index: 1500;
@@ -2060,6 +2054,13 @@ div.toolTitleNoSection {
     color: $brand-success;
     position: absolute;
     z-index: 1500;
+}
+.mark-terminal {
+    cursor: pointer;
+    color: $gray-500;
+    &.mark-terminal-active {
+        color: $brand-success;
+    }
 }
 #overview-border {
     position: absolute;
