@@ -46,7 +46,7 @@ export function installMonitor(globalProp, fallbackValue = null) {
                 logger.groupCollapsed(`${label} write...`, newValue);
                 logger.trace();
                 logger.groupEnd();
-                return (window._monitorStorage[globalProp] = newValue);
+                window._monitorStorage[globalProp] = newValue;
             }
         });
     } catch (err) {
@@ -76,7 +76,8 @@ export function installMonitor(globalProp, fallbackValue = null) {
                 logger.log("target?", target);
                 logger.trace();
                 logger.groupEnd();
-                return (target[prop] = val);
+                target[prop] = val;
+                return true;
             }
         }
     );

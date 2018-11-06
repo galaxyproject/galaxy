@@ -1,24 +1,5 @@
 /* global $, _, Galaxy */
-
 import "polyfills";
-
-// Jquery and all its horrible plugins
-import "jquery-migrate";
-/* we really need to get rid of these jquery plugins */
-import "libs/jquery/jquery.autocomplete";
-import "libs/jquery/jquery.event.hover";
-import "libs/jquery/jquery.event.drag";
-import "libs/jquery/jquery.event.drop";
-import "jquery-mousewheel";
-import "libs/jquery/jquery.form";
-import "libs/jquery/jquery.rating";
-import "libs/jquery/select2";
-import "libs/jquery/jquery-ui";
-import "libs/jquery/jstorage";
-import "libs/farbtastic";
-import "jquery.cookie";
-import "libs/jquery/jquery.dynatree";
-import "jquery.complexify";
 
 // Bootstrap overwrites .tooltip() method, so load it after jquery-ui
 import "bootstrap";
