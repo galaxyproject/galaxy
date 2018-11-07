@@ -1,3 +1,8 @@
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Data from "layout/data";
 import Masthead from "layout/masthead";
 import Panel from "layout/panel";
@@ -88,7 +93,7 @@ var View = Backbone.View.extend({
         // start the router
         if (this.router) {
             Backbone.history.start({
-                root: Galaxy.root,
+                root: getAppRoot(),
                 pushState: true
             });
         }
@@ -130,7 +135,7 @@ var View = Backbone.View.extend({
         if (this.config.show_inactivity_warning) {
             var content = this.config.inactivity_box_content || "";
             var verificationLink = $("<a/>")
-                .attr("href", `${Galaxy.root}user/resend_verification`)
+                .attr("href", `${getAppRoot()}user/resend_verification`)
                 .text("Resend verification");
             this.$el.addClass("has-inactivity-box");
             this.$inactivebox

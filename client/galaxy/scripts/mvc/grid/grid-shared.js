@@ -1,4 +1,8 @@
 /** This class renders the grid list with shared section. */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import GridView from "mvc/grid/grid-view";
 import LoadingIndicator from "ui/loading-indicator";
 
@@ -13,7 +17,7 @@ var View = Backbone.View.extend({
             this.active_tab = options.active_tab;
         }
         $.ajax({
-            url: `${Galaxy.root + this.item}/${this.model.get("action_id")}?${$.param(Galaxy.params)}`,
+            url: `${getAppRoot() + this.item}/${this.model.get("action_id")}?${$.param(Galaxy.params)}`,
             success: function(response) {
                 self.model.set(response);
                 self.render();
@@ -41,7 +45,7 @@ var View = Backbone.View.extend({
                     "</table>"
             );
             _.each(options.shared_by_others, (it, index) => {
-                var display_url = `${Galaxy.root + self.item}/display_by_username_and_slug?username=${
+                var display_url = `${getAppRoot() + self.item}/display_by_username_and_slug?username=${
                     it.username
                 }&slug=${it.slug}`;
                 $table.append(

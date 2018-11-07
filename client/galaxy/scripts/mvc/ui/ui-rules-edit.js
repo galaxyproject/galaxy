@@ -1,6 +1,9 @@
+/* global Galaxy */
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import _l from "utils/localization";
-import Utils from "utils/utils";
+// import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
 import ListCollectionCreator from "mvc/collection/list-collection-creator";
@@ -59,7 +62,7 @@ var View = Backbone.View.extend({
 
     _fetcCollectionAndEdit: function() {
         const view = this;
-        const url = `${Galaxy.root}api/dataset_collections/${view.target.id}?instance_type=history`;
+        const url = `${getAppRoot()}api/dataset_collections/${view.target.id}?instance_type=history`;
         axios
             .get(url)
             .then(response => this._showCollection(response))

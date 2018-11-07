@@ -1,14 +1,20 @@
-import _l from "utils/localization";
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-import Utils from "utils/utils";
+
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
+
 export default FormBase.extend({
     initialize: function(options) {
         var self = this;
@@ -162,7 +168,7 @@ export default FormBase.extend({
             onclick: function() {
                 prompt(
                     "Copy to clipboard: Ctrl+C, Enter",
-                    `${window.location.origin + Galaxy.root}root?tool_id=${options.id}`
+                    `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
                 );
             }
         });
@@ -173,7 +179,7 @@ export default FormBase.extend({
                 icon: "fa-download",
                 title: _l("Download"),
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}api/tools/${options.id}/download`;
+                    window.location.href = `${getAppRoot()}api/tools/${options.id}/download`;
                 }
             });
         }
@@ -265,7 +271,7 @@ export default FormBase.extend({
         $tmpl.find("img").each(function() {
             var img_src = $(this).attr("src");
             if (img_src.indexOf("admin_toolshed") !== -1) {
-                $(this).attr("src", Galaxy.root + img_src);
+                $(this).attr("src", getAppRoot() + img_src);
             }
         });
         return $tmpl;

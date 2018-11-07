@@ -1,3 +1,7 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import levenshteinDistance from "utils/levenshtein";
 import naturalSort from "utils/natural-sort";
 import baseCreator from "mvc/collection/base-creator";
@@ -629,7 +633,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
         createList: function(name) {
             var self = this;
 
-            var url = `${Galaxy.root}api/histories/${this.historyId}/contents/dataset_collections`;
+            var url = `${getAppRoot()}api/histories/${this.historyId}/contents/dataset_collections`;
 
             var ajaxData = {
                 type: "dataset_collection",

@@ -1,14 +1,14 @@
-/* global Galaxy */
-/* global $ */
-/* global Backbone */
-
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
 import { Dataset } from "mvc/dataset/data";
 import util_mod from "viz/trackster/util";
 import config_mod from "utils/config";
 import GridView from "mvc/grid/grid-view";
 import Tabs from "mvc/ui/ui-tabs";
+
 /**
  * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes
  * to include in the representation; to_json_mappers defines mappers for returned objects.
@@ -47,14 +47,14 @@ var CustomToJSON = {
 var select_datasets = (filters, success_fn) => {
     // history dataset selection tab
     var history_grid = new GridView({
-        url_base: `${Galaxy.root}visualization/list_history_datasets`,
+        url_base: `${getAppRoot()}visualization/list_history_datasets`,
         filters: filters,
         embedded: true
     });
 
     // library dataset selection tab
     var library_grid = new GridView({
-        url_base: `${Galaxy.root}visualization/list_library_datasets`,
+        url_base: `${getAppRoot()}visualization/list_library_datasets`,
         embedded: true
     });
 
@@ -85,7 +85,7 @@ var select_datasets = (filters, success_fn) => {
                 tabs.$("input.grid-row-select-checkbox[name=id]:checked").each(function() {
                     window.console.log($(this).val());
                     requests[requests.length] = $.ajax({
-                        url: `${Galaxy.root}api/datasets/${$(this).val()}`,
+                        url: `${getAppRoot()}api/datasets/${$(this).val()}`,
                         dataType: "json",
                         data: {
                             data_type: "track_config",
@@ -136,7 +136,7 @@ _.extend(CanvasManager.prototype, {
         var patterns = this.patterns;
         var dummy_context = this.dummy_context;
         var image = new Image();
-        image.src = `${Galaxy.root}static/images${path}`;
+        image.src = `${getAppRoot()}static/images${path}`;
         image.onload = () => {
             patterns[key] = dummy_context.createPattern(image, "repeat");
         };
@@ -250,7 +250,7 @@ var Cache = Backbone.Model.extend({
         return this.size() === 0
             ? null
             : // Most recent key is at the end of key array.
-              this.attributes.key_ary[this.attributes.key_ary.length - 1];
+            this.attributes.key_ary[this.attributes.key_ary.length - 1];
     }
 });
 
@@ -312,13 +312,13 @@ var GenomeDataManager = Cache.extend({
         var ready_deferred = $.Deferred();
 
         var // If requesting raw data, query dataset state; if requesting (converted) data,
-        // need to query converted datasets state.
-        query_type =
-            this.get("data_type") === "raw_data"
-                ? "state"
-                : this.get("data_type") === "data"
-                    ? "converted_datasets_state"
-                    : "error";
+            // need to query converted datasets state.
+            query_type =
+                this.get("data_type") === "raw_data"
+                    ? "state"
+                    : this.get("data_type") === "data"
+                        ? "converted_datasets_state"
+                        : "error";
 
         var ss_deferred = new util_mod.ServerStateDeferred({
             ajax_settings: {
@@ -607,22 +607,22 @@ var GenomeDataManager = Cache.extend({
         var all_data_available = true;
 
         var //  Map chromosome info into genome data.
-        gw_data = _.map(genome.get("chroms_info").chrom_info, chrom_info => {
-            var chrom_data = self.get_elt(
-                new GenomeRegion({
-                    chrom: chrom_info.chrom,
-                    start: 0,
-                    end: chrom_info.len
-                })
-            );
+            gw_data = _.map(genome.get("chroms_info").chrom_info, chrom_info => {
+                var chrom_data = self.get_elt(
+                    new GenomeRegion({
+                        chrom: chrom_info.chrom,
+                        start: 0,
+                        end: chrom_info.len
+                    })
+                );
 
-            // Set flag if data is not available.
-            if (!chrom_data) {
-                all_data_available = false;
-            }
+                // Set flag if data is not available.
+                if (!chrom_data) {
+                    all_data_available = false;
+                }
 
-            return chrom_data;
-        });
+                return chrom_data;
+            });
 
         // -- If all data is available, return it. --
         if (all_data_available) {
@@ -1029,7 +1029,7 @@ var Visualization = Backbone.Model.extend({
         type: ""
     },
 
-    urlRoot: `${Galaxy.root}api/visualizations`,
+    urlRoot: `${getAppRoot()}api/visualizations`,
 
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'

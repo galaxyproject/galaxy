@@ -1,10 +1,10 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import NodeView from "mvc/workflow/workflow-view-node";
-
-/* global $ */
-/* global Galaxy */
 
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {
@@ -148,7 +148,7 @@ var Node = Backbone.Model.extend({
 
         Utils.request({
             type: "POST",
-            url: `${Galaxy.root}api/workflows/build_module`,
+            url: `${getAppRoot()}api/workflows/build_module`,
             data: {
                 type: this.type,
                 tool_id: this.content_id,

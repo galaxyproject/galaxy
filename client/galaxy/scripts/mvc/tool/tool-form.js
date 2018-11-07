@@ -1,10 +1,17 @@
-import _l from "utils/localization";
 /* This is the regular tool form */
+
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Modal from "mvc/ui/ui-modal";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
+
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
@@ -22,9 +29,9 @@ var View = Backbone.View.extend({
                         var build_data = {};
                         var job_id = options.job_id;
                         if (job_id) {
-                            build_url = `${Galaxy.root}api/jobs/${job_id}/build_for_rerun`;
+                            build_url = `${getAppRoot()}api/jobs/${job_id}/build_for_rerun`;
                         } else {
-                            build_url = `${Galaxy.root}api/tools/${options.id}/build`;
+                            build_url = `${getAppRoot()}api/tools/${options.id}/build`;
                             build_data = $.extend({}, Galaxy.params);
                             build_data["tool_id"] && delete build_data["tool_id"];
                         }
@@ -36,7 +43,7 @@ var View = Backbone.View.extend({
                             data: build_data,
                             success: function(data) {
                                 if (!data.display) {
-                                    window.location = Galaxy.root;
+                                    window.location = getAppRoot();
                                     return;
                                 }
                                 form.model.set(data);
@@ -47,8 +54,8 @@ var View = Backbone.View.extend({
                             error: function(response, status) {
                                 var error_message = (response && response.err_msg) || "Uncaught error.";
                                 if (status == 401) {
-                                    window.location = `${Galaxy.root}user/login?${$.param({
-                                        redirect: `${Galaxy.root}?tool_id=${options.id}`
+                                    window.location = `${getAppRoot()}user/login?${$.param({
+                                        redirect: `${getAppRoot()}?tool_id=${options.id}`
                                     })}`;
                                 } else if (form.$el.is(":empty")) {
                                     form.$el.prepend(
@@ -89,7 +96,7 @@ var View = Backbone.View.extend({
                         Galaxy.emit.debug("tool-form::postchange()", "Sending current state.", current_state);
                         Utils.request({
                             type: "POST",
-                            url: `${Galaxy.root}api/tools/${form.model.get("id")}/build`,
+                            url: `${getAppRoot()}api/tools/${form.model.get("id")}/build`,
                             data: current_state,
                             success: function(data) {
                                 form.update(data);
@@ -196,7 +203,7 @@ var View = Backbone.View.extend({
             callback && callback();
             return;
         }
-        if (options.action !== `${Galaxy.root}tool_runner/index`) {
+        if (options.action !== `${getAppRoot()}tool_runner/index`) {
             var $f = $("<form/>").attr({
                 action: options.action,
                 method: options.method,
@@ -215,7 +222,7 @@ var View = Backbone.View.extend({
         Galaxy.emit.debug("tool-form::submit()", "Validation complete.", job_def);
         Utils.request({
             type: "POST",
-            url: `${Galaxy.root}api/tools`,
+            url: `${getAppRoot()}api/tools`,
             data: job_def,
             success: function(response) {
                 callback && callback();

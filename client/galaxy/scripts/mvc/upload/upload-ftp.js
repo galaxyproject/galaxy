@@ -1,4 +1,10 @@
 /** This renders the content of the ftp popup **/
+
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
 
@@ -12,7 +18,7 @@ export default Backbone.View.extend({
             class_partial: "upload-icon-button fa fa-minus-square-o",
             help_enabled: true,
             oidc_text: `<br/>If you are signed-in to Galaxy using a third-party identity and you <strong>don't have a Galaxy password</strong> please go to <a href="${
-                Galaxy.root
+                getAppRoot()
             }user/reset_password" target="_blank">this</a> page and request a password for your Galaxy account.`,
             help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${
                 options.ftp_upload_site

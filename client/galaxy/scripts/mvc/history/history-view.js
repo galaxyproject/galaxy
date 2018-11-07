@@ -1,4 +1,7 @@
-import * as _ from "underscore";
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import LIST_VIEW from "mvc/list/list-view";
 import { History } from "mvc/history/history-model";
@@ -13,8 +16,6 @@ import HistoryCopyDialog from "mvc/history/copy-dialog";
 import "ui/search-input";
 import "ui/mode-button";
 
-/* global $ */
-/* global Galaxy */
 
 /* =============================================================================
 TODO:
@@ -662,7 +663,7 @@ export function historyEntry(options) {
             allDatasets: $("#toggle-deleted").modeButton("getMode").mode === "showing_deleted"
         }).done(function() {
             if (window === window.parent) {
-                window.location = Galaxy.root;
+                window.location = getAppRoot();
             } else if (Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.loadCurrentHistory();
             }

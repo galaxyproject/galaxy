@@ -1,3 +1,8 @@
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
@@ -275,7 +280,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     createNewHistory: function(new_history_name) {
-        var promise = $.post(`${Galaxy.root}api/histories`, { name: new_history_name });
+        var promise = $.post(`${getAppRoot()}api/histories`, { name: new_history_name });
         return promise;
     },
 
@@ -307,7 +312,7 @@ var FolderToolbarView = Backbone.View.extend({
         });
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(`${Galaxy.root}history/set_as_current?id=${history_id}`);
+        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         this.chainCallImportingIntoHistory(items_to_import, history_name);
     },
 
@@ -327,7 +332,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     download: function(format) {
         var checked_items = this.findCheckedItems();
-        var url = `${Galaxy.root}api/libraries/datasets/download/${format}`;
+        var url = `${getAppRoot()}api/libraries/datasets/download/${format}`;
         var data = { ld_ids: checked_items.dataset_ids, folder_ids: checked_items.folder_ids };
         this.processDownload(url, data, "get");
     },
@@ -433,7 +438,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     fetchExtAndGenomes: function() {
         mod_utils.get({
-            url: `${Galaxy.root}api/datatypes?extension_only=False`,
+            url: `${getAppRoot()}api/datatypes?extension_only=False`,
             success: datatypes => {
                 this.list_extensions = [];
                 for (let key in datatypes) {
@@ -450,7 +455,7 @@ var FolderToolbarView = Backbone.View.extend({
             cache: true
         });
         mod_utils.get({
-            url: `${Galaxy.root}api/genomes`,
+            url: `${getAppRoot()}api/genomes`,
             success: genomes => {
                 this.list_genomes = [];
                 for (let key in genomes) {
@@ -787,7 +792,7 @@ var FolderToolbarView = Backbone.View.extend({
             for (let i = history_item_ids.length - 1; i >= 0; i--) {
                 var history_item_id = history_item_ids[i];
                 var folder_item = new mod_library_model.Item();
-                folder_item.url = `${Galaxy.root}api/folders/${this.options.id}/contents`;
+                folder_item.url = `${getAppRoot()}api/folders/${this.options.id}/contents`;
                 if (history_item_types[i] === "collection") {
                     folder_item.set({ from_hdca_id: history_item_id });
                 } else {
@@ -815,7 +820,7 @@ var FolderToolbarView = Backbone.View.extend({
             if (this.options.chain_call_control.failed_number === 0) {
                 mod_toastr.success("Selected datasets imported into history. Click this to start analyzing it.", "", {
                     onclick: () => {
-                        window.location = Galaxy.root;
+                        window.location = getAppRoot();
                     }
                 });
             } else if (this.options.chain_call_control.failed_number === this.options.chain_call_control.total_number) {
@@ -826,7 +831,7 @@ var FolderToolbarView = Backbone.View.extend({
                     "",
                     {
                         onclick: () => {
-                            window.location = Galaxy.root;
+                            window.location = getAppRoot();
                         }
                     }
                 );
@@ -872,7 +877,7 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
+                `${getAppRoot()}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
                     options.source
                 }&path=${popped_item}&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
                     options.space_to_tab
@@ -920,7 +925,7 @@ var FolderToolbarView = Backbone.View.extend({
         }
         var promise = $.when(
             $.post(
-                `${Galaxy.root}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
+                `${getAppRoot()}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
                     options.source
                 }&path=${popped_item}&preserve_dirs=${options.preserve_dirs}&link_data=${
                     options.link_data

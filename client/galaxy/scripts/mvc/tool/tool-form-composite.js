@@ -1,6 +1,10 @@
 /** This is the run workflow tool form view. */
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
@@ -11,9 +15,6 @@ import ToolFormBase from "mvc/tool/tool-form-base";
 import Modal from "mvc/ui/ui-modal";
 import Webhooks from "mvc/webhooks";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
-
-/* global $ */
-/* global Galaxy */
 
 var View = Backbone.View.extend({
     initialize: function(options) {
@@ -381,7 +382,7 @@ var View = Backbone.View.extend({
                     Galaxy.emit.debug("tool-form-composite::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/tools/${step.id}/build`,
+                        url: `${getAppRoot()}api/tools/${step.id}/build`,
                         data: current_state,
                         success: function(data) {
                             form.update(data);
@@ -618,7 +619,7 @@ var View = Backbone.View.extend({
             Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
             Utils.request({
                 type: "POST",
-                url: `${Galaxy.root}api/workflows/${this.model.id}/invocations`,
+                url: `${getAppRoot()}api/workflows/${this.model.id}/invocations`,
                 data: job_def,
                 success: function(response) {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
@@ -727,14 +728,14 @@ var View = Backbone.View.extend({
                 timesExecuted = `<em> - ${response.length} times</em>`;
                 if (newHistoryTarget) {
                     destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${
-                        Galaxy.root
+                        getAppRoot()
                     }history/view_multiple">history multi-view</a>.`;
                 }
             } else if (newHistoryTarget) {
                 // Single execution, with a destination other than the
                 // current history.  Present a link.
                 destinationBlurb = `This workflow will generate results in a new history. <a href="${
-                    Galaxy.root
+                    getAppRoot()
                 }history/switch_to_history?hist_id=${response[0].history_id}">Switch to that history now</a>.`;
             }
             return $(`

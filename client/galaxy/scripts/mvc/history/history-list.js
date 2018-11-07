@@ -1,4 +1,8 @@
+/* global Galaxy */
 /** This class renders the grid list. */
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import AjaxQueue from "utils/ajax-queue";
 import Utils from "utils/utils";
@@ -6,10 +10,7 @@ import GridView from "mvc/grid/grid-view";
 import { History } from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import LoadingIndicator from "ui/loading-indicator";
-import * as Backbone from "backbone";
 
-/* global $ */
-/* global Galaxy */
 
 var HistoryGridView = GridView.extend({
     initialize: function(grid_config) {
@@ -26,7 +27,7 @@ var HistoryGridView = GridView.extend({
                 return () => {
                     const historyId = $(el).data("id");
                     const url = `${
-                        Galaxy.root
+                        getAppRoot()
                     }api/histories/${historyId}?keys=nice_size,contents_active,contents_states`;
                     const options = {};
                     options.url = url;
@@ -99,7 +100,7 @@ var View = Backbone.View.extend({
         }
         this.model = new Backbone.Model();
         Utils.get({
-            url: `${Galaxy.root}history/${options.action_id}?${$.param(Galaxy.params)}`,
+            url: `${getAppRoot()}history/${options.action_id}?${$.param(Galaxy.params)}`,
             success: response => {
                 this.model.set(response);
                 this.render();

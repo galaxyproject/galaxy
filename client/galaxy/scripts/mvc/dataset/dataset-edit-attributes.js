@@ -1,9 +1,15 @@
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 /** Dataset edit attributes view */
-import Utils from "utils/utils";
+// import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
+
 var View = Backbone.View.extend({
     initialize: function() {
         this.setElement("<div/>");
@@ -26,7 +32,7 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         $.ajax({
-            url: `${Galaxy.root}dataset/get_edit?dataset_id=${self.model.get("dataset_id")}`,
+            url: `${getAppRoot()}dataset/get_edit?dataset_id=${self.model.get("dataset_id")}`,
             success: function(response) {
                 !self.initial_message && self.message.update(response);
                 self.initial_message = true;
@@ -55,7 +61,7 @@ var View = Backbone.View.extend({
         data.operation = operation;
         $.ajax({
             type: "PUT",
-            url: `${Galaxy.root}dataset/set_edit`,
+            url: `${getAppRoot()}dataset/set_edit`,
             data: data,
             success: function(response) {
                 self.message.update(response);

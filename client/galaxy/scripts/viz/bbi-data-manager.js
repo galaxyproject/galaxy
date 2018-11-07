@@ -1,5 +1,8 @@
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 import visualization from "viz/visualization";
 import * as bigwig from "libs/bbi/bigwig";
+
 /**
  * Data manager for BBI datasets/files, including BigWig and BigBed.
  */
@@ -13,7 +16,7 @@ var BBIDataManager = visualization.GenomeDataManager.extend({
         var deferred = $.Deferred();
         this.set_data(region, deferred);
 
-        var url = `${Galaxy.root}datasets/${this.get("dataset").id}/display`;
+        var url = `${getAppRoot()}datasets/${this.get("dataset").id}/display`;
 
         var self = this;
         var promise = new $.Deferred();

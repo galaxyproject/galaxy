@@ -1,11 +1,11 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
-
-/* global $ */
-/* global Galaxy */
 
 var View = Backbone.View.extend({
     el: "#center",
@@ -73,7 +73,7 @@ var View = Backbone.View.extend({
         params.tool_shed_repository_ids = JSON.stringify([repository_metadata.repository.id]);
         params.tool_shed_url = queue_key.split("|")[0];
         params.changeset = repository_metadata.changeset_revision;
-        var url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
+        var url = `${getAppRoot()}api/tool_shed_repositories/install?async=True`;
         $(`#queued_repository_${repository_metadata.repository.id}`).remove();
         if (window.localStorage.repositories) {
             if (queue_key === undefined) {
@@ -90,7 +90,7 @@ var View = Backbone.View.extend({
             var iri_params = JSON.parse(data);
             var repositories = iri_params.repositories;
             var new_route = `status/r/${repositories.join("|")}`;
-            $.post(`${Galaxy.root}admin_toolshed/install_repositories`, iri_params, data => {
+            $.post(`${getAppRoot()}admin_toolshed/install_repositories`, iri_params, data => {
                 console.log("Initializing repository installation succeeded");
             });
             Backbone.history.navigate(new_route, {

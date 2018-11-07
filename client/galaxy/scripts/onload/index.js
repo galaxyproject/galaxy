@@ -1,5 +1,9 @@
-/* global $, _, Galaxy */
+/* global Galaxy */
 import "polyfills";
+
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 
 // Bootstrap overwrites .tooltip() method, so load it after jquery-ui
 import "bootstrap";
@@ -30,6 +34,8 @@ import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
 import { installMonitor } from "utils/installMonitor";
+
+
 
 // ============================================================================
 // jquery on document ready
@@ -183,7 +189,7 @@ $(document).ready(() => {
     Galaxy.giveTourWithData = Tours.giveTourWithData;
 
     function onloadWebhooks() {
-        if (Galaxy.root !== undefined) {
+        if (getAppRoot() !== undefined) {
             if (Galaxy.config.enable_webhooks) {
                 // Load all webhooks with the type 'onload'
                 Webhooks.load({

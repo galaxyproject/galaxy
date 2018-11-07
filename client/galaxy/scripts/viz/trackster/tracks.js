@@ -1,6 +1,9 @@
-import _l from "utils/localization";
+/* global Galaxy */
 import _ from "underscore";
+import $ from "jquery";
 import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
 import util from "viz/trackster/util";
@@ -12,10 +15,8 @@ import tools_mod from "mvc/tool/tools";
 import config_mod from "utils/config";
 import bbi from "viz/bbi-data-manager";
 import "ui/editable-text";
-var extend = _.extend;
 
-/* global $ */
-/* global Galaxy */
+var extend = _.extend;
 
 // ---- Web UI specific utilities ----
 
@@ -1352,7 +1353,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
         var chrom_data = $.Deferred();
         $.ajax({
-            url: `${Galaxy.root}api/genomes/${this.dbkey}`,
+            url: `${getAppRoot()}api/genomes/${this.dbkey}`,
             data: url_parms,
             dataType: "json",
             success: result => {
@@ -2051,7 +2052,7 @@ var TracksterToolView = Backbone.View.extend({
         url_params.inputs = this.model.get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
-                url: `${Galaxy.root}api/tools`,
+                url: `${getAppRoot()}api/tools`,
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: "application/json",
@@ -2494,7 +2495,7 @@ extend(Track.prototype, Drawable.prototype, {
                     Galaxy.modal.hide();
 
                     // Go to visualization.
-                    window.top.location.href = `${Galaxy.root}visualization/sweepster?${$.param({
+                    window.top.location.href = `${getAppRoot()}visualization/sweepster?${$.param({
                         dataset_id: track.dataset.id,
                         hda_ldda: track.dataset.get("hda_ldda"),
                         regions: JSON.stringify(new Backbone.Collection(regions).toJSON())
@@ -3876,7 +3877,7 @@ var ReferenceTrack = function(view) {
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
     this.container_div.addClass("reference-track");
-    this.data_url = `${Galaxy.root}api/genomes/${this.view.dbkey}`;
+    this.data_url = `${getAppRoot()}api/genomes/${this.view.dbkey}`;
     this.data_url_extra_params = { reference: true };
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,
@@ -3975,7 +3976,7 @@ var LineTrack = function(view, container, obj_dict) {
     // If server has byte-range support, use BBI data manager to read directly from the BBI file.
     // FIXME: there should be a flag to wait for this check to complete before loading the track.
     var self = this;
-    $.when(supportsByteRanges(`${Galaxy.root}datasets/${this.dataset.id}/display`)).then(supportsByteRanges => {
+    $.when(supportsByteRanges(`${getAppRoot()}datasets/${this.dataset.id}/display`)).then(supportsByteRanges => {
         if (supportsByteRanges) {
             self.data_manager = new bbi.BBIDataManager({
                 dataset: self.dataset

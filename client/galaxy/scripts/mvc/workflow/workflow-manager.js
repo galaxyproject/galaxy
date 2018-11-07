@@ -1,8 +1,8 @@
+/* global Galaxy */
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 import Connector from "mvc/workflow/workflow-connector";
 import * as Toastr from "libs/toastr";
-
-/* global $ */
-/* global Galaxy */
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -279,7 +279,7 @@ class Workflow {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
                         var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
-                        callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                        callout.find("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small.png`);
                         wf.has_changes = true;
                     }
                 });

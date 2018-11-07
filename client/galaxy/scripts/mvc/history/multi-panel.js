@@ -1,6 +1,9 @@
-import _l from "utils/localization";
+/* global Galaxy */
 import _ from "underscore";
+import $ from "jquery";
 import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 import { HistoryCollection } from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
@@ -10,8 +13,6 @@ import baseMVC from "mvc/base-mvc";
 import ajaxQueue from "utils/ajax-queue";
 import "ui/search-input";
 
-/* global $ */
-/* global Galaxy */
 
 var logNamespace = "history";
 /* ==============================================================================
@@ -760,7 +761,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     close: function(ev) {
         //TODO: switch to pushState/router
-        window.location = Galaxy.root;
+        window.location = getAppRoot();
     },
 
     _clickToggleDeletedHistories: function(ev) {
@@ -770,9 +771,9 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
     /** Include deleted histories in the collection */
     toggleDeletedHistories: function(show) {
         if (show) {
-            window.location = `${Galaxy.root}history/view_multiple?include_deleted_histories=True`;
+            window.location = `${getAppRoot()}history/view_multiple?include_deleted_histories=True`;
         } else {
-            window.location = `${Galaxy.root}history/view_multiple`;
+            window.location = `${getAppRoot()}history/view_multiple`;
         }
     },
 

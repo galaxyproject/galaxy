@@ -2,12 +2,12 @@
  * Visualization and components for Sweepster, a visualization for exploring a tool's parameter space via
  * genomic visualization.
  */
-/* global Backbone */
-/* global Galaxy */
-/* global $ */
 
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
 import * as d3 from "libs/d3";
 import visualization from "viz/visualization";
 import tracks from "viz/trackster/tracks";
@@ -15,6 +15,7 @@ import tools from "mvc/tool/tools";
 import { Dataset } from "mvc/dataset/data";
 import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
+
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings
  * for future use without changing the input's value and for preserving inputs order.
@@ -279,8 +280,8 @@ var SweepsterTrack = Backbone.Model.extend({
             // FIXME: find a better way to deal with needed URLs:
             var track_config = _.extend(
                 {
-                    data_url: `${Galaxy.root}dummy1`,
-                    converted_datasets_state_url: `${Galaxy.root}dummy2`
+                    data_url: `${getAppRoot()}dummy1`,
+                    converted_datasets_state_url: `${getAppRoot()}dummy2`
                 },
                 options.track
             );
@@ -440,7 +441,7 @@ var SweepsterTrackView = Backbone.View.extend({
             self.$el.append(
                 $("<td/>")
                     .addClass("tile")
-                    .html($("<img/>").attr("src", `${Galaxy.root}images/loading_large_white_bg.gif`))
+                    .html($("<img/>").attr("src", `${getAppRoot()}images/loading_large_white_bg.gif`))
             );
         });
 
@@ -874,7 +875,7 @@ export var SweepsterVisualizationView = Backbone.View.extend({
                     icon_class: "cross-circle",
                     title: _l("Close"),
                     on_click: function() {
-                        window.top.location = `${Galaxy.root}visualizations/list`;
+                        window.top.location = `${getAppRoot()}visualizations/list`;
                     }
                 }
             ],

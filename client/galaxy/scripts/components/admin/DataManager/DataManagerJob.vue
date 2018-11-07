@@ -58,6 +58,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
@@ -128,7 +129,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/job_info?id=${this.id}`)
+            .get(`${getAppRoot()}data_manager/job_info?id=${this.id}`)
             .then(response => {
                 this.jobId = response.data.jobId;
                 this.exitCode = response.data.exitCode;

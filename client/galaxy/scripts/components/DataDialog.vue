@@ -45,6 +45,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -108,7 +109,7 @@ export default {
             this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             if (this.historyId) {
                 axios
-                    .get(`${Galaxy.root}api/histories/${this.historyId}/contents`)
+                    .get(`${getAppRoot()}api/histories/${this.historyId}/contents`)
                     .then(response => {
                         this.items = response.data;
                         this.optionsShow = true;

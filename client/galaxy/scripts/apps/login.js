@@ -1,19 +1,28 @@
-import jQuery from "jquery";
-var $ = jQuery;
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import { GalaxyApp } from "galaxy";
 import _l from "utils/localization";
 import Page from "layout/page";
+import { setGalaxyInstance } from "galaxy.singleton";
+import { getAppRoot } from "onload/loadConfig";
 
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp(options, bootstrapped);
-    Galaxy.debug("login app");
+    console.log("Analysis init");
+    
+    let Galaxy = setGalaxyInstance(() => {
+        let galaxy = new GalaxyApp(options, bootstrapped);
+        galaxy.debug("login app");
+        return galaxy;
+    });
+
     var redirect = encodeURI(options.redirect);
 
     // TODO: remove iframe for user login (at least) and render login page from here
     // then remove this redirect
     if (!options.show_welcome_with_login) {
-        var params = jQuery.param({ use_panels: "True", redirect: redirect });
-        window.location.href = `${Galaxy.root}user/login?${params}`;
+        var params = $.param({ use_panels: "True", redirect: redirect });
+        window.location.href = `${getAppRoot()}user/login?${params}`;
         return;
     }
 

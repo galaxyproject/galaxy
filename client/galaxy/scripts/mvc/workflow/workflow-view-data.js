@@ -1,3 +1,8 @@
+/* global Galaxy */
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
@@ -106,18 +111,18 @@ var OutputCalloutView = Backbone.View.extend({
             .append(
                 $("<div class='buttons'></div>").append(
                     $("<img/>")
-                        .attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`)
+                        .attr("src", `${getAppRoot()}static/images/fugue/asterisk-small-outline.png`)
                         .click(() => {
                             var outputName = view.output.name;
                             if (node.isWorkflowOutput(outputName)) {
                                 node.removeWorkflowOutput(outputName);
                                 view.$("img").attr(
                                     "src",
-                                    `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`
+                                    `${getAppRoot()}static/images/fugue/asterisk-small-outline.png`
                                 );
                             } else {
                                 node.addWorkflowOutput(outputName);
-                                view.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                                view.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small.png`);
                             }
                             window.workflow_globals.workflow.has_changes = true;
                             window.workflow_globals.canvas_manager.draw_overview();
@@ -140,14 +145,14 @@ var OutputCalloutView = Backbone.View.extend({
 
     resetImage: function() {
         if (!this.node.isWorkflowOutput(this.output.name)) {
-            this.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-outline.png`);
+            this.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small-outline.png`);
         } else {
-            this.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+            this.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small.png`);
         }
     },
 
     hoverImage: function() {
-        this.$("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small-yellow.png`);
+        this.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small-yellow.png`);
     }
 });
 

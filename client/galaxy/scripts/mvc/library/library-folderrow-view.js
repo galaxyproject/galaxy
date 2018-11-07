@@ -1,6 +1,12 @@
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
+
 var FolderRowView = Backbone.View.extend({
     events: {
         "click .undelete_dataset_btn": "undeleteDataset",
@@ -119,7 +125,7 @@ var FolderRowView = Backbone.View.extend({
                 mod_toastr.success("Dataset undeleted. Click this to see it.", "", {
                     onclick: function() {
                         var folder_id = that.model.get("folder_id");
-                        window.location = `${Galaxy.root}library/list#folders/${folder_id}/datasets/${that.id}`;
+                        window.location = `${getAppRoot()}library/list#folders/${folder_id}/datasets/${that.id}`;
                     }
                 });
             },

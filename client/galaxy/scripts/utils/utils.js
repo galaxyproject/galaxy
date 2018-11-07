@@ -2,11 +2,11 @@
  * Galaxy utilities comprises small functions, which at this point
  * do not require their own classes/files
  */
-import _l from "utils/localization";
-import * as _ from "underscore";
 
-/* global $ */
-/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 
 /** Builds a basic iframe */
 export function iframe(src) {
@@ -228,7 +228,7 @@ export function cssGetAttribute(classname, name) {
  */
 export function cssLoadFile(url) {
     if (!$(`link[href^="${url}"]`).length) {
-        $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo("head");
+        $(`<link href="${getAppRoot()}${url}" rel="stylesheet">`).appendTo("head");
     }
 }
 

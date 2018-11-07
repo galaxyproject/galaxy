@@ -1,8 +1,15 @@
-import _l from "utils/localization";
 /** User Preferences view */
-import Form from "mvc/form/form-view";
+
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
+// import Form from "mvc/form/form-view";
 import Ui from "mvc/ui/ui-misc";
 import QueryStringParsing from "utils/query-string-parsing";
+
 /** Contains descriptive dictionaries describing user forms */
 var Model = Backbone.Model.extend({
     initialize: function(options) {
@@ -62,7 +69,7 @@ var Model = Backbone.Model.extend({
                 description: _l("Associate OpenIDs with your account."),
                 icon: "fa-openid",
                 onclick: function() {
-                    Galaxy.page.router.push(`${Galaxy.root}openids/list`);
+                    Galaxy.page.router.push(`${getAppRoot()}openids/list`);
                 }
             },
             custom_builds: {
@@ -70,7 +77,7 @@ var Model = Backbone.Model.extend({
                 description: _l("Add or remove custom builds using history datasets."),
                 icon: "fa-cubes",
                 onclick: function() {
-                    Galaxy.page.router.push(`${Galaxy.root}custom_builds`);
+                    Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
                 }
             },
             logout: {
@@ -86,7 +93,7 @@ var Model = Backbone.Model.extend({
                                 Galaxy.modal.hide();
                             },
                             "Sign out": function() {
-                                window.location.href = `${Galaxy.root}user/logout?session_csrf_token=${
+                                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
                                     Galaxy.session_csrf_token
                                 }`;
                             }
@@ -111,7 +118,7 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         var config = Galaxy.config;
-        $.getJSON(`${Galaxy.root}api/users/${Galaxy.user.id}`, data => {
+        $.getJSON(`${getAppRoot()}api/users/${Galaxy.user.id}`, data => {
             self.$preferences = $("<div/>")
                 .append($("<h2/>").append("User preferences"))
                 .append($("<p/>").append(`You are logged in as <strong>${_.escape(data.email)}</strong>.`))
@@ -154,7 +161,7 @@ var View = Backbone.View.extend({
                 options.onclick();
             });
         } else {
-            $a.attr("href", `${Galaxy.root}user/${action}`);
+            $a.attr("href", `${getAppRoot()}user/${action}`);
         }
         this.$table.append($row);
     },

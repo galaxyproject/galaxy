@@ -1,11 +1,12 @@
-import * as _ from "underscore";
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import Webhooks from "mvc/webhooks";
 
-/* global $ */
-/* global Galaxy */
 
 // ============================================================================
 var menu = [
@@ -129,7 +130,7 @@ var menu = [
         func: function() {
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really unhide all hidden datasets?"))) {
-                $.post(`${Galaxy.root}history/adjust_hidden`, { user_action: "unhide" }, () => {
+                $.post(`${getAppRoot()}history/adjust_hidden`, { user_action: "unhide" }, () => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 });
             }
@@ -141,7 +142,7 @@ var menu = [
         func: function() {
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete all hidden datasets?"))) {
-                $.post(`${Galaxy.root}history/adjust_hidden`, { user_action: "delete" }, () => {
+                $.post(`${getAppRoot()}history/adjust_hidden`, { user_action: "delete" }, () => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
                 });
             }
@@ -244,7 +245,7 @@ var create = ($button, options) => {
     options = options || {};
     var isAnon = options.anonymous === undefined ? true : options.anonymous;
     var purgeAllowed = options.purgeAllowed || false;
-    var menu = buildMenu(isAnon, purgeAllowed, Galaxy.root);
+    var menu = buildMenu(isAnon, purgeAllowed, getAppRoot());
     //console.debug( 'menu:', menu );
     return new PopupMenu($button, menu);
 };

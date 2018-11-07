@@ -1,7 +1,7 @@
-/* global Backbone */
-/* global Galaxy */
-/* global _ */
-/* global $ */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
 
@@ -62,7 +62,7 @@ export var Dataset = Backbone.Model.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: `${Galaxy.root}api/datasets`
+    urlRoot: `${getAppRoot()}api/datasets`
 });
 
 /**
@@ -83,8 +83,8 @@ export var TabularDataset = Dataset.extend({
         if (this.attributes.first_data_chunk) {
             this.attributes.offset = this.attributes.first_data_chunk.offset;
         }
-        this.attributes.chunk_url = `${Galaxy.root}dataset/display?dataset_id=${this.id}`;
-        this.attributes.url_viz = `${Galaxy.root}visualization`;
+        this.attributes.chunk_url = `${getAppRoot()}dataset/display?dataset_id=${this.id}`;
+        this.attributes.url_viz = `${getAppRoot()}visualization`;
     },
 
     /**
@@ -519,9 +519,9 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // end is optional
         var end = this.col.end
             ? row
-                  .children()
-                  .eq(this.col.end)
-                  .html()
+                .children()
+                .eq(this.col.end)
+                .html()
             : start;
 
         // double check location

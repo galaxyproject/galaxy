@@ -1,9 +1,15 @@
-import _l from "utils/localization";
 /** This class renders the chart configuration form. */
-import Utils from "utils/utils";
+
+/* global Galaxy */
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import Table from "mvc/ui/ui-table";
+
 var Collection = Backbone.Collection.extend({
     comparator: function(a, b) {
         a = a.get("name");
@@ -18,9 +24,9 @@ var View = Backbone.View.extend({
         this.active_tab = "user";
         var history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         this.model = new Backbone.Model();
-        this.model.url = `${Galaxy.root}api/histories/${history_id}/custom_builds_metadata`;
+        this.model.url = `${getAppRoot()}api/histories/${history_id}/custom_builds_metadata`;
         this.collection = new Collection();
-        this.collection.url = `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`;
+        this.collection.url = `${getAppRoot()}api/users/${Galaxy.user.id}/custom_builds`;
         this.message = new Ui.Message({});
         this.installed_builds = new Ui.Select.View({
             optional: true,

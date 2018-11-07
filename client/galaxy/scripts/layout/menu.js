@@ -1,6 +1,10 @@
-/* global Backbone, $, _, Galaxy */
+/* global Galaxy */
 
 /** Masthead Collection **/
+import _ from "underscore"
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
@@ -419,7 +423,7 @@ var Tab = Backbone.View.extend({
         return $("<div/>")
             .append(
                 $("<a/>")
-                    .attr("href", Galaxy.root + url)
+                    .attr("href", getAppRoot() + url)
                     .html(label)
             )
             .html();
@@ -471,7 +475,7 @@ var Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? Galaxy.root + url : url;
+        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
     },
 
     /** body tempate */

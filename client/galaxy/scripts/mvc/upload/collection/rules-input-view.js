@@ -1,3 +1,7 @@
+/* global Galaxy */
+import _ from "underscore";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select";
@@ -115,7 +119,7 @@ export default Backbone.View.extend({
         }
         axios
             .get(
-                `${Galaxy.root}api/histories/${Galaxy.currHistoryPanel.model.id}/contents/${selectedDatasetId}/display`
+                `${getAppRoot()}api/histories/${Galaxy.currHistoryPanel.model.id}/contents/${selectedDatasetId}/display`
             )
             .then(response => {
                 this._setPreview(response.data);

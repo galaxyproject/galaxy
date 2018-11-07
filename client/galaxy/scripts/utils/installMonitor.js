@@ -10,6 +10,8 @@
 import { mock } from "utils/mock";
 const fakeLogger = mock(console);
 
+console.log("installMonitor");
+
 // stores values that are returned when somebody asks for window.Something
 window._monitorStorage = window._monitorStorage || {};
 

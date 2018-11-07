@@ -1,4 +1,7 @@
-/* global Galaxy, $, _ */
+import $ from "jquery";
+import _ from "underscore";
+import { setGalaxyInstance } from "galaxy.singleton";
+import { getAppRoot } from "onload/loadConfig";
 import { GalaxyApp } from "galaxy";
 import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
@@ -41,8 +44,13 @@ import Vue from "vue";
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp(options, bootstrapped);
-    Galaxy.debug("analysis app");
+    console.log("Analysis init");
+    
+    let Galaxy = setGalaxyInstance(() => {
+        let galaxy = new GalaxyApp(options, bootstrapped);
+        galaxy.debug("analysis app");
+        return galaxy;
+    });
 
     /** Routes */
     var AnalysisRouter = Router.extend({
@@ -151,7 +159,7 @@ window.app = function app(options, bootstrapped) {
             var userFilter = QueryStringParsing.get("f-username");
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`,
+                    url_base: `${getAppRoot()}workflow/list_published`,
                     active_tab: "shared",
                     url_data: {
                         "f-username": userFilter == null ? "" : userFilter
@@ -223,7 +231,7 @@ window.app = function app(options, bootstrapped) {
         show_openids: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}user/openids_list`,
+                    url_base: `${getAppRoot()}user/openids_list`,
                     active_tab: "user"
                 })
             );
@@ -232,7 +240,7 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`,
+                    url_base: `${getAppRoot()}dataset/list`,
                     active_tab: "user"
                 })
             );
@@ -297,7 +305,7 @@ window.app = function app(options, bootstrapped) {
         show_workflows_create: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: `workflow/create`,
+                    url: "workflow/create",
                     redirect: "workflow/editor",
                     active_tab: "workflow"
                 })
@@ -373,7 +381,7 @@ window.app = function app(options, bootstrapped) {
 
         /** load the center panel iframe using the given url */
         _loadCenterIframe: function(url, root) {
-            root = root || Galaxy.root;
+            root = root || getAppRoot();
             url = root + url;
             this.page.$("#galaxy_main").prop("src", url);
         },
@@ -381,7 +389,7 @@ window.app = function app(options, bootstrapped) {
         /** load workflow by its url in run mode */
         _loadWorkflow: function() {
             Utils.get({
-                url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
+                url: `${getAppRoot()}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: response => {
                     this.page.display(new ToolFormComposite.View(_.extend(response, { active_tab: "workflow" })));
                 },

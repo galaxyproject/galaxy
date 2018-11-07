@@ -6,16 +6,16 @@ import _l from "utils/localization";
 // The following must remain staged out of libs and not sourced from
 // node_modules, until TDTs are bundled.
 import _ from "underscore";
+import $ from "jquery";
 import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import "libs/bootstrap-tour";
 
-/* global $ */
-/* global Galaxy */
 
 // bootstrap-tour configures a window.Tour object; keep a local ref.
 let Tour = window.Tour;
 
-var gxy_root = typeof Galaxy === "undefined" ? "/" : Galaxy.root;
+var gxy_root = getAppRoot();
 
 const TOURPAGE_TEMPLATE = `
     <h2>Galaxy Tours</h2>

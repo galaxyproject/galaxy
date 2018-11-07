@@ -292,9 +292,6 @@ GalaxyApp.prototype.toString = function toString() {
     return `GalaxyApp(${userEmail})`;
 };
 
-// This is not great.  Rework to be a singleton-style Galaxy app accessible/created by import
-// window.Galaxy = window.Galaxy || new GalaxyApp();
-
 // ============================================================================
 export default {
     GalaxyApp: GalaxyApp

@@ -1,11 +1,11 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
-
-/* global $ */
-/* global Galaxy */
 
 var View = Backbone.View.extend({
     el: "#center",
@@ -38,7 +38,7 @@ var View = Backbone.View.extend({
         $(".show_wf_repo").on("click", ev => {
             var tool_ids = $(ev.target).attr("data-toolids");
             var toolshed = $(ev.target).attr("data-shed");
-            var api_url = `${Galaxy.root}api/tool_shed/repository`;
+            var api_url = `${getAppRoot()}api/tool_shed/repository`;
             var params = { tool_ids: tool_ids };
             $.get(api_url, params, data => {
                 repository_id = data.repository.id;
@@ -55,7 +55,7 @@ var View = Backbone.View.extend({
             var elem = $(ev.target);
             var tool_ids = elem.attr("data-toolids");
             var toolshed = elem.attr("data-shed");
-            var api_url = `${Galaxy.root}api/tool_shed/repository`;
+            var api_url = `${getAppRoot()}api/tool_shed/repository`;
             var params = { tool_ids: tool_ids };
             $.get(api_url, params, data => {
                 repository_id = data.repository.id;

@@ -1,8 +1,8 @@
-/* global Galaxy */
-/* global $ */
-/* global _ */
-
+import $ from "jquery";
+import _ from "underscore";
 import _l from "utils/localization";
+import { setGalaxyInstance } from "galaxy.singleton";
+import { getAppRoot } from "onload/loadConfig";
 import { GalaxyApp } from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
@@ -18,8 +18,13 @@ import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vu
 import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp(options, bootstrapped);
-    Galaxy.debug("admin app");
+    console.log("Admin init");
+
+    let Galaxy = setGalaxyInstance(() => {
+        let galaxy = new GalaxyApp(options, bootstrapped);
+        galaxy.debug("admin app");
+        return galaxy;
+    });
 
     /** Routes */
     var AdminRouter = Router.extend({
@@ -50,13 +55,13 @@ window.app = function app(options, bootstrapped) {
         home: function() {
             this.page
                 .$("#galaxy_main")
-                .prop("src", `${Galaxy.root}admin/center?message=${options.message}&status=${options.status}`);
+                .prop("src", `${getAppRoot()}admin/center?message=${options.message}&status=${options.status}`);
         },
 
         show_users: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}admin/users_list`,
+                    url_base: `${getAppRoot()}admin/users_list`,
                     url_data: Galaxy.params
                 })
             );
@@ -65,7 +70,7 @@ window.app = function app(options, bootstrapped) {
         show_roles: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}admin/roles_list`,
+                    url_base: `${getAppRoot()}admin/roles_list`,
                     url_data: Galaxy.params
                 })
             );
@@ -74,7 +79,7 @@ window.app = function app(options, bootstrapped) {
         show_groups: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}admin/groups_list`,
+                    url_base: `${getAppRoot()}admin/groups_list`,
                     url_data: Galaxy.params
                 })
             );
@@ -83,7 +88,7 @@ window.app = function app(options, bootstrapped) {
         show_repositories: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}admin_toolshed/browse_repositories`,
+                    url_base: `${getAppRoot()}admin_toolshed/browse_repositories`,
                     url_data: Galaxy.params
                 })
             );
@@ -92,7 +97,7 @@ window.app = function app(options, bootstrapped) {
         show_tool_versions: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}admin/tool_versions_list`,
+                    url_base: `${getAppRoot()}admin/tool_versions_list`,
                     url_data: Galaxy.params
                 })
             );
@@ -101,7 +106,7 @@ window.app = function app(options, bootstrapped) {
         show_quotas: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}admin/quotas_list`,
+                    url_base: `${getAppRoot()}admin/quotas_list`,
                     url_data: Galaxy.params
                 })
             );
@@ -123,7 +128,7 @@ window.app = function app(options, bootstrapped) {
             let vueMount = document.createElement("div");
             this.page.display(vueMount);
             // always set the route back to the base, i.e.
-            // `${Galaxy.root}admin/data_manager`
+            // `${getAppRoot()}admin/data_manager`
             Galaxy.debug("show_data_manager: path='" + path + "'");
             DataManagerRouter.replace(path || "/");
             new Vue({ router: DataManagerRouter, render: h => h(DataManagerView) }).$mount(vueMount);
@@ -132,7 +137,7 @@ window.app = function app(options, bootstrapped) {
         show_forms: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}forms/forms_list`,
+                    url_base: `${getAppRoot()}forms/forms_list`,
                     url_data: Galaxy.params
                 })
             );

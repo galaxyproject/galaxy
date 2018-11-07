@@ -1,5 +1,8 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
@@ -11,8 +14,6 @@ import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
-/* global $ */
-/* global Galaxy */
 // TODO: make show_message and the other utility functions importable/used
 // everywhere, instead of this global model
 /* global show_message */
@@ -107,7 +108,7 @@ export default Backbone.View.extend({
             }
             self.workflow.rectify_workflow_outputs();
             Utils.request({
-                url: `${Galaxy.root}api/workflows/${self.options.id}`,
+                url: `${getAppRoot()}api/workflows/${self.options.id}`,
                 type: "PUT",
                 data: { workflow: self.workflow.to_simple() },
                 success: function(data) {
@@ -256,7 +257,7 @@ export default Backbone.View.extend({
         // get available datatypes for post job action options
         this.datatypes = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes`,
+                url: `${getAppRoot()}api/datatypes`,
                 async: false
             }).responseText
         );
@@ -264,7 +265,7 @@ export default Backbone.View.extend({
         // get datatype mapping options
         this.datatypes_mapping = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes/mapping`,
+                url: `${getAppRoot()}api/datatypes/mapping`,
                 async: false
             }).responseText
         );
@@ -277,7 +278,7 @@ export default Backbone.View.extend({
             let _workflow_version_dropdown = {};
             let workflow_versions = JSON.parse(
                 $.ajax({
-                    url: `${Galaxy.root}api/workflows/${self.options.id}/versions`,
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
                     async: false
                 }).responseText
             );
@@ -385,14 +386,14 @@ export default Backbone.View.extend({
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
                 Run: function() {
-                    window.location = `${Galaxy.root}workflows/run?id=${self.options.id}`;
+                    window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`;
                 },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
                 },
                 "Auto Re-layout": layout_editor,
                 Download: {
-                    url: `${Galaxy.root}api/workflows/${self.options.id}/download?format=json-download`,
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
                     action: function() {}
                 },
                 Close: close_editor
@@ -425,7 +426,7 @@ export default Backbone.View.extend({
                     })
                         .done(id => {
                             window.onbeforeunload = undefined;
-                            window.location = `${Galaxy.root}workflow/editor?id=${id}`;
+                            window.location = `${getAppRoot()}workflow/editor?id=${id}`;
                             hide_modal();
                         })
                         .fail(() => {
@@ -668,7 +669,7 @@ export default Backbone.View.extend({
         var self = this;
         Utils.request({
             type: "POST",
-            url: `${Galaxy.root}api/workflows/build_module`,
+            url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
                 node.init_field_data(data);
@@ -813,7 +814,7 @@ export default Backbone.View.extend({
         node.type = type;
         node.content_id = content_id;
         var tmp = `<div><img height='16' align='middle' src='${
-            Galaxy.root
+            getAppRoot()
         }static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width

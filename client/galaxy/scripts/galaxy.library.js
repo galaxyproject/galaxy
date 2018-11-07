@@ -2,6 +2,9 @@
 // === MAIN GALAXY LIBRARY MODULE ====
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 import mod_baseMVC from "mvc/base-mvc";
@@ -71,7 +74,7 @@ var LibraryRouter = Backbone.Router.extend({
             url = `/${url}`;
         }
         if (typeof ga !== "undefined") {
-            ga("send", "pageview", `${Galaxy.root}library/list${url}`);
+            ga("send", "pageview", `${getAppRoot()}library/list${url}`);
         }
     }
 });

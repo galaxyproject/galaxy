@@ -1,13 +1,10 @@
-/* global $ */
-/* global _ */
 /* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import * as _ from "underscore";
-
-/* global Galaxy */
-/* global $ */
 
 // ============================================================================
 /** session storage for history panel preferences (and to maintain state)
@@ -114,7 +111,7 @@ var CurrentHistoryView = _super.extend(
         /** (re-)loads the user's current history & contents w/ details */
         loadCurrentHistory: function() {
             return this.loadHistory(null, {
-                url: `${Galaxy.root}history/current_history_json`
+                url: `${getAppRoot()}history/current_history_json`
             });
         },
 
@@ -125,7 +122,7 @@ var CurrentHistoryView = _super.extend(
                 return $.when();
             }
             return this.loadHistory(historyId, {
-                url: `${Galaxy.root}history/set_as_current?id=${historyId}`
+                url: `${getAppRoot()}history/set_as_current?id=${historyId}`
             });
         },
 
@@ -136,7 +133,7 @@ var CurrentHistoryView = _super.extend(
                 return $.when();
             }
             return this.loadHistory(null, {
-                url: `${Galaxy.root}history/create_new_current`
+                url: `${getAppRoot()}history/create_new_current`
             });
         },
 
