@@ -65,15 +65,15 @@ QUnit.test("App base has logging methods from utils/add-logging.js", function(as
     assert.ok(app._logNamespace === "GalaxyApp");
 });
 
-QUnit.test("App base will patch in attributes from existing Galaxy objects", function(assert) {
-    window.Galaxy = {
-        attribute: {
-            subattr: 1
-        }
-    };
-    var app = new GalaxyApp({});
-    assert.ok(typeof app.attribute === "object" && app.attribute.subattr === 1);
-});
+// QUnit.test("App base will patch in attributes from existing Galaxy objects", function(assert) {
+//     window.Galaxy = {
+//         attribute: {
+//             subattr: 1
+//         }
+//     };
+//     var app = new GalaxyApp({});
+//     assert.ok(typeof app.attribute === "object" && app.attribute.subattr === 1);
+// });
 
 QUnit.test("App base logger", function(assert) {
     var app = new GalaxyApp({});

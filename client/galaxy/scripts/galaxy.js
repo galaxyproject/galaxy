@@ -118,20 +118,11 @@ GalaxyApp.prototype._initConfig = function _initConfig(config) {
 
 /** add an option from options if the key matches an option in defaultOptions */
 GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
-    var self = this;
-    // in case req or plain script tag order has created a prev. version of the Galaxy obj...
-    if (self.options.patchExisting && patchWith) {
-        // self.debug( 'found existing Galaxy object:', patchWith );
-        // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
-        //TODO: move those attributes to more formal assignment in GalaxyApp
-        for (var k in patchWith) {
-            if (patchWith.hasOwnProperty(k)) {
-                // self.debug( '\t patching in ' + k + ' to Galaxy:', self[ k ] );
-                self[k] = patchWith[k];
-            }
-        }
-    }
+    // We don't want this behavior any-more but temporarily put a log in here
+    // so we can see when it used to run, just in case
+    console.warn("GalaxyApp._patchGalaxy, no longer want this to happen by default", patchWith);
 };
+
 
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
 GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {

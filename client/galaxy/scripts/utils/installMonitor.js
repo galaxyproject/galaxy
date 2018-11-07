@@ -68,8 +68,7 @@ export function installMonitor(globalProp, fallbackValue) {
                     let val = target[prop];
                     return val;
                 } catch (err) {
-                    console.log("Unable to retrieve property from proxy", err, target, globalProp)
-                    return undefined;
+                    logger.error(`Unable to retrieve property ${prop} from proxy ${globalProp}`, err);
                 }
             },
             set(o, prop, val) {
@@ -81,7 +80,7 @@ export function installMonitor(globalProp, fallbackValue) {
                     logger.trace();
                     target[prop] = val;
                 } catch(err) {
-                    logger.warn("Unable to write", globalProp, val);
+                    logger.error("Unable to write", globalProp, val);
                     didWrite = false;
                 }
                 logger.groupEnd();
