@@ -4,6 +4,7 @@ from .framework import (
     selenium_test,
     SeleniumTestCase,
 )
+
 from selenium.webdriver.support.ui import Select
 
 
