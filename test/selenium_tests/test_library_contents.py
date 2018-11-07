@@ -1,5 +1,8 @@
+from selenium.webdriver.support.ui import Select
+
 from .framework import (
     retry_assertion_during_transitions,
+    retry_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
@@ -31,6 +34,9 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.wait_for_absent_or_hidden(self.navigation.libraries.folder.selectors.import_modal)
 
         self.libraries_dataset_import_from_history()
+        # Need to select the right item on the dropdown
+        self._select_history_option("dataset_add_bulk", "Unnamed history")
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import_from_history_select(["1.txt"])
         # Add
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -99,3 +105,8 @@ class LibraryContentsTestCase(SeleniumTestCase):
         self.name = self._get_random_name(prefix="testcontents")
         self.libraries_index_create(self.name)
         self.libraries_open_with_name(self.name)
+
+    @retry_during_transitions
+    def _select_history_option(self, select_id, label_text):
+        select = Select(self.driver.find_element_by_id(select_id))
+        select.select_by_visible_text(label_text)
