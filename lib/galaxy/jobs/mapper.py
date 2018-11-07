@@ -52,12 +52,20 @@ class JobRunnerMapper(object):
         self.rules_module = galaxy.jobs.rules
 
         if job_config.dynamic_params is not None:
-            rules_module_name = job_config.dynamic_params['rules_module']
-            __import__(rules_module_name)
-            self.rules_module = sys.modules[rules_module_name]
+            module_name = job_config.dynamic_params['rules_module']
+            self.rules_module = self.__load_rules_module(module_name)
 
-    def __get_rule_modules(self):
-        unsorted_module_names = self.__get_rule_module_names()
+    def __load_rules_module(self, rules_module_name):
+        __import__(rules_module_name)
+        return sys.modules[rules_module_name]
+
+    def __get_child_rule_modules(self, root_rules_module):
+        """
+        Returns all matching sub modules under the given root module,
+        sorted in reverse order. The returned list will be a list of all
+        possible rule modules.
+        """
+        unsorted_module_names = self.__get_child_rule_module_names(root_rules_module)
         # Load modules in reverse order to allow hierarchical overrides
         # i.e. 000_galaxy_rules.py, 100_site_rules.py, 200_instance_rules.py
         module_names = sorted(unsorted_module_names, reverse=True)
@@ -75,12 +83,12 @@ class JobRunnerMapper(object):
                 continue
         return modules
 
-    def __get_rule_module_names(self):
-        rules_dir = self.rules_module.__path__[0]
+    def __get_child_rule_module_names(self, root_rules_module):
+        rules_dir = root_rules_module.__path__[0]
         names = []
         for fname in os.listdir(rules_dir):
             if not(fname.startswith("_")) and fname.endswith(".py"):
-                base_name = self.rules_module.__name__
+                base_name = root_rules_module.__name__
                 rule_module_name = "%s.%s" % (base_name, fname[:-len(".py")])
                 names.append(rule_module_name)
         return names
@@ -163,43 +171,61 @@ class JobRunnerMapper(object):
         dest['id'] = DYNAMIC_DESTINATION_ID
         return dest
 
-    def __determine_expand_function_name(self, destination):
+    def __find_function_by_tool_id(self, rule_modules):
         # default look for function with name matching an id of tool, unless one specified
-        expand_function_name = destination.params.get('function', None)
-        if not expand_function_name:
-            for tool_id in self.job_wrapper.tool.all_ids:
-                if self.__last_rule_module_with_function(tool_id):
-                    expand_function_name = tool_id
-                    break
-        return expand_function_name
+        for tool_id in self.job_wrapper.tool.all_ids:
+            matching_func = self.__last_matching_function_in_modules(rule_modules, tool_id)
+            if matching_func:
+                return matching_func
+        return None
 
-    def __get_expand_function(self, expand_function_name):
-        matching_rule_module = self.__last_rule_module_with_function(expand_function_name)
-        if matching_rule_module:
-            expand_function = getattr(matching_rule_module, expand_function_name)
-            return expand_function
+    def __get_expand_function(self, destination):
+        """
+        Returns the function that matches the rule. If a rules_module override
+        is specified, search within that rules_module, or default to the plugin's
+        top level rules_module.
+        """
+        rules_module_name = destination.params.get('rules_module')
+        rule_modules = self.__get_child_modules_or_defaults(rules_module_name)
+        expand_function = None
+        expand_function_name = destination.params.get('function')
+        if expand_function_name:
+            expand_function = self.__last_matching_function_in_modules(
+                rule_modules, expand_function_name)
+            if not expand_function:
+                message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % expand_function_name
+                raise Exception(message)
         else:
-            message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % (expand_function_name)
-            raise Exception(message)
+            expand_function = self.__find_function_by_tool_id(rule_modules)
+            if not expand_function:
+                message = ERROR_MESSAGE_NO_RULE_FUNCTION % destination
+                raise Exception(message)
+        return expand_function
 
-    def __last_rule_module_with_function(self, function_name):
+    def __get_child_modules_or_defaults(self, rules_module_name):
+        """
+        Returns the child rules under the given rules_module_name or default
+        to returning children of the top-level rules module for the plugin
+        """
+        if rules_module_name:
+            rules_module = self.__load_rules_module(rules_module_name)
+        else:
+            rules_module = self.rules_module
+        return self.__get_child_rule_modules(rules_module)
+
+    def __last_matching_function_in_modules(self, rule_modules, function_name):
         # self.rule_modules is sorted in reverse order, so find first
-        # wiht function
-        for rule_module in self.__get_rule_modules():
+        # with function
+        for rule_module in rule_modules:
             if hasattr(rule_module, function_name):
-                return rule_module
+                return getattr(rule_module, function_name)
         return None
 
     def __handle_dynamic_job_destination(self, destination):
         expand_type = destination.params.get('type', "python")
         expand_function = None
         if expand_type == "python":
-            expand_function_name = self.__determine_expand_function_name(destination)
-            if not expand_function_name:
-                message = ERROR_MESSAGE_NO_RULE_FUNCTION % destination
-                raise Exception(message)
-
-            expand_function = self.__get_expand_function(expand_function_name)
+            expand_function = self.__get_expand_function(destination)
         elif expand_type in STOCK_RULES:
             expand_function = STOCK_RULES[expand_type]
         else:
