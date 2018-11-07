@@ -1107,6 +1107,11 @@ non-optional composite inputs must be specified as part of the ``param``.
         <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="tags" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestOutput">
     <xs:annotation>
