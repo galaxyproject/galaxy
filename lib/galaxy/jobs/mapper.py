@@ -1,7 +1,8 @@
+import importlib
 import inspect
 import logging
 import os
-import sys
+import pkgutil
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
@@ -53,45 +54,35 @@ class JobRunnerMapper(object):
 
         if job_config.dynamic_params is not None:
             module_name = job_config.dynamic_params['rules_module']
-            self.rules_module = self.__load_rules_module(module_name)
+            self.rules_module = importlib.import_module(module_name)
 
-    def __load_rules_module(self, rules_module_name):
-        __import__(rules_module_name)
-        return sys.modules[rules_module_name]
+    def __import_submodules(self, package, recursive=False):
+        """ Import all submodules of a module
 
-    def __get_child_rule_modules(self, root_rules_module):
+        :param package: package (name or actual module)
+        :type package: str | module
+        :rtype: [module]
         """
-        Returns all matching sub modules under the given root module,
-        sorted in reverse order. The returned list will be a list of all
-        possible rule modules.
-        """
-        unsorted_module_names = self.__get_child_rule_module_names(root_rules_module)
-        # Load modules in reverse order to allow hierarchical overrides
-        # i.e. 000_galaxy_rules.py, 100_site_rules.py, 200_instance_rules.py
-        module_names = sorted(unsorted_module_names, reverse=True)
+        if isinstance(package, str):
+            package = importlib.import_module(package)
         modules = []
-        for rule_module_name in module_names:
+        for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
+            full_name = package.__name__ + '.' + name
             try:
-                module = __import__(rule_module_name)
-                for comp in rule_module_name.split(".")[1:]:
-                    module = getattr(module, comp)
+                module = importlib.import_module(full_name)
                 modules.append(module)
+                if recursive and is_pkg:
+                    modules.update(self.__import_submodules(module))
             except BaseException as exception:
                 exception_str = str(exception)
-                message = "%s rule module could not be loaded: %s" % (rule_module_name, exception_str)
+                message = "%s rule module could not be loaded: %s" % (name, exception_str)
                 log.debug(message)
                 continue
         return modules
 
-    def __get_child_rule_module_names(self, root_rules_module):
-        rules_dir = root_rules_module.__path__[0]
-        names = []
-        for fname in os.listdir(rules_dir):
-            if not(fname.startswith("_")) and fname.endswith(".py"):
-                base_name = root_rules_module.__name__
-                rule_module_name = "%s.%s" % (base_name, fname[:-len(".py")])
-                names.append(rule_module_name)
-        return names
+    def __import_submodules_in_reverse_order(self, package):
+        return sorted(self.__import_submodules(package),
+                      reverse=True, key=lambda m: m.__name__)
 
     def __invoke_expand_function(self, expand_function, destination_params):
         function_arg_names = inspect.getargspec(expand_function).args
@@ -186,7 +177,7 @@ class JobRunnerMapper(object):
         top level rules_module.
         """
         rules_module_name = destination.params.get('rules_module')
-        rule_modules = self.__get_child_modules_or_defaults(rules_module_name)
+        rule_modules = self.__get_rule_modules_or_defaults(rules_module_name)
         expand_function = None
         expand_function_name = destination.params.get('function')
         if expand_function_name:
@@ -202,16 +193,16 @@ class JobRunnerMapper(object):
                 raise Exception(message)
         return expand_function
 
-    def __get_child_modules_or_defaults(self, rules_module_name):
+    def __get_rule_modules_or_defaults(self, rules_module_name):
         """
-        Returns the child rules under the given rules_module_name or default
-        to returning children of the top-level rules module for the plugin
+        Returns the rules under the given rules_module_name or default
+        to returning the rules of the top-level rules module for the plugin
         """
         if rules_module_name:
-            rules_module = self.__load_rules_module(rules_module_name)
+            rules_module = importlib.import_module(rules_module_name)
         else:
             rules_module = self.rules_module
-        return self.__get_child_rule_modules(rules_module)
+        return self.__import_submodules_in_reverse_order(rules_module)
 
     def __last_matching_function_in_modules(self, rule_modules, function_name):
         # self.rule_modules is sorted in reverse order, so find first
