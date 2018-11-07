@@ -109,7 +109,7 @@ def validate_jsonrpc_request(request, regular_methods, notification_methods):
                                                            data=str(e)))
     try:
         assert request['method'] in (regular_methods + notification_methods)
-    except AssertionError as e:
+    except AssertionError:
         return False, request, jsonrpc_response(request=request,
                                                 error=dict(code=-32601,
                                                            message='Method not found',
@@ -142,14 +142,14 @@ def validate_jsonrpc_response(response, id=None):
                 'The "code" member of the "error" object in the Response is missing or not an integer.'
             assert 'message' in response, \
                 'The "message" member of the "error" object in the Response is missing.'
-    except Exception as e:
-        log.error('Response was not valid JSON-RPC: %s' % str(e))
+    except Exception:
+        log.exception('Response was not valid JSON-RPC')
         log.debug('Response was: %s' % response)
         return False, response
     if id is not None:
         try:
             assert 'id' in response and response['id'] == id
-        except Exception as e:
+        except Exception:
             log.error('The response id "%s" does not match the request id "%s"' % (response['id'], id))
             return False, response
     return True, response

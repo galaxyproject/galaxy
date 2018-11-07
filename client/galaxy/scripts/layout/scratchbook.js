@@ -2,9 +2,9 @@
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 import Frames from "mvc/ui/ui-frames";
-import DATA from "mvc/dataset/data";
+import { Dataset, createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
 import visualization from "viz/visualization";
-import trackster from "viz/trackster";
+import { TracksterUI } from "viz/trackster";
 import _l from "utils/localization";
 
 /* global Galaxy */
@@ -145,7 +145,7 @@ export default Backbone.View.extend({
 
     _loadDataset: function(dataset_id, callback) {
         var self = this;
-        var dataset = new DATA.Dataset({ id: dataset_id });
+        var dataset = new Dataset({ id: dataset_id });
         $.when(dataset.fetch()).then(() => {
             var is_tabular = _.find(
                 ["tabular", "interval"],
@@ -162,8 +162,8 @@ export default Backbone.View.extend({
                     ? {
                           title: title,
                           url: null,
-                          content: DATA.createTabularDatasetChunkedView({
-                              model: new DATA.TabularDataset(dataset.toJSON()),
+                          content: createTabularDatasetChunkedView({
+                              model: new TabularDataset(dataset.toJSON()),
                               embedded: true,
                               height: "100%"
                           }).$el
@@ -182,7 +182,7 @@ export default Backbone.View.extend({
         var self = this;
         var viz = new visualization.Visualization({ id: viz_id });
         $.when(viz.fetch()).then(() => {
-            var ui = new trackster.TracksterUI(Galaxy.root);
+            var ui = new TracksterUI(Galaxy.root);
 
             // Construct frame config based on dataset's type.
             var frame_config = {

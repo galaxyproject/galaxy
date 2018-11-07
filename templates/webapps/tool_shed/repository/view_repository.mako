@@ -56,7 +56,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ## ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 
@@ -167,7 +167,7 @@
             <b>Times cloned / installed:</b>
             ${repository.times_downloaded}
         </div>
-        %if trans.user_is_admin():
+        %if trans.user_is_admin:
             <div class="form-row">
                 <b>Location:</b>
                 ${repository.repo_path( trans.app ) | h}

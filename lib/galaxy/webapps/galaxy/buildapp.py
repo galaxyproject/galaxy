@@ -101,6 +101,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
 
     webapp.add_client_route('/admin/data_tables', 'admin')
     webapp.add_client_route('/admin/data_types', 'admin')
+    webapp.add_client_route('/admin/data_manager{path_info:.*}', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
@@ -223,6 +224,11 @@ def populate_api_routes(webapp, app):
                           controller="history_contents",
                           action="update_permissions",
                           conditions=dict(method=["PUT"]))
+    webapp.mapper.connect("history_contents_extra_files",
+                          "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
+                          controller="datasets",
+                          action="extra_files",
+                          conditions=dict(method=["GET"]))
     webapp.mapper.connect("history_contents_metadata_file",
                           "/api/histories/{history_id}/contents/{history_content_id}/metadata_file",
                           controller="datasets",
@@ -256,10 +262,10 @@ def populate_api_routes(webapp, app):
                           controller='cloud',
                           action='upload',
                           conditions=dict(method=["POST"]))
-    webapp.mapper.connect('cloud_storage_download',
-                          '/api/cloud/storage/download',
+    webapp.mapper.connect('cloud_storage_send',
+                          '/api/cloud/storage/send',
                           controller='cloud',
-                          action='download',
+                          action='send',
                           conditions=dict(method=["POST"]))
 
     _add_item_tags_controller(webapp,
@@ -295,8 +301,11 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource('group', 'groups', path_prefix='/api')
     webapp.mapper.resource_with_deleted('quota', 'quotas', path_prefix='/api')
 
-    webapp.mapper.connect('/api/cloud/authz/', action='index', controller='cloudauthz')
-    webapp.mapper.connect('/api/cloud/authz/create', action='create', controller='cloudauthz')
+    webapp.mapper.connect('/api/cloud/authz/', action='index', controller='cloudauthz', conditions=dict(method=["GET"]))
+    webapp.mapper.connect('/api/cloud/authz/',
+                          action='create',
+                          controller='cloudauthz',
+                          conditions=dict(method=["POST"]))
 
     webapp.mapper.connect('get_custom_builds_metadata',
                           '/api/histories/{id}/custom_builds_metadata',

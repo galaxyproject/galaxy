@@ -1,13 +1,13 @@
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
 import util from "viz/trackster/util";
 import slotting from "viz/trackster/slotting";
 import painters from "viz/trackster/painters";
 import filters_mod from "viz/trackster/filters";
-import data from "mvc/dataset/data";
+import { Dataset } from "mvc/dataset/data";
 import tools_mod from "mvc/tool/tools";
 import config_mod from "utils/config";
 import bbi from "viz/bbi-data-manager";
@@ -2037,7 +2037,7 @@ var TracksterToolView = Backbone.View.extend({
 
         // Run tool.
         this.run(url_params, new_track, track_data => {
-            new_track.set_dataset(new data.Dataset(track_data));
+            new_track.set_dataset(new Dataset(track_data));
             new_track.tiles_div.text("Running job.");
             new_track.init();
         });
@@ -2342,8 +2342,7 @@ var Track = function(view, container, obj_dict) {
     this.dataset = null;
     if (obj_dict.dataset) {
         // Dataset can be a Backbone model or a dict that can be used to create a model.
-        this.dataset =
-            obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset);
+        this.dataset = obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new Dataset(obj_dict.dataset);
     }
     this.dataset_check_type = "converted_datasets_state";
     this.data_url_extra_params = {};

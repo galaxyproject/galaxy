@@ -1,8 +1,6 @@
-import $ from "jquery";
-import "bootstrap";
-import * as _ from "underscore";
+/* global Galaxy, $, _ */
+import { GalaxyApp } from "galaxy";
 import decodeUriComponent from "decode-uri-component";
-import GalaxyApp from "galaxy";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
 import HistoryPanel from "./panels/history-panel";
@@ -31,8 +29,6 @@ import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import Vue from "vue";
 
-/* global Galaxy */
-
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
  *  * a left tool menu to allow the user to load tools in the center panel
@@ -45,7 +41,7 @@ import Vue from "vue";
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp(options, bootstrapped);
     Galaxy.debug("analysis app");
 
     /** Routes */
@@ -88,6 +84,13 @@ window.app = function app(options, bootstrapped) {
 
         authenticate: function(args, name) {
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
+        },
+
+        _display_vue_helper: function(component, props) {
+            let instance = Vue.extend(component);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance(props).$mount(vm);
         },
 
         show_tours: function(tour_id) {
@@ -145,10 +148,14 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_workflows_published: function() {
+            var userFilter = QueryStringParsing.get("f-username");
             this.page.display(
                 new GridView({
                     url_base: `${Galaxy.root}workflow/list_published`,
-                    active_tab: "shared"
+                    active_tab: "shared",
+                    url_data: {
+                        "f-username": userFilter == null ? "" : userFilter
+                    }
                 })
             );
         },
@@ -201,10 +208,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_histories_import: function() {
-            var historyImportInstance = Vue.extend(HistoryImport);
-            var vm = document.createElement("div");
-            this.page.display(vm);
-            new historyImportInstance().$mount(vm);
+            this._display_vue_helper(HistoryImport);
         },
 
         show_histories_permissions: function() {

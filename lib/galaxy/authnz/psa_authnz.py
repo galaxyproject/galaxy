@@ -123,15 +123,15 @@ class PSAAuthnz(IdentityProvider):
         self.config['user'] = user
 
     def authenticate(self, trans):
-        on_the_fly_config(trans)
-        strategy = Strategy(trans, Storage, self.config)
+        on_the_fly_config(trans.sa_session)
+        strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         return do_auth(backend)
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
-        on_the_fly_config(trans)
+        on_the_fly_config(trans.sa_session)
         self.config[setting_name('LOGIN_REDIRECT_URL')] = login_redirect_url
-        strategy = Strategy(trans, Storage, self.config)
+        strategy = Strategy(trans.request, trans.session, Storage, self.config)
         strategy.session_set(BACKENDS_NAME[self.config['provider']] + '_state', state_token)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         redirect_url = do_complete(
@@ -142,10 +142,10 @@ class PSAAuthnz(IdentityProvider):
         return redirect_url, self.config.get('user', None)
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
-        on_the_fly_config(trans)
+        on_the_fly_config(trans.sa_session)
         self.config[setting_name('DISCONNECT_REDIRECT_URL')] =\
             disconnect_redirect_url if disconnect_redirect_url is not None else ()
-        strategy = Strategy(trans, Storage, self.config)
+        strategy = Strategy(trans.request, trans.session, Storage, self.config)
         backend = self._load_backend(strategy, self.config['redirect_uri'])
         response = do_disconnect(backend, self._get_current_user(trans), association_id)
         if isinstance(response, six.string_types):
@@ -155,12 +155,11 @@ class PSAAuthnz(IdentityProvider):
 
 class Strategy(BaseStrategy):
 
-    def __init__(self, trans, storage, config, tpl=None):
-        self.trans = trans
-        self.request = trans.request
-        self.session = trans.session if trans.session else {}
+    def __init__(self, request, session, storage, config, tpl=None):
+        self.request = request
+        self.session = session if session else {}
         self.config = config
-        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.trans.request.host.startswith('https:') else False
+        self.config['SOCIAL_AUTH_REDIRECT_IS_HTTPS'] = True if self.request and self.request.host.startswith('https:') else False
         self.config['SOCIAL_AUTH_GOOGLE_OPENIDCONNECT_EXTRA_DATA'] = ['id_token']
         super(Strategy, self).__init__(storage, tpl)
 
@@ -196,9 +195,11 @@ class Strategy(BaseStrategy):
         path = path or ''
         if path.startswith('http://') or path.startswith('https://'):
             return path
-        return \
-            self.trans.request.host +\
-            '/authn' + ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
+        if self.request:
+            return \
+                self.request.host +\
+                '/authnz' + ('/' + self.config.get('provider')) if self.config.get('provider', None) is not None else ''
+        return path
 
     def redirect(self, url):
         return url
@@ -235,12 +236,12 @@ class Storage(object):
         return exception.__class__ is IntegrityError
 
 
-def on_the_fly_config(trans):
-    trans.app.model.PSACode.trans = trans
-    trans.app.model.UserAuthnzToken.trans = trans
-    trans.app.model.PSANonce.trans = trans
-    trans.app.model.PSAPartial.trans = trans
-    trans.app.model.PSAAssociation.trans = trans
+def on_the_fly_config(sa_session):
+    PSACode.sa_session = sa_session
+    UserAuthnzToken.sa_session = sa_session
+    PSANonce.sa_session = sa_session
+    PSAPartial.sa_session = sa_session
+    PSAAssociation.sa_session = sa_session
 
 
 def contains_required_data(response=None, is_new=False, **kwargs):

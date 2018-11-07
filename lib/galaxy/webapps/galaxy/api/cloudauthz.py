@@ -59,7 +59,7 @@ class CloudAuthzController(BaseAPIController):
     @expose_api
     def create(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/authz/create
+        * POST /api/cloud/authz
             Request to store the payload as a cloudauthz (cloud authorization) configuration for a user.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
@@ -123,7 +123,7 @@ class CloudAuthzController(BaseAPIController):
             raise e
 
         # No two authorization configuration with
-        # exact same key/value should not exist.
+        # exact same key/value should exist.
         for ca in trans.user.cloudauthzs:
             if ca.equals(trans.user.id, provider, authn_id, config):
                 log.debug("Rejected user `{}`'s request to create cloud authorization because a similar config "
@@ -142,8 +142,7 @@ class CloudAuthzController(BaseAPIController):
             log.debug('Created a new cloudauthz record for the user id `{}` '.format(str(trans.user.id)))
             trans.response.status = '200'
             return view
-
         except Exception as e:
-            log.exception(msg_template.format(e.message))
+            log.exception(msg_template.format("exception while creating the new cloudauthz record"))
             raise InternalServerError('An unexpected error has occurred while responding to the create request of the '
                                       'cloudauthz API.' + str(e))

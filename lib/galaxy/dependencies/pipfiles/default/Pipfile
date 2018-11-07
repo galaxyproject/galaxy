@@ -41,6 +41,7 @@ bdbag = "*"
 bleach = "*"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}
+isa-rwval = "*"
 boltons = "*"
 Paste = "*"
 docutils = "*"
@@ -73,6 +74,7 @@ paramiko = "*"
 python-genomespaceclient = "<2.0"
 social_auth_core = {version = "==1.5.0", extras = ['openidconnect']}
 cloudauthz = "<=0.2.0"
+gxformat2 = "*"
 
 [requires]
 python_version = "2.7"

@@ -43,42 +43,42 @@ class ToolsUploadTestCase(api.ApiTestCase):
     def test_upload_posix_newline_fixes_by_default(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content)
-        self.assertEquals(result_content, ONE_TO_SIX_WITH_TABS)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
 
     def test_fetch_posix_unaltered(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch")
-        self.assertEquals(result_content, ONE_TO_SIX_ON_WINDOWS)
+        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
 
     def test_upload_disable_posix_fix(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, to_posix_lines=None)
-        self.assertEquals(result_content, windows_content)
+        self.assertEqual(result_content, windows_content)
 
     def test_fetch_post_lines_option(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch", to_posix_lines=True)
-        self.assertEquals(result_content, ONE_TO_SIX_WITH_TABS)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
 
     def test_upload_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table)
-        self.assertEquals(result_content, table)
+        self.assertEqual(result_content, table)
 
     def test_fetch_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api='fetch')
-        self.assertEquals(result_content, table)
+        self.assertEqual(result_content, table)
 
     def test_upload_tab_to_space(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, space_to_tab="Yes")
-        self.assertEquals(result_content, ONE_TO_SIX_WITH_TABS)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
 
     def test_fetch_tab_to_space(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
-        self.assertEquals(result_content, ONE_TO_SIX_WITH_TABS)
+        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
 
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -158,42 +158,42 @@ class ToolsUploadTestCase(api.ApiTestCase):
         rdata_path = TestDataResolver().get_filename("1.RData")
         with open(rdata_path, "rb") as fh:
             rdata_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEquals(rdata_metadata["file_ext"], "rdata")
+        self.assertEqual(rdata_metadata["file_ext"], "rdata")
 
     @skip_without_datatype("csv")
     def test_csv_upload(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="csv")
-        self.assertEquals(csv_metadata["file_ext"], "csv")
+        self.assertEqual(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("csv")
     def test_csv_upload_auto(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEquals(csv_metadata["file_ext"], "csv")
+        self.assertEqual(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("csv")
     def test_csv_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="csv", to_posix_lines=True)
-        self.assertEquals(csv_metadata["file_ext"], "csv")
+        self.assertEqual(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("csv")
     def test_csv_sniff_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="auto", to_posix_lines=True)
-        self.assertEquals(csv_metadata["file_ext"], "csv")
+        self.assertEqual(csv_metadata["file_ext"], "csv")
 
     @skip_without_datatype("tiff")
     def test_image_upload_auto(self):
         tiff_path = TestDataResolver().get_filename("1.tiff")
         with open(tiff_path, "rb") as fh:
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEquals(tiff_metadata["file_ext"], "tiff")
+        self.assertEqual(tiff_metadata["file_ext"], "tiff")
 
     @skip_without_datatype("velvet")
     def test_composite_datatype(self):
@@ -239,6 +239,14 @@ class ToolsUploadTestCase(api.ApiTestCase):
 
             roadmaps_content = self._get_roadmaps_content(history_id, dataset)
             assert roadmaps_content.strip() == "roadmaps\ncontent", roadmaps_content
+
+    @skip_without_datatype("isa-tab")
+    def test_composite_datatype_isatab(self):
+        isatab_zip_path = TestDataResolver().get_filename("MTBLS6.zip")
+        details = self._upload_and_get_details(open(isatab_zip_path, "rb"), file_type="isa-tab")
+        assert details["state"] == "ok"
+        assert details["file_ext"] == "isa-tab", details
+        assert details["file_size"] == 85, details
 
     def test_upload_dbkey(self):
         with self.dataset_populator.test_history() as history_id:
@@ -454,6 +462,27 @@ class ToolsUploadTestCase(api.ApiTestCase):
 
             content = self.dataset_populator.get_history_dataset_content(history_id, dataset=datasets[2])
             assert content == ONE_TO_SIX_WITH_TABS
+
+    def test_upload_force_composite(self):
+        with self.dataset_populator.test_history() as history_id:
+            payload = self.dataset_populator.upload_payload(history_id, "Test123",
+                extra_inputs={
+                    "files_1|url_paste": "CompositeContent",
+                    "files_1|NAME": "composite",
+                    "file_count": "2",
+                    "force_composite": "True",
+                }
+            )
+            run_response = self.dataset_populator.tools_post(payload)
+            self.dataset_populator.wait_for_tool_run(history_id, run_response)
+            dataset = run_response.json()["outputs"][0]
+            content = self.dataset_populator.get_history_dataset_content(history_id, dataset=dataset)
+            assert content.strip() == "Test123"
+            extra_files = self.dataset_populator.get_history_dataset_extra_files(history_id, dataset_id=dataset["id"])
+            assert len(extra_files) == 1, extra_files  # [{u'path': u'1', u'class': u'File'}]
+            extra_file = extra_files[0]
+            assert extra_file["path"] == "composite"
+            assert extra_file["class"] == "File"
 
     def test_upload_from_invalid_url(self):
         history_id, new_dataset = self._upload('https://usegalaxy.org/bla123', assert_ok=False)

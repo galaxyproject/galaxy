@@ -271,11 +271,18 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: iuc,bioconda,conda-forge,defaults
+        default: iuc,conda-forge,bioconda,defaults
         required: false
         desc: |
           conda channels to enable by default
           (https://conda.io/docs/user-guide/tasks/manage-channels.html)
+
+      conda_use_local:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Use locally-built conda packages.
 
       conda_auto_install:
         type: bool
@@ -358,7 +365,7 @@ mapping:
 
       watch_job_rules:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of dynamic job rules. If changes are
@@ -1556,12 +1563,17 @@ mapping:
 
       monitor_thread_join_timeout:
         type: int
-        default: 5
+        default: 30
         required: false
         desc: |
           When stopping Galaxy cleanly, how much time to give various monitoring/polling
           threads to finish before giving up on joining them. Set to 0 to disable this and
-          restore the pre-18.01 default behavior.
+          terminate without waiting. Among others, these threads include the job handler
+          workers, which are responsible for preparing/submitting and collecting/finishing
+          jobs, and which can cause job errors if not shut down cleanly. If using
+          supervisord, consider also increasing the value of `stopwaitsecs`. If using job
+          handler mules, consider also setting the `mule-reload-mercy` uWSGI option. See
+          the Galaxy Admin Documentation for more.
 
       use_heartbeat:
         type: bool
@@ -1602,7 +1614,7 @@ mapping:
 
       sentry_sloreq_threshold:
         type: float
-        default: 0
+        default: 0.0
         required: false
         desc: |
           Sentry slow request logging.  Requests slower than the threshold
@@ -2099,6 +2111,13 @@ mapping:
         desc: |
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
+
+      enable_beta_workflow_format:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable import and export of workflows as Galaxy Format 2 workflows.
 
       force_beta_workflow_scheduled_min_steps:
         type: int

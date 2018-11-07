@@ -85,8 +85,8 @@ def main():
         pattern = pattern.replace(value, key)
 
     # match filename and invert flag
-    fileRegEx = re.compile("^[A-Za-z0-9./\-_]+$")
-    invertRegEx = re.compile("(true)|(false)")
+    fileRegEx = re.compile(r"^[A-Za-z0-9./\-_]+$")
+    invertRegEx = re.compile(r"(true)|(false)")
 
     # verify that filename and inversion flag are in the correct format
     if not fileRegEx.match(outputfile):

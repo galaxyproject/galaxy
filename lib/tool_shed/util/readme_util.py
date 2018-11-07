@@ -43,8 +43,8 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         f = open(full_path_to_readme_file, 'r')
                         text = unicodify(f.read())
                         f.close()
-                    except Exception as e:
-                        log.exception("Error reading README file '%s' from disk", str(relative_path_to_readme_file))
+                    except Exception:
+                        log.exception("Error reading README file '%s' from disk", relative_path_to_readme_file)
                         text = None
                     if text:
                         text_of_reasonable_length = basic_util.size_string(text)
@@ -56,7 +56,7 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                                 text_of_reasonable_length = suc.set_image_paths(app,
                                                                                 app.security.encode_id(repository.id),
                                                                                 text_of_reasonable_length)
-                            except Exception as e:
+                            except Exception:
                                 log.exception("Exception in build_readme_files_dict, so images may not be properly displayed")
                             finally:
                                 lock.release()
@@ -81,9 +81,8 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                             try:
                                 text = unicodify(fctx.data())
                                 readme_files_dict[readme_file_name] = basic_util.size_string(text)
-                            except Exception as e:
-                                log.exception("Error reading README file '%s' from repository manifest: %s" %
-                                              (str(relative_path_to_readme_file), str(e)))
+                            except Exception:
+                                log.exception("Error reading README file '%s' from repository manifest", relative_path_to_readme_file)
     return readme_files_dict
 
 

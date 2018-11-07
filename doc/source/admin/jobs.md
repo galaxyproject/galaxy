@@ -111,6 +111,21 @@ destination
 
 **Note:** Currently, failure conditions for memory limits and walltime are only implemented for the [Slurm](cluster.html) job runner plugin. Contributions for other implementations would be greatly appreciated! An example job configuration and an always-fail job runner plugin for development [can be found in this gist](https://gist.github.com/natefoo/361414fbca3c0ea63aa5).
 
+
+### Running jobs in containers
+
+Galaxy can be configured to run jobs in container runtimes. Currently the two supported runtimes are [Docker](https://www.docker.com) and [Singularity](https://www.sylabs.io/). Each ``<destination>`` can enable container support
+with ``<param id="docker_enabled">true</param>`` and/or ``<param id="singularity_enabled">true</param>``, as documented
+in the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced).
+In the case of Docker, containers are run using **sudo** unless ``<param id="docker_sudo">false</param>`` is specified, thus
+the user that Galaxy runs as should be able to run ``sudo docker`` without a password prompt for Docker containers to
+work.
+
+The images used for containers can either be specified explicitely in the ``<destination>`` using the *docker_default_container_id*, *docker_container_id_override*, *singularity_default_container_id* and
+*singularity_container_id_override* parameters, but (perhaps more commonly) the image to use can be derived from the
+tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
+tool using a ``<container>`` tag in the ``<requirements>`` section. 
+
 ### Macros
 
 The job configuration XML file may contain any number of macro definitions using the same

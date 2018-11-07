@@ -178,13 +178,13 @@ class Cloud(ObjectStore):
                 bucket = self.conn.storage.buckets.create(bucket_name)
             log.debug("Using cloud ObjectStore with bucket '%s'", bucket.name)
             return bucket
-        except InvalidNameException as e:
-            log.exception("Invalid bucket name -- unable to continue. {}".format(e.message))
+        except InvalidNameException:
+            log.exception("Invalid bucket name -- unable to continue")
             raise
-        except Exception as e:
+        except Exception:
             # These two generic exceptions will be replaced by specific exceptions
             # once proper exceptions are exposed by CloudBridge.
-            log.exception("Could not get bucket '{}'. {}".format(bucket_name, e.message))
+            log.exception("Could not get bucket '{}'".format(bucket_name))
         raise Exception
 
     def _fix_permissions(self, rel_path):

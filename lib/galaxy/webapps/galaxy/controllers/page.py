@@ -305,7 +305,7 @@ class _PageContentProcessor(HTMLParser, object):
     Processes page content to produce HTML that is suitable for display.
     For now, processor renders embedded objects.
     """
-    bare_ampersand = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
+    bare_ampersand = re.compile(r"&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
     elements_no_end_tag = set([
         'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame',
         'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',

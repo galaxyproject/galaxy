@@ -16,7 +16,7 @@ class RBACPermissionFailedException(galaxy.exceptions.InsufficientPermissionsExc
 
 class RBACPermission(object):
     """
-    Base class for wrangling/controlling the permissions ORM models (\*Permissions, Roles)
+    Base class for wrangling/controlling the permissions ORM models (*Permissions, Roles)
     that control which users can perform certain actions on their associated models
     (Libraries, Datasets).
     """
@@ -173,7 +173,7 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
 
     # ---- interface
     def is_permitted(self, dataset, user, trans=None):
-        if trans and trans.user_is_admin():
+        if trans and trans.user_is_admin:
             return True
 
         # anonymous users cannot manage permissions on datasets
@@ -232,7 +232,7 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
 
     # ---- interface
     def is_permitted(self, dataset, user, trans=None):
-        if trans and trans.user_is_admin():
+        if trans and trans.user_is_admin:
             return True
 
         current_roles = self._roles(dataset)

@@ -2,6 +2,7 @@
 API operations on the contents of a history dataset.
 """
 import logging
+import os
 
 from six import string_types
 
@@ -13,6 +14,9 @@ from galaxy import (
     web
 )
 from galaxy.datatypes import dataproviders
+from galaxy.util.path import (
+    safe_walk
+)
 from galaxy.visualization.data_providers.genome import (
     BamDataProvider,
     FeatureLocationIndexDataProvider,
@@ -301,6 +305,25 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         data = data_provider.get_data(**kwargs)
 
         return data
+
+    @web.expose_api_anonymous
+    def extra_files(self, trans, history_content_id, history_id, **kwd):
+        """
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/extra_files
+        Generate list of extra files.
+        """
+        decoded_content_id = self.decode_id(history_content_id)
+
+        hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
+        extra_files_path = hda.extra_files_path
+        rval = []
+        for root, directories, files in safe_walk(extra_files_path):
+            for directory in directories:
+                rval.append({"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)})
+            for file in files:
+                rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
+
+        return rval
 
     @web.expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,

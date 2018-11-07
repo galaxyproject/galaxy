@@ -11,7 +11,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ## ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 
@@ -21,9 +21,9 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Installed tool shed repository '${repository.name|h}'</div>
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-header">Installed tool shed repository '${repository.name|h}'</div>
+    <div class="card-body">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             <div class="form-row">
                 <label>Tool shed:</label>

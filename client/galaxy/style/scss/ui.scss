@@ -24,6 +24,11 @@
     transform: rotate(45deg);
 }
 
+// utility class from: https://github.com/twbs/bootstrap/pull/27268
+.overflow-auto {
+    overflow: auto !important;
+}
+
 // default margins
 $ui-margin-vertical: $margin-v * 0.25;
 $ui-margin-vertical-large: $margin-v * 0.5;

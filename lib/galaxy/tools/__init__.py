@@ -107,6 +107,7 @@ MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
 GALAXY_LIB_TOOLS_UNVERSIONED = [
     "upload1",
+    "send_to_cloud",
     "__DATA_FETCH__",
     # Legacy tools bundled with Galaxy.
     "vcf_to_maf_customtrack1",
@@ -138,6 +139,7 @@ GALAXY_LIB_TOOLS_UNVERSIONED = [
     "CONVERTER_maf_to_fasta_0",
     "CONVERTER_maf_to_interval_0",
     "CONVERTER_wiggle_to_interval_0",
+    "CONVERTER_tar_to_directory",
     # Tools improperly migrated to the tool shed (devteam)
     "qualityFilter",
     "winSplitter",
@@ -1703,7 +1705,7 @@ class Tool(Dictifiable):
             tool_help = tool.help._source
             # Check each line of the rendered tool help for an image tag that points to a location under static/
             for help_line in tool_help.split('\n'):
-                image_regex = re.compile('img alt="[^"]+" src="\${static_path}/([^"]+)"')
+                image_regex = re.compile(r'img alt="[^"]+" src="\${static_path}/([^"]+)"')
                 matches = re.search(image_regex, help_line)
                 if matches is not None:
                     tool_help_image = matches.group(1)
@@ -1813,7 +1815,7 @@ class Tool(Dictifiable):
             }
 
         # If an admin user, expose the path to the actual tool config XML file.
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             tool_dict['config_file'] = os.path.abspath(self.config_file)
 
         # Add link details.
@@ -1968,9 +1970,9 @@ class Tool(Dictifiable):
                     tool_dict['value'] = input.value_to_basic(state_inputs.get(input.name, initial_value), self.app, use_security=True)
                     tool_dict['default_value'] = input.value_to_basic(initial_value, self.app, use_security=True)
                     tool_dict['text_value'] = input.value_to_display_text(tool_dict['value'])
-                except Exception as e:
+                except Exception:
                     tool_dict = input.to_dict(request_context)
-                    log.exception('tools::to_json() - Skipping parameter expansion \'%s\': %s.' % (input.name, e))
+                    log.exception("tools::to_json() - Skipping parameter expansion '%s'", input.name)
                     pass
             if input_index >= len(group_inputs):
                 group_inputs.append(tool_dict)
@@ -2760,7 +2762,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 dce_object = dce.element_object
                 add_copied_value_to_new_elements(new_labels[i], dce_object)
         for key in new_elements.keys():
-            if not re.match("^[\w\-_]+$", key):
+            if not re.match(r"^[\w\-_]+$", key):
                 raise Exception("Invalid new colleciton identifier [%s]" % key)
         self._add_datasets_to_history(history, itervalues(new_elements))
         output_collections.create_collection(

@@ -5,6 +5,12 @@ import logging
 import uuid
 from collections import namedtuple
 
+from gxformat2 import (
+    from_galaxy_native,
+    ImporterGalaxyInterface,
+    ImportOptions,
+    python_to_workflow,
+)
 from six import string_types
 from sqlalchemy import and_
 from sqlalchemy.orm import joinedload, subqueryload
@@ -81,7 +87,7 @@ class WorkflowsManager(object):
         stored_workflow = self.get_stored_workflow(trans, workflow_id)
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin() and not stored_workflow.published:
+        if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.published:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is not owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
@@ -109,7 +115,7 @@ class WorkflowsManager(object):
         if isinstance(has_workflow, model.WorkflowInvocation):
             # We use the the owner of the history that is associated to the invocation as a proxy
             # for the owner of the invocation.
-            if trans.user != has_workflow.history.user and not trans.user_is_admin():
+            if trans.user != has_workflow.history.user and not trans.user_is_admin:
                 raise exceptions.ItemOwnershipException()
             else:
                 return True
@@ -121,7 +127,7 @@ class WorkflowsManager(object):
         else:
             stored_workflow = has_workflow
 
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.user != trans.user and not trans.user_is_admin:
             if check_ownership:
                 raise exceptions.ItemOwnershipException()
             # else check_accessible...
@@ -235,6 +241,27 @@ class WorkflowContentsManager(UsesAnnotations):
         self.app = app
         self._resource_mapper_function = get_resource_mapper_function(app)
 
+    def normalize_workflow_format(self, as_dict):
+        """Process incoming workflow descriptions for consumption by other methods.
+
+        Currently this mostly means converting format 2 workflows into standard Galaxy
+        workflow JSON for consumption for the rest of this module. In the future we will
+        want to be a lot more percise about this - preserve the original description along
+        side the data model and apply updates in a way that largely preserves YAML structure
+        so workflows can be extracted.
+        """
+        workflow_class = as_dict.get("class", None)
+        if workflow_class == "GalaxyWorkflow" or "$graph" in as_dict or "yaml_content" in as_dict:
+            if not self.app.config.enable_beta_workflow_format:
+                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
+
+            # Format 2 Galaxy workflow.
+            galaxy_interface = Format2ConverterGalaxyInterface()
+            import_options = ImportOptions()
+            import_options.deduplicate_subworkflows = True
+            as_dict = python_to_workflow(as_dict, galaxy_interface, workflow_directory=None, import_options=import_options)
+        return as_dict
+
     def build_workflow_from_dict(
         self,
         trans,
@@ -244,6 +271,7 @@ class WorkflowContentsManager(UsesAnnotations):
         publish=False,
         create_stored_workflow=True,
         exact_tools=True,
+        fill_defaults=False,
     ):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
@@ -257,6 +285,7 @@ class WorkflowContentsManager(UsesAnnotations):
             data,
             name=name,
             exact_tools=exact_tools,
+            fill_defaults=fill_defaults,
         )
         if 'uuid' in data:
             workflow.uuid = data['uuid']
@@ -298,7 +327,7 @@ class WorkflowContentsManager(UsesAnnotations):
             missing_tools=missing_tool_tups
         )
 
-    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data):
+    def update_workflow_from_dict(self, trans, stored_workflow, workflow_data, **kwds):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
 
@@ -306,6 +335,7 @@ class WorkflowContentsManager(UsesAnnotations):
             trans,
             workflow_data,
             name=stored_workflow.name,
+            **kwds
         )
 
         if missing_tool_tups:
@@ -343,12 +373,21 @@ class WorkflowContentsManager(UsesAnnotations):
         # but do need to use to make connections
         steps_by_external_id = {}
 
+        # Preload dependent workflows with locally defined content_ids.
+        subworkflows = data.get("subworkflows")
+        subworkflow_id_map = None
+        if subworkflows:
+            subworkflow_id_map = {}
+            for key, subworkflow_dict in subworkflows.items():
+                subworkflow = self.__build_embedded_subworkflow(trans, subworkflow_dict, **kwds)
+                subworkflow_id_map[key] = subworkflow
+
         # Keep track of tools required by the workflow that are not available in
         # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
         # will be ( tool_id, tool_name, tool_version ).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts(data):
-            self.__load_subworkflows(trans, step_dict)
+            self.__load_subworkflows(trans, step_dict, subworkflow_id_map, **kwds)
 
         for step_dict in self.__walk_step_dicts(data):
             module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **kwds)
@@ -377,6 +416,12 @@ class WorkflowContentsManager(UsesAnnotations):
         option describes the workflow in a context more tied to the current Galaxy instance and includes
         fields like 'url' and 'url' and actual unencoded step ids instead of 'order_index'.
         """
+
+        def to_format_2(wf_dict, **kwds):
+            if not trans.app.config.enable_beta_workflow_format:
+                raise exceptions.ConfigDoesNotAllowException("Format2 workflows not enabled.")
+            return from_galaxy_native(wf_dict, None, **kwds)
+
         if version == '':
             version = None
         if version is not None:
@@ -390,6 +435,12 @@ class WorkflowContentsManager(UsesAnnotations):
             wf_dict = self._workflow_to_dict_instance(stored, workflow=workflow, legacy=False)
         elif style == "run":
             wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow)
+        elif style == "format2":
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = to_format_2(wf_dict)
+        elif style == "format2_wrapped_yaml":
+            wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
+            wf_dict = to_format_2(wf_dict, json_wrapper=True)
         else:
             wf_dict = self._workflow_to_dict_export(trans, stored, workflow=workflow)
         if version:
@@ -893,11 +944,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
             yield step_dict
 
-    def __load_subworkflows(self, trans, step_dict):
+    def __load_subworkflows(self, trans, step_dict, subworkflow_id_map, **kwds):
         step_type = step_dict.get("type", None)
         if step_type == "subworkflow":
             subworkflow = self.__load_subworkflow_from_step_dict(
-                trans, step_dict
+                trans, step_dict, subworkflow_id_map, **kwds
             )
             step_dict["subworkflow"] = subworkflow
 
@@ -927,7 +978,8 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Create the model class for the step
         steps.append(step)
-        steps_by_external_id[step_dict['id']] = step
+        external_id = step_dict["id"]
+        steps_by_external_id[external_id] = step
         if 'workflow_outputs' in step_dict:
             workflow_outputs = step_dict['workflow_outputs']
             found_output_names = set([])
@@ -951,7 +1003,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 trans.sa_session.add(m)
         return module, step
 
-    def __load_subworkflow_from_step_dict(self, trans, step_dict):
+    def __load_subworkflow_from_step_dict(self, trans, step_dict, subworkflow_id_map, **kwds):
         embedded_subworkflow = step_dict.get("subworkflow", None)
         subworkflow_id = step_dict.get("content_id", None)
         if embedded_subworkflow and subworkflow_id:
@@ -961,17 +1013,22 @@ class WorkflowContentsManager(UsesAnnotations):
             raise Exception("Subworkflow step must define either subworkflow or content_id.")
 
         if embedded_subworkflow:
-            subworkflow = self.build_workflow_from_dict(
-                trans,
-                embedded_subworkflow,
-                create_stored_workflow=False,
-            ).workflow
+            subworkflow = self.__build_embedded_subworkflow(trans, embedded_subworkflow, **kwds)
+        elif subworkflow_id_map is not None:
+            # Interpret content_id as a workflow local thing.
+            subworkflow = subworkflow_id_map[subworkflow_id[1:]]
         else:
             workflow_manager = WorkflowsManager(self.app)
             subworkflow = workflow_manager.get_owned_workflow(
                 trans, subworkflow_id
             )
 
+        return subworkflow
+
+    def __build_embedded_subworkflow(self, trans, data, **kwds):
+        subworkflow = self.build_workflow_from_dict(
+            trans, data, create_stored_workflow=False, fill_defaults=kwds.get("fill_defaults", False)
+        ).workflow
         return subworkflow
 
     def __connect_workflow_steps(self, steps, steps_by_external_id):
@@ -996,7 +1053,10 @@ class WorkflowContentsManager(UsesAnnotations):
                     conn.input_step = step
                     conn.input_name = input_name
                     conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[conn_dict['id']]
+                    external_id = conn_dict['id']
+                    if external_id not in steps_by_external_id:
+                        raise KeyError("Failed to find external id %s in %s" % (external_id, steps_by_external_id.keys()))
+                    conn.output_step = steps_by_external_id[external_id]
 
                     input_subworkflow_step_index = conn_dict.get('input_subworkflow_step_id', None)
                     if input_subworkflow_step_index is not None:
@@ -1020,3 +1080,9 @@ class MissingToolsException(exceptions.MessageException):
     def __init__(self, workflow, errors):
         self.workflow = workflow
         self.errors = errors
+
+
+class Format2ConverterGalaxyInterface(ImporterGalaxyInterface):
+
+    def import_workflow(self, workflow, **kwds):
+        raise NotImplementedError("Direct format 2 import of nested workflows is not yet implemented, use bioblend client.")

@@ -11,7 +11,7 @@
 
 <%def name="center_panel()">
 
-    ${h.js('libs/jquery/select2')}
+    ## ${h.js('libs/jquery/select2')}
 
     <div style="overflow: auto; height: 100%;">
         <div class="page-container" style="padding: 10px;">

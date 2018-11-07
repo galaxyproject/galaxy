@@ -29,7 +29,7 @@ class ApiBatchTestCase(api.ApiTestCase):
         response = self._post_batch(batch)
         response = response.json()
         self.assertIsInstance(response, list)
-        self.assertEquals(len(response), 3)
+        self.assertEqual(len(response), 3)
 
     def test_unallowed_route(self):
         batch = [
@@ -38,7 +38,7 @@ class ApiBatchTestCase(api.ApiTestCase):
         response = self._post_batch(batch)
         response = response.json()
         self.assertIsInstance(response, list)
-        self.assertEquals(response[0]['status'], 403)
+        self.assertEqual(response[0]['status'], 403)
 
     def test_404_route(self):
         # needs to be within the allowed routes
@@ -48,7 +48,7 @@ class ApiBatchTestCase(api.ApiTestCase):
         response = self._post_batch(batch)
         response = response.json()
         self.assertIsInstance(response, list)
-        self.assertEquals(response[0]['status'], 404)
+        self.assertEqual(response[0]['status'], 404)
 
     def test_errors(self):
         batch = [
@@ -58,8 +58,8 @@ class ApiBatchTestCase(api.ApiTestCase):
         response = self._post_batch(batch)
         response = response.json()
         self.assertIsInstance(response, list)
-        self.assertEquals(response[0]['status'], 400)
-        self.assertEquals(response[1]['status'], 501)
+        self.assertEqual(response[0]['status'], 400)
+        self.assertEqual(response[1]['status'], 501)
 
     def test_querystring_params(self):
         post_data = dict(name='test')
@@ -74,6 +74,6 @@ class ApiBatchTestCase(api.ApiTestCase):
         ]
         response = self._post_batch(batch)
         response = response.json()
-        self.assertEquals(len(response), 2)
-        self.assertEquals(len(response[0]['body'].keys()), 2)
-        self.assertEquals(response[1]['body'], [])
+        self.assertEqual(len(response), 2)
+        self.assertEqual(len(response[0]['body'].keys()), 2)
+        self.assertEqual(response[1]['body'], [])

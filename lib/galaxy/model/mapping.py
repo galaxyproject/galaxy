@@ -925,7 +925,7 @@ model.WorkflowRequestInputParameter.table = Table(
     Column("value", TEXT),
     Column("type", Unicode(255)))
 
-model.WorkflowRequestInputStepParmeter.table = Table(
+model.WorkflowRequestInputStepParameter.table = Table(
     "workflow_request_input_step_parameter", metadata,
     Column("id", Integer, primary_key=True),
     Column("workflow_invocation_id", Integer, ForeignKey("workflow_invocation.id"), index=True),
@@ -2294,7 +2294,7 @@ mapper(model.WorkflowInvocation, model.WorkflowInvocation.table, properties=dict
     history=relation(model.History, backref=backref('workflow_invocations', uselist=True)),
     input_parameters=relation(model.WorkflowRequestInputParameter),
     step_states=relation(model.WorkflowRequestStepState),
-    input_step_parameters=relation(model.WorkflowRequestInputStepParmeter),
+    input_step_parameters=relation(model.WorkflowRequestInputStepParameter),
     input_datasets=relation(model.WorkflowRequestToInputDatasetAssociation),
     input_dataset_collections=relation(model.WorkflowRequestToInputDatasetCollectionAssociation),
     subworkflow_invocations=relation(model.WorkflowInvocationToSubworkflowInvocationAssociation,
@@ -2329,7 +2329,7 @@ simple_mapping(model.WorkflowRequestStepState,
     workflow_invocation=relation(model.WorkflowInvocation),
     workflow_step=relation(model.WorkflowStep))
 
-simple_mapping(model.WorkflowRequestInputStepParmeter,
+simple_mapping(model.WorkflowRequestInputStepParameter,
     workflow_invocation=relation(model.WorkflowInvocation),
     workflow_step=relation(model.WorkflowStep))
 

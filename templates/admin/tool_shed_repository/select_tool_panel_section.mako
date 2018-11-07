@@ -12,7 +12,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ## ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 
@@ -60,8 +60,8 @@
         general questions or concerns.
     </p>
 </div>
-<div class="toolForm">
-    <div class="toolFormBody">
+<div class="card">
+    <div class="card-body">
         <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install' )}" method="post" >
             <div class="form-row">
                 <input type="hidden" name="includes_tools" value="${includes_tools}" />

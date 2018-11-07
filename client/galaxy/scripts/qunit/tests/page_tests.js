@@ -1,5 +1,7 @@
 /* global QUnit */
-
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import testApp from "qunit/test-app";
 import Page from "layout/page";
 

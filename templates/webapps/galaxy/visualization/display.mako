@@ -41,7 +41,7 @@
 <%def name="render_item_links( visualization )">
     <a
         href="${h.url_for( controller='/visualization', action='imp', id=trans.security.encode_id( visualization.id ) )}"
-        class="btn btn-secondary fa fa-plus"
+        class="btn btn-secondary fa fa-plus float-right"
         title="Import visualization"></a>
 </%def>
 
@@ -52,7 +52,7 @@
         // FIXME: deliberate global required for now due to requireJS integration.
         view = null;
 
-        var ui = new (window.bundleEntries.Trackster.TracksterUI)( "${h.url_for('/')}" );
+        var ui = new (window.bundleEntries.TracksterUI)( "${h.url_for('/')}" );
         var container_element = $("#${trans.security.encode_id( visualization.id )}");
 
         $(function() {

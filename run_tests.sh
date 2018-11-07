@@ -543,12 +543,6 @@ do
           echo "Skipping Python test clean up."
           shift
           ;;
-      -watch|--watch)
-          # Have grunt watch test or directory for changes, only
-          # valid for javascript testing.
-          watch=1
-          shift
-          ;;
       --skip-venv)
           skip_venv='--skip-venv'
           shift

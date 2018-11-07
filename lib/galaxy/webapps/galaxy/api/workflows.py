@@ -205,7 +205,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Displays information needed to run a workflow from the command line.
         """
         stored_workflow = self.__get_stored_workflow(trans, id)
-        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
@@ -437,7 +437,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str(e))
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.user != trans.user and not trans.user_is_admin:
             trans.response.status = 403
             return("Workflow is not owned by current user")
 
@@ -492,6 +492,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_workflow(trans, id)
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
+            workflow_dict = self.__normalize_workflow(workflow_dict)
             new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
             if new_workflow_name and new_workflow_name != stored_workflow.name:
                 sanitized_name = sanitize_html(new_workflow_name)
@@ -522,10 +523,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
             if 'steps' in workflow_dict:
                 try:
+                    from_dict_kwds = self.__import_or_update_kwds(payload)
                     workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
                         trans,
                         stored_workflow,
                         workflow_dict,
+                        **from_dict_kwds
                     )
                 except workflows.MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
@@ -570,6 +573,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
+        data = self.__normalize_workflow(data)
         workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
         workflow = workflow.latest_workflow
         if workflow.has_errors:
@@ -582,21 +586,21 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
+        data = self.__normalize_workflow(data)
         import_tools = util.string_as_bool(payload.get("import_tools", False))
-        if import_tools and not trans.user_is_admin():
+        if import_tools and not trans.user_is_admin:
             raise exceptions.AdminRequiredException()
+
+        from_dict_kwds = self.__import_or_update_kwds(payload)
+
         publish = util.string_as_bool(payload.get("publish", False))
         # If 'publish' set, default to importable.
         importable = util.string_as_bool(payload.get("importable", publish))
-        # Galaxy will try to upgrade tool versions that don't match exactly during import,
-        # this prevents that.
-        exact_tools = util.string_as_bool(payload.get("exact_tools", True))
+
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
-        from_dict_kwds = dict(
-            publish=publish,
-            exact_tools=exact_tools,
-        )
+
+        from_dict_kwds["publish"] = publish
         workflow, missing_tool_tups = self._workflow_from_dict(trans, data, **from_dict_kwds)
         if importable:
             self._make_item_accessible(trans.sa_session, workflow)
@@ -635,6 +639,23 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                             changeset_revision,
                             payload)
         return item
+
+    def __import_or_update_kwds(self, payload):
+        # Galaxy will try to upgrade tool versions that don't match exactly during import,
+        # this prevents that.
+        exact_tools = util.string_as_bool(payload.get("exact_tools", True))
+
+        # Fill in missing tool state for hand built so the workflow can run, default of this
+        # should become True at some point in the future I imagine.
+        fill_defaults = util.string_as_bool(payload.get("fill_defaults", False))
+
+        return {
+            'exact_tools': exact_tools,
+            'fill_defaults': fill_defaults,
+        }
+
+    def __normalize_workflow(self, as_dict):
+        return self.workflow_contents_manager.normalize_workflow_format(as_dict)
 
     @expose_api
     def import_shared_workflow_deprecated(self, trans, payload, **kwd):

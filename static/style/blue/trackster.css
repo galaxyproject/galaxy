@@ -46,11 +46,11 @@
   cursor: pointer; }
 
 #zoom-out {
-  background: transparent url(../images/fugue/magnifier-zoom-out.png) center center no-repeat; }
+  background: transparent url(../../images/fugue/magnifier-zoom-out.png) center center no-repeat; }
 
 #zoom-in {
   margin-left: 10px;
-  background: transparent url(../images/fugue/magnifier-zoom.png) center center no-repeat; }
+  background: transparent url(../../images/fugue/magnifier-zoom.png) center center no-repeat; }
 
 .nav-input {
   font-size: 12px;
@@ -123,7 +123,7 @@
   position: absolute;
   margin-top: 0px;
   height: 14px;
-  background: #c1c9e5 url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+  background: #c1c9e5 url(../../images/visualization/draggable_horizontal.png) center center no-repeat;
   border: solid #666 1px; }
 
 .viewport-canvas {
@@ -141,7 +141,7 @@
 .group-handle {
   cursor: move;
   float: left;
-  background: #eee url("../images/tracks/block.png");
+  background: #eee url("../../images/tracks/block.png");
   width: 12px;
   height: 12px; }
 
@@ -179,7 +179,7 @@
   margin-top: 2px; }
 
 .tiles {
-  background: url("../images/tracks/diag_bg.gif");
+  background: url("../../images/tracks/diag_bg.gif");
   position: relative;
   overflow: hidden; }
 
@@ -327,92 +327,92 @@ input {
   margin: 0px 4px 0px 4px; }
 
 .exclamation {
-  background: transparent url(../images/fugue/exclamation.png) no-repeat;
+  background: transparent url(../../images/fugue/exclamation.png) no-repeat;
   margin-left: 5em; }
 
 .track-icons {
   float: left; }
 
 .icon-button.bookmarks {
-  background: transparent url("../images/fugue/bookmarks-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/bookmarks-bw.png") no-repeat; }
   .icon-button.bookmarks:hover {
-    background: transparent url("../images/fugue/bookmarks.png") no-repeat; }
+    background: transparent url("../../images/fugue/bookmarks.png") no-repeat; }
 
 .icon-button.layers-stack {
-  background: transparent url("../images/fugue/layers-stack-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/layers-stack-bw.png") no-repeat; }
   .icon-button.layers-stack:hover {
-    background: transparent url("../images/fugue/layers-stack.png") no-repeat; }
+    background: transparent url("../../images/fugue/layers-stack.png") no-repeat; }
 
 .icon-button.hammer {
-  background: transparent url("../images/fugue/hammer-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/hammer-bw.png") no-repeat; }
   .icon-button.hammer:hover {
-    background: transparent url("../images/fugue/hammer.png") no-repeat; }
+    background: transparent url("../../images/fugue/hammer.png") no-repeat; }
 
 .icon-button.toolbox {
-  background: transparent url("../images/fugue/toolbox-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/toolbox-bw.png") no-repeat; }
   .icon-button.toolbox:hover {
-    background: transparent url("../images/fugue/toolbox.png") no-repeat; }
+    background: transparent url("../../images/fugue/toolbox.png") no-repeat; }
 
 .icon-button.globe {
-  background: transparent url("../images/fugue/globe-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/globe-bw.png") no-repeat; }
   .icon-button.globe:hover {
-    background: transparent url("../images/fugue/globe.png") no-repeat; }
+    background: transparent url("../../images/fugue/globe.png") no-repeat; }
 
 .icon-button.block--plus {
-  background: transparent url("../images/fugue/block--plus-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/block--plus-bw.png") no-repeat; }
   .icon-button.block--plus:hover {
-    background: transparent url("../images/fugue/block--plus.png") no-repeat; }
+    background: transparent url("../../images/fugue/block--plus.png") no-repeat; }
 
 .icon-button.toggle {
-  background: transparent url("../images/fugue/toggle-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/toggle-bw.png") no-repeat; }
   .icon-button.toggle:hover {
-    background: transparent url("../images/fugue/toggle.png") no-repeat; }
+    background: transparent url("../../images/fugue/toggle.png") no-repeat; }
 
 .icon-button.toggle-expand {
-  background: transparent url("../images/fugue/toggle-expand-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/toggle-expand-bw.png") no-repeat; }
   .icon-button.toggle-expand:hover {
-    background: transparent url("../images/fugue/toggle-expand.png") no-repeat; }
+    background: transparent url("../../images/fugue/toggle-expand.png") no-repeat; }
 
 .icon-button.gear {
-  background: transparent url("../images/fugue/gear-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/gear-bw.png") no-repeat; }
   .icon-button.gear:hover {
-    background: transparent url("../images/fugue/gear.png") no-repeat; }
+    background: transparent url("../../images/fugue/gear.png") no-repeat; }
 
 .icon-button.application-dock-270 {
-  background: transparent url("../images/fugue/application-dock-270-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/application-dock-270-bw.png") no-repeat; }
   .icon-button.application-dock-270:hover {
-    background: transparent url("../images/fugue/application-dock-270.png") no-repeat; }
+    background: transparent url("../../images/fugue/application-dock-270.png") no-repeat; }
 
 .icon-button.ui-slider-050 {
-  background: transparent url("../images/fugue/ui-slider-050-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/ui-slider-050-bw.png") no-repeat; }
   .icon-button.ui-slider-050:hover {
-    background: transparent url("../images/fugue/ui-slider-050.png") no-repeat; }
+    background: transparent url("../../images/fugue/ui-slider-050.png") no-repeat; }
 
 .icon-button.arrow-resize-090 {
-  background: transparent url("../images/fugue/arrow-resize-090-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/arrow-resize-090-bw.png") no-repeat; }
   .icon-button.arrow-resize-090:hover {
-    background: transparent url("../images/fugue/arrow-resize-090.png") no-repeat; }
+    background: transparent url("../../images/fugue/arrow-resize-090.png") no-repeat; }
 
 .icon-button.layer-transparent {
-  background: transparent url("../images/fugue/layer-transparent-bw.png") no-repeat; }
+  background: transparent url("../../images/fugue/layer-transparent-bw.png") no-repeat; }
   .icon-button.layer-transparent:hover {
-    background: transparent url("../images/fugue/layer-transparent.png") no-repeat; }
+    background: transparent url("../../images/fugue/layer-transparent.png") no-repeat; }
 
 .remove-icon,
 .overview-close {
-  background: transparent url(../images/fugue/cross-small-bw.png) no-repeat; }
+  background: transparent url(../../images/fugue/cross-small-bw.png) no-repeat; }
 
 .icon-button.remove-icon:hover,
 .overview-close:hover {
-  background: transparent url(../images/fugue/cross-circle.png) no-repeat; }
+  background: transparent url(../../images/fugue/cross-circle.png) no-repeat; }
 
 .child-track-icon {
-  background: url("../images/fugue/arrow-000-small-bw.png") no-repeat;
+  background: url("../../images/fugue/arrow-000-small-bw.png") no-repeat;
   width: 30px;
   cursor: move; }
 
 .track-resize {
-  background: white url("../images/visualization/draggable_vertical.png") no-repeat top center;
+  background: white url("../../images/visualization/draggable_vertical.png") no-repeat top center;
   position: absolute;
   right: 3px;
   bottom: -4px;
@@ -456,7 +456,7 @@ input {
   font-size: 10px;
   filter: alpha(opacity=80);
   background-repeat: no-repeat;
-  background-image: url(../images/tipsy.gif);
+  background-image: url(../../images/tipsy.gif);
   background-position: top center; }
 
 .feature-popup-inner {
@@ -483,7 +483,7 @@ input {
   margin-top: 2px;
   cursor: move;
   float: left;
-  background: transparent url(../images/visualization/draggable_horizontal.png) center center no-repeat;
+  background: transparent url(../../images/visualization/draggable_horizontal.png) center center no-repeat;
   width: 10px;
   height: 12px; }
 

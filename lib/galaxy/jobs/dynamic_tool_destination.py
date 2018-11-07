@@ -644,7 +644,7 @@ class RuleValidator(object):
         @return: validated rule and result of validation
         """
 
-        emailregex = "^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
+        emailregex = r"^[A-Za-z0-9\.\+_-]+@[A-Za-z0-9\._-]+\.[a-zA-Z]*$"
 
         if "users" in rule:
             if isinstance(rule["users"], list):

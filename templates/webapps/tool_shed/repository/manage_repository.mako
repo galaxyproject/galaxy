@@ -15,7 +15,7 @@
     else:
         has_metadata = False
 
-    is_admin = trans.user_is_admin()
+    is_admin = trans.user_is_admin
     is_new = repository.is_new( trans.app )
 
     if repository.deprecated:
@@ -104,7 +104,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ## ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 

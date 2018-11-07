@@ -16,7 +16,7 @@ from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
 
-VALID_REPOSITORYNAME_RE = re.compile("^[a-z0-9\_]+$")
+VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
 
 
 def change_repository_name_in_hgrc_file(hgrc_file, new_name):
@@ -813,10 +813,10 @@ def get_tool_shed_status_for_installed_repository(app, repository):
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
             text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             return dict(revision_update=text)
-        except Exception as e:
+        except Exception:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
             return dict(revision_update='false')
-    except Exception as e:
+    except Exception:
         log.exception("Error attempting to get tool shed status for installed repository %s", str(repository.name))
         return {}
 
@@ -956,7 +956,7 @@ def update_repository(app, trans, id, **kwds):
     if repository is None:
         return None, "Unknown repository ID"
 
-    if not (trans.user_is_admin() or
+    if not (trans.user_is_admin or
             trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message

@@ -5,8 +5,8 @@
 import _l from "utils/localization";
 // The following must remain staged out of libs and not sourced from
 // node_modules, until TDTs are bundled.
-import * as Backbone from "libs/backbone";
-import * as _ from "libs/underscore";
+import _ from "underscore";
+import Backbone from "backbone";
 import "libs/bootstrap-tour";
 
 /* global $ */

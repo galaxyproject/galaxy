@@ -1,9 +1,9 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+/* global Galaxy */
+/* global $ */
+/* global _ */
+
 import _l from "utils/localization";
-import jQuery from "jquery";
-var $ = jQuery;
-import GalaxyApp from "galaxy";
+import { GalaxyApp } from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
@@ -13,12 +13,12 @@ import Utils from "utils/utils";
 import Page from "layout/page";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
+import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
+import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Vue from "vue";
 
-/* global Galaxy */
-
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp(options, bootstrapped);
     Galaxy.debug("admin app");
 
     /** Routes */
@@ -35,6 +35,7 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)form(/)(:form_id)": "show_form",
             "(/)admin/data_tables": "show_data_tables",
             "(/)admin/data_types": "show_data_types",
+            "(/)admin/data_manager*path": "show_data_manager",
             "*notFound": "not_found"
         },
 
@@ -105,17 +106,27 @@ window.app = function app(options, bootstrapped) {
                 })
             );
         },
-
+        _display_vue_helper: function(component, props) {
+            let instance = Vue.extend(component);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance(props).$mount(vm);
+        },
         show_data_tables: function() {
-            var vueMount = document.createElement("div");
-            this.page.display(vueMount);
-            new Vue(DataTables).$mount(vueMount);
+            this._display_vue_helper(DataTables);
+        },
+        show_data_types: function() {
+            this._display_vue_helper(DataTypes);
         },
 
-        show_data_types: function() {
-            var vueMount = document.createElement("div");
+        show_data_manager: function(path) {
+            let vueMount = document.createElement("div");
             this.page.display(vueMount);
-            new Vue(DataTypes).$mount(vueMount);
+            // always set the route back to the base, i.e.
+            // `${Galaxy.root}admin/data_manager`
+            Galaxy.debug("show_data_manager: path='" + path + "'");
+            DataManagerRouter.replace(path || "/");
+            new Vue({ router: DataManagerRouter, render: h => h(DataManagerView) }).$mount(vueMount);
         },
 
         show_forms: function() {

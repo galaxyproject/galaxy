@@ -41,7 +41,7 @@ def inherit(context):
 
         ## An admin user may be creating a new user account, in which case we want to display the registration form.
         ## But if the current user is not an admin user, then don't display the registration form.
-        %if ( cntrller=='admin' and trans.user_is_admin() ) or not trans.user:
+        %if ( cntrller=='admin' and trans.user_is_admin ) or not trans.user:
             ${render_registration_form()}
 
             %if trans.app.config.get( 'terms_url', None ) is not None:
@@ -79,12 +79,12 @@ def inherit(context):
             }
 
             function renderError(message) {
-                if (!$(".errormessage").size()) {
-                    $('<div/>').addClass('errormessage').insertBefore('#registrationForm');
+                if (!$(".alert-danger").size()) {
+                    $('<div/>').addClass('alert alert-danger').insertBefore('#registrationForm');
                 }
                 console.debug( $( '#registrationForm' ) );
-                console.debug( '.errormessage:', $( '.errormessage' ) );
-                $(".errormessage").html(message);
+                console.debug( '.alert-danger:', $( '.alert-danger' ) );
+                $(".alert-danger").html(message);
             }
 
             $("[name='password']").complexify({'minimumChars':6}, function(valid, complexity){

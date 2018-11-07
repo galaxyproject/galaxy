@@ -12,6 +12,7 @@
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="library_data.xml"/>
+  <tool file="remove_value.xml"/>
   <tool file="bibtex.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -158,6 +159,7 @@
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/mapper2.xml" />
+  <tool file="for_workflows/mapper_two.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/empty_list.xml" />
   <tool file="for_workflows/count_list.xml" />

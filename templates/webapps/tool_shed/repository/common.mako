@@ -1088,9 +1088,9 @@
 
 <%def name="render_resolver_dependencies( requirements_status )">
     %if requirements_status:
-        <div class="toolForm">
-            <div class="toolFormTitle">Dependency Resolver Details</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Dependency Resolver Details</div>
+            <div class="card-body">
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="module_resolvers">
                     ${render_tool_dependency_resolver( requirements_status )}
                 </table>
@@ -1143,9 +1143,9 @@
     %if readme_files_root_folder:
         ${render_table_wrap_style( "readme_files" )}
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Repository README files - may contain important installation or license information</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Repository README files - may contain important installation or license information</div>
+            <div class="card-body">
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="readme_files">
@@ -1155,9 +1155,9 @@
         </div>
     %endif
     %if has_dependencies:
-        <div class="toolForm">
-            <div class="toolFormTitle">Dependencies of this repository</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Dependencies of this repository</div>
+            <div class="card-body">
                 %if invalid_repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
@@ -1205,9 +1205,9 @@
     %endif
     %if has_contents:
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Contents of this repository</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Contents of this repository</div>
+            <div class="card-body">
                 %if valid_tools_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
@@ -1256,9 +1256,9 @@
     %if tool_test_results_root_folder and trans.app.config.display_legacy_test_results:
         ${render_table_wrap_style( "test_environment" )}
         <p/>
-        <div class="toolForm">
-            <div class="toolFormTitle">Automated tool test results</div>
-            <div class="toolFormBody">
+        <div class="card">
+            <div class="card-header">Automated tool test results</div>
+            <div class="card-body">
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">

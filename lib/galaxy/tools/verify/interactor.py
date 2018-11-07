@@ -383,6 +383,9 @@ class GalaxyInteractorApi(object):
             else:
                 element = self.uploads[element_def["value"]].copy()
                 element["name"] = element_identifier
+                tags = element_def.get("attributes").get("tags")
+                if tags:
+                    element["tags"] = tags.split(",")
             element_identifiers.append(element)
         return element_identifiers
 
@@ -745,7 +748,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
     maxseconds = testdef.maxseconds
     if testdef.num_outputs is not None:
         expected = testdef.num_outputs
-        actual = len(data_list)
+        actual = len(data_list) + len(data_collection_list)
         if expected != actual:
             message_template = "Incorrect number of outputs - expected %d, found %s."
             message = message_template % (expected, actual)

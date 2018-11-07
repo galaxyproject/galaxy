@@ -1,6 +1,10 @@
+/* global Galaxy */
+/* global $ */
+/* global Backbone */
+
 import _l from "utils/localization";
 import * as _ from "libs/underscore";
-import data_mod from "mvc/dataset/data";
+import { Dataset } from "mvc/dataset/data";
 import util_mod from "viz/trackster/util";
 import config_mod from "utils/config";
 import GridView from "mvc/grid/grid-view";
@@ -942,7 +946,7 @@ var BackboneTrack = Backbone.Model.extend(CustomToJSON).extend(
         },
 
         initialize: function(options) {
-            this.set("dataset", new data_mod.Dataset(options.dataset));
+            this.set("dataset", new Dataset(options.dataset));
 
             // -- Set up config settings. --
             var models = [
