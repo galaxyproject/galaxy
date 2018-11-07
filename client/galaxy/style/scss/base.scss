@@ -2002,17 +2002,6 @@ div.toolTitleNoSection {
     overflow: hidden;
 }
 
-#close-viewport {
-    border-left: 1px solid #999;
-    border-top: 1px solid #999;
-    background: #ddd url("../../images/overview_arrows.png") 12px 0px;
-    position: absolute;
-    right: 0px;
-    bottom: 0px;
-    width: 12px;
-    height: 12px;
-    z-index: 25000;
-}
 .base-terminal {
     @extend .fa;
     @extend .fa-circle;
@@ -2057,16 +2046,16 @@ div.toolTitleNoSection {
         color: $brand-success;
     }
 }
-#overview-border {
+.workflow-overview {
     position: absolute;
     width: 150px;
     height: 150px;
-    right: 20000px;
+    right: 0px;
     bottom: 0px;
     border-top: solid gray 1px;
     border-left: solid grey 1px;
     padding: 7px 0 0 7px;
-    background: #eeeeee no-repeat url("../../images/resizable.png");
+    background: $workflow-overview-border no-repeat url("../../images/resizable.png");
     z-index: 20000;
     overflow: hidden;
     max-width: 300px;

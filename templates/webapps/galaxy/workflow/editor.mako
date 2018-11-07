@@ -240,7 +240,7 @@
             <div id="workflow-parameters-container">
             </div>
         </div>
-        <div id="overview-border">
+        <div class="workflow-overview">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
@@ -248,7 +248,6 @@
                 </div>
             </div>
         </div>
-        <div id="close-viewport"></div>
     </div>
 
 </%def>

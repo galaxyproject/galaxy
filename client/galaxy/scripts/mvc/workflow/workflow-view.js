@@ -447,46 +447,18 @@ export default Backbone.View.extend({
         // On load, set the size to the pref stored in local storage if it exists
         var overview_size = $.jStorage.get("overview-size");
         if (overview_size !== undefined) {
-            $("#overview-border").css({
+            $(".workflow-overview").css({
                 width: overview_size,
                 height: overview_size
             });
         }
 
-        // Show viewport on load unless pref says it's off
-        if ($.jStorage.get("overview-off")) {
-            hide_overview();
-        } else {
-            show_overview();
-        }
-
         // Stores the size of the overview into local storage when it's resized
-        $("#overview-border").bind("dragend", function(e, d) {
+        $(".workflow-overview").bind("dragend", function(e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
             $.jStorage.set("overview-size", `${new_size}px`);
-        });
-
-        function show_overview() {
-            $.jStorage.set("overview-off", false);
-            $("#overview-border").css("right", "0px");
-            $("#close-viewport").css("background-position", "0px 0px");
-        }
-
-        function hide_overview() {
-            $.jStorage.set("overview-off", true);
-            $("#overview-border").css("right", "20000px");
-            $("#close-viewport").css("background-position", "12px 0px");
-        }
-
-        // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
-        $("#close-viewport").click(() => {
-            if ($("#overview-border").css("right") === "0px") {
-                hide_overview();
-            } else {
-                show_overview();
-            }
         });
 
         // Unload handler
