@@ -1,10 +1,9 @@
 
 /** This class handles job submissions to the Galaxy API. */
-
-/* global Galaxy */
 import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
+import { getGalaxyInstance } from "app";
 
 /** Time to wait before refreshing to check if job has completed */
 const WAITTIME = 1000;
@@ -144,6 +143,7 @@ var wait = function(chart, success, error) {
 
 /** Refresh history panel */
 var refreshHdas = function() {
+    let Galaxy = getGalaxyInstance();
     if (Galaxy && Galaxy.currHistoryPanel) {
         Galaxy.currHistoryPanel.refreshContents();
     }

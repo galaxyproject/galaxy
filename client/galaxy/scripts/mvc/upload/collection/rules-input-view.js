@@ -1,7 +1,7 @@
-/* global Galaxy */
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select";
@@ -78,10 +78,11 @@ export default Backbone.View.extend({
 
     _renderSelectedType: function() {
         const selectionType = this.selectionType;
+        let Galaxy = getGalaxyInstance();
         if (selectionType == "dataset") {
             if (!this.datasetSelectorView) {
                 this.selectedDatasetId = null;
-                const history = parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
+                const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
                 const historyContentModels = history.contents.models;
                 const options = [];
                 for (let historyContentModel of historyContentModels) {
@@ -112,6 +113,7 @@ export default Backbone.View.extend({
     },
 
     _onDataset: function(selectedDatasetId) {
+        let Galaxy = getGalaxyInstance();
         this.selectedDatasetId = selectedDatasetId;
         if (!selectedDatasetId) {
             this._setPreview("");
@@ -144,6 +146,7 @@ export default Backbone.View.extend({
     _buildSelection: function(content) {
         const selectionType = this.selectionType;
         const selection = {};
+        let Galaxy = getGalaxyInstance();
         if (selectionType == "dataset" || selectionType == "paste") {
             selection.selectionType = "raw";
             selection.content = content;

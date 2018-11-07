@@ -1,7 +1,7 @@
-/* global Galaxy */
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
@@ -56,6 +56,7 @@ var Tool = Backbone.View.extend({
                     form.model.get("postchange")(process, form);
                 },
                 postchange: function(process, form) {
+                    let Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
                         tool_id: options.id,

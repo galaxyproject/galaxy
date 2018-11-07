@@ -1,10 +1,10 @@
 /* This is the regular tool form */
 
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
@@ -12,10 +12,12 @@ import Modal from "mvc/ui/ui-modal";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
 
+
 var View = Backbone.View.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
-        this.modal = parent.Galaxy.modal || new Modal.View();
+        this.modal = Galaxy.modal || new Modal.View();
         this.form = new ToolFormBase(
             Utils.merge(
                 {
@@ -164,6 +166,7 @@ var View = Backbone.View.extend({
         }
 
         // Job Re-use Options
+        let Galaxy = getGalaxyInstance();
         var extra_user_preferences = {};
         if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
             extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
@@ -191,6 +194,7 @@ var View = Backbone.View.extend({
      * @param{function} callback  - Called when request has completed
      */
     submit: function(options, callback) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         var job_def = {
             tool_id: options.id,
@@ -236,7 +240,7 @@ var View = Backbone.View.extend({
                         toolId: job_def.tool_id
                     });
                 }
-                parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.refreshContents();
+                Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.refreshContents();
             },
             error: function(response) {
                 callback && callback();
@@ -269,6 +273,7 @@ var View = Backbone.View.extend({
      * @param{dict}     job_def   - Job execution dictionary
      */
     validate: function(job_def) {
+        let Galaxy = getGalaxyInstance();
         var job_inputs = job_def.inputs;
         var batch_n = -1;
         var batch_src = null;

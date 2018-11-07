@@ -1,9 +1,9 @@
-/* global Galaxy */
 import "polyfills";
 
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 
 // Bootstrap overwrites .tooltip() method, so load it after jquery-ui
 import "bootstrap";
@@ -185,6 +185,8 @@ $(document).ready(() => {
     });
 
     Tours.activeGalaxyTourRunner();
+
+    let Galaxy = getGalaxyInstance();
 
     Galaxy.giveTourWithData = Tours.giveTourWithData;
 

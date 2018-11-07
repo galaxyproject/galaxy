@@ -1,6 +1,4 @@
 /** This class handles, formats and caches datasets. */
-
-/* global Galaxy */
 import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";

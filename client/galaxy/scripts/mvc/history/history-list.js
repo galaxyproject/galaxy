@@ -1,8 +1,8 @@
-/* global Galaxy */
 /** This class renders the grid list. */
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import AjaxQueue from "utils/ajax-queue";
 import Utils from "utils/utils";
@@ -70,8 +70,9 @@ var HistoryGridView = GridView.extend({
             })
             .done(() => {
                 historyCopyDialog(history, {}).done(() => {
-                    if (window.parent && window.parent.Galaxy && window.parent.Galaxy.currHistoryPanel) {
-                        window.parent.Galaxy.currHistoryPanel.loadCurrentHistory();
+                    let Galaxy = getGalaxyInstance();
+                    if (Galaxy && Galaxy.currHistoryPanel) {
+                        Galaxy.currHistoryPanel.loadCurrentHistory();
                     }
                     window.location.reload(true);
                 });
@@ -91,6 +92,7 @@ var HistoryGridView = GridView.extend({
 var View = Backbone.View.extend({
     title: _l("Histories"),
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
 
         if (options.action_id == "list_published") {

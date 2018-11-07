@@ -1,4 +1,5 @@
-import * as Backbone from "backbone";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import mod_shed_list_view from "mvc/toolshed/shed-list-view";
 import mod_categories_view from "mvc/toolshed/categories-view";
 import mod_repositories_view from "mvc/toolshed/repositories-view";
@@ -7,7 +8,6 @@ import mod_repoqueue_view from "mvc/toolshed/repository-queue-view";
 import mod_repo_status_view from "mvc/toolshed/repo-status-view";
 import mod_workflows_view from "mvc/toolshed/workflows-view";
 
-/* global Galaxy */
 
 var AdminToolshedRouter = Backbone.Router.extend({
     initialize: function() {
@@ -56,6 +56,8 @@ var GalaxyAdminToolshedApp = Backbone.View.extend({
     },
 
     initialize: function() {
+        let Galaxy = getGalaxyInstance();
+
         Galaxy.admintoolshedapp = this;
         this.admin_toolshed_router = new AdminToolshedRouter();
 

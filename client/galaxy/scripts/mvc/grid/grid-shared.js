@@ -3,12 +3,14 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import GridView from "mvc/grid/grid-view";
 import LoadingIndicator from "ui/loading-indicator";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
+        let Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
         this.model = new Backbone.Model(options);
         this.item = this.model.get("item");

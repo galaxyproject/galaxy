@@ -22,6 +22,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -30,6 +31,7 @@ Vue.use(BootstrapVue);
 
 export default {
     data() {
+        let Galaxy = getGalaxyInstance();
         return {
             sourceFile: null,
             sourceURL: null,

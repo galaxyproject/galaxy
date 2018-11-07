@@ -1,10 +1,9 @@
-/* global Galaxy */
-
 /** Workflow view */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import * as mod_toastr from "libs/toastr";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
@@ -83,6 +82,7 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     copyWorkflow: function() {
+        let Galaxy = getGalaxyInstance();
         const oldName = this.model.get("name");
         $.getJSON(`${this.model.urlRoot}/${this.model.id}/download`, wfJson => {
             let newName = `Copy of ${oldName}`;
@@ -109,6 +109,7 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     _rowTemplate: function() {
+        let Galaxy = getGalaxyInstance();
         let show = this.model.get("show_in_tool_panel");
         let wfId = this.model.id;
         const checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
@@ -150,6 +151,7 @@ const WorkflowItemView = Backbone.View.extend({
 
     /** Template for user actions for workflows */
     _templateActions: function() {
+        let Galaxy = getGalaxyInstance();
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
             return `<div class="dropdown-menu">
                         <a class="dropdown-item" href="${getAppRoot()}workflow/editor?id=${this.model.id}">Edit</a>

@@ -1,6 +1,6 @@
-/* global Galaxy */
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import mod_util from "mvc/library/library-util";
 
 // ============================================================================
@@ -91,6 +91,7 @@ var FolderContainer = Backbone.Model.extend({
         id: "unknown"
     },
     parse: function(obj) {
+        let Galaxy = getGalaxyInstance();
         // empty the collection
         this.get("folder").reset();
         // response is not a simple array, it contains metadata

@@ -1,9 +1,8 @@
 /** This class renders the chart configuration form. */
-
-/* global Galaxy */
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 // import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
@@ -20,6 +19,7 @@ var Collection = Backbone.Collection.extend({
 
 var View = Backbone.View.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.active_tab = "user";
         var history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;

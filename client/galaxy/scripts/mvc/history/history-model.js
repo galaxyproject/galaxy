@@ -1,6 +1,7 @@
-/* global Galaxy */
 import _ from "underscore";
+import jQuery from "jquery";
 import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import { HistoryContents } from "mvc/history/history-contents";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
@@ -138,6 +139,7 @@ export var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
              *      Note: that this will return false for an anon user even if the history is theirs.
              */
             ownedByCurrUser: function() {
+                let Galaxy = getGalaxyInstance();
                 // no currUser
                 if (!Galaxy || !Galaxy.user) {
                     return false;

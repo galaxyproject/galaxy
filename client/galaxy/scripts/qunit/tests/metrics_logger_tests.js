@@ -1,11 +1,11 @@
 // This file isn't really testing anything useful yet, it is just testing
 // (or demonstrating) qunit+backbone interactions.
-/* global define */
+/* global QUnit */
 
-import testApp from "qunit/test-app";
-import metrics from "utils/metrics-logger";
-import $ from "jquery";
+import jQuery from "jquery";
 import sinon from "sinon";
+import metrics from "utils/metrics-logger";
+import testApp from "qunit/test-app";
 
 var MockConsole = function() {
     var self = this;

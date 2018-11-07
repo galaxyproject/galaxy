@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
@@ -1947,6 +1947,7 @@ var TracksterToolView = Backbone.View.extend({
      */
     run_on_dataset: function() {
         var tool = this.model;
+        let Galaxy = getGalaxyInstance();
         this.run(
             // URL params.
             {
@@ -2446,6 +2447,8 @@ extend(Track.prototype, Drawable.prototype, {
             title: _l("Tool parameter space visualization"),
             css_class: "arrow-split",
             on_click_fn: track => {
+                let Galaxy = getGalaxyInstance();
+
                 var html = `
                     <strong>Tool</strong>:${track.tool.get("name")}<br/>
                     <strong>Dataset</strong>:${track.config.get_value("name")}<br/>
@@ -2711,6 +2714,7 @@ extend(Track.prototype, Drawable.prototype, {
                         $("<a href='javascript:void(0);'></a>")
                             .text("View error")
                             .click(() => {
+                                let Galaxy = getGalaxyInstance();
                                 Galaxy.modal.show({
                                     title: _l("Trackster Error"),
                                     body: `<pre>${result.message}</pre>`,

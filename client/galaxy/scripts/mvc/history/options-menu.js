@@ -1,7 +1,7 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
@@ -32,6 +32,7 @@ var menu = [
     {
         html: _l("Create New"),
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.createNewHistory();
             }
@@ -40,6 +41,7 @@ var menu = [
     {
         html: _l("Copy History"),
         func: function() {
+            let Galaxy = getGalaxyInstance();
             historyCopyDialog(Galaxy.currHistoryPanel.model).done(() => {
                 Galaxy.currHistoryPanel.loadCurrentHistory();
             });
@@ -48,6 +50,7 @@ var menu = [
     {
         html: _l("Share or Publish"),
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push(`/histories/sharing?id=${Galaxy.currHistoryPanel.model.id}`);
             }
@@ -57,8 +60,9 @@ var menu = [
         html: _l("Show Structure"),
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
-                Galaxy.router.push(`/histories/show_structure`);
+                Galaxy.router.push("/histories/show_structure");
             }
         }
     },
@@ -70,6 +74,7 @@ var menu = [
         html: _l("Delete"),
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete the current history?"))) {
                 Galaxy.currHistoryPanel.model._delete().done(() => {
                     Galaxy.currHistoryPanel.loadCurrentHistory();
@@ -82,6 +87,7 @@ var menu = [
         purge: true,
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (
                 Galaxy &&
                 Galaxy.currHistoryPanel &&
@@ -106,6 +112,7 @@ var menu = [
     {
         html: _l("Dataset Security"),
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push(`/histories/permissions?id=${Galaxy.currHistoryPanel.model.id}`);
             }
@@ -119,6 +126,7 @@ var menu = [
     {
         html: _l("Collapse Expanded Datasets"),
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.collapseAll();
             }
@@ -128,6 +136,7 @@ var menu = [
         html: _l("Unhide Hidden Datasets"),
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really unhide all hidden datasets?"))) {
                 $.post(`${getAppRoot()}history/adjust_hidden`, { user_action: "unhide" }, () => {
@@ -140,6 +149,7 @@ var menu = [
         html: _l("Delete Hidden Datasets"),
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             // TODO: Deprecate this functionality and replace with group dataset selector and action combination
             if (Galaxy && Galaxy.currHistoryPanel && confirm(_l("Really delete all hidden datasets?"))) {
                 $.post(`${getAppRoot()}history/adjust_hidden`, { user_action: "delete" }, () => {
@@ -164,6 +174,7 @@ var menu = [
         html: _l("Export Tool Citations"),
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel && Galaxy.router) {
                 Galaxy.router.push(`/histories/citations?id=${Galaxy.currHistoryPanel.model.id}`);
             }

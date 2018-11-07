@@ -2,11 +2,11 @@
  * Top-level trackster code, used for creating/loading visualizations and user interface elements.
  */
 
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import tracks from "viz/trackster/tracks";
 import visualization from "viz/visualization";
@@ -29,7 +29,6 @@ import "ui/editable-text";
 //import "static/style/library.css";
 //import "static/style/trackster.css";
 
-/* global Galaxy */
 
 /**
  * User interface controls for trackster
@@ -47,6 +46,8 @@ export class TracksterUI extends Backbone.Model {
      * Save visualization, returning a Deferred object for the remote call to save.
      */
     save_viz() {
+        let Galaxy = getGalaxyInstance();
+
         // show dialog
         Galaxy.modal.show({ title: "Saving...", body: "progress" });
 
@@ -347,6 +348,7 @@ export class TracksterUI extends Backbone.Model {
      * Handle unsaved changes in visualization.
      */
     handle_unsaved_changes(view) {
+        let Galaxy = getGalaxyInstance();
         if (view.has_changes) {
             Galaxy.modal.show({
                 title: _l("Close visualization"),
@@ -415,6 +417,7 @@ export class TracksterUIView extends Backbone.View {
     }
 
     choose_existing_or_new() {
+        let Galaxy = getGalaxyInstance();
         var dbkey = query_string.get("dbkey");
         var listTracksParams = {};
 
@@ -450,6 +453,7 @@ export class TracksterUIView extends Backbone.View {
 
     // view
     view_in_saved(dataset_params) {
+        let Galaxy = getGalaxyInstance();
         var tracks_grid = new GridView({
             url_base: `${getAppRoot()}visualization/list_tracks`,
             embedded: true
@@ -498,6 +502,7 @@ export class TracksterUIView extends Backbone.View {
 
     // view
     view_new() {
+        let Galaxy = getGalaxyInstance();
         // ajax
         $.ajax({
             url: `${getAppRoot()}api/genomes?chrom_info=True`,

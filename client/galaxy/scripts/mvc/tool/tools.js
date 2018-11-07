@@ -1,12 +1,13 @@
 /**
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
-/* global d3 */
 /* global ga */
 import _ from "underscore";
 import $ from "jquery";
+import d3 from "d3";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import util from "viz/trackster/util";
 import { DatasetCollection } from "mvc/dataset/data";
 
@@ -520,6 +521,7 @@ var ToolLinkView = BaseView.extend({
         if (this.model.id === "upload1") {
             $link.find("a").on("click", e => {
                 e.preventDefault();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.upload.show();
             });
         } else if (formStyle === "regular") {
@@ -527,6 +529,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find("a").on("click", e => {
                 e.preventDefault();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
                     version: self.model.get("version")

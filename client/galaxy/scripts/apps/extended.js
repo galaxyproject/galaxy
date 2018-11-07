@@ -1,6 +1,8 @@
-/* global Galaxy, $ */
+import $ from "jquery";
 import "bootstrap";
-export { GalaxyApp } from "galaxy";
+// export { GalaxyApp } from "app";
+import { getGalaxyInstance } from "app";
+export { getGalaxyInstance, setGalaxyInstance } from "app";
 import WorkflowView from "mvc/workflow/workflow-view";
 import { TracksterUIView } from "viz/trackster";
 export { TracksterUI } from "viz/trackster";
@@ -23,21 +25,13 @@ export { default as HistoryViewAnnotated } from "mvc/history/history-view-annota
 export { default as HistoryCopyDialog } from "mvc/history/copy-dialog";
 export { default as HDAListItemEdit } from "mvc/history/hda-li-edit";
 export { default as HDAModel } from "mvc/history/hda-model";
-import addLogging from "utils/add-logging";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
 export { default as ToolshedGroups } from "toolshed/toolshed.groups";
-
 export { chart, chartUtilities } from "./chart";
 
-// TODO: update this when galaxy singleton code is merged
-if (Galaxy && Galaxy.debug === undefined) {
-    //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
-    //here; remove when imports are all fixed.
-    addLogging(Galaxy, "GalaxyApp");
-}
-
 export function masthead(options) {
+    let Galaxy = getGalaxyInstance();
     if (!Galaxy.user) {
         Galaxy.user = new user.User(options.user_json);
     }

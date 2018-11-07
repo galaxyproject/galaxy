@@ -1,4 +1,3 @@
-/* global Galaxy */
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import Connector from "mvc/workflow/workflow-connector";

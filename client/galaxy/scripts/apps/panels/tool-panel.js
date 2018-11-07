@@ -1,6 +1,7 @@
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import Tools from "mvc/tool/tools";
 import Upload from "mvc/upload/upload-view";
 import _l from "utils/localization";
@@ -38,6 +39,7 @@ var ToolPanel = Backbone.View.extend({
         });
 
         // add uploader button to Galaxy object
+        let Galaxy = getGalaxyInstance();
         Galaxy.upload = this.upload_button;
 
         // components for panel definition

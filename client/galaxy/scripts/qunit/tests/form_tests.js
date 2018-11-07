@@ -1,4 +1,9 @@
-/* global define */
+/**
+ * mvc/tool/tool-form is unused.
+ */
+
+ /* global define, QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import InputElement from "mvc/form/form-input";
 import Ui from "mvc/ui/ui-misc";
@@ -17,15 +22,20 @@ QUnit.module("Form test", {
     }
 });
 
-QUnit.test("tool-form", function(assert) {
-    // Huh? The following seems to be needed by tool-form.js - once the global usage
-    // is cleaned up in that module this can be deleted I assume.
-    window.parent.Galaxy = window.Galaxy;
+/*
+Not even used in code anymore
 
-    var toolform = new ToolForm.View({ id: "test" });
+QUnit.test("tool-form", function(assert) {
+
+    // // Huh? The following seems to be needed by tool-form.js - once the global usage
+    // // is cleaned up in that module this can be deleted I assume.
+    // window.parent.Galaxy = window.Galaxy;
+
+    // var toolform = new ToolForm.View({ id: "test" });
+    // $("body").prepend(toolform.$el);
+    // window.fakeserver.respond();
+    
     var form = toolform.form;
-    $("body").prepend(toolform.$el);
-    window.fakeserver.respond();
     var output = "";
     for (var property in assert) {
         output += property + ": ; ";
@@ -86,7 +96,9 @@ QUnit.test("tool-form", function(assert) {
             '{"a":"","b|c":"h","b|i":"i","b|j":"j","k_0|l":"l","k_0|m|n":"o","k_0|m|p":"p","k_0|m|q":"q"}',
         "Created data correct, after removing first repeat"
     );
+
 });
+*/
 
 QUnit.test("data", function(assert) {
     var visits = [];

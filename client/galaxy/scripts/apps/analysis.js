@@ -1,8 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
-import { setGalaxyInstance } from "galaxy.singleton";
+import { setGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-import { GalaxyApp } from "galaxy";
 import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
@@ -44,9 +43,8 @@ import Vue from "vue";
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-    console.log("Analysis init");
-    
-    let Galaxy = setGalaxyInstance(() => {
+
+    let Galaxy = setGalaxyInstance(GalaxyApp => {
         let galaxy = new GalaxyApp(options, bootstrapped);
         galaxy.debug("analysis app");
         return galaxy;

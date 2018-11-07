@@ -14,14 +14,24 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             );
         %endfor
 
-        window.Galaxy = new window.top.bundleEntries.GalaxyApp({
-            root               : '${h.url_for( "/" )}',
-            config             : ${ render_json( get_config_dict() )},
-            user               : ${ render_json( get_user_dict() )},
-            session_csrf_token : '${ trans.session_csrf_token }'
-        }, bootstrapped );
+        var options = {
+            root: '${h.url_for( "/" )}',
+            config: ${ render_json( get_config_dict() )},
+            user: ${ render_json( get_user_dict() )},
+            session_csrf_token: '${ trans.session_csrf_token }'
+        };
+        
+        // an observable would be a lot better at waiting for disjointed
+        // frame/parent frame loading
+        window.addEventListener("load", function() {
+            var galaxy = new window.bundleEntries.getGalaxyInstance();
+            if (galaxy && galaxy._processOptions) {
+                galaxy._processOptions(options);
+            }
+        });
 
         %if app:
+            console.warn("Does app ever run? Is it ever not-named app?");
             require([ '${app}' ]);
         %endif
         

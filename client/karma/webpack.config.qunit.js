@@ -5,7 +5,7 @@
  */
 
 let wpConfig = require("../webpack.config");
-wpConfig.mode = "production";
+wpConfig.mode = "development";
 wpConfig.entry = () => ({});
 
 const switchPlugin = (reMatcher, replacement) => {

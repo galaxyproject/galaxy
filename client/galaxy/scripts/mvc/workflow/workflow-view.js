@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
@@ -560,6 +560,7 @@ export default Backbone.View.extend({
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
+                        let Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
@@ -774,6 +775,7 @@ export default Backbone.View.extend({
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
+        let Galaxy = getGalaxyInstance();
         if (content && $container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;

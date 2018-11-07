@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
-import $ from "jquery";
+import {$,jQuery} from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
@@ -78,6 +78,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     render: function(options) {
         this.options = _.extend(this.options, options);
+        let Galaxy = getGalaxyInstance();
         var toolbar_template = this.templateToolBar();
         var template_defaults = {
             id: this.options.id,
@@ -105,6 +106,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     renderPaginator: function(options) {
         this.options = _.extend(this.options, options);
+        let Galaxy = getGalaxyInstance();
         var paginator_template = this.templatePaginator();
         $("body")
             .find(".folder-paginator")
@@ -122,6 +124,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     configureElements: function(options) {
         this.options = _.extend(this.options, options);
+        let Galaxy = getGalaxyInstance();
 
         if (this.options.can_add_library_item === true) {
             $(".add-library-items").show();
@@ -151,6 +154,7 @@ var FolderToolbarView = Backbone.View.extend({
     createFolderFromModal: function(event) {
         event.preventDefault();
         event.stopPropagation();
+        let Galaxy = getGalaxyInstance();
         var template = this.templateNewFolderInModal();
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -169,6 +173,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     createNewFolderEvent: function() {
+        let Galaxy = getGalaxyInstance();
         var folderDetails = this.serializeNewFolder();
         if (this.validateNewFolder(folderDetails)) {
             var folder = new mod_library_model.FolderAsModel();
@@ -216,6 +221,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     importToHistoryModal: function(e) {
         e.preventDefault();
+        let Galaxy = getGalaxyInstance();
         var $checkedValues = this.findCheckedRows();
         var template = this.templateImportIntoHistoryModal();
         if ($checkedValues.length === 0) {
@@ -366,6 +372,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     addFilesFromHistoryModal: function() {
+        let Galaxy = getGalaxyInstance();
         this.histories = new mod_library_model.GalaxyHistories();
         this.histories
             .fetch()
@@ -408,6 +415,7 @@ var FolderToolbarView = Backbone.View.extend({
      * Create modal for importing from Galaxy path.
      */
     importFilesFromPathModal: function() {
+        let Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal;
         var template_modal = this.templateImportPathModal();
         this.modal.show({
@@ -471,6 +479,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     renderSelectBoxes: function() {
+        let Galaxy = getGalaxyInstance();
         // This won't work properly unlesss we already have the data fetched.
         // See this.fetchExtAndGenomes()
         this.select_genome = new mod_select.View({
@@ -493,6 +502,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     importFilesFromGalaxyFolderModal: function(options) {
         var template_modal = this.templateBrowserModal();
+        let Galaxy = getGalaxyInstance();
         this.modal = Galaxy.modal;
         this.modal.show({
             closing_events: true,
@@ -639,6 +649,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param {int} length The number of items in the chain call.
      */
     initChainCallControl: function(options) {
+        let Galaxy = getGalaxyInstance();
         var template;
         switch (options.action) {
             case "adding_datasets":
@@ -815,6 +826,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {str} history_name     name of the history to import to
      */
     chainCallImportingIntoHistory: function(history_item_set, history_name) {
+        let Galaxy = getGalaxyInstance();
         var popped_item = history_item_set.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
@@ -865,6 +877,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
      */
     chainCallImportingUserdirFiles: function(options) {
+        let Galaxy = getGalaxyInstance();
         var popped_item = options.paths.pop();
         if (typeof popped_item === "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
@@ -911,6 +924,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {boolean} tag_using_filenames    add tags to datasets using names of files
      */
     chainCallImportingFolders: function(options) {
+        let Galaxy = getGalaxyInstance();
         // TODO need to check which paths to call
         var popped_item = options.paths.pop();
         if (typeof popped_item == "undefined") {
@@ -952,6 +966,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {array} hdas_set array of empty hda objects
      */
     chainCallAddingHdas: function(hdas_set) {
+        let Galaxy = getGalaxyInstance();
         this.added_hdas = new mod_library_model.Folder();
         var popped_item = hdas_set.pop();
         if (typeof popped_item == "undefined") {
@@ -990,6 +1005,7 @@ var FolderToolbarView = Backbone.View.extend({
      * @param  {array} lddas_set array of lddas to delete
      */
     chainCallDeletingItems: function(items_to_delete) {
+        let Galaxy = getGalaxyInstance();
         this.deleted_items = new mod_library_model.Folder();
         var item_to_delete = items_to_delete.pop();
         if (typeof item_to_delete === "undefined") {
@@ -1038,6 +1054,7 @@ var FolderToolbarView = Backbone.View.extend({
      * Handles the click on 'show deleted' checkbox
      */
     checkIncludeDeleted: function(event) {
+        let Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.folderListView.fetchFolder({
                 include_deleted: true
@@ -1053,6 +1070,7 @@ var FolderToolbarView = Backbone.View.extend({
      * Delete the selected items. Atomic. One by one.
      */
     deleteSelectedItems: function() {
+        let Galaxy = getGalaxyInstance();
         var dataset_ids = [];
         var folder_ids = [];
         var $checkedValues = this.findCheckedRows();
@@ -1114,6 +1132,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showLocInfo: function() {
+        let Galaxy = getGalaxyInstance();
         var library = null;
         if (Galaxy.libraries.libraryListView !== null) {
             library = Galaxy.libraries.libraryListView.collection.get(this.options.parent_library_id);
@@ -1138,6 +1157,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showLocInfoModal: function(library) {
+        let Galaxy = getGalaxyInstance();
         var template = this.templateLocInfoInModal();
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -1153,6 +1173,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showImportModal: function(options) {
+        let Galaxy = getGalaxyInstance();
         switch (options.source) {
             case "history":
                 this.addFilesFromHistoryModal();
@@ -1182,6 +1203,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     showPageSizePrompt: function(e) {
         e.preventDefault();
+        let Galaxy = getGalaxyInstance();
         var folder_page_size = prompt(
             "How many items per page do you want to see?",
             Galaxy.libraries.preferences.get("folder_page_size")
@@ -1220,6 +1242,7 @@ var FolderToolbarView = Backbone.View.extend({
 
     showCollectionSelect: function(e) {
         e.preventDefault();
+        let Galaxy = getGalaxyInstance();
         var checked_items = this.findCheckedItems();
         var template = this.templateCollectionSelectModal();
         this.modal = Galaxy.modal;
@@ -1283,6 +1306,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     showColectionBuilder: function(checked_items) {
+        let Galaxy = getGalaxyInstance();
         let collection_elements = [];
         let elements_source = this.modal.$('input[type="radio"]:checked').val();
         if (elements_source === "selection") {
@@ -1385,6 +1409,7 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     templateToolBar: function() {
+        let Galaxy = getGalaxyInstance();
         return _.template(
             [
                 '<div class="library_style_container">', // container start

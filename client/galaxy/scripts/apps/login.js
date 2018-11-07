@@ -1,16 +1,15 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { GalaxyApp } from "galaxy";
 import _l from "utils/localization";
 import Page from "layout/page";
-import { setGalaxyInstance } from "galaxy.singleton";
+import { setGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 
 window.app = function app(options, bootstrapped) {
     console.log("Analysis init");
     
-    let Galaxy = setGalaxyInstance(() => {
+    let Galaxy = setGalaxyInstance(GalaxyApp => {
         let galaxy = new GalaxyApp(options, bootstrapped);
         galaxy.debug("login app");
         return galaxy;

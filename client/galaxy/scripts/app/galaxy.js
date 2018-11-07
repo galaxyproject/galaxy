@@ -1,4 +1,3 @@
-/* global Galaxy */
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
@@ -7,8 +6,8 @@ import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
+import { serverPath } from "utils/serverPath";
 
-// TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
 /** Base galaxy client-side application.
  *      Iniitializes:
@@ -18,9 +17,9 @@ import localize from "utils/localization";
  *              galaxy.ini available from the configuration API)
  *          user        : the current user (as a mvc/user/user-model)
  */
-export function GalaxyApp(options, bootstrapped) {
-    var self = this;
-    return self._init(options || {}, bootstrapped || {});
+export function GalaxyApp(options = {}, bootstrapped = {}) {
+    // console.warn("GalaxyApp constructor", serverPath());
+    this._init(options, bootstrapped);
 }
 
 // add logging shortcuts for this object
@@ -40,7 +39,7 @@ try {
 }
 
 /** initalize options and sub-components */
-GalaxyApp.prototype._init = function __init(options, bootstrapped) {
+GalaxyApp.prototype._init = function(options, bootstrapped) {
     var self = this;
     _.extend(self, Backbone.Events);
     if (localDebugging) {
@@ -56,7 +55,9 @@ GalaxyApp.prototype._init = function __init(options, bootstrapped) {
     self.session_csrf_token = options.session_csrf_token || null;
 
     self._initConfig(options.config || {});
-    self._patchGalaxy(Galaxy);
+
+    // Don't do this by default
+    // self._patchGalaxy(Galaxy);
 
     self._initLogger(self.options.loggerOptions || {});
     // at this point, either logging or not and namespaces are enabled - chat it up
@@ -92,18 +93,29 @@ GalaxyApp.prototype.defaultOptions = {
 };
 
 /** filter to options present in defaultOptions (and default to them) */
-GalaxyApp.prototype._processOptions = function _processOptions(options) {
-    var self = this;
-    var defaults = self.defaultOptions;
-
-    self.options = {};
-    for (var k in defaults) {
-        if (defaults.hasOwnProperty(k)) {
-            self.options[k] = options.hasOwnProperty(k) ? options[k] : defaults[k];
-        }
-    }
-    return self;
+GalaxyApp.prototype._processOptions = function _processOptions(newOptions = {}) {
+    this.options = Object.assign({}, this.options || {}, newOptions);
 };
+
+
+/*
+// Actually, it looks like _processOptions doesn't want a sanitized list after all
+
+// returns subset of passed options that match the defaults
+GalaxyApp.prototype._validateOptions = function _validateOptions(newOptions) {
+    console.log("newOptions", newOptions);
+    console.log("defaults", this.defaultOptions);
+    let result = Object.keys(this.defaultOptions)
+        .reduce((result, key) => {
+            if (newOptions.hasOwnProperty(key)) {
+                result[key] = newOptions[key];
+            }
+            return result;
+        }, {});
+    console.log("result", result);
+    return result;
+};
+*/
 
 /** parse the config and any extra info derived from it */
 GalaxyApp.prototype._initConfig = function _initConfig(config) {
@@ -116,13 +128,22 @@ GalaxyApp.prototype._initConfig = function _initConfig(config) {
     return self;
 };
 
-/** add an option from options if the key matches an option in defaultOptions */
-GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
-    // We don't want this behavior any-more but temporarily put a log in here
-    // so we can see when it used to run, just in case
-    console.warn("GalaxyApp._patchGalaxy, no longer want this to happen by default", patchWith);
+// This is explicitly called when needed now instead of automagically
+GalaxyApp.prototype.patchGalaxy = function patchGalaxy(patchWith) {
+    var self = this;
+    // in case req or plain script tag order has created a prev. version of the Galaxy obj...
+    if (self.options.patchExisting && patchWith) {
+        // self.debug( 'found existing Galaxy object:', patchWith );
+        // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
+        //TODO: move those attributes to more formal assignment in GalaxyApp
+        for (var k in patchWith) {
+            if (patchWith.hasOwnProperty(k)) {
+                // self.debug( '\t patching in ' + k + ' to Galaxy:', self[ k ] );
+                self[k] = patchWith[k];
+            }
+        }
+    }
 };
-
 
 /** set up the metrics logger (utils/metrics-logger) and pass loggerOptions */
 GalaxyApp.prototype._initLogger = function _initLogger(loggerOptions) {

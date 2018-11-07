@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
 import {$, jQuery} from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import levenshteinDistance from "utils/levenshtein";
 import naturalSort from "utils/natural-sort";
 import baseCreator from "mvc/collection/base-creator";
@@ -1796,6 +1796,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 //=============================================================================
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datasets, options) {
+    var Galaxy = getGalaxyInstance();
     var deferred = jQuery.Deferred();
     var creator;
 

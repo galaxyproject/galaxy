@@ -2,10 +2,11 @@
 // === MAIN GALAXY LIBRARY MODULE ====
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
-/* global Galaxy, ga */
+/* global ga */
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 // import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 import mod_baseMVC from "mvc/base-mvc";
@@ -109,6 +110,7 @@ var GalaxyLibrary = Backbone.View.extend({
 
     initialize: function() {
         // This should go upstream in the js app once available
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.config.ga_code) {
             ((i, s, o, g, r, a, m) => {
                 i["GoogleAnalyticsObject"] = r;

@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
@@ -38,6 +38,7 @@ var LibraryView = Backbone.View.extend({
                 }
             },
             error: function(model, response) {
+                let Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
@@ -67,6 +68,7 @@ var LibraryView = Backbone.View.extend({
             }
         }
         var is_admin = false;
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.user) {
             is_admin = Galaxy.user.isAdmin();
         }

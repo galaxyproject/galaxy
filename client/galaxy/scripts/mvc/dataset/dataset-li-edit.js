@@ -1,7 +1,7 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
 import TAGS from "mvc/tag";
@@ -63,6 +63,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/edit", {
@@ -159,9 +160,12 @@ var DatasetListItemEdit = _super.extend(
                         parseToolBuild({});
                     });
             };
+
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.id === null) {
                 return null;
             }
+
             return faIconButton({
                 title: _l("Tool Help"),
                 classes: "icon-btn",
@@ -219,6 +223,7 @@ var DatasetListItemEdit = _super.extend(
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
@@ -240,6 +245,7 @@ var DatasetListItemEdit = _super.extend(
                     target: this.linkTarget,
                     faIcon: "fa-refresh",
                     onclick: function(ev) {
+                        let Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("/", {
@@ -272,6 +278,7 @@ var DatasetListItemEdit = _super.extend(
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
                     onclick: ev => {
+                        let Galaxy = getGalaxyInstance();
                         if (Galaxy.frame && Galaxy.frame.active) {
                             ev.preventDefault();
                             Galaxy.frame.add({ url: url, title: "Visualization" });

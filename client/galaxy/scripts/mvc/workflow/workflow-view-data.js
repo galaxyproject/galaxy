@@ -1,4 +1,3 @@
-/* global Galaxy */
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";

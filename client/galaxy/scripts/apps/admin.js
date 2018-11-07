@@ -1,9 +1,8 @@
 import $ from "jquery";
 import _ from "underscore";
 import _l from "utils/localization";
-import { setGalaxyInstance } from "galaxy.singleton";
+import { setGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-import { GalaxyApp } from "galaxy";
 import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
@@ -16,11 +15,12 @@ import DataTypes from "components/admin/DataTypes.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Vue from "vue";
+import { serverPath } from "utils/serverPath";
 
 window.app = function app(options, bootstrapped) {
-    console.log("Admin init");
+    console.warn("Admin init", serverPath());
 
-    let Galaxy = setGalaxyInstance(() => {
+    let Galaxy = setGalaxyInstance(GalaxyApp => {
         let galaxy = new GalaxyApp(options, bootstrapped);
         galaxy.debug("admin app");
         return galaxy;

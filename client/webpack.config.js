@@ -157,7 +157,7 @@ let buildconfig = {
             jQuery: `${libsBase}/jquery.custom.js`,
             _: "underscore",
             Backbone: "backbone",
-            Galaxy: ["galaxy.monitor", "default"]
+            Galaxy: ["app", "monitor"]
         }),
         new VueLoaderPlugin(),
         new MiniCssExtractPlugin({

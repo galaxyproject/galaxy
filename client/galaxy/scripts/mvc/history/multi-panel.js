@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { HistoryCollection } from "mvc/history/history-model";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
@@ -474,6 +474,7 @@ var MultiPanelColumns = Backbone.View.extend(baseMVC.LoggableMixin).extend({
 
     /** create a column and its panel and set up any listeners to them */
     createColumn: function createColumn(history, options) {
+        let Galaxy = getGalaxyInstance();
         // options passed can be re-used, so extend them before adding the model to prevent pollution for the next
         options = _.extend({}, options, {
             model: history,

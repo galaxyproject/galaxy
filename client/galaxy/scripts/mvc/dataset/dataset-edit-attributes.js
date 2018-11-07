@@ -1,10 +1,10 @@
-/* global Galaxy */
+/** Dataset edit attributes view */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-/** Dataset edit attributes view */
 // import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
 import Ui from "mvc/ui/ui-misc";
@@ -12,6 +12,7 @@ import Form from "mvc/form/form-view";
 
 var View = Backbone.View.extend({
     initialize: function() {
+        let Galaxy = getGalaxyInstance();
         this.setElement("<div/>");
         this.model = new Backbone.Model({
             dataset_id: Galaxy.params.dataset_id
@@ -205,6 +206,7 @@ var View = Backbone.View.extend({
 
     /** reload Galaxy's history after updating dataset's attributes */
     _reloadHistory: function() {
+        let Galaxy = getGalaxyInstance();
         if (Galaxy) {
             Galaxy.currHistoryPanel.loadCurrentHistory();
         }

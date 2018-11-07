@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import * as d3 from "d3";
 import { event as currentEvent } from "d3";
@@ -1172,6 +1172,8 @@ var Circster = Backbone.View.extend({
                     icon_class: "disk--arrow",
                     title: _l("Save"),
                     on_click: function() {
+                        let Galaxy = getGalaxyInstance();
+                        
                         // show saving dialog box
                         Galaxy.modal.show({
                             title: _l("Saving..."),

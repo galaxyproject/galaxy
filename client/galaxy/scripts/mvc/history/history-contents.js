@@ -1,6 +1,5 @@
-/* global Galaxy */
 import _ from "underscore";
-import $ from "jquery";
+import jQuery from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";

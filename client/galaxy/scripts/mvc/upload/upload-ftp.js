@@ -1,16 +1,14 @@
 /** This renders the content of the ftp popup **/
-
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.model = new Backbone.Model({
             cls: "upload-ftp",
             class_add: "upload-icon-button fa fa-square-o",
@@ -31,6 +29,7 @@ export default Backbone.View.extend({
         }).set(options);
 
         this.collection = this.model.get("collection");
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.config.enable_oidc) {
             this.model.set("help_text", this.model.get("help_text") + this.model.get("oidc_text"));
         }

@@ -1,7 +1,7 @@
-/* global Galaxy */
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import Deferred from "utils/deferred";
 import Modal from "mvc/ui/ui-modal";
 import Ui from "mvc/ui/ui-misc";
@@ -12,7 +12,8 @@ import Menu from "mvc/visualization/chart/views/menu";
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        this.modal = (window.parent.Galaxy && window.parent.Galaxy.modal) || new Modal.View();
+        let Galaxy = getGalaxyInstance();
+        this.modal = (Galaxy && Galaxy.modal) ? Galaxy.modal : new Modal.View();
         this.setElement(
             $("<div/>")
                 .addClass("charts-client")

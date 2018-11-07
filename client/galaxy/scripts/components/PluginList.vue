@@ -49,6 +49,7 @@
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import axios from "axios";
 
 export default {
@@ -64,6 +65,7 @@ export default {
         };
     },
     created() {
+        let Galaxy = getGalaxyInstance();
         let url = `${getAppRoot()}api/plugins`;
         let dataset_id = Galaxy.params.dataset_id;
         if (dataset_id) {
@@ -85,6 +87,7 @@ export default {
             if (this.fixed) {
                 this.create(plugin);
             } else {
+                let Galaxy = getGalaxyInstance();
                 let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
                 if (history_id) {
                     axios

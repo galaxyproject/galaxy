@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
-import $ from "jquery";
+import {$,jQuery} from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
@@ -66,6 +66,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     fetchDataset: function(options) {
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.Item({
             id: this.options.id
@@ -182,6 +183,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     importIntoHistory: function() {
         this.refreshUserHistoriesList(self => {
+            let Galaxy = getGalaxyInstance();
             var template = self.templateBulkImportInModal();
             self.modal = Galaxy.modal;
             self.modal.show({
@@ -252,6 +254,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     processImportToHistory: function(history_id) {
+        let Galaxy = getGalaxyInstance();
         var historyItem = new mod_library_model.HistoryItem();
         historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
@@ -281,6 +284,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     showPermissions: function(options) {
+        let Galaxy = getGalaxyInstance();
         var template = this.templateDatasetPermissions();
         var self = this;
         this.options = _.extend(this.options, options);

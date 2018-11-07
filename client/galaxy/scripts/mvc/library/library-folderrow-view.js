@@ -1,8 +1,8 @@
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_dataset_view from "mvc/library/library-dataset-view";
@@ -36,6 +36,7 @@ var FolderRowView = Backbone.View.extend({
         this.options = _.extend(this.options, options);
         var folder_item = this.options.model;
         var template = null;
+        let Galaxy = getGalaxyInstance();
 
         if (folder_item.get("type") === "folder" || folder_item.get("model_class") === "LibraryFolder") {
             this.options.type = "folder";
@@ -104,12 +105,14 @@ var FolderRowView = Backbone.View.extend({
 
     /* Show the page with dataset details. */
     showDatasetDetails: function() {
+        let Galaxy = getGalaxyInstance();
         Galaxy.libraries.datasetView = new mod_library_dataset_view.LibraryDatasetView({ id: this.id });
     },
 
     /* Undelete the dataset on server and render the row again. */
     undeleteDataset: function(event) {
         $(".tooltip").hide();
+        let Galaxy = getGalaxyInstance();
         var that = this;
         var dataset_id = $(event.target)
             .closest("tr")
@@ -141,6 +144,7 @@ var FolderRowView = Backbone.View.extend({
 
     /* Undelete the folder on server and render the row again. */
     undeleteFolder: function(event) {
+        let Galaxy = getGalaxyInstance();
         $(".tooltip").hide();
         var that = this;
         var folder_id = $(event.target)
@@ -179,6 +183,7 @@ var FolderRowView = Backbone.View.extend({
     },
 
     saveModifications: function() {
+        let Galaxy = getGalaxyInstance();
         var folder = Galaxy.libraries.folderListView.collection.get(this.$el.data("id"));
         var is_changed = false;
         var new_name = this.$el.find(".input_folder_name").val();

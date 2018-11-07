@@ -90,6 +90,7 @@
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import axios from "axios";
 import async_save_text from "utils/async-save-text";
 import Vue from "vue";
@@ -149,6 +150,7 @@ export default {
         }
     },
     data() {
+        let Galaxy = getGalaxyInstance();
         return {
             ready: false,
             has_username: Galaxy.user.get("username"),
@@ -184,6 +186,7 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setUsername: function() {
+            let Galaxy = getGalaxyInstance();
             axios
                 .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
                     username: this.new_username || ""

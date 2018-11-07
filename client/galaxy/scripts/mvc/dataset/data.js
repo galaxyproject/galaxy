@@ -4,6 +4,7 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { getGalaxyInstance } from "app";
 
 /**
  * Dataset metedata.
@@ -377,7 +378,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
     // backbone initialize
     initialize: function(options) {
         // check if environment is available
-        var Galaxy = parent.Galaxy;
+        let Galaxy = getGalaxyInstance();
 
         // link galaxy modal or create one
         if (Galaxy && Galaxy.modal) {

@@ -3,10 +3,10 @@
  * do not require their own classes/files
  */
 
-/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 
 /** Builds a basic iframe */
@@ -341,6 +341,7 @@ export function getQueryString(key) {
 }
 
 export function setWindowTitle(title) {
+    let Galaxy = getGalaxyInstance();
     if (title) {
         window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(
             title

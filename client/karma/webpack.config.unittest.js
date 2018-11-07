@@ -6,7 +6,7 @@
 let merge = require("webpack-merge");
 let wpConfig = require("../webpack.config");
 
-wpConfig.mode = "production";
+wpConfig.mode = "development";
 wpConfig.entry = () => ({});
 
 // Don't need assets for unit testing, override those rules

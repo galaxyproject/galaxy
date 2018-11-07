@@ -1,6 +1,7 @@
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
@@ -141,7 +142,7 @@ var TagsEditor = Backbone.View.extend(baseMVC.LoggableMixin)
 
         /** @returns {String[]} all tags used by the current user */
         _getTagsUsed: function() {
-            //TODO: global
+            let Galaxy = getGalaxyInstance();
             var self = this;
             return _.map(Galaxy.user.get("tags_used"), self._nameToHash);
         },
@@ -167,7 +168,7 @@ var TagsEditor = Backbone.View.extend(baseMVC.LoggableMixin)
          *  @param {String} newTag  the tag to add to the list of used
          */
         _addNewTagToTagsUsed: function(newTag) {
-            //TODO: global
+            let Galaxy = getGalaxyInstance();
             var tagsUsed = Galaxy.user.get("tags_used");
             if (!_.contains(tagsUsed, newTag)) {
                 tagsUsed.push(newTag);

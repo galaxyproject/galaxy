@@ -1,10 +1,9 @@
-/* global Galaxy */
-
 /** Frame manager uses the ui-frames to create the scratch book masthead icon and functionality **/
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import Frames from "mvc/ui/ui-frames";
 import { Dataset, createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
 import visualization from "viz/visualization";
@@ -76,6 +75,7 @@ export default Backbone.View.extend({
     addDataset: function(dataset_id) {
         var self = this;
         var current_dataset = null;
+        let Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
             var history_id = Galaxy.currHistoryPanel.collection.historyId;
             this.history_cache[history_id] = {
