@@ -1,11 +1,11 @@
+from selenium.webdriver.support.ui import Select
+
 from .framework import (
     retry_assertion_during_transitions,
     retry_during_transitions,
     selenium_test,
     SeleniumTestCase,
 )
-
-from selenium.webdriver.support.ui import Select
 
 
 class LibraryContentsTestCase(SeleniumTestCase):
