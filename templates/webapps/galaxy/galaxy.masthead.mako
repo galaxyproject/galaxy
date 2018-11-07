@@ -37,9 +37,6 @@
 
     ## load the frame manager
     <script type="text/javascript">
-        if( !window.Galaxy ){
-            Galaxy = {};
-        }
 
         // if we're in an iframe, create styles that hide masthead/messagebox, and reset top for panels
         // note: don't use a link to avoid roundtrip request

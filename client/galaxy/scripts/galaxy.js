@@ -1,3 +1,4 @@
+/* global Galaxy */
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
@@ -55,7 +56,7 @@ GalaxyApp.prototype._init = function __init(options, bootstrapped) {
     self.session_csrf_token = options.session_csrf_token || null;
 
     self._initConfig(options.config || {});
-    self._patchGalaxy(window.Galaxy);
+    self._patchGalaxy(Galaxy);
 
     self._initLogger(self.options.loggerOptions || {});
     // at this point, either logging or not and namespaces are enabled - chat it up
@@ -83,7 +84,7 @@ GalaxyApp.prototype._init = function __init(options, bootstrapped) {
 
 /** default options */
 GalaxyApp.prototype.defaultOptions = {
-    /** monkey patch attributes from existing window.Galaxy object? */
+    /** monkey patch attributes from existing Galaxy object? */
     patchExisting: true,
     /** root url of this app */
     root: "/",

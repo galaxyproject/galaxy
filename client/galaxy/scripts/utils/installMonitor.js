@@ -10,12 +10,10 @@
 import { mock } from "utils/mock";
 const fakeLogger = mock(console);
 
-console.log("installMonitor");
-
 // stores values that are returned when somebody asks for window.Something
 window._monitorStorage = window._monitorStorage || {};
 
-export function installMonitor(globalProp, fallbackValue = null) {
+export function installMonitor(globalProp, fallbackValue) {
     let label = `window.${globalProp}`;
     let debug = isPropMonitored(globalProp);
     let logger = debug ? console : fakeLogger;
@@ -62,24 +60,32 @@ export function installMonitor(globalProp, fallbackValue = null) {
         {},
         {
             get(o, prop) {
-                logger.groupCollapsed(`${label}.${prop} read`);
                 let target = window[globalProp];
-                logger.log("o?", o);
-                logger.log("target?", target);
-                logger.trace();
-                logger.groupEnd();
-                let val = target[prop];
-                return val;
+                try {
+                    logger.groupCollapsed(`${label}.${prop} read`);
+                    logger.trace();
+                    logger.groupEnd();
+                    let val = target[prop];
+                    return val;
+                } catch (err) {
+                    console.log("Unable to retrieve property from proxy", err, target, globalProp)
+                    return undefined;
+                }
             },
             set(o, prop, val) {
+                let didWrite = true;
                 let target = window[globalProp];
-                logger.groupCollapsed(`${label}.${prop} write`, val);
-                logger.log("o?", o);
-                logger.log("target?", target);
-                logger.trace();
+                logger.groupCollapsed(`${label}.${prop} write`, typeof(val));
+                try {
+                    logger.log("new value", val);
+                    logger.trace();
+                    target[prop] = val;
+                } catch(err) {
+                    logger.warn("Unable to write", globalProp, val);
+                    didWrite = false;
+                }
                 logger.groupEnd();
-                target[prop] = val;
-                return true;
+                return didWrite;
             }
         }
     );

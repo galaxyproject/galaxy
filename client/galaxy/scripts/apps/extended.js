@@ -31,10 +31,10 @@ export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 export { chart, chartUtilities } from "./chart";
 
 // TODO: update this when galaxy singleton code is merged
-if (window.Galaxy && window.Galaxy.debug === undefined) {
+if (Galaxy && Galaxy.debug === undefined) {
     //TODO: (kind of a temporary hack?) Must have Galaxy.logging for some of the imports
     //here; remove when imports are all fixed.
-    addLogging(window.Galaxy, "GalaxyApp");
+    addLogging(Galaxy, "GalaxyApp");
 }
 
 export function masthead(options) {

@@ -189,9 +189,9 @@ var View = Backbone.View.extend({
 
     /** Check if the communication server is online and show the icon otherwise hide the icon */
     _checkCommunicationServerOnline: function() {
-        var host = window.Galaxy.config.communication_server_host;
-        var port = window.Galaxy.config.communication_server_port;
-        var preferences = window.Galaxy.user.attributes.preferences;
+        var host = Galaxy.config.communication_server_host;
+        var port = Galaxy.config.communication_server_port;
+        var preferences = Galaxy.user.attributes.preferences;
         var $chat_icon_element = $("#show-chat-online");
         /** Check if the user has deactivated the communication in it's personal settings */
         if (preferences && ["1", "true"].indexOf(preferences.communication_server) != -1) {
@@ -201,7 +201,7 @@ var View = Backbone.View.extend({
             })
                 .success(data => {
                     // enable communication only when a user is logged in
-                    if (window.Galaxy.user.id !== null) {
+                    if (Galaxy.user.id !== null) {
                         if ($chat_icon_element.css("visibility") === "hidden") {
                             $chat_icon_element.css("visibility", "visible");
                         }

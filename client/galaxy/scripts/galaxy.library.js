@@ -2,13 +2,14 @@
 // === MAIN GALAXY LIBRARY MODULE ====
 // MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 
+/* global Galaxy, ga */
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import mod_utils from "utils/utils";
+// import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";
 import mod_baseMVC from "mvc/base-mvc";
-import mod_library_model from "mvc/library/library-model";
+// import mod_library_model from "mvc/library/library-model";
 import mod_folderlist_view from "mvc/library/library-folderlist-view";
 import mod_librarylist_view from "mvc/library/library-librarylist-view";
 import mod_librarytoolbar_view from "mvc/library/library-librarytoolbar-view";
@@ -108,7 +109,7 @@ var GalaxyLibrary = Backbone.View.extend({
 
     initialize: function() {
         // This should go upstream in the js app once available
-        if (window.Galaxy.config.ga_code) {
+        if (Galaxy.config.ga_code) {
             ((i, s, o, g, r, a, m) => {
                 i["GoogleAnalyticsObject"] = r;
                 (i[r] =
@@ -122,7 +123,7 @@ var GalaxyLibrary = Backbone.View.extend({
                 a.src = g;
                 m.parentNode.insertBefore(a, m);
             })(window, document, "script", "//www.google-analytics.com/analytics.js", "ga");
-            ga("create", window.Galaxy.config.ga_code, "auto");
+            ga("create", Galaxy.config.ga_code, "auto");
             ga("send", "pageview");
         }
 

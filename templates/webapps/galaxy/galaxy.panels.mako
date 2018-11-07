@@ -52,10 +52,7 @@
 </%def>
 
 <%def name="javascripts()">
-    <script>
-        window.Galaxy = window.Galaxy || {};
-        window.Galaxy.root = '${h.url_for( "/" )}';
-    </script>
+
     ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/raven" )}

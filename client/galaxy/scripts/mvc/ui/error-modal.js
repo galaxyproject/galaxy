@@ -1,3 +1,6 @@
+/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
 import _l from "utils/localization";
 
 //TODO: toastr is another possibility - I didn't see where I might add details, tho
@@ -73,7 +76,7 @@ function errorModal(message, title, details) {
 
     message = _l(message);
     title = _l(title) || _l("Error:");
-    if (window.Galaxy && Galaxy.modal) {
+    if (Galaxy && Galaxy.modal) {
         return _errorModal(message, title, details);
     }
 

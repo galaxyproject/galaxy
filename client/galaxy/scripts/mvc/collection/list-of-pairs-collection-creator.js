@@ -1,5 +1,6 @@
+/* global Galaxy */
 import _ from "underscore";
-import $ from "jquery";
+import {$, jQuery} from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import levenshteinDistance from "utils/levenshtein";
@@ -1811,7 +1812,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
         title: _l("Create a collection of paired datasets")
     });
 
-    if (!window.Galaxy || !Galaxy.modal) {
+    if (!Galaxy || !Galaxy.modal) {
         throw new Error("Galaxy or Galaxy.modal not found");
     }
 

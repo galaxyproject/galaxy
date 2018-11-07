@@ -205,8 +205,8 @@ var View = Backbone.View.extend({
 
     /** reload Galaxy's history after updating dataset's attributes */
     _reloadHistory: function() {
-        if (window.Galaxy) {
-            window.Galaxy.currHistoryPanel.loadCurrentHistory();
+        if (Galaxy) {
+            Galaxy.currHistoryPanel.loadCurrentHistory();
         }
     }
 });

@@ -3,6 +3,7 @@
  * do not require their own classes/files
  */
 
+/* global Galaxy */
 import _ from "underscore";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
@@ -341,11 +342,11 @@ export function getQueryString(key) {
 
 export function setWindowTitle(title) {
     if (title) {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""} | ${_l(
+        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(
             title
         )}`;
     } else {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""}`;
+        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
     }
 }
 
