@@ -222,11 +222,11 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="panel-header-buttons" style="float: right">
+        <div class="panel-header-buttons">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
-        <div class="unified-panel-header-inner" id="workflow-canvas-title">
-            Workflow Canvas | ${h.to_unicode( stored.name ) | h}
+        <div class="unified-panel-header-inner">
+            ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
     <div class="unified-panel-body" id="workflow-canvas-body">

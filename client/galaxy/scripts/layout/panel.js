@@ -45,7 +45,7 @@ var SidePanel = Backbone.View.extend({
     _templateHeader: function(data) {
         return `<div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
-                        <div class="panel-header-buttons" style="float: right"/>
+                        <div class="panel-header-buttons"/>
                         <div class="panel-header-text"/>
                     </div>
                 </div>
