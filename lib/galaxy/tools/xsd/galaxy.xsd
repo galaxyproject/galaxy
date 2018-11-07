@@ -347,7 +347,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="split_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A comma separated list of data inputs to split for job parallelization.</xs:documentation>
+        <xs:documentation xml:lang="en">A comma-separated list of data inputs to split for job parallelization.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="split_size" type="xs:string">
@@ -362,7 +362,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="shared_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A comma separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
+        <xs:documentation xml:lang="en">A comma-separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2360,7 +2360,7 @@ file. Use the file extension.</xs:documentation>
 This is only valid if ``type`` is ``data_collection``. Restrict the kind of
 collection that can be consumed by this parameter (e.g. ``paired``,
 ``list:paired``, ``list``). Multiple such collection types can be specified here
-as a comma separated list.
+as a comma-separated list.
 
               ]]></xs:documentation>
           </xs:annotation>
