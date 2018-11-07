@@ -560,13 +560,6 @@ div.metadataHelpBody {
     overflow: auto;
 }
 
-div.titleRow {
-    font-weight: bold;
-    border-bottom: dotted gray 1px;
-    margin-bottom: 0.5em;
-    padding-bottom: 0.25em;
-}
-
 // Forms
 
 div.toolFormBody div.toolFormTitle {
@@ -596,22 +589,76 @@ div.toolHelpBody {
 }
 
 // In workflow
+div.toolTitleDisabled {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: square outside;
+    font-style: italic;
+    color: gray;
+}
+
+div.toolTitleNoSectionDisabled {
+      padding-bottom: 0px;
+      font-style: italic;
+      color: gray;
+}
+
+div.toolFormRow {
+    position: relative;
+}
+
+.callout {
+    position: absolute;
+    z-index: 10000;
+    div.buttons img {
+        border: none;
+        width: 16px;
+        height: 16px;
+        cursor: pointer;
+    }
+}
 
 .toolForm.toolFormInCanvas {
+    z-index: 100;
+    position: absolute;
     border: solid $form-border 1px;
     @include border-radius(2px);
     background: $white;
     margin: 0px;
     &.toolForm-active {
+        z-index: 1001;
         box-shadow: 0 0 0 3px $brand-primary;
         @include border-radius(1px);
     }
     .toolFormTitle {
         font-size: $font-size-base;
         line-height: $line-height-base;
+        cursor: move;
+        min-height: 16px;
+    }
+    .toolFormBody {
+        padding: 0;
+        margin-left: 6px;
+        margin-right: 6px;
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted black 1px;
+            margin: 0 5px;
+        }
     }
 }
 
+.toolForm.toolFormInCanvas.tool-node-error {
+    border-color: #AA6666;
+    .toolFormTitle {
+        background: #FFCCCC;
+        border-color: #AA6666;
+    }
+}
 div.form,
 div.toolForm {
     border: solid $form-border 1px;
@@ -633,6 +680,7 @@ div.form-body {
 }
 
 div.form-row {
+    position: relative;
     padding: 5px 10px;
 }
 
@@ -696,6 +744,10 @@ div.form-row-error-message {
 
 .workflow-right {
     background: white;
+}
+
+.workflow-right .right-content {
+    margin: 3px;
 }
 
 .workflow-right .right-content .section-row {
