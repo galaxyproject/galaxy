@@ -608,11 +608,6 @@ div.toolFormRow {
     position: relative;
 }
 
-.callout {
-    position: absolute;
-    z-index: 10000;
-}
-
 .toolForm.toolFormInCanvas {
     @extend .card;
     z-index: 100;
@@ -2045,6 +2040,21 @@ div.toolTitleNoSection {
     &.mark-terminal-active {
         color: $brand-success;
     }
+}
+.delete-terminal {
+    @extend .btn;
+    @extend .btn-sm;
+    @extend .btn-primary;
+    @extend .fa;
+    @extend .fa-minus-circle;
+    @extend .p-1;
+    position: absolute;
+    z-index: 2500;
+    left: -15px;
+}
+.callout-terminal {
+    position: absolute;
+    z-index: 10000;
 }
 .workflow-overview {
     position: absolute;

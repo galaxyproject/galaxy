@@ -92,7 +92,7 @@ var OutputCalloutView = Backbone.View.extend({
         var view = this;
         var node = this.node;
         this.$el
-            .attr("class", `callout ${this.label}`)
+            .attr("class", `callout-terminal ${this.label}`)
             .css({ display: "none" })
             .append(
                 $("<icon class='mark-terminal fa fa-asterisk'/>")
