@@ -208,7 +208,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         // Save PJAs in the case of change datatype actions.
         window.workflow_globals.workflow.check_changes_in_active_form();
         // Drag proxy div
-        var h = $('<div class="drag-terminal" style="position: absolute;"></div>')
+        var h = $("<div class='drag-terminal'/>")
             .appendTo("#canvas-container")
             .get(0);
         // Terminal and connection to display noodle while dragging
