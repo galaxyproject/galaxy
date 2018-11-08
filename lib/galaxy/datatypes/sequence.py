@@ -594,11 +594,10 @@ class Fastg(Sequence):
                     break
             elif line and not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
+                    # The next line.strip() must not be '', nor startwith '>'
                     line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
                         break
-                    elif len(line) > 1 and not re.search(r'^[\d.]+$', line[1:]):
-                        return False
                     return True
                 else:
                     break  # we found a non-empty line, but it's not a header
