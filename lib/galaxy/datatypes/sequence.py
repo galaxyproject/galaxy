@@ -582,7 +582,6 @@ class Fastg(Sequence):
         False
         >>> fname = get_test_fname( 'sequence.fastg' )
         >>> Fastg().sniff( fname )
-        >>> csFasta().sniff( fname )
         True
         """
         fh = file_prefix.string_io()
