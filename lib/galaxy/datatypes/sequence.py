@@ -635,7 +635,7 @@ class Fastg(Sequence):
             else:
                 dataset.blurb = nice_size(dataset.get_size())
             dataset.blurb += '\nversion=%s' % dataset.metadata.version
-            for k, v in dataset.metadata.properies.iteritems():
+            for k, v in dataset.metadata.properties.iteritems():
                 if k != 'version':
                     dataset.blurb += '\n%s=%s' % (k, v)
         else:
