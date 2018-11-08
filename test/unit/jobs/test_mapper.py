@@ -89,6 +89,7 @@ def test_dynamic_mapping_missing_function():
     error_message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % ("missing_func")
     __assert_mapper_errors_with_message(mapper, error_message)
 
+
 def test_dynamic_mapping_rule_module_override():
     mapper = __mapper(__dynamic_destination(dict(function="rule_module_override",
                                                  rules_module=test_rules_override.__name__)))

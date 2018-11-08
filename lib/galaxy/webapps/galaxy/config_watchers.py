@@ -2,10 +2,10 @@ from functools import partial
 from os.path import dirname
 
 from galaxy.queue_worker import (
+    job_rule_modules,
     reload_data_managers,
     reload_job_rules,
-    reload_toolbox,
-    job_rule_modules
+    reload_toolbox
 )
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,

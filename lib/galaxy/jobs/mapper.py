@@ -1,12 +1,11 @@
 import importlib
 import inspect
 import logging
-import os
-import pkgutil
 
 import galaxy.jobs.rules
 from galaxy.jobs import stock_rules
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
+from galaxy.util.submodules import import_submodules
 from .rule_helper import RuleHelper
 
 log = logging.getLogger(__name__)
@@ -55,34 +54,6 @@ class JobRunnerMapper(object):
         if job_config.dynamic_params is not None:
             module_name = job_config.dynamic_params['rules_module']
             self.rules_module = importlib.import_module(module_name)
-
-    def __import_submodules(self, package, recursive=False):
-        """ Import all submodules of a module
-
-        :param package: package (name or actual module)
-        :type package: str | module
-        :rtype: [module]
-        """
-        if isinstance(package, str):
-            package = importlib.import_module(package)
-        modules = []
-        for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
-            full_name = package.__name__ + '.' + name
-            try:
-                module = importlib.import_module(full_name)
-                modules.append(module)
-                if recursive and is_pkg:
-                    modules.update(self.__import_submodules(module))
-            except BaseException as exception:
-                exception_str = str(exception)
-                message = "%s rule module could not be loaded: %s" % (name, exception_str)
-                log.debug(message)
-                continue
-        return modules
-
-    def __import_submodules_in_reverse_order(self, package):
-        return sorted(self.__import_submodules(package),
-                      reverse=True, key=lambda m: m.__name__)
 
     def __invoke_expand_function(self, expand_function, destination_params):
         function_arg_names = inspect.getargspec(expand_function).args
@@ -202,7 +173,7 @@ class JobRunnerMapper(object):
             rules_module = importlib.import_module(rules_module_name)
         else:
             rules_module = self.rules_module
-        return self.__import_submodules_in_reverse_order(rules_module)
+        return import_submodules(rules_module, ordered=True)
 
     def __last_matching_function_in_modules(self, rule_modules, function_name):
         # self.rule_modules is sorted in reverse order, so find first
