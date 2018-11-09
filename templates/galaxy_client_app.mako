@@ -20,14 +20,9 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             user: ${ render_json( get_user_dict() )},
             session_csrf_token: '${ trans.session_csrf_token }'
         };
-        
-        // an observable would be a lot better at waiting for disjointed
-        // frame/parent frame loading
-        window.addEventListener("load", function() {
-            var galaxy = new window.bundleEntries.getGalaxyInstance();
-            if (galaxy && galaxy._processOptions) {
-                galaxy._processOptions(options);
-            }
+
+        window.bundleEntries.setGalaxyInstance(function(GalaxyApp) {
+            return new GalaxyApp(options, bootstrapped);
         });
 
         %if app:

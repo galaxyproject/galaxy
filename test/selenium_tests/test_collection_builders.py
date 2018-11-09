@@ -73,16 +73,19 @@ class CollectionBuildersTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_build_paired_list_hide_original(self):
-        self.perform_upload(self.get_filename("1.tabular"))
-        self.perform_upload(self.get_filename("2.tabular"))
-        self._wait_for_hid_visible(1)
-        self._wait_for_hid_visible(2)
-        self.history_panel_multi_operations_show()
-        self.history_panel_muli_operation_select_hid(1)
-        self.history_panel_muli_operation_select_hid(2)
-        self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list_pairs)
+        try:
+            self.perform_upload(self.get_filename("1.tabular"))
+            self.perform_upload(self.get_filename("2.tabular"))
+            self._wait_for_hid_visible(1)
+            self._wait_for_hid_visible(2)
+            self.history_panel_multi_operations_show()
+            self.history_panel_muli_operation_select_hid(1)
+            self.history_panel_muli_operation_select_hid(2)
+            self.history_panel_multi_operation_action_click(self.navigation.history_panel.multi_operations.labels.build_list_pairs)
 
-        self.wait_for_and_click(self.navigation.collection_builders.selectors.clear_filters)
+            self.wait_for_and_click(self.navigation.collection_builders.selectors.clear_filters)
+        except:
+            self.sleep_for_seconds(3600)
 
         forward_column = self.wait_for_visible(self.navigation.collection_builders.selectors.forward_datasets)
         first_datset_forward = forward_column.find_elements_by_css_selector("li")[0]
