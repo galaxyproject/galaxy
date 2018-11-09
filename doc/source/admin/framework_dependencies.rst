@@ -187,8 +187,8 @@ Galaxy can create a virtualenv using the adapted virtualenv package. Once a vali
         3. Start galaxy using ``sh run.sh`` or execute ``sh scripts/common_startup.sh``.
 
 
-    A Conda environemnt named ``_galaxy_`` will be created using python 2 and the appropriate virtualenv package will be installed into this environment.
-    Using this environemnt a ``.venv`` is initialized. This is a one-time setup, and all other activation and dependency
+    A Conda environment named ``_galaxy_`` will be created using python 2 and the appropriate virtualenv package will be installed into this environment.
+    Using this environment a ``.venv`` is initialized. This is a one-time setup, and all other activation and dependency
     management happens exactly as if a system python was used for creating ``.venv``.
 
 .. _Conda: https://conda.io/
@@ -218,7 +218,7 @@ Galaxy release) or "unpinned" (the latest versions of all dependencies will be i
 incompatibilities with new versions). By default, the release branches of Galaxy use pinned versions for three reasons:
 
 1. Using pinned versions insures that the prebuilt wheels on `wheels.galaxyproject.org`_ will be installed, and no
-   compilation will be necesseary.
+   compilation will be necessary.
 
 2. Galaxy releases are tested with the pinned versions and this allows us to give as much assurance as possible that the
    pinned versions will work with the given Galaxy release (especially as time progresses and newer dependency versions
