@@ -2049,8 +2049,10 @@ div.toolTitleNoSection {
     @extend .fa;
     @extend .fa-minus-circle;
     @extend .p-1;
+    @extend .mt-1;
     position: absolute;
     z-index: 2500;
+    top: 0px;
     left: -15px;
 }
 .callout-terminal {
