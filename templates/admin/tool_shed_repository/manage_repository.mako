@@ -11,7 +11,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ## ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 

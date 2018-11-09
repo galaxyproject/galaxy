@@ -8,7 +8,6 @@
  */
 
 import { mock } from "utils/mock";
-import store from "store";
 const fakeLogger = mock(console);
 
 // stores values that are returned when somebody asks for window.Something
@@ -123,13 +122,13 @@ export function isPropMonitored(prop) {
 }
 
 function getToggles() {
-    let json = store.get("global_monitors");
+    let json = sessionStorage.getItem("global_monitors");
     let existinglist = json ? JSON.parse(json) : {};
     return existinglist;
 }
 
 function setToggles(toggleList) {
-    store.set("global_monitors", JSON.stringify(toggleList));
+    sessionStorage.setItem("global_monitors", JSON.stringify(toggleList));
 }
 
 // Console utilities
