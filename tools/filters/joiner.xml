@@ -85,7 +85,7 @@ ${json.dumps( __fill_options )}
    </param>
   </inputs>
   <outputs>
-     <data format_source="input1" name="out_file1" metadata_source="input1" />
+     <data auto_format="true" name="out_file1" />
   </outputs>
   <tests>
     <test>
