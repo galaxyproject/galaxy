@@ -95,19 +95,18 @@ var OutputCalloutView = Backbone.View.extend({
             .attr("class", `callout-terminal ${this.label}`)
             .css({ display: "none" })
             .append(
-                $("<icon class='mark-terminal fa fa-asterisk'/>")
-                    .click(() => {
-                        var outputName = view.output.name;
-                        if (node.isWorkflowOutput(outputName)) {
-                            node.removeWorkflowOutput(outputName);
-                            view.$("icon").removeClass("mark-terminal-active");
-                        } else {
-                            node.addWorkflowOutput(outputName);
-                            view.$("icon").addClass("mark-terminal-active");
-                        }
-                        window.workflow_globals.workflow.has_changes = true;
-                        window.workflow_globals.canvas_manager.draw_overview();
-                    })
+                $("<icon class='mark-terminal fa fa-asterisk'/>").click(() => {
+                    var outputName = view.output.name;
+                    if (node.isWorkflowOutput(outputName)) {
+                        node.removeWorkflowOutput(outputName);
+                        view.$("icon").removeClass("mark-terminal-active");
+                    } else {
+                        node.addWorkflowOutput(outputName);
+                        view.$("icon").addClass("mark-terminal-active");
+                    }
+                    window.workflow_globals.workflow.has_changes = true;
+                    window.workflow_globals.canvas_manager.draw_overview();
+                })
             )
             .tooltip({
                 delay: 500,

@@ -121,19 +121,21 @@ var BaseInputTerminalView = TerminalView.extend({
         // If connected, create a popup to allow disconnection
         if (terminal.connectors.length > 0) {
             let t = $("<div/>")
-                        .addClass("delete-terminal")
-                        .click(() => {
-                            $.each(terminal.connectors, (_, x) => {
-                                if (x) {
-                                    x.destroy();
-                                }
-                            });
-                            t.remove();
-                        })
-                        .on("mouseleave", () => {
-                            t.remove();
-                        });
-            $(element).parent().append(t);
+                .addClass("delete-terminal")
+                .click(() => {
+                    $.each(terminal.connectors, (_, x) => {
+                        if (x) {
+                            x.destroy();
+                        }
+                    });
+                    t.remove();
+                })
+                .on("mouseleave", () => {
+                    t.remove();
+                });
+            $(element)
+                .parent()
+                .append(t);
         }
     }
 });
@@ -172,7 +174,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         this.el.terminal = terminal;
         this.$el.attr("output-name", name);
         this.$el.attr("id", id);
-        this.$el.append($("<icon/>"))
+        this.$el.append($("<icon/>"));
         terminal.node = node;
         terminal.name = name;
         terminal.label = output.label;
