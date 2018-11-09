@@ -94,7 +94,7 @@ GalaxyApp.prototype.defaultOptions = {
 
 /** filter to options present in defaultOptions (and default to them) */
 GalaxyApp.prototype._processOptions = function _processOptions(newOptions = {}) {
-    this.options = Object.assign({}, this.options || {}, newOptions);
+    this.options = Object.assign({}, this.defaultOptions, this.options || {}, newOptions);
 };
 
 

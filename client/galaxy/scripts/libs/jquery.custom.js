@@ -14,7 +14,14 @@ require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.form");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.rating");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/select2");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery-ui");
-require("imports-loader?jQuery=jqueryVendor!libs/jquery/jstorage");
+
+// This is probably the worst jquery plugin I've ever seen. It's basically
+// unimportable except as a direct script tag. and there's absolutely no reason
+// for this functionality to be bolted onto the side of jQuery. I'm going to
+// replace it with something more standard like "store"
+// https://www.npmjs.com/package/store
+// require("imports-loader?jQuery=jqueryVendor!libs/jquery/jstorage");
+
 require("imports-loader?jQuery=jqueryVendor!libs/farbtastic");
 require("imports-loader?jQuery=jqueryVendor,$=jqueryVendor,define=>false!jquery.cookie");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.dynatree");

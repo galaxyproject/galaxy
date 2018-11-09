@@ -7,22 +7,10 @@
  * not and probably never have. Keeping them around for now, but we should get
  * rid of them by rewriting the tests or preferrably by removing the code to
  * which they apply.
- * 
- * TODO: Fix jquery bundle to deliver same plugins to all frames
- * qunit/tests/page_tests
- * This test does not work with ChromeHeadless, but does with PhantomJS The
- * error is related to the jQuery bundling issue. Currently it can't find the
- * select2 plugin because the frame pages are loading a different jquery load-out
- * than the main UI.
  */
 
 const baseKarmaConfig = require("./karma.config.base");
-
-// Webpack config requires massaging because the QUnit tests require CSS because
-// they are not truly unit tests. Normally webpack css and assets would be
-// stripped out of a test bundle. Apparently these tests were written prior to
-// selenium being implemented.
-const webpackConfig = require("./webpack.config.qunit");
+const webpackConfig = require("./webpack.config.unittest");
 
 const testFiles = [
     "qunit/test.js"

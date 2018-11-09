@@ -13,6 +13,7 @@ import FormWrappers from "mvc/workflow/workflow-forms";
 import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
+import store from "store";
 
 // TODO: make show_message and the other utility functions importable/used
 // everywhere, instead of this global model
@@ -446,7 +447,8 @@ export default Backbone.View.extend({
         }
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = $.jStorage.get("overview-size");
+        
+        var overview_size = store.get("overview-size");
         if (overview_size !== undefined) {
             $("#overview-border").css({
                 width: overview_size,
@@ -455,7 +457,7 @@ export default Backbone.View.extend({
         }
 
         // Show viewport on load unless pref says it's off
-        if ($.jStorage.get("overview-off")) {
+        if (store.get("overview-off")) {
             hide_overview();
         } else {
             show_overview();
@@ -466,17 +468,17 @@ export default Backbone.View.extend({
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            $.jStorage.set("overview-size", `${new_size}px`);
+            store.set("overview-size", `${new_size}px`);
         });
 
         function show_overview() {
-            $.jStorage.set("overview-off", false);
+            store.set("overview-off", false);
             $("#overview-border").css("right", "0px");
             $("#close-viewport").css("background-position", "0px 0px");
         }
 
         function hide_overview() {
-            $.jStorage.set("overview-off", true);
+            store.set("overview-off", true);
             $("#overview-border").css("right", "20000px");
             $("#close-viewport").css("background-position", "12px 0px");
         }

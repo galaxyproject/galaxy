@@ -1,6 +1,12 @@
 /** Creates a generic/global Galaxy environment, loads shared libraries and a
  * fake server */
 
+import $ from "jquery";
+
+// jQuery.fn.tooltip lives on one of these 2 libs
+import "bootstrap";
+import "bootstrap-tour";
+
 import sinon from "sinon";
 import Backbone from "backbone";
 import { setGalaxyInstance } from "app";
@@ -12,8 +18,7 @@ export default {
 
     create() {
 
-        setGalaxyInstance((GalaxyApp) => {
-            console.log("setting default galaxy", galaxyOptions);
+        setGalaxyInstance(GalaxyApp => {
             let galaxy = new GalaxyApp(galaxyOptions);
             galaxy.currHistoryPanel = { 
                 model: new Backbone.Model()

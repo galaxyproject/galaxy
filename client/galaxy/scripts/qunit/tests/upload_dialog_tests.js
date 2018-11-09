@@ -1,4 +1,5 @@
-/* global define */
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import GalaxyUpload from "mvc/upload/upload-view";
 
