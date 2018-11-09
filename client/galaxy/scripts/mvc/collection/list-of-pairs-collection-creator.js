@@ -1,5 +1,5 @@
 import _ from "underscore";
-import {$, jQuery} from "jquery";
+import jQuery from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
