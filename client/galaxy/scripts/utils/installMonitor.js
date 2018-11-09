@@ -8,6 +8,7 @@
  */
 
 import { mock } from "utils/mock";
+import store from "store";
 const fakeLogger = mock(console);
 
 // stores values that are returned when somebody asks for window.Something
@@ -109,26 +110,26 @@ export function showMonitoredProperties() {
 // indicated prop on the next page refresh
 
 export function toggleGlobalMonitor(prop, bShow = false) {
-    let toggleList = getSessionToggles();
+    let toggleList = getToggles();
     toggleList[prop] = Boolean(bShow);
-    setSessionToggles(toggleList);
+    setToggles(toggleList);
     return toggleList;
 }
 
 // determines whether specified prop is toggled on or off by the user
 export function isPropMonitored(prop) {
-    let toggleList = getSessionToggles();
+    let toggleList = getToggles();
     return toggleList[prop] == true;
 }
 
-function getSessionToggles() {
-    let json = sessionStorage.getItem("global_monitors");
+function getToggles() {
+    let json = store.get("global_monitors");
     let existinglist = json ? JSON.parse(json) : {};
     return existinglist;
 }
 
-function setSessionToggles(toggleList) {
-    sessionStorage.setItem("global_monitors", JSON.stringify(toggleList));
+function setToggles(toggleList) {
+    store.set("global_monitors", JSON.stringify(toggleList));
 }
 
 // Console utilities
