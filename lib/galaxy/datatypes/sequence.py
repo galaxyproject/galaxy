@@ -551,7 +551,7 @@ class Fastg(Sequence):
     edam_format = "format_3823"
     file_ext = "fastg"
 
-    MetadataElement(name="version", default='1.0', desc="FASTG formaat version", readonly=True, visible=True, no_value='1.0')
+    MetadataElement(name="version", default='1.0', desc="FASTG format version", readonly=True, visible=True, no_value='1.0')
     MetadataElement(name="properties", default={}, param=DictParameter, desc="FASTG properites", readonly=True, visible=True, no_value={})
 
     def sniff_prefix(self, file_prefix):
@@ -616,7 +616,7 @@ class Fastg(Sequence):
                     props = {x.split('=')[0][1:]: x.split('=')[1] for x in re.findall(':[a-zA-Z0-9_]+=[a-zA-Z0-9_().,\" ]+', line)}
                     dataset.metadata.properties.update(props)
                     if 'version' in props:
-                        dataset.metadata.verion = props['version']
+                        dataset.metadata.version = props['version']
                 if line and line.startswith('>'):
                     break
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
