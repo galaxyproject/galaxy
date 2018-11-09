@@ -19,7 +19,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import (
     Binary
 )
-from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.metadata import DictParameter, MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     get_headers,
@@ -542,6 +542,103 @@ class csFasta(Sequence):
             dataset.metadata.sequences = None
             return
         return Sequence.set_meta(self, dataset, **kwd)
+
+
+@build_sniff_from_prefix
+class Fastg(Sequence):
+    """ Class representing a FASTG sequence """
+    """ http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf """
+    edam_format = "format_3823"
+    file_ext = "fastg"
+
+    MetadataElement(name="version", default='1.0', desc="FASTG format version", readonly=True, visible=True, no_value='1.0')
+    MetadataElement(name="properties", default={}, param=DictParameter, desc="FASTG properites", readonly=True, visible=True, no_value={})
+
+    def sniff_prefix(self, file_prefix):
+        """FASTG must begin with lines:
+           #FASTG:begin;
+           #FASTG:version=*.*;
+           #FASTG:properties;
+        """
+        """Or these can be combined on a line:
+           #FASTG:begin:version=*.*:properties;
+        """
+        """FASTG must end with line:
+           #FASTG:end;
+        """
+        """ Example FASTG file:
+            #FASTG:begin;
+            #FASTG:version=1.0:assembly_name="tiny example";
+            >chr1:chr1;
+            ACGANNNNN[5:gap:size=(5,4..6)]CAGGC[1:alt:allele|C,G]TATACG
+            >chr2;
+            ACATACGCATATATATATATATATATAT[20:tandem:size=(10,8..12)|AT]TCAGGCA[1:alt|A,T,TT]GGAC
+            #FASTG:end;
+        """
+        """
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( 'sequence.fasta' )
+        >>> Fastg().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'sequence.fastg' )
+        >>> Fastg().sniff( fname )
+        True
+        """
+        fh = file_prefix.string_io()
+        for i, line in enumerate(fh):
+            if not line:
+                break  # EOF
+            line = line.strip()
+            if i == 0:
+                if not line.startswith('#FASTG:begin'):
+                    break
+            elif line and not line.startswith('#'):  # first non-empty non-comment line
+                if line.startswith('>'):
+                    # The next line.strip() must not be '', nor startwith '>'
+                    line = fh.readline().strip()
+                    if line == '' or line.startswith('>'):
+                        break
+                    return True
+                else:
+                    break  # we found a non-empty line, but it's not a header
+        return False
+
+    def set_meta(self, dataset, **kwd):
+        with open(dataset.file_name) as fh:
+            for i, line in enumerate(fh):
+                if not line:
+                    break  # EOF
+                line = line.strip()
+                if i == 0:
+                    if not line.startswith('#FASTG:begin'):
+                        break
+                if line.startswith('#FASTG'):
+                    props = {x.split('=')[0][1:]: x.split('=')[1] for x in re.findall(':[a-zA-Z0-9_]+=[a-zA-Z0-9_().,\" ]+', line)}
+                    dataset.metadata.properties.update(props)
+                    if 'version' in props:
+                        dataset.metadata.version = props['version']
+                if line and line.startswith('>'):
+                    break
+        if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+            dataset.metadata.data_lines = None
+            dataset.metadata.sequences = None
+            return
+        return Sequence.set_meta(self, dataset, **kwd)
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek(dataset.file_name)
+            if dataset.metadata.sequences:
+                dataset.blurb = "%s sequences" % util.commaify(str(dataset.metadata.sequences))
+            else:
+                dataset.blurb = nice_size(dataset.get_size())
+            dataset.blurb += '\nversion=%s' % dataset.metadata.version
+            for k, v in dataset.metadata.properties.iteritems():
+                if k != 'version':
+                    dataset.blurb += '\n%s=%s' % (k, v)
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
 
 
 @build_sniff_from_prefix

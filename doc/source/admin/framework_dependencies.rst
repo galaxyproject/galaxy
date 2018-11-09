@@ -171,149 +171,25 @@ create a virtualenv can be found under the `Managing dependencies manually`_ sec
 Conda
 ^^^^^
 
-`Conda`_ and `virtualenv`_ are incompatible. However, Conda provides its own environment separation functionality in the
-form of `Conda environments`_.  Starting Galaxy with Conda Python will cause Galaxy to create a ``_galaxy_YY.MM``
-environment into which Galaxy framework dependencies will be installed.
+.. caution::
+    These instruction apply to Galaxy release 19.01 or newer. Please consult the documentation for your version of Galaxy.
 
-To instruct Galaxy to use a different environment name, set the ``$GALAXY_CONDA_ENV`` environment variable.
 
-If you use the recommended setup of sourcing ``$CONDA_ROOT/etc/profile.d/conda.sh`` as of Conda 4.4, Conda Python is not
-automatically added to your ``$PATH``, so Galaxy will not use Conda for its framework dependencies unless you start it
-with an environment activated that has Conda Python installed. This is because Galaxy defaults to creating a virtualenv
-unless the ``python`` on ``$PATH`` is Conda Python.
+`Conda`_ and `virtualenv`_ are incompatible, unless an adapted `virtualenv_` from the `conda-forge_` channel is used.
+Galaxy can create a virtualenv using the adapted virtualenv package. Once a valid ``.venv`` environment exists it will be used.
 
 .. tip::
 
-    If you would like to force Galaxy to use Conda with Conda 4.4 or later, the simplest method is:
+    If you would like to use a virtualenv created by Conda, the simplest method is:
 
         1. Ensure ``.venv`` does not exist.
-        2. Activate the base environment with ``conda activate base``
-
-    Galaxy will not install in to the base environment.
-
-.. caution::
-
-    Versions of Galaxy prior to 18.05 could install in to the base/root Conda environment. Consult the correct version
-    of the documentation for your version of Galaxy.
-
-**Installing dependencies with conda (instead of pip)**
-
-Because Conda package names typically match PyPI package names, you can install Conda versions of what dependencies are
-available from conda-forge_ and Bioconda_ using a script provided with Galaxy, **but this is not necessary**. If you do
-not run the script, the dependencies will simply be installed via pip.
-
-.. code-block:: console
-
-    $ conda config --add channels bioconda
-    $ conda config --add channels conda-forge
-    $ conda create --name galaxy --file <(lib/galaxy/dependencies/conda-file.sh)
-    Filtering out requirements not available in conda... done
-    Solving environment: done
-
-    ## Package Plan ##
-
-      environment location: /srv/galaxy/conda/envs/galaxy
-
-      added / updated specs: 
-        - anyjson==0.3.3
-        #...
-        - whoosh==2.7.4
+        2. Place ``conda`` on your PATH if it isn't.
+        3. Start galaxy using ``sh run.sh`` or execute ``sh scripts/common_startup.sh``.
 
 
-    The following NEW packages will be INSTALLED:
-
-        anyjson:            0.3.3-py27_1            conda-forge
-        #...
-        zlib:               1.2.8-3                 conda-forge
-
-    Proceed ([y]/n)? 
-
-    Preparing transaction: done
-    Verifying transaction: done
-    Executing transaction: done
-    #
-    # To activate this environment, use
-    #
-    #     $ conda activate galaxy
-    #
-    # To deactivate an active environment, use
-    #
-    #     $ conda deactivate
-
-Next, activate the environment and run ``pip`` to fetch the remaining dependencies:
-
-.. code-block:: console
-
-    $ conda activate galaxy
-    $ pip install --index-url https://wheels.galaxyproject.org/simple/ --extra-index-url https://pypi.python.org/simple/ -r requirements.txt
-    Requirement already satisfied: pip>=8.1 in /srv/galaxy/conda/envs/galaxy/lib/python2.7/site-packages
-    #...
-    Collecting SQLAlchemy==1.0.15 (from -r requirements.txt (line 8))
-      Downloading https://wheels.galaxyproject.org/packages/SQLAlchemy-1.0.15-cp27-cp27mu-manylinux1_x86_64.whl (1.0MB)
-        100% |████████████████████████████████| 1.0MB 48.6MB/s 
-    #...
-    Installing collected packages: SQLAlchemy, ...
-    Successfully installed SQLAlchemy-1.0.15 ...
-
-.. code-block:: console
-
-    $ uwsgi --yaml config/galaxy.yml
-    [uWSGI] getting YAML configuration from config/galaxy.yml
-    [uwsgi-static] added mapping for /static/style => static/style/blue
-    [uwsgi-static] added mapping for /static => static
-    *** Starting uWSGI 2.0.15 (64bit) on [Thu Jan 25 11:57:17 2018] ***
-
-You may encounter the following traceback when starting Galaxy:
-
-.. code-block:: pytb
-
-    Traceback (most recent call last):
-      File "lib/galaxy/main.py", line 278, in <module>
-        main()
-      File "lib/galaxy/main.py", line 274, in main
-        app_loop(args, log)
-      File "lib/galaxy/main.py", line 124, in app_loop
-        log=log,
-      File "lib/galaxy/main.py", line 91, in load_galaxy_app
-        from galaxy.app import UniverseApplication
-      File "/srv/galaxy/server/lib/galaxy/app.py", line 30, in <module>
-        from galaxy.visualization.data_providers.registry import DataProviderRegistry
-      File "/srv/galaxy/server/lib/galaxy/visualization/data_providers/registry.py", line 15, in <module>
-        from galaxy.visualization.data_providers import genome
-      File "/srv/galaxy/server/lib/galaxy/visualization/data_providers/genome.py", line 17, in <module>
-        from bx.bbi.bigbed_file import BigBedFile
-    ImportError: cannot import name BigBedFile
-
-If this is the case, uninstall bx-python from Conda and reinstall it from the Galaxy wheel:
-
-.. code-block:: console
-
-    $ conda remove bx-python
-    Solving environment: done
-
-    ## Package Plan ##
-
-      environment location: /srv/galaxy/conda/envs/galaxy
-
-      removed specs: 
-        - bx-python
-
-
-    The following packages will be REMOVED:
-
-        bx-python: 0.7.3-py27_0 bioconda
-
-    Proceed ([y]/n)? 
-
-    Preparing transaction: done
-    Verifying transaction: done
-    Executing transaction: done
-    $ pip install --index-url https://wheels.galaxyproject.org/simple bx-python
-    Collecting bx-python
-      Downloading https://wheels.galaxyproject.org/packages/bx_python-0.7.3-cp27-cp27mu-manylinux1_x86_64.whl (2.1MB)
-        100% |████████████████████████████████| 2.2MB 66.1MB/s 
-    Installing collected packages: bx-python
-    Successfully installed bx-python-0.7.3
+    A Conda environment named ``_galaxy_`` will be created using python 2 and the appropriate virtualenv package will be installed into this environment.
+    Using this environment a ``.venv`` is initialized. This is a one-time setup, and all other activation and dependency
+    management happens exactly as if a system python was used for creating ``.venv``.
 
 .. _Conda: https://conda.io/
 .. _Conda environments: https://conda.io/docs/user-guide/tasks/manage-environments.html
@@ -342,7 +218,7 @@ Galaxy release) or "unpinned" (the latest versions of all dependencies will be i
 incompatibilities with new versions). By default, the release branches of Galaxy use pinned versions for three reasons:
 
 1. Using pinned versions insures that the prebuilt wheels on `wheels.galaxyproject.org`_ will be installed, and no
-   compilation will be necesseary.
+   compilation will be necessary.
 
 2. Galaxy releases are tested with the pinned versions and this allows us to give as much assurance as possible that the
    pinned versions will work with the given Galaxy release (especially as time progresses and newer dependency versions
