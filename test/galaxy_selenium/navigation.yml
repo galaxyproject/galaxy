@@ -269,7 +269,7 @@ workflow_editor:
 
     connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
 
-    connector_destroy_callout: '.callout .fa-times'
+    connector_destroy_callout: '.delete-terminal'
 
 tour:
   popover:
