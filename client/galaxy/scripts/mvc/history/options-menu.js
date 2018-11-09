@@ -105,13 +105,9 @@ var menu = [
                     )
                 )
             ) {
-                $.post(
-                    `${Galaxy.root}history/make_private`,
-                    { history_id: "${Galaxy.currHistoryPanel.model.id}" },
-                    () => {
-                        Galaxy.currHistoryPanel.loadCurrentHistory();
-                    }
-                );
+                $.post(`${Galaxy.root}history/make_private`, { history_id: Galaxy.currHistoryPanel.model.id }, () => {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
+                });
             }
         }
     },

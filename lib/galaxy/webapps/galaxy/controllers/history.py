@@ -705,7 +705,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         if all_histories:
             histories = trans.user.histories
         elif history_id:
-            history = [self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)]
+            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
             if history:
                 histories.append(history)
         if not histories:
@@ -722,7 +722,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             # Set private role for all datasets
             for hda in history.datasets:
                 if (not hda.dataset.library_associations
-                        and not trans.app.security_agent.dataset_is_private_to_user(hda.dataset)
+                        and not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset)
                         and trans.app.security_agent.can_manage_dataset(user_roles, hda.dataset)):
                     # If it's not private to me, and I can manage it, set fixed private permissions.
                     trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
