@@ -7,7 +7,6 @@ import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
 import { getGalaxyInstance } from "app";
-import { serverPath } from "utils/serverPath";
 
 // ============================================================================
 /** Base galaxy client-side application.
@@ -49,19 +48,20 @@ GalaxyApp.prototype._init = function(options, bootstrapped) {
     }
 
     self._processOptions(options);
+    self._initConfig(options.config || {});
+
+    // Patch if this galaxy instance is replacing an existing one
+    // _patchGalaxy depends on options.patchExisting
+    // TODO: rethink this behavior
+    let existingGalaxy = getGalaxyInstance();
+    if (existingGalaxy) {
+        self._patchGalaxy(existingGalaxy);
+    }
 
     // add root and url parameters
     self.root = options.root || "/";
     self.params = options.params || {};
     self.session_csrf_token = options.session_csrf_token || null;
-
-    self._initConfig(options.config || {});
-
-    // Patch if this galaxy instance is replacing an existing one
-    let existingGalaxy = getGalaxyInstance();
-    if (existingGalaxy) {
-        self._patchGalaxy(existingGalaxy);
-    }
 
     self._initLogger(self.options.loggerOptions || {});
     // at this point, either logging or not and namespaces are enabled - chat it up
@@ -97,8 +97,17 @@ GalaxyApp.prototype.defaultOptions = {
 };
 
 /** filter to options present in defaultOptions (and default to them) */
-GalaxyApp.prototype._processOptions = function (newOptions = {}) {
-    this.options = Object.assign({}, this.defaultOptions, this.options || {}, newOptions);
+GalaxyApp.prototype._processOptions = function _processOptions(options) {
+    var self = this;
+    var defaults = self.defaultOptions;
+
+    self.options = {};
+    for (var k in defaults) {
+        if (defaults.hasOwnProperty(k)) {
+            self.options[k] = options.hasOwnProperty(k) ? options[k] : defaults[k];
+        }
+    }
+    return self;
 };
 
 /** parse the config and any extra info derived from it */
@@ -113,10 +122,9 @@ GalaxyApp.prototype._initConfig = function _initConfig(config) {
 };
 
 // TODO: Remove this behavior when we can, it is kind of non-intuitive
-// in case req or plain script tag order has created a prev. version of the Galaxy obj...
-GalaxyApp.prototype._patchGalaxy = function (patchWith) {
-    // console.warn("Patching new galaxy instance with existing galaxy values");
+GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
     var self = this;
+    // in case req or plain script tag order has created a prev. version of the Galaxy obj...
     if (self.options.patchExisting && patchWith) {
         // self.debug( 'found existing Galaxy object:', patchWith );
         // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
