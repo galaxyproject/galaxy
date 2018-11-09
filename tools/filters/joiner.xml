@@ -1,4 +1,4 @@
-<tool id="join1" name="Join two Datasets" version="2.1.1">
+<tool id="join1" name="Join two Datasets" version="2.1.2">
   <description>side by side on a specified field</description>
   <requirements>
     <requirement type="package" version="2.7.13">python</requirement>
