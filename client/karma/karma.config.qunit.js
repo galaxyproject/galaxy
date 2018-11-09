@@ -10,7 +10,6 @@
  */
 
 const baseKarmaConfig = require("./karma.config.base");
-const webpackConfig = require("./webpack.config.unittest");
 
 const testFiles = [
     "qunit/test.js"
@@ -30,8 +29,7 @@ module.exports = function (config) {
     let settings = Object.assign({}, baseKarmaConfig, {
         files: testFiles.concat(assets),
         preprocessors: preprocessors,
-        frameworks: ["polyfill", "qunit"],
-        webpack: webpackConfig
+        frameworks: ["polyfill", "qunit"]
     });
 
     config.set(settings);
