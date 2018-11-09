@@ -49,7 +49,7 @@ var Model = Backbone.Model.extend({
                     if (
                         confirm(
                             _l(
-                                "WARNING: This will make *all* datasets for which you have " +
+                                "WARNING: This will make all datasets (excluding library datasets) for which you have " +
                                     "'management' permissions, in all of your histories " +
                                     "private, and will set permissions such that all " +
                                     "of your new data in these histories is created as private.  Any " +

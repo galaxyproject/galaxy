@@ -101,7 +101,7 @@ var menu = [
                 Galaxy.currHistoryPanel &&
                 confirm(
                     _l(
-                        "This will make all the data in this history private, and will set permissions such that all new data is created as private.  Any datasets within that are currently shared will need to be re-shared or published.  Are you sure you want to do this?"
+                        "This will make all the data in this history private (excluding library datasets), and will set permissions such that all new data is created as private.  Any datasets within that are currently shared will need to be re-shared or published.  Are you sure you want to do this?"
                     )
                 )
             ) {
