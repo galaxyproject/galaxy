@@ -1,6 +1,6 @@
 /**
  * jQuery and all its horrible plugins. Bundled together and repackaged into a
- * single module, then aliased by webpack as "jquery";
+ * single module, then aliased by webpack as "jquery"
  */
 
 var jQuery = require("jqueryVendor");
