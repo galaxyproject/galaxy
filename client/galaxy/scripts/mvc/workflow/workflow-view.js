@@ -10,6 +10,7 @@ import FormWrappers from "mvc/workflow/workflow-forms";
 import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
+import store from "store";
 
 /* global $ */
 /* global Galaxy */
@@ -445,7 +446,7 @@ export default Backbone.View.extend({
         }
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = $.jStorage.get("overview-size");
+        var overview_size = store.get("overview-size");
         if (overview_size !== undefined) {
             $(".workflow-overview").css({
                 width: overview_size,
@@ -458,7 +459,7 @@ export default Backbone.View.extend({
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            $.jStorage.set("overview-size", `${new_size}px`);
+            store.set("overview-size", `${new_size}px`);
         });
 
         // Unload handler

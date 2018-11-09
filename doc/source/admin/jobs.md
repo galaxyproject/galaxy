@@ -2,7 +2,7 @@
 
 By default, jobs in Galaxy are run locally on the server on which the Galaxy application was started.  Many options are available for running Galaxy jobs on other systems, including clusters and other remote resources.
 
-This document is a reference for the job configuration file.  [Detailed documentation](cluster) is provided for configuring Galaxy to work with a variety of Distributed Resource Managers (DRMs) such as TORQUE, Grid Engine, LSF, and HTCondor.  Additionally, a wide range of infrastructure decisions and configuration changes should be made when running Galaxy as a production service, as one is likely doing if using a cluster.  It is highly recommended that the [production server documentation](production.html) and [cluster configuration documentation](cluster.html) be read before making changes to the job configuration.
+This document is a reference for the job configuration file.  [Detailed documentation](cluster.html) is provided for configuring Galaxy to work with a variety of Distributed Resource Managers (DRMs) such as TORQUE, Grid Engine, LSF, and HTCondor.  Additionally, a wide range of infrastructure decisions and configuration changes should be made when running Galaxy as a production service, as one is likely doing if using a cluster.  It is highly recommended that the [production server documentation](production.html) and [cluster configuration documentation](cluster.html) be read before making changes to the job configuration.
 
 **The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
 
@@ -38,7 +38,7 @@ workers
 
 ### Job Handlers
 
-The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](https://galaxyproject.org/admin/config/performance/scaling/)) should be used for running jobs, and how to group those processes.
+The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](scaling.html)) should be used for running jobs, and how to group those processes.
 
 The handlers configuration may define a ``default`` attribute. This is the the handler(s) that should be used if no explicit handler is defined for a job and is required if >1 handlers defined.
 

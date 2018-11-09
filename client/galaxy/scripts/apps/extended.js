@@ -29,6 +29,7 @@ export { create_chart, create_histogram } from "reports/run_stats";
 export { default as ToolshedGroups } from "toolshed/toolshed.groups";
 
 export { chart, chartUtilities } from "./chart";
+export { default as store } from "store";
 
 // TODO: update this when galaxy singleton code is merged
 if (window.Galaxy && window.Galaxy.debug === undefined) {
