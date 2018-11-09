@@ -6,6 +6,7 @@ import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
+import { getGalaxyInstance } from "app";
 import { serverPath } from "utils/serverPath";
 
 // ============================================================================
@@ -56,8 +57,11 @@ GalaxyApp.prototype._init = function(options, bootstrapped) {
 
     self._initConfig(options.config || {});
 
-    // Don't do this by default
-    // self._patchGalaxy(Galaxy);
+    // Patch if this galaxy instance is replacing an existing one
+    let existingGalaxy = getGalaxyInstance();
+    if (existingGalaxy) {
+        self._patchGalaxy(existingGalaxy);
+    }
 
     self._initLogger(self.options.loggerOptions || {});
     // at this point, either logging or not and namespaces are enabled - chat it up
@@ -93,29 +97,9 @@ GalaxyApp.prototype.defaultOptions = {
 };
 
 /** filter to options present in defaultOptions (and default to them) */
-GalaxyApp.prototype._processOptions = function _processOptions(newOptions = {}) {
+GalaxyApp.prototype._processOptions = function (newOptions = {}) {
     this.options = Object.assign({}, this.defaultOptions, this.options || {}, newOptions);
 };
-
-
-/*
-// Actually, it looks like _processOptions doesn't want a sanitized list after all
-
-// returns subset of passed options that match the defaults
-GalaxyApp.prototype._validateOptions = function _validateOptions(newOptions) {
-    console.log("newOptions", newOptions);
-    console.log("defaults", this.defaultOptions);
-    let result = Object.keys(this.defaultOptions)
-        .reduce((result, key) => {
-            if (newOptions.hasOwnProperty(key)) {
-                result[key] = newOptions[key];
-            }
-            return result;
-        }, {});
-    console.log("result", result);
-    return result;
-};
-*/
 
 /** parse the config and any extra info derived from it */
 GalaxyApp.prototype._initConfig = function _initConfig(config) {
@@ -128,10 +112,11 @@ GalaxyApp.prototype._initConfig = function _initConfig(config) {
     return self;
 };
 
-// This is explicitly called when needed now instead of automagically
-GalaxyApp.prototype.patchGalaxy = function patchGalaxy(patchWith) {
+// TODO: Remove this behavior when we can, it is kind of non-intuitive
+// in case req or plain script tag order has created a prev. version of the Galaxy obj...
+GalaxyApp.prototype._patchGalaxy = function (patchWith) {
+    // console.warn("Patching new galaxy instance with existing galaxy values");
     var self = this;
-    // in case req or plain script tag order has created a prev. version of the Galaxy obj...
     if (self.options.patchExisting && patchWith) {
         // self.debug( 'found existing Galaxy object:', patchWith );
         // ...(for now) monkey patch any added attributes that the previous Galaxy may have had

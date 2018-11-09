@@ -446,7 +446,7 @@ export default Backbone.View.extend({
         }
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = localStorage.setItem("overview-size");
+        var overview_size = localStorage.getItem("overview-size");
         if (overview_size !== undefined) {
             $("#overview-border").css({
                 width: overview_size,

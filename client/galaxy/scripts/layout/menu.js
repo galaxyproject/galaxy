@@ -416,7 +416,11 @@ var Tab = Backbone.View.extend({
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
                         Galaxy.page.router.push(options.url);
                     } else {
-                        Galaxy.frame.add(options);
+                        try {
+                            Galaxy.frame.add(options);
+                        } catch(err) {
+                            console.warn("Missing frame element on galaxy instance", err);
+                        }
                     }
                 }
             });

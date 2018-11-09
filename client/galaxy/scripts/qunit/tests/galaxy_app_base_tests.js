@@ -1,6 +1,6 @@
 /* global QUnit */
 import testApp from "qunit/test-app";
-import { getGalaxyInstance } from "app";
+import { getGalaxyInstance, setGalaxyInstance} from "app";
 
 QUnit.module("Galaxy client app tests", {
     beforeEach: function() {
@@ -44,15 +44,17 @@ QUnit.test("App base has logging methods from utils/add-logging.js", function(as
 });
 
 // We no longer want this behavior
-// QUnit.test("App base will patch in attributes from existing Galaxy objects", function(assert) {
-//     window.Galaxy = {
-//         attribute: {
-//             subattr: 1
-//         }
-//     };
-//     var app = new GalaxyApp({});
-//     assert.ok(typeof app.attribute === "object" && app.attribute.subattr === 1);
-// });
+QUnit.test("App base will patch in attributes from existing Galaxy objects", function(assert) {
+
+    var existingApp = getGalaxyInstance();
+    existingApp.foo = 123;
+
+    var newApp = setGalaxyInstance(GalaxyApp => {
+        return new GalaxyApp();
+    });
+    
+    assert.ok(newApp.foo === 123);
+});
 
 QUnit.test("App base logger", function(assert) {
     var app = getGalaxyInstance();
