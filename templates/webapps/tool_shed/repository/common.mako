@@ -73,10 +73,12 @@
 
 <%def name="container_javascripts()">
     <script type="text/javascript">
+        debugger;
+        var store = window.bundleEntries.store;
         var init_dependencies = function() {
             var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
             var restore_folder_state = function() {
-                var state = $.jStorage.get(storage_id);
+                var state = store.get(storage_id);
                 if (state) {
                     for (var id in state) {
                         if (state[id] === true) {
@@ -94,7 +96,7 @@
                     var folder = $(this);
                     state[folder.attr("id")] = folder.hasClass("expanded");
                 });
-                $.jStorage.set(storage_id, state);
+                store.set(storage_id, state);
             };
             $(".container-table").each(function() {
                 //var container_id = this.id.split( "-" )[0];

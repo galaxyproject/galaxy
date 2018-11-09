@@ -14,7 +14,6 @@ require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.form");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.rating");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/select2");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery-ui");
-require("imports-loader?jQuery=jqueryVendor!libs/jquery/jstorage");
 require("imports-loader?jQuery=jqueryVendor!libs/farbtastic");
 require("imports-loader?jQuery=jqueryVendor,$=jqueryVendor,define=>false!jquery.cookie");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.dynatree");

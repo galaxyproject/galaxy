@@ -106,6 +106,7 @@
     "qunitjs": "^2.4.1",
     "sass-loader": "^7.1.0",
     "sinon": "^4.1.2",
+    "store": "^2.0.12",
     "style-loader": "^0.23.1",
     "vue-loader": "^15.4.2",
     "vue-style-loader": "^4.1.2",

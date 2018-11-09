@@ -10,7 +10,6 @@ define([
     "qunit/test-data/fakeserver",
     "galaxy",
     "libs/jquery/select2",
-    "libs/jquery/jstorage",
     "libs/jquery/jquery-ui"
 ], function($, sinon, bootstrap, Backbone, bootstrapped, serverdata, appBase) {
     var Galaxy = {

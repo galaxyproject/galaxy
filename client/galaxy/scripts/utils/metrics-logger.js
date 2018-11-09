@@ -388,7 +388,7 @@ LoggingCache.defaultOptions = {
 /** initialize with options */
 LoggingCache.prototype._init = function _init(options) {
     if (!this._hasStorage()) {
-        //TODO: fall back to jstorage
+        //TODO: fall back to local storage
         throw new Error("LoggingCache needs localStorage");
     }
     if (!options.key) {
