@@ -208,6 +208,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             filename = self.store_jobtemplate(job_wrapper, jt)
             self.userid = pwent[2]
             external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2]).strip()
+            if external_job_id is None:
+                job_wrapper.fail("(%s) could not queue job" % galaxy_id_tag)
+                return
         log.info("(%s) queued as %s" % (galaxy_id_tag, external_job_id))
 
         # store runner information for tracking if Galaxy restarts
@@ -365,9 +368,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         return filename
 
     def external_runjob(self, external_runjob_script, jobtemplate_filename, username):
-        """ runs an external script the will QSUB a new job.
+        """ runs an external script that will QSUB a new job.
         The external script needs to be run with sudo, and will setuid() to the specified user.
-        Effectively, will QSUB as a different user (then the one used by Galaxy).
+        Effectively, will QSUB as a different user (than the one used by Galaxy).
         """
         command = shlex.split(external_runjob_script)
         command.extend([str(username), jobtemplate_filename])
@@ -379,14 +382,14 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         # os.unlink(jobtemplate_filename)
         if exitcode != 0:
             # There was an error in the child process
-            raise RuntimeError("External_runjob failed (exit code %s)\nChild process reported error:\n%s" % (str(exitcode), stderrdata))
-        if not stdoutdata.strip():
-            raise RuntimeError("External_runjob did return the job id: %s" % (stdoutdata))
-
+            log.exception("External_runjob failed (exit code %s). Child process reported error: %s" % (str(exitcode), stderrdata))
+            return None
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.
-        jobId = stdoutdata
-        return jobId
+        if not stdoutdata.strip():
+            log.exception("External_runjob did not returned nothing instead of the job id")
+            return None
+        return stdoutdata
 
     def _job_name(self, job_wrapper):
         external_runjob_script = job_wrapper.get_destination_configuration("drmaa_external_runjob_script", None)
