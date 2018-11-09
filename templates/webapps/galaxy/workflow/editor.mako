@@ -222,11 +222,11 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="panel-header-buttons" style="float: right">
+        <div class="panel-header-buttons">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
-        <div class="unified-panel-header-inner" id="workflow-canvas-title">
-            Workflow Canvas | ${h.to_unicode( stored.name ) | h}
+        <div class="unified-panel-header-inner">
+            ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
     <div class="unified-panel-body" id="workflow-canvas-body">
@@ -240,7 +240,7 @@
             <div id="workflow-parameters-container">
             </div>
         </div>
-        <div id="overview-border">
+        <div class="workflow-overview">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
@@ -248,7 +248,6 @@
                 </div>
             </div>
         </div>
-        <div id="close-viewport"></div>
     </div>
 
 </%def>

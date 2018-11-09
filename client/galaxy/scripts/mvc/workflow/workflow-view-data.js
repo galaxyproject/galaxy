@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+// import { getAppRoot } from "onload/loadConfig";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
@@ -61,14 +61,6 @@ var DataOutputView = Backbone.View.extend({
             });
             this.calloutView = calloutView;
             this.$el.append(calloutView.el);
-            this.$el.hover(
-                () => {
-                    calloutView.hoverImage();
-                },
-                () => {
-                    calloutView.resetImage();
-                }
-            );
         }
         this.$el.css({
             position: "absolute",
@@ -101,32 +93,24 @@ var OutputCalloutView = Backbone.View.extend({
         this.label = options.label;
         this.node = options.node;
         this.output = options.output;
-
         var view = this;
         var node = this.node;
         this.$el
-            .attr("class", `callout ${this.label}`)
+            .attr("class", `callout-terminal ${this.label}`)
             .css({ display: "none" })
             .append(
-                $("<div class='buttons'></div>").append(
-                    $("<img/>")
-                        .attr("src", `${getAppRoot()}static/images/fugue/asterisk-small-outline.png`)
-                        .click(() => {
-                            var outputName = view.output.name;
-                            if (node.isWorkflowOutput(outputName)) {
-                                node.removeWorkflowOutput(outputName);
-                                view.$("img").attr(
-                                    "src",
-                                    `${getAppRoot()}static/images/fugue/asterisk-small-outline.png`
-                                );
-                            } else {
-                                node.addWorkflowOutput(outputName);
-                                view.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small.png`);
-                            }
-                            window.workflow_globals.workflow.has_changes = true;
-                            window.workflow_globals.canvas_manager.draw_overview();
-                        })
-                )
+                $("<icon class='mark-terminal fa fa-asterisk'/>").click(() => {
+                    var outputName = view.output.name;
+                    if (node.isWorkflowOutput(outputName)) {
+                        node.removeWorkflowOutput(outputName);
+                        view.$("icon").removeClass("mark-terminal-active");
+                    } else {
+                        node.addWorkflowOutput(outputName);
+                        view.$("icon").addClass("mark-terminal-active");
+                    }
+                    window.workflow_globals.workflow.has_changes = true;
+                    window.workflow_globals.canvas_manager.draw_overview();
+                })
             )
             .tooltip({
                 delay: 500,
@@ -144,14 +128,10 @@ var OutputCalloutView = Backbone.View.extend({
 
     resetImage: function() {
         if (!this.node.isWorkflowOutput(this.output.name)) {
-            this.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small-outline.png`);
+            this.$("icon").removeClass("mark-terminal-active");
         } else {
-            this.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small.png`);
+            this.$("icon").addClass("mark-terminal-active");
         }
-    },
-
-    hoverImage: function() {
-        this.$("img").attr("src", `${getAppRoot()}static/images/fugue/asterisk-small-yellow.png`);
     }
 });
 

@@ -225,7 +225,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     if [ -n "$VIRTUAL_ENV" ]; then
         if ! in_venv "$(command -v node)"; then
             echo "Installing node into $VIRTUAL_ENV with nodeenv."
-            nodeenv -n 9.11.1 -p
+            nodeenv -n 10.13.0 -p
         fi
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."

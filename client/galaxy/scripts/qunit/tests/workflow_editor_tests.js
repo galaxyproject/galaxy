@@ -260,7 +260,7 @@ QUnit.test("default attributes", function(assert) {
     assert.equal(connector.dragging, false);
     assert.equal(connector.canvas, null);
     assert.equal(connector.inner_color, "#FFFFFF");
-    assert.equal(connector.outer_color, "#D8B365");
+    assert.equal(connector.outer_color, "#25537b");
 });
 
 QUnit.test("destroy", function(assert) {
