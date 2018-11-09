@@ -73,7 +73,6 @@
 
 <%def name="container_javascripts()">
     <script type="text/javascript">
-        debugger;
         var store = window.bundleEntries.store;
         var init_dependencies = function() {
             var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
