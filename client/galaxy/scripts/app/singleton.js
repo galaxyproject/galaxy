@@ -12,6 +12,8 @@ import { GalaxyApp } from "./galaxy";
 import { serverPath } from "utils/serverPath";
 
 export function setGalaxyInstance(factory, atTop = true) {
+    // console.warn("setGalaxyInstance", serverPath());
+
     let storage = getStorage(atTop);
     let newInstance = factory(GalaxyApp);
     
@@ -22,7 +24,9 @@ export function setGalaxyInstance(factory, atTop = true) {
         addLogging(newInstance, "GalaxyApp");
     }
 
-    // let proxy = new Proxy(newInstance, {
+    // Debugging frame property
+    
+    // storage._galaxyInstance = new Proxy(newInstance, {
     //     get(galaxy, prop) {
     //         if (prop == "frame") {
     //             console.groupCollapsed("Frame Get", serverPath());
@@ -42,8 +46,6 @@ export function setGalaxyInstance(factory, atTop = true) {
     //         return true;
     //     }
     // });
-    
-    // storage._galaxyInstance = proxy;
 
     storage._galaxyInstance = newInstance;
 
@@ -64,31 +66,3 @@ export function getStorage(atTop = true) {
     let storage = ((window !== window.top) && atTop) ? window.top : window;
     return storage;
 }
-
-/* A handy way to track code that tweaks specific properties of Galaxy. You can
-see everything with the monitor, but this filters it down nicely 
-
-
-let proxy = new Proxy(newInstance, {
-    get(galaxy, prop) {
-        if (prop == "frame") {
-            console.groupCollapsed("Frame Get", serverPath());
-            console.trace();
-            console.groupEnd();
-        }
-        return galaxy[prop];
-    },
-    set(galaxy, prop, val) {
-        galaxy[prop] = val;
-        if (prop == "frame") {
-            console.groupCollapsed("Frame Set", serverPath());
-            console.log(val);
-            console.trace();
-            console.groupEnd();
-        }
-        return true;
-    }
-});
-
-storage._galaxyInstance = proxy;
-*/
