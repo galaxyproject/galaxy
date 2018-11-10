@@ -357,16 +357,16 @@ QUnit.module("Node unit test", {
     },
     init_field_data_simple: function(option_overrides) {
         var data = Utils.merge(option_overrides, {
-            data_inputs: [{ name: "input1", extensions: ["data"] }],
-            data_outputs: [{ name: "output1", extensions: ["data"] }],
+            inputs: [{ name: "input1", extensions: ["data"] }],
+            outputs: [{ name: "output1", extensions: ["data"] }],
             label: null
         });
         this.node.init_field_data(data);
     },
     update_field_data_with_new_input: function(option_overrides) {
         var new_data = Utils.merge(option_overrides, {
-            data_inputs: [{ name: "input1", extensions: ["data"] }, { name: "extra_0|input1", extensions: ["data"] }],
-            data_outputs: [{ name: "output1", extensions: ["data"] }],
+            inputs: [{ name: "input1", extensions: ["data"] }, { name: "extra_0|input1", extensions: ["data"] }],
+            outputs: [{ name: "output1", extensions: ["data"] }],
             post_job_actions: "{}",
             label: "New Label"
         });
@@ -401,8 +401,8 @@ QUnit.test("init_field_data properties", function(assert) {
     var node = this.node;
     this.expect_workflow_node_changed(assert, function() {
         var data = {
-            data_inputs: [],
-            data_outputs: [],
+            inputs: [],
+            outputs: [],
             type: "tool",
             name: "cat1",
             config_form: "{}",
@@ -507,8 +507,8 @@ QUnit.test("update_field_data destroys old terminals", function(assert) {
     var node = this.node;
     this.expect_workflow_node_changed(assert, function() {
         var data = {
-            data_inputs: [{ name: "input1", extensions: ["data"] }, { name: "willDisappear", extensions: ["data"] }],
-            data_outputs: [{ name: "output1", extensions: ["data"] }]
+            inputs: [{ name: "input1", extensions: ["data"] }, { name: "willDisappear", extensions: ["data"] }],
+            outputs: [{ name: "output1", extensions: ["data"] }]
         };
         node.init_field_data(data);
         var old_input_terminal = node.input_terminals.willDisappear;

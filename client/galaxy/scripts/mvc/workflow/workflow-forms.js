@@ -90,6 +90,7 @@ var Tool = Backbone.View.extend({
         var options = form.model.attributes;
         Utils.deepeach(options.inputs, input => {
             if (input.type) {
+                input.connectable = true;
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
                     input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
@@ -105,6 +106,7 @@ var Tool = Backbone.View.extend({
         });
         Utils.deepeach(options.inputs, input => {
             if (input.type === "conditional") {
+                input.connectable = false;
                 input.test_param.collapsible_value = undefined;
             }
         });
