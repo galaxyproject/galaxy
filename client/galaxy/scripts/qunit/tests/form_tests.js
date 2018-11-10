@@ -1,10 +1,16 @@
-/* global define */
+/**
+ * mvc/tool/tool-form is unused.
+ */
+
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import InputElement from "mvc/form/form-input";
 import Ui from "mvc/ui/ui-misc";
 import FormData from "mvc/form/form-data";
 import ToolForm from "mvc/tool/tool-form";
 import Utils from "utils/utils";
+import { getAppRoot } from "onload/loadConfig";
 
 QUnit.module("Form test", {
     beforeEach: function() {
@@ -17,15 +23,19 @@ QUnit.module("Form test", {
     }
 });
 
+
 QUnit.test("tool-form", function(assert) {
-    // Huh? The following seems to be needed by tool-form.js - once the global usage
-    // is cleaned up in that module this can be deleted I assume.
-    window.parent.Galaxy = window.Galaxy;
+
+    // // Huh? The following seems to be needed by tool-form.js - once the global usage
+    // // is cleaned up in that module this can be deleted I assume.
+    // window.parent.Galaxy = window.Galaxy;
 
     var toolform = new ToolForm.View({ id: "test" });
-    var form = toolform.form;
     $("body").prepend(toolform.$el);
     window.fakeserver.respond();
+    
+   
+    var form = toolform.form;
     var output = "";
     for (var property in assert) {
         output += property + ": ; ";
@@ -88,10 +98,12 @@ QUnit.test("tool-form", function(assert) {
     );
 });
 
+
 QUnit.test("data", function(assert) {
+
     var visits = [];
     Utils.get({
-        url: Galaxy.root + "api/tools/test/build",
+        url: getAppRoot() + "api/tools/test/build",
         success: function(response) {
             FormData.visitInputs(response.inputs, function(node, name, context) {
                 visits.push({ name: name, node: node });

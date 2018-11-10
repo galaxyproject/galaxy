@@ -1,11 +1,11 @@
 // This file isn't really testing anything useful yet, it is just testing
 // (or demonstrating) qunit+backbone interactions.
-/* global define */
 
-import testApp from "qunit/test-app";
-import metrics from "utils/metrics-logger";
-import $ from "jquery";
+/* global QUnit */
+import jQuery from "jquery";
 import sinon from "sinon";
+import metrics from "utils/metrics-logger";
+import testApp from "qunit/test-app";
 
 var MockConsole = function() {
     var self = this;
@@ -23,7 +23,16 @@ var MockConsole = function() {
     id: "test"
 };
 
-QUnit.module("Metrics logger tests");
+QUnit.module("Metrics logger tests", {
+    beforeEach: function() {
+        testApp.create();
+    },
+    afterEach: function() {
+        testApp.destroy();
+    }
+});
+
+
 // ======================================================================== MetricsLogger
 QUnit.test("logger construction/initializiation defaults", function(assert) {
     var logger = new metrics.MetricsLogger({});
