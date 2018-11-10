@@ -24,6 +24,11 @@
     transform: rotate(45deg);
 }
 
+// utility class from: https://github.com/twbs/bootstrap/pull/27268
+.overflow-auto {
+    overflow: auto !important;
+}
+
 // default margins
 $ui-margin-vertical: $margin-v * 0.25;
 $ui-margin-vertical-large: $margin-v * 0.5;
@@ -202,7 +207,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
                 text-decoration: underline;
             }
         }
-        .portlet-operations  {
+        .portlet-operations {
             button {
                 @extend .ml-1;
             }
@@ -396,7 +401,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
 }
 
 .ui-select {
-    position:relative;
+    position: relative;
     .icon-dropdown {
         position: absolute;
         top: 0.7rem;
@@ -408,7 +413,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         cursor: pointer;
         -webkit-appearance: none;
         -moz-border-radius: $border-radius-base;
-
     }
     .select2-container {
         width: 100%;

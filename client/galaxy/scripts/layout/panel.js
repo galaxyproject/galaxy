@@ -1,6 +1,6 @@
 import $ from "jquery";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import _ from "underscore";
+import Backbone from "backbone";
 
 var MIN_PANEL_WIDTH = 160;
 var MAX_PANEL_WIDTH = 800;
@@ -45,7 +45,7 @@ var SidePanel = Backbone.View.extend({
     _templateHeader: function(data) {
         return `<div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
-                        <div class="panel-header-buttons" style="float: right"/>
+                        <div class="panel-header-buttons"/>
                         <div class="panel-header-text"/>
                     </div>
                 </div>

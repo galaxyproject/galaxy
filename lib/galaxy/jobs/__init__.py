@@ -1198,9 +1198,6 @@ class JobWrapper(HasResourceParameters):
         self.sa_session.flush()
 
     def _set_object_store_ids(self, job):
-        if self.app.config.legacy_eager_objectstore_initialization:
-            return
-
         if job.object_store_id:
             # We aren't setting this during job creation anymore, but some existing
             # jobs may have this set. Skip this following code if that is the case.
@@ -1851,9 +1848,10 @@ class JobWrapper(HasResourceParameters):
                 # to the object store from jobs - be sure that file is cleaned up. This
                 # is a bit of hack - our object store abstractions would be stronger
                 # and more consistent if tools weren't writing there directly.
-                target = dataset.file_name
-                if os.path.exists(target):
-                    os.remove(target)
+                try:
+                    dataset.full_delete()
+                except ObjectNotFound:
+                    pass
 
     def __link_file_check(self):
         """ outputs_to_working_directory breaks library uploads where data is

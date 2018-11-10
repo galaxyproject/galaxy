@@ -193,7 +193,7 @@ var Node = Backbone.Model.extend({
         }
     },
     init_field_data: function(data) {
-        console.debug("init_field_data: ", data);
+        //console.debug("init_field_data: ", data);
         if (data.type) {
             this.type = data.type;
         }

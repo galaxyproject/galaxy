@@ -9,41 +9,30 @@ class ScrollPanel {
         window.clearTimeout(this.timeout);
         var x = e.pageX;
         var y = e.pageY;
-
-        var // Panel size and position
-        panel = $(this.panel);
-
+        // Panel size and position
+        var panel = $(this.panel);
         var panel_pos = panel.position();
         var panel_w = panel.width();
         var panel_h = panel.height();
-
-        var // Viewport size and offset
-        viewport = panel.parent();
-
+        // Viewport size and offset
+        var viewport = panel.parent();
         var viewport_w = viewport.width();
         var viewport_h = viewport.height();
         var viewport_offset = viewport.offset();
-
-        var // Edges of viewport (in page coordinates)
-        min_x = viewport_offset.left;
-
+        // Edges of viewport (in page coordinates)
+        var min_x = viewport_offset.left;
         var min_y = viewport_offset.top;
         var max_x = min_x + viewport.width();
         var max_y = min_y + viewport.height();
-
-        var // Legal panel range
-        p_min_x = -(panel_w - viewport_w / 2);
-
+        // Legal panel range
+        var p_min_x = -(panel_w - viewport_w / 2);
         var p_min_y = -(panel_h - viewport_h / 2);
         var p_max_x = viewport_w / 2;
         var p_max_y = viewport_h / 2;
-
-        var // Did the panel move?
-        moved = false;
-
-        var // Constants
-        close_dist = 5;
-
+        // Did the panel move?
+        var moved = false;
+        // Constants
+        var close_dist = 5;
         var nudge = 23;
         var t = 0;
         if (x - close_dist < min_x) {
@@ -182,11 +171,8 @@ class CanvasManager {
                 var in_h = self.cc.height();
                 var o_w = self.oc.width();
                 var o_h = self.oc.height();
-
                 var new_x_offset = e.pageX - self.oc.offset().left - self.ov.width() / 2;
-
                 var new_y_offset = e.pageY - self.oc.offset().top - self.ov.height() / 2;
-
                 move(-((new_x_offset / o_w) * in_w), -((new_y_offset / o_h) * in_h));
                 self.app.workflow.fit_canvas_to_nodes();
                 self.draw_overview();
@@ -209,7 +195,7 @@ class CanvasManager {
                 self.draw_overview();
             });
         // Dragging for overview border (resize)
-        $("#overview-border").bind("drag", function(e, d) {
+        $(".workflow-overview").bind("drag", function(e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
@@ -219,10 +205,9 @@ class CanvasManager {
             });
             self.draw_overview();
         });
-
         /*  Disable dragging for child element of the panel so that resizing can
                 only be done by dragging the borders */
-        $("#overview-border div").bind("drag", () => {});
+        $(".workflow-overview div").bind("drag", () => {});
     }
     init_copy_paste() {
         document.addEventListener("copy", e => {
@@ -282,7 +267,6 @@ class CanvasManager {
     }
     draw_overview() {
         var canvas_el = $("#overview-canvas");
-
         var size = canvas_el
             .parent()
             .parent()
@@ -327,9 +311,7 @@ class CanvasManager {
         canvas_el.attr("height", o_h);
         // Draw overview
         $.each(this.app.workflow.nodes, (id, node) => {
-            c.fillStyle = "#D2C099";
-            c.strokeStyle = "#D8B365";
-            c.lineWidth = 1;
+            c.fillStyle = "gray";
             var node_element = $(node.element);
             var position = node_element.position();
             var x = (position.left / in_w) * o_w;
@@ -337,14 +319,9 @@ class CanvasManager {
             var w = (node_element.width() / in_w) * o_w;
             var h = (node_element.height() / in_h) * o_h;
             if (node.errors) {
-                c.fillStyle = "#FFCCCC";
-                c.strokeStyle = "#AA6666";
-            } else if (node.workflow_outputs !== undefined && node.workflow_outputs.length > 0) {
-                c.fillStyle = "#E8A92D";
-                c.strokeStyle = "#E8A92D";
+                c.fillStyle = "#e31a1e";
             }
             c.fillRect(x, y, w, h);
-            c.strokeRect(x, y, w, h);
         });
         this.update_viewport_overlay();
     }

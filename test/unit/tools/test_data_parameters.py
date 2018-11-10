@@ -27,7 +27,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         # Selection is Optional. may be selected with other stuff,
         # not sure the UI should really allow this but easy enough
         # to just filter it out.
-        self.assertEquals([hda], self.param.to_python('%s,None' % hda.id, self.app))
+        self.assertEqual([hda], self.param.to_python('%s,None' % hda.id, self.app))
 
     def test_field_filter_on_types(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)

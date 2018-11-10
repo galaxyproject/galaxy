@@ -185,7 +185,7 @@ if not check_expression(cond_text):
 
 # Work out which columns are used in the filter (save using 1 based counting)
 used_cols = sorted(set(int(match.group()[1:])
-                   for match in re.finditer('c(\d)+', cond_text)))
+                   for match in re.finditer(r'c(\d)+', cond_text)))
 largest_col_index = max(used_cols)
 
 # Prepare the column variable names and wrappers for column data types. Only

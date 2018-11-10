@@ -110,19 +110,6 @@ class JobHandlerQueue(Monitors):
         job = self.sa_session.query(model.Job).get(id)
         return job, self.job_wrapper(job, use_persisted_destination=True)
 
-    def __write_registry_file_if_absent(self, job):
-        # TODO: remove this and the one place it is called in late 2018, this
-        # hack attempts to minimize the job failures due to upgrades from 17.05
-        # Galaxies.
-        job_wrapper = self.job_wrapper(job)
-        cwd = job_wrapper.working_directory
-        datatypes_config = os.path.join(cwd, "registry.xml")
-        if not os.path.exists(datatypes_config):
-            try:
-                self.app.datatypes_registry.to_xml_file(path=datatypes_config)
-            except OSError:
-                pass
-
     def __check_jobs_at_startup(self):
         """
         Checks all jobs that are in the 'new', 'queued' or 'running' state in
@@ -150,7 +137,6 @@ class JobHandlerQueue(Monitors):
                         (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
-            self.__write_registry_file_if_absent(job)
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
                 log.warning("(%s) Tool '%s' removed from tool config, unable to recover job" % (job.id, job.tool_id))
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
@@ -415,11 +401,17 @@ class JobHandlerQueue(Monitors):
             pause_message = ", ".join(jobs_to_pause[job_id])
             pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.pause(job=job, message=pause_message)
+            try:
+                job_wrapper.pause(job=job, message=pause_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to pause job.", job_id)
         for job_id in sorted(jobs_to_fail):
             fail_message = ", ".join(jobs_to_fail[job_id])
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.fail(fail_message)
+            try:
+                job_wrapper.fail(fail_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to fail job.", job_id)
         jobs_to_ignore.update(jobs_to_pause)
         jobs_to_ignore.update(jobs_to_fail)
         return [j for j in jobs if j.id not in jobs_to_ignore]
@@ -502,7 +494,7 @@ class JobHandlerQueue(Monitors):
                     usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
                     if usage > quota:
                         return JOB_USER_OVER_QUOTA, job_destination
-                except AssertionError as e:
+                except AssertionError:
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
         if (state == JOB_READY and
@@ -973,8 +965,12 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.values():
+        failures = []
+        for name, runner in self.job_runners.items():
             try:
                 runner.shutdown()
             except Exception:
-                raise Exception("Failed to shutdown runner %s" % runner)
+                failures.append(name)
+                log.exception("Failed to shutdown runner %s", name)
+        if failures:
+            raise Exception("Failed to shutdown runners: %s" % ', '.join(failures))

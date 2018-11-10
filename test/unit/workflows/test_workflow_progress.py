@@ -121,8 +121,12 @@ class WorkflowProgressTestCase(unittest.TestCase):
         self.inputs_by_step_id = {100: hda}
         progress = self._new_workflow_progress()
         progress.set_outputs_for_input(self._invocation_step(0))
-
-        replacement = progress.replacement_for_tool_input(self._step(2), MockInput(), "input1")
+        step_dict = {
+            "name": "input1",
+            "input_type": "dataset",
+            "multiple": False,
+        }
+        replacement = progress.replacement_for_input(self._step(2), step_dict)
         assert replacement is hda
 
     def test_connect_tool_output(self):
@@ -152,8 +156,12 @@ class WorkflowProgressTestCase(unittest.TestCase):
         assert len(steps) == 1, steps
         step, invocation_step = steps[0]
         assert step is self.invocation.workflow.steps[4]
-
-        replacement = progress.replacement_for_tool_input(self._step(4), MockInput(), "input1")
+        step_dict = {
+            "name": "input1",
+            "input_type": "dataset",
+            "multiple": False,
+        }
+        replacement = progress.replacement_for_input(self._step(4), step_dict)
         assert replacement is hda3
 
     # TODO: Replace multiple true HDA with HDCA
@@ -188,19 +196,15 @@ class WorkflowProgressTestCase(unittest.TestCase):
         subworkflow_progress.set_outputs_for_input(subworkflow_invocation_step)
 
         subworkflow_cat_step = subworkflow.step_by_index(1)
-
-        assert hda is subworkflow_progress.replacement_for_tool_input(
+        step_dict = {
+            "name": "input1",
+            "input_type": "dataset",
+            "multiple": False,
+        }
+        assert hda is subworkflow_progress.replacement_for_input(
             subworkflow_cat_step,
-            MockInput(),
-            "input1",
+            step_dict,
         )
-
-
-class MockInput(object):
-
-    def __init__(self, type="data", multiple=False):
-        self.multiple = multiple
-        self.type = type
 
 
 class MockModuleInjector(object):

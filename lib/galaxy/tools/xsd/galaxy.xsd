@@ -233,8 +233,8 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
 This is a container tag set for the ``requirement`` and ``container`` tags
 described in greater detail below. ``requirement``s describe software packages
 and other individual computing requirements required to execute a tool, while
-``container``s describe Docker containers that should be able to serve as
-complete descriptions of the runtime of a tool.
+``container``s describe Docker or Singularity containers that should be able to
+serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -312,9 +312,21 @@ resolver.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 This tag set is contained within the 'requirements' tag set. Galaxy can be
-configured to run tools within [Docker](https://www.docker.com/) containers -
-this tag allows the tool to suggest possible valid Docker containers for this
-tool.
+configured to run tools within [Docker](https://www.docker.com/) or [Singularity](https://www.sylabs.io/singularity/)
+containers - this tag allows the tool to suggest possible valid containers for this tool. The contents of the tag should
+be a container image identifier appropriate for the particular container runtime being used, e.g. 
+``quay.io/biocontainers/fastqc:0.11.2--1`` for Docker or ``docker://quay.io/biocontainers/fastqc:0.11.2--1``
+(or alternatively ``/opt/containers/fastqc.simg`` if your Galaxy installation will be loading the image from a filesystem path)
+for Singularity. The ``requirements`` tag can contain multiple ``container`` tags describing suitable container options, in
+which case the first container that is found by the Galaxy container resolver at runtime will be used.
+
+Example:
+
+```xml
+<requirements>
+  <container type="docker">quay.io/biocontainers/fastqc:0.11.2--1</container>
+<requirements>
+```
 
 Read more about configuring Galaxy to run Docker jobs
 [here](https://galaxyproject.org/admin/tools/docker/).
@@ -324,7 +336,7 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ContainerType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently must be ``docker``.</xs:documentation>
+            <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently may be ``docker`` or ``singularity``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -347,7 +359,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="split_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A comma separated list of data inputs to split for job parallelization.</xs:documentation>
+        <xs:documentation xml:lang="en">A comma-separated list of data inputs to split for job parallelization.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="split_size" type="xs:string">
@@ -362,7 +374,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="shared_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A comma separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
+        <xs:documentation xml:lang="en">A comma-separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1074,6 +1086,11 @@ referenced input dataset. This is only valid if the corresponding parameter is
 of ``type`` ``data``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="tags" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestCompositeData">
     <xs:annotation>
@@ -1100,6 +1117,11 @@ non-optional composite inputs must be specified as part of the ``param``.
     <xs:attribute name="type" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="tags" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -2350,7 +2372,7 @@ file. Use the file extension.</xs:documentation>
 This is only valid if ``type`` is ``data_collection``. Restrict the kind of
 collection that can be consumed by this parameter (e.g. ``paired``,
 ``list:paired``, ``list``). Multiple such collection types can be specified here
-as a comma separated list.
+as a comma-separated list.
 
               ]]></xs:documentation>
           </xs:annotation>
@@ -3889,7 +3911,12 @@ tool ultimately creates. If the code, when executed, returns ``True``,
 the output dataset is retained. In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
-conditionals are accessed using a hash named after the conditional.
+conditionals are accessed using a dictionary named after the conditional. Boolean
+parameters appear as booleans, not the value of their ``truevalue`` and
+``falsevalue`` attributes. In the example below, ``options["selection_mode"]`` would
+appear as ``$options.selection_mode`` in Cheetah. Similarly ``options["vcf_output"]``
+would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true and
+``''`` when false in Cheetah.
 
 ### Example
 

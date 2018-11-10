@@ -1,52 +1,35 @@
-// ---------------------------------------------------------------------------- all histories
+// all histories
 .history-panel {
     @extend .flex-vertical-container;
-
     > .controls {
-        margin: $margin-h $margin-v;
-        padding: 0px;
+        @extend .px-3;
         flex: 0 0 auto;
-
         .title {
-            margin-bottom: 4px;
+            .name {
+                margin-left: -1px;
+            }
             input {
-                width: 100%;
-                // keep the text in position
-                margin: -3px 0px -3px -3px;
                 font-weight: bold;
             }
         }
         .subtitle:not(:empty) {
-            min-height: 15px;
-            margin: -4px 0px 8px;
             span + span:before {
                 content: ", ";
             }
         }
         .history-size {
             float: left;
-            margin: 4px 0 0;
+            @extend .mt-1;
         }
         .actions {
-            margin-bottom: 8px;
             &:empty {
                 height: $icon-btn-size;
             }
         }
-
-        // TODO: remove
         .messages {
             clear: both;
-            margin-bottom: 0px;
-            & > * {
-                cursor: pointer;
-                &:last-child {
-                    margin-bottom: 8px;
-                }
-            }
             .quota-message {
                 display: none;
-                margin: 8px 0px 5px 0px;
             }
         }
 
@@ -190,7 +173,7 @@
     }
 
     > .empty-message {
-        margin: 0px 10px 0px 10px;
+        @extend .m-3;
     }
 
     .loading-indicator,

@@ -38,7 +38,7 @@
                 <div class="form-row">
                     <% existing_emails = ','.join([ d.user.email for d in history.users_shared_with ]) %>
                     <label>Galaxy user emails with which to share histories</label>
-                    %if trans.app.config.expose_user_email or trans.app.config.expose_user_name or trans.user_is_admin():
+                    %if trans.app.config.expose_user_email or trans.app.config.expose_user_name or trans.user_is_admin:
                     <input type="hidden" id="email_select" name="email" value="${ existing_emails }" style="float: left; width: 250px; margin-right: 10px;">
                     </input>
                     %else:
@@ -52,7 +52,7 @@
                 %if send_to_err:
                     <div style="clear: both"></div>
                     <div class="form-row">
-                        <div class="errormessage">${send_to_err}</div>
+                        <div class="alert alert-danger">${send_to_err}</div>
                     </div>
                 %endif
                 <div style="clear: both"></div>
@@ -157,7 +157,7 @@
                     %if send_to_err:
                         <div style="clear: both"></div>
                         <div class="form-row">
-                            <div class="errormessage">${send_to_err}</div>
+                            <div class="alert alert-danger">${send_to_err}</div>
                         </div>
                     %endif
                     ## Needed for rebuilding dicts
@@ -223,7 +223,7 @@
                         ## cannot_change looks like: {historyX : [hda, hda], historyY : [hda] }
                         <div style="clear: both"></div>
                         <div class="form-row">
-                            <div class="errormessage">
+                            <div class="alert alert-danger">
                                 The following datasets cannot be shared with ${email} because you are not authorized to 
                                 change the permissions on them
                             </div>

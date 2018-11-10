@@ -124,7 +124,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
-        return (allow_admin and trans.user_is_admin()) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
+        return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
 
     @web.expose
     def errors(self, trans, id):
@@ -203,7 +203,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin() or (data.history and trans.get_user() == data.history.user)):
+        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message("Please wait until this dataset finishes uploading before attempting to view it.")
@@ -872,9 +872,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Dataset id %s marked as deleted" % str(id))
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
-        except Exception as e:
+        except Exception:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % (dataset_id, id)
-            log.exception(msg + ': ' + str(e))
+            log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
             status = 'error'
@@ -966,8 +966,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 except Exception:
                     log.exception('Unable to purge dataset (%s) on purge of HDA (%s):' % (hda.dataset.id, hda.id))
             trans.sa_session.flush()
-        except Exception as exc:
-            msg = 'HDA purge failed (encoded: %s, decoded: %s): %s' % (dataset_id, id, exc)
+        except Exception:
+            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % (dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'

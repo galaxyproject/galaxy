@@ -41,11 +41,8 @@ for inspection of live javascript to facilitate debugging, use:
 
     make client-production-maps
 
-Important Note: The development branch of Galaxy does not include client script
-artifacts, and these should not be committed.  When issuing a PR to a stable
-branch, please run "make client-production-maps", and include those artifacts.
-Or, if you'd rather, include only the /client source changes and build
-artifacts can be added by maintainers on merge.
+Important Note: The Galaxy repository does not include client script artifacts,
+and these should not be committed.
 
 
 Automatic Rebuilding (Watch Mode)
@@ -68,8 +65,8 @@ Changing Styles/CSS
 ===================
 
 The CSS and styling used by Galaxy is also controlled from this directory.
-Galaxy uses LESS, a superset of CSS that compiles to CSS, for its styling. LESS
-files are kept in client/galaxy/style/less. Compiled CSS is in
+Galaxy uses Sass for its styling, a superset of CSS that compiles to CSS. Sass
+files are kept in client/galaxy/style/scss. Compiled CSS is in
 static/style/blue.
 
 As mentioned above, 'make client' will also rebuild styles.  If you *only* want

@@ -26,7 +26,7 @@ ${render_galaxy_repository_actions( repository )}
     ${render_msg( message, status )}
 %endif
 
-<div class="toolFormTitle">${workflow_name | h}</div>
+<div class="card-header">${workflow_name | h}</div>
 <div class="form-row">
     <div class="toolParamHelp" style="clear: both;">
         (this page displays SVG graphics)

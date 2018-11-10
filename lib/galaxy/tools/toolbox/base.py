@@ -327,7 +327,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                             # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                             panel_dict.append_tool(tool)
                             log_msg = "Loaded tool id: %s, version: %s into tool panel...." % (tool.id, tool.version)
-        if not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids:
+        if log_msg and (not hasattr(self.app, 'tool_cache') or tool_id in self.app.tool_cache._new_tool_ids):
             log.debug(log_msg)
 
     def _load_tool_panel(self):
@@ -952,7 +952,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         Use cache if present, store to cache otherwise.
         Note: The cached tool's to_dict is specific to the calls from toolbox.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             to_dict = self._tool_to_dict_cache.get(tool.id, None)
             if not to_dict:
                 to_dict = tool.to_dict(trans, link_details=True)

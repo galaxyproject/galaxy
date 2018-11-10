@@ -8,7 +8,7 @@ var View = Backbone.View.extend({
         this.multiple = options.multiple || false;
 
         // create message handler
-        this.message = new Ui.Message({cls: "col mb-0"});
+        this.message = new Ui.Message({ cls: "col mb-0" });
 
         // create selections area
         this.selections = $("<div/>");
@@ -122,7 +122,7 @@ var View = Backbone.View.extend({
 
     /** Main Template */
     _template: function(options) {
-        return  `<div class="ui-list container">
+        return `<div class="ui-list container">
                     <div class="row">
                         <div class="col-1 pl-0 mb-2">
                             <div class="ui-list-button"/>

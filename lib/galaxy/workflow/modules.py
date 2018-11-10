@@ -39,11 +39,13 @@ from galaxy.tools.parameters.basic import (
     TextToolParameter,
     workflow_building_modes
 )
+from galaxy.tools.parameters.history_query import HistoryQuery
 from galaxy.tools.parameters.wrapped import make_dict_copy
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import safe_loads
 from galaxy.util.odict import odict
 from galaxy.util.rules_dsl import RuleSet
+from galaxy.util.template import fill_template
 from tool_shed.util import common_util
 
 log = logging.getLogger(__name__)
@@ -77,7 +79,8 @@ class WorkflowModule(object):
     @classmethod
     def from_dict(Class, trans, d, **kwds):
         module = Class(trans, **kwds)
-        module.recover_state(d.get("tool_state"))
+        input_connections = d.get("input_connections", {})
+        module.recover_state(d.get("tool_state"), input_connections=input_connections, **kwds)
         module.label = d.get("label")
         return module
 
@@ -265,6 +268,64 @@ class WorkflowModule(object):
 
         return []
 
+    def compute_collection_info(self, progress, step, all_inputs):
+        """Use get_all_inputs (if implemented) to determine collection mapping for execution.
+
+        Hopefully this can be reused for Tool and Subworkflow modules.
+        """
+
+        collections_to_match = self._find_collections_to_match(
+            progress, step, all_inputs
+        )
+        # Have implicit collections...
+        if collections_to_match.has_collections():
+            collection_info = self.trans.app.dataset_collections_service.match_collections(
+                collections_to_match
+            )
+        else:
+            collection_info = None
+
+        return collection_info
+
+    def _find_collections_to_match(self, progress, step, all_inputs):
+        collections_to_match = matching.CollectionsToMatch()
+
+        for input_dict in all_inputs:
+            name = input_dict["name"]
+            multiple = input_dict["multiple"]
+            if multiple:
+                continue
+
+            data = progress.replacement_for_input(step, input_dict)
+            can_map_over = hasattr(data, "collection")  # and data.collection.allow_implicit_mapping
+
+            if not can_map_over:
+                continue
+
+            is_data_param = input_dict["input_type"] == "dataset"
+            if is_data_param:
+                collections_to_match.add(name, data)
+                continue
+
+            is_data_collection_param = input_dict["input_type"] == "dataset_collection"
+            if is_data_collection_param:
+                dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
+
+                history_query = HistoryQuery.from_collection_types(
+                    input_dict.get("collection_types", None),
+                    dataset_collection_type_descriptions,
+                )
+                subcollection_type_description = history_query.can_map_over(data)
+                if subcollection_type_description:
+                    collections_to_match.add(name, data, subcollection_type=subcollection_type_description.collection_type)
+                continue
+
+            if data is not NO_REPLACEMENT:
+                collections_to_match.add(name, data)
+                continue
+
+        return collections_to_match
+
 
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
@@ -300,12 +361,13 @@ class SubWorkflowModule(WorkflowModule):
             return self.subworkflow.name
         return self.name
 
-    def get_data_inputs(self):
+    def get_all_inputs(self, data_only=False):
         """ Get configure time data input descriptions. """
         # Filter subworkflow steps and get inputs
         step_to_input_type = {
             "data_input": "dataset",
             "data_collection_input": "dataset_collection",
+            "parameter_input": "parameter",
         }
         inputs = []
         if hasattr(self.subworkflow, 'input_steps'):
@@ -326,6 +388,9 @@ class SubWorkflowModule(WorkflowModule):
                 )
                 inputs.append(input)
         return inputs
+
+    def get_data_inputs(self):
+        return self.get_all_inputs(data_only=True)
 
     def get_data_outputs(self):
         outputs = []
@@ -738,21 +803,24 @@ class ToolModule(WorkflowModule):
     def get_inputs(self):
         return self.tool.inputs if self.tool else {}
 
-    def get_data_inputs(self):
-        data_inputs = []
+    def get_all_inputs(self, data_only=False):
+        inputs = []
         if self.tool:
 
             def callback(input, prefixed_name, prefixed_label, **kwargs):
-                if not hasattr(input, 'hidden') or not input.hidden:
+                visible = not hasattr(input, 'hidden') or not input.hidden
+                is_data = isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter)
+                skip = data_only and (not visible or not is_data)
+                if not skip:
                     if isinstance(input, DataToolParameter):
-                        data_inputs.append(dict(
+                        inputs.append(dict(
                             name=prefixed_name,
                             label=prefixed_label,
                             multiple=input.multiple,
                             extensions=input.extensions,
                             input_type="dataset", ))
                     elif isinstance(input, DataCollectionToolParameter):
-                        data_inputs.append(dict(
+                        inputs.append(dict(
                             name=prefixed_name,
                             label=prefixed_label,
                             multiple=input.multiple,
@@ -760,9 +828,21 @@ class ToolModule(WorkflowModule):
                             collection_types=input.collection_types,
                             extensions=input.extensions,
                         ))
+                    else:
+                        inputs.append(
+                            dict(
+                                name=prefixed_name,
+                                label=prefixed_label,
+                                multiple=False,
+                                input_type="parameter",
+                            )
+                        )
 
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
-        return data_inputs
+        return inputs
+
+    def get_data_inputs(self):
+        return self.get_all_inputs(data_only=True)
 
     def get_data_outputs(self):
         data_outputs = []
@@ -793,6 +873,14 @@ class ToolModule(WorkflowModule):
                         format = when_elem.get('format', None)
                         if format and format not in formats:
                             formats.append(format)
+                if tool_output.label:
+                    try:
+                        params = make_dict_copy(self.state.inputs)
+                        params['on_string'] = 'input dataset(s)'
+                        params['tool'] = self.tool
+                        extra_kwds['label'] = fill_template(tool_output.label, context=params)
+                    except Exception:
+                        pass
                 data_outputs.append(
                     dict(
                         name=name,
@@ -848,6 +936,77 @@ class ToolModule(WorkflowModule):
 
     # ---- Run time ---------------------------------------------------------
 
+    def recover_state(self, state, **kwds):
+        """ Recover state `dict` from simple dictionary describing configuration
+        state (potentially from persisted step state).
+
+        Sub-classes should supply a `default_state` method which contains the
+        initial state `dict` with key, value pairs for all available attributes.
+        """
+        super(ToolModule, self).recover_state(state, **kwds)
+        if kwds.get("fill_defaults", False) and self.tool:
+            self.compute_runtime_state(self.trans, step_updates=None)
+            self.augment_tool_state_for_input_connections(**kwds)
+            self.tool.check_and_update_param_values(self.state.inputs, self.trans, workflow_building_mode=True)
+
+    def augment_tool_state_for_input_connections(self, **kwds):
+        """Update tool state to accommodate specified input connections.
+
+        Top-level and conditional inputs will automatically get populated with connected
+        data outputs at runtime, but if there are not enough repeat instances in the tool
+        state - the runtime replacement code will never visit the input elements it needs
+        to in order to connect the data parameters to the tool state. This code then
+        populates the required repeat instances in the tool state in order for these
+        instances to be visited and inputs properly connected at runtime. I believe
+        this should be run before check_and_update_param_values in recover_state so non-data
+        parameters are properly populated with default values. The need to populate
+        defaults is why this is done here instead of at runtime - but this might also
+        be needed at runtime at some point (for workflows installed before their corresponding
+        tools?).
+
+        See the test case test_inputs_to_steps for an example of a workflow test
+        case that exercises this code.
+        """
+
+        # Ensure any repeats defined only by input_connections are populated.
+        input_connections = kwds.get("input_connections", {})
+        expected_replacement_keys = input_connections.keys()
+
+        def augment(expected_replacement_key, inputs, inputs_state):
+            if "|" not in expected_replacement_key:
+                return
+
+            prefix, rest = expected_replacement_key.split("|", 1)
+            if "_" not in prefix:
+                return
+
+            repeat_name, index = prefix.rsplit("_", 1)
+            if not index.isdigit():
+                return
+
+            index = int(index)
+            repeat = self.tool.inputs[repeat_name]
+            if repeat.type != "repeat":
+                return
+
+            if repeat_name not in inputs_states:
+                inputs_states[repeat_name] = []
+
+            repeat_values = inputs_states[repeat_name]
+            repeat_instance_state = None
+            while index >= len(repeat_values):
+                repeat_instance_state = {"__index__": len(repeat_values)}
+                repeat_values.append(repeat_instance_state)
+
+            if repeat_instance_state:
+                # TODO: untest branch - no test case for nested repeats yet...
+                augment(rest, repeat.inputs, repeat_instance_state)
+
+        for expected_replacement_key in expected_replacement_keys:
+            inputs_states = self.state.inputs
+            inputs = self.tool.inputs
+            augment(expected_replacement_key, inputs, inputs_states)
+
     def get_runtime_state(self):
         state = DefaultToolState()
         state.inputs = self.state.inputs
@@ -896,12 +1055,12 @@ class ToolModule(WorkflowModule):
         # metadata parameters from it.
         if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
             del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
-        collections_to_match = self._find_collections_to_match(tool, progress, step)
-        # Have implicit collections...
-        if collections_to_match.has_collections():
-            collection_info = self.trans.app.dataset_collections_service.match_collections(collections_to_match)
-        else:
-            collection_info = None
+
+        all_inputs = self.get_all_inputs()
+        all_inputs_by_name = {}
+        for input_dict in all_inputs:
+            all_inputs_by_name[input_dict["name"]] = input_dict
+        collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         param_combinations = []
         if collection_info:
@@ -920,21 +1079,20 @@ class ToolModule(WorkflowModule):
 
             # Connect up
             def callback(input, prefixed_name, **kwargs):
+                input_dict = all_inputs_by_name[prefixed_name]
+
                 replacement = NO_REPLACEMENT
-                if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                    if iteration_elements and prefixed_name in iteration_elements:
-                        if isinstance(input, DataToolParameter):
-                            # Pull out dataset instance from element.
-                            replacement = iteration_elements[prefixed_name].dataset_instance
-                            if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
-                                replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
-                        else:
-                            # If collection - just use element model object.
-                            replacement = iteration_elements[prefixed_name]
+                if iteration_elements and prefixed_name in iteration_elements:
+                    if isinstance(input, DataToolParameter):
+                        # Pull out dataset instance from element.
+                        replacement = iteration_elements[prefixed_name].dataset_instance
+                        if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
+                            replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
                     else:
-                        replacement = progress.replacement_for_tool_input(step, input, prefixed_name)
+                        # If collection - just use element model object.
+                        replacement = iteration_elements[prefixed_name]
                 else:
-                    replacement = progress.replacement_for_tool_input(step, input, prefixed_name)
+                    replacement = progress.replacement_for_input(step, input_dict)
 
                 if replacement is not NO_REPLACEMENT:
                     found_replacement_keys.add(prefixed_name)
@@ -1022,27 +1180,6 @@ class ToolModule(WorkflowModule):
             outputs[output_dataset_collection_assoc.output_name] = output_dataset_collection_assoc.dataset_collection
 
         progress.set_step_outputs(invocation_step, outputs)
-
-    def _find_collections_to_match(self, tool, progress, step):
-        collections_to_match = matching.CollectionsToMatch()
-
-        def callback(input, prefixed_name, **kwargs):
-            is_data_param = isinstance(input, DataToolParameter)
-            if is_data_param and not input.multiple:
-                data = progress.replacement_for_tool_input(step, input, prefixed_name)
-                if isinstance(data, model.HistoryDatasetCollectionAssociation):
-                    collections_to_match.add(prefixed_name, data)
-
-            is_data_collection_param = isinstance(input, DataCollectionToolParameter)
-            if is_data_collection_param and not input.multiple:
-                data = progress.replacement_for_tool_input(step, input, prefixed_name)
-                history_query = input._history_query(self.trans)
-                subcollection_type_description = history_query.can_map_over(data)
-                if subcollection_type_description:
-                    collections_to_match.add(prefixed_name, data, subcollection_type=subcollection_type_description.collection_type)
-
-        visit_input_values(tool.inputs, step.state.inputs, callback)
-        return collections_to_match
 
     def _effective_post_job_actions(self, step):
         effective_post_job_actions = step.post_job_actions[:]

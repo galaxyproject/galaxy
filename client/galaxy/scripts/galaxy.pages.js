@@ -1,6 +1,5 @@
 import _l from "utils/localization";
 import "libs/jquery/jquery.form";
-import "libs/jquery/jstorage";
 import "libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.autocomplete";
 import GridView from "mvc/grid/grid-view";

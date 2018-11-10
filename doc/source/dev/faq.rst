@@ -14,13 +14,9 @@ This can be done with either IPython or a plain Python console, depending on you
 ... build Galaxy Javascript frontend client?
 --------------------------------------------
 
-We've added a makefile which will let you do this. You can simple run::
+We've added a makefile which will let you do this. You can simply run::
 
     make client
-
-If you prefer docker and aren't a JS developer primarily, you can run
-
-    make grunt-docker
 
 Please see the ``Makefile`` itself for details and other options. There is also a readme at
 ``client/README.md``.

@@ -10,6 +10,7 @@ import FormWrappers from "mvc/workflow/workflow-forms";
 import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
+import store from "store";
 
 /* global $ */
 /* global Galaxy */
@@ -445,48 +446,20 @@ export default Backbone.View.extend({
         }
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = $.jStorage.get("overview-size");
+        var overview_size = store.get("overview-size");
         if (overview_size !== undefined) {
-            $("#overview-border").css({
+            $(".workflow-overview").css({
                 width: overview_size,
                 height: overview_size
             });
         }
 
-        // Show viewport on load unless pref says it's off
-        if ($.jStorage.get("overview-off")) {
-            hide_overview();
-        } else {
-            show_overview();
-        }
-
         // Stores the size of the overview into local storage when it's resized
-        $("#overview-border").bind("dragend", function(e, d) {
+        $(".workflow-overview").bind("dragend", function(e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            $.jStorage.set("overview-size", `${new_size}px`);
-        });
-
-        function show_overview() {
-            $.jStorage.set("overview-off", false);
-            $("#overview-border").css("right", "0px");
-            $("#close-viewport").css("background-position", "0px 0px");
-        }
-
-        function hide_overview() {
-            $.jStorage.set("overview-off", true);
-            $("#overview-border").css("right", "20000px");
-            $("#close-viewport").css("background-position", "12px 0px");
-        }
-
-        // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
-        $("#close-viewport").click(() => {
-            if ($("#overview-border").css("right") === "0px") {
-                hide_overview();
-            } else {
-                show_overview();
-            }
+            store.set("overview-size", `${new_size}px`);
         });
 
         // Unload handler
@@ -734,9 +707,11 @@ export default Backbone.View.extend({
                 $.each(node.post_job_actions, (k, pja) => {
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
-                            var arg_matches = action_argument.match(parameter_re);
-                            if (arg_matches) {
-                                matches = matches.concat(arg_matches);
+                            if (typeof action_argument === "string") {
+                                let arg_matches = action_argument.match(parameter_re);
+                                if (arg_matches) {
+                                    matches = matches.concat(arg_matches);
+                                }
                             }
                         });
                     }

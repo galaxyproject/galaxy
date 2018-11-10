@@ -84,8 +84,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert pair_1_element["element_index"] == 0, pair_1_element
         pair_1_object = pair_1_element["object"]
         self._assert_has_keys(pair_1_object, "collection_type", "elements", "element_count")
-        self.assertEquals(pair_1_object["collection_type"], "paired")
-        self.assertEquals(pair_1_object["populated"], True)
+        self.assertEqual(pair_1_object["collection_type"], "paired")
+        self.assertEqual(pair_1_object["populated"], True)
         pair_elements = pair_1_object["elements"]
         assert len(pair_elements) == 2
         pair_1_element_1 = pair_elements[0]
@@ -201,7 +201,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
-        self.assertEquals(hdca["name"], "Test upload")
+        self.assertEqual(hdca["name"], "Test upload")
         hdca_tags = hdca["tags"]
         assert len(hdca_tags) == 1
         assert "name:collection1" in hdca_tags
@@ -228,7 +228,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
-        self.assertEquals(hdca["name"], "Test upload")
+        self.assertEqual(hdca["name"], "Test upload")
         assert len(hdca["elements"]) == 1, hdca
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "samp1"

@@ -192,7 +192,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
                 if os.path.isdir(absolute_selected_file):
                     try:
                         os.rmdir(absolute_selected_file)
-                    except OSError as e:
+                    except OSError:
                         # The directory is not empty.
                         pass
                 elif os.path.isfile(absolute_selected_file):
@@ -200,7 +200,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
                     dir = os.path.split(absolute_selected_file)[0]
                     try:
                         os.rmdir(dir)
-                    except OSError as e:
+                    except OSError:
                         # The directory is not empty.
                         pass
     # See if any admin users have chosen to receive email alerts when a repository is updated.

@@ -3,7 +3,7 @@ import _l from "utils/localization";
 import AjaxQueue from "utils/ajax-queue";
 import Utils from "utils/utils";
 import GridView from "mvc/grid/grid-view";
-import HistoryModel from "mvc/history/history-model";
+import { History } from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import LoadingIndicator from "ui/loading-indicator";
 import * as Backbone from "backbone";
@@ -61,7 +61,7 @@ var HistoryGridView = GridView.extend({
         ajaxQueue.start();
     },
     _showCopyDialog: function(id) {
-        var history = new HistoryModel.History({ id: id });
+        var history = new History({ id: id });
         history
             .fetch()
             .fail(() => {

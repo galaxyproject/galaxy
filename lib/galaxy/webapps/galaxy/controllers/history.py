@@ -17,7 +17,6 @@ from galaxy.model.item_attrs import (
 from galaxy.util import listify, Params, parse_int, sanitize_text
 from galaxy.util.create_history_template import render_item
 from galaxy.util.odict import odict
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
@@ -491,7 +490,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         ).get(id)
         if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
                              (trans.history and history.id == trans.history.id) or
-                             trans.user_is_admin())):
+                             trans.user_is_admin)):
             return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
@@ -1207,8 +1206,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     messages.append('History \'%s\' does not appear to belong to you.' % cur_name)
                 # skip if it wouldn't be a change
                 elif new_name != cur_name:
-                    # escape, sanitize, set, and log the change
-                    h.name = sanitize_html(escape(new_name))
+                    h.name = new_name
                     trans.sa_session.add(h)
                     trans.sa_session.flush()
                     trans.log_event('History renamed: id: %s, renamed to: %s' % (str(h.id), new_name))

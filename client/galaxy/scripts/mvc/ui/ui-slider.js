@@ -44,7 +44,7 @@ var View = Backbone.View.extend({
                         v == 13 ||
                         v == 37 ||
                         v == 39 ||
-                        (v >= 48 && v <= 57 && !pressed[16]) ||
+                        (v >= 48 && v <= 57) ||
                         (v >= 96 && v <= 105) ||
                         ((v == 190 || v == 110) &&
                             $(this)
@@ -133,9 +133,9 @@ var View = Backbone.View.extend({
 
     /** Slider template */
     _template: function() {
-        return `<div class="ui-form-slider container">
+        return `<div class="ui-form-slider container-fluid">
                     <div class="row">
-                        <input class="ui-form-slider-text form-control" type="text"/>
+                        <input class="ui-input ui-form-slider-text" type="text"/>
                         <div class="ui-form-slider-element col mt-1"/>
                     </div>
                 </div>`;

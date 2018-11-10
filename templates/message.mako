@@ -42,21 +42,16 @@
 ##
 
 <%def name="center_panel()">
-    ${render_large_message( message, status )}
+    ${render_msg( message, status )}
 </%def>
 
 <%def name="body()">
-    ${render_large_message( message, status )}
-</%def>
-
-## Render large message.
-<%def name="render_large_message( message, status )">
-    <div class="${status}messagelarge" style="margin: 1em">${_(message)}</div>
+    ${render_msg( message, status )}
 </%def>
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
-    <div class="${status}message">${_(msg)}</div>
-    <br/>
+    <% status = "success" if status == "done" else status %>
+    <% status = "danger" if status == "error" else status %>
+    <div class="mt-2 alert alert-${status}">${_(msg)}</div>
 </%def>
-

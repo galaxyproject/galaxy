@@ -21,8 +21,8 @@ def upgrade(migrate_engine):
         t.c.metric_value.alter(type=Numeric(26, 7))
         t = Table("task_metric_numeric", metadata, autoload=True)
         t.c.metric_value.alter(type=Numeric(26, 7))
-    except Exception as e:
-        log.exception("Modifying numeric column failed: %s", str(e))
+    except Exception:
+        log.exception("Modifying numeric column failed")
 
 
 def downgrade(migrate_engine):

@@ -1,12 +1,11 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import BASE_MVC from "mvc/base-mvc";
 import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
-
-/* global $ */
 
 // TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
@@ -18,7 +17,7 @@ import localize from "utils/localization";
  *              galaxy.ini available from the configuration API)
  *          user        : the current user (as a mvc/user/user-model)
  */
-function GalaxyApp(options, bootstrapped) {
+export function GalaxyApp(options, bootstrapped) {
     var self = this;
     return self._init(options || {}, bootstrapped || {});
 }
@@ -294,7 +293,7 @@ GalaxyApp.prototype.toString = function toString() {
 };
 
 // This is not great.  Rework to be a singleton-style Galaxy app accessible/created by import
-window.Galaxy = window.Galaxy || new GalaxyApp();
+// window.Galaxy = window.Galaxy || new GalaxyApp();
 
 // ============================================================================
 export default {

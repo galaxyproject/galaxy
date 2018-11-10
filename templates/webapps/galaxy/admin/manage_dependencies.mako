@@ -24,14 +24,14 @@
 
 <%def name="render_tool_centric_table( tools, requirements_status)">
      <tr>
-         <th bgcolor="#D8D8D8">Select</th>
-         <th bgcolor="#D8D8D8">Name</th>
-         <th bgcolor="#D8D8D8">ID</th>
-         <th bgcolor="#D8D8D8">Requirement</th>
-         <th bgcolor="#D8D8D8">Version</th>
-         <th bgcolor="#D8D8D8">Resolver</th>
-         <th bgcolor="#D8D8D8">Exact</th>
-         <th bgcolor="#D8D8D8"></th>
+         <th>Select</th>
+         <th>Name</th>
+         <th>ID</th>
+         <th>Requirement</th>
+         <th>Version</th>
+         <th>Resolver</th>
+         <th>Exact</th>
+         <th></th>
      </tr>
      <% ctr = 0 %>
      %for tool in tools.values():
@@ -55,8 +55,8 @@
 
 <%def name="render_unused_dependencies(unused_environments)">
     <tr>
-        <th bgcolor="#D8D8D8">Select</th>
-        <th bgcolor="#D8D8D8">Environment Path</th>
+        <th>Select</th>
+        <th>Environment Path</th>
     </tr>
     <% ctr = 0 %>
     %for path in unused_environments:
@@ -76,14 +76,14 @@
 
 <%def name="render_dependencies_details(tools, requirements_status, tool_ids_by_requirements)">
     <tr>
-        <th bgcolor="#D8D8D8">Select</th>
-        <th bgcolor="#D8D8D8">Used by</th>
-        <th bgcolor="#D8D8D8">Environment Path</th>
-        <th bgcolor="#D8D8D8">Requirement</th>
-        <th bgcolor="#D8D8D8">Version</th>
-        <th bgcolor="#D8D8D8">Resolver</th>
-        <th bgcolor="#D8D8D8">Exact</th>
-        <th bgcolor="#D8D8D8"></th>
+        <th>Select</th>
+        <th>Used by</th>
+        <th>Environment Path</th>
+        <th>Requirement</th>
+        <th>Version</th>
+        <th>Resolver</th>
+        <th>Exact</th>
+        <th></th>
     </tr>
     <% ctr = 0 %>
     %for requirements, r_status in requirements_status.items():
@@ -107,14 +107,14 @@
 
 <%def name="render_dependencies_details(tools, requirements_status, tool_ids_by_requirements)">
     <tr>
-        <th bgcolor="#D8D8D8">Select</th>
-        <th bgcolor="#D8D8D8">Used by</th>
-        <th bgcolor="#D8D8D8">Environment Path</th>
-        <th bgcolor="#D8D8D8">Requirement</th>
-        <th bgcolor="#D8D8D8">Version</th>
-        <th bgcolor="#D8D8D8">Resolver</th>
-        <th bgcolor="#D8D8D8">Exact</th>
-        <th bgcolor="#D8D8D8"></th>
+        <th>Select</th>
+        <th>Used by</th>
+        <th>Environment Path</th>
+        <th>Requirement</th>
+        <th>Version</th>
+        <th>Resolver</th>
+        <th>Exact</th>
+        <th></th>
     </tr>
     <% ctr = 0 %>
     %for requirements, r_status in requirements_status.items():
@@ -147,25 +147,25 @@
 %if viewkey == "Switch to tool-centric view":
     <input type="submit" name="viewkey" value="Switch to details view"/>
     <input type="submit" name="viewkey" value="Switch to unused dependencies view"/>
-    <div class="toolForm">
-        <div class="toolFormTitle">Tool-centric dependencies</div>
-        <div class="toolFormBody">
+    <div class="card mt-2 mb-2">
+        <div class="card-header">Tool-centric dependencies</div>
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 ${render_tool_centric_table(tools, requirements_status)}
 %elif viewkey == "Switch to unused dependencies view":
     <input type="submit" name="viewkey" value="Switch to details view"/>
     <input type="submit" name="viewkey" value="Switch to tool-centric view"/>
-        <div class="toolForm">
-        <div class="toolFormTitle">Unused dependency environments</div>
-        <div class="toolFormBody">
+        <div class="card mt-2 mb-2">
+        <div class="card-header">Unused dependency environments</div>
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 ${render_unused_dependencies(unused_environments)}
 %else:
     <input type="submit" name="viewkey" value="Switch to tool-centric view"/>
     <input type="submit" name="viewkey" value="Switch to unused dependencies view"/>
-    <div class="toolForm">
-        <div class="toolFormTitle">Dependency details</div>
-        <div class="toolFormBody">
+    <div class="card mt-2 mb-2">
+        <div class="card-header">Dependency details</div>
+        <div class="card-body overflow-auto">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 ${render_dependencies_details(tools, requirements_status, tool_ids_by_requirements)}
 %endif

@@ -1,13 +1,14 @@
 import jQuery from "jquery";
 var $ = jQuery;
-import GalaxyApp from "galaxy";
+import { GalaxyApp } from "galaxy";
+import _l from "utils/localization";
 import Page from "layout/page";
 import Login from "components/login/Login.vue";
 import Password from "components/login/Password.vue";
 import Vue from "vue";
 
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
+    window.Galaxy = new GalaxyApp(options, bootstrapped);
     Galaxy.debug("login app");
     $(() => {
         Galaxy.page = new Page.View(options);
