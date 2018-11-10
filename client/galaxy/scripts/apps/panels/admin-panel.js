@@ -1,13 +1,12 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
-
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
-
-/* global Galaxy */
-/* global $ */
+import { getGalaxyInstance } from "app";
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.page = page;
         this.root = options.root;
