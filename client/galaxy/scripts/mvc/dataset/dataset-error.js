@@ -1,16 +1,18 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
-import * as Backbone from "backbone";
-import * as _ from "underscore";
 
-/* global Galaxy */
-/* global $ */
 
 /** Dataset edit attributes view */
 var View = Backbone.View.extend({
     initialize: function() {
+        let Galaxy = getGalaxyInstance();
         this.setElement("<div/>");
         this.model = new Backbone.Model({
             dataset_id: Galaxy.params.dataset_id
@@ -21,12 +23,12 @@ var View = Backbone.View.extend({
 
     // Fetch data for the selected dataset and
     render: function() {
-        var data_url = `${Galaxy.root}api/datasets/${this.model.get("dataset_id")}`;
+        var data_url = `${getAppRoot()}api/datasets/${this.model.get("dataset_id")}`;
 
         Utils.get({
             url: data_url,
             success: dataset => {
-                var job_url = `${Galaxy.root}api/jobs/${dataset.creating_job}?full=True`;
+                var job_url = `${getAppRoot()}api/jobs/${dataset.creating_job}?full=True`;
                 Utils.get({
                     url: job_url,
                     success: job => {
@@ -108,6 +110,7 @@ var View = Backbone.View.extend({
 
     /** Convert tab template */
     _getBugFormTemplate: function(dataset, job) {
+        let Galaxy = getGalaxyInstance();
         var inputs = [
             {
                 help: _l("Your email address"),
@@ -155,7 +158,7 @@ var View = Backbone.View.extend({
                     floating: "clear",
                     onclick: () => {
                         var form_data = form.data.create();
-                        var url = `${Galaxy.root}api/jobs/${job.id}/error`;
+                        var url = `${getAppRoot()}api/jobs/${job.id}/error`;
                         form_data.dataset_id = dataset.id;
                         this.submit(form_data, url);
                     }

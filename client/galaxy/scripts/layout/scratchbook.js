@@ -1,14 +1,15 @@
 /** Frame manager uses the ui-frames to create the scratch book masthead icon and functionality **/
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import Frames from "mvc/ui/ui-frames";
 import { Dataset, createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";
 import visualization from "viz/visualization";
 import { TracksterUI } from "viz/trackster";
 import _l from "utils/localization";
 
-/* global Galaxy */
-/* global $ */
 
 export default Backbone.View.extend({
     initialize: function(options) {
@@ -74,6 +75,7 @@ export default Backbone.View.extend({
     addDataset: function(dataset_id) {
         var self = this;
         var current_dataset = null;
+        let Galaxy = getGalaxyInstance();
         if (Galaxy && Galaxy.currHistoryPanel) {
             var history_id = Galaxy.currHistoryPanel.collection.historyId;
             this.history_cache[history_id] = {
@@ -170,7 +172,7 @@ export default Backbone.View.extend({
                       }
                     : {
                           title: title,
-                          url: `${Galaxy.root}datasets/${dataset_id}/display/?preview=True`,
+                          url: `${getAppRoot()}datasets/${dataset_id}/display/?preview=True`,
                           content: null
                       }
             );
@@ -182,7 +184,7 @@ export default Backbone.View.extend({
         var self = this;
         var viz = new visualization.Visualization({ id: viz_id });
         $.when(viz.fetch()).then(() => {
-            var ui = new TracksterUI(Galaxy.root);
+            var ui = new TracksterUI(getAppRoot());
 
             // Construct frame config based on dataset's type.
             var frame_config = {

@@ -9,6 +9,7 @@ import UploadViewDefault from "mvc/upload/default/default-view";
 import UploadViewComposite from "mvc/upload/composite/composite-view";
 import UploadViewCollection from "mvc/upload/collection/collection-view";
 import UploadViewRuleBased from "mvc/upload/collection/rules-input-view";
+import { getGalaxyInstance } from "app";
 
 export default Backbone.View.extend({
     options: {
@@ -63,6 +64,7 @@ export default Backbone.View.extend({
 
     /** Show/hide upload dialog */
     show: function() {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         if (!Galaxy.currHistoryPanel || !Galaxy.currHistoryPanel.model) {
             window.setTimeout(() => {
@@ -111,6 +113,7 @@ export default Backbone.View.extend({
 
     /** Refresh user and current history */
     currentHistory: function() {
+        let Galaxy = getGalaxyInstance();
         return this.current_user && Galaxy.currHistoryPanel.model.get("id");
     },
 

@@ -1,5 +1,6 @@
 import _ from "underscore";
 import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
@@ -14,7 +15,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 
         /** API location for this resource */
         urlRoot: function() {
-            return `${Galaxy.root}api/users`;
+            return `${getAppRoot()}api/users`;
         },
 
         /** Model defaults
@@ -122,7 +123,7 @@ User.getCurrentUserFromApi = options => {
 var UserCollection = Backbone.Collection.extend(baseMVC.LoggableMixin).extend({
     model: User,
     urlRoot: function() {
-        return `${Galaxy.root}api/users`;
+        return `${getAppRoot()}api/users`;
     }
     //logger  : console,
 });

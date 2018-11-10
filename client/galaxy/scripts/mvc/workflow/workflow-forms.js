@@ -1,7 +1,12 @@
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
+
 /** Default form wrapper for non-tool modules in the workflow editor. */
 var Default = Backbone.View.extend({
     initialize: function(options) {
@@ -12,7 +17,7 @@ var Default = Backbone.View.extend({
                 onchange: function() {
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/workflows/build_module`,
+                        url: `${getAppRoot()}api/workflows/build_module`,
                         data: {
                             id: node.id,
                             type: node.type,
@@ -51,6 +56,7 @@ var Tool = Backbone.View.extend({
                     form.model.get("postchange")(process, form);
                 },
                 postchange: function(process, form) {
+                    let Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
                         tool_id: options.id,
@@ -61,7 +67,7 @@ var Tool = Backbone.View.extend({
                     Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/workflows/build_module`,
+                        url: `${getAppRoot()}api/workflows/build_module`,
                         data: current_state,
                         success: function(data) {
                             form.model.set(data.config_form);

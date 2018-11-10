@@ -1,5 +1,8 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
@@ -10,10 +13,7 @@ import FormWrappers from "mvc/workflow/workflow-forms";
 import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
-import store from "store";
 
-/* global $ */
-/* global Galaxy */
 // TODO: make show_message and the other utility functions importable/used
 // everywhere, instead of this global model
 /* global show_message */
@@ -108,7 +108,7 @@ export default Backbone.View.extend({
             }
             self.workflow.rectify_workflow_outputs();
             Utils.request({
-                url: `${Galaxy.root}api/workflows/${self.options.id}`,
+                url: `${getAppRoot()}api/workflows/${self.options.id}`,
                 type: "PUT",
                 data: { workflow: self.workflow.to_simple() },
                 success: function(data) {
@@ -257,7 +257,7 @@ export default Backbone.View.extend({
         // get available datatypes for post job action options
         this.datatypes = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes`,
+                url: `${getAppRoot()}api/datatypes`,
                 async: false
             }).responseText
         );
@@ -265,7 +265,7 @@ export default Backbone.View.extend({
         // get datatype mapping options
         this.datatypes_mapping = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes/mapping`,
+                url: `${getAppRoot()}api/datatypes/mapping`,
                 async: false
             }).responseText
         );
@@ -278,7 +278,7 @@ export default Backbone.View.extend({
             let _workflow_version_dropdown = {};
             let workflow_versions = JSON.parse(
                 $.ajax({
-                    url: `${Galaxy.root}api/workflows/${self.options.id}/versions`,
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
                     async: false
                 }).responseText
             );
@@ -386,14 +386,14 @@ export default Backbone.View.extend({
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
                 Run: function() {
-                    window.location = `${Galaxy.root}workflows/run?id=${self.options.id}`;
+                    window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`;
                 },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
                 },
                 "Auto Re-layout": layout_editor,
                 Download: {
-                    url: `${Galaxy.root}api/workflows/${self.options.id}/download?format=json-download`,
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
                     action: function() {}
                 },
                 Close: close_editor
@@ -426,7 +426,7 @@ export default Backbone.View.extend({
                     })
                         .done(id => {
                             window.onbeforeunload = undefined;
-                            window.location = `${Galaxy.root}workflow/editor?id=${id}`;
+                            window.location = `${getAppRoot()}workflow/editor?id=${id}`;
                             hide_modal();
                         })
                         .fail(() => {
@@ -446,7 +446,7 @@ export default Backbone.View.extend({
         }
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = store.get("overview-size");
+        var overview_size = localStorage.getItem("overview-size");
         if (overview_size !== undefined) {
             $(".workflow-overview").css({
                 width: overview_size,
@@ -459,7 +459,7 @@ export default Backbone.View.extend({
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            store.set("overview-size", `${new_size}px`);
+            localStorage.setItem("overview-size", `${new_size}px`);
         });
 
         // Unload handler
@@ -532,6 +532,7 @@ export default Backbone.View.extend({
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
+                        let Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
@@ -641,7 +642,7 @@ export default Backbone.View.extend({
         var self = this;
         Utils.request({
             type: "POST",
-            url: `${Galaxy.root}api/workflows/build_module`,
+            url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
                 node.init_field_data(data);
@@ -746,6 +747,7 @@ export default Backbone.View.extend({
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
+        let Galaxy = getGalaxyInstance();
         if (content && $container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;
@@ -786,7 +788,7 @@ export default Backbone.View.extend({
         node.type = type;
         node.content_id = content_id;
         var tmp = `<div><img height='16' align='middle' src='${
-            Galaxy.root
+            getAppRoot()
         }static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width

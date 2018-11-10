@@ -1,12 +1,15 @@
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+
 // ============================================================================
 // TS GROUP RELATED MODELS
 
 const Group = Backbone.Model.extend({
-    urlRoot: `${Galaxy.root}api/groups`
+    urlRoot: `${getAppRoot()}api/groups`
 });
 
 const Groups = Backbone.Collection.extend({
-    url: `${Galaxy.root}api/groups`,
+    url: `${getAppRoot()}api/groups`,
 
     model: Group
 });

@@ -1,3 +1,7 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import LIST_ITEM from "mvc/list/list-item";
 import STATES from "mvc/dataset/states";
 import faIconButton from "ui/fa-icon-button";
@@ -82,7 +86,7 @@ var DatasetListItemView = _super.extend(
             if (view.model.inReadyState() && !view.model.hasDetails()) {
                 return view.model.fetch({ silent: true });
             }
-            return jQuery.when();
+            return $.when();
         },
 
         // ......................................................................... removal
@@ -162,6 +166,7 @@ var DatasetListItemView = _super.extend(
                 // add frame manager option onclick event
                 var self = this;
                 displayBtnData.onclick = ev => {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         // Add dataset to frames.
                         Galaxy.frame.addDataset(self.model.get("id"));
@@ -259,6 +264,7 @@ var DatasetListItemView = _super.extend(
                 target: this.linkTarget,
                 faIcon: "fa-info-circle",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.frame && Galaxy.frame.active) {
                         Galaxy.frame.add({
                             title: _l("Dataset details"),

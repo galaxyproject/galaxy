@@ -1,3 +1,7 @@
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
 import TAGS from "mvc/tag";
@@ -5,10 +9,6 @@ import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import * as _ from "underscore";
-
-/* global Galaxy */
-/* global $ */
 
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
@@ -59,10 +59,11 @@ var DatasetListItemEdit = _super.extend(
 
             var editBtnData = {
                 title: _l("Edit attributes"),
-                href: `${Galaxy.root}datasets/edit?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/edit?dataset_id=${this.model.attributes.id}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/edit", {
@@ -150,7 +151,7 @@ var DatasetListItemEdit = _super.extend(
             };
             var parseToolID = data => {
                 $.ajax({
-                    url: `${Galaxy.root}api/tools/${data.tool_id}/build`
+                    url: `${getAppRoot()}api/tools/${data.tool_id}/build`
                 })
                     .done(data => {
                         parseToolBuild(data);
@@ -159,9 +160,12 @@ var DatasetListItemEdit = _super.extend(
                         parseToolBuild({});
                     });
             };
+
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.id === null) {
                 return null;
             }
+
             return faIconButton({
                 title: _l("Tool Help"),
                 classes: "icon-btn",
@@ -172,7 +176,7 @@ var DatasetListItemEdit = _super.extend(
                         self.$el.find(".toolhelp").toggle();
                     } else {
                         $.ajax({
-                            url: `${Galaxy.root}api/jobs/${jobID}`
+                            url: `${getAppRoot()}api/jobs/${jobID}`
                         })
                             .done(data => {
                                 parseToolID(data);
@@ -215,10 +219,11 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
-                href: `${Galaxy.root}datasets/error?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/error?dataset_id=${this.model.attributes.id}`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
@@ -240,6 +245,7 @@ var DatasetListItemEdit = _super.extend(
                     target: this.linkTarget,
                     faIcon: "fa-refresh",
                     onclick: function(ev) {
+                        let Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("/", {
@@ -265,13 +271,14 @@ var DatasetListItemEdit = _super.extend(
 
             if (visualizations.length >= 1) {
                 let dsid = this.model.get("id");
-                let url = Galaxy.root + "visualizations?dataset_id=" + dsid;
+                let url = getAppRoot() + "visualizations?dataset_id=" + dsid;
                 return faIconButton({
                     title: _l("Visualize this data"),
                     href: url,
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
                     onclick: ev => {
+                        let Galaxy = getGalaxyInstance();
                         if (Galaxy.frame && Galaxy.frame.active) {
                             ev.preventDefault();
                             Galaxy.frame.add({ url: url, title: "Visualization" });
@@ -352,7 +359,7 @@ var DatasetListItemEdit = _super.extend(
         _makeDbkeyEditLink: function($details) {
             // make the dbkey a link to editing
             if (this.model.get("metadata_dbkey") === "?" && !this.model.isDeletedOrPurged()) {
-                var editableDbkey = $('<a class="value">?</a>')
+                var editableDbkey = $("<a class=\"value\">?</a>")
                     .attr("href", this.model.urls.edit)
                     .attr("target", "_top");
                 $details.find(".dbkey .value").replaceWith(editableDbkey);
@@ -415,10 +422,10 @@ DatasetListItemEdit.prototype.templates = (() => {
         failed_metadata: BASE_MVC.wrapTemplate(
             [
                 // in this override, provide a link to the edit page
-                '<% if( dataset.state === "failed_metadata" ){ %>',
-                '<div class="failed_metadata-warning warningmessagesmall">',
+                "<% if( dataset.state === \"failed_metadata\" ){ %>",
+                "<div class=\"failed_metadata-warning warningmessagesmall\">",
                 _l("An error occurred setting the metadata for this dataset"),
-                '<br /><a href="<%- dataset.urls.edit %>" target="_top">',
+                "<br /><a href=\"<%- dataset.urls.edit %>\" target=\"_top\">",
                 _l("Set it manually or retry auto-detection"),
                 "</a>",
                 "</div>",
@@ -432,13 +439,13 @@ DatasetListItemEdit.prototype.templates = (() => {
                 // in this override, provide links to undelete or purge the dataset
                 "<% if( dataset.deleted && !dataset.purged ){ %>",
                 // deleted not purged
-                '<div class="deleted-msg warningmessagesmall">',
+                "<div class=\"deleted-msg warningmessagesmall\">",
                 _l("This dataset has been deleted"),
-                '<br /><a class="undelete-link" href="javascript:void(0);">',
+                "<br /><a class=\"undelete-link\" href=\"javascript:void(0);\">",
                 _l("Undelete it"),
                 "</a>",
                 "<% if( view.purgeAllowed ){ %>",
-                '<br /><a class="purge-link" href="javascript:void(0);">',
+                "<br /><a class=\"purge-link\" href=\"javascript:void(0);\">",
                 _l("Permanently remove it from disk"),
                 "</a>",
                 "<% } %>",
@@ -452,24 +459,24 @@ DatasetListItemEdit.prototype.templates = (() => {
     var visualizationsTemplate = BASE_MVC.wrapTemplate(
         [
             "<% if( visualizations.length === 1 ){ %>",
-            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
-            ' target="<%- visualizations[0].target %>" title="',
+            "<a class=\"visualization-link icon-btn\" href=\"<%- visualizations[0].href %>\"",
+            " target=\"<%- visualizations[0].target %>\" title=\"",
             _l("Visualize in"),
-            ' <%- visualizations[0].html %>">',
-            '<span class="fa fa-bar-chart-o"></span>',
+            " <%- visualizations[0].html %>\">",
+            "<span class=\"fa fa-bar-chart-o\"></span>",
             "</a>",
 
             "<% } else { %>",
-            '<div class="visualizations-dropdown dropdown icon-btn">',
-            '<a data-toggle="dropdown" title="',
+            "<div class=\"visualizations-dropdown dropdown icon-btn\">",
+            "<a data-toggle=\"dropdown\" title=\"",
             _l("Visualize"),
-            '">',
-            '<span class="fa fa-bar-chart-o"></span>',
+            "\">",
+            "<span class=\"fa fa-bar-chart-o\"></span>",
             "</a>",
-            '<ul class="dropdown-menu" role="menu">',
+            "<ul class=\"dropdown-menu\" role=\"menu\">",
             "<% _.each( visualizations, function( visualization ){ %>",
-            '<li><a class="visualization-link" href="<%- visualization.href %>"',
-            ' target="<%- visualization.target %>">',
+            "<li><a class=\"visualization-link\" href=\"<%- visualization.href %>\"",
+            " target=\"<%- visualization.target %>\">",
             "<%- visualization.html %>",
             "</a></li>",
             "<% }); %>",

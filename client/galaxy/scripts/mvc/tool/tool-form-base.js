@@ -1,16 +1,22 @@
-import _l from "utils/localization";
 /**
     This is the base class of the tool form plugin. This class is e.g. inherited by the regular and the workflow tool form.
 */
-import Utils from "utils/utils";
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
 import Deferred from "utils/deferred";
 import Ui from "mvc/ui/ui-misc";
 import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
+
 export default FormBase.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.deferred = new Deferred();
         FormBase.prototype.initialize.call(this, options);
@@ -19,8 +25,8 @@ export default FormBase.extend({
         this._update(this.model.get("initialmodel"));
 
         // listen to history panel
-        if (this.model.get("listen_to_history") && parent.Galaxy && parent.Galaxy.currHistoryPanel) {
-            this.listenTo(parent.Galaxy.currHistoryPanel.collection, "change", () => {
+        if (this.model.get("listen_to_history") && Galaxy && Galaxy.currHistoryPanel) {
+            this.listenTo(Galaxy.currHistoryPanel.collection, "change", () => {
                 self.model.get("onchange")();
             });
         }
@@ -53,6 +59,7 @@ export default FormBase.extend({
         this.$el.off().hide();
         this.deferred.execute(() => {
             FormBase.prototype.remove.call(self);
+            let Galaxy = getGalaxyInstance();
             Galaxy.emit.debug("tool-form-base::_destroy()", "Destroy view.");
         });
     },
@@ -67,12 +74,13 @@ export default FormBase.extend({
                 `<b>${options.name}</b> ${options.description} (Galaxy Version ${options.version})`,
             operations: !options.hide_operations && this._operations(),
             onchange: function() {
+                let Galaxy = getGalaxyInstance();
                 self.deferred.reset();
                 self.deferred.execute(process => {
                     self.model.get("postchange")(process, self);
                     if (self.model.get("listen_to_history")) {
                         process.then(() => {
-                            self.stopListening(parent.Galaxy.currHistoryPanel.collection);
+                            self.stopListening(Galaxy.currHistoryPanel.collection);
                         });
                     }
                 });
@@ -162,18 +170,19 @@ export default FormBase.extend({
             onclick: function() {
                 prompt(
                     "Copy to clipboard: Ctrl+C, Enter",
-                    `${window.location.origin + Galaxy.root}root?tool_id=${options.id}`
+                    `${window.location.origin + getAppRoot()}root?tool_id=${options.id}`
                 );
             }
         });
 
         // add admin operations
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.user && Galaxy.user.get("is_admin")) {
             menu_button.addMenu({
                 icon: "fa-download",
                 title: _l("Download"),
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}api/tools/${options.id}/download`;
+                    window.location.href = `${getAppRoot()}api/tools/${options.id}/download`;
                 }
             });
         }
@@ -265,7 +274,7 @@ export default FormBase.extend({
         $tmpl.find("img").each(function() {
             var img_src = $(this).attr("src");
             if (img_src.indexOf("admin_toolshed") !== -1) {
-                $(this).attr("src", Galaxy.root + img_src);
+                $(this).attr("src", getAppRoot() + img_src);
             }
         });
         return $tmpl;

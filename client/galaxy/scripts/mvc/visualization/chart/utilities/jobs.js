@@ -1,8 +1,9 @@
-/** This class handles job submissions to the Galaxy API. */
-import * as _ from "underscore";
-import Utils from "utils/utils";
 
-/* global Galaxy */
+/** This class handles job submissions to the Galaxy API. */
+import _ from "underscore";
+import { getAppRoot } from "onload/loadConfig";
+import Utils from "utils/utils";
+import { getGalaxyInstance } from "app";
 
 /** Time to wait before refreshing to check if job has completed */
 const WAITTIME = 1000;
@@ -47,7 +48,7 @@ var request = function(chart, parameters, success, error) {
     if (chart.get("modified") && chart.get("dataset_id_job")) {
         Utils.request({
             type: "PUT",
-            url: Galaxy.root + "api/histories/none/contents/" + chart.get("dataset_id_job"),
+            url: getAppRoot() + "api/histories/none/contents/" + chart.get("dataset_id_job"),
             data: { deleted: true },
             success: () => {
                 refreshHdas();
@@ -62,7 +63,7 @@ var request = function(chart, parameters, success, error) {
         chart.state("wait", "Sending job request...");
         Utils.request({
             type: "POST",
-            url: Galaxy.root + "api/tools",
+            url: getAppRoot() + "api/tools",
             data: parameters,
             success: function(response) {
                 if (!response.outputs || response.outputs.length === 0) {
@@ -106,7 +107,7 @@ var request = function(chart, parameters, success, error) {
 var wait = function(chart, success, error) {
     Utils.request({
         type: "GET",
-        url: Galaxy.root + "api/datasets/" + chart.get("dataset_id_job"),
+        url: getAppRoot() + "api/datasets/" + chart.get("dataset_id_job"),
         data: {},
         success: function(dataset) {
             var ready = false;
@@ -142,6 +143,7 @@ var wait = function(chart, success, error) {
 
 /** Refresh history panel */
 var refreshHdas = function() {
+    let Galaxy = getGalaxyInstance();
     if (Galaxy && Galaxy.currHistoryPanel) {
         Galaxy.currHistoryPanel.refreshContents();
     }

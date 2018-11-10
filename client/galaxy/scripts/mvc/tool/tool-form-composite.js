@@ -1,6 +1,9 @@
 /** This is the run workflow tool form view. */
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Deferred from "utils/deferred";
@@ -12,12 +15,10 @@ import Modal from "mvc/ui/ui-modal";
 import Webhooks from "mvc/webhooks";
 import WorkflowIcons from "mvc/workflow/workflow-icons";
 
-/* global $ */
-/* global Galaxy */
-
 var View = Backbone.View.extend({
     initialize: function(options) {
-        this.modal = window.parent.Galaxy.modal || new Modal.View();
+        let Galaxy = getGalaxyInstance();
+        this.modal = Galaxy.modal || new Modal.View();
         this.model = (options && options.model) || new Backbone.Model(options);
         this.deferred = new Deferred();
         if (options && options.active_tab) {
@@ -38,6 +39,7 @@ var View = Backbone.View.extend({
     /** Configures form/step options for each workflow step */
     _configure: function() {
         var self = this;
+        let Galaxy = getGalaxyInstance();
         this.forms = [];
         this.steps = [];
         this.links = [];
@@ -333,6 +335,7 @@ var View = Backbone.View.extend({
 
     /** Render job caching option */
     _renderUseCachedJob: function() {
+        let Galaxy = getGalaxyInstance();
         var extra_user_preferences = {};
         if (Galaxy.user.attributes.preferences && "extra_user_preferences" in Galaxy.user.attributes.preferences) {
             extra_user_preferences = JSON.parse(Galaxy.user.attributes.preferences.extra_user_preferences);
@@ -366,6 +369,7 @@ var View = Backbone.View.extend({
 
     /** Render step */
     _renderStep: function(step) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         var form = null;
         this.deferred.execute(promise => {
@@ -381,7 +385,7 @@ var View = Backbone.View.extend({
                     Galaxy.emit.debug("tool-form-composite::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/tools/${step.id}/build`,
+                        url: `${getAppRoot()}api/tools/${step.id}/build`,
                         data: current_state,
                         success: function(data) {
                             form.update(data);
@@ -524,11 +528,12 @@ var View = Backbone.View.extend({
 
     /** Refresh the history after job submission while form is shown */
     _refreshHistory: function() {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         var history =
-            window.parent.Galaxy &&
-            window.parent.Galaxy.currHistoryPanel &&
-            window.parent.Galaxy.currHistoryPanel.model;
+            Galaxy &&
+            Galaxy.currHistoryPanel &&
+            Galaxy.currHistoryPanel.model;
         if (this._refresh_history) {
             window.clearTimeout(this._refresh_history);
         }
@@ -558,6 +563,7 @@ var View = Backbone.View.extend({
 
     /** Validate and submit workflow */
     _submit: function() {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         var history_form_data = this.history_form.data.create();
         var job_def = {
@@ -618,7 +624,7 @@ var View = Backbone.View.extend({
             Galaxy.emit.debug("tool-form-composite::submit()", "Validation complete.", job_def);
             Utils.request({
                 type: "POST",
-                url: `${Galaxy.root}api/workflows/${this.model.id}/invocations`,
+                url: `${getAppRoot()}api/workflows/${this.model.id}/invocations`,
                 data: job_def,
                 success: function(response) {
                     Galaxy.emit.debug("tool-form-composite::submit", "Submission successful.", response);
@@ -712,6 +718,7 @@ var View = Backbone.View.extend({
 
     /** Templates */
     _templateSuccess: function(response) {
+        let Galaxy = getGalaxyInstance();
         if ($.isArray(response) && response.length > 0) {
             let timesExecuted = "";
             // Default destination blurb, used for a single execution, same history.
@@ -727,14 +734,14 @@ var View = Backbone.View.extend({
                 timesExecuted = `<em> - ${response.length} times</em>`;
                 if (newHistoryTarget) {
                     destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${
-                        Galaxy.root
+                        getAppRoot()
                     }history/view_multiple">history multi-view</a>.`;
                 }
             } else if (newHistoryTarget) {
                 // Single execution, with a destination other than the
                 // current history.  Present a link.
                 destinationBlurb = `This workflow will generate results in a new history. <a href="${
-                    Galaxy.root
+                    getAppRoot()
                 }history/switch_to_history?hist_id=${response[0].history_id}">Switch to that history now</a>.`;
             }
             return $(`
