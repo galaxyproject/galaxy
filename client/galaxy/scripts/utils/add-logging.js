@@ -9,10 +9,6 @@ function addLogging(obj, namespace) {
     if (namespace !== undefined) {
         addTo._logNamespace = namespace;
     }
-    //yagni?: without this, may not capture Galaxy.config.debug and add Galaxy.logger properly
-    // if( window.Galaxy && window.Galaxy.config && window.Galaxy.config.debug ){
-    //     addTo.logger = window.Galaxy.logger;
-    // }
 
     // give the object each
     LOGGING_FNS.forEach(logFn => {

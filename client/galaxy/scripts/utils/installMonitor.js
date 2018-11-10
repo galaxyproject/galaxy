@@ -13,7 +13,7 @@ const fakeLogger = mock(console);
 // stores values that are returned when somebody asks for window.Something
 window._monitorStorage = window._monitorStorage || {};
 
-export function installMonitor(globalProp, fallbackValue = null) {
+export function installMonitor(globalProp, fallbackValue) {
     let label = `window.${globalProp}`;
     let debug = isPropMonitored(globalProp);
     let logger = debug ? console : fakeLogger;
@@ -21,7 +21,9 @@ export function installMonitor(globalProp, fallbackValue = null) {
     // initialize storage with existing value
     let existingValue = window[globalProp] || fallbackValue;
     window._monitorStorage[globalProp] = existingValue;
-    logger.log(label, "Populating storage with initial value", existingValue);
+    logger.groupCollapsed(`${label} populating monitor storage with initial value`);
+    logger.log(existingValue);
+    logger.groupEnd();
 
     // Replaces window.Thing with an object definition that forwards
     // gets and set values to window._monitorStorage
@@ -30,23 +32,29 @@ export function installMonitor(globalProp, fallbackValue = null) {
             enumerable: true,
             configurable: false,
             get() {
+                let val = undefined;
+                logger.groupCollapsed(`${label} read`);
+                logger.trace();
                 try {
-                    let val = window._monitorStorage[globalProp];
-                    logger.groupCollapsed(`${label} read`);
+                    val = window._monitorStorage[globalProp];
                     logger.log(val);
-                    logger.trace();
-                    logger.groupEnd();
-                    return val;
                 } catch (err) {
-                    logger.warn("Unable to retrieve", globalProp, err);
+                    logger.warn("Unable to retrieve");
+                    logger.warn(err);
                 }
-                return null;
+                logger.groupEnd();
+                return val;
             },
             set(newValue) {
-                logger.groupCollapsed(`${label} write...`, newValue);
+                logger.groupCollapsed(`${label} write...`, String(newValue));
                 logger.trace();
+                try {
+                    window._monitorStorage[globalProp] = newValue;
+                } catch(err) {
+                    logger.log("Unable to set value on window facade");
+                    logger.warn(err);
+                }
                 logger.groupEnd();
-                window._monitorStorage[globalProp] = newValue;
             }
         });
     } catch (err) {
@@ -60,24 +68,33 @@ export function installMonitor(globalProp, fallbackValue = null) {
         {},
         {
             get(o, prop) {
+                let val = undefined;
                 logger.groupCollapsed(`${label}.${prop} read`);
-                let target = window[globalProp];
-                logger.log("o?", o);
-                logger.log("target?", target);
                 logger.trace();
+                try {
+                    let target = window[globalProp];
+                    val = target[prop];
+                } catch (err) {
+                    logger.warn("Unable to retrieve property from proxy", prop);
+                    logger.warn(err);
+                }
                 logger.groupEnd();
-                let val = target[prop];
                 return val;
             },
             set(o, prop, val) {
-                let target = window[globalProp];
-                logger.groupCollapsed(`${label}.${prop} write`, val);
-                logger.log("o?", o);
-                logger.log("target?", target);
+                let didWrite = true;
+                logger.groupCollapsed(`${label}.${prop} write`);
                 logger.trace();
+                try {
+                    let target = window[globalProp];
+                    logger.log("new value", String(val));
+                    target[prop] = val;
+                } catch(err) {
+                    logger.warn("Unable to write", globalProp, val);
+                    didWrite = false;
+                }
                 logger.groupEnd();
-                target[prop] = val;
-                return true;
+                return didWrite;
             }
         }
     );
@@ -92,25 +109,25 @@ export function showMonitoredProperties() {
 // indicated prop on the next page refresh
 
 export function toggleGlobalMonitor(prop, bShow = false) {
-    let toggleList = getSessionToggles();
+    let toggleList = getToggles();
     toggleList[prop] = Boolean(bShow);
-    setSessionToggles(toggleList);
+    setToggles(toggleList);
     return toggleList;
 }
 
 // determines whether specified prop is toggled on or off by the user
 export function isPropMonitored(prop) {
-    let toggleList = getSessionToggles();
+    let toggleList = getToggles();
     return toggleList[prop] == true;
 }
 
-function getSessionToggles() {
+function getToggles() {
     let json = sessionStorage.getItem("global_monitors");
     let existinglist = json ? JSON.parse(json) : {};
     return existinglist;
 }
 
-function setSessionToggles(toggleList) {
+function setToggles(toggleList) {
     sessionStorage.setItem("global_monitors", JSON.stringify(toggleList));
 }
 
