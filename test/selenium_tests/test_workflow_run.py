@@ -98,6 +98,39 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     @managed_history
+    def test_step_parameter_inputs(self):
+        self.perform_upload(self.get_filename("1.txt"))
+        self.wait_for_history()
+        self.open_in_workflow_run("""
+class: GalaxyWorkflow
+inputs:
+  input_int: integer
+  input_data: data
+steps:
+  simple_constructs:
+    tool_id: simple_constructs
+    label: tool_exec
+    in:
+      inttest: input_int
+      files_0|file: input_data
+""")
+        workflow_run = self.components.workflow_run
+        input_div_element = workflow_run.input_div(label="input_int").wait_for_visible()
+        input_element = input_div_element.find_element_by_css_selector("input")
+        input_element.clear()
+        input_element.send_keys("12345")
+
+        self.screenshot("workflow_run_step_parameter_input")
+        self.workflow_run_submit()
+        output_hid = 2
+        self.history_panel_wait_for_hid_ok(output_hid, allowed_force_refreshes=1)
+        history_id = self.current_history_id()
+        content = self.dataset_populator.get_history_dataset_content(history_id, hid=output_hid)
+        assert "12345" in content, content
+        assert "chr6_hla_hap2" in content
+
+    @selenium_test
+    @managed_history
     def test_replacement_parameters_on_subworkflows(self):
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
@@ -160,7 +193,7 @@ class WorkflowRunTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
     def workflow_run_specify_inputs(self, inputs):
         workflow_run = self.components.workflow_run
         for label, value in inputs.items():
-            input_div_element = workflow_run.input_div(label=label).wait_for_visible()
+            input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
             self.select2_set_value(input_div_element, "%d: " % value["hid"])
 
     def workflow_run_with_name(self, name):

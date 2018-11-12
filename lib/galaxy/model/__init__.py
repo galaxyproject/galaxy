@@ -4192,14 +4192,9 @@ class WorkflowStepConnection(RepresentById):
         self.input_step_id = None
         self.input_name = None
 
-    def set_non_data_connection(self):
-        self.output_name = WorkflowStepConnection.NON_DATA_CONNECTION
-        self.input_name = WorkflowStepConnection.NON_DATA_CONNECTION
-
     @property
     def non_data_connection(self):
-        return (self.output_name == WorkflowStepConnection.NON_DATA_CONNECTION and
-                self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
+        return (self.output_name == self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
 
     def copy(self):
         # TODO: handle subworkflow ids...

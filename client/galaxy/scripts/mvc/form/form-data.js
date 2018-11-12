@@ -84,7 +84,9 @@ export var Manager = Backbone.Model.extend({
                             if (field && field.value) {
                                 value = field.value();
                                 if (input.ignore === undefined || input.ignore != value) {
-                                    if (field.collapsed && input.collapsible_value) {
+                                    if (field.collapsed && field.connected) {
+                                        value = { __class__: "ConnectedValue" };
+                                    } else if (field.collapsed && input.collapsible_value) {
                                         value = input.collapsible_value;
                                     }
                                     add(flat_id, input.id, value);
