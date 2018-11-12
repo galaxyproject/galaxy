@@ -36,6 +36,12 @@ def test_dynamic_mapping():
     assert mapper.job_config.rule_response == "local_runner"
 
 
+def test_chained_dynamic_mapping():
+    mapper = __mapper(__dynamic_destination(dict(function="dynamic_chain_1")))
+    assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
+    assert mapper.job_config.rule_response == "final_destination"
+
+
 def test_dynamic_mapping_priorities():
     mapper = __mapper(__dynamic_destination(dict(function="tophat")))
     assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
