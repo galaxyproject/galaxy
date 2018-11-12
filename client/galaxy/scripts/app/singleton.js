@@ -11,8 +11,7 @@ export function setGalaxyInstance(factory, atTop = true) {
 
     let storage = getStorage(atTop);
     let newInstance = factory(GalaxyApp);
-    
-    if (newInstance.constructor.name != "GalaxyApp") {
+    if (!(newInstance instanceof GalaxyApp)) {
         newInstance = new GalaxyApp(newInstance);
     }
     if (newInstance.debug === undefined) {
