@@ -9,7 +9,7 @@ from boltons.iterutils import remap
 
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.json import safe_loads
-from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
+from .basic import DataCollectionToolParameter, DataToolParameter, is_runtime_value, runtime_to_json, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
 
 REPLACE_ON_TRUTHY = object()
@@ -179,11 +179,8 @@ def check_param(trans, param, incoming_value, param_values):
     error = None
     try:
         if trans.workflow_building_mode:
-            if isinstance(value, RuntimeValue):
-                return [{'__class__' : 'RuntimeValue'}, None]
-            if isinstance(value, dict):
-                if value.get('__class__') == 'RuntimeValue':
-                    return [value, None]
+            if is_runtime_value(value):
+                return [runtime_to_json(value), None]
         value = param.from_json(value, trans, param_values)
         param.validate(value, trans)
     except ValueError as e:

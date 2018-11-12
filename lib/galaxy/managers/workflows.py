@@ -561,7 +561,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     data['upgrade_messages'][step.order_index] = {module.tool.name: "\n".join(module.version_changes)}
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ''
-            config_form = module.get_config_form()
+            config_form = module.get_config_form(step=step)
             # Pack attributes into plain dictionary
             step_dict = {
                 'id': step.order_index,
@@ -571,8 +571,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 'name': module.get_name(),
                 'tool_state': module.get_state(),
                 'errors': module.get_errors(),
-                'data_inputs': module.get_data_inputs(),
-                'data_outputs': module.get_data_outputs(),
+                'inputs': module.get_all_inputs(connectable_only=True),
+                'outputs': module.get_all_outputs(),
                 'config_form': config_form,
                 'annotation': annotation_str,
                 'post_job_actions': {},
@@ -598,9 +598,6 @@ class WorkflowContentsManager(UsesAnnotations):
                         if isinstance(input, DataCollectionToolParameter):
                             input_connections_type[input.name] = "dataset_collection"
                 visit_input_values(module.tool.inputs, module.state.inputs, callback)
-                # Filter
-                # FIXME: this removes connection without displaying a message currently!
-                input_connections = [conn for conn in input_connections if conn.input_name in data_input_names]
                 # post_job_actions
                 pja_dict = {}
                 for pja in step.post_job_actions:
@@ -653,12 +650,12 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         for order_index in sorted(steps):
             step = steps[order_index]
-            for i, step_data_output in enumerate(step['data_outputs']):
+            for i, step_data_output in enumerate(step['outputs']):
                 if step_data_output.get('collection_type_source') and step_data_output['collection_type'] is None:
                     collection_type_source = step_data_output['collection_type_source']
                     for input_connection in step['input_connections'].get(collection_type_source, []):
                         input_step = steps[input_connection['id']]
-                        for input_step_data_output in input_step['data_outputs']:
+                        for input_step_data_output in input_step['outputs']:
                             if input_step_data_output['name'] == input_connection['output_name']:
                                 step_data_output['collection_type'] = input_step_data_output.get('collection_type')
         return steps
@@ -789,8 +786,6 @@ class WorkflowContentsManager(UsesAnnotations):
                     # If the tool is installed we attempt to verify input values
                     # and connections, otherwise the last known state will be dumped without modifications.
                     visit_input_values(module.tool.inputs, module.state.inputs, callback)
-                    # FIXME: this removes connection without displaying a message currently!
-                    input_connections = [conn for conn in input_connections if (conn.input_name in data_input_names or conn.non_data_connection)]
 
             # Encode input connections as dictionary
             input_conn_dict = {}
@@ -846,6 +841,8 @@ class WorkflowContentsManager(UsesAnnotations):
                 label = "Input Dataset"
             elif step_type == "data_collection_input":
                 label = "Input Dataset Collection"
+            elif step_type == 'parameter_input':
+                label = "Input Parameter"
             else:
                 raise ValueError("Invalid step_type %s" % step_type)
             if legacy:

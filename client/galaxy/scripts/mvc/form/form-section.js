@@ -175,6 +175,7 @@ var View = Backbone.View.extend({
             text_value: input_def.text_value,
             collapsible_value: input_def.collapsible_value,
             collapsible_preview: input_def.collapsible_preview,
+            connectable: input_def.connectable,
             help: input_def.help,
             argument: input_def.argument,
             disabled: input_def.disabled,

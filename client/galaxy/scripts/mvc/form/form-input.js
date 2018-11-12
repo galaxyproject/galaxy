@@ -25,6 +25,7 @@ export default Backbone.View.extend({
         this.$collapsible = this.$(".ui-form-collapsible");
         this.$collapsible_text = this.$(".ui-form-collapsible-text");
         this.$collapsible_icon = this.$(".ui-form-collapsible-icon");
+        this.$connected_icon = this.$(".ui-form-connected-icon");
         this.$title = this.$(".ui-form-title");
         this.$title_text = this.$(".ui-form-title-text");
         this.$error_text = this.$(".ui-form-error-text");
@@ -36,16 +37,35 @@ export default Backbone.View.extend({
 
         // decide wether to expand or collapse fields
         var collapsible_value = this.model.get("collapsible_value");
+        var value = JSON.stringify(this.model.get("value"));
+        var connected = value == JSON.stringify({ __class__: "ConnectedValue" });
+        this.field.connected = connected;
         this.field.collapsed =
-            collapsible_value !== undefined &&
-            JSON.stringify(this.model.get("value")) == JSON.stringify(collapsible_value);
+            this.field.connected ||
+            (collapsible_value !== undefined &&
+                JSON.stringify(this.model.get("value")) == JSON.stringify(collapsible_value));
         this.listenTo(this.model, "change", this.render, this);
         this.render();
 
         // add click handler
         var self = this;
-        this.$collapsible.on("click", () => {
+        this.$collapsible_icon.on("click", () => {
+            if (self.field.connected) {
+                return;
+            }
             self.field.collapsed = !self.field.collapsed;
+            if (self.field.collapsed) {
+                self.field.connected = false;
+            }
+            app.trigger && app.trigger("change");
+            self.render();
+        });
+        this.$connected_icon.on("click", () => {
+            self.field.connected = !self.field.connected;
+            self.field.collapsed = self.field.connected;
+            if (!self.field.connected) {
+                this.model.set("value", null);
+            }
             app.trigger && app.trigger("change");
             self.render();
         });
@@ -108,21 +128,41 @@ export default Backbone.View.extend({
                 style: this.model.get("style")
             });
         // render collapsible options
-        if (
+        const connected = this.field.connected;
+        const collapsible =
+            !connected &&
             !this.field.collapsible_disabled &&
             !this.model.get("disabled") &&
-            this.model.get("collapsible_value") !== undefined
-        ) {
+            this.model.get("collapsible_value") !== undefined;
+        const connectable = this.model.get("connectable");
+        if (collapsible || connectable) {
             var collapsible_state = this.field.collapsed ? "enable" : "disable";
             this.$title_text.hide();
             this.$collapsible.show();
             this.$collapsible_text.text(this.model.get("label"));
-            this.$collapsible_icon
-                .removeClass()
-                .addClass("icon")
-                .addClass(this.model.get(`cls_${collapsible_state}`))
-                .attr("data-original-title", this.model.get(`text_${collapsible_state}`))
-                .tooltip({ placement: "bottom" });
+            if (collapsible && !connected) {
+                this.$collapsible_icon
+                    .removeClass()
+                    .addClass("icon ui-form-collapsible-icon")
+                    .addClass(this.model.get(`cls_${collapsible_state}`))
+                    .attr("data-original-title", this.model.get(`text_${collapsible_state}`))
+                    .tooltip({ placement: "bottom" })
+                    .show();
+            } else {
+                this.$collapsible_icon.hide();
+            }
+            if (connectable) {
+                const connectedIconStyle = this.field.connected ? "fa fa-times" : "fa fa-arrows-h";
+                this.$connected_icon
+                    .removeClass()
+                    .addClass("icon ui-form-connected-icon")
+                    .addClass(connectedIconStyle)
+                    .attr("data-original-title", this.model.get(`text_${collapsible_state}`))
+                    .tooltip({ placement: "bottom" })
+                    .show();
+            } else {
+                this.$connected_icon.hide();
+            }
         } else {
             this.$title_text.show().text(this.model.get("label"));
             this.$collapsible.hide();
@@ -145,6 +185,7 @@ export default Backbone.View.extend({
                         $("<div/>")
                             .addClass("ui-form-collapsible")
                             .append($("<i/>").addClass("ui-form-collapsible-icon"))
+                            .append($("<i/>").addClass("ui-form-connected-icon"))
                             .append($("<span/>").addClass("ui-form-collapsible-text"))
                     )
                     .append($("<span/>").addClass("ui-form-title-text"))

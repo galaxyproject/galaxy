@@ -151,6 +151,17 @@ var InputTerminalView = BaseInputTerminalView.extend({
     }
 });
 
+var InputParameterTerminalView = BaseInputTerminalView.extend({
+    terminalMappingClass: Terminals.TerminalMapping,
+    terminalMappingViewClass: InputTerminalMappingView,
+    terminalForInput: function(input) {
+        return new Terminals.InputParameterTerminal({
+            element: this.el,
+            input: input
+        });
+    }
+});
+
 var InputCollectionTerminalView = BaseInputTerminalView.extend({
     terminalMappingClass: Terminals.TerminalMapping,
     terminalMappingViewClass: InputTerminalMappingView,
@@ -269,9 +280,25 @@ var OutputCollectionTerminalView = BaseOutputTerminalView.extend({
     }
 });
 
+var OutputParameterTerminalView = BaseOutputTerminalView.extend({
+    terminalMappingClass: Terminals.TerminalMapping,
+    terminalMappingViewClass: TerminalMappingView,
+    terminalForOutput: function(output) {
+        var collection_type = output.collection_type;
+        var collection_type_source = output.collection_type_source;
+        var terminal = new Terminals.OutputCollectionTerminal({
+            element: this.el,
+            type: output.type,
+        });
+        return terminal;
+    }
+});
+
 export default {
     InputTerminalView: InputTerminalView,
+    InputParameterTerminalView: InputParameterTerminalView,
     OutputTerminalView: OutputTerminalView,
+    OutputParameterTerminalView: OutputParameterTerminalView,
     InputCollectionTerminalView: InputCollectionTerminalView,
     OutputCollectionTerminalView: OutputCollectionTerminalView
 };
