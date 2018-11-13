@@ -121,7 +121,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv=16' -c 'conda-forge'
+                    $CONDA_EXE create --yes --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv>=16' -c 'conda-forge'
                     source activate "$GALAXY_CONDA_ENV"
                     virtualenv "$GALAXY_VIRTUAL_ENV"
                     unset __CONDA_INFO
@@ -137,9 +137,9 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$(command -v python)" "$GALAXY_VIRTUAL_ENV"
             else
-                vvers=13.1.2
-                vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-                vsha="aabc8ef18cddbd8a2a9c7f92bc43e2fea54b1147330d65db920ef3ce9812e3dc"
+                vvers=16.1.0
+                vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
+                vsha=f899fafcd92e1150f40c8215328be38ff24b519cd95357fa6e78e006c7638208
                 vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                 vsrc="$vtmp/$(basename $vurl)"
                 # SSL certificates are not checked to prevent problems with messed
@@ -151,12 +151,16 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                 elif command -v wget >/dev/null; then
                     wget --no-check-certificate -O "$vsrc" "$vurl"
                 else
-                    python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
+                    python -c "try:
+    from urllib import urlretrieve
+except:
+    from urllib.request import urlretrieve
+urllib.urlretrieve('$vurl', '$vsrc')"
                 fi
                 echo "Verifying $vsrc checksum is $vsha"
                 python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
                 tar zxf "$vsrc" -C "$vtmp"
-                python "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
+                python "$vtmp/virtualenv-$vvers/src/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
             fi
         fi

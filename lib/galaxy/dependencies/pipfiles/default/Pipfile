@@ -36,7 +36,7 @@ Mercurial = {version = "<=3.7.3", markers = "python_version < '3'"}
 nodeenv = "*"
 pycryptodome = "*"
 uWSGI = "*"
-pysam = "==0.14.1"
+pysam = "==0.15.1"
 bdbag = "*"
 bleach = "*"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
