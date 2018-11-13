@@ -526,4 +526,4 @@ export default {
     historyContents3: historyContents3,
     jobs4: jobs4,
     historyContents4: historyContents4
-}
+};

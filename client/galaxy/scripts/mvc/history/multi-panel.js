@@ -13,7 +13,6 @@ import baseMVC from "mvc/base-mvc";
 import ajaxQueue from "utils/ajax-queue";
 import "ui/search-input";
 
-
 var logNamespace = "history";
 /* ==============================================================================
 TODO:

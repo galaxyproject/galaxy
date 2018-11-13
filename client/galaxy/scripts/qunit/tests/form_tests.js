@@ -23,9 +23,7 @@ QUnit.module("Form test", {
     }
 });
 
-
 QUnit.test("tool-form", function(assert) {
-
     // // Huh? The following seems to be needed by tool-form.js - once the global usage
     // // is cleaned up in that module this can be deleted I assume.
     // window.parent.Galaxy = window.Galaxy;
@@ -33,8 +31,7 @@ QUnit.test("tool-form", function(assert) {
     var toolform = new ToolForm.View({ id: "test" });
     $("body").prepend(toolform.$el);
     window.fakeserver.respond();
-    
-   
+
     var form = toolform.form;
     var output = "";
     for (var property in assert) {
@@ -98,9 +95,7 @@ QUnit.test("tool-form", function(assert) {
     );
 });
 
-
 QUnit.test("data", function(assert) {
-
     var visits = [];
     Utils.get({
         url: getAppRoot() + "api/tools/test/build",

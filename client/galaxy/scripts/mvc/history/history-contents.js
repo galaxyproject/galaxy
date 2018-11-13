@@ -10,7 +10,6 @@ import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
 
-
 const limitPerPageDefault = window.localStorage.getItem("historyContentsLimitPerPageDefault") || 500;
 
 //==============================================================================

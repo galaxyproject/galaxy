@@ -114,7 +114,7 @@ var HistoryViewEdit = _super.extend(
         /** In this override, add tag and annotation editors and a btn to toggle the selectors */
         _buildNewRender: function() {
             var Galaxy = getGalaxyInstance();
-            
+
             // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
             var $newRender = _super.prototype._buildNewRender.call(this);
             if (!this.model) {

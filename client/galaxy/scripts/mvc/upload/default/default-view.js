@@ -1,5 +1,5 @@
 /** Renders contents of the default uploader */
-import $ from "jquery"
+import $ from "jquery";
 import Backbone from "backbone";
 import _ from "underscore";
 import _l from "utils/localization";

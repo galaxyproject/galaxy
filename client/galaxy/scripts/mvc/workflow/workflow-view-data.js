@@ -193,5 +193,5 @@ var OutputCalloutView = Backbone.View.extend({
 export default {
     DataInputView: DataInputView,
     DataOutputView: DataOutputView,
-    ParameterOutputView: ParameterOutputView,
+    ParameterOutputView: ParameterOutputView
 };

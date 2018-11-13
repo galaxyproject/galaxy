@@ -16,7 +16,6 @@ import HistoryCopyDialog from "mvc/history/copy-dialog";
 import "ui/search-input";
 import "ui/mode-button";
 
-
 /* =============================================================================
 TODO:
 
@@ -673,7 +672,9 @@ export function historyEntry(options) {
         el: $("#history-" + options.historyJSON.id),
         className: viewClass.prototype.className + " wide",
         $scrollContainer: options.hasMasthead
-            ? function() { return this.$el.parent(); }
+            ? function() {
+                  return this.$el.parent();
+              }
             : undefined,
         model: history,
         show_deleted: options.showDeletedJson,

@@ -5,13 +5,7 @@ import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import NodeView from "mvc/workflow/workflow-view-node";
 
-var StepParameterTypes = [
-    'text',
-    'integer',
-    'float',
-    'boolean',
-    'color',
-]
+var StepParameterTypes = ["text", "integer", "float", "boolean", "color"];
 
 var Node = Backbone.Model.extend({
     initialize: function(app, attr) {

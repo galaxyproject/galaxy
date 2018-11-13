@@ -8,7 +8,6 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 
-
 /** Dataset edit attributes view */
 var View = Backbone.View.extend({
     initialize: function() {

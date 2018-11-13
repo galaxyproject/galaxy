@@ -32,7 +32,6 @@ QUnit.module("Metrics logger tests", {
     }
 });
 
-
 // ======================================================================== MetricsLogger
 QUnit.test("logger construction/initializiation defaults", function(assert) {
     var logger = new metrics.MetricsLogger({});

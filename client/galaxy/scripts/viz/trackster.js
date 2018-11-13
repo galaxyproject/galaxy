@@ -29,7 +29,6 @@ import "ui/editable-text";
 //import "static/style/library.css";
 //import "static/style/trackster.css";
 
-
 /**
  * User interface controls for trackster
  */
@@ -568,9 +567,7 @@ export class TracksterUIView extends Backbone.View {
         }
 
         // close selection/finalize template
-        html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${
-            getAppRoot()
-        }custom_builds" target="_top">Add a Custom Build</a></div></form>`;
+        html += `</select></div><div style="clear: both;"></div></div><div class="form-row">Is the build not listed here? <a href="${getAppRoot()}custom_builds" target="_top">Add a Custom Build</a></div></form>`;
 
         // return
         return html;

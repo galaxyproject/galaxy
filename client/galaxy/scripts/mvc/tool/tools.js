@@ -427,21 +427,21 @@ var ToolPanel = Backbone.Model.extend({
         var self = this;
 
         var // Helper to recursively parse tool panel.
-            parse_elt = elt_dict => {
-                var type = elt_dict.model_class;
-                // There are many types of tools; for now, anything that ends in 'Tool'
-                // is treated as a generic tool.
-                if (type.indexOf("Tool") === type.length - 4) {
-                    return self.attributes.tools.get(elt_dict.id);
-                } else if (type === "ToolSection") {
-                    // Parse elements.
-                    var elems = _.map(elt_dict.elems, parse_elt);
-                    elt_dict.elems = elems;
-                    return new ToolSection(elt_dict);
-                } else if (type === "ToolSectionLabel") {
-                    return new ToolSectionLabel(elt_dict);
-                }
-            };
+        parse_elt = elt_dict => {
+            var type = elt_dict.model_class;
+            // There are many types of tools; for now, anything that ends in 'Tool'
+            // is treated as a generic tool.
+            if (type.indexOf("Tool") === type.length - 4) {
+                return self.attributes.tools.get(elt_dict.id);
+            } else if (type === "ToolSection") {
+                // Parse elements.
+                var elems = _.map(elt_dict.elems, parse_elt);
+                elt_dict.elems = elems;
+                return new ToolSection(elt_dict);
+            } else if (type === "ToolSectionLabel") {
+                return new ToolSectionLabel(elt_dict);
+            }
+        };
 
         return _.map(response, parse_elt);
     },
@@ -767,11 +767,11 @@ var templates = {
     // the category level container in the tool panel (e.g. 'Get Data', 'Text Manipulation')
     panel_section: _.template(
         [
-            "<div class=\"toolSectionTitle\" id=\"title_<%- id %>\">",
-            "<a href=\"javascript:void(0)\"><span><%- name %></span></a>",
+            '<div class="toolSectionTitle" id="title_<%- id %>">',
+            '<a href="javascript:void(0)"><span><%- name %></span></a>',
             "</div>",
-            "<div id=\"<%- id %>\" class=\"toolSectionBody\" style=\"display: none;\">",
-            "<div class=\"toolSectionBg\"></div>",
+            '<div id="<%- id %>" class="toolSectionBody" style="display: none;">',
+            '<div class="toolSectionBg"></div>',
             "<div>"
         ].join("")
     ),
@@ -779,15 +779,15 @@ var templates = {
     // a single tool's link in the tool panel; will load the tool form in the center panel
     tool_link: _.template(
         [
-            "<a class=\"<%- id %> tool-link\" href=\"<%= link %>\" target=\"<%- target %>\" minsizehint=\"<%- min_width %>\">",
-            "<span class=\"labels\">",
+            '<a class="<%- id %> tool-link" href="<%= link %>" target="<%- target %>" minsizehint="<%- min_width %>">',
+            '<span class="labels">',
             "<% _.each( labels, function( label ){ %>",
-            "<span class=\"badge badge-primary badge-<%- label %>\">",
+            '<span class="badge badge-primary badge-<%- label %>">',
             "<%- label %>",
             "</span>",
             "<% }); %>",
             "</span>",
-            "<span class=\"tool-old-link\">",
+            '<span class="tool-old-link">',
             "<%- name %>",
             "</span>",
             " <%- description %>",
@@ -799,26 +799,26 @@ var templates = {
     // loaded when a tool link is clicked in the tool panel
     tool_form: _.template(
         [
-            "<div class=\"toolFormTitle\"><%- tool.name %> (version <%- tool.version %>)</div>",
-            "<div class=\"toolFormBody\">",
+            '<div class="toolFormTitle"><%- tool.name %> (version <%- tool.version %>)</div>',
+            '<div class="toolFormBody">',
             "<% _.each( tool.inputs, function( input ){ %>",
-            "<div class=\"form-row\">",
-            "<label for=\"<%- input.name %>\"><%- input.label %>:</label>",
-            "<div class=\"form-row-input\">",
+            '<div class="form-row">',
+            '<label for="<%- input.name %>"><%- input.label %>:</label>',
+            '<div class="form-row-input">',
             "<%= input.html %>",
             "</div>",
-            "<div class=\"toolParamHelp\" style=\"clear: both;\">",
+            '<div class="toolParamHelp" style="clear: both;">',
             "<%- input.help %>",
             "</div>",
-            "<div style=\"clear: both;\"></div>",
+            '<div style="clear: both;"></div>',
             "</div>",
             "<% }); %>",
             "</div>",
-            "<div class=\"form-row form-actions\">",
-            "<input type=\"submit\" class=\"btn btn-primary\" name=\"runtool_btn\" value=\"Execute\" />",
+            '<div class="form-row form-actions">',
+            '<input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute" />',
             "</div>",
-            "<div class=\"toolHelp\">",
-            "<div class=\"toolHelpBody\"><% tool.help %></div>",
+            '<div class="toolHelp">',
+            '<div class="toolHelpBody"><% tool.help %></div>',
             "</div>"
             // TODO: we need scoping here because 'help' is the dom for the help menu in the masthead
             // which implies a leaky variable that I can't find

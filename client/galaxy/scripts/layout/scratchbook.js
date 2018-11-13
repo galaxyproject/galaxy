@@ -10,7 +10,6 @@ import visualization from "viz/visualization";
 import { TracksterUI } from "viz/trackster";
 import _l from "utils/localization";
 
-
 export default Backbone.View.extend({
     initialize: function(options) {
         options = options || {};

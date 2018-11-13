@@ -11,7 +11,6 @@ import { History } from "mvc/history/history-model";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import LoadingIndicator from "ui/loading-indicator";
 
-
 var HistoryGridView = GridView.extend({
     initialize: function(grid_config) {
         this.ajaxQueue = new AjaxQueue.AjaxQueue();
@@ -26,9 +25,7 @@ var HistoryGridView = GridView.extend({
             this.$el.find(".delayed-value-datasets_by_state").map((i, el) => {
                 return () => {
                     const historyId = $(el).data("id");
-                    const url = `${
-                        getAppRoot()
-                    }api/histories/${historyId}?keys=nice_size,contents_active,contents_states`;
+                    const url = `${getAppRoot()}api/histories/${historyId}?keys=nice_size,contents_active,contents_states`;
                     const options = {};
                     options.url = url;
                     options.type = "GET";

@@ -9,7 +9,6 @@ import UTILS from "utils/utils";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
-
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
  *      tool use and a collection of the datasets those tools produced.

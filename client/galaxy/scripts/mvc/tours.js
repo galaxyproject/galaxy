@@ -11,7 +11,6 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import "libs/bootstrap-tour";
 
-
 // bootstrap-tour configures a window.Tour object; keep a local ref.
 let Tour = window.Tour;
 

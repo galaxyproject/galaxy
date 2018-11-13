@@ -7,7 +7,6 @@ import PopupMenu from "mvc/ui/popup-menu";
 import historyCopyDialog from "mvc/history/copy-dialog";
 import Webhooks from "mvc/webhooks";
 
-
 // ============================================================================
 var menu = [
     {

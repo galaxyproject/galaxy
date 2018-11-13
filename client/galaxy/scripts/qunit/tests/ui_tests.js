@@ -8,7 +8,6 @@ import Drilldown from "mvc/ui/ui-drilldown";
 import Slider from "mvc/ui/ui-slider";
 import Tabs from "mvc/ui/ui-tabs";
 
-
 QUnit.module("Ui test", {
     beforeEach: function() {
         testApp.create();
@@ -60,7 +59,6 @@ QUnit.test("tabs", function(assert) {
     tabs.model.set("current", "id_c");
     _test();
 });
-
 
 QUnit.test("button-default", function(assert) {
     var button = new Ui.Button({ title: "title" });

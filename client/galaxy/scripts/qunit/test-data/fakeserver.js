@@ -12,4 +12,4 @@ export default {
     "api/tools/test/build": {
         data: JSON.stringify(toolsTestBuild)
     }
-}
+};

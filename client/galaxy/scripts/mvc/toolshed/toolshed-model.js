@@ -2,7 +2,6 @@ import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 
-
 var ToolShedModel = Backbone.Model.extend({
     defaults: {
         url: "https://toolshed.g2.bx.psu.edu/",

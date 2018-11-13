@@ -1173,7 +1173,7 @@ var Circster = Backbone.View.extend({
                     title: _l("Save"),
                     on_click: function() {
                         let Galaxy = getGalaxyInstance();
-                        
+
                         // show saving dialog box
                         Galaxy.modal.show({
                             title: _l("Saving..."),

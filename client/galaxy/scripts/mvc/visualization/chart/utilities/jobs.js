@@ -1,4 +1,3 @@
-
 /** This class handles job submissions to the Galaxy API. */
 import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";

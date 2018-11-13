@@ -19,7 +19,7 @@ export function setGalaxyInstance(factory, atTop = true) {
     }
 
     // Debugging frame property
-    
+
     // storage._galaxyInstance = new Proxy(newInstance, {
     //     get(galaxy, prop) {
     //         if (prop == "frame") {
@@ -57,6 +57,6 @@ export function galaxyIsInitialized(atTop = true) {
 }
 
 export function getStorage(atTop = true) {
-    let storage = ((window !== window.top) && atTop) ? window.top : window;
+    let storage = window !== window.top && atTop ? window.top : window;
     return storage;
 }

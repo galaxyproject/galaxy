@@ -530,10 +530,7 @@ var View = Backbone.View.extend({
     _refreshHistory: function() {
         let Galaxy = getGalaxyInstance();
         var self = this;
-        var history =
-            Galaxy &&
-            Galaxy.currHistoryPanel &&
-            Galaxy.currHistoryPanel.model;
+        var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
         if (this._refresh_history) {
             window.clearTimeout(this._refresh_history);
         }
@@ -733,16 +730,14 @@ var View = Backbone.View.extend({
                 // Executed more than one time, build blurb but skip history link.
                 timesExecuted = `<em> - ${response.length} times</em>`;
                 if (newHistoryTarget) {
-                    destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${
-                        getAppRoot()
-                    }history/view_multiple">history multi-view</a>.`;
+                    destinationBlurb = `This workflow will generate results in multiple histories.  You can observe progress in the <a href="${getAppRoot()}history/view_multiple">history multi-view</a>.`;
                 }
             } else if (newHistoryTarget) {
                 // Single execution, with a destination other than the
                 // current history.  Present a link.
-                destinationBlurb = `This workflow will generate results in a new history. <a href="${
-                    getAppRoot()
-                }history/switch_to_history?hist_id=${response[0].history_id}">Switch to that history now</a>.`;
+                destinationBlurb = `This workflow will generate results in a new history. <a href="${getAppRoot()}history/switch_to_history?hist_id=${
+                    response[0].history_id
+                }">Switch to that history now</a>.`;
             }
             return $(`
                 <div class="donemessagelarge">

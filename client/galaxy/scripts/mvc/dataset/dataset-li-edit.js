@@ -359,7 +359,7 @@ var DatasetListItemEdit = _super.extend(
         _makeDbkeyEditLink: function($details) {
             // make the dbkey a link to editing
             if (this.model.get("metadata_dbkey") === "?" && !this.model.isDeletedOrPurged()) {
-                var editableDbkey = $("<a class=\"value\">?</a>")
+                var editableDbkey = $('<a class="value">?</a>')
                     .attr("href", this.model.urls.edit)
                     .attr("target", "_top");
                 $details.find(".dbkey .value").replaceWith(editableDbkey);
@@ -422,10 +422,10 @@ DatasetListItemEdit.prototype.templates = (() => {
         failed_metadata: BASE_MVC.wrapTemplate(
             [
                 // in this override, provide a link to the edit page
-                "<% if( dataset.state === \"failed_metadata\" ){ %>",
-                "<div class=\"failed_metadata-warning warningmessagesmall\">",
+                '<% if( dataset.state === "failed_metadata" ){ %>',
+                '<div class="failed_metadata-warning warningmessagesmall">',
                 _l("An error occurred setting the metadata for this dataset"),
-                "<br /><a href=\"<%- dataset.urls.edit %>\" target=\"_top\">",
+                '<br /><a href="<%- dataset.urls.edit %>" target="_top">',
                 _l("Set it manually or retry auto-detection"),
                 "</a>",
                 "</div>",
@@ -439,13 +439,13 @@ DatasetListItemEdit.prototype.templates = (() => {
                 // in this override, provide links to undelete or purge the dataset
                 "<% if( dataset.deleted && !dataset.purged ){ %>",
                 // deleted not purged
-                "<div class=\"deleted-msg warningmessagesmall\">",
+                '<div class="deleted-msg warningmessagesmall">',
                 _l("This dataset has been deleted"),
-                "<br /><a class=\"undelete-link\" href=\"javascript:void(0);\">",
+                '<br /><a class="undelete-link" href="javascript:void(0);">',
                 _l("Undelete it"),
                 "</a>",
                 "<% if( view.purgeAllowed ){ %>",
-                "<br /><a class=\"purge-link\" href=\"javascript:void(0);\">",
+                '<br /><a class="purge-link" href="javascript:void(0);">',
                 _l("Permanently remove it from disk"),
                 "</a>",
                 "<% } %>",
@@ -459,24 +459,24 @@ DatasetListItemEdit.prototype.templates = (() => {
     var visualizationsTemplate = BASE_MVC.wrapTemplate(
         [
             "<% if( visualizations.length === 1 ){ %>",
-            "<a class=\"visualization-link icon-btn\" href=\"<%- visualizations[0].href %>\"",
-            " target=\"<%- visualizations[0].target %>\" title=\"",
+            '<a class="visualization-link icon-btn" href="<%- visualizations[0].href %>"',
+            ' target="<%- visualizations[0].target %>" title="',
             _l("Visualize in"),
-            " <%- visualizations[0].html %>\">",
-            "<span class=\"fa fa-bar-chart-o\"></span>",
+            ' <%- visualizations[0].html %>">',
+            '<span class="fa fa-bar-chart-o"></span>',
             "</a>",
 
             "<% } else { %>",
-            "<div class=\"visualizations-dropdown dropdown icon-btn\">",
-            "<a data-toggle=\"dropdown\" title=\"",
+            '<div class="visualizations-dropdown dropdown icon-btn">',
+            '<a data-toggle="dropdown" title="',
             _l("Visualize"),
-            "\">",
-            "<span class=\"fa fa-bar-chart-o\"></span>",
+            '">',
+            '<span class="fa fa-bar-chart-o"></span>',
             "</a>",
-            "<ul class=\"dropdown-menu\" role=\"menu\">",
+            '<ul class="dropdown-menu" role="menu">',
             "<% _.each( visualizations, function( visualization ){ %>",
-            "<li><a class=\"visualization-link\" href=\"<%- visualization.href %>\"",
-            " target=\"<%- visualization.target %>\">",
+            '<li><a class="visualization-link" href="<%- visualization.href %>"',
+            ' target="<%- visualization.target %>">',
             "<%- visualization.html %>",
             "</a></li>",
             "<% }); %>",

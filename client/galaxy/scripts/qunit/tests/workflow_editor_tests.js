@@ -860,7 +860,6 @@ QUnit.test("disableMapOver", function(assert) {
     assert.ok(changeSpy.called);
 });
 
-
 QUnit.module("terminal mapping logic", {
     beforeEach: function() {
         testApp.create();

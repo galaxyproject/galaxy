@@ -1,5 +1,5 @@
 /** Masthead Collection **/
-import _ from "underscore"
+import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
@@ -418,7 +418,7 @@ var Tab = Backbone.View.extend({
                     } else {
                         try {
                             Galaxy.frame.add(options);
-                        } catch(err) {
+                        } catch (err) {
                             console.warn("Missing frame element on galaxy instance", err);
                         }
                     }

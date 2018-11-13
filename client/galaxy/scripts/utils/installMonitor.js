@@ -50,7 +50,7 @@ export function installMonitor(globalProp, fallbackValue) {
                 logger.trace();
                 try {
                     window._monitorStorage[globalProp] = newValue;
-                } catch(err) {
+                } catch (err) {
                     logger.log("Unable to set value on window facade");
                     logger.warn(err);
                 }
@@ -89,7 +89,7 @@ export function installMonitor(globalProp, fallbackValue) {
                     let target = window[globalProp];
                     logger.log("new value", String(val));
                     target[prop] = val;
-                } catch(err) {
+                } catch (err) {
                     logger.warn("Unable to write", globalProp, val);
                     didWrite = false;
                 }

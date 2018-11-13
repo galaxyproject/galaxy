@@ -8,7 +8,6 @@ import { getGalaxyInstance } from "app";
 /** the right hand panel in the analysis page that shows the current history */
 var HistoryPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        
         var Galaxy = getGalaxyInstance();
         var self = this;
 

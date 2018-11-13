@@ -74,7 +74,7 @@ function errorModal(message, title, details) {
     if (!message) {
         return;
     }
-    
+
     let Galaxy = getGalaxyInstance();
     message = _l(message);
     title = _l(title) || _l("Error:");

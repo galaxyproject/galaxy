@@ -21,4 +21,3 @@ import "qunit/tests/modal_tests";
 import "qunit/tests/page_tests";
 import "qunit/tests/utils_tests";
 import "qunit/tests/ui_tests";
-

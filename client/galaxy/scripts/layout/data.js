@@ -28,7 +28,7 @@ export default class Data {
         }
         $.uploadpost({
             url: `${Galaxy.root}api/tools`,
-            success: (response) => {
+            success: response => {
                 if (history_panel) {
                     history_panel.refreshContents();
                 }

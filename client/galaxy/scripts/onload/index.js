@@ -35,8 +35,6 @@ import Utils from "utils/utils";
 
 import { installMonitor } from "utils/installMonitor";
 
-
-
 // ============================================================================
 // jquery on document ready
 // ============================================================================

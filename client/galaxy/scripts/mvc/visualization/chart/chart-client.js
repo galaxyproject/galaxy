@@ -13,7 +13,7 @@ import Menu from "mvc/visualization/chart/views/menu";
 export default Backbone.View.extend({
     initialize: function(options) {
         let Galaxy = getGalaxyInstance();
-        this.modal = (Galaxy && Galaxy.modal) ? Galaxy.modal : new Modal.View();
+        this.modal = Galaxy && Galaxy.modal ? Galaxy.modal : new Modal.View();
         this.setElement(
             $("<div/>")
                 .addClass("charts-client")

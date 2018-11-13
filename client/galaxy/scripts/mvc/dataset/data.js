@@ -520,9 +520,9 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // end is optional
         var end = this.col.end
             ? row
-                .children()
-                .eq(this.col.end)
-                .html()
+                  .children()
+                  .eq(this.col.end)
+                  .html()
             : start;
 
         // double check location

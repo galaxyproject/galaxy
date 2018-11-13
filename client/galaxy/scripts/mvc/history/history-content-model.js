@@ -9,7 +9,7 @@ import { getAppRoot } from "onload/loadConfig";
 var collectionFuzzyCountDefault = 1000;
 try {
     collectionFuzzyCountDefault = localStorage.getItem("collectionFuzzyCountDefault") || collectionFuzzyCountDefault;
-} catch (err) { }
+} catch (err) {}
 
 //==============================================================================
 /** @class Mixin for HistoryContents content (HDAs, HDCAs).

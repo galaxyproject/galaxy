@@ -12,7 +12,6 @@ import Modal from "mvc/ui/ui-modal";
 import ToolFormBase from "mvc/tool/tool-form-base";
 import Webhooks from "mvc/webhooks";
 
-
 var View = Backbone.View.extend({
     initialize: function(options) {
         let Galaxy = getGalaxyInstance();

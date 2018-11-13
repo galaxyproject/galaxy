@@ -8,7 +8,7 @@ import { getAppRoot } from "onload/loadConfig";
 
 window.app = function app(options, bootstrapped) {
     console.log("Analysis init");
-    
+
     let Galaxy = setGalaxyInstance(GalaxyApp => {
         let galaxy = new GalaxyApp(options, bootstrapped);
         galaxy.debug("login app");

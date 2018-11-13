@@ -6,7 +6,6 @@ import _ from "underscore";
 import jQuery from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 
-
 ($ => {
     // add event properties
     jQuery.event.props.push("dataTransfer");

@@ -15,12 +15,10 @@ import serverdata from "qunit/test-data/fakeserver";
 import "./assets/base.css";
 
 export default {
-
     create() {
-
         setGalaxyInstance(GalaxyApp => {
             let galaxy = new GalaxyApp(galaxyOptions);
-            galaxy.currHistoryPanel = { 
+            galaxy.currHistoryPanel = {
                 model: new Backbone.Model()
             };
             galaxy.emit = {
@@ -49,4 +47,4 @@ export default {
             delete window.fakeserver;
         }
     }
-}
+};

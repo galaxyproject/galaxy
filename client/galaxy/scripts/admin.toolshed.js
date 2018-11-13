@@ -8,7 +8,6 @@ import mod_repoqueue_view from "mvc/toolshed/repository-queue-view";
 import mod_repo_status_view from "mvc/toolshed/repo-status-view";
 import mod_workflows_view from "mvc/toolshed/workflows-view";
 
-
 var AdminToolshedRouter = Backbone.Router.extend({
     initialize: function() {
         this.routesHit = 0;

@@ -24,4 +24,4 @@ export default {
         model_class: "User",
         id: "f2db41e1fa331b3e"
     }
-}
+};

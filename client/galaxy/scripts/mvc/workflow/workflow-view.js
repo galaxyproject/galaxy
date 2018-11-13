@@ -787,9 +787,7 @@ export default Backbone.View.extend({
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp = `<div><img height='16' align='middle' src='${
-            getAppRoot()
-        }static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
+        var tmp = `<div><img height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width
         // Now add floats

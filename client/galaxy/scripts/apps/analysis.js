@@ -43,7 +43,6 @@ import Vue from "vue";
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-
     let Galaxy = setGalaxyInstance(GalaxyApp => {
         let galaxy = new GalaxyApp(options, bootstrapped);
         galaxy.debug("analysis app");

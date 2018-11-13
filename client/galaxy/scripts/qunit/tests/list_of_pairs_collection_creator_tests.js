@@ -9,16 +9,15 @@ import DATA from "qunit/test-data/paired-collection-creator.data";
 var PCC = PAIRED_COLLECTION_CREATOR.PairedCollectionCreator;
 
 QUnit.module("Galaxy client app tests", {
-    beforeEach: function () {
+    beforeEach: function() {
         testApp.create();
         $.fx.off = true;
     },
-    afterEach: function () {
+    afterEach: function() {
         testApp.destroy();
         $.fx.off = false;
     }
 });
-
 
 // Following test no longer passes - something is wrong setting up Galaxy.root - but we have multiple Selenium tests that cover verifying
 // actual such lists are created as a result of this form. The matching stuff later on in the
@@ -29,7 +28,7 @@ QUnit.module("Galaxy client app tests", {
 //     var pcc = new PCC({ datasets: DATA._1, historyId: "fakeHistoryId" });
 //     var server = sinon.fakeServer.create();
 //     var requestJSON;
-    
+
 //     server.respondWith("POST", "/api/histories/fakeHistoryId/contents/dataset_collections", function (request) {
 //         requestJSON = JSON.parse(request.requestBody);
 //         request.respond(
@@ -48,8 +47,7 @@ QUnit.module("Galaxy client app tests", {
 //     server.restore();
 // });
 
-
-QUnit.test("Creator base/empty construction/initializiation defaults", function (assert) {
+QUnit.test("Creator base/empty construction/initializiation defaults", function(assert) {
     var pcc = new PCC([]);
     assert.ok(pcc instanceof PCC);
     assert.deepEqual(pcc.filters, pcc.commonFilters[pcc.DEFAULT_FILTERS]);
@@ -58,7 +56,7 @@ QUnit.test("Creator base/empty construction/initializiation defaults", function 
     assert.equal(pcc.strategy, "autopairLCS");
 });
 
-QUnit.test("Creator construction/initializiation with datasets", function (assert) {
+QUnit.test("Creator construction/initializiation with datasets", function(assert) {
     var pcc = new PCC({
         datasets: DATA._1
     });
@@ -69,7 +67,7 @@ QUnit.test("Creator construction/initializiation with datasets", function (asser
     assert.deepEqual(pcc.initialList, DATA._1);
     // datasets 1 has no ids, so the pcc will create them
     assert.ok(
-        _.every(pcc.initialList, function (dataset) {
+        _.every(pcc.initialList, function(dataset) {
             return dataset.id;
         })
     );
@@ -78,7 +76,7 @@ QUnit.test("Creator construction/initializiation with datasets", function (asser
     assert.equal(pcc.paired.length, pcc.initialList.length / 2);
 });
 
-QUnit.test("Try easy autopairing with simple exact matching", function (assert) {
+QUnit.test("Try easy autopairing with simple exact matching", function(assert) {
     var pcc = new PCC({
         datasets: DATA._1,
         strategy: "simple",
@@ -88,7 +86,7 @@ QUnit.test("Try easy autopairing with simple exact matching", function (assert) 
     assert.equal(pcc.paired.length, pcc.initialList.length / 2);
 });
 
-QUnit.test("Try easy autopairing with LCS", function (assert) {
+QUnit.test("Try easy autopairing with LCS", function(assert) {
     var pcc = new PCC({
         datasets: DATA._1,
         strategy: "lcs",
@@ -98,7 +96,7 @@ QUnit.test("Try easy autopairing with LCS", function (assert) {
     assert.equal(pcc.paired.length, pcc.initialList.length / 2);
 });
 
-QUnit.test("Try easy autopairing with Levenshtein", function (assert) {
+QUnit.test("Try easy autopairing with Levenshtein", function(assert) {
     var pcc = new PCC({
         datasets: DATA._1,
         strategy: "levenshtein",

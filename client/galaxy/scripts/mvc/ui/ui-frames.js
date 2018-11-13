@@ -1,6 +1,6 @@
 /** Frame view */
 import _ from "underscore";
-import $ from "jquery"
+import $ from "jquery";
 import Backbone from "backbone";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
