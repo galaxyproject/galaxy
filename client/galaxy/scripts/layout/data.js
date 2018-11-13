@@ -30,7 +30,7 @@ export default class Data {
             history_id = history_panel.model.get("id");
         }
         $.uploadpost({
-            url: `${getAppRoot}api/tools`,
+            url: `${getAppRoot()}api/tools`,
             success: response => {
                 if (history_panel) {
                     history_panel.refreshContents();
