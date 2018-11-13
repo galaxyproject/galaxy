@@ -81,8 +81,13 @@ class LSF(BaseJobExec):
         return rval
 
     def parse_single_status(self, status, job_id):
-        if "is not found" in status:
+        if not status:
             # Job not found in LSF, most probably finished and forgotten.
+            # lsf outputs: Job <num> is not found -- but that is on the stderr
+            # Note: a very old failed job job will not be shown here either,
+            # which would be badly handled here. So this only works well when Galaxy
+            # is constantly monitoring the jobs. The logic here is that DONE jobs get forgotten
+            # faster than failed jobs.
             return job_states.OK
         return self._get_job_state(status)
 
