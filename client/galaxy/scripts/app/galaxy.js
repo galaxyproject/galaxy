@@ -6,8 +6,8 @@ import userModel from "mvc/user/user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
+import { getGalaxyInstance } from "app";
 
-// TODO: move into a singleton pattern and have dependents import Galaxy
 // ============================================================================
 /** Base galaxy client-side application.
  *      Iniitializes:
@@ -17,9 +17,9 @@ import localize from "utils/localization";
  *              galaxy.ini available from the configuration API)
  *          user        : the current user (as a mvc/user/user-model)
  */
-export function GalaxyApp(options, bootstrapped) {
-    var self = this;
-    return self._init(options || {}, bootstrapped || {});
+export function GalaxyApp(options = {}, bootstrapped = {}) {
+    // console.warn("GalaxyApp constructor", serverPath());
+    this._init(options, bootstrapped);
 }
 
 // add logging shortcuts for this object
@@ -39,7 +39,7 @@ try {
 }
 
 /** initalize options and sub-components */
-GalaxyApp.prototype._init = function __init(options, bootstrapped) {
+GalaxyApp.prototype._init = function(options, bootstrapped) {
     var self = this;
     _.extend(self, Backbone.Events);
     if (localDebugging) {
@@ -48,14 +48,20 @@ GalaxyApp.prototype._init = function __init(options, bootstrapped) {
     }
 
     self._processOptions(options);
+    self._initConfig(options.config || {});
+
+    // Patch if this galaxy instance is replacing an existing one
+    // _patchGalaxy depends on options.patchExisting
+    // TODO: rethink this behavior
+    let existingGalaxy = getGalaxyInstance();
+    if (existingGalaxy) {
+        self._patchGalaxy(existingGalaxy);
+    }
 
     // add root and url parameters
     self.root = options.root || "/";
     self.params = options.params || {};
     self.session_csrf_token = options.session_csrf_token || null;
-
-    self._initConfig(options.config || {});
-    self._patchGalaxy(window.Galaxy);
 
     self._initLogger(self.options.loggerOptions || {});
     // at this point, either logging or not and namespaces are enabled - chat it up
@@ -83,7 +89,7 @@ GalaxyApp.prototype._init = function __init(options, bootstrapped) {
 
 /** default options */
 GalaxyApp.prototype.defaultOptions = {
-    /** monkey patch attributes from existing window.Galaxy object? */
+    /** monkey patch attributes from existing Galaxy object? */
     patchExisting: true,
     /** root url of this app */
     root: "/",
@@ -115,7 +121,7 @@ GalaxyApp.prototype._initConfig = function _initConfig(config) {
     return self;
 };
 
-/** add an option from options if the key matches an option in defaultOptions */
+// TODO: Remove this behavior when we can, it is kind of non-intuitive
 GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
     var self = this;
     // in case req or plain script tag order has created a prev. version of the Galaxy obj...
@@ -291,9 +297,6 @@ GalaxyApp.prototype.toString = function toString() {
     var userEmail = this.user ? this.user.get("email") || "(anonymous)" : "uninitialized";
     return `GalaxyApp(${userEmail})`;
 };
-
-// This is not great.  Rework to be a singleton-style Galaxy app accessible/created by import
-// window.Galaxy = window.Galaxy || new GalaxyApp();
 
 // ============================================================================
 export default {

@@ -1,5 +1,7 @@
 import DataDialog from "components/DataDialog.vue";
 import Vue from "vue";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
 
 export default class Data {
     /**
@@ -21,14 +23,15 @@ export default class Data {
      * Creates a history dataset by submitting an upload request
      */
     create(options) {
+        let Galaxy = getGalaxyInstance();
         let history_panel = Galaxy.currHistoryPanel;
         let history_id = options.history_id;
         if (!history_id && history_panel) {
             history_id = history_panel.model.get("id");
         }
         $.uploadpost({
-            url: `${Galaxy.root}api/tools`,
-            success: (response) => {
+            url: `${getAppRoot}api/tools`,
+            success: response => {
                 if (history_panel) {
                     history_panel.refreshContents();
                 }

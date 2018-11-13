@@ -59,6 +59,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
@@ -156,7 +157,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/jobs_list?id=${decodeURIComponent(this.id)}`)
+            .get(`${getAppRoot()}data_manager/jobs_list?id=${decodeURIComponent(this.id)}`)
             .then(response => {
                 this.dataManager = response.data.dataManager;
                 this.jobs = response.data.jobs;

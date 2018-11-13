@@ -27,6 +27,7 @@
     </b-card>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import * as bibtexParse from "libs/bibtexParse";
 import { convertLaTeX } from "latex-to-unicode-converter";
@@ -65,7 +66,7 @@ export default {
     },
     created: function() {
         axios
-            .get(`${Galaxy.root}api/${this.source}/${this.id}/citations`)
+            .get(`${getAppRoot()}api/${this.source}/${this.id}/citations`)
             .then(response => {
                 this.content = "";
                 for (var rawCitation of response.data) {

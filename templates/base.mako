@@ -66,14 +66,6 @@
         'bundled/extended.bundled'
     )}
 
-    <script type="text/javascript">
-        ## global configuration object
-        ## TODO: remove
-        window.Galaxy = window.Galaxy || {};
-        window.Galaxy.root = '${h.url_for( "/" )}';
-        window.Galaxy.config = {};
-    </script>
-
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
         <script type="text/javascript">
             $(document).ready( function() {

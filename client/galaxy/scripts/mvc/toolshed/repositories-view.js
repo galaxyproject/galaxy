@@ -1,12 +1,10 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
-
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 import "libs/jquery/jquery-ui";
-
-/* global $ */
-/* global Galaxy */
 
 var ToolShedCategoryContentsView = Backbone.View.extend({
     el: "#center",
@@ -39,7 +37,7 @@ var ToolShedCategoryContentsView = Backbone.View.extend({
         $("#search_box").autocomplete({
             source: (request, response) => {
                 var shed_url = this.model.tool_shed.replace(/%2f/g, "/");
-                var base_url = `${Galaxy.root}api/tool_shed/search`;
+                var base_url = `${getAppRoot()}api/tool_shed/search`;
                 var params = {
                     term: request.term,
                     tool_shed_url: shed_url

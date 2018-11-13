@@ -440,7 +440,7 @@ var InputParameterTerminal = BaseInputTerminal.extend({
     },
     attachable: function(other) {
         return this.type == other.attributes.type;
-    },
+    }
 });
 
 var InputCollectionTerminal = BaseInputTerminal.extend({
@@ -578,8 +578,7 @@ var OutputCollectionTerminal = Terminal.extend({
     }
 });
 
-var OutputParameterTerminal = Terminal.extend({
-});
+var OutputParameterTerminal = Terminal.extend({});
 
 export default {
     InputTerminal: InputTerminal,

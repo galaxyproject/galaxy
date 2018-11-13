@@ -1,3 +1,7 @@
+import $ from "jquery";
+import Backbone from "backbone";
+// import { getAppRoot } from "onload/loadConfig";
+
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 
@@ -189,5 +193,5 @@ var OutputCalloutView = Backbone.View.extend({
 export default {
     DataInputView: DataInputView,
     DataOutputView: DataOutputView,
-    ParameterOutputView: ParameterOutputView,
+    ParameterOutputView: ParameterOutputView
 };

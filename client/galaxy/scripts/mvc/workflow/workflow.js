@@ -1,15 +1,15 @@
 /** Workflow view */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import * as mod_toastr from "libs/toastr";
-import * as Backbone from "backbone";
-import * as _ from "underscore";
 import TAGS from "mvc/tag";
 import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";
 import LoadingIndicator from "ui/loading-indicator";
-
-/* global $ */
-/* global Galaxy */
 
 /** View of the individual workflows */
 const WorkflowItemView = Backbone.View.extend({
@@ -46,7 +46,7 @@ const WorkflowItemView = Backbone.View.extend({
             { show_in_tool_panel: !this.model.get("show_in_tool_panel") },
             {
                 success: function() {
-                    window.location = `${Galaxy.root}workflows/list`;
+                    window.location = `${getAppRoot()}workflows/list`;
                 }
             }
         );
@@ -81,6 +81,7 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     copyWorkflow: function() {
+        let Galaxy = getGalaxyInstance();
         const oldName = this.model.get("name");
         $.getJSON(`${this.model.urlRoot}/${this.model.id}/download`, wfJson => {
             let newName = `Copy of ${oldName}`;
@@ -107,6 +108,7 @@ const WorkflowItemView = Backbone.View.extend({
     },
 
     _rowTemplate: function() {
+        let Galaxy = getGalaxyInstance();
         let show = this.model.get("show_in_tool_panel");
         let wfId = this.model.id;
         const checkboxHtml = `<input id="show-in-tool-panel" type="checkbox" class="show-in-tool-panel" ${
@@ -115,7 +117,7 @@ const WorkflowItemView = Backbone.View.extend({
         return `
             <td>
                 <div class="btn-group">
-                    <a href="${Galaxy.root}workflow/editor?id=${this.model.id}" class="btn btn-secondary">
+                    <a href="${getAppRoot()}workflow/editor?id=${this.model.id}" class="btn btn-secondary">
                         ${_.escape(this.model.get("name"))}
                     </a>
                     <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
@@ -148,31 +150,32 @@ const WorkflowItemView = Backbone.View.extend({
 
     /** Template for user actions for workflows */
     _templateActions: function() {
+        let Galaxy = getGalaxyInstance();
         if (this.model.get("owner") === Galaxy.user.attributes.username) {
             return `<div class="dropdown-menu">
-                        <a class="dropdown-item" href="${Galaxy.root}workflow/editor?id=${this.model.id}">Edit</a>
-                        <a class="dropdown-item" href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a>
-                        <a class="dropdown-item" href="${Galaxy.root}workflow/sharing?id=${this.model.id}">Share</a>
-                        <a class="dropdown-item" href="${Galaxy.root}api/workflows/${
+                        <a class="dropdown-item" href="${getAppRoot()}workflow/editor?id=${this.model.id}">Edit</a>
+                        <a class="dropdown-item" href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a>
+                        <a class="dropdown-item" href="${getAppRoot()}workflow/sharing?id=${this.model.id}">Share</a>
+                        <a class="dropdown-item" href="${getAppRoot()}api/workflows/${
                 this.model.id
             }/download?format=json-download">Download</a>
                         <a class="dropdown-item" id="copy-workflow" style="cursor: pointer;">Copy</a>
                         <a class="dropdown-item" id="rename-workflow" style="cursor: pointer;">Rename</a>
-                        <a class="dropdown-item" href="${Galaxy.root}workflow/display_by_id?id=${
+                        <a class="dropdown-item" href="${getAppRoot()}workflow/display_by_id?id=${
                 this.model.id
             }">View</a>
                         <a class="dropdown-item" id="delete-workflow" style="cursor: pointer;">Delete</a>
                     </div>`;
         } else {
             return `<ul class="dropdown-menu">
-                        <li><a href="${Galaxy.root}workflow/display_by_username_and_slug?username=${this.model.get(
+                        <li><a href="${getAppRoot()}workflow/display_by_username_and_slug?username=${this.model.get(
                 "owner"
             )}&slug=${this.model.get("slug")}">View</a></li>
-                        <li><a href="${Galaxy.root}workflows/run?id=${this.model.id}">Run</a></li>
+                        <li><a href="${getAppRoot()}workflows/run?id=${this.model.id}">Run</a></li>
                         <li><a id="copy-workflow" style="cursor: pointer;">Copy</a></li>
-                        <li><a class="link-confirm-shared-${this.model.id}" href="${
-                Galaxy.root
-            }workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
+                        <li><a class="link-confirm-shared-${
+                            this.model.id
+                        }" href="${getAppRoot()}workflow/sharing?unshare_me=True&id=${this.model.id}">Remove</a></li>
                     </ul>`;
         }
     }
@@ -329,11 +332,7 @@ const WorkflowListView = Backbone.View.extend({
 
     /** Template for actions buttons */
     _templateActionButtons: function() {
-        return `<ul class="manage-table-actions"><li><input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow..."></li><li><a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="${
-            Galaxy.root
-        }workflows/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${
-            Galaxy.root
-        }workflows/import"></a></li></ul>`;
+        return `<ul class="manage-table-actions"><li><input class="search-wf form-control" type="text" autocomplete="off" placeholder="search for workflow..."></li><li><a class="action-button fa fa-plus wf-action" id="new-workflow" title="Create new workflow" href="${getAppRoot()}workflows/create"></a></li><li><a class="action-button fa fa-upload wf-action" id="import-workflow" title="Upload or import workflow" href="${getAppRoot()}workflows/import"></a></li></ul>`;
     },
 
     /** Template for workflow table */

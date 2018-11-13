@@ -288,7 +288,7 @@ var OutputParameterTerminalView = BaseOutputTerminalView.extend({
         var collection_type_source = output.collection_type_source;
         var terminal = new Terminals.OutputCollectionTerminal({
             element: this.el,
-            type: output.type,
+            type: output.type
         });
         return terminal;
     }

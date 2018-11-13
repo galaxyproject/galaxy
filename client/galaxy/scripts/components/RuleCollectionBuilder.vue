@@ -412,6 +412,7 @@
     </state-div>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
@@ -1401,7 +1402,7 @@ export default {
             };
             const doJobCheck = () => {
                 axios
-                    .get(`${Galaxy.root}api/jobs/${jobId}`)
+                    .get(`${getAppRoot()}api/jobs/${jobId}`)
                     .then(handleJobShow)
                     .catch(this.renderFetchError);
             };
@@ -1421,7 +1422,7 @@ export default {
                 }
             };
             axios
-                .get(`${Galaxy.root}api/jobs/${jobId}?full=True`)
+                .get(`${getAppRoot()}api/jobs/${jobId}?full=True`)
                 .then(handleJobShow)
                 .catch(this.renderFetchError);
         },
@@ -1509,7 +1510,7 @@ export default {
 
                 if (this.state !== "error") {
                     axios
-                        .post(`${Galaxy.root}api/tools/fetch`, {
+                        .post(`${getAppRoot()}api/tools/fetch`, {
                             history_id: historyId,
                             targets: targets,
                             auto_decompress: true
