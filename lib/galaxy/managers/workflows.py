@@ -224,7 +224,7 @@ class WorkflowsManager:
         workflow_invocation_step = self.get_invocation_step(trans, decoded_workflow_invocation_step_id)
         workflow_invocation = workflow_invocation_step.workflow_invocation
         if not workflow_invocation.active:
-            raise exceptions.RequestParameterInvalidException("Attempting to modify the state of an completed workflow invocation.")
+            raise exceptions.RequestParameterInvalidException("Attempting to modify the state of a completed workflow invocation.")
 
         step = workflow_invocation_step.workflow_step
         module = module_factory.from_workflow_step(trans, step)
@@ -346,10 +346,14 @@ class WorkflowContentsManager(UsesAnnotations):
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         # If there's a source, put it in the workflow name.
+        if 'name' not in data:
+            raise Exception(f"Invalid workflow format detected [{data}]")
+
+        workflow_input_name = data['name']
         if source:
-            name = "{} (imported from {})".format(data['name'], source)
+            name = f"{workflow_input_name} (imported from {source})"
         else:
-            name = data['name']
+            name = workflow_input_name
         workflow, missing_tool_tups = self._workflow_from_raw_description(
             trans,
             raw_workflow_description,
