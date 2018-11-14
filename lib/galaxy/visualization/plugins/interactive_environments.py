@@ -17,7 +17,6 @@ from six.moves import configparser, shlex_quote
 
 from galaxy import model, web
 from galaxy.containers import ContainerPort
-from galaxy.containers.docker_model import DockerVolume
 from galaxy.managers import api_keys
 from galaxy.util import string_as_bool_or_none
 from galaxy.util.bunch import Bunch
@@ -50,7 +49,6 @@ class InteractiveEnvironmentRequest(object):
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
         self.attr.app_root = self.attr.root + "static/plugins/interactive_environments/" + self.attr.viz_id + "/static/"
-        self.attr.import_volume = True
 
         plugin_path = os.path.abspath(plugin.path)
 
@@ -251,15 +249,6 @@ class InteractiveEnvironmentRequest(object):
             .replace('${PROXY_PREFIX}', str(self.attr.proxy_prefix.replace('/', '%2F')))
         return url
 
-    def volume(self, container_path, host_path, **kwds):
-        if self.attr.container_interface is None:
-            return DockerVolume(container_path, host_path, **kwds)
-        else:
-            return self.attr.container_interface.volume_class(
-                container_path,
-                host_path=host_path,
-                mode=kwds.get('mode', 'ro'))
-
     def _get_env_for_run(self, env_override=None):
         if env_override is None:
             env_override = {}
@@ -270,11 +259,6 @@ class InteractiveEnvironmentRequest(object):
                 key = key.upper()
             conf[key] = item
         return conf
-
-    def _get_import_volume_for_run(self):
-        if self.use_volumes and self.attr.import_volume:
-            return '{temp_dir}:/import/'.format(temp_dir=self.temp_dir)
-        return ''
 
     def _get_name_for_run(self):
         return CONTAINER_NAME_PREFIX + uuid.uuid4().hex
@@ -287,7 +271,7 @@ class InteractiveEnvironmentRequest(object):
             base.append(subcmd)
         return base
 
-    def docker_cmd(self, image, env_override=None, volumes=None):
+    def docker_cmd(self, image, env_override=None):
         """
             Generate and return the docker command to execute
         """
@@ -298,11 +282,20 @@ class InteractiveEnvironmentRequest(object):
         # --name should really not be set, but we'll try to honor it anyway
         name = ['--name=%s' % self._get_name_for_run()] if '--name' not in command_inject else []
         env = self._get_env_for_run(env_override)
-        import_volume_def = self._get_import_volume_for_run()
-        if volumes is None:
-            volumes = []
-        if import_volume_def:
-            volumes.insert(0, import_volume_def)
+
+        galaxy_volume_options = [
+            ('type', 'volume'),
+            ('destination': '/galaxy'),
+            ('volume-driver', 'galaxy'),
+            ('volume-opt', 'url=%s' % env['GALAXY_URL']),
+            ('volume-opt', 'apikey=%s' % env['API_KEY']),
+        ]
+
+        if env.get('HUMAN_IDS', False):
+            galaxy_volume_options.append((
+                'volume-opt',
+                'human_readable=true'
+            ))
 
         return (
             self.base_docker_cmd('run') +
@@ -310,18 +303,9 @@ class InteractiveEnvironmentRequest(object):
             name +
             _flag_opts('-e', ['='.join(map(str, t)) for t in env.items()]) +
             ['-d', '-P'] +
-            _flag_opts('-v', map(str, volumes)) +
+            ['--mount', ','.join('='.join(t) for t in galaxy_volume_options)],
             [image]
         )
-
-    @property
-    def use_volumes(self):
-        if self.attr.container_interface and not self.attr.container_interface.supports_volumes:
-            return False
-        elif self.attr.viz_config.has_option("docker", "use_volumes"):
-            return string_as_bool_or_none(self.attr.viz_config.get("docker", "use_volumes"))
-        else:
-            return True
 
     def _get_command_inject_env(self):
         """For the containers interface, parse any -e/--env flags from `command_inject`.
@@ -341,18 +325,12 @@ class InteractiveEnvironmentRequest(object):
                 envsets.append(item[5:])
         return dict(map(lambda s: string.split(s, '=', 1), envsets))
 
-    def container_run_args(self, image, env_override=None, volumes=None):
-        if volumes is None:
-            volumes = []
-        import_volume_def = self._get_import_volume_for_run()
-        if import_volume_def:
-            volumes.append(import_volume_def)
+    def container_run_args(self, image, env_override=None):
         env = self._get_command_inject_env()
         env.update(self._get_env_for_run(env_override))
         args = {
             'image': image,
             'environment': env,
-            'volumes': volumes,
             'name': self._get_name_for_run(),
             'detach': True,
             'publish_all_ports': True,
@@ -362,22 +340,6 @@ class InteractiveEnvironmentRequest(object):
             # yet we can query the registry for it
             args['publish_port_random'] = self.attr.docker_connect_port
         return args
-
-    def _ids_to_volumes(self, ids):
-        if len(ids.strip()) == 0:
-            return []
-
-        # They come as a comma separated list
-        ids = ids.split(',')
-
-        # Next we need to turn these into volumes
-        volumes = []
-        for id in ids:
-            decoded_id = self.trans.security.decode_id(id)
-            dataset = self.trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_id)
-            # TODO: do we need to check if the user has access?
-            volumes.append(self.volume('/import/[{0}] {1}.{2}'.format(dataset.id, dataset.name, dataset.ext), dataset.get_file_name()))
-        return volumes
 
     def _find_port_mapping(self, port_mappings):
         port_mapping = None
@@ -397,10 +359,10 @@ class InteractiveEnvironmentRequest(object):
             port_mapping = port_mappings[0]
         return port_mapping
 
-    def _launch_legacy(self, image, env_override, volumes):
+    def _launch_legacy(self, image, env_override):
         """Legacy launch method for use when the container interface is not enabled
         """
-        raw_cmd = self.docker_cmd(image, env_override=env_override, volumes=volumes)
+        raw_cmd = self.docker_cmd(image, env_override=env_override)
         redacted_command = raw_cmd
         if self.attr.redact_username_in_logs:
             def make_safe(param):
@@ -450,10 +412,10 @@ class InteractiveEnvironmentRequest(object):
             # go through the proxy we ship.
             # self.attr.PORT = self.attr.proxy_request[ 'proxied_port' ]
 
-    def _launch_container_interface(self, image, env_override, volumes):
+    def _launch_container_interface(self, image, env_override):
         """Launch method for use when the container interface is enabled
         """
-        run_args = self.container_run_args(image, env_override, volumes)
+        run_args = self.container_run_args(image, env_override)
         container = self.attr.container_interface.run_in_container(None, **run_args)
         container_port = container.map_port(self.attr.docker_connect_port)
         if not container_port:
@@ -475,7 +437,7 @@ class InteractiveEnvironmentRequest(object):
         )
         self.attr.proxy_url = self.attr.proxy_request['proxy_url']
 
-    def launch(self, image=None, additional_ids=None, env_override=None, volumes=None):
+    def launch(self, image=None, env_override=None):
         """Launch a docker image.
 
         :type image: str
@@ -483,20 +445,10 @@ class InteractiveEnvironmentRequest(object):
                       is used, which is the first image listed in the
                       allowed_images.yml{,.sample} file.
 
-        :type additional_ids: str
-        :param additional_ids: comma separated list of encoded HDA IDs. These
-                               are transformed into Volumes and added to that
-                               argument
-
         :type env_override: dict
         :param env_override: dictionary of environment variables to add.
 
-        :type volumes: list of :class:`galaxy.containers.docker_model.DockerVolume`s
-        :param volumes: dictionary of docker volume mounts
-
         """
-        if volumes is None:
-            volumes = []
         if image is None:
             image = self.default_image
 
@@ -506,13 +458,10 @@ class InteractiveEnvironmentRequest(object):
             raise Exception("Attempting to launch disallowed image! %s not in list of allowed images [%s]"
                             % (image, ', '.join(self.allowed_images)))
 
-        if additional_ids is not None:
-            volumes += self._ids_to_volumes(additional_ids)
-
         if self.attr.container_interface is None:
-            self._launch_legacy(image, env_override, volumes)
+            self._launch_legacy(image, env_override)
         else:
-            self._launch_container_interface(image, env_override, volumes)
+            self._launch_container_interface(image, env_override)
 
     def inspect_container(self, container_id):
         """Runs docker inspect on a container and returns json response as python dictionary inspect_data.
