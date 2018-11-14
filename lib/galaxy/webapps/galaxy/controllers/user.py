@@ -302,7 +302,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 if success:
                     # The handle_user_login() method has a call to the history_set_default_permissions() method
                     # (needed when logging in with a history), user needs to have default permissions set before logging in
-                    if not trans.user_is_admin():
+                    if not trans.user_is_admin:
                         trans.handle_user_login(user)
                         trans.log_event("User (auto) created a new account")
                         trans.log_event("User logged in")
@@ -471,10 +471,12 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         subscribe_checked = CheckboxField.is_checked(subscribe)
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
-        is_admin = trans.user_is_admin()
+        print trans
+        print "DONE"
+        is_admin = trans.user_is_admin
         success = False
         show_user_prepopulate_form = False
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
@@ -524,7 +526,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         username = util.restore_text(username)
         status = None
         message = None
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         user = self.user_manager.create(email=email, username=username, password=password)
         if subscribe_checked:
             # subscribe user to email list
