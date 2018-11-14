@@ -285,7 +285,7 @@ class InteractiveEnvironmentRequest(object):
 
         galaxy_volume_options = [
             ('type', 'volume'),
-            ('destination': '/galaxy'),
+            ('destination', '/galaxy'),
             ('volume-driver', 'galaxy'),
             ('volume-opt', 'url=%s' % env['GALAXY_URL']),
             ('volume-opt', 'apikey=%s' % env['API_KEY']),
