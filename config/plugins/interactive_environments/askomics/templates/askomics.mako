@@ -17,13 +17,13 @@ else:
 
 # Launch the IE. This builds and runs the docker command in the background.
 ie_request.launch(
-    additional_ids=additional_ids if ie_request.use_volumes else None,
     env_override={
         'ASKO_load_url': 'http://localhost:6543',
         'ASKOMICS_API_KEY': askomics_api_key,
         'ASKO_files_dir': '/tmp/askomics-ie',
         'VIRT_Parameters_NumberOfBuffers': 10000,  # see https://github.com/xgaia/askomics-docker-compose/tree/master/virtuoso#virtuoso for this values
-        'VIRT_Parameters_MaxDirtyBuffers': 6000
+        'VIRT_Parameters_MaxDirtyBuffers': 6000,
+        'ADDITIONAL_IDS': additional_ids,
     }
 )
 

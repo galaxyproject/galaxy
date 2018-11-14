@@ -24,7 +24,6 @@ DATASET_HID = hda.hid
 # Add all environment variables collected from Galaxy's IE infrastructure
 ie_request.launch(
     image=trans.request.params.get('image_tag', None),
-    additional_ids=additional_ids if ie_request.use_volumes else None,
     env_override={
         'notebook_username': USERNAME,
         'notebook_password': PASSWORD,

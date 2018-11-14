@@ -8,7 +8,6 @@ import hashlib
 # Sets ID and sets up a lot of other variables
 ie_request.load_deploy_config()
 ie_request.attr.docker_port = 8888
-ie_request.attr.import_volume = False
 
 if ie_request.attr.PASSWORD_AUTH:
     m = hashlib.sha1()
@@ -32,7 +31,6 @@ else:
 # Add all environment variables collected from Galaxy's IE infrastructure
 ie_request.launch(
     image=trans.request.params.get('image_tag', None),
-    additional_ids=additional_ids if ie_request.use_volumes else None,
     env_override={
         'notebook_password': PASSWORD,
         'dataset_hid': DATASET_HID,
