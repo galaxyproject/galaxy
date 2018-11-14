@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
@@ -75,7 +76,7 @@ export default {
         },
         reload() {
             axios
-                .get(`${Galaxy.root}data_manager/reload_tool_data_tables?table_name=${this.dataTable["name"]}`)
+                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTable["name"]}`)
                 .then(response => {
                     if (response.data.dataTable) {
                         this.dataTable = response.data.dataTable;
@@ -90,7 +91,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/tool_data_table_info?table_name=${this.name}`)
+            .get(`${getAppRoot()}data_manager/tool_data_table_info?table_name=${this.name}`)
             .then(response => {
                 this.dataTable = response.data.dataTable;
                 this.viewOnly = response.data.viewOnly;

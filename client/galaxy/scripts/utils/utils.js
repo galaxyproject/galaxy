@@ -2,11 +2,12 @@
  * Galaxy utilities comprises small functions, which at this point
  * do not require their own classes/files
  */
-import _l from "utils/localization";
-import * as _ from "underscore";
 
-/* global $ */
-/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
 
 /** Builds a basic iframe */
 export function iframe(src) {
@@ -228,7 +229,7 @@ export function cssGetAttribute(classname, name) {
  */
 export function cssLoadFile(url) {
     if (!$(`link[href^="${url}"]`).length) {
-        $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo("head");
+        $(`<link href="${getAppRoot()}${url}" rel="stylesheet">`).appendTo("head");
     }
 }
 
@@ -340,12 +341,11 @@ export function getQueryString(key) {
 }
 
 export function setWindowTitle(title) {
+    let Galaxy = getGalaxyInstance();
     if (title) {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""} | ${_l(
-            title
-        )}`;
+        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
     } else {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""}`;
+        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
     }
 }
 

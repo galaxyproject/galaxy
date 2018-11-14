@@ -63,12 +63,6 @@
     </script>
     %endif
 
-    <script type="text/javascript">
-        // this is needed *before* the app code is loaded - many MVC access Galaxy.root for their url
-        // TODO: change this by using a common Backbone.Model base class and url fn
-        window.Galaxy = { root: '${ options[ "root" ] }' };
-    </script>
-
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
     <script type="text/javascript">
         $(document).ready( function() {

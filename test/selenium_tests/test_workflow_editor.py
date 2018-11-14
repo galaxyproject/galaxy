@@ -54,10 +54,7 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor = self.components.workflow_editor
 
         name = self.workflow_create_new()
-        editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
-        editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
-        editor.tool_menu_item_link(section_name="inputs", item_name="data_input").wait_for_and_click()
+        self.workflow_editor_add_input(item_name="data_input")
         self.screenshot("workflow_editor_data_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
@@ -85,16 +82,13 @@ class WorkflowEditorTestCase(SeleniumTestCase):
         editor = self.components.workflow_editor
 
         name = self.workflow_create_new()
-        editor.canvas_body.wait_for_visible()
-        editor.tool_menu.wait_for_visible()
-        editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
-        editor.tool_menu_item_link(section_name="inputs", item_name="data_collection_input").wait_for_and_click()
-        self.screenshot("workflow_editor_data_input_collection_new")
+        self.workflow_editor_add_input(item_name="data_collection_input")
+        self.screenshot("workflow_editor_data_collection_input_new")
         editor.label_input.wait_for_and_send_keys("input1")
         editor.annotation_input.wait_for_and_send_keys("my cool annotation")
         editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.screenshot("workflow_editor_data_input_collection_filled_in")
+        self.screenshot("workflow_editor_data_collection_input_filled_in")
         self.workflow_editor_save_and_close()
         self.workflow_index_open_with_name(name)
         data_input_node = editor.node._(label="input1")
@@ -107,7 +101,82 @@ class WorkflowEditorTestCase(SeleniumTestCase):
 
         data_input_node.destroy.wait_for_and_click()
         data_input_node.wait_for_absent()
-        self.screenshot("workflow_editor_data_input_deleted")
+        self.screenshot("workflow_editor_data_collection_input_deleted")
+
+    @selenium_test
+    def test_integer_input(self):
+        editor = self.components.workflow_editor
+
+        name = self.workflow_create_new()
+        self.workflow_editor_add_input(item_name="parameter_input")
+        self.screenshot("workflow_editor_parameter_input_new")
+
+        editor.label_input.wait_for_and_send_keys("input1")
+        editor.annotation_input.wait_for_and_send_keys("my cool annotation")
+        editor.label_input.wait_for_and_click()  # Seems to help force the save of whole annotation.
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.screenshot("workflow_editor_parameter_input_filled_in")
+        self.workflow_editor_save_and_close()
+        self.workflow_index_open_with_name(name)
+        data_input_node = editor.node._(label="input1")
+        data_input_node.title.wait_for_and_click()
+
+        label = editor.label_input.wait_for_value()
+        assert label == "input1", label
+        # should work but Galaxy is broken.
+        # assert editor.annotation_input.wait_for_value() == "my cool annotation"
+
+        data_input_node.destroy.wait_for_and_click()
+        data_input_node.wait_for_absent()
+        self.screenshot("workflow_editor_parameter_input_deleted")
+
+    @selenium_test
+    def test_non_data_connections(self):
+        self.open_in_workflow_editor("""
+class: GalaxyWorkflow
+inputs:
+  input_int: integer
+steps:
+  simple_constructs:
+    tool_id: simple_constructs
+    label: tool_exec
+    in:
+      inttest: input_int
+""")
+        self.screenshot("workflow_editor_parameter_connection_simple")
+        self.assert_connected("input_int#output", "simple_constructs#inttest")
+
+        editor = self.components.workflow_editor
+
+        tool_node = editor.node._(label="simple_constructs")
+        tool_input = tool_node.input_terminal(name="inttest")
+        tool_input.wait_for_and_click()
+
+        editor.connector_destroy_callout.wait_for_and_click()
+        self.assert_not_connected("input_int#output", "simple_constructs#inttest")
+        self.screenshot("workflow_editor_parameter_connection_destroyed")
+
+        # When connected, cannot turn it into a RuntimeValue..
+        collapse_input = editor.collapse_icon(name="inttest")
+        collapse_input.wait_for_absent_or_hidden()
+
+        # If it is disconnected, then can specify as RuntimeValue
+        connect_icon = editor.connect_icon(name="inttest")
+        connect_icon.wait_for_visible()
+        connect_icon.wait_for_and_click()
+        collapse_input.wait_for_visible()
+
+        # Also the connector should disappear
+        tool_input.wait_for_absent_or_hidden()
+
+        # Now make it connected again and watch the requestss
+        connect_icon.wait_for_and_click()
+
+        tool_input.wait_for_visible()
+        collapse_input.wait_for_absent_or_hidden()
+
+        self.workflow_editor_connect("input_int#output", "simple_constructs#inttest", screenshot_partial="workflow_editor_parameter_connection_dragging")
+        self.assert_connected("input_int#output", "simple_constructs#inttest")
 
     @selenium_test
     def test_existing_connections(self):
@@ -328,6 +397,16 @@ steps:
         sink_id = input_element.get_attribute("id")
 
         return source_id, sink_id
+
+    def workflow_editor_add_input(self, item_name="data_input"):
+        editor = self.components.workflow_editor
+
+        # Make sure we're on the the workflow editor and not clicking the main tool panel.
+        editor.canvas_body.wait_for_visible()
+
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="inputs").wait_for_and_click()
+        editor.tool_menu_item_link(section_name="inputs", item_name=item_name).wait_for_and_click()
 
     def workflow_editor_destroy_connection(self, sink):
         editor = self.components.workflow_editor

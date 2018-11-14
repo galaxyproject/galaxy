@@ -1,6 +1,9 @@
-/* global Backbone, $, _, Galaxy */
-
 /** Masthead Collection **/
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
@@ -16,6 +19,8 @@ var Collection = Backbone.Collection.extend({
     fetch: function(options) {
         options = options || {};
         this.reset();
+
+        let Galaxy = getGalaxyInstance();
 
         //
         // Chat server tab
@@ -124,6 +129,7 @@ var Collection = Backbone.Collection.extend({
                             };
 
                             // Galaxy.page is undefined for data libraries, workflows pages
+                            let Galaxy = getGalaxyInstance();
                             if (Galaxy.page) {
                                 Galaxy.page.masthead.collection.add(obj);
                             } else if (Galaxy.masthead) {
@@ -406,10 +412,15 @@ var Tab = Backbone.View.extend({
                 if (options.onclick) {
                     options.onclick();
                 } else {
+                    let Galaxy = getGalaxyInstance();
                     if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
                         Galaxy.page.router.push(options.url);
                     } else {
-                        Galaxy.frame.add(options);
+                        try {
+                            Galaxy.frame.add(options);
+                        } catch (err) {
+                            console.warn("Missing frame element on galaxy instance", err);
+                        }
                     }
                 }
             });
@@ -419,7 +430,7 @@ var Tab = Backbone.View.extend({
         return $("<div/>")
             .append(
                 $("<a/>")
-                    .attr("href", Galaxy.root + url)
+                    .attr("href", getAppRoot() + url)
                     .html(label)
             )
             .html();
@@ -440,6 +451,7 @@ var Tab = Backbone.View.extend({
                 if (model.get("onclick")) {
                     model.get("onclick")();
                 } else {
+                    let Galaxy = getGalaxyInstance();
                     if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
                         Galaxy.page.router.push(model.attributes.url);
                     } else {
@@ -471,7 +483,7 @@ var Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? Galaxy.root + url : url;
+        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
     },
 
     /** body tempate */

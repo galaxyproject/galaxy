@@ -3,7 +3,7 @@
 // tool form templates
 export default {
     openFileBrowser: function(options) {
-        var GS_UI_URL = window.Galaxy.config.genomespace_ui_url;
+        var GS_UI_URL = Galaxy.config.genomespace_ui_url;
         var GS_UPLOAD_URL = `${GS_UI_URL}upload/loadUrlToGenomespace.html?getLocation=true`;
 
         var newWin = window.open(GS_UPLOAD_URL, "GenomeSpace File Browser", "height=360px,width=600px");

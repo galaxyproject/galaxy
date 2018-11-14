@@ -30,11 +30,12 @@ from galaxy.tools.parameters import (
 )
 from galaxy.tools.parameters.basic import (
     BooleanToolParameter,
+    ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
     is_runtime_value,
     parameter_types,
-    RuntimeValue,
+    runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
     workflow_building_modes
@@ -151,12 +152,18 @@ class WorkflowModule(object):
         """ This returns inputs displayed in the workflow editor """
         return {}
 
+    def get_all_inputs(self, data_only=False, connectable_only=False):
+        return []
+
     def get_data_inputs(self):
         """ Get configure time data input descriptions. """
+        return self.get_all_inputs(data_only=True)
+
+    def get_all_outputs(self, data_only=False):
         return []
 
     def get_data_outputs(self):
-        return []
+        return self.get_all_outputs(data_only=True)
 
     def get_post_job_actions(self, incoming):
         return []
@@ -172,7 +179,7 @@ class WorkflowModule(object):
         """ Replace connected inputs with placeholder/dummy values. """
         pass
 
-    def get_config_form(self):
+    def get_config_form(self, step=None):
         """ Serializes input parameters of a module into input dictionaries. """
         return {
             'title' : self.name,
@@ -361,7 +368,7 @@ class SubWorkflowModule(WorkflowModule):
             return self.subworkflow.name
         return self.name
 
-    def get_all_inputs(self, data_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False):
         """ Get configure time data input descriptions. """
         # Filter subworkflow steps and get inputs
         step_to_input_type = {
@@ -389,10 +396,7 @@ class SubWorkflowModule(WorkflowModule):
                 inputs.append(input)
         return inputs
 
-    def get_data_inputs(self):
-        return self.get_all_inputs(data_only=True)
-
-    def get_data_outputs(self):
+    def get_all_outputs(self, data_only=False):
         outputs = []
         if hasattr(self.subworkflow, 'workflow_outputs'):
             from galaxy.managers.workflows import WorkflowContentsManager
@@ -403,7 +407,7 @@ class SubWorkflowModule(WorkflowModule):
                                                                                   tooltip=False)
             for order_index in sorted(subworkflow_dict['steps']):
                 step = subworkflow_dict['steps'][order_index]
-                data_outputs = subworkflow_dict['steps'][order_index]['data_outputs']
+                data_outputs = subworkflow_dict['steps'][order_index]['outputs']
                 for workflow_output in step['workflow_outputs']:
                     label = workflow_output['label']
                     if not label:
@@ -498,7 +502,7 @@ class InputModule(WorkflowModule):
         state.inputs = dict(input=None)
         return state
 
-    def get_data_inputs(self):
+    def get_all_inputs(self, data_only=False, connectable_only=False):
         return []
 
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
@@ -538,7 +542,7 @@ class InputDataModule(InputModule):
     type = "data_input"
     name = "Input dataset"
 
-    def get_data_outputs(self):
+    def get_all_outputs(self, data_only=False):
         return [dict(name='output', extensions=['input'])]
 
     def get_filter_set(self, connections=None):
@@ -579,7 +583,7 @@ class InputDataCollectionModule(InputModule):
         input_element = Element("param", name="input", label=self.label, type="data_collection", collection_type=collection_type)
         return dict(input=DataCollectionToolParameter(None, input_element, self.trans))
 
-    def get_data_outputs(self):
+    def get_all_outputs(self, data_only=False):
         return [
             dict(
                 name='output',
@@ -604,14 +608,20 @@ class InputParameterModule(WorkflowModule):
         optional = self.state.inputs.get("optional", self.default_optional)
         input_parameter_type = SelectToolParameter(None, XML(
             '''
-            <param name="parameter_type" label="Parameter type" type="select" value="%s">
+            <param name="parameter_type" label="Parameter type" type="select">
                 <option value="text">Text</option>
                 <option value="integer">Integer</option>
                 <option value="float">Float</option>
                 <option value="boolean">Boolean (True or False)</option>
                 <option value="color">Color</option>
             </param>
-            ''' % parameter_type))
+            '''))
+        for i, option in enumerate(input_parameter_type.static_options):
+            option = list(option)
+            if option[1] == parameter_type:
+                # item 0 is option description, item 1 is value, item 2 is "selected"
+                option[2] = True
+                input_parameter_type.static_options[i] = tuple(option)
         return odict([("parameter_type", input_parameter_type),
                       ("optional", BooleanToolParameter(None, Element("param", name="optional", label="Optional", type="boolean", value=optional)))])
 
@@ -635,8 +645,16 @@ class InputParameterModule(WorkflowModule):
         state.inputs = dict(input=None)
         return state
 
-    def get_data_inputs(self):
-        return []
+    def get_all_outputs(self, data_only=False):
+        if data_only:
+            return []
+
+        return [dict(
+            name='output',
+            label=self.label,
+            type=self.state.inputs.get('parameter_type', self.parameter_type),
+            parameter=True,
+        )]
 
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         step = invocation_step.workflow_step
@@ -651,7 +669,7 @@ class PauseModule(WorkflowModule):
     type = "pause"
     name = "Pause for dataset review"
 
-    def get_data_inputs(self):
+    def get_all_inputs(self, data_only=False, connectable_only=False):
         input = dict(
             name="input",
             label="Dataset for Review",
@@ -659,9 +677,9 @@ class PauseModule(WorkflowModule):
             extensions='input',
             input_type="dataset",
         )
-        return [input]
+        return [input] if not data_only else []
 
-    def get_data_outputs(self):
+    def get_all_outputs(self, data_only=False):
         return [dict(name="output", label="Reviewed Dataset", extensions=['input'])]
 
     def get_runtime_state(self):
@@ -803,14 +821,24 @@ class ToolModule(WorkflowModule):
     def get_inputs(self):
         return self.tool.inputs if self.tool else {}
 
-    def get_all_inputs(self, data_only=False):
+    def get_all_inputs(self, data_only=False, connectable_only=False):
+        if data_only and connectable_only:
+            raise Exception("Must specify at most one of data_only and connectable_only as True.")
+
         inputs = []
         if self.tool:
 
-            def callback(input, prefixed_name, prefixed_label, **kwargs):
+            def callback(input, prefixed_name, prefixed_label, value=None, **kwargs):
                 visible = not hasattr(input, 'hidden') or not input.hidden
+                input_type = input.type
                 is_data = isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter)
-                skip = data_only and (not visible or not is_data)
+                is_connectable = is_runtime_value(value) and runtime_to_json(value)["__class__"] == "ConnectedValue"
+                if data_only:
+                    skip = not visible or not is_data
+                elif connectable_only:
+                    skip = not visible or not (is_data or is_connectable)
+                else:
+                    skip = not visible
                 if not skip:
                     if isinstance(input, DataToolParameter):
                         inputs.append(dict(
@@ -835,16 +863,14 @@ class ToolModule(WorkflowModule):
                                 label=prefixed_label,
                                 multiple=False,
                                 input_type="parameter",
+                                type=input_type,
                             )
                         )
 
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         return inputs
 
-    def get_data_inputs(self):
-        return self.get_all_inputs(data_only=True)
-
-    def get_data_outputs(self):
+    def get_all_outputs(self, data_only=False):
         data_outputs = []
         if self.tool:
             for name, tool_output in self.tool.outputs.items():
@@ -890,9 +916,9 @@ class ToolModule(WorkflowModule):
                 )
         return data_outputs
 
-    def get_config_form(self):
+    def get_config_form(self, step=None):
         if self.tool:
-            self.add_dummy_datasets()
+            self.add_dummy_datasets(connections=step and step.input_connections)
             incoming = {}
             params_to_incoming(incoming, self.tool.inputs, self.state.inputs, self.trans.app)
             return self.tool.to_json(self.trans, incoming, workflow_building_mode=True)
@@ -911,22 +937,23 @@ class ToolModule(WorkflowModule):
 
             # Any input needs to have value RuntimeValue or obtain the value from connected steps
             def callback(input, prefixed_name, context, **kwargs):
-                if isinstance(input, DataToolParameter) or isinstance(input, DataCollectionToolParameter):
-                    if connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
-                        if prefixed_name in input_connections_by_name:
-                            connection = input_connections_by_name[prefixed_name]
-                            output_step = next(output_step for output_step in steps if connection.output_step_id == output_step.id)
-                            if output_step.type.startswith('data'):
-                                output_inputs = output_step.module.get_runtime_inputs(connections=connections)
-                                output_value = output_inputs['input'].get_initial_value(self.trans, context)
-                                if isinstance(input, DataToolParameter) and isinstance(output_value, self.trans.app.model.HistoryDatasetCollectionAssociation):
-                                    return output_value.to_hda_representative()
-                                return output_value
-                            return RuntimeValue()
-                        else:
-                            return input.get_initial_value(self.trans, context)
-                    elif connections is None or prefixed_name in input_connections_by_name:
-                        return RuntimeValue()
+                input_type = input.type
+                is_data = input_type in ['data', 'data_collection']
+                if is_data and connections is not None and steps is not None and self.trans.workflow_building_mode is workflow_building_modes.USE_HISTORY:
+                    if prefixed_name in input_connections_by_name:
+                        connection = input_connections_by_name[prefixed_name]
+                        output_step = next(output_step for output_step in steps if connection.output_step_id == output_step.id)
+                        if output_step.type.startswith('data'):
+                            output_inputs = output_step.module.get_runtime_inputs(connections=connections)
+                            output_value = output_inputs['input'].get_initial_value(self.trans, context)
+                            if input_type == "data" and isinstance(output_value, self.trans.app.model.HistoryDatasetCollectionAssociation):
+                                return output_value.to_hda_representative()
+                            return output_value
+                        return ConnectedValue()
+                    else:
+                        return input.get_initial_value(self.trans, context)
+                elif (is_data and connections is None) or prefixed_name in input_connections_by_name:
+                    return ConnectedValue()
             visit_input_values(self.tool.inputs, self.state.inputs, callback)
         else:
             raise ToolMissingException("Tool %s missing. Cannot add dummy datasets." % self.tool_id)
@@ -1300,6 +1327,11 @@ def load_module_sections(trans):
                 "title": "Input Dataset Collection",
                 "description": "Input dataset collection"
             },
+            {
+                "name": "parameter_input",
+                "title": "Parameter Input",
+                "description": "Simple inputs used for workflow logic"
+            },
         ],
     }
 
@@ -1312,12 +1344,7 @@ def load_module_sections(trans):
                     "name": "pause",
                     "title": "Pause Workflow for Dataset Review",
                     "description": "Pause for Review"
-                },
-                {
-                    "name": "parameter_input",
-                    "title": "Parameter Input",
-                    "description": "Simple inputs used for workflow logic"
-                },
+                }
             ],
         }
 

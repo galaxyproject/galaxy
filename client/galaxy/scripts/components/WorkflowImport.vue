@@ -21,6 +21,8 @@
     </b-form>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -29,6 +31,7 @@ Vue.use(BootstrapVue);
 
 export default {
     data() {
+        let Galaxy = getGalaxyInstance();
         return {
             sourceFile: null,
             sourceURL: null,
@@ -53,9 +56,9 @@ export default {
                 formData.append("archive_file", this.sourceFile);
                 formData.append("archive_source", this.sourceURL);
                 axios
-                    .post(`${Galaxy.root}api/workflows`, formData)
+                    .post(`${getAppRoot()}api/workflows`, formData)
                     .then(response => {
-                        window.location = `${Galaxy.root}workflows/list?message=${
+                        window.location = `${getAppRoot()}workflows/list?message=${
                             response.data.message
                         }&status=success`;
                     })

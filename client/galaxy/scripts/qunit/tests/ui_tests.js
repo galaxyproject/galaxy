@@ -1,3 +1,5 @@
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import sinon from "sinon";
 import Ui from "mvc/ui/ui-misc";
@@ -5,9 +7,6 @@ import SelectContent from "mvc/ui/ui-select-content";
 import Drilldown from "mvc/ui/ui-drilldown";
 import Slider from "mvc/ui/ui-slider";
 import Tabs from "mvc/ui/ui-tabs";
-
-/* global QUnit */
-/* global $ */
 
 QUnit.module("Ui test", {
     beforeEach: function() {
@@ -21,6 +20,7 @@ QUnit.module("Ui test", {
 });
 
 QUnit.test("tabs", function(assert) {
+    assert.ok($.fn);
     var self = this;
     var tabs = new Tabs.View({});
     var collection = tabs.collection;

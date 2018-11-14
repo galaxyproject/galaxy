@@ -1,8 +1,12 @@
+import _ from "underscore";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import HISTORY_CONTENTS from "mvc/history/history-contents";
 import STATES from "mvc/dataset/states";
 import AJAX_QUEUE from "utils/ajax-queue";
 import BASE_MVC from "mvc/base-mvc";
-import _l from "utils/localization";
+// import _l from "utils/localization";
+
 var logNamespace = "jobs";
 //==============================================================================
 var searchableMixin = BASE_MVC.SearchableModelMixin;
@@ -86,7 +90,7 @@ var Job = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
 
             // ........................................................................ ajax
             /** root api url */
-            urlRoot: `${Galaxy.root}api/jobs`,
+            urlRoot: `${getAppRoot()}api/jobs`,
             //url : function(){ return this.urlRoot; },
 
             // ........................................................................ searching
@@ -115,7 +119,7 @@ var JobCollection = Backbone.Collection.extend(BASE_MVC.LoggableMixin).extend(
         model: Job,
 
         /** root api url */
-        urlRoot: `${Galaxy.root}api/jobs`,
+        urlRoot: `${getAppRoot()}api/jobs`,
         url: function() {
             return this.urlRoot;
         },

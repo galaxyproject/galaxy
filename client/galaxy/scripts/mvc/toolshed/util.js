@@ -1,9 +1,9 @@
-/* global Galaxy */
-/* global $ */
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
 
 var searchShed = function(request, response) {
     var shed_url = this.shed_url;
-    var base_url = `${Galaxy.root}api/tool_shed/search`;
+    var base_url = `${getAppRoot()}api/tool_shed/search`;
     $.get(base_url, { term: request.term, tool_shed_url: shed_url }, data => {
         var result_list = this.shedParser(data);
         response(result_list);

@@ -1,6 +1,7 @@
 /** Renders contents of the default uploader */
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
 import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/default/default-row";
@@ -11,9 +12,7 @@ import Select from "mvc/ui/ui-select";
 import Ui from "mvc/ui/ui-misc";
 import LazyLimited from "mvc/lazy/lazy-limited";
 import "utils/uploadbox";
-
-/* global Galaxy */
-/* global $ */
+import { getGalaxyInstance } from "app";
 
 export default Backbone.View.extend({
     // current upload size in bytes
@@ -261,6 +260,7 @@ export default Backbone.View.extend({
 
     /** Success */
     _eventSuccess: function(index, message) {
+        let Galaxy = getGalaxyInstance();
         var it = this.collection.get(index);
         it.set({ percentage: 100, status: "success" });
         this.ui_button.model.set("percentage", this._uploadPercentage(100, it.get("file_size")));
@@ -373,6 +373,7 @@ export default Backbone.View.extend({
             this._uploadFtp();
 
             // queue remaining files
+            let Galaxy = getGalaxyInstance();
             this.uploadbox.start({
                 id: Galaxy.user.id,
                 chunk_upload_size: this.app.options.chunk_upload_size

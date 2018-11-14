@@ -64,6 +64,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
@@ -107,7 +108,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/data_managers_list`)
+            .get(`${getAppRoot()}data_manager/data_managers_list`)
             .then(response => {
                 this.dataManagers = response.data.dataManagers;
                 this.dataTables = response.data.dataTables;

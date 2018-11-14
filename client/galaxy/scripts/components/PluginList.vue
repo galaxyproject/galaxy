@@ -48,7 +48,10 @@
     </div>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import axios from "axios";
+
 export default {
     data() {
         return {
@@ -62,7 +65,8 @@ export default {
         };
     },
     created() {
-        let url = `${Galaxy.root}api/plugins`;
+        let Galaxy = getGalaxyInstance();
+        let url = `${getAppRoot()}api/plugins`;
         let dataset_id = Galaxy.params.dataset_id;
         if (dataset_id) {
             this.fixed = true;
@@ -83,10 +87,11 @@ export default {
             if (this.fixed) {
                 this.create(plugin);
             } else {
+                let Galaxy = getGalaxyInstance();
                 let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
                 if (history_id) {
                     axios
-                        .get(`${Galaxy.root}api/plugins/${plugin.name}?history_id=${history_id}`)
+                        .get(`${getAppRoot()}api/plugins/${plugin.name}?history_id=${history_id}`)
                         .then(response => {
                             this.name = plugin.name;
                             this.hdas = response.data && response.data.hdas;

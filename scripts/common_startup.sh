@@ -69,14 +69,14 @@ in_conda_env() {
 }
 
 if [ $COPY_SAMPLE_FILES -eq 1 ]; then
-	# Create any missing config/location files
-	for sample in $SAMPLES; do
-		file=${sample%.sample}
-	    if [ ! -f "$file" -a -f "$sample" ]; then
-	        echo "Initializing $file from $(basename "$sample")"
-	        cp "$sample" "$file"
-	    fi
-	done
+    # Create any missing config/location files
+    for sample in $SAMPLES; do
+        file=${sample%.sample}
+        if [ ! -f "$file" -a -f "$sample" ]; then
+            echo "Initializing $file from $(basename "$sample")"
+            cp "$sample" "$file"
+        fi
+    done
 fi
 
 # remove problematic cached files
@@ -113,15 +113,17 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
         # beforehand.
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
-            echo "Found Conda, virtualenv will not be used."
+            echo "Found Conda, will set up a virtualenv using conda."
             echo "To use a virtualenv instead, create one with a non-Conda Python 2.7 at $GALAXY_VIRTUAL_ENV"
-            : ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}
+            : ${GALAXY_CONDA_ENV:="_galaxy_"}
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 if ! check_conda_env "$GALAXY_CONDA_ENV"; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9'
+                    $CONDA_EXE create --yes --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv=16' -c 'conda-forge'
+                    source activate "$GALAXY_CONDA_ENV"
+                    virtualenv "$GALAXY_VIRTUAL_ENV"
                     unset __CONDA_INFO
                 fi
             fi
