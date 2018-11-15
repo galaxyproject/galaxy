@@ -1,7 +1,9 @@
 # A simple CLI runner for slurm that can be used when running Galaxy from a
 # non-submit host and using a Slurm cluster.
 from logging import getLogger
+
 from galaxy.jobs import JobState
+
 try:
     from galaxy.model import Job
     job_states = Job.states
