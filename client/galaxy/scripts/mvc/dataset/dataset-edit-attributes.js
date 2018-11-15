@@ -172,6 +172,14 @@ var View = Backbone.View.extend({
                     onclick: function() {
                         self._submit("datatype", form);
                     }
+                }),
+                submit_datatype_sniff: new Ui.ButtonIcon({
+                    tooltip: _l("Sniff the datatype and change it."),
+                    title: _l("Sniff datatype"),
+                    icon: "fa-undo",
+                    onclick: function() {
+                        self._submit("datatype_sniff", form);
+                    }
                 })
             }
         });
