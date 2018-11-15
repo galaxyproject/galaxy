@@ -220,17 +220,24 @@ class JobRunnerMapper(object):
         return job_destination
 
     def __cache_job_destination(self, params, raw_job_destination=None):
-        if not hasattr(self, 'cached_job_destination'):
-            self.cached_job_destination = self.__determine_job_destination(
+        self.cached_job_destination = self.__determine_job_destination(
                 params, raw_job_destination=raw_job_destination)
         return self.cached_job_destination
 
     def get_job_destination(self, params):
         """
-        Cache the job_destination to avoid recalculation.
+        cached_job_destination is a public property that is sometimes
+        externally set to short-circuit the mapper, such as during resubmits.
+        get_job_destination will respect that and not run the mapper if so.
         """
-        return self.__cache_job_destination(params)
+        if not hasattr(self, 'cached_job_destination'):
+            return self.__cache_job_destination(params)
+        return self.cached_job_destination
 
     def cache_job_destination(self, raw_job_destination):
+        """
+        Force update of cached_job_destination to mapper determined job
+        destination, overwriting any externally set cached_job_destination
+        """
         return self.__cache_job_destination(
             None, raw_job_destination=raw_job_destination)
