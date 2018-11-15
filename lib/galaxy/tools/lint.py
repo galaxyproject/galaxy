@@ -29,7 +29,7 @@ def lint_xml(tool_xml, level=LEVEL_ALL, fail_level=LEVEL_WARN, extra_modules=[],
 def lint_tool_source_with(lint_context, tool_source, extra_modules=[]):
     import galaxy.tools.linters
     tool_xml = getattr(tool_source, "xml_tree", None)
-    linter_modules = submodules.submodules(galaxy.tools.linters)
+    linter_modules = submodules.import_submodules(galaxy.tools.linters, ordered=True)
     linter_modules.extend(extra_modules)
     for module in linter_modules:
         tool_type = tool_source.parse_tool_type() or "default"

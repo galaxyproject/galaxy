@@ -1,32 +1,54 @@
 from __future__ import absolute_import
 
+import importlib
 import logging
-from os import listdir
+import pkgutil
 
 log = logging.getLogger(__name__)
 
 
-def submodules(module):
-    unsorted_submodule_names = __submodule_names(module)
-    submodule_names = sorted(unsorted_submodule_names, reverse=True)
+def import_submodules(module, ordered=True, recursive=False):
+    """ Import all submodules of a module
+
+    :param module: module (package name or actual module)
+    :type module: str | module
+
+    :param ordered: Whether to order the returned modules. The default is True, and
+           modules are returned in reverse order to allow hierarchical overrides
+           i.e. 000_galaxy_rules.py, 100_site_rules.py, 200_instance_rules.py
+    :type ordered: bool
+
+    :param recursive: Recursively returns all subpackages
+    :type recursive: bool
+
+    :rtype: [module]
+    """
+    sub_modules = __import_submodules_impl(module, recursive)
+    if ordered:
+        return sorted(sub_modules, reverse=True, key=lambda m: m.__name__)
+    else:
+        return sub_modules
+
+
+def __import_submodules_impl(module, recursive=False):
+    """ Implementation of import only, without sorting.
+
+    :param module: module (package name or actual module)
+    :type module: str | module
+    :rtype: [module]
+    """
+    if isinstance(module, str):
+        module = importlib.import_module(module)
     submodules = []
-    for submodule_name in submodule_names:
-        full_submodule = "%s.%s" % (module.__name__, submodule_name)
+    for _, name, is_pkg in pkgutil.walk_packages(module.__path__):
+        full_name = module.__name__ + '.' + name
         try:
-            __import__(full_submodule)
-            submodule = getattr(module, submodule_name)
+            submodule = importlib.import_module(full_name)
             submodules.append(submodule)
+            if recursive and is_pkg:
+                submodules.update(__import_submodules_impl(submodule, recursive=True))
         except BaseException:
-            message = "%s dynamic module could not be loaded (traceback follows):" % (full_submodule)
+            message = "%s dynamic module could not be loaded (traceback follows):" % (full_name)
             log.exception(message)
+            continue
     return submodules
-
-
-def __submodule_names(module):
-    module_dir = module.__path__[0]
-    names = []
-    for fname in listdir(module_dir):
-        if not(fname.startswith("_")) and fname.endswith(".py"):
-            submodule_name = fname[:-len(".py")]
-            names.append(submodule_name)
-    return names

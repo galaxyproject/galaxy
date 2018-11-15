@@ -69,6 +69,7 @@ class MockApp(object):
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
+            destinations={}
         )
         self.tool_data_tables = {}
         self.dataset_collections_service = None
