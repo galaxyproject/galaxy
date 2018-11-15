@@ -88,6 +88,7 @@ class LSF(BaseJobExec):
             # which would be badly handled here. So this only works well when Galaxy
             # is constantly monitoring the jobs. The logic here is that DONE jobs get forgotten
             # faster than failed jobs.
+            log.warning("Job id '%s' not found LSF status check" % job_id)
             return job_states.OK
         return self._get_job_state(status)
 
