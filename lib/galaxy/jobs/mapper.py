@@ -221,7 +221,7 @@ class JobRunnerMapper(object):
 
     def __cache_job_destination(self, params, raw_job_destination=None):
         self.cached_job_destination = self.__determine_job_destination(
-                params, raw_job_destination=raw_job_destination)
+            params, raw_job_destination=raw_job_destination)
         return self.cached_job_destination
 
     def get_job_destination(self, params):

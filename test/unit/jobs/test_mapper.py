@@ -103,6 +103,23 @@ def test_dynamic_mapping_rule_module_override():
     assert mapper.job_config.rule_response == "new_rules_package"
 
 
+def test_dynamic_mapping_externally_set_job_destination():
+    mapper = __mapper(__dynamic_destination(dict(function="upload")))
+    # Initially, the mapper should not have a cached destination
+    assert not hasattr(mapper, 'cached_job_destination')
+    # Overwrite with an externally set job destination
+    manually_set_destination = JobDestination(runner="dynamic")
+    mapper.cached_job_destination = manually_set_destination
+    destination = mapper.get_job_destination({})
+    assert destination == manually_set_destination
+    assert mapper.cached_job_destination == manually_set_destination
+    # Force overwrite with mapper determined destination
+    mapper.cache_job_destination(None)
+    assert mapper.cached_job_destination is not None
+    assert mapper.cached_job_destination != manually_set_destination
+    assert mapper.job_config.rule_response == "local_runner"
+
+
 def __assert_mapper_errors_with_message(mapper, message):
     exception = None
     try:
