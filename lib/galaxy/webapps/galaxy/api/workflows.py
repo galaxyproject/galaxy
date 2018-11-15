@@ -25,6 +25,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import (
     BaseAPIController,
     SharableMixin,
@@ -54,7 +55,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 return shed_url
         return None
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
         """
         GET /api/workflows
