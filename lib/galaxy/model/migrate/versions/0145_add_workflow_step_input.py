@@ -71,7 +71,7 @@ def upgrade(migrate_engine):
     insert_step_connections_cmd = \
         "INSERT INTO workflow_step_connection (output_step_id, input_step_input_id, output_name, input_subworkflow_step_id) " + \
         "SELECT wsc.output_step_id, wsi.id, wsc.output_name, wsc.input_subworkflow_step_id " + \
-        "FROM workflow_step_connection_premigrate145 as wsc left outer join workflow_step_input as wsi on wsc.input_step_id = wsi.workflow_step_id and wsc.input_name = wsi.name ORDER BY wsc.id"
+        "FROM workflow_step_connection_premigrate145 AS wsc LEFT OUTER JOIN workflow_step_input AS wsi ON wsc.input_step_id = wsi.workflow_step_id AND wsc.input_name = wsi.name ORDER BY wsc.id"
 
     migrate_engine.execute(insert_step_connections_cmd)
 
