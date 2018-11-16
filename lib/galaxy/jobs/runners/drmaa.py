@@ -308,18 +308,13 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         # Replace the watch list with the updated version
         self.watched = new_watched
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """Attempts to delete a job from the DRM queue"""
-        dest_params = {}
-        try:
-            # fully dynamic destinations may not be defined in the job config
-            dest_params = self.app.job_config.get_destination(job.destination_id).params
-        except KeyError:
-            pass
+        job = job_wrapper.get_job()
         try:
             ext_id = job.get_job_runner_external_id()
             assert ext_id not in (None, 'None'), 'External job id is None'
-            kill_script = job.get_destination_configuration(dest_params, self.app.config, "drmaa_external_killjob_script", None)
+            kill_script = job_wrapper.get_destination_configuration("drmaa_external_killjob_script")
             if kill_script is None:
                 self.ds.kill(ext_id)
             else:

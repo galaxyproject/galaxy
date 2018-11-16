@@ -519,7 +519,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def fail_job(self, job_state, message=GENERIC_REMOTE_ERROR, full_status=None):
         """Seperated out so we can use the worker threads for it."""
-        self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+        self.stop_job(job_state.job_wrapper)
         stdout = ""
         stderr = ""
         if full_status:
@@ -538,7 +538,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 log.warning("check_pid(): Got errno %s when attempting to check PID %d: %s" % (errno.errorcode[e.errno], pid, e.strerror))
             return False
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
+        job = job_wrapper.get_job()
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         client = self.get_client(job.destination_params, job.job_runner_external_id)
         job_ext_output_metadata = job.get_external_output_metadata()

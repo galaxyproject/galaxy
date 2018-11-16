@@ -214,8 +214,9 @@ class CondorJobRunner(AsynchronousJobRunner):
         # Replace the watch list with the updated version
         self.watched = new_watched
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """Attempts to delete a job from the DRM queue"""
+        job = job_wrapper.get_job()
         external_id = job.job_runner_external_id
         failure_message = condor_stop(external_id)
         if failure_message:

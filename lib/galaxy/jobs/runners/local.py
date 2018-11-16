@@ -154,8 +154,9 @@ class LocalJobRunner(BaseJobRunner):
             log.exception("Job wrapper finish method failed")
             self._fail_job_local(job_wrapper, "Unable to finish job")
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        job = job_wrapper.get_job()
         job_ext_output_metadata = job.get_external_output_metadata()
         try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
