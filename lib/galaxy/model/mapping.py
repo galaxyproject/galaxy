@@ -920,7 +920,9 @@ model.WorkflowStepInput.table = Table(
     Column("value_from_type", TEXT),
     Column("default_value", JSONType),
     Column("default_value_set", Boolean, default=False),
-    Column("runtime_value", Boolean, default=False))
+    Column("runtime_value", Boolean, default=False),
+    UniqueConstraint("workflow_step_id", "name"),
+)
 
 
 model.WorkflowRequestStepState.table = Table(
@@ -2236,7 +2238,7 @@ mapper(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(
     workflow_step=relation(model.WorkflowStep,
         backref=backref("inputs", uselist=True),
         cascade="all",
-        primaryjoin=(model.WorkflowStep.table.c.id == model.WorkflowStepInput.table.c.workflow_step_id))
+        primaryjoin=(model.WorkflowStepInput.table.c.workflow_step_id == model.WorkflowStep.table.c.id))
 ))
 
 mapper(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
