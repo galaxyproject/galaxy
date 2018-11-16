@@ -123,11 +123,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
-        show_published = util.string_as_bool(kwd.get('show_published', 'True'))
         missing_tools = util.string_as_bool(kwd.get('missing_tools', 'False'))
         rval = []
         filter1 = (trans.app.model.StoredWorkflow.user == trans.user)
         user = trans.get_user()
+        if user is None:
+            show_published = util.string_as_bool(kwd.get('show_published', 'True'))
+        else :
+            show_published = util.string_as_bool(kwd.get('show_published', 'False'))
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
