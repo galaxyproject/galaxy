@@ -1410,13 +1410,14 @@ steps:
       steps:
         random_lines:
           tool_id: random_lines1
-          state:
-            num_lines: 2
-            input:
-              $link: inner_input
-            seed_source:
-              seed_source_selector: set_seed
-              seed: asdf
+          in:
+            input: inner_input
+            num_lines:
+              default: 2
+            seed_source|seed_source_selector:
+              default: set_seed
+            seed_source|seed:
+              default: asdf
         split:
           tool_id: split
           in:
@@ -2867,6 +2868,73 @@ steps:
         self._assert_status_code_is(run_workflow_response, 200)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         self.assertEqual("2\n", self.dataset_populator.get_history_dataset_content(history_id))
+
+    @skip_without_tool("random_lines1")
+    def test_run_replace_params_over_default(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input: data
+steps:
+  randomlines:
+    tool_id: random_lines1
+    in:
+      input: input
+      num_lines:
+        default: 6
+""", test_data="""
+step_parameters:
+  '1':
+    num_lines: 4
+input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=True, assert_ok=True, round_trip_format_conversion=True)
+            result = self.dataset_populator.get_history_dataset_content(history_id)
+            assert result.count("\n") == 4
+
+    @skip_without_tool("random_lines1")
+    def test_run_replace_params_over_default_delayed(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input: data
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: input
+  the_pause:
+    type: pause
+    in:
+      input: first_cat/out_file1
+  randomlines:
+    tool_id: random_lines1
+    in:
+      input: the_pause
+      num_lines:
+        default: 6
+""", test_data="""
+step_parameters:
+  '3':
+    num_lines: 4
+input:
+  value: 1.bed
+  type: File
+""", history_id=history_id, wait=False)
+            wait_on(lambda: len(self._history_jobs(history_id)) >= 2 or None, "history jobs")
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+
+            workflow_id = run_summary.workflow_id
+            invocation_id = run_summary.invocation_id
+
+            self.__review_paused_steps(workflow_id, invocation_id, order_index=2, action=True)
+            self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+
+            result = self.dataset_populator.get_history_dataset_content(history_id)
+            assert result.count("\n") == 4
 
     def test_pja_import_export(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_pja_import", add_pja=True)

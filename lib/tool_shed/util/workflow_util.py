@@ -306,13 +306,12 @@ def get_workflow_from_dict(trans, workflow_dict, tools_metadata, repository_id, 
         # Input connections.
         for input_name, conn_dict in step.temp_input_connections.items():
             if conn_dict:
+                step_input = step.get_or_add_input(input_name)
                 output_step = steps_by_external_id[conn_dict['id']]
                 conn = trans.model.WorkflowStepConnection()
-                conn.input_step = step
-                conn.input_name = input_name
+                conn.input_step_input = step_input
                 conn.output_step = output_step
                 conn.output_name = conn_dict['output_name']
-                step.input_connections.append(conn)
         del step.temp_input_connections
     # Order the steps if possible.
     attach_ordered_steps(workflow, steps)
