@@ -1,4 +1,4 @@
-"""Integration tests for the Pulsar embedded runner."""
+"""Integration tests for chained dynamic job destinations."""
 
 import os
 import tempfile
