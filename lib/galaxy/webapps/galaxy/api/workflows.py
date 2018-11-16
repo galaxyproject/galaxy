@@ -123,7 +123,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
-        show_published = util.string_as_bool(kwd.get('show_published', 'False'))
+        show_published = util.string_as_bool(kwd.get('show_published', 'True'))
         missing_tools = util.string_as_bool(kwd.get('missing_tools', 'False'))
         rval = []
         filter1 = (trans.app.model.StoredWorkflow.user == trans.user)
@@ -142,10 +142,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['owner'] = wf.user.username
             item['number_of_steps'] = wf.latest_workflow.step_count
             item['show_in_tool_panel'] = False
-            for x in user.stored_workflow_menu_entries:
-                if x.stored_workflow_id == wf.id:
-                    item['show_in_tool_panel'] = True
-                    break
+            if user is not None:
+                for x in user.stored_workflow_menu_entries:
+                    if x.stored_workflow_id == wf.id:
+                        item['show_in_tool_panel'] = True
+                        break
             rval.append(item)
         for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
                 model.StoredWorkflowUserShareAssociation.stored_workflow).options(
@@ -161,10 +162,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
             item['show_in_tool_panel'] = False
-            for x in user.stored_workflow_menu_entries:
-                if x.stored_workflow_id == wf_sa.id:
-                    item['show_in_tool_panel'] = True
-                    break
+            if user is not None:
+                for x in user.stored_workflow_menu_entries:
+                    if x.stored_workflow_id == wf_sa.id:
+                        item['show_in_tool_panel'] = True
+                        break
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
@@ -198,7 +200,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return workflows
         return rval
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}
