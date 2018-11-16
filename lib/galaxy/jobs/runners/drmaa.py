@@ -207,7 +207,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             log.debug('(%s) submitting with credentials: %s [uid: %s]' % (galaxy_id_tag, pwent[0], pwent[2]))
             filename = self.store_jobtemplate(job_wrapper, jt)
             self.userid = pwent[2]
-            external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2]).strip()
+            external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2])
             if external_job_id is None:
                 job_wrapper.fail("(%s) could not queue job" % galaxy_id_tag)
                 return
@@ -386,7 +386,8 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             return None
         # The expected output is a single line containing a single numeric value:
         # the DRMAA job-ID. If not the case, will throw an error.
-        if not stdoutdata.strip():
+        stdoutdata = stdoutdata.strip()
+        if not stdoutdata:
             log.exception("External_runjob did not returned nothing instead of the job id")
             return None
         return stdoutdata
