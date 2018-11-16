@@ -321,11 +321,11 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 command = shlex.split(kill_script)
                 command.extend([str(ext_id), str(self.userid)])
                 subprocess.Popen(command, shell=False)
-            log.info("(%s/%s) Removed from DRM queue at user's request" % (job.get_id(), ext_id))
+            log.info("(%s/%s) Removed from DRM queue at user's request" % (job.id, ext_id))
         except drmaa.InvalidJobException:
-            log.exception("(%s/%s) User killed running job, but it was already dead" % (job.get_id(), ext_id))
+            log.exception("(%s/%s) User killed running job, but it was already dead" % (job.id, ext_id))
         except Exception:
-            log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.get_id(), ext_id))
+            log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.id, ext_id))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -339,12 +339,12 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.get_id(), job.get_job_runner_external_id()))
+            log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.id, job.get_job_runner_external_id()))
             ajs.old_state = drmaa.JobState.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.get_state() == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.get_id(), job.get_job_runner_external_id()))
+            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.id, job.get_job_runner_external_id()))
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
             self.monitor_queue.put(ajs)

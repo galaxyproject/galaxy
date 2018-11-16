@@ -138,7 +138,7 @@ class TaskedJobRunner(BaseJobRunner):
         tasks = job.get_tasks()
         if (len(tasks) > 0):
             for task in tasks:
-                log.debug("Killing task's job " + str(task.get_id()))
+                log.debug("Killing task's job %s" % task.id)
                 self.app.job_manager.job_handler.dispatcher.stop(task)
 
         # There were no subtasks, so just kill the job. We'll touch
@@ -190,7 +190,7 @@ class TaskedJobRunner(BaseJobRunner):
             task_state = task.get_state()
             if (model.Task.states.QUEUED == task_state):
                 log.debug("_cancel_job for job %d: Task %d is not running; setting state to DELETED"
-                          % (job.get_id(), task.get_id()))
+                          % (job.id, task.id))
                 task_wrapper.change_state(task.states.DELETED)
         # If a task failed, then the caller will have waited a few seconds
         # before recognizing the failure. In that time, a queued task could
@@ -202,7 +202,7 @@ class TaskedJobRunner(BaseJobRunner):
             if (model.Task.states.RUNNING == task_wrapper.get_state()):
                 task = task_wrapper.get_task()
                 log.debug("_cancel_job for job %d: Stopping running task %d"
-                          % (job.get_id(), task.get_id()))
+                          % (job.id, task.id))
                 job_wrapper.app.job_manager.job_handler.dispatcher.stop(task)
 
     def _check_pid(self, pid):

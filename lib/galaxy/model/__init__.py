@@ -200,7 +200,6 @@ def cached_id(galaxy_model_object):
 
 
 class JobLike(object):
-
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
 
     def _init_metrics(self):
@@ -700,10 +699,6 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         # This is defined in the SQL Alchemy mapper as a relation to the User.
         return self.user
 
-    def get_id(self):
-        # This is defined in the SQL Alchemy's Job table (and not in the model).
-        return self.id
-
     def get_tasks(self):
         # The tasks member is pert of a reference in the SQL Alchemy schema:
         return self.tasks
@@ -984,16 +979,12 @@ class Task(JobLike, RepresentById):
         param_dict = tool.params_from_strings(param_dict, app)
         return param_dict
 
-    def get_id(self):
-        # This is defined in the SQL Alchemy schema:
-        return self.id
-
     def get_id_tag(self):
         """
         Return an id tag suitable for identifying the task.
         This combines the task's job id and the task's own id.
         """
-        return "%s_%s" % (self.job.get_id(), self.get_id())
+        return "%s_%s" % (self.job.id, self.id)
 
     def get_command_line(self):
         return self.command_line
