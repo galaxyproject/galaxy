@@ -63,7 +63,7 @@ def upgrade(migrate_engine):
 
     insert_step_inputs_cmd = \
         "INSERT INTO workflow_step_input (workflow_step_id, name) " + \
-        "SELECT id, input_name FROM workflow_step_connection_premigrate145"
+        "SELECT input_step_id, input_name FROM workflow_step_connection_premigrate145"
 
     migrate_engine.execute(insert_step_inputs_cmd)
 
