@@ -652,6 +652,30 @@
             <param id="num_jobs">50</param>
             <!-- <param id="job_states">queued</param> -->
         </destination>
+        <destination id="burst_if_queued" runner="dynamic">
+            <!-- Dynamic destinations can be chained together to create more
+            complex rules. In this example, the built-in burst stock rule
+            determines whether to burst, and if so, directs to burst_if_size,
+            a user-defined dynamic destination. This destination in turn will
+            conditionally route it to a remote pulsar node if the input size
+            is below a certain threshold, or route to local if not. -->
+            <param id="type">burst</param>
+            <param id="from_destination_ids">local</param>
+            <param id="to_destination_id">burst_if_size</param>
+            <param id="num_jobs">2</param>
+            <param id="job_states">queued</param>
+        </destination>
+        <destination id="burst_if_size" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">to_destination_if_size</param>
+            <!-- Also demonstrates a destination level override of the
+            rules_module. This rules_module will take precedence over the
+            plugin level rules module when resolving the dynamic function -->
+            <param id="rules_module">galaxycloudrunner.rules</param>
+            <param id="max_size">1g</param>
+            <param id="to_destination_id">pulsar</param>
+            <param id="fallback_destination_id">local</param>
+        </destination>
         <destination id="docker_dispatch" runner="dynamic">
             <!-- Follow dynamic destination type will send all tool's that
             support docker to static destination defined by

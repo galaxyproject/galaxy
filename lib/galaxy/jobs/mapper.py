@@ -205,24 +205,39 @@ class JobRunnerMapper(object):
                 job_destination = self.job_config.get_destination(job_destination_rep)
         return job_destination
 
-    def __cache_job_destination(self, params, raw_job_destination=None):
+    def __determine_job_destination(self, params, raw_job_destination=None):
         if raw_job_destination is None:
             raw_job_destination = self.job_wrapper.tool.get_job_destination(params)
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
             job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
+            log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
+            # Recursively handle chained dynamic destinations
+            if job_destination.runner == DYNAMIC_RUNNER_NAME:
+                return self.__determine_job_destination(params, raw_job_destination=job_destination)
         else:
             job_destination = raw_job_destination
-        log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
-        self.cached_job_destination = job_destination
+            log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
+        return job_destination
+
+    def __cache_job_destination(self, params, raw_job_destination=None):
+        self.cached_job_destination = self.__determine_job_destination(
+            params, raw_job_destination=raw_job_destination)
+        return self.cached_job_destination
 
     def get_job_destination(self, params):
         """
-        Cache the job_destination to avoid recalculation.
+        cached_job_destination is a public property that is sometimes
+        externally set to short-circuit the mapper, such as during resubmits.
+        get_job_destination will respect that and not run the mapper if so.
         """
         if not hasattr(self, 'cached_job_destination'):
-            self.__cache_job_destination(params)
+            return self.__cache_job_destination(params)
         return self.cached_job_destination
 
     def cache_job_destination(self, raw_job_destination):
-        self.__cache_job_destination(None, raw_job_destination=raw_job_destination)
-        return self.cached_job_destination
+        """
+        Force update of cached_job_destination to mapper determined job
+        destination, overwriting any externally set cached_job_destination
+        """
+        return self.__cache_job_destination(
+            None, raw_job_destination=raw_job_destination)

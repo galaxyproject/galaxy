@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+        <plugin id="dynamic" type="runner">
+            <param id="rules_module">integration.chained_dyndest_rules.module1</param>
+        </plugin>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="dyn_dest1">
+        <destination id="dyn_dest1" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">dyndest_chain_1</param>
+        </destination>
+        <destination id="dyn_dest2" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">dyndest_chain_2</param>
+            <!-- test overriding rules_module at destination level -->
+            <param id="rules_module">integration.chained_dyndest_rules.module2</param>
+            <param id="tmp_dir_prefix">from1</param>
+        </destination>
+    </destinations>
+
+</job_conf>
