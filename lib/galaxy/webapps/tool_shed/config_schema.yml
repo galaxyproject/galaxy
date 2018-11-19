@@ -526,14 +526,6 @@ mapping:
           in the filter above.  This value becomes the "path" attribute set in the
           cookie so the cookies from each instance will not clobber each other.
 
-      enable_openid:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable authentication via OpenID.  Allows users to log in to their Galaxy
-          account by authenticating with an OpenID provider.
-
       log_actions:
         type: bool
         default: true
