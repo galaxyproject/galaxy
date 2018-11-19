@@ -82,16 +82,6 @@ model.UserAddress.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
-model.UserOpenID.table = Table(
-    "galaxy_user_openid", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("openid", TEXT, index=True, unique=True),
-    Column("provider", TrimmedString(255)))
-
 model.PSAAssociation.table = Table(
     "psa_association", metadata,
     Column('id', Integer, primary_key=True),
@@ -1474,17 +1464,6 @@ mapper(model.UserAddress, model.UserAddress.table, properties=dict(
         primaryjoin=(model.UserAddress.table.c.user_id == model.User.table.c.id),
         backref='addresses',
         order_by=desc(model.UserAddress.table.c.update_time)),
-))
-
-mapper(model.UserOpenID, model.UserOpenID.table, properties=dict(
-    session=relation(model.GalaxySession,
-        primaryjoin=(model.UserOpenID.table.c.session_id == model.GalaxySession.table.c.id),
-        backref='openids',
-        order_by=desc(model.UserOpenID.table.c.update_time)),
-    user=relation(model.User,
-        primaryjoin=(model.UserOpenID.table.c.user_id == model.User.table.c.id),
-        backref='openids',
-        order_by=desc(model.UserOpenID.table.c.update_time))
 ))
 
 mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
