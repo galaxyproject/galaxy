@@ -18,7 +18,6 @@ from sqlalchemy import (
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
-    model,
     util,
     web
 )
@@ -38,7 +37,6 @@ from galaxy.web.base.controller import (
     UsesFormDefinitionsMixin
 )
 from galaxy.web.form_builder import CheckboxField
-from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger(__name__)
 
