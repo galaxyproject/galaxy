@@ -15,9 +15,6 @@
             <li><a href="${h.url_for( controller='user', action='set_default_permissions', cntrller=cntrller )}">${_('Change default permissions')}</a> for new histories</li>
             <li><a href="${h.url_for( controller='user', action='api_keys', cntrller=cntrller )}">${_('Manage your API keys')}</a></li>
             <li><a href="${h.url_for( controller='user', action='toolbox_filters', cntrller=cntrller )}">${_('Manage your ToolBox filters')}</a></li>
-            %if trans.app.config.enable_openid and not trans.app.config.use_remote_user:
-                <li><a href="${h.url_for( controller='openids', action='list' )}">${_('Manage OpenIDs')}</a> linked to your account</li>
-            %endif
             <li><a href="${h.url_for( controller='user', action='logout', logout_all=True )}" target="_top">${_('Logout')}</a> ${_('of all user sessions')}</li>
         %else:
             <li><a href="${h.url_for( controller='user', action='manage_user_info', cntrller=cntrller )}">${_('Manage your information')}</a></li>
