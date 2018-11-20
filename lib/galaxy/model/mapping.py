@@ -2583,16 +2583,15 @@ def db_next_hid(self, n=1):
     :returns:   the next history id
     """
     session = object_session(self)
-    conn = session.connection()
     table = self.table
-    trans = conn.begin()
+    trans = session.begin()
     try:
         if "postgres" not in session.bind.dialect.name:
             next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self), for_update=True).scalar()
             table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
         else:
             stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
-            next_hid = conn.execute(stmt).scalar() - n
+            next_hid = session.execute(stmt).scalar() - n
         trans.commit()
         return next_hid
     except Exception:
@@ -2604,11 +2603,11 @@ model.History._next_hid = db_next_hid
 
 
 def _workflow_invocation_update(self):
-    conn = object_session(self).connection()
+    session = object_session(self)
     table = self.table
     now_val = now()
     stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
-    conn.execute(stmt)
+    session.execute(stmt)
 
 
 model.WorkflowInvocation.update = _workflow_invocation_update

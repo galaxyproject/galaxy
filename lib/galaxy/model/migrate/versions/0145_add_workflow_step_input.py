@@ -21,7 +21,6 @@ from galaxy.model.custom_types import JSONType
 log = logging.getLogger(__name__)
 metadata = MetaData()
 
-
 WorkflowStepInput_table = Table(
     "workflow_step_input", metadata,
     Column("id", Integer, primary_key=True),
@@ -65,7 +64,7 @@ def upgrade(migrate_engine):
 
     insert_step_inputs_cmd = \
         "INSERT INTO workflow_step_input (workflow_step_id, name) " + \
-        "SELECT input_step_id, input_name FROM workflow_step_connection_preupgrade145"
+        "SELECT DISTINCT input_step_id, input_name FROM workflow_step_connection_preupgrade145"
     migrate_engine.execute(insert_step_inputs_cmd)
 
     insert_step_connections_cmd = \
