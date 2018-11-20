@@ -1178,11 +1178,7 @@ class JobWrapper(HasResourceParameters):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
         """
-        # this is called by self._job_dataset_path_rewriter, which is called by self.job_destination(), so to access
-        # self.job_destination directly would cause infinite recursion
-        dest_params = {}
-        if hasattr(self, 'job_runner_mapper') and hasattr(self.job_runner_mapper, 'cached_job_destination'):
-            dest_params = self.job_runner_mapper.cached_job_destination.params
+        dest_params = self.job_destination.params
         return self.get_job().get_destination_configuration(
             dest_params, self.app.config, key, default
         )
@@ -1487,9 +1483,9 @@ class JobWrapper(HasResourceParameters):
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
-        self.tool.exec_after_process(self.queue.app, inp_data, out_data, param_dict, job=job)
+        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
         # Call 'exec_after_process' hook
-        self.tool.call_hook('exec_after_process', self.queue.app, inp_data=inp_data,
+        self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
         job.command_line = unicodify(self.command_line)

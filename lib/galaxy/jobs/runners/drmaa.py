@@ -338,29 +338,24 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         # Replace the watch list with the updated version
         self.watched = new_watched
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """Attempts to delete a job from the DRM queue"""
-        dest_params = {}
-        try:
-            # fully dynamic destinations may not be defined in the job config
-            dest_params = self.app.job_config.get_destination(job.destination_id).params
-        except KeyError:
-            pass
+        job = job_wrapper.get_job()
         try:
             ext_id = job.get_job_runner_external_id()
             assert ext_id not in (None, 'None'), 'External job id is None'
-            kill_script = job.get_destination_configuration(dest_params, self.app.config, "drmaa_external_killjob_script", None)
+            kill_script = job_wrapper.get_destination_configuration("drmaa_external_killjob_script")
             if kill_script is None:
                 self.ds.kill(ext_id)
             else:
                 command = shlex.split(kill_script)
                 command.extend([str(ext_id), str(self.userid)])
                 subprocess.Popen(command, shell=False)
-            log.info("(%s/%s) Removed from DRM queue at user's request" % (job.get_id(), ext_id))
+            log.info("(%s/%s) Removed from DRM queue at user's request" % (job.id, ext_id))
         except drmaa.InvalidJobException:
-            log.exception("(%s/%s) User killed running job, but it was already dead" % (job.get_id(), ext_id))
+            log.exception("(%s/%s) User killed running job, but it was already dead" % (job.id, ext_id))
         except Exception:
-            log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.get_id(), ext_id))
+            log.exception("(%s/%s) User killed running job, but error encountered removing from DRM queue" % (job.id, ext_id))
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -374,12 +369,12 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
         if job.state == model.Job.states.RUNNING:
-            log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.get_id(), job.get_job_runner_external_id()))
+            log.debug("(%s/%s) is still in running state, adding to the DRM queue" % (job.id, job.get_job_runner_external_id()))
             ajs.old_state = drmaa.JobState.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.get_state() == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.get_id(), job.get_job_runner_external_id()))
+            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue" % (job.id, job.get_job_runner_external_id()))
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
             self.monitor_queue.put(ajs)
