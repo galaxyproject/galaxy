@@ -173,7 +173,7 @@ var View = Backbone.View.extend({
                         self._submit("datatype", form);
                     }
                 }),
-                submit_datatype_detect: new Ui.ButtonIcon({
+                submit_datatype_detect: new Ui.Button({
                     tooltip: _l("Detect the datatype and change it."),
                     title: _l("Detect datatype"),
                     icon: "fa-undo",
