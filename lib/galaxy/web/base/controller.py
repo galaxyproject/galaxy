@@ -1243,9 +1243,10 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         """
         # TODO: replace this method with direct access to manager.
         workflow_contents_manager = workflows.WorkflowContentsManager(self.app)
-        created_workflow = workflow_contents_manager.build_workflow_from_dict(
+        raw_workflow_description = workflow_contents_manager.ensure_raw_description(data)
+        created_workflow = workflow_contents_manager.build_workflow_from_raw_description(
             trans,
-            data,
+            raw_workflow_description,
             source=source,
             add_to_menu=add_to_menu,
             publish=publish,

@@ -284,6 +284,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'workflow_id',
             'installed_repository_file',
             'from_history_id',
+            'from_path',
             'shared_workflow_id',
             'workflow',
         ])
@@ -313,10 +314,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             archive_file = payload.get('archive_file')
             archive_data = None
             if archive_source:
-                try:
-                    archive_data = requests.get(archive_source).text
-                except Exception:
-                    raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
+                if archive_source.startswith("file://"):
+                    if not trans.user_is_admin:
+                        raise exceptions.AdminRequiredException()
+                    workflow_src = {"src": "from_path", "path": archive_source[len("file://"):]}
+                    payload["workflow"] = workflow_src
+                    return self.__api_import_new_workflow(trans, payload, **kwd)
+                else:
+                    try:
+                        archive_data = requests.get(archive_source).text
+                    except Exception:
+                        raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
             elif hasattr(archive_file, 'file'):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
@@ -349,6 +357,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item = stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
             item['url'] = url_for('workflow', id=item['id'])
             return item
+
+        if 'from_path' in payload:
+            from_path = payload.get('from_path')
+            payload["workflow"] = {"src": "from_path", "path": from_path}
+            return self.__api_import_new_workflow(trans, payload, **kwd)
 
         if 'shared_workflow_id' in payload:
             workflow_id = payload['shared_workflow_id']
@@ -492,7 +505,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_workflow(trans, id)
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
-            workflow_dict = self.__normalize_workflow(workflow_dict)
+            raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
+            workflow_dict = raw_workflow_description.as_dict
             new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
             if new_workflow_name and new_workflow_name != stored_workflow.name:
                 sanitized_name = sanitize_html(new_workflow_name)
@@ -524,10 +538,10 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if 'steps' in workflow_dict:
                 try:
                     from_dict_kwds = self.__import_or_update_kwds(payload)
-                    workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                    workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(
                         trans,
                         stored_workflow,
-                        workflow_dict,
+                        raw_workflow_description,
                         **from_dict_kwds
                     )
                 except workflows.MissingToolsException:
@@ -573,8 +587,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
-        data = self.__normalize_workflow(data)
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
+        raw_workflow_description = self.__normalize_workflow(trans, data)
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, source=source)
         workflow = workflow.latest_workflow
         if workflow.has_errors:
             return {"message": "Imported, but some steps in this workflow have validation errors.", "status": "error"}
@@ -586,7 +600,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
-        data = self.__normalize_workflow(data)
+        raw_workflow_description = self.__normalize_workflow(trans, data)
+        data = raw_workflow_description.as_dict
         import_tools = util.string_as_bool(payload.get("import_tools", False))
         if import_tools and not trans.user_is_admin:
             raise exceptions.AdminRequiredException()
@@ -601,7 +616,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
 
         from_dict_kwds["publish"] = publish
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, data, **from_dict_kwds)
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, **from_dict_kwds)
         if importable:
             self._make_item_accessible(trans.sa_session, workflow)
             trans.sa_session.flush()
@@ -654,8 +669,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'fill_defaults': fill_defaults,
         }
 
-    def __normalize_workflow(self, as_dict):
-        return self.workflow_contents_manager.normalize_workflow_format(as_dict)
+    def __normalize_workflow(self, trans, as_dict):
+        return self.workflow_contents_manager.normalize_workflow_format(trans, as_dict)
 
     @expose_api
     def import_shared_workflow_deprecated(self, trans, payload, **kwd):
