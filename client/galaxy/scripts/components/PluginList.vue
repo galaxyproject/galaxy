@@ -124,7 +124,7 @@ export default {
         },
         _errorMessage: function(e) {
             let message = e && e.response && e.response.data && e.response.data.err_msg;
-            return message || "Request failed for unkown reason.";
+            return message || "Request failed for an unknown reason.";
         }
     }
 };

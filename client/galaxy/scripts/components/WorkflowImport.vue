@@ -64,7 +64,7 @@ export default {
                     })
                     .catch(error => {
                         let message = error.response.data && error.response.data.err_msg;
-                        this.errorMessage = message || "Import failed for unkown reason.";
+                        this.errorMessage = message || "Import failed for an unknown reason.";
                     });
             }
         }
