@@ -96,7 +96,7 @@ class LSF(BaseJobExec):
     def get_failure_reason(self, job_id):
         return "bjobs -l " + job_id
 
-    def parse_failure_reason(self, reason):
+    def parse_failure_reason(self, reason, job_id):
         # LSF will produce the following in the job output file:
         # TERM_MEMLIMIT: job killed after reaching LSF memory usage limit.
         # Exited with exit code 143.
