@@ -5,7 +5,7 @@ import time
 from json import dumps
 from uuid import uuid4
 
-from requests import delete, put
+from requests import delete, get, put
 
 from base import api  # noqa: I100,I202
 from base import rules_test_data  # noqa: I100
@@ -238,6 +238,10 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
             show_response = self._get("workflows/%s" % workflow_id)
             self._assert_status_code_is(show_response, 403)
 
+            # Try as anonymous user
+            workflows_url = self._api_url("workflows/%s" % workflow_id)
+            assert get(workflows_url).status_code == 403
+
     def test_delete(self):
         workflow_id = self.workflow_populator.simple_workflow("test_delete")
         workflow_name = "test_delete"
@@ -421,6 +425,20 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
         with self._different_user():
             other_import_response = self.__import_workflow(workflow_id)
             self._assert_status_code_is(other_import_response, 403)
+
+    def test_anonymous_published(self):
+        def anonymous_published_workflows():
+            workflows_url = self._api_url("workflows?show_published=True")
+            return get(workflows_url).json()
+
+        names = [w["name"] for w in anonymous_published_workflows()]
+        assert "test published example" not in names
+        workflow_id = self.workflow_populator.simple_workflow("test published example", publish=True)
+
+        names = [w["name"] for w in anonymous_published_workflows()]
+        assert "test published example" in names
+        ids = [w["id"] for w in anonymous_published_workflows()]
+        assert workflow_id in ids
 
     def test_import_published(self):
         workflow_id = self.workflow_populator.simple_workflow("test_import_published", publish=True)

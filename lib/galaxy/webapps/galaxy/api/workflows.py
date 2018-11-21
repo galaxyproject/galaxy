@@ -25,6 +25,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import (
     BaseAPIController,
     SharableMixin,
@@ -54,7 +55,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 return shed_url
         return None
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
         """
         GET /api/workflows
@@ -122,11 +123,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
-        show_published = util.string_as_bool(kwd.get('show_published', 'False'))
         missing_tools = util.string_as_bool(kwd.get('missing_tools', 'False'))
         rval = []
         filter1 = (trans.app.model.StoredWorkflow.user == trans.user)
         user = trans.get_user()
+        if user is None:
+            show_published = util.string_as_bool(kwd.get('show_published', 'True'))
+        else :
+            show_published = util.string_as_bool(kwd.get('show_published', 'False'))
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
@@ -141,10 +145,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['owner'] = wf.user.username
             item['number_of_steps'] = wf.latest_workflow.step_count
             item['show_in_tool_panel'] = False
-            for x in user.stored_workflow_menu_entries:
-                if x.stored_workflow_id == wf.id:
-                    item['show_in_tool_panel'] = True
-                    break
+            if user is not None:
+                for x in user.stored_workflow_menu_entries:
+                    if x.stored_workflow_id == wf.id:
+                        item['show_in_tool_panel'] = True
+                        break
             rval.append(item)
         for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
                 model.StoredWorkflowUserShareAssociation.stored_workflow).options(
@@ -160,10 +165,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
             item['show_in_tool_panel'] = False
-            for x in user.stored_workflow_menu_entries:
-                if x.stored_workflow_id == wf_sa.id:
-                    item['show_in_tool_panel'] = True
-                    break
+            if user is not None:
+                for x in user.stored_workflow_menu_entries:
+                    if x.stored_workflow_id == wf_sa.id:
+                        item['show_in_tool_panel'] = True
+                        break
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
@@ -197,7 +203,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return workflows
         return rval
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}
