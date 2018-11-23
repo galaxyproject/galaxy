@@ -39,7 +39,7 @@ from .util import (
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
-DEFAULT_CHANNELS = "conda-forge,bioconda"
+DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = '/source/'
@@ -322,7 +322,7 @@ def add_build_arguments(parser):
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
                         help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
-    parser.add_argument('-c', '--channels', dest='channels', default=DEFAULT_CHANNELS,
+    parser.add_argument('-c', '--channels', dest='channels', default=",".join(DEFAULT_CHANNELS),
                         help='Comma separated list of target conda channels.')
     parser.add_argument('--conda-version', dest="conda_version", default=None,
                         help="Change to specified version of Conda before installing packages.")
