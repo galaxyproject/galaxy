@@ -42,6 +42,7 @@ parse_common_args() {
                 ;;
             --daemon|start)
                 paster_args="$paster_args --daemon"
+                gunicorn_args="$gunicorn_args --daemon"
                 add_pid_arg=1
                 add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
@@ -161,7 +162,7 @@ find_server() {
         server_args="$server_args $uwsgi_args"
     elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
         export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
-        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\""
+        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\" $gunicorn_args"
         if [ "$add_pid_arg" -eq 1 ]; then
             server_args="$server_args --pid \"$PID_FILE\""
         fi
