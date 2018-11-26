@@ -35,6 +35,10 @@ matrix:
     - env: TOX_ENV=py34-unit
       addons: *py3_addons
 
+before_install:
+  # Workaround for https://github.com/travis-ci/travis-ci/issues/7940
+  - sudo rm -f /etc/boto.cfg
+
 install:
   - set -e
   - pip install tox
