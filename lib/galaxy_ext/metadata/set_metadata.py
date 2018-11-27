@@ -82,15 +82,8 @@ def set_metadata():
     # Set up datatypes registry
     datatypes_config = sys.argv.pop(1)
     if not os.path.exists(datatypes_config):
-        # This path should exist, except for jobs that started running on release 17.05, where a global
-        # datatypes_config (instead of a datatypes_config per job) was used. For a while release 17.05
-        # would remove the global datatypes config on shutdown and toolbox reload, which would lead to
-        # failed metadata jobs. To remedy this we scan jobs at startup for missing registry.xml files,
-        # and if we detect such a job we write out the current registry.xml file.
-        datatypes_config = os.path.join(tool_job_working_directory, "registry.xml")
-        if not os.path.exists(datatypes_config):
-            print("Metadata setting failed because registry.xml could not be found. You may retry setting metadata.")
-            sys.exit(1)
+        print("Metadata setting failed because registry.xml could not be found. You may retry setting metadata.")
+        sys.exit(1)
     import galaxy.datatypes.registry
     datatypes_registry = galaxy.datatypes.registry.Registry()
     datatypes_registry.load_datatypes(root_dir=galaxy_root, config=datatypes_config)
@@ -117,13 +110,7 @@ def set_metadata():
         filename_out = fields.pop(0)
         filename_results_code = fields.pop(0)
         dataset_filename_override = fields.pop(0)
-        # Need to be careful with the way that these parameters are populated from the filename splitting,
-        # because if a job is running when the server is updated, any existing external metadata command-lines
-        # will not have info about the newly added override_metadata file
-        if fields:
-            override_metadata = fields.pop(0)
-        else:
-            override_metadata = None
+        override_metadata = fields.pop(0)
         set_meta_kwds = stringify_dictionary_keys(json.load(open(filename_kwds)))  # load kwds; need to ensure our keywords are not unicode
         try:
             dataset = cPickle.load(open(filename_in, 'rb'))  # load DatasetInstance
@@ -133,12 +120,11 @@ def set_metadata():
             if dataset.dataset.id in existing_job_metadata_dict:
                 dataset.extension = existing_job_metadata_dict[dataset.dataset.id].get('ext', dataset.extension)
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
-            if override_metadata:
-                override_metadata = json.load(open(override_metadata))
-                for metadata_name, metadata_file_override in override_metadata:
-                    if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value(metadata_file_override):
-                        metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
-                    setattr(dataset.metadata, metadata_name, metadata_file_override)
+            override_metadata = json.load(open(override_metadata))
+            for metadata_name, metadata_file_override in override_metadata:
+                if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value(metadata_file_override):
+                    metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
+                setattr(dataset.metadata, metadata_name, metadata_file_override)
             file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
             set_meta_with_tool_provided(dataset, file_dict, set_meta_kwds, datatypes_registry)
             if max_metadata_value_size:
