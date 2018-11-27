@@ -31,7 +31,6 @@ from galaxy.web.base.controller import (
     UsesFormDefinitionsMixin
 )
 from galaxy.web.form_builder import CheckboxField
-from galaxy.web.framework.helpers import grids, time_ago
 
 log = logging.getLogger(__name__)
 
@@ -115,6 +114,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
 
     @expose_api_anonymous_and_sessionless
     def login(self, trans, payload={}, **kwd):
+        return self.__validate_login(trans, payload, **kwd)
+
+    def __validate_login(self, trans, payload={}, **kwd):
         '''Handle Galaxy Log in'''
         login = kwd.get("login", payload.get("login"))
         password = kwd.get("password", payload.get("password"))
@@ -265,8 +267,6 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         subscribe_checked = CheckboxField.is_checked(subscribe)
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
-        print trans
-        print "DONE"
         is_admin = trans.user_is_admin
         success = False
         show_user_prepopulate_form = False
