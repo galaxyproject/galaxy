@@ -2,8 +2,12 @@
 Manager and Serializer for Users.
 """
 import logging
+import random
+import socket
+from datetime import datetime
 
-import sqlalchemy
+from markupsafe import escape
+from sqlalchemy import and_, desc, exc, func, true
 
 from galaxy import (
     exceptions,
@@ -15,54 +19,61 @@ from galaxy.managers import (
     base,
     deletable
 )
-from galaxy.security import validate_user_input
+from galaxy.security.validate_user_input import validate_email, validate_password, validate_publicname
+from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
+PASSWORD_RESET_TEMPLATE = """
+To reset your Galaxy password for the instance at %s use the following link,
+which will expire %s.
+
+%s
+
+If you did not make this request, no action is necessary on your part, though
+you may want to notify an administrator.
+
+If you're having trouble using the link when clicking it from email client, you
+can also copy and paste it into your browser.
+"""
+
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
-    model_class = model.User
     foreign_key_name = 'user'
 
     # TODO: there is quite a bit of functionality around the user (authentication, permissions, quotas, groups/roles)
     #   most of which it may be unneccessary to have here
 
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
-    # TODO: incorp CreatesUsersMixin
     # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
+    def __init__(self, app):
+        self.model_class = app.model.User
+        super(UserManager, self).__init__(app)
 
-    def create(self, webapp_name=None, **kwargs):
+    def create(self, email=None, username=None, password=None, **kwargs):
         """
         Create a new user.
         """
-        # TODO: deserialize and validate here
-        email = kwargs['email']
-        username = kwargs['username']
-        password = kwargs['password']
         self._error_on_duplicate_email(email)
-
-        user = model.User(email=email, password=password)
+        user = self.model_class(email=email)
+        user.set_password_cleartext(password)
         user.username = username
-
         if self.app.config.user_activation_on:
             user.active = False
         else:
             # Activation is off, every new user is active by default.
             user.active = True
-
         self.session().add(user)
         try:
             self.session().flush()
             # TODO:?? flush needed for permissions below? If not, make optional
-        except sqlalchemy.exc.IntegrityError as db_err:
+        except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
-
         # can throw an sqlalx.IntegrityError if username not unique
-
         self.app.security_agent.create_private_user_role(user)
-        if webapp_name == 'galaxy':
-            # We set default user permissions, before we log in and set the default history permissions
+        # We set default user permissions, before we log in and set the default history permissions
+        if hasattr(self.app.config, "new_user_dataset_access_role_default_private"):
             permissions = self.app.config.new_user_dataset_access_role_default_private
             self.app.security_agent.user_set_default_permissions(user, default_access_private=permissions)
         return user
@@ -179,7 +190,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         query = (self.session().query(model.APIKeys)
                  .filter_by(user=user)
-                 .order_by(sqlalchemy.desc(model.APIKeys.create_time)))
+                 .order_by(desc(model.APIKeys.create_time)))
         all = query.all()
         if len(all):
             return all[0]
@@ -242,6 +253,150 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         tags = all_tags_query.distinct().all()
         tags = [((name + ':' + val) if val else name) for name, val in tags]
         return sorted(tags)
+
+    def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
+        """
+        Allows to change a user password with a token.
+        """
+        if not token and not id:
+            return None, "Please provide a token or a user and password."
+        if token:
+            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
+            if not token_result or not token_result.expiration_time > datetime.utcnow():
+                return None, "Invalid or expired password reset token, please request a new one."
+            user = token_result.user
+            message = self.__set_password(trans, user, password, confirm)
+            if message:
+                return None, message
+            token_result.expiration_time = datetime.utcnow()
+            trans.sa_session.add(token_result)
+            return user, "Password has been changed. Token has been invalidated."
+        else:
+            user = self.by_id(self.app.security.decode_id(id))
+            if user:
+                message = self.app.auth_manager.check_change_password(user, current)
+                if message:
+                    return None, message
+                message = self.__set_password(trans, user, password, confirm)
+                if message:
+                    return None, message
+                return user, "Password has been changed."
+            else:
+                return user, "User not found."
+
+    def __set_password(self, trans, user, password, confirm):
+        if not password:
+            return "Please provide a new password."
+        if user:
+            # Validate the new password
+            message = validate_password(trans, password, confirm)
+            if message:
+                return message
+            else:
+                # Save new password
+                user.set_password_cleartext(password)
+                # Invalidate all other sessions
+                if trans.galaxy_session:
+                    for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
+                                                     .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
+                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
+                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                        other_galaxy_session.is_valid = False
+                        trans.sa_session.add(other_galaxy_session)
+                trans.sa_session.add(user)
+                trans.sa_session.flush()
+                trans.log_event("User change password")
+        else:
+            return "Failed to determine user, access denied."
+
+    def send_activation_email(self, trans, email, username):
+        """
+        Send the verification email containing the activation link to the user's email.
+        """
+        activation_token = self.__get_activation_token(trans, escape(email))
+        activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=escape(email), qualified=True)
+        host = self.__get_host(trans)
+        body = ("Hello %s,\n\n"
+                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
+                "%s \n\n"
+                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
+                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
+                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
+                "Your Galaxy Team" % (escape(username), escape(email),
+                                      datetime.utcnow().strftime("%D"),
+                                      trans.request.host, activation_link,
+                                      trans.app.config.terms_url,
+                                      trans.app.config.error_email_to,
+                                      trans.app.config.instance_resource_url))
+        to = email
+        frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+        subject = 'Galaxy Account Activation'
+        try:
+            util.send_mail(frm, to, subject, body, trans.app.config)
+            return True
+        except Exception:
+            log.exception('Unable to send the activation email.')
+            return False
+
+    def __get_activation_token(self, trans, email):
+        """
+        Check for the activation token. Create new activation token and store it in the database if no token found.
+        """
+        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+        activation_token = user.activation_token
+        if activation_token is None:
+            activation_token = util.hash_util.new_secure_hash(str(random.getrandbits(256)))
+            user.activation_token = activation_token
+            trans.sa_session.add(user)
+            trans.sa_session.flush()
+        return activation_token
+
+    def send_reset_email(self, trans, payload={}, **kwd):
+        """Reset the user's password. Send an email with token that allows a password change."""
+        if self.app.config.smtp_server is None:
+            return "Mail is not configured for this Galaxy instance and password reset information cannot be sent. Please contact your local Galaxy administrator."
+        email = payload.get("email")
+        if not email:
+            return "Please provide your email."
+        message = validate_email(trans, email, check_dup=False)
+        if message:
+            return message
+        else:
+            reset_user, prt = self.get_reset_token(trans, email)
+            if prt:
+                host = self.__get_host(trans)
+                reset_url = url_for(controller='root', action='login', token=prt.token)
+                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
+                                                  reset_url)
+                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+                subject = 'Galaxy Password Reset'
+                try:
+                    util.send_mail(frm, email, subject, body, trans.app.config)
+                    trans.sa_session.add(reset_user)
+                    trans.sa_session.flush()
+                    trans.log_event('User reset password: %s' % email)
+                except Exception as e:
+                    log.debug(body)
+                    return "Failed to submit email. Please contact the administrator: %s" % str(e)
+            else:
+                return "Failed to produce password reset token. User not found."
+
+    def get_reset_token(self, trans, email):
+        reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+        if not reset_user:
+            # Perform a case-insensitive check only if the user wasn't found
+            reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
+        if reset_user:
+            prt = trans.app.model.PasswordResetToken(reset_user)
+            trans.sa_session.add(prt)
+            trans.sa_session.flush()
+            return reset_user, prt
+
+    def __get_host(self, trans):
+        host = trans.request.host.split(':')[0]
+        if host in ['localhost', '127.0.0.1', '0.0.0.0']:
+            host = socket.getfqdn()
+        return host
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
@@ -313,7 +468,7 @@ class UserDeserializer(base.ModelDeserializer):
     def deserialize_username(self, item, key, username, trans=None, **context):
         # TODO: validate_user_input requires trans and should(?) raise exceptions
         # move validation to UserValidator and use self.app, exceptions instead
-        validation_error = validate_user_input.validate_publicname(trans, username, user=item)
+        validation_error = validate_publicname(trans, username, user=item)
         if validation_error:
             raise base.ModelDeserializingError(validation_error)
         return self.default_deserializer(item, key, username, trans=trans, **context)
@@ -372,5 +527,4 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
             'disk_usage'    : {'op': ('le', 'ge')}
         })
 
-        self.fn_filter_parsers.update({
-        })
+        self.fn_filter_parsers.update({})
