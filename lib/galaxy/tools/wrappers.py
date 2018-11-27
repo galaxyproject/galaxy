@@ -406,6 +406,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         return True
 
     @property
+    def element_identifier(self):
+        return self.name
+
+    @property
     def is_input_supplied(self):
         return self.__input_supplied
 
