@@ -10,6 +10,7 @@ from galaxy import (
     objectstore,
     quota
 )
+from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
 from galaxy.jobs import NoopQueue
 from galaxy.managers import tags
@@ -69,7 +70,6 @@ class MockApp(object):
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
-            destinations={}
         )
         self.tool_data_tables = {}
         self.dataset_collections_service = None
@@ -78,6 +78,7 @@ class MockApp(object):
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = Bunch(job_queue=NoopQueue())
         self.application_stack = ApplicationStack()
+        self.auth_manager = AuthManager(self)
 
     def init_datatypes(self):
         datatypes_registry = registry.Registry()
@@ -121,6 +122,10 @@ class MockAppConfig(Bunch):
         self.expose_dataset_path = True
         self.allow_user_dataset_purge = True
         self.enable_old_display_applications = True
+        self.redact_username_in_logs = False
+        self.auth_config_file = "config/auth_conf.xml.sample"
+        self.error_email_to = "admin@email.to"
+        self.password_expiration_period = 0
 
         self.umask = 0o77
 
@@ -155,14 +160,23 @@ class MockTrans(object):
         self.webapp = MockWebapp(**kwargs)
         self.sa_session = self.app.model.session
         self.workflow_building_mode = False
+        self.error_message = None
+        self.anonymous = False
+        self.debug = True
 
         self.galaxy_session = None
         self.__user = user
         self.security = self.app.security
         self.history = history
 
-        self.request = Bunch(headers={})
-        self.response = Bunch(headers={})
+        self.request = Bunch(headers={}, body=None)
+        self.response = Bunch(headers={}, set_content_type=lambda i : None)
+
+    def handle_user_login(self, user):
+        pass
+
+    def log_event(self, message):
+        pass
 
     def get_user(self):
         if self.galaxy_session:
