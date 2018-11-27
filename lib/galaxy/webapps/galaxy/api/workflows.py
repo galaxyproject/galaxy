@@ -146,10 +146,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['number_of_steps'] = wf.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             if user is not None:
-                for x in user.stored_workflow_menu_entries:
-                    if x.stored_workflow_id == wf.id:
-                        item['show_in_tool_panel'] = True
-                        break
+                item['show_in_tool_panel'] = wf.show_in_tool_panel(user_id=user.id)
             rval.append(item)
         for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
                 model.StoredWorkflowUserShareAssociation.stored_workflow).options(
@@ -166,10 +163,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
             item['show_in_tool_panel'] = False
             if user is not None:
-                for x in user.stored_workflow_menu_entries:
-                    if x.stored_workflow_id == wf_sa.id:
-                        item['show_in_tool_panel'] = True
-                        break
+                item['show_in_tool_panel'] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
