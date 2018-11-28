@@ -55,7 +55,7 @@ class JobRunnerMapper(object):
             module_name = job_config.dynamic_params['rules_module']
             self.rules_module = importlib.import_module(module_name)
 
-    def __invoke_expand_function(self, expand_function, destination_params):
+    def __invoke_expand_function(self, expand_function, destination):
         function_arg_names = inspect.getargspec(expand_function).args
         app = self.job_wrapper.app
         possible_args = {
@@ -64,15 +64,16 @@ class JobRunnerMapper(object):
             "tool_id": self.job_wrapper.tool.id,
             "job_wrapper": self.job_wrapper,
             "rule_helper": RuleHelper(app),
-            "app": app
+            "app": app,
+            "referrer": destination
         }
 
         actual_args = {}
 
         # Send through any job_conf.xml defined args to function
-        for destination_param in destination_params.keys():
+        for destination_param in destination.params.keys():
             if destination_param in function_arg_names:
-                actual_args[destination_param] = destination_params[destination_param]
+                actual_args[destination_param] = destination.params[destination_param]
 
         # Populate needed args
         for possible_arg_name in possible_args:
@@ -196,7 +197,7 @@ class JobRunnerMapper(object):
         return self.__handle_rule(expand_function, destination)
 
     def __handle_rule(self, rule_function, destination):
-        job_destination = self.__invoke_expand_function(rule_function, destination.params)
+        job_destination = self.__invoke_expand_function(rule_function, destination)
         if not isinstance(job_destination, galaxy.jobs.JobDestination):
             job_destination_rep = str(job_destination)  # Should be either id or url
             if '://' in job_destination_rep:

@@ -36,6 +36,7 @@ def check_rule_params(
     tool_id,
     job_wrapper,
     rule_helper,
+    referrer,
     app,
     job,
     user,
@@ -47,6 +48,8 @@ def check_rule_params(
     assert job_wrapper.is_mock_job_wrapper()
     assert app == job_wrapper.app
     assert rule_helper is not None
+    assert isinstance(referrer, JobDestination)
+    assert referrer.params['param1'] == "referrer_param"
 
     assert job.user == user
     assert user.id == 6789
