@@ -34,7 +34,7 @@ class JobExternalOutputMetadataWrapper(object):
     def __init__(self, job_id):
         self.job_id = job_id
 
-    def get_output_filenames_by_dataset(self, dataset, sa_session):
+    def _get_output_filenames_by_dataset(self, dataset, sa_session):
         if isinstance(dataset, galaxy.model.HistoryDatasetAssociation):
             return sa_session.query(galaxy.model.JobExternalOutputMetadata) \
                              .filter_by(job_id=self.job_id,
@@ -56,13 +56,13 @@ class JobExternalOutputMetadataWrapper(object):
 
     def invalidate_external_metadata(self, datasets, sa_session):
         for dataset in datasets:
-            jeom = self.get_output_filenames_by_dataset(dataset, sa_session)
+            jeom = self._get_output_filenames_by_dataset(dataset, sa_session)
             # shouldn't be more than one valid, but you never know
             while jeom:
                 jeom.is_valid = False
                 sa_session.add(jeom)
                 sa_session.flush()
-                jeom = self.get_output_filenames_by_dataset(dataset, sa_session)
+                jeom = self._get_output_filenames_by_dataset(dataset, sa_session)
 
     def setup_external_metadata(self, datasets, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
@@ -121,7 +121,7 @@ class JobExternalOutputMetadataWrapper(object):
             # when setting metadata externally, via 'auto-detect' button in edit attributes, etc.,
             # we don't want to overwrite (losing the ability to cleanup) our existing dataset keys and files,
             # so we will only populate the dictionary once
-            metadata_files = self.get_output_filenames_by_dataset(dataset, sa_session)
+            metadata_files = self._get_output_filenames_by_dataset(dataset, sa_session)
             if not metadata_files:
                 job = sa_session.query(galaxy.model.Job).get(self.job_id)
                 metadata_files = galaxy.model.JobExternalOutputMetadata(job=job, dataset=dataset)
@@ -184,7 +184,7 @@ class JobExternalOutputMetadataWrapper(object):
             return args
 
     def external_metadata_set_successfully(self, dataset, sa_session):
-        metadata_files = self.get_output_filenames_by_dataset(dataset, sa_session)
+        metadata_files = self._get_output_filenames_by_dataset(dataset, sa_session)
         if not metadata_files:
             return False  # this file doesn't exist
         rval, rstring = json.load(open(metadata_files.filename_results_code))
@@ -214,3 +214,22 @@ class JobExternalOutputMetadataWrapper(object):
             metadata_files.job_runner_external_pid = pid
             sa_session.add(metadata_files)
             sa_session.flush()
+
+    def load_metadata(self, dataset, name, sa_session, working_directory, remote_metadata_directory=None):
+        # load metadata from file
+        # we need to no longer allow metadata to be edited while the job is still running,
+        # since if it is edited, the metadata changed on the running output will no longer match
+        # the metadata that was stored to disk for use via the external process,
+        # and the changes made by the user will be lost, without warning or notice
+        output_filename = self._get_output_filenames_by_dataset(dataset, sa_session).filename_out
+
+        def path_rewriter(path):
+            if not path:
+                return path
+            normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
+            normalized_path = os.path.normpath(path)
+            if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
+                return normalized_path.replace(normalized_remote_metadata_directory, working_directory, 1)
+            return path
+
+        dataset.metadata.from_JSON_dict(output_filename, path_rewriter=path_rewriter)

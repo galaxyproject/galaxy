@@ -2258,10 +2258,14 @@ class SetMetadataTool(Tool):
             )
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
+        working_directory = app.object_store.get_filename(
+            job, base_dir='job_work', dir_only=True, obj_dir=True
+        )
         for name, dataset in inp_data.items():
             external_metadata = get_metadata_compute_strategy(app, job.id)
-            if external_metadata.external_metadata_set_successfully(dataset, app.model.context):
-                dataset.metadata.from_JSON_dict(external_metadata.get_output_filenames_by_dataset(dataset, app.model.context).filename_out)
+            sa_session = app.model.context
+            if external_metadata.external_metadata_set_successfully(dataset, sa_session):
+                external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
             else:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add(dataset)
