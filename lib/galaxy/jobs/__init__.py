@@ -24,11 +24,12 @@ from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
 import galaxy
 from galaxy import model, util
-from galaxy.datatypes import metadata, sniff
+from galaxy.datatypes import sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
+from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
@@ -702,7 +703,7 @@ class JobWrapper(HasResourceParameters):
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper(job)
+        self.external_output_metadata = get_metadata_compute_strategy(self.app, job.id)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:

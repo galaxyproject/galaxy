@@ -25,9 +25,9 @@ from galaxy import (
     exceptions,
     model
 )
-from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.tags import GalaxyTagManager
+from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -2259,7 +2259,7 @@ class SetMetadataTool(Tool):
 
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
         for name, dataset in inp_data.items():
-            external_metadata = JobExternalOutputMetadataWrapper(job)
+            external_metadata = get_metadata_compute_strategy(app, job.id)
             if external_metadata.external_metadata_set_successfully(dataset, app.model.context):
                 dataset.metadata.from_JSON_dict(external_metadata.get_output_filenames_by_dataset(dataset, app.model.context).filename_out)
             else:
