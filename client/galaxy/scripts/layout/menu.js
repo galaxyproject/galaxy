@@ -163,6 +163,11 @@ var Collection = Backbone.Collection.extend({
             tooltip: _l("Support, contact, and community"),
             menu: [
                 {
+                    title: _l("Galaxy Help"),
+                    url: options.helpsite_url,
+                    target: "_blank"
+                },
+                {
                     title: _l("Support"),
                     url: options.support_url,
                     target: "_blank"
