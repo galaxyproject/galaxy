@@ -34,7 +34,7 @@ log = logging.getLogger(__name__)
 galaxy.model.Job()  # this looks REAL stupid, but it is REQUIRED in order for SA to insert parameters into the classes defined by the mappers --> it appears that instantiating ANY mapper'ed class would suffice here
 
 
-def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry):
+def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size):
     # This method is somewhat odd, in that we set the metadata attributes from tool,
     # then call set_meta, then set metadata attributes from tool again.
     # This is intentional due to interplay of overwrite kwd, the fact that some metadata
@@ -61,6 +61,12 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
     dataset_instance.datatype.set_meta(dataset_instance, **set_meta_kwds)
     for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
+
+    if max_metadata_value_size:
+        for k, v in list(dataset_instance.metadata.items()):
+            if total_size(v) > max_metadata_value_size:
+                log.info("Key %s too large for metadata, discarding" % k)
+                dataset_instance.metadata.remove_key(k)
 
 
 def set_metadata():
@@ -140,12 +146,7 @@ def set_metadata():
                         metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
                     setattr(dataset.metadata, metadata_name, metadata_file_override)
             file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
-            set_meta_with_tool_provided(dataset, file_dict, set_meta_kwds, datatypes_registry)
-            if max_metadata_value_size:
-                for k, v in list(dataset.metadata.items()):
-                    if total_size(v) > max_metadata_value_size:
-                        log.info("Key %s too large for metadata, discarding" % k)
-                        dataset.metadata.remove_key(k)
+            set_meta_with_tool_provided(dataset, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
         except Exception as e:
@@ -159,7 +160,7 @@ def set_metadata():
             new_dataset._extra_files_path = os.path.join(tool_job_working_directory, "working", extra_files)
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = galaxy.model.HistoryDatasetAssociation(id=-i, dataset=new_dataset, extension=file_dict.get('ext', 'data'))
-        set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry)
+        set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
         file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
     if existing_job_metadata_dict or new_job_metadata_dict:
         with open(job_metadata, 'wt') as job_metadata_fh:
