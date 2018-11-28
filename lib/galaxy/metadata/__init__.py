@@ -49,7 +49,7 @@ class JobExternalOutputMetadataWrapper(object):
                              .first()  # there should only be one or None
         return None
 
-    def get_dataset_metadata_key(self, dataset):
+    def _get_dataset_metadata_key(self, dataset):
         # Set meta can be called on library items and history items,
         # need to make different keys for them, since ids can overlap
         return "%s_%d" % (dataset.__class__.__name__, dataset.id)
@@ -115,7 +115,7 @@ class JobExternalOutputMetadataWrapper(object):
             raise Exception('In setup_external_metadata, the received datatypes_config is None.')
         metadata_files_list = []
         for dataset in datasets:
-            key = self.get_dataset_metadata_key(dataset)
+            key = self._get_dataset_metadata_key(dataset)
             # future note:
             # wonkiness in job execution causes build command line to be called more than once
             # when setting metadata externally, via 'auto-detect' button in edit attributes, etc.,
@@ -198,7 +198,7 @@ class JobExternalOutputMetadataWrapper(object):
             # we need to confirm that any MetadataTempFile files were removed, if not we need to remove them
             # can occur if the job was stopped before completion, but a MetadataTempFile is used in the set_meta
             MetadataTempFile.cleanup_from_JSON_dict_filename(metadata_files.filename_out)
-            dataset_key = self.get_dataset_metadata_key(metadata_files.dataset)
+            dataset_key = self._get_dataset_metadata_key(metadata_files.dataset)
             for key, fname in [('filename_in', metadata_files.filename_in),
                                ('filename_out', metadata_files.filename_out),
                                ('filename_results_code', metadata_files.filename_results_code),
