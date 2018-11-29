@@ -731,7 +731,7 @@ mapping:
 
       smtp_username:
         type: str
-        default: '' 
+        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -996,6 +996,13 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Galaxy/brand" text.
+
+      helpsite_url:
+        type: str
+        default: https://help.galaxyproject.org/
+        required: false
+        desc: |
+          The URL linked by the "Galaxy Help" link in the "Help" menu.
 
       wiki_url:
         type: str

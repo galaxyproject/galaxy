@@ -697,6 +697,9 @@ galaxy:
   # The URL linked by the "Galaxy/brand" text.
   #logo_url: /
 
+  # The URL linked by the "Galaxy Help" link in the "Help" menu.
+  #helpsite_url: 'https://help.galaxyproject.org/'
+
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: 'https://galaxyproject.org/'
 
@@ -1354,6 +1357,9 @@ galaxy:
   # Enable beta workflow modules that should not yet be considered part
   # of Galaxy's stable API.
   #enable_beta_workflow_modules: false
+
+  # Enable import and export of workflows as Galaxy Format 2 workflows.
+  #enable_beta_workflow_format: false
 
   # Following options only apply to workflows scheduled using the legacy
   # workflow run API (running workflows via a POST to /api/workflows).
