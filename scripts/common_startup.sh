@@ -249,6 +249,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
         fi
     else
         echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
+        exit 1
     fi
     popd
 else
