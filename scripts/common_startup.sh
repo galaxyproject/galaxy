@@ -69,14 +69,14 @@ in_conda_env() {
 }
 
 if [ $COPY_SAMPLE_FILES -eq 1 ]; then
-	# Create any missing config/location files
-	for sample in $SAMPLES; do
-		file=${sample%.sample}
-	    if [ ! -f "$file" -a -f "$sample" ]; then
-	        echo "Initializing $file from $(basename "$sample")"
-	        cp "$sample" "$file"
-	    fi
-	done
+    # Create any missing config/location files
+    for sample in $SAMPLES; do
+        file=${sample%.sample}
+        if [ ! -f "$file" -a -f "$sample" ]; then
+            echo "Initializing $file from $(basename "$sample")"
+            cp "$sample" "$file"
+        fi
+    done
 fi
 
 # remove problematic cached files
