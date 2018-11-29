@@ -1632,6 +1632,171 @@ class CustomTrack(Tabular):
         return found_at_least_one_track
 
 
+class GTrack(Interval):
+    edam_format = "format_3164"
+    file_ext = "gtrack"
+    # track_type = "LineTrack"
+    # data_sources = {"data": "bigwig", "index": "bigwig"}
+
+    """Add metadata elements"""
+    # MetadataElement(name="comment_lines", default=0, desc="Number of comment lines",
+    #                 readonly=False, optional=True, no_value=0)
+
+    MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True,
+                    visible=False, optional=True, no_value=0)
+    MetadataElement(name="header_lines", default=0, desc="Number of header lines",
+                    readonly=False, optional=True, no_value=0)
+    MetadataElement(name="bounding_regions", default=0, desc="Number of bounding regions",
+                    readonly=False, optional=True, no_value=0)
+
+    # MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
+    #                 visible=False, no_value=0)
+    # MetadataElement(name="column_types", default=[], desc="Column types",
+    #                 param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
+    # MetadataElement(name="column_names", default=[], desc="Column names", readonly=True,
+    #                 visible=False, optional=True, no_value=[])
+    # MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
+    #                 visible=False, optional=True, no_value=[])
+    #
+    MetadataElement(name="chromCol", default=1, desc="Sequence id (chrom) column",
+                    param=metadata.ColumnParameter)
+    MetadataElement(name="startCol", default=2, desc="Start column",
+                    param=metadata.ColumnParameter)
+    MetadataElement(name="endCol", default=3, desc="End column",
+                    param=metadata.ColumnParameter)
+    MetadataElement(name="strandCol", desc="Strand column",
+                    param=metadata.ColumnParameter, optional=True, no_value=0)
+    MetadataElement(name="nameCol", desc="Identifier column",
+                    param=metadata.ColumnParameter, optional=True, no_value=0)
+
+    GTRACK_STD_COLUMN_TYPES = {
+        'genome': 'str',
+        'seqid': 'str',
+        'start': 'int',
+        'end': 'int',
+        'strand': 'str',
+        'id': 'str',
+        'edges': 'list'
+    }
+
+    # TODO: Implement GTrack sniffer
+    # Rules for being a GTrack file, if either
+    # 1. "GTrack version" header exists
+    # 2. "GTrack subtype" header exists
+    # 3. "Subtype URL" header exists, and points to a real URL
+    # 4. Column spec line exists, and:
+    #   - At least one of the core reserved columns (start, end, value, edges) exist
+    #     - Although to be complicated value and edges column might have another name if
+    #       the "value column" and "edges column" headers is set
+    #     - The number of columns in the data lines and column lines are the same (expect for
+    #         the last line, which might be cut short due to the cutoff)
+    #
+    # NB: Try to reuse and refine existing parse function instead of implementing them twice
+    # Example files: GTrack files to try can be found at:
+    #    https://github.com/gtrack/gtrackcore/tree/master/gtrackcore/data/gtrack
+    #    Just try by uploading the files into Galaxy with and without sniffing (autodetect type)
+    #    You unfortunately need to restart Galaxy for each code change..
+    # Note: file_prefix is a string of the beginning 1 MB of the file (or so)
+    def sniff_prefix(self, file_prefix):
+        return False
+
+    def set_meta(self, dataset, **kwd):
+        hash_count_to_lines, num_data_lines = self._parse_file(dataset.file_name)
+        self._set_meta_for_counts(dataset, hash_count_to_lines, num_data_lines)
+
+        column_lines = hash_count_to_lines[3]
+        if column_lines:
+            self._set_meta_for_column_line(dataset, column_lines[0], hash_count_to_lines[2])
+
+    def _set_meta_for_counts(self, dataset, hash_count_to_lines, num_data_lines):
+        dataset.metadata.comment_lines = len(hash_count_to_lines[1])
+        dataset.metadata.data_lines = num_data_lines
+        dataset.metadata.header_lines = sum(len(hash_count_to_lines[i]) for i in (2, 3))
+        dataset.metadata.bounding_regions = len(hash_count_to_lines[4])
+
+    def _set_meta_for_column_line(self, dataset, column_line, header_lines):
+        cols = column_line.lower().split('\t')
+
+        dataset.metadata.columns = len(cols)
+        dataset.metadata.column_names = cols
+
+        col_types = []
+        for col in cols:
+            col_type = self.GTRACK_STD_COLUMN_TYPES.get(col)
+            if not col_type:
+                # TODO: Handle "value column", "value type" and "value dimensions" header lines
+                if col == 'value':
+                    col_type = 'float'
+                else:
+                    col_type = 'str'
+            col_types.append(col_type)
+        dataset.metadata.column_types = col_types
+
+        # TODO: Set the Galaxy std columns to match GTrack file
+        # dataset.metadata.chromCol = 1
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        # hash_count_to_lines, num_data_lines = self._parse_file(dataset.file_name)
+        if not dataset.dataset.purged:
+            dataset.blurb = 'GTrack file contains: {} comment lines, ' \
+                            '{} header lines (incl. colspec), ' \
+                            '{} bounding regions, and {} data lines ' \
+                            'of {} columns'.format(
+                dataset.metadata.comment_lines,
+                dataset.metadata.header_lines,
+                dataset.metadata.bounding_regions,
+                dataset.metadata.data_lines,
+                dataset.metadata.columns
+            )
+            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte,
+                                              skipchars=['#'])
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    # TODO: You probably need this to properly handle the value column
+    # Note: Header variables are case insensitive, so handle them as lower-case
+    # def _parse_headers(self, header_lines):
+
+    def _parse_file(self, filename):
+        from collections import defaultdict
+        hash_count_to_lines = defaultdict(list)
+        num_data_lines = 0
+        with open(filename) as input_file:
+            for line in input_file:
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith('#'):
+                    num_hashes = len(line) - len(line.lstrip('#'))
+                    # More than 4 hashes do not have a meaning, handle as comment
+                    if num_hashes > 4:
+                        num_hashes = 1
+                    hash_count_to_lines[num_hashes].append(line.lstrip('#').strip())
+                else:
+                    num_data_lines += 1
+        return hash_count_to_lines, num_data_lines
+
+    def get_mime(self):
+        return 'text/plain'
+
+    # TODO: I have not investigated whether we neet to implement the below functions.
+    # TODO: Might also be other functions we might need to implement
+    # def as_ucsc_display_file(self, dataset, **kwd):
+    #     """
+    #         Returns file contents as is with no modifications.
+    #         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
+    #     """
+    #     return open(dataset.file_name)
+    #
+    # def get_estimated_display_viewport(self, dataset, chrom_col=0, start_col=1, end_col=2):
+    #     """
+    #         Set viewport based on dataset's first 100 lines.
+    #     """
+    #     return Interval.get_estimated_display_viewport(self, dataset, chrom_col=chrom_col,
+    #                                                    start_col=start_col, end_col=end_col)
+
+
 class ENCODEPeak(Interval):
     """
     Human ENCODE peak format. There are both broad and narrow peak formats.
