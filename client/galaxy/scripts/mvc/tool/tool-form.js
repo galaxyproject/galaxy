@@ -353,7 +353,7 @@ var View = Backbone.View.extend({
         if (list.length > 0) {
             blurb += `<p>${title}:</p>`;
             for (let item of list) {
-                let rowString = max > 0 ? `${item.hid}: ${item.name}` : "...";
+                let rowString = max > 0 ? `${item.hid}: ${_.escape(item.name)}` : "...";
                 blurb += `<p class="messagerow">
                             <b>${rowString}</b>
                           </p>`;
