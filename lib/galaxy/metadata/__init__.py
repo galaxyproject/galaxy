@@ -1,5 +1,6 @@
 """Define abstraction for capturing the metadata of job's output datasets."""
 
+import abc
 import json
 import os
 import shutil
@@ -7,6 +8,7 @@ import tempfile
 from logging import getLogger
 from os.path import abspath
 
+import six
 from six.moves import cPickle
 
 import galaxy.model
@@ -20,7 +22,45 @@ def get_metadata_compute_strategy(app, job_id):
     return JobExternalOutputMetadataWrapper(job_id)
 
 
-class JobExternalOutputMetadataWrapper(object):
+@six.add_metaclass(abc.ABCMeta)
+class MetadataCollectionStrategy(object):
+    """Interface describing the abstract process of writing out and collecting output metadata.
+    """
+
+    def invalidate_external_metadata(self, datasets, sa_session):
+        """Invalidate written files."""
+        pass
+
+    def set_job_runner_external_pid(self, pid, sa_session):
+        pass
+
+    def cleanup_external_metadata(self, sa_session):
+        pass
+
+    @abc.abstractmethod
+    def setup_external_metadata(self, datasets, sa_session, exec_dir=None,
+                                tmp_dir=None, dataset_files_path=None,
+                                output_fnames=None, config_root=None,
+                                config_file=None, datatypes_config=None,
+                                job_metadata=None, compute_tmp_dir=None,
+                                include_command=True, max_metadata_value_size=0,
+                                kwds=None):
+        """Setup files needed for external metadata collection.
+
+        If include_command is True, return full Python command to externally compute metadata
+        otherwise just the arguments to galaxy_ext.metadata.set_metadata required to build.
+        """
+
+    @abc.abstractmethod
+    def external_metadata_set_successfully(self, dataset, sa_session):
+        """Return boolean indicating if metadata for specified dataset was written properly."""
+
+    @abc.abstractmethod
+    def load_metadata(self, dataset, name, sa_session, working_directory, remote_metadata_directory=None):
+        """Load metadata calculated externally into specified dataset."""
+
+
+class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
     """
     Class with methods allowing set_meta() to be called externally to the
     Galaxy head.
