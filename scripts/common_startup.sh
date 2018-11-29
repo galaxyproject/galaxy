@@ -241,10 +241,16 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
 
     # Build client
-    if ! make client-production-maps; then
-        echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
-        exit 1
+    pushd client
+    if yarn install --network-timeout 120000 --check-files; then
+        if ! yarn run build-production-maps; then
+            echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+            exit 1
+        fi
+    else
+        echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
     fi
+    popd
 else
     echo "Regenerating static plugin directories."
     python ./scripts/plugin_staging.py
