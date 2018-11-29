@@ -1752,9 +1752,14 @@ class JobWrapper(HasResourceParameters):
         if datatypes_config is None:
             datatypes_config = os.path.join(self.working_directory, 'registry.xml')
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
-        command = self.external_output_metadata.setup_external_metadata([output_dataset_assoc.dataset for
-                                                                         output_dataset_assoc in
-                                                                         job.output_datasets + job.output_library_datasets],
+
+        output_datasets = {}
+        for output_dataset_assoc in job.output_datasets + job.output_library_datasets:
+            output_name = output_dataset_assoc.name
+            assert output_name not in output_datasets
+            output_datasets[output_dataset_assoc.name] = output_dataset_assoc.dataset
+
+        command = self.external_output_metadata.setup_external_metadata(output_datasets,
                                                                         self.sa_session,
                                                                         exec_dir=exec_dir,
                                                                         tmp_dir=tmp_dir,

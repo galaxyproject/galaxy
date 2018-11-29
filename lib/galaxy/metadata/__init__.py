@@ -38,7 +38,7 @@ class MetadataCollectionStrategy(object):
         pass
 
     @abc.abstractmethod
-    def setup_external_metadata(self, datasets, sa_session, exec_dir=None,
+    def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
                                 output_fnames=None, config_root=None,
                                 config_file=None, datatypes_config=None,
@@ -104,7 +104,7 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                 sa_session.flush()
                 jeom = self._get_output_filenames_by_dataset(dataset, sa_session)
 
-    def setup_external_metadata(self, datasets, sa_session, exec_dir=None,
+    def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
                                 tmp_dir=None, dataset_files_path=None,
                                 output_fnames=None, config_root=None,
                                 config_file=None, datatypes_config=None,
@@ -143,8 +143,8 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                 metadata_path_on_compute(metadata_files.filename_override_metadata),
             )
             return line
-        if not isinstance(datasets, list):
-            datasets = [datasets]
+
+        datasets = list(datasets_dict.values())
         if exec_dir is None:
             exec_dir = os.path.abspath(os.getcwd())
         if dataset_files_path is None:
