@@ -3,13 +3,13 @@
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
-                <b-form @submit.prevent="submit()">
+                <b-form id="login" @submit.prevent="submit()">
                     <b-card header="Welcome to Galaxy, please log in">
                         <b-form-group label="Username or Email Address">
-                            <b-form-input type="text" v-model="login"/>
+                            <b-form-input name="login" type="text" v-model="login"/>
                         </b-form-group>
                         <b-form-group label="Password">
-                            <b-form-input type="password" v-model="password"/>
+                            <b-form-input name="password" type="password" v-model="password"/>
                             <b-form-text>Forgot password? Click here to <a @click="reset" href="#">reset</a> your password.</b-form-text>
                         </b-form-group>
                         <b-button type="submit">Login</b-button>

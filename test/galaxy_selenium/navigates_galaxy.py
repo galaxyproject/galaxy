@@ -376,12 +376,11 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_user()
         self.wait_for_and_click(self.navigation.masthead.labels.login)
 
-        with self.main_panel():
-            self.sleep_for(WAIT_TYPES.UX_RENDER)
-            form = self.wait_for_visible(self.navigation.login.selectors.form)
-            self.fill(form, login_info)
-            self.snapshot("logging-in")
-            self.click_submit(form)
+        self.sleep_for(WAIT_TYPES.UX_RENDER)
+        form = self.wait_for_visible(self.navigation.login.selectors.form)
+        self.fill(form, login_info)
+        self.snapshot("logging-in")
+        self.wait_for_and_click(self.navigation.login.selectors.submit)
 
         self.snapshot("login-submitted")
         if assert_valid:
