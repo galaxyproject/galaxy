@@ -999,7 +999,7 @@ mapping:
 
       helpsite_url:
         type: str
-        default: https://help.galaxyproject.org/
+        default: ''
         required: false
         desc: |
           The URL linked by the "Galaxy Help" link in the "Help" menu.
