@@ -163,11 +163,6 @@ var Collection = Backbone.Collection.extend({
             tooltip: _l("Support, contact, and community"),
             menu: [
                 {
-                    title: _l("Galaxy Help"),
-                    url: options.helpsite_url,
-                    target: "_blank"
-                },
-                {
                     title: _l("Support"),
                     url: options.support_url,
                     target: "_blank"
@@ -222,6 +217,13 @@ var Collection = Backbone.Collection.extend({
                 title: _l("Galaxy Biostar"),
                 url: options.biostar_url_redirect,
                 target: "_blank"
+            });
+        }
+        if (options.helpsite_url) {
+            helpTab.menu.unshift({
+                    title: _l("Galaxy Help"),
+                    url: options.helpsite_url,
+                    target: "_blank"
             });
         }
         this.add(helpTab);
