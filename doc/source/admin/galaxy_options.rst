@@ -2836,6 +2836,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_workflow_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable import and export of workflows as Galaxy Format 2
+    workflows.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``force_beta_workflow_scheduled_min_steps``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
