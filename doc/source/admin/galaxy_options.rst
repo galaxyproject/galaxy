@@ -1319,6 +1319,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~
+``helpsite_url``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Help" link in the "Help" menu.
+:Default: ````
+:Type: str
+
+
 ~~~~~~~~~~~~
 ``wiki_url``
 ~~~~~~~~~~~~

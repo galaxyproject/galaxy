@@ -447,6 +447,7 @@ class Configuration(object):
         self.message_box_class = kwargs.get('message_box_class', 'info')
         self.support_url = kwargs.get('support_url', 'https://galaxyproject.org/support')
         self.citation_url = kwargs.get('citation_url', 'https://galaxyproject.org/citing-galaxy')
+        self.helpsite_url = kwargs.get('helpsite_url', None)
         self.wiki_url = kwargs.get('wiki_url', 'https://galaxyproject.org/')
         self.blog_url = kwargs.get('blog_url', None)
         self.screencasts_url = kwargs.get('screencasts_url', None)
