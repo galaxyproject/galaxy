@@ -1366,6 +1366,9 @@ galaxy:
   # of Galaxy's stable API.
   #enable_beta_workflow_modules: false
 
+  # Enable import and export of workflows as Galaxy Format 2 workflows.
+  #enable_beta_workflow_format: false
+
   # Following options only apply to workflows scheduled using the legacy
   # workflow run API (running workflows via a POST to /api/workflows).
   # Force usage of Galaxy's beta workflow scheduler under certain
