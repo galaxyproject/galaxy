@@ -12,7 +12,7 @@ In addition to framework dependencies, as of Galaxy 18.01, the client (UI) is no
 **in the development (dev) branch of the source repository**. The built client is still provided in
 ``release_YY.MM`` branches and the ``master`` branch.
 
-.. _Python module dependencies: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/requirements.txt
+.. _Python module dependencies: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/pipfiles/default/pinned-requirements.txt
 .. _Python packaging best practices: https://packaging.python.org
 .. _virtualenv: https://packaging.python.org/tutorials/installing-packages/#creating-virtual-environments
 .. _pip: https://packaging.python.org/tutorials/installing-packages/#use-pip-for-installing
