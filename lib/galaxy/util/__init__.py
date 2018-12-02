@@ -1351,6 +1351,8 @@ def size_to_bytes(size):
 
     >>> size_to_bytes('1024')
     1024
+    >>> size_to_bytes('1.0')
+    1
     >>> size_to_bytes('10 bytes')
     10
     >>> size_to_bytes('4k')
@@ -1360,16 +1362,16 @@ def size_to_bytes(size):
     """
     # Assume input in bytes if we can convert directly to an int
     try:
-        return int(size)
+        return int(float(size))
     except ValueError:
         pass
     # Otherwise it must have non-numeric characters
-    size_re = re.compile(r'([\d\.]+)\s*([eptgmk]b?|b|bytes?)$')
+    size_re = re.compile(r'(?P<size>[\d\.]+)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
     assert size_match is not None
-    size = float(size_match.group(1))
-    multiple = size_match.group(2)
-    if multiple.startswith('b'):
+    size = float(size_match.group("size"))
+    multiple = size_match.group("multiple")
+    if multiple == "" or multiple.startswith('b'):
         return int(size)
     elif multiple.startswith('k'):
         return int(size * 1024)
