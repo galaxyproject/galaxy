@@ -20,7 +20,7 @@ azure-storage-nspkg==3.0.0
 babel==2.6.0
 bagit==1.7.0
 bcrypt==3.1.4
-bdbag==1.5.0
+bdbag==1.4.1
 beaker==1.10.0
 bioblend==0.11.0
 bleach==3.0.2
