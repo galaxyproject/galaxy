@@ -378,38 +378,55 @@ function contrastingColor(r, g, b) {
     return (o > 125) ? 'black' : 'white';
 }
 
-export function hashToTagColor(tagValue) {
-    var hash = hashFnv32a(tagValue);
-    var r = ((hash & 0x00f) >> 0),
-        g = ((hash & 0x0f0) >> 4),
-        b = ((hash & 0xf00) >> 8);
+/**
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 1].
+ *
+ * @param   {number}  h       The hue
+ * @param   {number}  s       The saturation
+ * @param   {number}  l       The lightness
+ * @return  {Array}           The RGB representation
+ */
+function hslToRgb(h, s, l){
+    var r, g, b;
 
-    // Pastels
-    var r2 = 15 - (r % 6),
-        g2 = 15 - (g % 6),
-        b2 = 15 - (b % 6);
+    if(s == 0){
+        r = g = b = l; // achromatic
+    }else{
+        var hue2rgb = function hue2rgb(p, q, t){
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
 
-    // All colours
-    //var r2 = r % 0xf,
-        //g2 = g % 0xf,
-        //b2 = b % 0xf;
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
 
-    // Not horribly dark
-    //var r2 = r % 0xa,
-        //g2 = g % 0xa,
-        //b2 = b % 0xa;
-
-    return [r2, g2, b2];
+    return [r, g, b];
 }
 
-export function generateTagColor(tag) {
-    var [r, g, b] = hashToTagColor(tag)
-    return `#${r.toString(16)}${g.toString(16)}${b.toString(16)}`;
-}
+export function generateTagStyle(tag) {
+    var hash = hashFnv32a(tag);
+    var hue = (hash >> 4) & 360;
+    //var lightnessOffset = 20; // dark
+    var lightnessOffset = 75; // pastel
+    var lightness = lightnessOffset + (hash & 0xf);
+    var bgColor = `hsl(${hue}, 100%, ${lightness}%)`;
+    var brColor = `hsl(${hue}, 100%, 30%)`; // darker
 
-export function generateTagColorFg(tag) {
-    var [r, g, b] = hashToTagColor(tag)
-    return contrastingColor(r / 0xf, g / 0xf, b / 0xf)
+    var [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
+    var fgColor = contrastingColor(r, g, b)
+
+    return `background-color: ${bgColor}; color: ${fgColor};`
 }
 
 
@@ -433,6 +450,5 @@ export default {
     appendScriptStyle: appendScriptStyle,
     getQueryString: getQueryString,
     setWindowTitle: setWindowTitle,
-    generateTagColor: generateTagColor,
-    generateTagColorFg: generateTagColorFg
+    generateTagStyle: generateTagStyle
 };
