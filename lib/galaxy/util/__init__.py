@@ -1383,6 +1383,7 @@ def size_to_bytes(size):
     else:
         raise ValueError("Unknown multiplier '%s' in '%s'" % (multiple, size))
 
+
 def send_mail(frm, to, subject, body, config, html=None):
     """
     Sends an email.
