@@ -1347,7 +1347,7 @@ def nice_size(size):
 
 def size_to_bytes(size):
     """
-    Returns a number of bytes if given a reasonably formatted string with the size
+    Returns a number of bytes (as integer) if given a reasonably formatted string with the size
 
     >>> size_to_bytes('1024')
     1024
@@ -1360,32 +1360,28 @@ def size_to_bytes(size):
     >>> size_to_bytes('2.2 TB')
     2418925581107
     """
-    # Assume input in bytes if we can convert directly to an int
-    try:
-        return int(float(size))
-    except ValueError:
-        pass
-    # Otherwise it must have non-numeric characters
     size_re = re.compile(r'(?P<size>[\d\.]+)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
-    assert size_match is not None
-    size = float(size_match.group("size"))
+    if size_match is None:
+        raise Exception("size_to_int: could not parse %s"%(size))
+    number = float(size_match.group("size"))
     multiple = size_match.group("multiple")
     if multiple == "" or multiple.startswith('b'):
-        return int(size)
+        return int(number)
     elif multiple.startswith('k'):
-        return int(size * 1024)
+        return int(number * 1024)
     elif multiple.startswith('m'):
-        return int(size * 1024 ** 2)
+        return int(number * 1024 ** 2)
     elif multiple.startswith('g'):
-        return int(size * 1024 ** 3)
+        return int(number * 1024 ** 3)
     elif multiple.startswith('t'):
-        return int(size * 1024 ** 4)
+        return int(number * 1024 ** 4)
     elif multiple.startswith('p'):
-        return int(size * 1024 ** 5)
+        return int(number * 1024 ** 5)
     elif multiple.startswith('e'):
-        return int(size * 1024 ** 6)
-
+        return int(number * 1024 ** 6)
+    else:
+        raise Exception("size_to_bytes: unknown multipier %s in %s"%(multiple, size))
 
 def send_mail(frm, to, subject, body, config, html=None):
     """
