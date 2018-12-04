@@ -238,7 +238,7 @@
 
         // js-tagging_common.mako, community_tag_js
 
-        config.setConfig({
+        config.set({
             tags: {
                 communityLinkPrefix: '${h.url_for ( controller='/' + controller_name , action='list_published')}',
                 ratingUrl: "${h.url_for ( controller='/' + controller_name , action='rate_async' )}",

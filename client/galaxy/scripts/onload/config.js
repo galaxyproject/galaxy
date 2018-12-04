@@ -29,8 +29,8 @@ export const config$ = configStorage.pipe(
 );
 
 // Allow templates to set config vars
-export function setConfig(...fragments) {
-    // console.log("setConfig", ...fragments);
+export function set(...fragments) {
+    // console.log("config.set", ...fragments);
     fragments = fragments.filter(fragment => fragment instanceof Object);
     if (fragments.length == 0) {
         return;
@@ -39,7 +39,7 @@ export function setConfig(...fragments) {
         let newConfig = Object.assign({}, configStorage.getValue(), ...fragments);
         configStorage.next(newConfig);
     } catch(err) {
-        console.warn("setConfig error");
+        console.warn("config.set error");
         console.dir(fragments);
         console.log("unable to assign configs");
         console.error(err);

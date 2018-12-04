@@ -24,7 +24,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             session_csrf_token: '${ trans.session_csrf_token }'
         };
 
-        config.setConfig({
+        config.set({
             options: options,
             bootstrapped: bootstrapped
         });
@@ -49,7 +49,7 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             %endif
         %endif
 
-        config.setConfig({
+        config.set({
             sentry: sentry
         });
 
