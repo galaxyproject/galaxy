@@ -1360,11 +1360,11 @@ def size_to_bytes(size):
     >>> size_to_bytes('2.2 TB')
     2418925581107
     """
-    size_re = re.compile(r'(?P<size>[\d\.]+)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
+    size_re = re.compile(r'(?P<number>\d+(\.\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
     if size_match is None:
         raise ValueError("Could not parse string '%s'" % size)
-    number = float(size_match.group("size"))
+    number = float(size_match.group("number"))
     multiple = size_match.group("multiple")
     if multiple == "" or multiple.startswith('b'):
         return int(number)
