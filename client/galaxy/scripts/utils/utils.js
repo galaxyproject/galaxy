@@ -426,7 +426,7 @@ export function generateTagStyle(tag) {
     var [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
     var fgColor = contrastingColor(r, g, b)
 
-    return `background-color: ${bgColor}; color: ${fgColor};`
+    return `background-color: ${bgColor}; color: ${fgColor}; border: 1px solid gray`
 }
 
 
