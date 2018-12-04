@@ -1,13 +1,19 @@
-import _ from "underscore";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 import Tools from "mvc/tool/tools";
 import Upload from "mvc/upload/upload-view";
 import _l from "utils/localization";
+// import ToolForm from "mvc/tool/tool-form-composite";
+import _ from "libs/underscore";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
+        console.log('initializing toolpanel');
+
+        let Galaxy = getGalaxyInstance();
+        let appRoot = getAppRoot();
+
         // access configuration options
         var config = options.config;
         this.root = options.root;
@@ -31,7 +37,7 @@ var ToolPanel = Backbone.View.extend({
 
         // add upload modal
         this.upload_button = new Upload({
-            upload_path: config.nginx_upload_path || `${getAppRoot()}api/tools`,
+            upload_path: config.nginx_upload_path || `${appRoot}api/tools`,
             chunk_upload_size: config.chunk_upload_size,
             ftp_upload_site: config.ftp_upload_site,
             default_genome: config.default_genome,
@@ -39,7 +45,6 @@ var ToolPanel = Backbone.View.extend({
         });
 
         // add uploader button to Galaxy object
-        let Galaxy = getGalaxyInstance();
         Galaxy.upload = this.upload_button;
 
         // components for panel definition
@@ -79,8 +84,9 @@ var ToolPanel = Backbone.View.extend({
 
     /** build a link to one tool */
     _templateTool: function(tool) {
+        let appRoot = getAppRoot();
         return `<div class="toolTitle">
-                    <a href="${getAppRoot()}${tool.href}" target="galaxy_main">
+                    <a href="${appRoot}${tool.href}" target="galaxy_main">
                         ${tool.title}
                     </a>
                 </div>`;
@@ -88,8 +94,9 @@ var ToolPanel = Backbone.View.extend({
 
     /** build a link to 'All Workflows' */
     _templateAllWorkflow: function(tool) {
+        let appRoot = getAppRoot();
         return `<div class="toolTitle">
-                    <a href="${getAppRoot()}${tool.href}">
+                    <a href="${appRoot}${tool.href}">
                         ${tool.title}
                     </a>
                 </div>`;
@@ -97,8 +104,9 @@ var ToolPanel = Backbone.View.extend({
 
     /** build links to workflows in toolpanel */
     _templateWorkflowLink: function(wf) {
+        let appRoot = getAppRoot();
         return `<div class="toolTitle">
-                    <a class="${wf.cls}" href="${getAppRoot()}${wf.href}">
+                    <a class="${wf.cls}" href="${appRoot}${wf.href}">
                         ${_.escape(wf.title)}
                     </a>
                 </div>`;

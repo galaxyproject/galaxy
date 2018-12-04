@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Backbone from "backbone";
-// import { getAppRoot } from "onload/loadConfig";
+// import { getAppRoot } from "onload";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};

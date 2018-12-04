@@ -92,7 +92,6 @@ var ExpandableView = Backbone.View.extend(BASE_MVC.LoggableMixin).extend({
     _setUpBehaviors: function($where) {
         $where = $where || this.$el;
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
-        //make_popup_menus( $where );
         $where.find("[title]").tooltip({ placement: "bottom" });
     },
 

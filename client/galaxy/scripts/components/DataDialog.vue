@@ -45,7 +45,8 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -106,6 +107,7 @@ export default {
             this.modalShow = false;
         },
         load: function() {
+            let Galaxy = getGalaxyInstance();
             this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             if (this.historyId) {
                 axios

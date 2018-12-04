@@ -2,7 +2,7 @@
 import Backbone from "backbone";
 import Ui from "mvc/ui/ui-misc";
 import List from "mvc/ui/ui-list";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 
 // collection of libraries
 var Libraries = Backbone.Collection.extend({

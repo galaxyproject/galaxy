@@ -30,17 +30,21 @@
 %>
 </%def>
 
-<%def name="javascripts()">
+<%def name="javascripts()"> 
+    <!-- display_base.mako javascripts() -->
     ${parent.javascripts()}
+</%def>
+
+<%def name="javascript_app()"> 
+    <!-- display_base.mako javascript_app() -->
+    ${parent.javascript_app()}
     ${community_tag_js( get_controller_name( item ) )}
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css(
-        "autocomplete_tagging",
         "embed_item",
-        "jquery.rating",
         "library",
         "jquery-ui/smoothness/jquery-ui"
     )}

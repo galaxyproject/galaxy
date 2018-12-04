@@ -89,7 +89,7 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import async_save_text from "utils/async-save-text";

@@ -1,5 +1,5 @@
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import AJAX_QUEUE from "utils/ajax-queue";
 
 /** ms between fetches when checking running jobs/datasets for updates */

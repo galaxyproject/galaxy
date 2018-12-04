@@ -1,5 +1,5 @@
 import _ from "underscore";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import DATASET_MODEL from "mvc/dataset/dataset-model";
 import BASE_MVC from "mvc/base-mvc";
 import Utils from "utils/utils";

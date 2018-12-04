@@ -1,6 +1,9 @@
+import _ from "underscore";
+import Backbone from "backbone";
 import * as mod_toastr from "libs/toastr";
 import mod_group_model from "toolshed/groups/group-model";
 import mod_group_row from "toolshed/groups/group-listrow-view";
+
 const GroupListView = Backbone.View.extend({
     el: "#groups_element",
     defaults: {},
@@ -62,33 +65,6 @@ const GroupListView = Backbone.View.extend({
         const rowView = new mod_group_row.GroupListRowView(options);
         this.$el.find("#group_list_body").append(rowView.el);
     },
-
-    /**
-     * Table heading was clicked, update sorting preferences and re-render.
-     * @return {[type]} [description]
-     */
-    // sort_clicked : function(){
-    //     if (Galaxy.libraries.preferences.get('sort_order') === 'asc'){
-    //         Galaxy.libraries.preferences.set({'sort_order': 'desc'});
-    //     } else {
-    //         Galaxy.libraries.preferences.set({'sort_order': 'asc'});
-    //     }
-    //     this.render();
-    // },
-
-    /**
-     * Sort the underlying collection according to the parameters received.
-     * Currently supports only sorting by name.
-     */
-    // sortLibraries: function(){
-    //     if (Galaxy.libraries.preferences.get('sort_by') === 'name'){
-    //         if (Galaxy.libraries.preferences.get('sort_order') === 'asc'){
-    //             this.collection.sortByNameAsc();
-    //         } else if (Galaxy.libraries.preferences.get('sort_order') === 'desc'){
-    //             this.collection.sortByNameDesc();
-    //         }
-    //     }
-    // },
 
     // MMMMMMMMMMMMMMMMMM
     // === TEMPLATES ====

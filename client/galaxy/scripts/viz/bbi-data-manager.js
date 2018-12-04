@@ -1,5 +1,5 @@
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import visualization from "viz/visualization";
 import * as bigwig from "libs/bbi/bigwig";
 

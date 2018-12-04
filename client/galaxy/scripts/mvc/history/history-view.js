@@ -1,6 +1,6 @@
 import _ from "underscore";
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import LIST_VIEW from "mvc/list/list-view";
@@ -672,9 +672,7 @@ export function historyEntry(options) {
         el: $("#history-" + options.historyJSON.id),
         className: viewClass.prototype.className + " wide",
         $scrollContainer: options.hasMasthead
-            ? function() {
-                  return this.$el.parent();
-              }
+            ? function() { return this.$el.parent(); }
             : undefined,
         model: history,
         show_deleted: options.showDeletedJson,

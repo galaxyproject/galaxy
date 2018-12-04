@@ -64,7 +64,7 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 

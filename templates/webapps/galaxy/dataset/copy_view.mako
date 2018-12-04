@@ -10,21 +10,21 @@
     ${handle_refresh_frames()}
     
     <script type="text/javascript">
-        $(function() {
+        config.addInitialization(function() {
+            console.log("copy_view.mako inline hardcoded initialization");
+            
             $("#select-multiple").click(function() {
                 $("#single-dest-select").val("");
                 $("#single-destination").hide();
                 $("#multiple-destination").show();
             });
-        });
-        $(function() {
+
             $("#source-content-all").click(function() {
                 $("input[name='source_content_ids']").each(function() {
                     this.checked = true;
                 });
             });
-        });
-        $(function() {
+
             $("#source-content-none").click(function() {
                 $("input[name='source_content_ids']").each(function() {
                     this.checked = false;

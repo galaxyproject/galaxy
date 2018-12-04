@@ -96,8 +96,14 @@
                                         tags=tags, \
                                         editable=False, \
                                         use_toggle_link=False )}
+
+    ## Looks same as one in next def, redundant?
     <script type="text/javascript">
-        init_tag_click_function($('#${elt_id}'), tool_tag_click);
+        config.addInitialization(function() {
+            console.log("tagging_common.mako, render_tool-tagging_elements");
+            let targetSelector = '#${elt_id}';
+            window.bundleEntries.init_tag_click_function(targetSelector, tool_tag_click);
+        });
     </script>
 </%def>
 
@@ -113,9 +119,15 @@
                                         use_toggle_link=use_toggle_link, \
                                         editable=False, tag_type="community")}
 
-    ## Set up tag click function.
     <script type="text/javascript">
-        init_tag_click_function($('#${elt_id}'), ${tag_click_fn});
+        config.addInitialization(function initTaggingCommon() {
+            // set up tag click function for python-rendered markup
+            // TODO: turn this into a component soon
+            var targetSelector = '#${elt_id}';
+            var clickHandler = ${tag_click_fn};
+            console.log("tagging_common.mako, set up tag click function", targetSelector);
+            window.bundleEntries.init_tag_click_function(targetSelector, clickHandler);
+        });
     </script>
 </%def>
 
@@ -128,7 +140,7 @@
         tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
         elt_id = int ( floor ( random() * six.MAXSIZE ) )
 
-        # Get list of user's item tags. TODO: implement owner_tags for all taggable objects and use here.
+        # Get list of users item tags. TODO: implement owner_tags for all taggable objects and use here.
         item_tags = [ tag for tag in tagged_item.tags if ( tag.user == user ) ]
     %>
 
@@ -140,6 +152,7 @@
     else:
         use_toggle_link = False
     %>
+    
     ${self.render_tagging_element_html(elt_id=elt_id, tags=item_tags, editable=editable, use_toggle_link=use_toggle_link,  input_size=input_size, in_form=in_form, render_add_tag_button=render_add_tag_button)}
 
     ## Build script that augments tags using progressive javascript.
@@ -155,36 +168,12 @@
         {
             var text = "";
             var num_tags = _.size(tags);
-            if (num_tags != 0)
-              {
+            if (num_tags != 0) {
                 text = num_tags + (num_tags != 1 ? " Tags" : " Tag");
-                /*
-                // Show first N tags; hide the rest.
-                var max_to_show = 1;
-
-                // Build tag string.
-                var tag_strs = new Array();
-                var count = 0;
-                for (tag_name in tags)
-                  {
-                    tag_value = tags[tag_name];
-                    tag_strs[tag_strs.length] = build_tag_str(tag_name, tag_value);
-                    if (++count == max_to_show)
-                      break;
-                  }
-                tag_str = tag_strs.join(", ");
-
-                // Finalize text.
-                var num_tags_hiding = num_tags - max_to_show;
-                text = "Tags: " + tag_str +
-                  (num_tags_hiding != 0 ? " and " + num_tags_hiding + " more" : "");
-                */
-              }
-            else
-              {
+            } else {
                 // No tags.
                 text = "Add tags";
-              }
+            }
             return text;
         };
 
@@ -206,8 +195,8 @@
                 else:
                     tag_names_and_values[tag_name] = tag_value
         %>
-        var options =
-        {
+
+        var options = {
             tags : ${h.dumps(tag_names_and_values)},
             editable : ${iff( editable, 'true', 'false' )},
             get_toggle_link_text_fn: ${get_toggle_link_text_fn},
@@ -222,6 +211,7 @@
          };
 
         $('#${elt_id}').autocomplete_tagging(options);
+
     </script>
 
     ## Use style to hide/display the tag area.
@@ -241,75 +231,22 @@
 </%def>
 
 
-<%def name="community_tag_js( controller_name )">
 ## set up comminity tag and rating handling - used for page start up / set up
 ## controller_name: the model controller for the item being tagged - generally gotten with get_controller_name( item )
-<script type="text/javascript">
-    // Handle click on community tag.
-    function community_tag_click(tag_name, tag_value) {
-        var href = '${h.url_for ( controller='/' + controller_name , action='list_published')}';
-        href = href + "?f-tags=" + tag_name;
-        if (tag_value != undefined && tag_value != "") {
-            href = href + ":" + tag_value;
-        }
-        self.location = href;
-    }
+<%def name="community_tag_js( controller_name )">
+    <script type="text/javascript">
 
-    // Map item rating to number of stars to show.
-    function map_rating_to_num_stars(rating) {
-        if (rating <= 0)
-            return 0;
-        else if (rating > 0 && rating <= 1.5)
-            return 1;
-        else if (rating > 1.5 && rating <= 2.5)
-            return 2;
-        else if (rating > 2.5 && rating <= 3.5)
-            return 3;
-        else if (rating > 3.5 && rating <= 4.5)
-            return 4;
-        else if (rating > 4.5)
-            return 5;
-    }
+        // js-tagging_common.mako, community_tag_js
 
-    // Init. on document load.
-    $(function() {
-        // Set links to Galaxy screencasts to open in overlay.
-        $(this).find("a[href^='http://screencast.g2.bx.psu.edu/']").each( function() {
-            $(this).click( function() {
-                var href = $(this).attr('href');
-                show_in_overlay(
-                    {
-                        url: href,
-                        width: 640,
-                        height: 480,
-                        scroll: 'no'
-                    }
-                );
-                return false;
-            });
-        });
+        config.setConfig({
+            tags: {
+                communityLinkPrefix: '${h.url_for ( controller='/' + controller_name , action='list_published')}',
+                ratingUrl: "${h.url_for ( controller='/' + controller_name , action='rate_async' )}",
+                ratingId: "${trans.security.encode_id( item.id )}"
+            }
+        }); 
 
-        // Init user item rating.
-        $('.user_rating_star').rating({
-            callback: function(rating, link) {
-                $.ajax({
-                    type: "GET",
-                    url: "${h.url_for ( controller='/' + controller_name , action='rate_async' )}",
-                    data: { id : "${trans.security.encode_id( item.id )}", rating : rating },
-                    dataType: 'json',
-                    error: function() { alert( "Rating submission failed" ); },
-                    success: function( community_data ) {
-                        $('#rating_feedback').show();
-                        $('#num_ratings').text(Math.round(community_data[1]*10)/10);
-                        $('#ave_rating').text(community_data[0]);
-                        $('.community_rating_star').rating('readOnly', false);
-                        $('.community_rating_star').rating('select', map_rating_to_num_stars(community_data[0])-1);
-                        $('.community_rating_star').rating('readOnly', true);
-                    }
-                });
-            },
-            required: true // Hide cancel button.
-        });
-    });
-</script>
+        config.addInitialization(window.bundleEntries.taggingInit);
+
+    </script>
 </%def>

@@ -1,5 +1,10 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
+
 /* This class maps the form dom to an api compatible javascript dictionary. */
-export var Manager = Backbone.Model.extend({
+export const Manager = Backbone.Model.extend({
     initialize: function(app) {
         this.app = app;
     },
@@ -209,6 +214,7 @@ export var visitInputs = (inputs, callback, prefix, context) => {
         }
     });
     for (var key in inputs) {
+        let Galaxy = getGalaxyInstance();
         var node = inputs[key];
         node.name = node.name || key;
         var name = prefix ? `${prefix}|${node.name}` : node.name;

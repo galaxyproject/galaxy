@@ -3,7 +3,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";

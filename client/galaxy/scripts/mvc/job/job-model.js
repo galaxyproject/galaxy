@@ -1,6 +1,6 @@
 import _ from "underscore";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import HISTORY_CONTENTS from "mvc/history/history-contents";
 import STATES from "mvc/dataset/states";
 import AJAX_QUEUE from "utils/ajax-queue";

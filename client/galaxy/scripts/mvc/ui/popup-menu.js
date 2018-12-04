@@ -1,4 +1,7 @@
-// =============================================================================
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+
 /**
  * view for a popup menu
  */
@@ -220,7 +223,7 @@ PopupMenu.make_popupmenu = (button_element, initial_options) => {
             newOption.header = true;
 
             // keys with function values indicate: a menu option
-        } else if (jQuery.type(optionVal) === "function") {
+        } else if ($.type(optionVal) === "function") {
             newOption.func = optionVal;
         }
         //TODO:?? any other special optionVals?

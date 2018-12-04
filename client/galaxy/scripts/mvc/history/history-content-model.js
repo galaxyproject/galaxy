@@ -1,7 +1,7 @@
 // import _ from "underscore";
 import jQuery from "jquery";
 // import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 // import STATES from "mvc/dataset/states";
 // import BASE_MVC from "mvc/base-mvc";
 // import _l from "utils/localization";

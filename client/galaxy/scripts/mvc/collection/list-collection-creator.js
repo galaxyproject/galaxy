@@ -1,15 +1,21 @@
+import _ from "underscore";
+import jQuery from "jquery";
+import Backbone from "backbone";
 import HDCA from "mvc/history/hdca-model";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
 import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
-import naturalSort from "utils/natural-sort";
+// import naturalSort from "utils/natural-sort";
 import _l from "utils/localization";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
 import Vue from "vue";
 
 import "ui/hoverhighlight";
 
+import { getGalaxyInstance } from "app";
+
+var $ = jQuery;
 var logNamespace = "collections";
 
 /*==============================================================================
@@ -114,12 +120,12 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
         ev.stopPropagation();
         ev.preventDefault();
 
-        var promptString = [
-            _l("Enter a new name for the element"),
-            ":\n(",
-            _l("Note that changing the name here will not rename the dataset"),
-            ")"
-        ].join("");
+        // var promptString = [
+        //     _l("Enter a new name for the element"),
+        //     ":\n(",
+        //     _l("Note that changing the name here will not rename the dataset"),
+        //     ")"
+        // ].join("");
 
         var response = prompt(`${_l("Enter a new name for the element")}:`, this.element.name);
 
@@ -1016,6 +1022,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
 const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
     const deferred = jQuery.Deferred();
+    let Galaxy = getGalaxyInstance();
     const modal = Galaxy.modal || new UI_MODAL.View();
 
     const creatorOptions = _.defaults(options || {}, {

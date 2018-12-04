@@ -1,12 +1,14 @@
 ## Include JavaScript code to refresh Galaxy application frames as needed.
 <%def name="handle_refresh_frames()">
+
+    <!-- refresh_frames.mako -->
+
     ## If no refresh frames, print nothing.
-    <%
-        if not refresh_frames: return ''
-    %>
+    <% if not refresh_frames: return '' %>
 
     ## Write JavaScript to refresh specified frames.
     <script type="text/javascript">
+        
         function user_changed( user_email, is_admin ) {
             if ( user_email ) {
                 $(".loggedin-only").show();
@@ -26,13 +28,6 @@
         parent.location.href="${h.url_for( controller='root' )}";
     %endif
     %if 'masthead' in refresh_frames:
-        ## if ( parent.frames && parent.frames.galaxy_masthead ) {
-        ##     parent.frames.galaxy_masthead.location.href="${h.url_for( controller='root', action='masthead')}";
-        ## }
-        ## else if ( parent.parent && parent.parent.frames && parent.parent.frames.galaxy_masthead ) {
-        ##     parent.parent.frames.galaxy_masthead.location.href="${h.url_for( controller='root', action='masthead')}";
-        ## }
-
         ## Refresh masthead == user changes (backward compatibility)
         if ( parent.user_changed ) {
             %if trans.user:
@@ -51,7 +46,6 @@
         if ( parent.frames && Galaxy.toolPanel ) {
             // FIXME: refreshing the tool menu does not work with new JS-based approach,
             // but refreshing the tool menu is not used right now, either.
-
             if ( parent.force_left_panel ) {
                 parent.force_left_panel( 'show' );
             }

@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import visualization from "viz/visualization";
@@ -1606,8 +1606,8 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
     request_redraw: function(options, drawable) {
         var view = this;
 
-        var // Either redrawing a single drawable or all view's drawables.
-        track_list = drawable ? [drawable] : view.drawables;
+        // Either redrawing a single drawable or all view's drawables.
+        var track_list = drawable ? [drawable] : view.drawables;
 
         // Add/update tracks in track list to redraw list.
         _.each(track_list, track => {
@@ -2354,18 +2354,18 @@ var Track = function(view, container, obj_dict) {
         "data_manager" in obj_dict
             ? obj_dict.data_manager
             : new visualization.GenomeDataManager({
-                  dataset: this.dataset,
-                  // HACK: simulate 'genome' attributes from view for now.
-                  // View should eventually use Genome object.
-                  genome: new visualization.Genome({
-                      key: view.dbkey,
-                      chroms_info: {
-                          chrom_info: view.chrom_data
-                      }
-                  }),
-                  data_mode_compatible: this.data_and_mode_compatible,
-                  can_subset: this.can_subset
-              });
+                dataset: this.dataset,
+                // HACK: simulate 'genome' attributes from view for now.
+                // View should eventually use Genome object.
+                genome: new visualization.Genome({
+                    key: view.dbkey,
+                    chroms_info: {
+                        chrom_info: view.chrom_data
+                    }
+                }),
+                data_mode_compatible: this.data_and_mode_compatible,
+                can_subset: this.can_subset
+            });
 
     // Height attributes: min height, max height, and visible height.
     this.min_height_px = 16;
@@ -3083,11 +3083,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Step (a) for (re)moving tiles.
         this.tiles_div.children().addClass("remove");
 
-        var // Tile width in bases.
-        tile_width = Math.floor(TILE_SIZE * resolution);
+        // Tile width in bases.
+        var tile_width = Math.floor(TILE_SIZE * resolution);
 
-        var // Index of first tile that overlaps visible region.
-        tile_index = Math.floor(low / tile_width);
+        // Index of first tile that overlaps visible region.
+        var tile_index = Math.floor(low / tile_width);
 
         var tile_region;
         var tile_promise;

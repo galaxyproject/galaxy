@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import Deferred from "utils/deferred";
 import Modal from "mvc/ui/ui-modal";

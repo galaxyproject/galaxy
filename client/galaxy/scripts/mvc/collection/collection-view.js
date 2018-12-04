@@ -1,5 +1,5 @@
 import _ from "underscore";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import LIST_VIEW from "mvc/list/list-view";
 import DC_MODEL from "mvc/collection/collection-model";
 import DC_LI from "mvc/collection/collection-li";

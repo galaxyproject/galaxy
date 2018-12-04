@@ -412,7 +412,8 @@
     </state-div>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
@@ -1376,12 +1377,14 @@ export default {
             this.mapping.splice(index, 1);
         },
         refreshAndWait(response) {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.refreshContents();
             }
             this.waitOnJob(response);
         },
         waitOnJob(response) {
+            let Galaxy = getGalaxyInstance();
             const jobId = response.data.jobs[0].id;
             const handleJobShow = jobResponse => {
                 const state = jobResponse.data.state;
@@ -1394,9 +1397,10 @@ export default {
                         "Unknown error encountered while running your upload job, this could be a server issue or a problem with the upload definition.";
                     this.doFullJobCheck(jobId);
                 } else {
-                    const history =
-                        parent.Galaxy && parent.Galaxy.currHistoryPanel && parent.Galaxy.currHistoryPanel.model;
-                    history.refresh();
+                    const history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
+                    if (history) {
+                        history.refresh();
+                    }
                     this.oncreate();
                 }
             };
@@ -1480,6 +1484,7 @@ export default {
                     this.oncreate();
                 }
             } else {
+                let Galaxy = getGalaxyInstance();
                 const historyId = Galaxy.currHistoryPanel.model.id;
                 let elements, targets;
                 if (collectionType) {

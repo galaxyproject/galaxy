@@ -1,5 +1,5 @@
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 
 // ============================================================================
 // TS GROUP RELATED MODELS

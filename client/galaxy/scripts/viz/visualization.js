@@ -1,13 +1,14 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import _l from "utils/localization";
 import { Dataset } from "mvc/dataset/data";
 import util_mod from "viz/trackster/util";
 import config_mod from "utils/config";
 import GridView from "mvc/grid/grid-view";
 import Tabs from "mvc/ui/ui-tabs";
+import { getGalaxyInstance } from "app";
 
 /**
  * Mixin for returning custom JSON representation from toJSON. Class attribute to_json_keys defines a set of attributes
@@ -72,6 +73,7 @@ var select_datasets = (filters, success_fn) => {
     });
 
     // modal
+    let Galaxy = getGalaxyInstance();
     Galaxy.modal.show({
         title: _l("Select datasets for new tracks"),
         body: tabs.$el,

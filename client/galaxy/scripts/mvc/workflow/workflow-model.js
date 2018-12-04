@@ -1,5 +1,5 @@
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import baseMVC from "mvc/base-mvc";
 
 // workflow model

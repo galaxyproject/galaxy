@@ -1,10 +1,11 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
+import { getGalaxyInstance } from "app";
 
 var FolderView = Backbone.View.extend({
     el: "#center",
@@ -37,6 +38,7 @@ var FolderView = Backbone.View.extend({
                 }
             },
             error: function(model, response) {
+                let Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
@@ -59,6 +61,7 @@ var FolderView = Backbone.View.extend({
         $(".tooltip").remove();
 
         var is_admin = false;
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.user) {
             is_admin = Galaxy.user.isAdmin();
         }

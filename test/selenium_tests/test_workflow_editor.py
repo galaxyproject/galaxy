@@ -444,7 +444,9 @@ steps:
 
     def workflow_create_new(self, annotation=None):
         self.workflow_index_open()
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.click_button_new_workflow()
+        self.sleep_for(self.wait_types.UX_RENDER)
         form_element = self.driver.find_element_by_id("submit")
         name = self._get_random_name()
         annotation = annotation or self._get_random_name()

@@ -1,5 +1,5 @@
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import mod_util from "mvc/library/library-util";
 

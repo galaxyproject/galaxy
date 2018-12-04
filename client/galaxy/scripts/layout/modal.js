@@ -1,7 +1,7 @@
-/* global $ */
+import $ from "jquery";
 
 // Modal dialog boxes
-var Modal = function(options) {
+export const Modal = function(options) {
     this.$overlay = options.overlay;
     this.$dialog = options.dialog;
     this.$header = this.$dialog.find(".modal-header");
@@ -11,6 +11,7 @@ var Modal = function(options) {
     // Close button
     this.$header.find(".close").on("click", $.proxy(this.hide, this));
 };
+
 
 $.extend(Modal.prototype, {
     setContent: function(options) {
@@ -105,11 +106,11 @@ $(() => {
 });
 
 // Backward compatibility
-function hide_modal() {
+export function hide_modal() {
     modal.hide();
 }
 
-function show_modal(title, body, buttons, extra_buttons, init_fn) {
+export function show_modal(title, body, buttons, extra_buttons, init_fn) {
     modal.setContent({
         title: title,
         body: body,
@@ -119,7 +120,7 @@ function show_modal(title, body, buttons, extra_buttons, init_fn) {
     modal.show({ backdrop: true }, init_fn);
 }
 
-function show_message(title, body, buttons, extra_buttons, init_fn) {
+export function show_message(title, body, buttons, extra_buttons, init_fn) {
     modal.setContent({
         title: title,
         body: body,
@@ -129,7 +130,7 @@ function show_message(title, body, buttons, extra_buttons, init_fn) {
     modal.show({ backdrop: false }, init_fn);
 }
 
-function show_in_overlay(options) {
+export function show_in_overlay(options) {
     var width = options.width || "600";
     var height = options.height || "400";
     var scroll = options.scroll || "auto";
@@ -148,12 +149,3 @@ function show_in_overlay(options) {
     });
     modal.show({ backdrop: true });
 }
-
-// ============================================================================
-export default {
-    Modal: Modal,
-    hide_modal: hide_modal,
-    show_modal: show_modal,
-    show_message: show_message,
-    show_in_overlay: show_in_overlay
-};

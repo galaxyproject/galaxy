@@ -1,5 +1,5 @@
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import Utils from "utils/utils";
 import List from "mvc/ui/ui-list";
 

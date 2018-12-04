@@ -10,7 +10,7 @@ import Ui from "mvc/ui/ui-misc";
 import FormData from "mvc/form/form-data";
 import ToolForm from "mvc/tool/tool-form";
 import Utils from "utils/utils";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 
 QUnit.module("Form test", {
     beforeEach: function() {
@@ -24,9 +24,6 @@ QUnit.module("Form test", {
 });
 
 QUnit.test("tool-form", function(assert) {
-    // // Huh? The following seems to be needed by tool-form.js - once the global usage
-    // // is cleaned up in that module this can be deleted I assume.
-    // window.parent.Galaxy = window.Galaxy;
 
     var toolform = new ToolForm.View({ id: "test" });
     $("body").prepend(toolform.$el);

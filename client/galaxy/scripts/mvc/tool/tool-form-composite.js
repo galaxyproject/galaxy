@@ -2,7 +2,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
@@ -254,8 +254,7 @@ var View = Backbone.View.extend({
         if (step_version_changes && step_version_changes.length > 0) {
             this.$message.append(
                 new Ui.Message({
-                    message:
-                        "Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this Galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.",
+                    message: "Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.",
                     status: "warning",
                     persistent: true,
                     fade: false
@@ -441,12 +440,12 @@ var View = Backbone.View.extend({
                                 step.inputs && step.inputs.length > 0
                                     ? step.inputs
                                     : [
-                                          {
-                                              type: "hidden",
-                                              name: "No options available.",
-                                              ignore: null
-                                          }
-                                      ]
+                                        {
+                                            type: "hidden",
+                                            name: "No options available.",
+                                            ignore: null
+                                        }
+                                    ]
                         },
                         step
                     )
@@ -758,7 +757,7 @@ var View = Backbone.View.extend({
             .addClass("errormessagelarge")
             .append(
                 $("<p/>").text(
-                    `The server could not complete the request. Please contact the Galaxy Team if this error persists. ${JSON.stringify(
+                    `The server could not complete the request. Please contact the galaxy Team if this error persists. ${JSON.stringify(
                         err_msg
                     ) || ""}`
                 )

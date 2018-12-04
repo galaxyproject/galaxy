@@ -1,19 +1,18 @@
+import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import _ from "underscore";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 
 var AdminPanel = Backbone.View.extend({
-    initialize: function(page, options) {
-        let Galaxy = getGalaxyInstance();
+    initialize: function (page, options) {
         var self = this;
         this.page = page;
         this.root = options.root;
         this.config = options.config;
         this.settings = options.settings;
         this.model = new Backbone.Model({
-            title: `Galaxy version ${Galaxy.config.version_major}`
+            title: `Galaxy version ${getGalaxyInstance().config.version_major}`
         });
         this.categories = new Backbone.Collection([
             {
@@ -140,7 +139,7 @@ var AdminPanel = Backbone.View.extend({
         this.setElement(this._template());
     },
 
-    render: function() {
+    render: function () {
         var self = this;
         this.$el.empty();
         this.categories.each(category => {
@@ -173,18 +172,18 @@ var AdminPanel = Backbone.View.extend({
         });
     },
 
-    _templateSection: function(options) {
+    _templateSection: function (options) {
         return `<div class="toolSectionWrapper">
                     <div class="toolSectionTitle">${_l(options.title)}</div>
                     <div class="toolSectionBody"/>
                 </div>`;
     },
 
-    _template: function() {
+    _template: function () {
         return '<div class="toolMenuContainer"/>';
     },
 
-    toString: function() {
+    toString: function () {
         return "adminPanel";
     }
 });

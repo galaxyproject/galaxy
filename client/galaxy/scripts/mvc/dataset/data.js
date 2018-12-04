@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
 import { getGalaxyInstance } from "app";
@@ -424,7 +424,8 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // check for vcf-file format
         if (this.file_ext == "vcf") {
             // search array
-            function search(str, array) {
+            
+            const search = (str, array) => {
                 for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
                 return -1;
             }
@@ -519,10 +520,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
 
         // end is optional
         var end = this.col.end
-            ? row
-                  .children()
-                  .eq(this.col.end)
-                  .html()
+            ? row.children().eq(this.col.end).html()
             : start;
 
         // double check location
@@ -570,7 +568,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
  * Create a tabular dataset chunked view (and requisite tabular dataset model)
  * and appends to parent_elt.
  */
-export var createTabularDatasetChunkedView = options => {
+export const createTabularDatasetChunkedView = options => {
     // If no model, create and set model from dataset config.
     if (!options.model) {
         options.model = new TabularDataset(options.dataset_config);

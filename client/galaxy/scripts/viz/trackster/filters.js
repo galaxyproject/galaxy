@@ -1,5 +1,8 @@
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
+import _ from "libs/underscore";
+import $ from "jquery";
+import { getGalaxyInstance } from "app";
+
 var extend = _.extend;
 
 /**
@@ -636,8 +639,11 @@ extend(FiltersManager.prototype, {
         // Invoke recursive function to run filters; this enables chaining of filters via
         // iteratively application.
         (function run_filter(input_dataset_id, filters) {
-            var // Set up filtering info and params.
-            filter_tuple = filters[0];
+
+            let Galaxy = getGalaxyInstance();
+
+            // Set up filtering info and params.
+            var filter_tuple = filters[0];
 
             var tool_id = filter_tuple[0];
             var tool_filters = filter_tuple[1];
@@ -653,27 +659,34 @@ extend(FiltersManager.prototype, {
             // Remove current filter.
             filters = filters.slice(1);
 
-            // DBTODO: This will never work, run_tool_url doesn't exist?
-            $.getJSON(run_tool_url, url_params, response => {
-                if (response.error) {
-                    // General error.
-                    Galaxy.modal.show({
-                        title: _l("Filter Dataset"),
-                        body: `Error running tool ${tool_id}`,
-                        buttons: { Close: Galaxy.modal.hide() }
-                    });
-                } else if (filters.length === 0) {
-                    // No more filters to run.
-                    Galaxy.modal.show({
-                        title: _l("Filtering Dataset"),
-                        body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
-                        buttons: { Close: Galaxy.modal.hide() }
-                    });
-                } else {
-                    // More filters to run.
-                    run_filter(response.dataset_id, filters);
-                }
-            });
+            try {
+                // DBTODO: This will never work, run_tool_url doesn't exist?
+                console.warn("Undefined url run_tool_url referenced in source code with no")
+                $.getJSON(run_tool_url, url_params, response => {
+                    if (response.error) {
+                        // General error.
+                        Galaxy.modal.show({
+                            title: _l("Filter Dataset"),
+                            body: `Error running tool ${tool_id}`,
+                            buttons: { Close: Galaxy.modal.hide() }
+                        });
+                    } else if (filters.length === 0) {
+                        // No more filters to run.
+                        Galaxy.modal.show({
+                            title: _l("Filtering Dataset"),
+                            body: "Filter(s) are running on the complete dataset. Outputs are in dataset's history.",
+                            buttons: { Close: Galaxy.modal.hide() }
+                        });
+                    } else {
+                        // More filters to run.
+                        run_filter(response.dataset_id, filters);
+                    }
+                });
+            } catch (err) {
+                // catch so we can figure out who's calling this nonsense
+                console.warn("Bad code references run_tool_url", err);
+            }
+
         })(this.track.dataset_id, active_filters_list);
     }
 });

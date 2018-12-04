@@ -2,7 +2,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import Frames from "mvc/ui/ui-frames";
 import { Dataset, createTabularDatasetChunkedView, TabularDataset } from "mvc/dataset/data";

@@ -1,7 +1,14 @@
+/**
+ * The big list of horrible globals we expose on window.bundleEntries.
+ * 
+ * Everything that is exposed on this global variable is something that the python templates
+ * require for their hardcoded initializations. These objects are going to have to continue
+ * to exist until such time as we replace the overall application with a Vue component which
+ * will handle initializations for components individually.
+ */
+
 import $ from "jquery";
 import "bootstrap";
-// export { GalaxyApp } from "app";
-import { getGalaxyInstance } from "app";
 export { getGalaxyInstance, setGalaxyInstance } from "app";
 import WorkflowView from "mvc/workflow/workflow-view";
 import { TracksterUIView } from "viz/trackster";
@@ -11,9 +18,6 @@ export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
 import GalaxyLibrary from "galaxy.library";
 import AdminToolshed from "admin.toolshed";
-import Masthead from "layout/masthead";
-import user from "mvc/user/user-model";
-import Modal from "mvc/ui/ui-modal";
 export { default as pages } from "galaxy.pages";
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 import { HistoryCollection } from "mvc/history/history-model";
@@ -28,19 +32,8 @@ export { default as HDAModel } from "mvc/history/hda-model";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
 export { default as ToolshedGroups } from "toolshed/toolshed.groups";
-export { chart, chartUtilities } from "./chart";
 
-export function masthead(options) {
-    let Galaxy = getGalaxyInstance();
-    if (!Galaxy.user) {
-        Galaxy.user = new user.User(options.user_json);
-    }
-    if (!Galaxy.masthead) {
-        Galaxy.masthead = new Masthead.View(options);
-        Galaxy.modal = new Modal.View();
-        $("#masthead").replaceWith(Galaxy.masthead.render().$el);
-    }
-}
+export { initMasthead } from "components/Masthead/initMasthead";
 
 export function adminToolshed(options) {
     new AdminToolshed.GalaxyApp(options);
@@ -75,8 +68,34 @@ export function multiHistory(options) {
         histories: histories
     });
 
-    histories.fetchFirst({ silent: true }).done(function() {
+    histories.fetchFirst({ silent: true }).done(function () {
         multipanel.createColumns();
         multipanel.render(0);
     });
 }
+
+// Previously wandering around as window.thing = thing in the onload script
+export { default as panels } from "layout/panel";
+export { default as init_tag_click_function } from "ui/autocom_tagging";
+export { show_in_overlay, hide_modal, show_message, show_modal, Modal } from "layout/modal";
+export { make_popupmenu, make_popup_menus } from "ui/popupmenu";
+export { default as async_save_text } from "utils/async-save-text";
+
+// Previously "chart"
+import Client from "mvc/visualization/chart/chart-client";
+import Datasets from "mvc/visualization/chart/utilities/datasets";
+import Series from "mvc/visualization/chart/utilities/series";
+import Jobs from "mvc/visualization/chart/utilities/jobs";
+
+export function chart(options) {
+    return new Client(options);
+}
+
+export let chartUtilities = {
+    Datasets: Datasets,
+    Jobs: Jobs,
+    Series: Series
+};
+
+export { panelManagement } from "onload/panelManagement";
+export { taggingInit, community_tag_click } from "onload/taggingInit";

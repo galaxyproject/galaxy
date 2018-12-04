@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
@@ -13,12 +13,8 @@ import FormWrappers from "mvc/workflow/workflow-forms";
 import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
-
-// TODO: make show_message and the other utility functions importable/used
-// everywhere, instead of this global model
-/* global show_message */
-/* global hide_modal */
-/* global make_popupmenu */
+import { hide_modal, show_message } from "layout/modal";
+import { make_popupmenu } from "ui/popupmenu";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
@@ -78,7 +74,7 @@ export default Backbone.View.extend({
                     window.onbeforeunload = undefined;
                     window.document.location = self.urls.workflow_index;
                 };
-                window.show_modal(
+                window.bundleEntries.show_modal(
                     "Close workflow editor",
                     "There are unsaved changes to your workflow which will be lost.",
                     {
@@ -132,7 +128,7 @@ export default Backbone.View.extend({
                     self.showWorkflowParameters();
                     self.build_version_select();
                     if (data.errors) {
-                        window.show_modal("Saving workflow", body, {
+                        window.bundleEntries.show_modal("Saving workflow", body, {
                             Ok: hide_modal
                         });
                     } else {
@@ -143,7 +139,7 @@ export default Backbone.View.extend({
                     }
                 },
                 error: function(response) {
-                    window.show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
+                    window.bundleEntries.show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
                 }
             });
         };
@@ -355,7 +351,7 @@ export default Backbone.View.extend({
                         }
                     });
                     if (upgrade_message) {
-                        window.show_modal(
+                        window.bundleEntries.show_modal(
                             "Issues loading this workflow",
                             `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
                             { Continue: hide_modal }
@@ -366,7 +362,7 @@ export default Backbone.View.extend({
                     self.showWorkflowParameters();
                 },
                 error: function(response) {
-                    window.show_modal("Loading workflow failed.", response.err_msg, {
+                    window.bundleEntries.show_modal("Loading workflow failed.", response.err_msg, {
                         Ok: function(response) {
                             window.onbeforeunload = undefined;
                             window.document.location = workflow_index;
@@ -381,7 +377,7 @@ export default Backbone.View.extend({
 
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
-        if (window.make_popupmenu) {
+        if (make_popupmenu) {
             make_popupmenu($("#workflow-options-button"), {
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
@@ -406,7 +402,7 @@ export default Backbone.View.extend({
                 '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
                     '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
             );
-            window.show_modal("Save As a New Workflow", body, {
+            window.bundleEntries.show_modal("Save As a New Workflow", body, {
                 OK: function() {
                     var rename_name =
                         $("#workflow_rename").val().length > 0
@@ -586,7 +582,7 @@ export default Backbone.View.extend({
                     upgrade_message += "</ul></li>";
                 });
                 if (upgrade_message) {
-                    window.show_modal(
+                    window.bundleEntries.show_modal(
                         "Subworkflow embedded with changes",
                         `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${upgrade_message}</ul>`,
                         { Continue: hide_modal }

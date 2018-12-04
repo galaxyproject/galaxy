@@ -6,7 +6,7 @@ import _ from "underscore";
 import $ from "jquery";
 import d3 from "d3";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import util from "viz/trackster/util";
 import { DatasetCollection } from "mvc/dataset/data";

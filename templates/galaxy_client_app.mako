@@ -7,12 +7,15 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 <%def name="load( app=None, **kwargs )">
     <script type="text/javascript">
 
-        var bootstrapped = {};
-        %for key in kwargs:
-            bootstrapped[ '${key}' ] = (
-                ${ render_json( kwargs[ key ] ) }
-            );
-        %endfor
+        // galaxy_client_app_mako, load
+
+        var bootstrapped;
+        try {
+            bootstrapped = ${render_json(kwargs)};
+        } catch(err) {
+            console.warn("Unable to parse bootstrapped variable", err);
+            bootstrapped = {};
+        }
 
         var options = {
             root: '${h.url_for( "/" )}',
@@ -21,17 +24,54 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
             session_csrf_token: '${ trans.session_csrf_token }'
         };
 
-        window.bundleEntries.setGalaxyInstance(function(GalaxyApp) {
-            return new GalaxyApp(options, bootstrapped);
+        config.setConfig({
+            options: options,
+            bootstrapped: bootstrapped
         });
 
         %if app:
-            console.warn("Does app ever run? Is it ever not-named app?");
-            require([ '${app}' ]);
+            console.warn("Does app ever run? Is it ever not-named app?", '${app}');
         %endif
         
     </script>
 </%def>
+
+<%def name="config_sentry(app)">
+    <script type="text/javascript">
+
+        // TODO: make this work the same in all places, maybe 
+        // make a global func in galaxy_client_app?
+        var sentry = {};
+        %if app.config.sentry_dsn:
+            sentry.sentry_dsn_public = "${app.config.sentry_dsn_public}"
+            %if trans.user:
+                sentry.email = "${trans.user.email|h}";
+            %endif
+        %endif
+
+        config.setConfig({
+            sentry: sentry
+        });
+
+    </script>
+</%def>
+
+<%def name="config_google_analytics(app)">
+    %if app.config.ga_code:
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+            ga('create', '${app.config.ga_code}', 'auto');
+            ga('send', 'pageview');
+        </script>
+    %endif
+</%def>
+
+
+
+    
 
 
 ## ----------------------------------------------------------------------------

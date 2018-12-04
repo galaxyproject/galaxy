@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import axios from "axios";
 import Message from "../Message.vue";
 import DataTablesGrid from "./DataTablesGrid.vue";

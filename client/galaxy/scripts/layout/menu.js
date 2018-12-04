@@ -2,7 +2,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";

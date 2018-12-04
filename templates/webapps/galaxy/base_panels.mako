@@ -5,14 +5,6 @@
 ## Default title
 <%def name="title()"></%def>
 
-<%def name="javascripts()">
-${parent.javascripts()}
-</%def>
-
-<%def name="late_javascripts()">
-${parent.late_javascripts()}
-</%def>
-
 ## Masthead
 <%def name="masthead()">
     <%

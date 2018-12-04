@@ -25,6 +25,7 @@
     "bootstrap-vue": "^2.0.0-rc.11",
     "d3": "3",
     "decode-uri-component": "^0.2.0",
+    "deep-assign": "^3.0.0",
     "font-awesome": "^4.7.0",
     "gulp-uglify": "^3.0.1",
     "handsontable": "^2.0.0",
@@ -42,6 +43,7 @@
     "pyre-to-regexp": "^0.0.5",
     "raven-js": "^3.27.0",
     "requirejs": "2.3.6",
+    "rxjs": "^6.3.3",
     "underscore": "^1.9.1",
     "vue": "2.5.17",
     "vue-router": "3.0.1"

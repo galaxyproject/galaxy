@@ -1,7 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";

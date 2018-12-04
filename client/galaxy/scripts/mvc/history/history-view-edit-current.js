@@ -1,6 +1,6 @@
 import _ from "underscore";
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";

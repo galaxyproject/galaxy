@@ -1,7 +1,7 @@
 import _ from "underscore";
 import jQuery from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDCA_MODEL from "mvc/history/hdca-model";

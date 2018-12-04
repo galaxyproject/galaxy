@@ -1,8 +1,12 @@
+import $ from "jquery";
 import _l from "utils/localization";
 import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.wymeditor";
 import "libs/jquery/jquery.autocomplete";
 import GridView from "mvc/grid/grid-view";
+import { hide_modal, show_modal } from "layout/modal";
+import { make_popupmenu } from "ui/popupmenu";
+import { getGalaxyInstance } from "app";
 
 var WYMeditor = window.WYMeditor;
 
@@ -330,6 +334,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
             url_base: item_info.list_ajax_url,
             embedded: true
         });
+        let Galaxy = getGalaxyInstance();
         Galaxy.modal.show({
             title: `Insert Link to ${item_info.singular}`,
             body: $("<div/>")
@@ -423,6 +428,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
             url_base: item_info.list_ajax_url,
             embedded: true
         });
+        let Galaxy = getGalaxyInstance();
         Galaxy.modal.show({
             title: `Insert Link to ${item_info.singular}`,
             body: $("<div/>")

@@ -1,7 +1,7 @@
 /* global $, jQuery */
 import _ from "underscore";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import mod_utils from "utils/utils";
@@ -84,7 +84,8 @@ var FolderToolbarView = Backbone.View.extend({
             id: this.options.id,
             is_admin: false,
             is_anonym: true,
-            multiple_add_dataset_options: false
+            multiple_add_dataset_options: false,
+            Galaxy: Galaxy
         };
         if (Galaxy.user) {
             template_defaults.is_admin = Galaxy.user.isAdmin();
@@ -293,10 +294,11 @@ var FolderToolbarView = Backbone.View.extend({
     processImportToHistory: function(history_id, history_name) {
         var checked_items = this.findCheckedItems();
         var items_to_import = [];
+        var historyItem;
         // prepare the dataset objects to be imported
         for (let i = checked_items.dataset_ids.length - 1; i >= 0; i--) {
             var library_dataset_id = checked_items.dataset_ids[i];
-            var historyItem = new mod_library_model.HistoryItem();
+            historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_dataset_id;
             historyItem.source = "library";
@@ -305,7 +307,7 @@ var FolderToolbarView = Backbone.View.extend({
         // prepare the folder objects to be imported
         for (let i = checked_items.folder_ids.length - 1; i >= 0; i--) {
             var library_folder_id = checked_items.folder_ids[i];
-            var historyItem = new mod_library_model.HistoryItem();
+            historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_folder_id;
             historyItem.source = "library_folder";
@@ -717,8 +719,9 @@ var FolderToolbarView = Backbone.View.extend({
                 length: paths.length,
                 action: "adding_datasets"
             });
+            var full_source;
             if (selection_type === "folder") {
-                var full_source = `${options.source}_folder`;
+                full_source = `${options.source}_folder`;
                 this.chainCallImportingFolders({
                     paths: paths,
                     preserve_dirs: preserve_dirs,
@@ -731,7 +734,7 @@ var FolderToolbarView = Backbone.View.extend({
                     tag_using_filenames: tag_using_filenames
                 });
             } else if (selection_type === "file") {
-                var full_source = `${options.source}_file`;
+                full_source = `${options.source}_file`;
                 this.chainCallImportingUserdirFiles({
                     paths: paths,
                     file_type: file_type,
@@ -1409,7 +1412,6 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     templateToolBar: function() {
-        let Galaxy = getGalaxyInstance();
         return _.template(
             [
                 '<div class="library_style_container">', // container start

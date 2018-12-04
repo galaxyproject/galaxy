@@ -36,6 +36,7 @@
 </%def>
 
 <%def name="stylesheets()">
+    <!-- ind_share_base.mako stylesheets() -->
     ${parent.stylesheets()}
     <style>
         ## If page is displayed in panels, pad from edges for readabilit.
@@ -116,6 +117,9 @@
     </div>
 
     <script type="text/javascript">
+
+    // ind_share_base.mako
+
     /*  This should be ripped out and made generic at some point for the
      *  various API bindings available, and once the API can filter list
      *  queries (term, below) */

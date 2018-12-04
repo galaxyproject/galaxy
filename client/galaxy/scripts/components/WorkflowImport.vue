@@ -21,7 +21,7 @@
     </b-form>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import Vue from "vue";

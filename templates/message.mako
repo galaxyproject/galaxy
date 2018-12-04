@@ -27,13 +27,15 @@
 </%def>
 
 <%def name="javascripts()">
+    <!-- message.mako javascripts() -->
     ${parent.javascripts()}
     ${handle_refresh_frames()}
     <script type="text/javascript">
-        if ( parent.handle_minwidth_hint )
-        {
-            parent.handle_minwidth_hint( -1 );
-        }
+        config.addInitialization(function() {
+            if (parent.handle_minwidth_hint) {
+                parent.handle_minwidth_hint(-1);
+            }
+        });
     </script>
 </%def>
 
@@ -53,5 +55,5 @@
 <%def name="render_msg( msg, status='done' )">
     <% status = "success" if status == "done" else status %>
     <% status = "danger" if status == "error" else status %>
-    <div class="mt-2 alert alert-${status}">${_(msg)}</div>
+    <div class="message mt-2 alert alert-${status}">${_(msg)}</div>
 </%def>

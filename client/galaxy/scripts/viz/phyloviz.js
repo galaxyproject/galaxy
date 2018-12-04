@@ -6,6 +6,8 @@ import * as d3 from "libs/d3";
 import visualization_mod from "viz/visualization";
 import { Dataset } from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { hide_modal, show_message} from "layout/modal";
+
 /**
  * Base class of any menus that takes in user interaction. Contains checking methods.
  */

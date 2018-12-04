@@ -33,7 +33,7 @@
                                 container.find(".toggle-expand").hide();
                                 container.find(".toggle").show();
 
-                                make_popup_menus();
+                                window.bundleEntries.make_popup_menus();
                             }
                         });
                     } else {
@@ -84,7 +84,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "base", "autocomplete_tagging" )}
+    ${h.css( "base" )}
     <style type="text/css">
         .toggle { display: none; }
         .embedded-item .title {

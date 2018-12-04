@@ -27,7 +27,8 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 import axios from "axios";
 import Vue from "vue";
 import DisplayStructure from "components/DisplayStructured.vue";
@@ -95,6 +96,7 @@ export default {
             });
         },
         showStructure: function() {
+            let Galaxy = getGalaxyInstance();
             let displayStructureInstance = Vue.extend(DisplayStructure),
                 mountView = document.createElement("div");
             Galaxy.page.center.display(mountView);

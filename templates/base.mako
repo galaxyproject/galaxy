@@ -12,6 +12,7 @@
         <meta name = "viewport" content = "maximum-scale=1.0">
         ## Force IE to standards mode, and prefer Google Chrome Frame if the user has already installed it
         <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+        ${self.metas()}
 
         <title>
             Galaxy
@@ -20,12 +21,14 @@
             %endif
             | ${self.title()}
         </title>
+
         ## relative href for site root
+        ## TODO: This is what the <base> tag is for
         <link rel="index" href="${ h.url_for( '/' ) }"/>
-        ${self.metas()}
-        ${self.stylesheets()}
-        ${self.javascripts()}
-        ${self.javascript_app()}
+
+        ${stylesheets()}
+        ${javascripts()}
+        ${javascript_app()}
     </head>
     <body class="inbound">
         ${next.body()}
@@ -40,46 +43,28 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css("base")}
     ${h.css('bootstrap-tour')}
     ${h.css('base')}
 </%def>
 
 ## Default javascripts
 <%def name="javascripts()">
-    ## Send errors to Sentry server if configured
-    %if app.config.sentry_dsn:
-        ${h.js( "libs/raven" )}
-        <script>
-            Raven.config('${app.config.sentry_dsn_public}').install();
-            %if trans.user:
-                Raven.setUser( { email: "${trans.user.email|h}" } );
-            %endif
-        </script>
-    %endif
-
+    <!-- base.mako javascripts() -->
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'libs/require',
         'bundled/libs.chunk',
-        'bundled/base.chunk',
-        'bundled/extended.bundled'
+        'bundled/base.chunk'
     )}
+    ${ javascripts_entry()}
+</%def>
 
-    %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
-        <script type="text/javascript">
-            $(document).ready( function() {
-                // Auto Focus on first item on form
-                if ( $("*:focus").html() == null ) {
-                    $(":input:not([type=hidden]):visible:enabled:first").focus();
-                }
-            });
-        </script>
-    %endif
-
+<%def name="javascripts_entry()">
+    <!-- base.mako javascripts_entry() -->
+    ${ h.js('bundled/generic.bundled') }
 </%def>
 
 <%def name="javascript_app()">
+    <!-- base.mako javascript_app() -->
     ${ galaxy_client.load( app=self.js_app ) }
 </%def>
 

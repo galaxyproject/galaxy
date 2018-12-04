@@ -1,3 +1,4 @@
+<%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 <!DOCTYPE HTML>
 <html>
     <!--js-app.mako-->
@@ -14,91 +15,76 @@
             | ${app.config.brand}
             %endif
         </title>
-        ## relative href for site root
-        <link rel="index" href="${ h.url_for( '/' ) }"/>
-        ## TODO: use loaders to move everything but the essentials below the fold
-        ${ h.css(
-            ## 'jquery.rating',
-            'jquery-ui/smoothness/jquery-ui',
-            ## base needs to come after jquery-ui because of ui-button, ui- etc. name collision
-            'base',
-            ##'bootstrap-tour',
-        )}
-        ${ page_setup() }
-    </head>
 
+        ## relative href for site root
+        ## TODO: just use <base>, that's what it's for
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
+
+        ${ stylesheets() }
+
+    </head>
     <body scroll="no" class="full-content">
 
-        ${ js_disabled_warning() }
+        <%block name="js_disabled_warning">
+            <noscript>
+                <div class="overlay overlay-background noscript-overlay">
+                    <div>
+                        <h3 class="title">Javascript Required for Galaxy</h3>
+                        <div>
+                            The Galaxy analysis interface requires a browser with Javascript enabled.<br>
+                            Please enable Javascript and refresh this page.
+                        </div>
+                    </div>
+                </div>
+            </noscript>
+        </%block>
 
-        ## js libraries and bundled js app
-        ${ h.js(
-            'libs/require',
-            'bundled/libs.chunk',
-            'bundled/base.chunk',
-            'bundled/' + js_app_name + '.bundled'
-        )}
-
-        <script type="text/javascript">
-            console.debug("Initializing javascript application:", "${js_app_entry_fn}");
-            ${js_app_entry_fn}(
-                ${ h.dumps( options ) },
-                ${ h.dumps( bootstrapped ) }
-            );
-        </script>
+        ${ javascript() }
 
     </body>
 </html>
 
-## ============================================================================
-<%def name="page_setup()">
-    ## Send js errors to Sentry server if configured
-    %if app.config.sentry_dsn:
-    ${h.js( "libs/raven" )}
-    <script>
-        Raven.config('${app.config.sentry_dsn_public}').install();
-        %if trans.user:
-            Raven.setUser( { email: "${trans.user.email|h}" } );
-        %endif
-    </script>
-    %endif
-
-    %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
-    <script type="text/javascript">
-        $(document).ready( function() {
-            // Auto Focus on first item on form
-            if ( $("*:focus").html() == null ) {
-                $(":input:not([type=hidden]):visible:enabled:first").focus();
-            }
-        });
-    </script>
-    %endif
-
-    ## google analytics
-    %if app.config.ga_code:
-    <script type="text/javascript">
-        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-        ga('create', '${app.config.ga_code}', 'auto');
-        ga('send', 'pageview');
-    </script>
-    %endif
-
+## Default stylesheets
+<%def name="stylesheets()">
+    ${h.css(
+        'jquery-ui/smoothness/jquery-ui',
+        'bootstrap-tour',
+        'base',
+    )}
 </%def>
 
-## ============================================================================
-<%def name="js_disabled_warning()">
-    <noscript>
-        <div class="overlay overlay-background noscript-overlay">
-            <div>
-                <h3 class="title">Javascript Required for Galaxy</h3>
-                <div>
-                    The Galaxy analysis interface requires a browser with Javascript enabled.<br>
-                    Please enable Javascript and refresh this page.
-                </div>
-            </div>
-        </div>
-    </noscript>
+<%def name="javascript()">
+    <!-- js-app.mako javascript -->
+    ${ h.js(
+        'bundled/libs.chunk',
+        'bundled/base.chunk'
+    )}
+    ${ self.javascript_entry() }
+    ${ self.javascript_app() }
+</%def>
+
+<%def name="javascript_entry()">
+    <!-- js-app.mako javascript_entry -->
+    ${ h.js('bundled/' + js_app_name + '.bundled')}
+</%def>
+
+<%def name="javascript_app()">
+
+    <!-- js-app.mako javascript_app -->
+    <script type="text/javascript">
+
+        // js-app.mako
+        var options = ${ h.dumps( options ) };
+        var bootstrapped = ${ h.dumps( bootstrapped ) };
+
+        config.setConfig({
+            options: options,
+            bootstrapped: bootstrapped,
+            form_input_auto_focus: ${h.to_js_bool(form_input_auto_focus)}
+        });
+        
+    </script>
+
+    ${ galaxy_client.config_sentry(app)}
+    ${ galaxy_client.config_google_analytics(app)}
 </%def>

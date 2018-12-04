@@ -3,6 +3,10 @@
  * Not idempotent
  * TODO: This isn't just internal, some notebooks are calling it?
  */
+
+import $ from "jquery";
+import { getAppRoot } from "onload";
+
 export function append_notebook(url) {
     clear_main_area();
     $("#main").append(
@@ -18,8 +22,9 @@ export function clear_main_area() {
 }
 
 export function display_spinner() {
+    let appRoot = getAppRoot();
     $("#main").append(
-        `<img id="spinner" src="${galaxy_root}static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">`
+        `<img id="spinner" src="${appRoot}static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">`
     );
 }
 

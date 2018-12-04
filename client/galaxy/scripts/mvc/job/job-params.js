@@ -1,7 +1,7 @@
 /** Workflow view */
 import _ from "underscore";
 import Backbone from "backbone";
-// import { getAppRoot } from "onload/loadConfig";
+// import { getAppRoot } from "onload";
 import Utils from "utils/utils";
 
 /** Build messages after user action */

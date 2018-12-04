@@ -1,7 +1,7 @@
 import DataDialog from "components/DataDialog.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 
 export default class Data {
     /**

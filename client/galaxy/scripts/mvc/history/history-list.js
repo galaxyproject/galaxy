@@ -1,7 +1,7 @@
 /** This class renders the grid list. */
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import AjaxQueue from "utils/ajax-queue";

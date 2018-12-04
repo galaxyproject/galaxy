@@ -5,7 +5,7 @@
 /* global ga */
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 // import mod_utils from "utils/utils";
 import mod_toastr from "libs/toastr";

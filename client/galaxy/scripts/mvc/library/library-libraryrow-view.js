@@ -1,5 +1,9 @@
-// dependencies
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import mod_toastr from "libs/toastr";
+import { getGalaxyInstance } from "app";
+
 // galaxy library row view
 var LibraryRowView = Backbone.View.extend({
     events: {
@@ -27,9 +31,10 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     render: function(library) {
+        let Galaxy = getGalaxyInstance();
         if (typeof library === "undefined") {
             library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
-            console.log(library);
+            // console.log(library);
         }
         this.prepareButtons(library);
         var tmpl = this.templateRow();
@@ -117,6 +122,7 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     save_library_modification: function() {
+        let Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var is_changed = false;
 
@@ -168,6 +174,7 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     delete_library: function() {
+        let Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var row_view = this;
         // mark the library deleted
@@ -197,6 +204,7 @@ var LibraryRowView = Backbone.View.extend({
     },
 
     undelete_library: function() {
+        let Galaxy = getGalaxyInstance();
         var library = Galaxy.libraries.libraryListView.collection.get(this.$el.data("id"));
         var row_view = this;
 

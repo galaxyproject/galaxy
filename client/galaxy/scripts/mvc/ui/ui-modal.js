@@ -1,3 +1,7 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+
 export var View = Backbone.View.extend({
     className: "ui-modal",
 
@@ -20,7 +24,7 @@ export var View = Backbone.View.extend({
     buttonList: {},
 
     // initialize
-    initialize: function(options) {
+    initialize: function (options) {
         this.options = _.defaults(options || {}, this.optionsDefault);
         $(this.options.container).prepend(this.el);
         // optional render
@@ -32,7 +36,7 @@ export var View = Backbone.View.extend({
     /**
      * Displays modal
      */
-    show: function(options) {
+    show: function (options) {
         if (options) {
             this.options = _.defaults(options, this.optionsDefault);
             this.render();
@@ -56,7 +60,7 @@ export var View = Backbone.View.extend({
     /**
      * Hide modal
      */
-    hide: function(canceled) {
+    hide: function (canceled) {
         this.visible = false;
         this.$el.fadeOut("fast");
         if (this.options.closing_callback) {
@@ -69,7 +73,7 @@ export var View = Backbone.View.extend({
     /**
      * Render modal
      */
-    render: function() {
+    render: function () {
         var self = this;
         this.$el.html(this._template());
 
@@ -84,8 +88,8 @@ export var View = Backbone.View.extend({
         if (this.options.body == "progress") {
             this.options.body = $(
                 '<div class="progress progress-striped active">' +
-                    '<div class="progress-bar progress-bar-info" style="width:100%"/>' +
-                    "</div>"
+                '<div class="progress-bar progress-bar-info" style="width:100%"/>' +
+                "</div>"
             );
         }
 
@@ -139,7 +143,7 @@ export var View = Backbone.View.extend({
      * Returns the button dom
      * @param{String}   name    - Button name/title
      */
-    getButton: function(name) {
+    getButton: function (name) {
         return this.buttonList[name];
     },
 
@@ -147,7 +151,7 @@ export var View = Backbone.View.extend({
      * Enables a button
      * @param{String}   name    - Button name/title
      */
-    enableButton: function(name) {
+    enableButton: function (name) {
         this.getButton(name).prop("disabled", false);
     },
 
@@ -155,7 +159,7 @@ export var View = Backbone.View.extend({
      * Disables a button
      * @param{String}   name    - Button name/title
      */
-    disableButton: function(name) {
+    disableButton: function (name) {
         this.getButton(name).prop("disabled", true);
     },
 
@@ -163,7 +167,7 @@ export var View = Backbone.View.extend({
      * Show a button
      * @param{String}   name    - Button name/title
      */
-    showButton: function(name) {
+    showButton: function (name) {
         this.getButton(name).show();
     },
 
@@ -171,21 +175,21 @@ export var View = Backbone.View.extend({
      * Hide a button
      * @param{String}   name    - Button name/title
      */
-    hideButton: function(name) {
+    hideButton: function (name) {
         this.getButton(name).hide();
     },
 
     /**
      * Returns scroll top for body element
      */
-    scrollTop: function() {
+    scrollTop: function () {
         return this.$body.scrollTop();
     },
 
     /**
      * Returns the modal template
      */
-    _template: function() {
+    _template: function () {
         return (
             '<div class="modal-backdrop fade"/>' +
             '<div class="modal-dialog">' +

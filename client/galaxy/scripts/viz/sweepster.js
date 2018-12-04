@@ -6,7 +6,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import _l from "utils/localization";
 import * as d3 from "libs/d3";
 import visualization from "viz/visualization";
@@ -15,6 +15,8 @@ import tools from "mvc/tool/tools";
 import { Dataset } from "mvc/dataset/data";
 import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { show_modal, hide_modal } from "layout/modal";
+import { make_popupmenu } from "ui/popupmenu";
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings

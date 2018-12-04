@@ -1,4 +1,5 @@
 import _ from "libs/underscore";
+import $ from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import mod_toastr from "libs/toastr";

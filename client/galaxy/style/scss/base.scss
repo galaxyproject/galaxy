@@ -37,6 +37,13 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "flex.scss";
 @import "charts.scss";
 
+// Anything that should be included with a specific Vue component
+// I'm going to start putting down here
+// TODO: remove and include with new compoenents as theya re developed.
+@import "message.scss";
+
+
+
 // Mixins
 @mixin user-select($select) {
     -webkit-touch-callout: #{$select};
@@ -184,7 +191,15 @@ body {
             height: 100%;
         }
     }
+    // Replaces unnecessary if/then logic in base_panels.mako
+    &:first-child {
+        left: 0;
+    }
+    &:last-child {
+        right: 0;
+    }
 }
+
 
 #right {
     width: $panel-width;

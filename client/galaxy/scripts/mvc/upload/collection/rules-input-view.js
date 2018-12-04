@@ -1,6 +1,6 @@
 import _ from "underscore";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Ui from "mvc/ui/ui-misc";

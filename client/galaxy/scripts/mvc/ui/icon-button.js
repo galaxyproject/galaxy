@@ -1,3 +1,6 @@
+import Backbone from "backbone";
+import { make_popupmenu } from "ui/popupmenu";
+
 //=============================================================================
 /**
  * backbone model for icon buttons

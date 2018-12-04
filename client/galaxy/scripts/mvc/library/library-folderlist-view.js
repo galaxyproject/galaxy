@@ -1,6 +1,10 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_library_folderrow_view from "mvc/library/library-folderrow-view";
+import { getGalaxyInstance } from "app";
 
 var FolderListView = Backbone.View.extend({
     el: "#folder_items_element",
@@ -55,8 +59,8 @@ var FolderListView = Backbone.View.extend({
         this.fetchFolder();
     },
 
-    fetchFolder: function(options) {
-        var options = options || {};
+    fetchFolder: function(options = {}) {
+
         this.options.include_deleted = options.include_deleted;
         var self = this;
 
@@ -74,6 +78,7 @@ var FolderListView = Backbone.View.extend({
                 self.render();
             },
             error: function(model, response) {
+                let Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
@@ -137,6 +142,8 @@ var FolderListView = Backbone.View.extend({
     },
 
     paginate: function(options) {
+        let Galaxy = getGalaxyInstance();
+
         this.options = _.extend(this.options, options);
 
         if (this.options.show_page === null || this.options.show_page < 1) {
@@ -176,6 +183,8 @@ var FolderListView = Backbone.View.extend({
      *  be added to the view's collection.
      */
     addAll: function(models) {
+        let Galaxy = getGalaxyInstance();
+
         _.each(models, model => {
             Galaxy.libraries.folderListView.collection.add(model, {
                 current_sort_order: false
@@ -192,6 +201,7 @@ var FolderListView = Backbone.View.extend({
      * and that event will be bound on all subviews.
      */
     postRender: function() {
+        let Galaxy = getGalaxyInstance();
         var fetched_metadata = this.folderContainer.attributes.metadata;
         fetched_metadata.contains_file_or_folder =
             typeof this.collection.findWhere({ type: "file" }) !== "undefined" ||

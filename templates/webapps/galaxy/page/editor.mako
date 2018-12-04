@@ -31,7 +31,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "base", "autocomplete_tagging", "embed_item" )}
+    ${h.css( "base", "embed_item" )}
     <style type='text/css'>
         .galaxy-page-editor-button
         {

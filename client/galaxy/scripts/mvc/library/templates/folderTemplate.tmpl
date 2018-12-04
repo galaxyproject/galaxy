@@ -1,0 +1,71 @@
+<ol class="breadcrumb">
+
+    <li class="breadcrumb-item">
+        <a title="Return to the list of libraries" href="#">Libraries</a>
+    </li>
+
+    <% _.each(path, function(path_item) { %>
+        <% if (path_item[0] != id) { %>
+            <li class="breadcrumb-item">
+                <a title="Return to this folder" href="#/folders/<%- path_item[0] %>">
+                    <%- path_item[1] %>
+                </a>
+            </li>
+        <% } else { %>
+            <li class="breadcrumb-item active">
+                <span title="You are in this folder">
+                    <%- path_item[1] %>
+                </span>
+            </li>
+        <% } %>
+    <% }); %>
+    
+</ol>"
+
+<table data-library-id="<%- parent_library_id  %>" class="grid table table-sm">
+    <thead>
+        <th class="button_heading"></th>
+        <th class="mid" style="width: 20px; " title="Check to select all datasets">
+            <input id="select-all-checkboxes" style="margin: 0;" type="checkbox">
+        </th>
+        <th>
+            <a class="sort-folder-name" title="Click to reverse order" href="#">name</a>
+                <span title="Sorted alphabetically" class="sort-icon-name fa fa-sort-alpha-<%- order %>"></span>
+            </th>
+        <th style="width:20%;">
+            <a class="sort-folder-description" title="Click to reverse order" href="#">description</a>
+            <span title="Sorted alphabetically" class="sort-icon-description fa"></span>
+        </th>
+        <th style="width:5%;">
+            <a class="sort-folder-file_ext" title="Click to reverse order" href="#">data type</a> 
+            <span title="Sorted alphabetically" class="sort-icon-file_ext fa"></span>
+        </th>
+        <th style="width:10%;">size</th>
+        <th style="width:160px;">time updated (UTC)</th>
+        <th style="width:5%;">
+            <a class="sort-folder-state" title="Click to reverse order" href="#">state</a> 
+            <span title="Sorted alphabetically" class="sort-icon-state fa"></span></th>
+        <th style="width:150px;"></th>
+    </thead>
+    <tbody id="folder_list_body">
+        <tr id="first_folder_item">
+            <td>
+                <a href="#<% if (upper_folder_id !== 0){ print("folders/" + upper_folder_id)} %>" title="Go to parent folder" class="btn_open_folder btn btn-secondary btn-sm">..<a>
+            </td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+        </tr>
+    </tbody>
+</table>
+
+<div class="empty-folder-message" style="display:none;">
+    This folder is either empty or you do not have proper access permissions to see the contents. If you expected something to show up
+    please consult the <a href="https://galaxyproject.org/data-libraries/#permissions" target="_blank">library security wikipage</a>
+    or visit the <a href="https://biostar.usegalaxy.org/" target="_blank">Galaxy support site</a>.
+</div>

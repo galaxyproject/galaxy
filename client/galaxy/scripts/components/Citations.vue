@@ -27,7 +27,7 @@
     </b-card>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import axios from "axios";
 import * as bibtexParse from "libs/bibtexParse";
 import { convertLaTeX } from "latex-to-unicode-converter";

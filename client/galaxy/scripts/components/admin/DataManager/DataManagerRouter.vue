@@ -1,5 +1,5 @@
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import Vue from "vue";
 import VueRouter from "vue-router";
 import DataManager from "./DataManager.vue";

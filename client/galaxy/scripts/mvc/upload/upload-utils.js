@@ -1,5 +1,5 @@
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import Utils from "utils/utils";
 
 const AUTO_EXTENSION = {

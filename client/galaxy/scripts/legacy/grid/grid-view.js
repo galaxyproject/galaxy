@@ -1,12 +1,19 @@
-// This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
-// not appended to the identifier of a nested array.
-jQuery.ajaxSettings.traditional = true;
-
-// dependencies
+import _ from "underscore";
+import jQuery from "jquery";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 import GridModel from "legacy/grid/grid-model";
 import Templates from "legacy/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
+import { getGalaxyInstance } from "app";
+
+let $ = jQuery;
+
+// WARNING: this is a global setting
+// This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
+// not appended to the identifier of a nested array.
+jQuery.ajaxSettings.traditional = true;
+
 // grid view
 export default Backbone.View.extend({
     // model
@@ -67,8 +74,9 @@ export default Backbone.View.extend({
     handle_refresh: function(refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                if (window.top.Galaxy && window.top.Galaxy.currHistoryPanel) {
-                    window.top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                let Galaxy = getGalaxyInstance();
+                if (Galaxy && Galaxy.currHistoryPanel) {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
             }
         }

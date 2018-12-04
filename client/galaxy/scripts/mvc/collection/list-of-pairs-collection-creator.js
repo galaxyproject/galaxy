@@ -1,7 +1,7 @@
 import _ from "underscore";
 import jQuery from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import levenshteinDistance from "utils/levenshtein";
 import naturalSort from "utils/natural-sort";
@@ -10,7 +10,9 @@ import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/hoverhighlight";
 
+var $ = jQuery;
 var logNamespace = "collections";
+
 /* ============================================================================
 TODO:
 

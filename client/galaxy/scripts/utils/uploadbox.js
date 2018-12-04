@@ -4,7 +4,7 @@
 
 import _ from "underscore";
 import jQuery from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 
 ($ => {
     // add event properties

@@ -1,7 +1,6 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%def name="title()">
-
     Workflow Editor
 </%def>
 
@@ -33,22 +32,25 @@
 %>
 </%def>
 
-<%def name="javascripts()">
+<%def name="javascript_app()">
 
-    ${parent.javascripts()}
+    ${parent.javascript_app()}
 
-    <script type='text/javascript'>
-        $( function() {
-            window.bundleEntries.workflow(${h.dumps(self.editor_config)});
+    <script type="text/javascript">
+        config.addInitialization(function(galaxy, config) {
+            let editorConfig = ${h.dumps(self.editor_config)};
+            console.log("editorConfig", editorConfig);
+            window.bundleEntries.workflow(editorConfig);
         });
     </script>
-
 </%def>
+
+
 
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging", "jquery-ui/smoothness/jquery-ui" )}
+    ${h.css("jquery-ui/smoothness/jquery-ui" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}

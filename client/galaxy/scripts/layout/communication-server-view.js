@@ -1,9 +1,10 @@
 /** Real-time Communication feature **/
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
 import Modal from "mvc/ui/ui-modal";
-/* global $ */
+import { getGalaxyInstance } from "app";
 
 export var CommunicationServerView = Backbone.View.extend({
     initialize: function() {
@@ -12,6 +13,8 @@ export var CommunicationServerView = Backbone.View.extend({
 
     /** makes bootstrap modal and iframe inside it */
     makeModalIframe: function(e) {
+        let Galaxy = getGalaxyInstance();
+
         // make modal
         var host = Galaxy.config.communication_server_host;
 

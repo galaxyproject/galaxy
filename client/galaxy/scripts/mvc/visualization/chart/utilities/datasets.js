@@ -1,6 +1,6 @@
 /** This class handles, formats and caches datasets. */
 import _ from "underscore";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import Utils from "utils/utils";
 
 /** Assists in assigning the viewport panels */

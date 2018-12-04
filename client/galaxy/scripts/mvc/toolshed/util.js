@@ -1,5 +1,5 @@
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 
 var searchShed = function(request, response) {
     var shed_url = this.shed_url;

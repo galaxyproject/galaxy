@@ -1,7 +1,7 @@
 /** Generic form view */
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import Form from "mvc/form/form-view";
 import Ui from "mvc/ui/ui-misc";
 

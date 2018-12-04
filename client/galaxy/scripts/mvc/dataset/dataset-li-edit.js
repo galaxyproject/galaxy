@@ -1,6 +1,6 @@
 import _ from "underscore";
 import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";

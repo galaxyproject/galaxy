@@ -1,8 +1,12 @@
-import _l from "utils/localization";
 /** This class creates a ui component which enables the dynamic creation of portlets */
+import _l from "utils/localization";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
+import { getGalaxyInstance } from "app";
 
 export var View = Backbone.View.extend({
     initialize: function(options) {
@@ -39,6 +43,7 @@ export var View = Backbone.View.extend({
     /** Add new repeat block */
     add: function(options) {
         if (!options.id || this.list[options.id]) {
+            let Galaxy = getGalaxyInstance();
             Galaxy.emit.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
             return;
         }
@@ -71,6 +76,7 @@ export var View = Backbone.View.extend({
     /** Delete repeat block */
     del: function(id) {
         if (!this.list[id]) {
+            let Galaxy = getGalaxyInstance();
             Galaxy.emit.debug("form-repeat::del()", "Invalid repeat block id.");
             return;
         }

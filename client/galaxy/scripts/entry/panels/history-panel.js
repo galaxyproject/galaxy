@@ -1,15 +1,16 @@
 import Backbone from "backbone";
+import _l from "utils/localization";
+import { getGalaxyInstance } from "app";
 import Ui from "mvc/ui/ui-misc";
 import historyOptionsMenu from "mvc/history/options-menu";
 import CurrentHistoryView from "mvc/history/history-view-edit-current";
-import _l from "utils/localization";
-import { getGalaxyInstance } from "app";
 
 /** the right hand panel in the analysis page that shows the current history */
 var HistoryPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        var Galaxy = getGalaxyInstance();
-        var self = this;
+        
+        let Galaxy = getGalaxyInstance();
+        let self = this;
 
         this.userIsAnonymous = Galaxy.user.isAnonymous();
         this.allow_user_dataset_purge = options.config.allow_user_dataset_purge;

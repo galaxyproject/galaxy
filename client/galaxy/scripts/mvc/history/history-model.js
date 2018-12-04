@@ -2,7 +2,7 @@ import _ from "underscore";
 import jQuery from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "onload";
 import { HistoryContents } from "mvc/history/history-contents";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import UTILS from "utils/utils";
