@@ -1363,7 +1363,7 @@ def size_to_bytes(size):
     size_re = re.compile(r'(?P<size>[\d\.]+)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
     if size_match is None:
-        raise Exception("size_to_int: could not parse %s"%(size))
+        raise ValueError("Could not parse string '%s'" % size)
     number = float(size_match.group("size"))
     multiple = size_match.group("multiple")
     if multiple == "" or multiple.startswith('b'):
@@ -1381,7 +1381,7 @@ def size_to_bytes(size):
     elif multiple.startswith('e'):
         return int(number * 1024 ** 6)
     else:
-        raise Exception("size_to_bytes: unknown multipier %s in %s"%(multiple, size))
+        raise ValueError("Unknown multiplier '%s' in '%s'" % (multiple, size))
 
 def send_mail(frm, to, subject, body, config, html=None):
     """
