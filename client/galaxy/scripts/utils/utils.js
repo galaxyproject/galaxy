@@ -369,17 +369,47 @@ function hashFnv32a(str) {
     return hval >>> 0;
 }
 
-export function generateTagColor(tagValue) {
-    //var r = (15 - ((hash & 0xf) % 6)).toString(16),
-        //g = (15 - (((hash & 0xf0) >> 4) % 6)).toString(16),
-        //b = (15 - (((hash & 0xf00) >> 8) % 6)).toString(16);
+function contrastingColor(r, g, b) {
+    // Expects r, g, b as floats on range [0, 1]
+    // http://www.w3.org/TR/AERT#color-contrast
+    var o = ((r * 255 * 299) +
+             (g * 255 * 587) +
+             (b * 255 * 114)) / 1000;
+    return (o > 125) ? 'black' : 'white';
+}
 
+export function hashToTagColor(tagValue) {
     var hash = hashFnv32a(tagValue);
-    var r = (((hash & 0x00f) >> 0) % 10),
-        g = (((hash & 0x0f0) >> 4) % 10),
-        b = (((hash & 0xf00) >> 8) % 10);
+    var r = ((hash & 0x00f) >> 0),
+        g = ((hash & 0x0f0) >> 4),
+        b = ((hash & 0xf00) >> 8);
 
-    return `#${r}${g}${b}`;
+    // Pastels
+    var r2 = 15 - (r % 6),
+        g2 = 15 - (g % 6),
+        b2 = 15 - (b % 6);
+
+    // All colours
+    //var r2 = r % 0xf,
+        //g2 = g % 0xf,
+        //b2 = b % 0xf;
+
+    // Not horribly dark
+    //var r2 = r % 0xa,
+        //g2 = g % 0xa,
+        //b2 = b % 0xa;
+
+    return [r2, g2, b2];
+}
+
+export function generateTagColor(tag) {
+    var [r, g, b] = hashToTagColor(tag)
+    return `#${r.toString(16)}${g.toString(16)}${b.toString(16)}`;
+}
+
+export function generateTagColorFg(tag) {
+    var [r, g, b] = hashToTagColor(tag)
+    return contrastingColor(r / 0xf, g / 0xf, b / 0xf)
 }
 
 
@@ -403,5 +433,6 @@ export default {
     appendScriptStyle: appendScriptStyle,
     getQueryString: getQueryString,
     setWindowTitle: setWindowTitle,
-    generateTagColor: generateTagColor
+    generateTagColor: generateTagColor,
+    generateTagColorFg: generateTagColorFg
 };
