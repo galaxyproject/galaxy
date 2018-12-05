@@ -3,7 +3,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import _l from "utils/localization";
 import Page from "layout/page";
-import Login from "components/login/Login.vue";
+import Index from "components/login/Index.vue";
 import Password from "components/login/Password.vue";
 import Vue from "vue";
 import { setGalaxyInstance } from "app";
@@ -22,7 +22,7 @@ window.app = function app(options, bootstrapped) {
         Galaxy.page = new Page.View(options);
         var vm = document.createElement("div");
         Galaxy.display(vm);
-        var component = Galaxy.params.token || Galaxy.params.expired_user ? Password : Login;
+        var component = Galaxy.params.token || Galaxy.params.expired_user ? Password : Index;
         var loginInstance = Vue.extend(component);
         new loginInstance({propsData: options}).$mount(vm);
     });
