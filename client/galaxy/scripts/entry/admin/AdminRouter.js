@@ -11,9 +11,7 @@ import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
 import Vue from "vue";
 
-
 export const getAdminRouter = (Galaxy, options) => {
-
     let galaxyRoot = getAppRoot();
 
     return Router.extend({
@@ -33,43 +31,43 @@ export const getAdminRouter = (Galaxy, options) => {
             "*notFound": "not_found"
         },
 
-        authenticate: function () {
+        authenticate: function() {
             let Galaxy = getGalaxyInstance();
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
         },
 
-        not_found: function () {
+        not_found: function() {
             window.location.reload(); // = window.location.href;
         },
 
-        home: function () {
+        home: function() {
             this.page
                 .$("#galaxy_main")
                 .prop("src", `${galaxyRoot}admin/center?message=${options.message}&status=${options.status}`);
         },
 
-        show_users: function () {
-            this._show_grid_view('admin/users_list');
+        show_users: function() {
+            this._show_grid_view("admin/users_list");
         },
 
-        show_roles: function () {
-            this._show_grid_view('admin/roles_list');
+        show_roles: function() {
+            this._show_grid_view("admin/roles_list");
         },
 
-        show_groups: function () {
-            this._show_grid_view('admin/groups_list');
+        show_groups: function() {
+            this._show_grid_view("admin/groups_list");
         },
 
-        show_repositories: function () {
-            this._show_grid_view('admin_toolshed/browse_repositories');
+        show_repositories: function() {
+            this._show_grid_view("admin_toolshed/browse_repositories");
         },
 
-        show_tool_versions: function () {
-            this._show_grid_view('admin/tool_versions_list');
+        show_tool_versions: function() {
+            this._show_grid_view("admin/tool_versions_list");
         },
 
         show_quotas: function() {
-            this._show_grid_view('admin/quotas_list');
+            this._show_grid_view("admin/quotas_list");
         },
 
         _show_grid_view: function(urlSuffix) {
@@ -82,20 +80,20 @@ export const getAdminRouter = (Galaxy, options) => {
             );
         },
 
-        _display_vue_helper: function (component, props) {
+        _display_vue_helper: function(component, props) {
             let instance = Vue.extend(component);
             let vm = document.createElement("div");
             this.page.display(vm);
             new instance(props).$mount(vm);
         },
-        show_data_tables: function () {
+        show_data_tables: function() {
             this._display_vue_helper(DataTables);
         },
-        show_data_types: function () {
+        show_data_types: function() {
             this._display_vue_helper(DataTypes);
         },
 
-        show_data_manager: function (path) {
+        show_data_manager: function(path) {
             let Galaxy = getGalaxyInstance();
             console.log("show_data_manager");
             let vueMount = document.createElement("div");
@@ -107,11 +105,11 @@ export const getAdminRouter = (Galaxy, options) => {
             new Vue({ router: DataManagerRouter, render: h => h(DataManagerView) }).$mount(vueMount);
         },
 
-        show_forms: function () {
-            this._show_grid_view('forms/forms_list');
+        show_forms: function() {
+            this._show_grid_view("forms/forms_list");
         },
 
-        show_form: function (form_id) {
+        show_form: function(form_id) {
             var id = `?id=${QueryStringParsing.get("id")}`;
             var form_defs = {
                 reset_user_password: {
@@ -182,5 +180,4 @@ export const getAdminRouter = (Galaxy, options) => {
             this.page.display(new FormWrapper.View(form_defs[form_id]));
         }
     });
-
-}    
+};

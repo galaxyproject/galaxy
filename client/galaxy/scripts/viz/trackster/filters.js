@@ -639,7 +639,6 @@ extend(FiltersManager.prototype, {
         // Invoke recursive function to run filters; this enables chaining of filters via
         // iteratively application.
         (function run_filter(input_dataset_id, filters) {
-
             let Galaxy = getGalaxyInstance();
 
             // Set up filtering info and params.
@@ -661,7 +660,7 @@ extend(FiltersManager.prototype, {
 
             try {
                 // DBTODO: This will never work, run_tool_url doesn't exist?
-                console.warn("Undefined url run_tool_url referenced in source code with no")
+                console.warn("Undefined url run_tool_url referenced in source code with no");
                 $.getJSON(run_tool_url, url_params, response => {
                     if (response.error) {
                         // General error.
@@ -686,7 +685,6 @@ extend(FiltersManager.prototype, {
                 // catch so we can figure out who's calling this nonsense
                 console.warn("Bad code references run_tool_url", err);
             }
-
         })(this.track.dataset_id, active_filters_list);
     }
 });

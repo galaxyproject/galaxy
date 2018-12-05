@@ -22,7 +22,7 @@ export function replace_big_select_inputs(min_length, max_length, select_elts) {
 
     select_elts = select_elts || $("select");
 
-    select_elts.each(function () {
+    select_elts.each(function() {
         var select_elt = $(this).not("[multiple]");
         // Make sure that options is within range.
         var num_options = select_elt.find("option").length;

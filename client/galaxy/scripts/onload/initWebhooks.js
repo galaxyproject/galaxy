@@ -3,7 +3,7 @@ import Utils from "utils/utils";
 
 /**
  * Initializes webhooks.
- * 
+ *
  * @param {object} galaxy Galaxy application instance
  */
 export const initWebhooks = (galaxy, config) => {
@@ -14,7 +14,7 @@ export const initWebhooks = (galaxy, config) => {
     if (galaxy.config.enable_webhooks) {
         Webhooks.load({
             type: "onload",
-            callback: function (webhooks) {
+            callback: function(webhooks) {
                 // This is tragic. We need to install a push server
                 webhooks.each(model => {
                     var webhook = model.toJSON();
@@ -25,4 +25,4 @@ export const initWebhooks = (galaxy, config) => {
             }
         });
     }
-}
+};

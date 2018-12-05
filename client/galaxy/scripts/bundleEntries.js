@@ -1,6 +1,6 @@
 /**
  * The big list of horrible globals we expose on window.bundleEntries.
- * 
+ *
  * Everything that is exposed on this global variable is something that the python templates
  * require for their hardcoded initializations. These objects are going to have to continue
  * to exist until such time as we replace the overall application with a Vue component which
@@ -68,7 +68,7 @@ export function multiHistory(options) {
         histories: histories
     });
 
-    histories.fetchFirst({ silent: true }).done(function () {
+    histories.fetchFirst({ silent: true }).done(function() {
         multipanel.createColumns();
         multipanel.render(0);
     });

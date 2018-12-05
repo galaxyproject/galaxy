@@ -3,7 +3,7 @@ import Raven from "libs/raven";
 /**
  * Initializes raven/sentry, one of the few functions that should actually be
  * in a global init. Transplanted here from js-app.mako
- * 
+ *
  * @param {object} config Galaxy configuration object
  */
 export const initSentry = (galaxy, config) => {
@@ -16,4 +16,4 @@ export const initSentry = (galaxy, config) => {
             Raven.setUser({ email });
         }
     }
-}
+};

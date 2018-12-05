@@ -13,7 +13,6 @@ import { mock } from "utils/mock";
 window._monitorStorage = window._monitorStorage || {};
 
 export function installMonitor(globalProp) {
-
     // Need to handle the special case of window.Galaxy because
     // we already install an Object.defineProperty on window.Galaxy
     // to make the singleton available to legacy scripts
@@ -27,7 +26,6 @@ export function installMonitor(globalProp) {
 }
 
 export function installObjectWatcher(globalProp, getter = null, setter = null) {
-
     let label = `window.${globalProp}`;
     let debug = isPropMonitored(globalProp);
     let logger = debug ? console : mock(console);
@@ -44,7 +42,7 @@ export function installObjectWatcher(globalProp, getter = null, setter = null) {
             logger.trace();
             try {
                 if (getter) {
-                    val = getter()
+                    val = getter();
                 } else {
                     val = window._monitorStorage[globalProp];
                 }
@@ -72,7 +70,6 @@ export function installObjectWatcher(globalProp, getter = null, setter = null) {
             logger.groupEnd();
         }
     });
-
 }
 
 // sets a flag in sessionStorage to install a monitor for the
@@ -83,7 +80,7 @@ export function toggleGlobalMonitor(prop, bShow = true) {
         toggleList[prop] = true;
     } else {
         if (prop in toggleList) {
-            delete toggleList[prop]
+            delete toggleList[prop];
         }
     }
     setToggles(toggleList);
@@ -106,7 +103,7 @@ export function showMonitorToggles() {
 function getToggles() {
     let json = sessionStorage.getItem("global_monitors");
     let existinglist = json ? JSON.parse(json) : {};
-    return existinglist;    
+    return existinglist;
 }
 
 // put the toggle list back in session storage
@@ -117,11 +114,13 @@ function setToggles(toggleList) {
 // Display properties available for monitoring at time of page reload
 // (you can add more during a page-session with installMonitor)
 export function monitorInit() {
-
     let monitoredProps = Object.keys(getToggles());
 
     console.group("monitor init");
-    console.log("The following global properties are monitored because they were setup in the javascript source manually:", monitoredProps);
+    console.log(
+        "The following global properties are monitored because they were setup in the javascript source manually:",
+        monitoredProps
+    );
     console.log("To toggle messages on/off, type toggleGlobalMonitor('Galaxy', true|false) into the console");
     console.log("You can set up any other variable by typing installMonitor('a window variable name')");
     console.groupEnd();

@@ -24,7 +24,6 @@ QUnit.module("Form test", {
 });
 
 QUnit.test("tool-form", function(assert) {
-
     var toolform = new ToolForm.View({ id: "test" });
     $("body").prepend(toolform.$el);
     window.fakeserver.respond();

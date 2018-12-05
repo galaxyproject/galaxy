@@ -20,11 +20,12 @@ export function showOrRedirect(Galaxy, { options }) {
 
 export function initLoginView(Galaxy, { options }) {
     console.log("initLoginView");
-    
-    Galaxy.page = new Page.View({
-        ...options,
+
+    let pageConfig = Object.assign({}, options, {
         Right: getLoginPage(options)
     });
+
+    Galaxy.page = new Page.View(pageConfig);
 }
 
 addInitialization(showOrRedirect, initLoginView);

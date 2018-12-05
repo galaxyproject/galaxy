@@ -12,7 +12,6 @@ export const Modal = function(options) {
     this.$header.find(".close").on("click", $.proxy(this.hide, this));
 };
 
-
 $.extend(Modal.prototype, {
     setContent: function(options) {
         this.$header.hide();

@@ -60,7 +60,6 @@ var FolderListView = Backbone.View.extend({
     },
 
     fetchFolder: function(options = {}) {
-
         this.options.include_deleted = options.include_deleted;
         var self = this;
 

@@ -14,7 +14,7 @@ const galaxyStub = {
 };
 
 // Causes global Galaxy references to pass through the singleton functions
-installObjectWatcher("Galaxy", getGalaxyInstance, (newValue) => {
+installObjectWatcher("Galaxy", getGalaxyInstance, newValue => {
     return setGalaxyInstance(() => newValue);
 });
 

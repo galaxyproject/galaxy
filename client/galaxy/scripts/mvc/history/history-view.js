@@ -672,7 +672,9 @@ export function historyEntry(options) {
         el: $("#history-" + options.historyJSON.id),
         className: viewClass.prototype.className + " wide",
         $scrollContainer: options.hasMasthead
-            ? function() { return this.$el.parent(); }
+            ? function() {
+                  return this.$el.parent();
+              }
             : undefined,
         model: history,
         show_deleted: options.showDeletedJson,

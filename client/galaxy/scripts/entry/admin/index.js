@@ -7,13 +7,12 @@ import Page from "layout/page";
 addInitialization((Galaxy, { options }) => {
     console.log("Admin custom page setup");
 
-    options.config = {
-        ...options.config,
+    let optionsConfig = Object.assign({}, options.config, {
         active_view: "admin"
-    };
+    });
 
     let pageOptions = {
-        ...options,
+        config: optionsConfig,
         Left: AdminPanel,
         Router: getAdminRouter(Galaxy, options)
     };

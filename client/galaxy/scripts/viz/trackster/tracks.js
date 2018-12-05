@@ -2354,18 +2354,18 @@ var Track = function(view, container, obj_dict) {
         "data_manager" in obj_dict
             ? obj_dict.data_manager
             : new visualization.GenomeDataManager({
-                dataset: this.dataset,
-                // HACK: simulate 'genome' attributes from view for now.
-                // View should eventually use Genome object.
-                genome: new visualization.Genome({
-                    key: view.dbkey,
-                    chroms_info: {
-                        chrom_info: view.chrom_data
-                    }
-                }),
-                data_mode_compatible: this.data_and_mode_compatible,
-                can_subset: this.can_subset
-            });
+                  dataset: this.dataset,
+                  // HACK: simulate 'genome' attributes from view for now.
+                  // View should eventually use Genome object.
+                  genome: new visualization.Genome({
+                      key: view.dbkey,
+                      chroms_info: {
+                          chrom_info: view.chrom_data
+                      }
+                  }),
+                  data_mode_compatible: this.data_and_mode_compatible,
+                  can_subset: this.can_subset
+              });
 
     // Height attributes: min height, max height, and visible height.
     this.min_height_px = 16;

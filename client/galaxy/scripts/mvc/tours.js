@@ -8,13 +8,14 @@ import _l from "utils/localization";
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload";
+// import { getAppRoot } from "onload";
 import "libs/bootstrap-tour";
 
 // bootstrap-tour configures a window.Tour object; keep a local ref.
 let Tour = window.Tour;
 
-var gxy_root = getAppRoot();
+// var gxy_root = getAppRoot();
+var gxy_root = "/";
 
 const TOURPAGE_TEMPLATE = `
     <h2>Galaxy Tours</h2>

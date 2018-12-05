@@ -9,7 +9,7 @@ import { getAppRoot } from "onload";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        console.log('initializing toolpanel');
+        console.log("initializing toolpanel");
 
         let Galaxy = getGalaxyInstance();
         let appRoot = getAppRoot();

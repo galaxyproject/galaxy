@@ -424,11 +424,11 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // check for vcf-file format
         if (this.file_ext == "vcf") {
             // search array
-            
+
             const search = (str, array) => {
                 for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
                 return -1;
-            }
+            };
 
             // load
             this.col.chrom = search("Chrom", metadata.get("column_names"));
@@ -520,7 +520,10 @@ var TabularButtonTracksterView = Backbone.View.extend({
 
         // end is optional
         var end = this.col.end
-            ? row.children().eq(this.col.end).html()
+            ? row
+                  .children()
+                  .eq(this.col.end)
+                  .html()
             : start;
 
         // double check location

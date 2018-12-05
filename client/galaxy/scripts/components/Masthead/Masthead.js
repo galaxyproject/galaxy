@@ -4,7 +4,6 @@ import Masthead from "layout/masthead";
 import Modal from "mvc/ui/ui-modal";
 
 export default {
-
     created() {
         this.initUser();
         this.setFrameClass();
@@ -17,11 +16,9 @@ export default {
     updated() {
         this.backboneRender();
     },
-    
-    methods: {
-        
-        backboneRender() {
 
+    methods: {
+        backboneRender() {
             // dont bother unless we're in top window
             if (window.top !== window) {
                 return;
@@ -33,10 +30,10 @@ export default {
             if (!galaxy.masthead) {
                 galaxy.masthead = new Masthead.View(this.$props);
             }
-            
+
             // why is this initialized with the masthead?
             if (!galaxy.modal) {
-                galaxy.modal = new Modal.View(); 
+                galaxy.modal = new Modal.View();
             }
 
             // bolt the rendered DOM onto the vue component's element
@@ -56,7 +53,7 @@ export default {
 
         // Alternative to previous manual css manipulation. We don't
         // even need this since :empty is a valid css selector
-        
+
         // TODO: Write style guide outlining the duty of javascript as
         // a manipulator of application state and markup, and not to
         // write CSS manually
@@ -67,7 +64,5 @@ export default {
                 document.body.classList.add("framed");
             }
         }
-
     }
-
-}
+};

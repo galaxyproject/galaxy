@@ -1,7 +1,3 @@
-/**
- * TODO: Stop using iframes. They are terrible. 
- */
-
 import $ from "jquery";
 
 // If galaxy_main frame does not exist and link targets galaxy_main,
@@ -9,7 +5,7 @@ import $ from "jquery";
 export function adjustIframeLinks() {
     console.log("adjustIframeLinks");
 
-    $("a").click(function () {
+    $("a").click(function() {
         var anchor = $(this);
         var galaxy_main_exists = window.parent.frames && window.parent.frames.galaxy_main;
         if (anchor.attr("target") == "galaxy_main" && !galaxy_main_exists) {
@@ -26,7 +22,6 @@ export function adjustIframeLinks() {
         return anchor;
     });
 }
-
 
 /**
  * Adds an identifying class at the document root so that we can tell when we're

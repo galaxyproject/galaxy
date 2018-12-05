@@ -127,7 +127,7 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
     // in case req or plain script tag order has created a prev. version of the Galaxy obj...
     if (self.options.patchExisting && patchWith) {
         // self.debug( 'found existing Galaxy object:', patchWith );
-        // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
+        // (for now) monkey patch any added attributes that the previous Galaxy may have had
         //TODO: move those attributes to more formal assignment in GalaxyApp
         for (var k in patchWith) {
             if (patchWith.hasOwnProperty(k)) {

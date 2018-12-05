@@ -1,7 +1,7 @@
 /**
  * Exported objects here are available in window scope on the
  * python templates for purposes of initializination.
- * 
+ *
  * Called by python templates to setup configuration variables.
  * Intermediate step to complete removal of python templates.
  */
@@ -24,9 +24,7 @@ const defaultConfigs = {
 // Config observable
 const configStorage = new BehaviorSubject(defaultConfigs);
 
-export const config$ = configStorage.pipe(
-    debounceTime(50)
-);
+export const config$ = configStorage.pipe(debounceTime(50));
 
 // Allow templates to set config vars
 export function set(...fragments) {
@@ -38,7 +36,7 @@ export function set(...fragments) {
     try {
         let newConfig = Object.assign({}, configStorage.getValue(), ...fragments);
         configStorage.next(newConfig);
-    } catch(err) {
+    } catch (err) {
         console.warn("config.set error");
         console.dir(fragments);
         console.log("unable to assign configs");
@@ -54,6 +52,7 @@ export function getConfig() {
 
 export function getAppRoot(defaultRoot = "/") {
     let root = defaultRoot;
+    debugger;
     try {
         // try actual config
         root = getConfig().options.root;
@@ -68,14 +67,14 @@ export function getAppRoot(defaultRoot = "/") {
 }
 
 // Finds <link rel="index"> in head element and pulls root url fragment from
-// there That should probably have been a <base> tag instead since that's how
-// they're using <link rel="index" />, but why should we expect modern web
-// developers to understand HTML 1.0?
+// there That should probably be a <base> tag instead since that's how
+// they're using <link rel="index" />
 function getRootFromIndexLink(defaultRoot = "/") {
-    let links = document.getElementsByTagName("link");
-    let indexLink = [...links].find(link => link.rel == "index");
-    if (indexLink && indexLink.href) {
-        return serverPath(indexLink.href);
-    }
     return defaultRoot;
+    // let links = Array.from(document.getElementsByTagName("link"));
+    // let indexLink = links.find(link => link.rel == "index");
+    // if (indexLink && indexLink.href) {
+    //     return serverPath(indexLink.href);
+    // }
+    // return defaultRoot;
 }

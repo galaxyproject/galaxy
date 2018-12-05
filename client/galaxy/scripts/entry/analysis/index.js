@@ -1,4 +1,3 @@
-import deepAssign from "deep-assign";
 import { standardInit, addInitialization } from "onload";
 import { getAnalysisRouter } from "./AnalysisRouter";
 import ToolPanel from "entry/panels/tool-panel";
@@ -8,11 +7,11 @@ import Page from "layout/page";
 addInitialization((Galaxy, { options = {} }) => {
     console.log("Analysis custom page setup");
 
-    let pageOptions = deepAssign(options, {
-        config: {
+    let pageOptions = Object.assign({}, options, {
+        config: Object.assign({}, options.config, {
             hide_panels: Galaxy.params.hide_panels,
             hide_masthead: Galaxy.params.hide_masthead
-        },
+        }),
         Left: ToolPanel,
         Right: HistoryPanel,
         Router: getAnalysisRouter(Galaxy)

@@ -32,7 +32,6 @@ export default {
         window.WAIT_FADE = 300;
         window.fakeserver = sinon.fakeServer.create();
 
-
         for (var route in serverdata) {
             window.fakeserver.respondWith("GET", getAppRoot() + route, [
                 200,

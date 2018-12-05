@@ -1,0 +1,5 @@
+{
+  "devDependencies": {
+    "@babel/plugin-proposal-object-rest-spread": "^7.2.0"
+  }
+}

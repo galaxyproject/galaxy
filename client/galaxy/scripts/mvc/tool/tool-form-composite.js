@@ -254,7 +254,8 @@ var View = Backbone.View.extend({
         if (step_version_changes && step_version_changes.length > 0) {
             this.$message.append(
                 new Ui.Message({
-                    message: "Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.",
+                    message:
+                        "Some tools are being executed with different versions compared to those available when this workflow was last saved because the other versions are not or no longer available on this galaxy instance. To upgrade your workflow and dismiss this message simply edit the workflow and re-save it.",
                     status: "warning",
                     persistent: true,
                     fade: false
@@ -440,12 +441,12 @@ var View = Backbone.View.extend({
                                 step.inputs && step.inputs.length > 0
                                     ? step.inputs
                                     : [
-                                        {
-                                            type: "hidden",
-                                            name: "No options available.",
-                                            ignore: null
-                                        }
-                                    ]
+                                          {
+                                              type: "hidden",
+                                              name: "No options available.",
+                                              ignore: null
+                                          }
+                                      ]
                         },
                         step
                     )
