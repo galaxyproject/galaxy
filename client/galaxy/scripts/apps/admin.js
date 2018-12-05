@@ -14,6 +14,7 @@ import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
+import Register from "components/login/Register.vue";
 import Vue from "vue";
 import { serverPath } from "utils/serverPath";
 
@@ -31,6 +32,7 @@ window.app = function app(options, bootstrapped) {
         routes: {
             "(/)admin(/)": "home",
             "(/)admin(/)users": "show_users",
+            "(/)admin(/)users(/)create": "show_users_create",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
             "(/)admin(/)tool_versions": "show_tool_versions",
@@ -65,6 +67,18 @@ window.app = function app(options, bootstrapped) {
                     url_data: Galaxy.params
                 })
             );
+        },
+
+        show_users_create: function() {
+            let instance = Vue.extend(Register);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance({ propsData: {
+                redirect: "/admin/users",
+                registration_warning_message: options.config.registration_warning_message,
+                mailing_join_addr: options.config.mailing_join_addr,
+                smtp_server: options.config.smtp_server
+            } }).$mount(vm);
         },
 
         show_roles: function() {
