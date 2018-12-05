@@ -358,7 +358,6 @@ export function setWindowTitle(title) {
  * @returns {integer}
  */
 function hashFnv32a(str) {
-    /*jshint bitwise:false */
     var i, l,
         hval = 0x811c9dc5;
 
@@ -369,9 +368,18 @@ function hashFnv32a(str) {
     return hval >>> 0;
 }
 
+/**
+ * Implement W3C contrasting color algorithm
+ * http://www.w3.org/TR/AERT#color-contrast
+ *
+ * @param   {number}  r       Red
+ * @param   {number}  g       Green
+ * @param   {number}  b       Blue
+ * @return  {string}          Either 'white' or 'black'
+ *
+ * Assumes r, g, b are in the set [0, 1]
+ */
 function contrastingColor(r, g, b) {
-    // Expects r, g, b as floats on range [0, 1]
-    // http://www.w3.org/TR/AERT#color-contrast
     var o = ((r * 255 * 299) +
              (g * 255 * 587) +
              (b * 255 * 114)) / 1000;
@@ -417,16 +425,15 @@ function hslToRgb(h, s, l){
 export function generateTagStyle(tag) {
     var hash = hashFnv32a(tag);
     var hue = (hash >> 4) & 360;
-    //var lightnessOffset = 20; // dark
-    var lightnessOffset = 75; // pastel
+    var lightnessOffset = 75;
     var lightness = lightnessOffset + (hash & 0xf);
     var bgColor = `hsl(${hue}, 100%, ${lightness}%)`;
-    var brColor = `hsl(${hue}, 100%, 30%)`; // darker
+    var brColor = `hsl(${hue}, 100%, ${lightness - 40}%)`;
 
     var [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
     var fgColor = contrastingColor(r, g, b)
 
-    return `background-color: ${bgColor}; color: ${fgColor}; border: 1px solid gray`
+    return `background-color: ${bgColor}; color: ${fgColor}; border: 1px solid ${brColor}`
 }
 
 
