@@ -69,14 +69,14 @@ in_conda_env() {
 }
 
 if [ $COPY_SAMPLE_FILES -eq 1 ]; then
-	# Create any missing config/location files
-	for sample in $SAMPLES; do
-		file=${sample%.sample}
-	    if [ ! -f "$file" -a -f "$sample" ]; then
-	        echo "Initializing $file from $(basename "$sample")"
-	        cp "$sample" "$file"
-	    fi
-	done
+    # Create any missing config/location files
+    for sample in $SAMPLES; do
+        file=${sample%.sample}
+        if [ ! -f "$file" -a -f "$sample" ]; then
+            echo "Initializing $file from $(basename "$sample")"
+            cp "$sample" "$file"
+        fi
+    done
 fi
 
 # remove problematic cached files
@@ -241,10 +241,17 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
 
     # Build client
-    if ! make client-production-maps; then
-        echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+    cd client
+    if yarn install --network-timeout 120000 --check-files; then
+        if ! yarn run build-production-maps; then
+            echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+            exit 1
+        fi
+    else
+        echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
         exit 1
     fi
+    cd -
 else
     echo "Regenerating static plugin directories."
     python ./scripts/plugin_staging.py
