@@ -52,7 +52,7 @@ class BaseWrapperTestCase(UsesApp):
 
     def test_version_path(self):
         wrapper = self._wrapper()
-        version_path = wrapper.get_version_string_path()
+        version_path = wrapper.get_version_string_path_legacy()
         expected_path = os.path.join(self.test_directory, "new_files", "GALAXY_VERSION_STRING_345")
         self.assertEqual(version_path, expected_path)
 
