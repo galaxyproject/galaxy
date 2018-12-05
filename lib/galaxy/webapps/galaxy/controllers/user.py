@@ -246,6 +246,21 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                                        status='done',
                                        active_view="user")
 
+    @expose_api_anonymous_and_sessionless
+    def create(self, trans, payload={}, **kwd):
+        if not payload:
+            payload = kwd
+        user, message = self.user_manager.register(trans, **payload)
+        if message:
+            return self.message_exception(trans, message, sanitize=False)
+        elif user and not trans.user_is_admin:
+            # The handle_user_login() method has a call to the history_set_default_permissions() method
+            # (needed when logging in with a history), user needs to have default permissions set before logging in
+            trans.handle_user_login(user)
+            trans.log_event("User created a new account")
+            trans.log_event("User logged in")
+        return {"message": "Success."}
+
     @web.expose
     def create(self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd):
         params = util.Params(kwd)
