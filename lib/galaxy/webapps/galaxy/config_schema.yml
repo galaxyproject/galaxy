@@ -2437,6 +2437,7 @@ mapping:
           failing jobs are just failed outright.
 
       track_jobs_in_database:
+        # FIXME: note deprecated, superceded by job_handler_assignment_method
         type: bool
         default: true
         required: false

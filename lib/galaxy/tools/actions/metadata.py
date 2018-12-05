@@ -63,7 +63,6 @@ class SetMetadataToolAction(ToolAction):
         except AttributeError:
             job.tool_version = "1.0.1"
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
-        job.set_handler(tool.get_job_handler(job_params))
         sa_session.add(job)
         sa_session.flush()  # ensure job.id is available
 
@@ -104,7 +103,7 @@ class SetMetadataToolAction(ToolAction):
         sa_session.flush()
 
         # Queue the job for execution
-        app.job_manager.job_queue.put(job.id, tool.id)
+        app.job_manager.enqueue(job, tool=tool)
         # FIXME: need to add event logging to app and log events there rather than trans.
         # trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
 

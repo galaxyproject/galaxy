@@ -12,8 +12,6 @@ from galaxy.tools.actions import (
 from galaxy.tools.parser.output_objects import ToolOutput
 from .. import tools_support
 
-TEST_HANDLER_NAME = "test_handler_1"
-
 
 # I cannot think of a saner way to test if data is being wrapped than use a
 # data param in the output label - though you would probably never want to do
@@ -73,7 +71,6 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
         self.app.model.context.flush()
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
-        self.app.job_config["get_handler"] = lambda h: TEST_HANDLER_NAME
         self.app.object_store = MockObjectStore()
 
     def test_output_created(self):
@@ -113,10 +110,6 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
         )
         # Again this is a stupid way to ensure data parameters are wrapped.
         self.assertEqual(output["out1"].name, "Output (%s)" % hda1.dataset.get_file_name())
-
-    def test_handler_set(self):
-        job, _ = self._simple_execute()
-        assert job.handler == TEST_HANDLER_NAME
 
     def test_inactive_user_job_create_failure(self):
         self.trans.user_is_active = False

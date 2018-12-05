@@ -561,16 +561,18 @@ class Tool(Dictifiable):
         assert rval is not None, 'Could not get a job tool configuration for Tool %s with job_params %s, this is a bug' % (self.id, job_params)
         return rval
 
-    def get_job_handler(self, job_params=None):
-        """Get a suitable job handler for this `Tool` given the provided `job_params`.  If multiple handlers are valid for combination of `Tool` and `job_params` (e.g. the defined handler is a handler tag), one will be selected at random.
+    def get_configured_job_handler(self, job_params=None):
+        """Get the configured job handler for this `Tool` given the provided `job_params`.
+
+        Unlike the former ``get_job_handler()`` method, this does not perform "preassignment" (random selection of
+        a configured handler ID from a tag).
 
         :param job_params: Any params specific to this job (e.g. the job source)
         :type job_params: dict or None
 
-        :returns: str -- The id of a job handler for a job run of this `Tool`
+        :returns: str or None -- The configured handler for a job run of this `Tool`
         """
-        # convert tag to ID if necessary
-        return self.app.job_config.get_handler(self.__get_job_tool_configuration(job_params=job_params).handler)
+        return self.__get_job_tool_configuration(job_params=job_params).handler
 
     def get_job_destination(self, job_params=None):
         """
@@ -1516,7 +1518,16 @@ class Tool(Dictifiable):
         `self.tool_action`. In general this will create a `Job` that
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
-        return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
+        try:
+            return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
+        except exceptions.ToolExecutionError as exc:
+            job = exc.job
+            job_id = 'unknown'
+            if job is not None:
+                job.mark_failed(info=exc.err_msg, blurb=exc.err_code.default_error_message)
+                job_id = job.id
+            log.error("Tool execution failed for job: %s", job_id)
+            raise
 
     def params_to_strings(self, params, app, nested=False):
         return params_to_strings(self.inputs, params, app, nested)

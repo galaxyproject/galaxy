@@ -145,6 +145,11 @@
     "message": "Error in a configuration file."
    },
    {
+    "name": "TOOL_EXECUTION_ERROR",
+    "code": 500004,
+    "message": "Tool execution failed due to an internal server error."
+   },
+   {
     "name": "NOT_IMPLEMENTED",
     "code": 501001,
     "message": "Method is not implemented."

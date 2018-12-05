@@ -25,6 +25,7 @@ class JobConfXmlParserTestCase(unittest.TestCase):
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
             default_job_resubmission_condition="",
+            track_jobs_in_database=True,
             server_name="main",
         )
         self.__write_config_from(SIMPLE_JOB_CONF)
@@ -50,12 +51,10 @@ class JobConfXmlParserTestCase(unittest.TestCase):
         assert len(task_runners) == 1
         assert task_runners[0]["workers"] == 5
 
-    def test_load_simple_handler(self):
-        main_handler = self.job_config.handlers["main"]
-        assert main_handler[0] == "main"
-
-    def test_if_one_handler_implicit_default(self):
-        assert self.job_config.default_handler_id == "main"
+    def test_if_no_handlers_implict_db_self(self):
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers == {}
+        assert self.job_config.handler_assignment_methods == ['db-self']
 
     def test_explicit_handler_default(self):
         self.__with_advanced_config()

@@ -19,8 +19,8 @@ import yaml
 from six import string_types
 
 from galaxy.util import unicodify
-from galaxy.util.bunch import Bunch
 from galaxy.util.facts import get_facts
+from galaxy.util.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.util.path import has_ext
 from galaxy.util.properties import nice_config_parser
 from .message import ApplicationStackMessage, ApplicationStackMessageDispatcher
@@ -54,12 +54,6 @@ class ApplicationStack(object):
     server_name_template = '{server_name}'
     default_app_name = 'main'
 
-    # used both to route jobs to a pool with this name and indicate whether or
-    # not a stack is using messaging for handler assignment
-    pools = Bunch(
-        JOB_HANDLERS='job-handlers',
-    )
-
     @classmethod
     def log_filter(cls):
         return cls.log_filter_class()
@@ -76,6 +70,12 @@ class ApplicationStack(object):
         self.app = app
         self.config = config or (app and app.config)
         self.running = False
+
+    def init_job_handling(self, job_config):
+        pass
+
+    def init_late_prefork(self):
+        pass
 
     def log_startup(self):
         log.info("Galaxy server instance '%s' is running" % self.app.config.server_name)
@@ -97,11 +97,17 @@ class ApplicationStack(object):
         # TODO: ideally jobs would be mappable to handlers by pool name
         return None
 
+    def has_base_pool(self, pool_name):
+        return False
+
     def has_pool(self, pool_name):
         return False
 
     def in_pool(self, pool_name):
         return False
+
+    def pool_members(self, pool_name):
+        return None
 
     @property
     def facts(self):
@@ -129,12 +135,16 @@ class ApplicationStack(object):
 class MessageApplicationStack(ApplicationStack):
     def __init__(self, app=None, config=None):
         super(MessageApplicationStack, self).__init__(app=app, config=config)
+        self.use_messaging = False
         self.dispatcher = ApplicationStackMessageDispatcher()
         self.transport = self.transport_class(app, stack=self, dispatcher=self.dispatcher)
 
+    def init_late_prefork(self):
+        self.transport.init_late_prefork()
+
     def start(self):
         super(MessageApplicationStack, self).start()
-        if not self.running:
+        if self.use_messaging and not self.running:
             self.transport.start()
             self.running = True
 
@@ -157,7 +167,7 @@ class MessageApplicationStack(ApplicationStack):
         self.transport.send_message(msg.encode(), dest)
 
     def shutdown(self):
-        if self.running:
+        if self.use_messaging and self.running:
             log.info('Application stack interface shutting down')
             self.transport.shutdown()
             self.running = False
@@ -282,7 +292,84 @@ class UWSGIApplicationStack(MessageApplicationStack):
     def __init__(self, app=None, config=None):
         self._farms_dict = None
         self._mules_list = None
+        self._farm_server_names_dict = None
+
+        # If there's more than one farm *and* more than one farm will be using farm messaging, additional locks need to
+        # be configured by the admin. This allows us to keep track of how many such farms are configured.
+        self._lock_farms = set()
+
         super(UWSGIApplicationStack, self).__init__(app=app, config=config)
+
+    def _set_default_job_handler_assignment_methods(self, job_config, pool):
+        # This is called once per job_config (job config or workflow scheduling manager), and only in the case that
+        # handler assignment is not explicitly configured by the admin. Disable DB_SELF if a valid farm (pool) is
+        # configured. Use mule messaging unless the job_config doesn't allow it (e.g. workflow scheduling manager), in
+        # which case, use DB_PREASSIGN.
+        #
+        # TODO MULTIPOOL: if there is no default in any base_pool (and no job_config.default_handler_id) then don't
+        # remove DB_SELF
+        conf_class_name = job_config.__class__.__name__
+        remove_methods = [HANDLER_ASSIGNMENT_METHODS.DB_SELF]
+        if (HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE not in job_config.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS):
+            add_method = HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE
+        else:
+            add_method = HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN
+            remove_methods.append(HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE)
+        log.debug("%s: No job handler assignment methods were configured but a uWSGI farm named '%s' exists,"
+                  " automatically enabling the '%s' assignment method", conf_class_name, pool, add_method)
+        for m in remove_methods:
+            try:
+                job_config.handler_assignment_methods.remove(m)
+                log.debug("%s: Removed '%s' from handler assignment methods due to use of mules", conf_class_name, m)
+            except ValueError:
+                pass
+        if add_method not in job_config.handler_assignment_methods:
+            job_config.handler_assignment_methods.insert(0, add_method)
+        log.debug("%s: handler assignment methods updated to: %s", conf_class_name,
+                  ', '.join(job_config.handler_assignment_methods))
+
+    def _init_job_handler_assignment_methods(self, job_config, pool):
+        if not job_config.handler_assignment_methods_configured:
+            self._set_default_job_handler_assignment_methods(job_config, pool)
+        if HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE in job_config.handler_assignment_methods:
+            self.use_messaging = True
+
+    def _init_job_handler_subpools(self, job_config, pool):
+        # Set up members of "subpools" ("pool.*") as handlers (including the base pool itself, if it exists)
+        for farm in self._configured_farms:
+            if not (farm == pool or farm.startswith(pool + '.')):
+                continue
+            if job_config.use_messaging:
+                self._lock_farms.add(farm)
+            if farm == pool:
+                tag = job_config.DEFAULT_HANDLER_TAG
+            else:
+                tag = farm.replace(pool + '.', '', 1)
+            # Pools are hierarchical (so that you can have e.g. workflow schedulers use the job handlers pool if no
+            # workflow schedulers pool exists), so if a pool for a given tag has already been found higher in the
+            # hierarchy, don't add mules from a farm/pool lower in the hierarchy.
+            # FIXME: test
+            if tag not in job_config.pool_for_tag:
+                if self.in_pool(farm):
+                    job_config.is_handler = True
+                for handler in self.pool_members(farm):
+                    job_config.add_handler(handler, [tag])
+                job_config.pool_for_tag[tag] = farm
+
+    def init_job_handling(self, job_config):
+        """Automatically add uWSGI farms as pools if they are named per predefined names and there is not an explicit
+        job handler assignment configuration.
+
+        Also automatically add mule messaging as the preferred assignment method, if supported.
+        """
+        # Only do the stack handler assignment init once per job_config
+        stack_assignment_methods_configured = False
+        for pool in job_config.DEFAULT_BASE_HANDLER_POOLS:
+            if self.has_base_pool(pool):
+                if not stack_assignment_methods_configured:
+                    self._init_job_handler_assignment_methods(job_config, pool)
+                    stack_assignment_methods_configured = True
+                self._init_job_handler_subpools(job_config, pool)
 
     @property
     def _configured_mules(self):
@@ -314,19 +401,38 @@ class UWSGIApplicationStack(MessageApplicationStack):
                 farms.append(farm)
         return farms
 
-    def _mule_index_in_farm(self, farm_name):
+    def _mule_index_in_farm(self, farm_name, mule_id=None):
+        mule_id = mule_id or uwsgi.mule_id()
         try:
             mules = self._configured_farms[farm_name]
-            return mules.index(uwsgi.mule_id())
+            return mules.index(mule_id)
         except (KeyError, ValueError):
             return -1
 
     @property
     def _farm_name(self):
+        # TODO: to allow mules to be in multiple farms you'll need to start here
         try:
             return self._farms[0]
         except IndexError:
             return None
+
+    @property
+    def _farm_server_names(self):
+        if self._farm_server_names_dict is None:
+            self._farm_server_names_dict = {}
+            for farm_name, mules in self._configured_farms.items():
+                server_names = []
+                facts = self.facts
+                for mule in mules:
+                    facts.update({
+                        'pool_name': farm_name,
+                        'server_id': mule,
+                        'instance_id': self._mule_index_in_farm(farm_name, mule) + 1,
+                    })
+                    server_names.append(self.server_name_template.format(**facts))
+                self._farm_server_names_dict[farm_name] = server_names
+        return self._farm_server_names_dict
 
     @property
     def instance_id(self):
@@ -363,6 +469,9 @@ class UWSGIApplicationStack(MessageApplicationStack):
             os.environ['_GALAXY_UWSGI_FARM_NAMES'] = ','.join(self._farms)
         super(UWSGIApplicationStack, self).start()
 
+    def has_base_pool(self, pool_name):
+        return self.has_pool(pool_name) or any([farm.startswith(pool_name + '.') for farm in self._configured_farms])
+
     def has_pool(self, pool_name):
         return pool_name in self._configured_farms
 
@@ -371,6 +480,9 @@ class UWSGIApplicationStack(MessageApplicationStack):
             return False
         else:
             return pool_name in self._farms
+
+    def pool_members(self, pool_name):
+        return self._farm_server_names.get(pool_name, None)
 
     def workers(self):
         return uwsgi.workers()

@@ -115,6 +115,8 @@ class JobConfiguration(ConfiguresHandlers):
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
+    DEFAULT_BASE_HANDLER_POOLS = ('job-handlers',)
+
     DEFAULT_NWORKERS = 4
 
     JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
@@ -135,6 +137,8 @@ class JobConfiguration(ConfiguresHandlers):
         self.handlers = {}
         self.handler_runner_plugins = {}
         self.default_handler_id = None
+        self.handler_assignment_methods = None
+        self.handler_assignment_methods_configured = False
         self.destinations = {}
         self.destination_tags = {}
         self.default_destination_id = None
@@ -150,7 +154,6 @@ class JobConfiguration(ConfiguresHandlers):
                             output_size=None,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
-        self._is_handler = None
 
         default_resubmits = []
         default_resubmit_condition = self.app.config.default_job_resubmission_condition
@@ -212,23 +215,12 @@ class JobConfiguration(ConfiguresHandlers):
 
         # Parse handlers
         handlers_conf = root.find('handlers')
+        self._init_handler_assignment_methods(handlers_conf)
         self._init_handlers(handlers_conf)
-
-        # Determine the default handler(s)
-        try:
-            self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
-        except Exception:
-            pass
-        # For tets, this may not exist
-        try:
-            base_server_name = self.app.config.base_server_name
-        except AttributeError:
-            base_server_name = self.app.config.get('base_server_name', None)
-        if (self.default_handler_id is None
-                or (len(self.handlers) == 1 and base_server_name == next(iter(self.handlers.keys())))):
-            # Shortcut for compatibility with existing job confs that use the default handlers block,
-            # there are no defined handlers, or there's only one handler and it's this server
-            self.__set_default_job_handler()
+        self._set_default_handler_assignment_methods()
+        log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
+        for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
+            log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -269,7 +261,8 @@ class JobConfiguration(ConfiguresHandlers):
                     self.destinations[tag].append(job_destination)
 
         # Determine the default destination
-        self.default_destination_id = self._get_default(self.app.config, destinations, list(self.destinations.keys()))
+        self.default_destination_id = self._get_default(
+            self.app.config, destinations, list(self.destinations.keys()), auto=True)
 
         # Parse resources...
         resources = root.find('resources')
@@ -346,31 +339,13 @@ class JobConfiguration(ConfiguresHandlers):
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=DEFAULT_LOCAL_WORKERS))
         # Set the handlers
-        self.__set_default_job_handler()
+        self._init_handler_assignment_methods()
+        self._init_handlers()
+        self._set_default_handler_assignment_methods()
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]
         log.debug('Done loading job configuration')
-
-    def __set_default_job_handler(self):
-        # Called when self.default_handler_id is None
-        if self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
-            if (self.app.application_stack.in_pool(self.app.application_stack.pools.JOB_HANDLERS)):
-                log.info("Found job handler pool managed by application stack, this server (%s) is a member of pool: "
-                         "%s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
-                self._is_handler = True
-            else:
-                log.info("Found job handler pool managed by application stack, this server (%s) will submit jobs to "
-                         "pool: %s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
-        else:
-            log.info('Did not find job handler pool managed by application stack, this server (%s) will handle jobs '
-                     'submitted to it', self.app.config.server_name)
-            self._is_handler = True
-            self.app.application_stack.register_postfork_function(self.make_self_default_handler)
-
-    def make_self_default_handler(self):
-        self.default_handler_id = self.app.config.server_name
-        self.handlers[self.app.config.server_name] = [self.app.config.server_name]
 
     def get_tool_resource_xml(self, tool_id, tool_type):
         """ Given a tool id, return XML elements describing parameters to
@@ -484,7 +459,7 @@ class JobConfiguration(ConfiguresHandlers):
 
         :returns: JobToolConfiguration -- a representation of a <tool> element that uses the default handler and destination
         """
-        return JobToolConfiguration(id='default', handler=self.default_handler_id, destination=self.default_destination_id)
+        return JobToolConfiguration(id='_default_', handler=self.default_handler_id, destination=self.default_destination_id)
 
     # Called upon instantiation of a Tool object
     def get_job_tool_configurations(self, ids):

@@ -296,7 +296,7 @@ class DatasetAssociationManager(base.ModelManager,
                 # Are *all* of the job's other output datasets deleted?
                 if job.check_if_output_datasets_deleted():
                     job.mark_deleted(self.app.config.track_jobs_in_database)
-                    self.app.job_manager.job_stop_queue.put(job.id)
+                    self.app.job_manager.stop(job)
                     return True
         return False
 
