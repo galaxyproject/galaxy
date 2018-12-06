@@ -92,10 +92,10 @@ class Workflow {
         var using_workflow_outputs = false;
         var has_existing_pjas = false;
         $.each(this.nodes, (k, node) => {
-            if (node.workflow_outputs && node.workflow_outputs.length > 0) {
+            if (node.type === "tool" && node.workflow_outputs && node.workflow_outputs.length > 0) {
                 using_workflow_outputs = true;
             }
-            $.each(node.post_job_actions, (pja_id, pja) => {
+            $.each(node.post_job_actions, (pja_using_workflow_outputsid, pja) => {
                 if (pja.action_type === "HideDatasetAction") {
                     has_existing_pjas = true;
                 }
@@ -104,43 +104,41 @@ class Workflow {
         if (using_workflow_outputs !== false || has_existing_pjas !== false) {
             // Using workflow outputs, or has existing pjas.  Remove all PJAs and recreate based on outputs.
             $.each(this.nodes, (k, node) => {
-                if (node.type === "tool") {
-                    var node_changed = false;
-                    if (node.post_job_actions === null) {
-                        node.post_job_actions = {};
-                        node_changed = true;
+                var node_changed = false;
+                if (node.post_job_actions === null) {
+                    node.post_job_actions = {};
+                    node_changed = true;
+                }
+                var pjas_to_rem = [];
+                $.each(node.post_job_actions, (pja_id, pja) => {
+                    if (pja.action_type == "HideDatasetAction") {
+                        pjas_to_rem.push(pja_id);
                     }
-                    var pjas_to_rem = [];
-                    $.each(node.post_job_actions, (pja_id, pja) => {
-                        if (pja.action_type == "HideDatasetAction") {
-                            pjas_to_rem.push(pja_id);
+                });
+                if (pjas_to_rem.length > 0) {
+                    $.each(pjas_to_rem, (i, pja_name) => {
+                        node_changed = true;
+                        delete node.post_job_actions[pja_name];
+                    });
+                }
+                if (using_workflow_outputs) {
+                    $.each(node.output_terminals, (ot_id, ot) => {
+                        var create_pja = !node.isWorkflowOutput(ot.name);
+                        if (create_pja === true) {
+                            node_changed = true;
+                            var pja = {
+                                action_type: "HideDatasetAction",
+                                output_name: ot.name,
+                                action_arguments: {}
+                            };
+                            node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
+                            node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
                         }
                     });
-                    if (pjas_to_rem.length > 0) {
-                        $.each(pjas_to_rem, (i, pja_name) => {
-                            node_changed = true;
-                            delete node.post_job_actions[pja_name];
-                        });
-                    }
-                    if (using_workflow_outputs) {
-                        $.each(node.output_terminals, (ot_id, ot) => {
-                            var create_pja = !node.isWorkflowOutput(ot.name);
-                            if (create_pja === true) {
-                                node_changed = true;
-                                var pja = {
-                                    action_type: "HideDatasetAction",
-                                    output_name: ot.name,
-                                    action_arguments: {}
-                                };
-                                node.post_job_actions[`HideDatasetAction${ot.name}`] = null;
-                                node.post_job_actions[`HideDatasetAction${ot.name}`] = pja;
-                            }
-                        });
-                    }
-                    // lastly, if this is the active node, and we made changes, reload the display at right.
-                    if (this.active_node == node && node_changed === true) {
-                        this.reload_active_node();
-                    }
+                }
+                // lastly, if this is the active node, and we made changes, reload the display at right.
+                if (this.active_node == node && node_changed === true) {
+                    this.reload_active_node();
                 }
             });
         }
