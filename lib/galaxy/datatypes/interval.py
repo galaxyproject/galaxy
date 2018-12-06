@@ -1649,12 +1649,12 @@ class GTrack(Interval):
     MetadataElement(name="bounding_regions", default=0, desc="Number of bounding regions",
                     readonly=False, optional=True, no_value=0)
 
-    # MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
-    #                 visible=False, no_value=0)
-    # MetadataElement(name="column_types", default=[], desc="Column types",
-    #                 param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
-    # MetadataElement(name="column_names", default=[], desc="Column names", readonly=True,
-    #                 visible=False, optional=True, no_value=[])
+    MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
+                    visible=False, no_value=0)
+    MetadataElement(name="column_types", default=[], desc="Column types",
+                    param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
+    MetadataElement(name="column_names", default=[], desc="Column names", readonly=True,
+                    visible=False, optional=True, no_value=[])
     # MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
     #                 visible=False, optional=True, no_value=[])
     #
@@ -1679,6 +1679,14 @@ class GTrack(Interval):
         'edges': 'list'
     }
 
+    GTRACK_COLUMN_NAMES_MAPPING = {
+        'value column:' : 'value',
+        'edges column:' : 'edges'
+    }
+
+    SUBTYPE_URL = 'subtype url:'
+    STD_COLUMNS = ['start', 'end', 'value', 'edges']
+
     # TODO: Implement GTrack sniffer
     # Rules for being a GTrack file, if either
     # 1. "GTrack version" header exists
@@ -1698,10 +1706,38 @@ class GTrack(Interval):
     #    You unfortunately need to restart Galaxy for each code change..
     # Note: file_prefix is a string of the beginning 1 MB of the file (or so)
     def sniff_prefix(self, file_prefix):
+        hash_count_to_lines, num_data_lines, data_lines = self._parse_file(file_prefix.string_io(), True)
+        column_line = hash_count_to_lines[3][0].lower()
+        print "column line: " + column_line
+        for line in hash_count_to_lines[2]:
+            if line.lower().startswith(('gtrack version:', 'gtrack subtype:')):
+                return True
+            if line.lower().startswith(self.SUBTYPE_URL):
+                url = line[len(self.SUBTYPE_URL):].strip()
+                if url:
+                    from urlparse import urlparse
+                    parsed_url = urlparse(url)
+                    if parsed_url.netloc:
+                        return True
+            if column_line:
+                for column_name in (self.GTRACK_COLUMN_NAMES_MAPPING.keys()):
+                    column_line = self._replace_column_name(line, column_line, column_name)
+
+        if not column_line:
+            return False
+
+        cols = column_line.split('\t')
+        if any(std_column in cols for std_column in self.STD_COLUMNS):
+            for line in data_lines[:-1]:
+                if len(line.split('\t')) != len(cols):
+                    return False
+            return True
+
         return False
 
     def set_meta(self, dataset, **kwd):
-        hash_count_to_lines, num_data_lines = self._parse_file(dataset.file_name)
+        with open(dataset.file_name) as input_file:
+            hash_count_to_lines, num_data_lines = self._parse_file(input_file)
         self._set_meta_for_counts(dataset, hash_count_to_lines, num_data_lines)
 
         column_lines = hash_count_to_lines[3]
@@ -1733,7 +1769,15 @@ class GTrack(Interval):
         dataset.metadata.column_types = col_types
 
         # TODO: Set the Galaxy std columns to match GTrack file
-        # dataset.metadata.chromCol = 1
+        if 'seqid' in cols:
+            dataset.metadata.chromCol = cols.index('seqid')
+        if 'start' in cols:
+            dataset.metadata.startCol = cols.index('start')
+        if 'end' in cols:
+            dataset.metadata.endCol = cols.index('end')
+        if 'strand' in cols:
+            dataset.metadata.strandCol = cols.index('strand')
+
 
     def set_peek(self, dataset, is_multi_byte=False):
         # hash_count_to_lines, num_data_lines = self._parse_file(dataset.file_name)
@@ -1758,27 +1802,40 @@ class GTrack(Interval):
     # Note: Header variables are case insensitive, so handle them as lower-case
     # def _parse_headers(self, header_lines):
 
-    def _parse_file(self, filename):
+    def _parse_file(self, input_file, include_data = False):
         from collections import defaultdict
         hash_count_to_lines = defaultdict(list)
         num_data_lines = 0
-        with open(filename) as input_file:
-            for line in input_file:
-                line = line.strip()
-                if not line:
-                    continue
-                if line.startswith('#'):
-                    num_hashes = len(line) - len(line.lstrip('#'))
-                    # More than 4 hashes do not have a meaning, handle as comment
-                    if num_hashes > 4:
-                        num_hashes = 1
-                    hash_count_to_lines[num_hashes].append(line.lstrip('#').strip())
-                else:
-                    num_data_lines += 1
+        data_lines = []
+
+        for line in input_file:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('#'):
+                num_hashes = len(line) - len(line.lstrip('#'))
+                # More than 4 hashes do not have a meaning, handle as comment
+                if num_hashes > 4:
+                    num_hashes = 1
+                hash_count_to_lines[num_hashes].append(line.lstrip('#').strip())
+            else:
+                num_data_lines += 1
+                if include_data:
+                    data_lines.append(line.strip())
+        if include_data:
+            return hash_count_to_lines, num_data_lines, data_lines
+
         return hash_count_to_lines, num_data_lines
 
     def get_mime(self):
         return 'text/plain'
+
+    def _replace_column_name(self, header_line, column_line, column_name):
+        if header_line.lower().startswith(column_name):
+            value_column = header_line[len(column_name):].strip()
+            column_line = column_line.replace(value_column, self.GTRACK_COLUMN_NAMES_MAPPING[column_name])
+
+        return column_line
 
     # TODO: I have not investigated whether we neet to implement the below functions.
     # TODO: Might also be other functions we might need to implement
