@@ -241,7 +241,7 @@
     tool panel layout.  This file can be changed by the Galaxy
     administrator to alter the layout of the tool panel.  If not
     present, Galaxy will create it.
-:Default: ``integrated_tool_panel.xml``
+:Default: ``config/integrated_tool_panel.xml``
 :Type: str
 
 

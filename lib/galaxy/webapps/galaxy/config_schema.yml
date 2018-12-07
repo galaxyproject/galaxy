@@ -204,7 +204,7 @@ mapping:
 
       integrated_tool_panel_config:
         type: str
-        default: integrated_tool_panel.xml
+        default: config/integrated_tool_panel.xml
         required: false
         desc: |
           File that contains the XML section and tool tags from all tool panel config

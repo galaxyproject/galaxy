@@ -39,11 +39,11 @@ CONFIG_TEST_TOOL_VERSION_2 = CONFIG_TEST_TOOL_VERSION_TEMPLATE.safe_substitute(d
 class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
 
     @property
-    def integerated_tool_panel_path(self):
+    def integrated_tool_panel_path(self):
         return os.path.join(self.test_directory, "integrated_tool_panel.xml")
 
     def assert_integerated_tool_panel(self, exists=True):
-        does_exist = os.path.exists(self.integerated_tool_panel_path)
+        does_exist = os.path.exists(self.integrated_tool_panel_path)
         if exists:
             assert does_exist
         else:
@@ -474,7 +474,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         self.toolbox  # create toolbox
         assert not self.reindexed
 
-        os.remove(self.integerated_tool_panel_path)
+        os.remove(self.integrated_tool_panel_path)
 
 
 class SimplifiedToolBox(ToolBox):

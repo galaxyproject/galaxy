@@ -74,7 +74,7 @@ class Configuration(object):
         self.tool_secret = kwargs.get("tool_secret", "")
         self.tool_data_path = resolve_path(kwargs.get("tool_data_path", "shed-tool-data"), os.getcwd())
         self.tool_data_table_config_path = None
-        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
+        self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'config/integrated_tool_panel.xml'), self.root)
         self.builds_file_path = resolve_path(kwargs.get("builds_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'builds.txt')), self.root)
         self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         self.ftp_upload_dir = kwargs.get('ftp_upload_dir', None)
