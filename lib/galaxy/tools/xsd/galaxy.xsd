@@ -2699,20 +2699,13 @@ on the topic of ``GALAXY_SLOTS`` for more information and examples.
 
 ### Error detection
 
-The ``detect_errors`` attribute of ``command``, if present, can be one of:
+The ``detect_errors`` attribute of ``command``, if present, loads a preset of error detection checks (for exit codes and content of stdio to indicate fatal tool errors or fatal out of memory errors). It can be one of:
 
-* ``default``: no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
-* ``exit_code``: error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive``: error if tool exit code is not 0 or ``Exception:``, ``Error:``, or
-  various messages related to being out of memory appear in the standard error or output.
-  (The @bgruening recommendation).
+* ``default``: for non-legacy tools with absent stdio block non-zero exit codes are added. For legacy tools or if a stdio block is present nothing is added.
+* ``exit_code``: adds checks for non zero exit codes (The @jmchilton recommendation). The ``oom_exit_code`` parameter can be used to add an additional out of memory indicating exit code.
+* ``aggressive``: adds checks for non zero exit codes, and checks for ``Exception:``, ``Error:`` in the standard error. Additionally checks for messages in the standard error that indicate an out of memory error (``MemoryError``, ``std::bad_alloc``, ``java.lang.OutOfMemoryError``, ``Out of memory``). (The @bgruening recommendation).
 
-For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
-Legacy tools default to ``default`` behavior described above (erroring if the tool
-produces any standard error output).
-
-See [pull request 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
-information and discussion on the ``detect_errors`` attribute.
+Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy tools using ``default``. From release 19.01 checks defined in the stdio tag are prepended to the checks defined by the presets loaded in the command block.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
