@@ -126,6 +126,18 @@ class Cel(Binary):
             return False
 
 
+class MashSketch(Binary):
+    """
+        Mash Sketch file.
+        Sketches are used by the MinHash algorithm to allow fast distance estimations 
+        with low storage and memory requirements. To make a sketch, each k-mer in a sequence 
+        is hashed, which creates a pseudo-random identifier. By sorting these identifiers (hashes), 
+        a small subset from the top of the sorted list can represent the entire sequence (these are min-hashes). 
+        The more similar another sequence is, the more min-hashes it is likely to share.
+    """
+    file_ext = "msh"
+    
+    
 class CompressedArchive(Binary):
     """
         Class describing an compressed binary file
