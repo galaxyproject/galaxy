@@ -87,6 +87,7 @@ class AzureBlobObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Azure.
     """
+    store_type = 'azure_blob'
 
     def __init__(self, config, config_dict):
         super(AzureBlobObjectStore, self).__init__(config)
@@ -127,6 +128,24 @@ class AzureBlobObjectStore(ObjectStore):
             self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
+
+    def to_dict(self):
+        as_dict = super(AzureBlobObjectStore, self).to_dict()
+        as_dict.update({
+            'auth': {
+                'account_name': self.account_name,
+                'account_key': self.account_key,
+            },
+            'container': {
+                'name': self.container_name,
+                'max_chunk_size': self.max_chunk_size,
+            },
+            'cache': {
+                'size': self.cache_size,
+                'path': self.staging_path,
+            }
+        })
+        return as_dict
 
     ###################
     # Private Methods #
