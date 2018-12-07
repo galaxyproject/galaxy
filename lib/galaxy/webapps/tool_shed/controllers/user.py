@@ -153,7 +153,7 @@ class User(BaseUser):
                 redirect_url = web.url_for('/admin/users?status=success&message=Created new user account.')
             else:
                 redirect_url = web.url_for('/')
-        return trans.fill_template('/user/register.mako',
+        return trans.fill_template('/webapps/tool_shed/user/register.mako',
                                    cntrller=cntrller,
                                    email=email,
                                    username=transform_publicname(trans, username),
