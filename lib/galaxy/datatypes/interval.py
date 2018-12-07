@@ -1646,8 +1646,8 @@ class GTrack(Interval):
                     visible=False, optional=True, no_value=0)
     MetadataElement(name="header_lines", default=0, desc="Number of header lines",
                     readonly=False, optional=True, no_value=0)
-    MetadataElement(name="bounding_regions", default=0, desc="Number of bounding regions",
-                    readonly=False, optional=True, no_value=0)
+    # MetadataElement(name="bounding_regions", default=0, desc="Number of bounding regions",
+    #                 readonly=False, optional=True, no_value=0)
 
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
                     visible=False, no_value=0)
@@ -1666,8 +1666,8 @@ class GTrack(Interval):
                     param=metadata.ColumnParameter)
     MetadataElement(name="strandCol", desc="Strand column",
                     param=metadata.ColumnParameter, optional=True, no_value=0)
-    MetadataElement(name="nameCol", desc="Identifier column",
-                    param=metadata.ColumnParameter, optional=True, no_value=0)
+    # MetadataElement(name="nameCol", desc="Identifier column",
+    #                 param=metadata.ColumnParameter, optional=True, no_value=0)
 
     GTRACK_STD_COLUMN_TYPES = {
         'genome': 'str',
@@ -1684,8 +1684,23 @@ class GTrack(Interval):
         'edges column:' : 'edges'
     }
 
+    GTRACK_VALUE_TYPE = {
+        'number' : 'float',
+        'character': 'str',
+        'binary' : 'int',
+        'category' : 'str',
+        'list' : 'list',
+        'vector' : 'list',
+        'pair' : 'list'
+    }
+
     SUBTYPE_URL = 'subtype url:'
     STD_COLUMNS = ['start', 'end', 'value', 'edges']
+    GTRACK_VERSION = 'gtrack version:'
+    GTRACK_SUBTYPE = 'gtrack subtype:'
+    VALUE_COLUMN = 'value column:'
+    VALUE_TYPE = 'value type:'
+    VALUE_DIMENSION = 'value dimension:'
 
     # TODO: Implement GTrack sniffer
     # Rules for being a GTrack file, if either
@@ -1707,10 +1722,11 @@ class GTrack(Interval):
     # Note: file_prefix is a string of the beginning 1 MB of the file (or so)
     def sniff_prefix(self, file_prefix):
         hash_count_to_lines, num_data_lines, data_lines = self._parse_file(file_prefix.string_io(), True)
-        column_line = hash_count_to_lines[3][0].lower()
-        print "column line: " + column_line
+        column_line = None
+        if hash_count_to_lines[3]:
+            column_line = hash_count_to_lines[3][0].lower()
         for line in hash_count_to_lines[2]:
-            if line.lower().startswith(('gtrack version:', 'gtrack subtype:')):
+            if line.lower().startswith((self.GTRACK_VERSION, self.GTRACK_SUBTYPE)):
                 return True
             if line.lower().startswith(self.SUBTYPE_URL):
                 url = line[len(self.SUBTYPE_URL):].strip()
@@ -1756,13 +1772,27 @@ class GTrack(Interval):
         dataset.metadata.columns = len(cols)
         dataset.metadata.column_names = cols
 
+        value_type = None
+        for line in header_lines:
+            line = line.lower()
+            column_line = self._replace_column_name(line, column_line, self.VALUE_COLUMN)
+            if line.startswith(self.VALUE_TYPE):
+                value_type =  self.GTRACK_VALUE_TYPE[line[len(self.VALUE_TYPE):].strip()]
+            if line.startswith(self.VALUE_DIMENSION):
+                dimension = line[len(self.VALUE_DIMENSION):].strip()
+                if dimension != 'scalar':
+                    value_type = self.GTRACK_VALUE_TYPE[dimension]
+
         col_types = []
         for col in cols:
             col_type = self.GTRACK_STD_COLUMN_TYPES.get(col)
             if not col_type:
                 # TODO: Handle "value column", "value type" and "value dimensions" header lines
                 if col == 'value':
-                    col_type = 'float'
+                    if value_type:
+                        col_type = value_type
+                    else:
+                        col_type = 'float'
                 else:
                     col_type = 'str'
             col_types.append(col_type)
