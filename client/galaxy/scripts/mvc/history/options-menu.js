@@ -98,7 +98,25 @@ var menu = [
             }
         }
     },
-
+    {
+        html: _l("Make Data Private"),
+        anon: true,
+        func: function() {
+            if (
+                Galaxy &&
+                Galaxy.currHistoryPanel &&
+                confirm(
+                    _l(
+                        "This will make all the data in this history private (excluding library datasets), and will set permissions such that all new data is created as private.  Any datasets within that are currently shared will need to be re-shared or published.  Are you sure you want to do this?"
+                    )
+                )
+            ) {
+                $.post(`${Galaxy.root}history/make_private`, { history_id: Galaxy.currHistoryPanel.model.id }, () => {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
+                });
+            }
+        }
+    },
     {
         html: _l("Dataset Actions"),
         header: true,
