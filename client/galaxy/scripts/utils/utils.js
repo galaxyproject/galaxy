@@ -424,7 +424,7 @@ function hslToRgb(h, s, l){
 
 export function generateTagStyle(tag) {
     var hash = hashFnv32a(tag);
-    var hue = (hash >> 4) & 360;
+    var hue = Math.abs((hash >> 4) % 360);
     var lightnessOffset = 75;
     var lightness = lightnessOffset + (hash & 0xf);
     var bgColor = `hsl(${hue}, 100%, ${lightness}%)`;
