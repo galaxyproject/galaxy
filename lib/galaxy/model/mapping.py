@@ -874,6 +874,7 @@ model.StoredWorkflow.table = Table(
     Column("deleted", Boolean, default=False),
     Column("importable", Boolean, default=False),
     Column("slug", TEXT, index=True),
+    Column("from_path", TEXT, index=True),
     Column("published", Boolean, index=True, default=False))
 
 model.Workflow.table = Table(

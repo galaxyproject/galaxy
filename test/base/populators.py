@@ -556,6 +556,14 @@ class BaseWorkflowPopulator(object):
         workflow = self.load_workflow(name)
         return self.create_workflow(workflow, **create_kwds)
 
+    def import_workflow_from_path(self, from_path):
+        data = dict(
+            from_path=from_path
+        )
+        import_response = self._post("workflows", data=data)
+        api_asserts.assert_status_code_is(import_response, 200)
+        return import_response.json()["id"]
+
     def create_workflow(self, workflow, **create_kwds):
         upload_response = self.create_workflow_response(workflow, **create_kwds)
         uploaded_workflow_id = upload_response.json()["id"]
@@ -624,6 +632,20 @@ class BaseWorkflowPopulator(object):
         response = self._get("workflows/%s/download" % workflow_id, data=params)
         api_asserts.assert_status_code_is(response, 200)
         return response.json()
+
+    def update_workflow(self, workflow_id, workflow_object):
+        data = dict(
+            workflow=workflow_object
+        )
+        raw_url = 'workflows/%s' % workflow_id
+        put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
+        return put_response
+
+    @contextlib.contextmanager
+    def export_for_update(self, workflow_id):
+        workflow_object = self.download_workflow(workflow_id)
+        yield workflow_object
+        self.update_workflow(workflow_id, workflow_object)
 
     def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
         """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
