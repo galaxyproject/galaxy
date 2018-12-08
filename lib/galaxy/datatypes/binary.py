@@ -136,8 +136,8 @@ class MashSketch(Binary):
         The more similar another sequence is, the more min-hashes it is likely to share.
     """
     file_ext = "msh"
-    
-    
+
+
 class CompressedArchive(Binary):
     """
         Class describing an compressed binary file
