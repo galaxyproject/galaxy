@@ -12,7 +12,7 @@
                             <b-form-input name="password" type="password" v-model="password"/>
                             <b-form-text>Forgot password? Click here to <a @click="reset" href="#">reset</a> your password.</b-form-text>
                         </b-form-group>
-                        <b-button type="submit">Login</b-button>
+                        <b-button name="login" type="submit">Login</b-button>
                     </b-card>
                 </b-form>
             </div>

@@ -4,25 +4,25 @@
             {{registration_warning_message}}
         </b-alert>
         <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
-        <b-form @submit.prevent="submit()">
+        <b-form id="registration" @submit.prevent="submit()">
             <b-card header="Create account">
                 <b-form-group label="Email Address">
-                    <b-form-input type="text" v-model="email"/>
+                    <b-form-input name="email" type="text" v-model="email"/>
                 </b-form-group>
                 <b-form-group label="Password">
-                    <b-form-input type="password" v-model="password"/>
+                    <b-form-input name="password" type="password" v-model="password"/>
                 </b-form-group>
                 <b-form-group label="Confirm password">
-                    <b-form-input type="password" v-model="confirm"/>
+                    <b-form-input name="confirm" type="password" v-model="confirm"/>
                 </b-form-group>
                 <b-form-group label="Public name">
-                    <b-form-input type="text" v-model="username"/>
+                    <b-form-input name="username" type="text" v-model="username"/>
                     <b-form-text>Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes ('.', '_', '-').</b-form-text>
                 </b-form-group>
                 <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">
-                    <input type="checkbox" v-model="subscribe"/>
+                    <input name="subscribe" type="checkbox" v-model="subscribe"/>
                 </b-form-group>
-                <b-button type="submit">Create</b-button>
+                <b-button name="create" type="submit">Create</b-button>
             </b-card>
         </b-form>
     </div>

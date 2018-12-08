@@ -57,8 +57,6 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    register: 'Register'
-    login: 'Login'
     logout: 'Logout'
     custom_builds: 'Custom Builds'
     saved_histories: 'Saved Histories'
@@ -208,14 +206,16 @@ login:
     form: 'form#login'
     submit:
       type: xpath
-      selector: "//button[@type='submit']"
+      selector: "//button[@name='login']"
 
 registration:
+  labels:
+      tab: 'Register'
   selectors:
-    form: '#registration'
+    form: 'form#registration'
     submit:
       type: xpath
-      selector: "//input[@value='Submit']"
+      selector: "//button[@name='create']"
 
 tool_form:
   selectors:
@@ -324,7 +324,7 @@ admin:
     users_grid: '#users-grid'
     users_grid_create_button: '.manage-table-actions .action-button'
     groups_grid_create_button: '.manage-table-actions .action-button'
-    registration_form: 'form[name="registration"]'
+    registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
     groups_create_view: '#create-group'
