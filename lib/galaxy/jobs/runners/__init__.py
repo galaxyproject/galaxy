@@ -458,10 +458,17 @@ class BaseJobRunner(object):
     def _finish_or_resubmit_job(self, job_state, stdout, stderr, exit_code):
         job = job_state.job_wrapper.get_job()
         check_output_detected_state = job_state.job_wrapper.check_tool_output(stdout, stderr, exit_code, job)
+        job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
+
+        # clean up the job files
+        cleanup_job = job_state.job_wrapper.cleanup_job
+        if cleanup_job == "always" or (job_not_ok and cleanup_job == "onsuccess"):
+            job_state.cleanup()
+
         # Flush with streams...
         self.sa_session.add(job)
         self.sa_session.flush()
-        if check_output_detected_state != DETECTED_JOB_STATE.OK:
+        if job_not_ok:
             job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
             if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
                 job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
@@ -721,11 +728,6 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         except ValueError:
             log.warning("(%s/%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, external_job_id, exit_code_str))
             exit_code = 0
-
-        # clean up the job files
-        cleanup_job = job_state.job_wrapper.cleanup_job
-        if cleanup_job == "always" or (not stderr and cleanup_job == "onsuccess"):
-            job_state.cleanup()
 
         try:
             self._finish_or_resubmit_job(job_state, stdout, stderr, exit_code)
