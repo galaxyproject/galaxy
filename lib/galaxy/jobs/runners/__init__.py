@@ -455,6 +455,9 @@ class BaseJobRunner(object):
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
+    def _job_io_for_db(self, stream):
+        return shrink_stream_by_size(stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+
     def _finish_or_resubmit_job(self, job_state, stdout, stderr, job_id=None, external_job_id=None):
         try:
             job = job_state.job_wrapper.get_job()
@@ -721,8 +724,8 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         while which_try < self.app.config.retry_job_output_collection + 1:
             try:
                 with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, 'rb') as stderr_file:
-                    stdout = shrink_stream_by_size(stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-                    stderr = shrink_stream_by_size(stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+                    stdout = self._job_io_for_db(stdout_file)
+                    stderr = self._job_io_for_db(stderr_file)
                 break
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
