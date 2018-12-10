@@ -455,30 +455,36 @@ class BaseJobRunner(object):
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
-    def _finish_or_resubmit_job(self, job_state, stdout, stderr):
-        job = job_state.job_wrapper.get_job()
-        exit_code = job_state.read_exit_code()
-        check_output_detected_state = job_state.job_wrapper.check_tool_output(stdout, stderr, exit_code, job)
-        job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
+    def _finish_or_resubmit_job(self, job_state, stdout, stderr, job_id=None, external_job_id=None):
+        try:
+            job = job_state.job_wrapper.get_job()
+            exit_code = job_state.read_exit_code()
+            check_output_detected_state = job_state.job_wrapper.check_tool_output(stdout, stderr, exit_code, job)
+            job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
 
-        # clean up the job files
-        cleanup_job = job_state.job_wrapper.cleanup_job
-        if cleanup_job == "always" or (job_not_ok and cleanup_job == "onsuccess"):
-            job_state.cleanup()
+            # clean up the job files
+            cleanup_job = job_state.job_wrapper.cleanup_job
+            if cleanup_job == "always" or (job_not_ok and cleanup_job == "onsuccess"):
+                job_state.cleanup()
 
-        # Flush with streams...
-        self.sa_session.add(job)
-        self.sa_session.flush()
-        if job_not_ok:
-            job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
-            if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
-                job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
-            job_state.runner_state = job_runner_state
-            self._handle_runner_state('failure', job_state)
-            # Was resubmitted or something - I think we are done with it.
-            if job_state.runner_state_handled:
-                return
-        job_state.job_wrapper.finish(stdout, stderr, exit_code, check_output_detected_state=check_output_detected_state)
+            # Flush with streams...
+            self.sa_session.add(job)
+            self.sa_session.flush()
+
+            if job_not_ok:
+                job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
+                if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
+                    job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+                job_state.runner_state = job_runner_state
+                self._handle_runner_state('failure', job_state)
+                # Was resubmitted or something - I think we are done with it.
+                if job_state.runner_state_handled:
+                    return
+
+            job_state.job_wrapper.finish(stdout, stderr, exit_code, check_output_detected_state=check_output_detected_state)
+        except Exception:
+            log.exception("(%s/%s) Job wrapper finish method failed" % (job_id or '', external_job_id or ''))
+            job_state.job_wrapper.fail("Unable to finish job", exception=True)
 
 
 class JobState(object):
@@ -734,11 +740,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             self.mark_as_failed(job_state)
             return
 
-        try:
-            self._finish_or_resubmit_job(job_state, stdout, stderr)
-        except Exception:
-            log.exception("(%s/%s) Job wrapper finish method failed" % (galaxy_id_tag, external_job_id))
-            job_state.job_wrapper.fail("Unable to finish job", exception=True)
+        self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=galaxy_id_tag, external_job_id=external_job_id)
 
     def mark_as_finished(self, job_state):
         self.work_queue.put((self.finish_job, job_state))

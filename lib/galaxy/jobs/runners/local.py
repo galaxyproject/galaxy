@@ -141,12 +141,7 @@ class LocalJobRunner(BaseJobRunner):
         job_state = JobState(job_wrapper, job_destination)
         job_state.exit_code_file = JobState.default_exit_code_file(job_wrapper.working_directory, job_id)
         job_state.stop_job = False
-        # Finish the job!
-        try:
-            self._finish_or_resubmit_job(job_state, stdout, stderr)
-        except Exception:
-            log.exception("Job wrapper finish method failed")
-            self._fail_job_local(job_wrapper, "Unable to finish job")
+        self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=job_id)
 
     def stop_job(self, job_wrapper):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
