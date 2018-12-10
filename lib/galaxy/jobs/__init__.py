@@ -217,7 +217,10 @@ class JobConfiguration(ConfiguresHandlers):
         handlers_conf = root.find('handlers')
         self._init_handler_assignment_methods(handlers_conf)
         self._init_handlers(handlers_conf)
-        self._set_default_handler_assignment_methods()
+        if not self.handler_assignment_methods_configured:
+            self._set_default_handler_assignment_methods()
+        else:
+            self.app.application_stack.init_job_handling(self)
         log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
         for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
             log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
@@ -341,7 +344,10 @@ class JobConfiguration(ConfiguresHandlers):
         # Set the handlers
         self._init_handler_assignment_methods()
         self._init_handlers()
-        self._set_default_handler_assignment_methods()
+        if not self.handler_assignment_methods_configured:
+            self._set_default_handler_assignment_methods()
+        else:
+            self.app.application_stack.init_job_handling(self)
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]

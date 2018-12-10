@@ -7,9 +7,8 @@ import json
 import logging
 import os
 
-# The uwsgi module is automatically injected by the parent uwsgi
-# process and only exists that way.  If anything works, this is a
-# uwsgi-managed process.
+# The uwsgi module is automatically injected by the parent uwsgi process and only exists that way.  If anything works,
+# this is a uwsgi-managed process.
 try:
     import uwsgi
 except ImportError:
@@ -348,7 +347,6 @@ class UWSGIApplicationStack(MessageApplicationStack):
             # Pools are hierarchical (so that you can have e.g. workflow schedulers use the job handlers pool if no
             # workflow schedulers pool exists), so if a pool for a given tag has already been found higher in the
             # hierarchy, don't add mules from a farm/pool lower in the hierarchy.
-            # FIXME: test
             if tag not in job_config.pool_for_tag:
                 if self.in_pool(farm):
                     job_config.is_handler = True

@@ -92,11 +92,6 @@ class ConfiguresHandlers(object):
             if not self.app.config.track_jobs_in_database and \
                     HANDLER_ASSIGNMENT_METHODS.MEM_SELF not in self.UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS:
                 # DEPRECATED: You should just set mem_self as the only method if you want this
-                # FIXME: does setting MEM_SELF still disable track_jobs_in_database like it used to?
-                # FIXME: test MEM_SELF via all config routes:
-                #  1. no assign config, track_jobs_in_databse = False in config
-                #  2. assign_with='mem-self', track_jobs_in_databse = False in config
-                #  2. assign_with='mem-self', track_jobs_in_databse = True in config
                 log.warning("The `track_jobs_in_database` option is deprecated, please set `%s` as the job"
                             " handler assignment method in the job handler configuration",
                             HANDLER_ASSIGNMENT_METHODS.MEM_SELF)
@@ -262,7 +257,6 @@ class ConfiguresHandlers(object):
 
         :returns: str -- A valid job handler ID.
         """
-        # FIXME: test a combo of pool handlers and defined handlers w/ DB_PREASSIGN as the only method
         handler = configured
         if handler is None:
             handler = self.default_handler_id or self.DEFAULT_HANDLER_TAG

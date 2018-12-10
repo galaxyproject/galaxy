@@ -153,7 +153,6 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         try:
             self._assign_handler(workflow_invocation)
         except HandlerAssignmentError:
-            # FIXME: test, raise new exception?
             raise RuntimeError("Unable to set a handler for workflow invocation '%s'" % workflow_invocation.id)
 
         return workflow_invocation
@@ -234,7 +233,10 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
     def __init_handler_assignment_methods(self, config_element=None):
         self._init_handler_assignment_methods(config_element)
-        self._set_default_handler_assignment_methods()
+        if not self.handler_assignment_methods_configured:
+            self._set_default_handler_assignment_methods()
+        else:
+            self.app.application_stack.init_job_handling(self)
         log.info("Workflow scheduling handler assignment method(s): %s", ', '.join(self.handler_assignment_methods))
         for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
             log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
