@@ -84,7 +84,6 @@ class LocalJobRunner(BaseJobRunner):
             return
 
         stderr = stdout = ''
-        exit_code = 0
 
         # command line has been added to the wrapper by prepare_job()
         command_line, exit_code_path = self.__command_line(job_wrapper)
@@ -114,18 +113,11 @@ class LocalJobRunner(BaseJobRunner):
                 if terminated:
                     return
 
-                # Reap the process and get the exit code.
-                exit_code = proc.wait()
+                proc.wait()
 
             finally:
                 with self._proc_lock:
                     self._procs.remove(proc)
-
-            try:
-                exit_code = int(open(exit_code_path, 'r').read())
-            except Exception:
-                log.warning("Failed to read exit code from path %s" % exit_code_path)
-                pass
 
             if proc.terminated_by_shutdown:
                 self._fail_job_local(job_wrapper, "job terminated by Galaxy shutdown")
@@ -147,10 +139,11 @@ class LocalJobRunner(BaseJobRunner):
 
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
+        job_state.exit_code_file = JobState.default_exit_code_file(job_wrapper.working_directory, job_id)
         job_state.stop_job = False
         # Finish the job!
         try:
-            self._finish_or_resubmit_job(job_state, stdout, stderr, exit_code)
+            self._finish_or_resubmit_job(job_state, stdout, stderr)
         except Exception:
             log.exception("Job wrapper finish method failed")
             self._fail_job_local(job_wrapper, "Unable to finish job")

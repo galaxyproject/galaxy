@@ -455,8 +455,9 @@ class BaseJobRunner(object):
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
-    def _finish_or_resubmit_job(self, job_state, stdout, stderr, exit_code):
+    def _finish_or_resubmit_job(self, job_state, stdout, stderr):
         job = job_state.job_wrapper.get_job()
+        exit_code = job_state.read_exit_code()
         check_output_detected_state = job_state.job_wrapper.check_tool_output(stdout, stderr, exit_code, job)
         job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
 
@@ -527,6 +528,24 @@ class JobState(object):
     @staticmethod
     def default_exit_code_file(files_dir, id_tag):
         return os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
+
+    def read_exit_code(self):
+        try:
+            # This should be an 8-bit exit code, but read ahead anyway:
+            exit_code_str = open(self.exit_code_file, "r").read(32)
+        except Exception:
+            # By default, the exit code is 0, which typically indicates success.
+            exit_code_str = "0"
+
+        try:
+            # Decode the exit code. If it's bogus, then just use 0.
+            exit_code = int(exit_code_str)
+        except ValueError:
+            galaxy_id_tag = self.job_wrapper.get_id_tag()
+            log.warning("(%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, exit_code_str))
+            exit_code = 0
+
+        return exit_code
 
     def cleanup(self):
         for file in [getattr(self, a) for a in self.cleanup_file_attributes if hasattr(self, a)]:
@@ -716,21 +735,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
             return
 
         try:
-            # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = open(job_state.exit_code_file, "r").read(32)
-        except Exception:
-            # By default, the exit code is 0, which typically indicates success.
-            exit_code_str = "0"
-
-        try:
-            # Decode the exit code. If it's bogus, then just use 0.
-            exit_code = int(exit_code_str)
-        except ValueError:
-            log.warning("(%s/%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, external_job_id, exit_code_str))
-            exit_code = 0
-
-        try:
-            self._finish_or_resubmit_job(job_state, stdout, stderr, exit_code)
+            self._finish_or_resubmit_job(job_state, stdout, stderr)
         except Exception:
             log.exception("(%s/%s) Job wrapper finish method failed" % (galaxy_id_tag, external_job_id))
             job_state.job_wrapper.fail("Unable to finish job", exception=True)
