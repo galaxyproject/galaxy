@@ -1635,13 +1635,10 @@ class CustomTrack(Tabular):
 class GTrack(Interval):
     edam_format = "format_3164"
     file_ext = "gtrack"
-    # track_type = "LineTrack"
-    # data_sources = {"data": "bigwig", "index": "bigwig"}
 
     """Add metadata elements"""
-    # MetadataElement(name="comment_lines", default=0, desc="Number of comment lines",
-    #                 readonly=False, optional=True, no_value=0)
-
+    MetadataElement(name="comment_lines", default=0, desc="Number of comment lines",
+                     readonly=False, optional=True, no_value=0)
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True,
                     visible=False, optional=True, no_value=0)
     MetadataElement(name="header_lines", default=0, desc="Number of header lines",
@@ -1655,9 +1652,9 @@ class GTrack(Interval):
                     param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
     MetadataElement(name="column_names", default=[], desc="Column names", readonly=True,
                     visible=False, optional=True, no_value=[])
-    # MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
-    #                 visible=False, optional=True, no_value=[])
-    #
+    MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
+                    visible=False, optional=True, no_value=[])
+
     MetadataElement(name="chromCol", default=1, desc="Sequence id (chrom) column",
                     param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column",
@@ -1666,8 +1663,6 @@ class GTrack(Interval):
                     param=metadata.ColumnParameter)
     MetadataElement(name="strandCol", desc="Strand column",
                     param=metadata.ColumnParameter, optional=True, no_value=0)
-    # MetadataElement(name="nameCol", desc="Identifier column",
-    #                 param=metadata.ColumnParameter, optional=True, no_value=0)
 
     GTRACK_STD_COLUMN_TYPES = {
         'genome': 'str',
@@ -1818,7 +1813,7 @@ class GTrack(Interval):
                             'of {} columns'.format(
                 dataset.metadata.comment_lines,
                 dataset.metadata.header_lines,
-                dataset.metadata.bounding_regions,
+                #dataset.metadata.bounding_regions,
                 dataset.metadata.data_lines,
                 dataset.metadata.columns
             )

@@ -1981,3 +1981,90 @@ class Psl(Tabular):
                     break
         if count > 0:
             return True
+
+class GSuite(Tabular):
+    MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True,
+                    visible=False, optional=True, no_value=0)
+    MetadataElement(name="header_lines", default=0, desc="Number of header lines",
+                    readonly=False, optional=True, no_value=0)
+
+    MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
+                    visible=False, no_value=0)
+    MetadataElement(name="column_types", default=[], desc="Column types",
+                    param=metadata.ColumnTypesParameter, readonly=True, visible=False, no_value=[])
+    MetadataElement(name="column_names", default=[], desc="Column names", readonly=True,
+                    visible=False, optional=True, no_value=[])
+    MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
+                    visible=False, optional=True, no_value=[])
+
+
+    def sniff_prefix(self, file_prefix):
+        print "sniff"
+
+    def set_meta(self, dataset, **kwd):
+        with open(dataset.file_name) as input_file:
+            hash_count_to_lines, num_data_lines = self._parse_file(input_file)
+        self._set_meta_for_counts(dataset, hash_count_to_lines, num_data_lines)
+
+        column_lines = hash_count_to_lines[3]
+        if column_lines:
+            self._set_meta_for_column_line(dataset, column_lines[0])
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.blurb = 'GTrack file contains: {} comment lines, ' \
+                            '{} header lines (incl. colspec), ' \
+                            '{} bounding regions, and {} data lines ' \
+                            'of {} columns'.format(
+                dataset.metadata.comment_lines,
+                dataset.metadata.header_lines,
+                #dataset.metadata.bounding_regions,
+                dataset.metadata.data_lines,
+                dataset.metadata.columns
+            )
+            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte,
+                                              skipchars=['#'])
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def _set_meta_for_counts(self, dataset, hash_count_to_lines, num_data_lines):
+        dataset.metadata.comment_lines = len(hash_count_to_lines[1])
+        dataset.metadata.data_lines = num_data_lines
+        dataset.metadata.header_lines = sum(len(hash_count_to_lines[i]) for i in (2, 3))
+        dataset.metadata.bounding_regions = len(hash_count_to_lines[4])
+
+    def _set_meta_for_column_line(self, dataset, column_line):
+        cols = column_line.lower().split('\t')
+
+        dataset.metadata.columns = len(cols)
+        dataset.metadata.column_names = cols
+
+        col_types = ['string' for i in range(len(cols))]
+        dataset.metadata.column_types = col_types
+
+
+    def _parse_file(self, input_file, include_data = False):
+        from collections import defaultdict
+        hash_count_to_lines = defaultdict(list)
+        num_data_lines = 0
+        data_lines = []
+
+        for line in input_file:
+            line = line.strip()
+            if not line:
+                continue
+            if line.startswith('#'):
+                num_hashes = len(line) - len(line.lstrip('#'))
+                # More than 4 hashes do not have a meaning, handle as comment
+                if num_hashes > 4:
+                    num_hashes = 1
+                hash_count_to_lines[num_hashes].append(line.lstrip('#').strip())
+            else:
+                num_data_lines += 1
+                if include_data:
+                    data_lines.append(line.strip())
+        if include_data:
+            return hash_count_to_lines, num_data_lines, data_lines
+
+        return hash_count_to_lines, num_data_lines
