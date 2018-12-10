@@ -94,8 +94,20 @@ Under this strategy, job handling is offloaded to dedicated non-web-serving proc
 directly by the master uWSGI process. As a benefit of using mule messaging, only job handlers that are alive will be
 selected to run jobs.
 
-This is the recommended deployment strategy for Galaxy servers that run web servers and job handlers **on the same
-host**.
+This is the recommended deployment strategy.
+
+```eval_rst
+.. important::
+
+   If using **Zerg Mode** or running more than one uWSGI *master* process, do not use **uWSGI + Mules**. Doing so can
+   can cause jobs to be executed by mutiple handlers when recovering unassigned jobs at Galaxy server startup.
+
+   Multiple master processes is a rare configuration and is typically only used in the case of load balancing the web
+   application across multiple hosts. Note that multiple master proceses is not the same thing as the ``processess``
+   uWSGI configuration option, which is perfectly safe to set when using job handler mules.
+
+   For these scenarios, **uWSGI + Webless** is the recommended deployment strategy.
+```
 
 ### uWSGI for web serving and Webless Galaxy applications as job handlers
 
@@ -110,8 +122,8 @@ Like mules, under this strategy, job handling is offloaded to dedicated non-web-
 are [managed by the administrator](#starting-and-stopping). Because the handler is randomly assigned by the web worker
 when the job is submitted via the UI/API, jobs may be assigned to dead handlers.
 
-This is the recommended deployment strategy for Galaxy servers that run web servers and job handlers **on different
-hosts**.
+This is the recommended deployment strategy when **Zerg Mode** is used, and for Galaxy servers that run web servers and
+job handlers **on different hosts**.
 
 ## Legacy Deployment Options
 

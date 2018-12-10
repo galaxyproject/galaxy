@@ -26,15 +26,9 @@ class JobManager(object):
             self.job_handler = handler.JobHandler(app)
         else:
             self.job_handler = NoopHandler()
-        self.__check_jobs_at_startup()
+            self.__check_jobs_at_startup()
 
     def __check_jobs_at_startup(self):
-        """
-        TODO: It should be documented that starting two Galaxy uWSGI master processes simultaneously would result in a race condition that *could* cause two handlers to pick up the same job.
-
-        The recommended config for now will be webless handlers if running more than one uWSGI (master) process
-        """
-        # FIXME: test
         if self.app.job_config.use_messaging:
             jobs_at_startup = self.app.model.context.query(Job).enable_eagerloads(False) \
                 .filter((Job.state == Job.states.NEW) & (Job.handler == null())).all()

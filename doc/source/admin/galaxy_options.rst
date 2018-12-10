@@ -3277,10 +3277,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    In multiprocess configurations, notification between processes
-    about new jobs must be done via the database.  In single process
-    configurations, this can be done in memory, which is a bit
-    quicker.
+    This option is deprecated, use the `mem-self` handler assignment
+    option in the job configuration instead.
 :Default: ``true``
 :Type: bool
 
