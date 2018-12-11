@@ -50,6 +50,20 @@ class JobManager(object):
         return JobHandlerMessage(task='setup', job_id=job.id)
 
     def enqueue(self, job, tool=None):
+        """Queue a job for execution.
+
+        Due to the nature of some handler assignment methods which are wholly DB-based, the enqueue method will flush
+        the job. Callers who create the job typically should not flush the job before handing it off to ``enqueue()``.
+        If a job handler cannot be assigned, :exception:`ToolExecutionError` is raised.
+
+        :param job:     Job to enqueue.
+        :type job:      Instance of :class:`galaxy.model.Job`.
+        :param tool:    Tool that the job will execute.
+        :type tool:     Instance of :class:`galaxy.tools.Tool`.
+
+        :raises ToolExecutionError: if a handler was unable to be assigned.
+        returns: str or None -- Handler ID, tag, or pool assigned to the job.
+        """
         tool_id = None
         configured_handler = None
         if tool:
@@ -67,6 +81,15 @@ class JobManager(object):
             raise ToolExecutionError(exc.args[0], job=exc.obj)
 
     def stop(self, job, message=None):
+        """Stop a job that is currently executing.
+
+        This can be safely called on jobs that have already terminated.
+
+        :param job:     Job to stop.
+        :type job:      Instance of :class:`galaxy.model.Job`.
+        :param message: Message (if any) to be set on the job and output dataset(s) to explain the reason for stopping.
+        :type message:  str
+        """
         self.job_handler.job_stop_queue.put(job.id, error_msg=message)
 
     def shutdown(self):

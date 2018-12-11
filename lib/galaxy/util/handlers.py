@@ -217,18 +217,38 @@ class ConfiguresHandlers(object):
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class
 
     def _assign_handler_direct(self, obj, configured):
+        """Directly assign a handler if the object has been preconfigured to a known single static handler.
+
+        :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param configured:      Same as :method:`ConfiguresHandlers.assign_handler()`.
+
+        :returns: str -- A valid handler ID, or False if no handler was assigned.
+        """
         if self.app.config.track_jobs_in_database and configured:
             try:
-                resolved = self.get_preassigned_handler(configured)
+                handlers = self.handlers[configured]
             except KeyError:
-                resolved = None
-            if resolved == configured:
+                handlers = None
+            if handlers == (configured,):
                 obj.set_handler(configured)
                 _timed_flush_obj(obj)
-                return True
+                return configured
         return False
 
     def _assign_mem_self_handler(self, obj, method, configured, queue_callback=None, **kwargs):
+        """Assign object to this handler using this process's in-memory queue.
+
+        This method ignores all handler configuration.
+
+        :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param method:          Same as :method:`ConfiguresHandlers._assign_db_preassign_handler()`.
+        :param configured:      Ignored.
+        :param queue_callback:  Callback to be executed when the job should be queued (i.e. a callback to the handler's
+                                ``put()`` method). No arguments are passed.
+        :type queue_callback:   callable
+
+        :returns: str -- This process's server name (handler ID).
+        """
         assert queue_callback is not None, \
             "Cannot perform '%s' handler assignment: `queue_callback` is None" % HANDLER_ASSIGNMENT_METHODS.MEM_SELF
         if configured:
@@ -240,6 +260,17 @@ class ConfiguresHandlers(object):
         return self.app.config.server_name
 
     def _assign_db_self_handler(self, obj, method, configured, **kwargs):
+        """Assign object to this process by setting its ``handler`` column in the database to this process.
+
+        This only occurs if there is not an explicitly configured handler assignment for the object. Otherwise, it is
+        passed to the DB_PREASSIGN method for assignment.
+
+        :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param method:          Same as :method:`ConfiguresHandlers._assign_db_preassign_handler()`.
+        :param configured:      Same as :method:`ConfiguresHandlers.assign_handler()`.
+
+        :returns: str -- The assigned handler ID.
+        """
         if configured:
             return self.handler_assignment_method_methods[HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN](
                 obj, method, configured, **kwargs
@@ -249,12 +280,20 @@ class ConfiguresHandlers(object):
         return self.app.config.server_name
 
     def _assign_db_preassign_handler(self, obj, method, configured, index=None, **kwargs):
-        """Given a handler ID or tag, return a handler matching it, of those handlers that are statically configured in
+        """Assign object to a handler by setting its ``handler`` column in the database to a handler selected at random
+        from the known handlers in the appropriate tag.
+
+        Given a handler ID or tag, return a handler matching it, of those handlers that are statically configured in
         the job configuration, or known via preconfigured pools.
 
-        :param index: Generate "consistent" "random" handlers with this index if specified.
-        :type index: int
+        :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param method:          Assignment method currently being checked.
+        :type method:           Value in :data:`HANDLER_ASSIGNMENT_METHODS`.
+        :param configured:      Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param index:           Generate "consistent" "random" handlers with this index if specified.
+        :type index:            int
 
+        :raises KeyError: if the configured or default handler is not a known handler ID or tag.
         :returns: str -- A valid job handler ID.
         """
         handler = configured
@@ -273,6 +312,19 @@ class ConfiguresHandlers(object):
         return handler_id
 
     def _assign_uwsgi_mule_message_handler(self, obj, method, configured, message_callback=None, **kwargs):
+        """Assign object to a handler by sending a setup message to the appropriate handler pool (farm), where a handler
+        (mule) will receive the message and assign itself.
+
+        :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param method:          Same as :method:`ConfiguresHandlers._assign_db_preassign_handler()`.
+        :param configured:      Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param queue_callback:  Callback returning a setup message to be sent via the stack messaging interface's
+                                ``send_message()`` method. No arguments are passed.
+        :type queue_callback:   callable
+
+        :raises HandlerAssignmentSkip: if the configured or default handler is not a known handler pool (farm)
+        :returns: str -- The assigned handler pool.
+        """
         assert message_callback is not None, \
             "Cannot perform '%s' handler assignment: `message_callback` is None" \
             % HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE
@@ -290,8 +342,14 @@ class ConfiguresHandlers(object):
     def assign_handler(self, obj, configured=None, **kwargs):
         """Set a job handler, flush obj
 
-        :param obj: Object to assign to (must be a model object with ``handler`` attribute and ``log_str`` callable)
-        :param configured: A handler ID or tag/pool.
+        Called assignment methods should raise :exception:`HandlerAssignmentSkip` to indicate that the next method
+        should be tried.
+
+        :param obj:         Object to assign a handler to (must be a model object with ``handler`` attribute and
+                            ``log_str`` callable).
+        :type obj:          instance of :class:`galaxy.model.Job` or other model object with a ``set_handler()`` method.
+        :param configured:  Preconfigured handler (ID, tag, or None) for the given object.
+        :type configured:   str or None.
 
         :returns: bool -- True on successful assignment, False otherwise.
         """
@@ -308,7 +366,7 @@ class ConfiguresHandlers(object):
                 handler = self._handler_assignment_method_methods[method](
                     obj, method, configured=configured, **kwargs)
                 log.info("(%s) Handler '%s' assigned using '%s' assignment method", obj.log_str(), handler, method)
-                break
+                return handler
             except HandlerAssignmentSkip:
                 log.debug("(%s) Handler assignment method '%s' did not assign a handler, trying next method",
                           obj.log_str(), method)

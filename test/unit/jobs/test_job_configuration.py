@@ -58,11 +58,17 @@ class JobConfXmlParserTestCase(unittest.TestCase):
         assert task_runners[0]["workers"] == 5
 
     def test_explicit_handler_default(self):
-        self.__with_advanced_config()
+        self.__with_handlers_config(
+            handlers=[{'id': 'handler0', 'tags': 'handlers'}, {'id': 'handler1', 'tags': 'handlers'}],
+            default='handlers'
+        )
         assert self.job_config.default_handler_id == "handlers"
 
     def test_handler_tag_parsing(self):
-        self.__with_advanced_config()
+        self.__with_handlers_config(
+            handlers=[{'id': 'handler0', 'tags': 'handlers'}, {'id': 'handler1', 'tags': 'handlers'}],
+            default='handlers'
+        )
         assert "handler0" in self.job_config.handlers["handlers"]
         assert "handler1" in self.job_config.handlers["handlers"]
 
@@ -264,12 +270,13 @@ class JobConfXmlParserTestCase(unittest.TestCase):
     def __with_advanced_config(self):
         self.__write_config_from(ADVANCED_JOB_CONF)
 
-    def __with_handlers_config(self, assign_with=None, handlers=None, base_pools=None):
+    def __with_handlers_config(self, assign_with=None, default=None, handlers=None, base_pools=None):
         handlers = handlers or []
         template = {
             'assign_with': ' assign_with="%s"' % assign_with if assign_with is not None else '',
+            'default': ' default="%s"' % default if default is not None else '',
             'handlers': '\n'.join([
-                '<handler id="{id}"/>'.format(
+                '<handler id="{id}"{tags}/>'.format(
                     id=x['id'],
                     tags=' tags="%s"' % x['tags'] if 'tags' in x else ''
                 ) for x in handlers]),
