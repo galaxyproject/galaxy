@@ -343,7 +343,6 @@ class JobConfiguration(ConfiguresHandlers):
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=DEFAULT_LOCAL_WORKERS))
         # Set the handlers
         self._init_handler_assignment_methods()
-        self._init_handlers()
         if not self.handler_assignment_methods_configured:
             self._set_default_handler_assignment_methods()
         else:
