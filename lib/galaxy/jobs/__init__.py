@@ -1490,7 +1490,17 @@ class JobWrapper(HasResourceParameters):
         self.cleanup(delete_files=delete_files)
 
     def check_tool_output(self, stdout, stderr, tool_exit_code, job):
-        return check_output(self.tool, stdout, stderr, tool_exit_code, job)
+        job_id_tag = "<unknown job id>"
+        if job is not None:
+            job_id_tag = job.get_id_tag()
+
+        state, stdout_unicodified, stderr_unicodified, job_messages = check_output(self.tool.stdio_regexes, self.tool.stdio_exit_codes, stdout, stderr, tool_exit_code, job_id_tag)
+
+        # Store the modified stdout and stderr in the job:
+        if job is not None:
+            job.set_streams(stdout_unicodified, stderr_unicodified, job_messages=job_messages)
+
+        return state
 
     def cleanup(self, delete_files=True):
         # At least one of these tool cleanup actions (job import), is needed
