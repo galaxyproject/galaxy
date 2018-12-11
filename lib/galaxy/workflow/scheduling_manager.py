@@ -116,7 +116,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
     def _assign_handler(self, workflow_invocation):
         # Use random-ish integer history_id to produce a consistent index to pick
         # job handler with.
-        random_index = workflow_invocation.history_id
+        random_index = workflow_invocation.history.id
         queue_callback = partial(self._queue_callback, workflow_invocation)
         message_callback = partial(self._message_callback, workflow_invocation)
         if self.app.config.parallelize_workflow_scheduling_within_histories:
@@ -188,7 +188,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
 
         if not self.__handlers_configured and self.__stack_has_pool:
             # Stack has a pool for us so override inherited config and use the pool
-            self.__init_handler_assignment_methods()
+            self.__init_handlers()
             self.__handlers_configured = True
 
     def __init_default_scheduler(self):
@@ -225,14 +225,10 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             else:
                 log.warning(EXCEPTION_MESSAGE_SERIALIZE)
 
-    def __init_handlers(self, config_element):
+    def __init_handlers(self, config_element=None):
         assert not self.__handlers_configured
-        self.__init_handler_assignment_methods(config_element)
-        self._init_handlers(config_element)
-        self.__handlers_configured = True
-
-    def __init_handler_assignment_methods(self, config_element=None):
         self._init_handler_assignment_methods(config_element)
+        self._init_handlers(config_element)
         if not self.handler_assignment_methods_configured:
             self._set_default_handler_assignment_methods()
         else:
@@ -240,6 +236,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         log.info("Workflow scheduling handler assignment method(s): %s", ', '.join(self.handler_assignment_methods))
         for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
             log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
+        self.__handlers_configured = True
 
     def __init_plugin(self, plugin_type, workflow_scheduler_id=None, **kwds):
         workflow_scheduler_id = workflow_scheduler_id or self.default_scheduler_id

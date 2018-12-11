@@ -173,8 +173,7 @@ class JobConfiguration(ConfiguresHandlers):
             tree = load(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
-            log.warning('Job configuration "%s" does not exist, using default'
-                        ' job configuration (this server will run jobs)',
+            log.warning('Job configuration "%s" does not exist, using default job configuration',
                         self.app.config.job_config_file)
             self.__set_default_job_conf()
         except Exception as e:
