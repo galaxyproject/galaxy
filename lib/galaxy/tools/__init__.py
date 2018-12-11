@@ -895,11 +895,6 @@ class Tool(Dictifiable):
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(meta_file):
-            # Maybe this is a legacy job, use the job working directory instead
-            meta_file = os.path.join(job_wrapper.working_directory, self.provided_metadata_file)
-
         if not os.path.exists(meta_file):
             return output_collect.NullToolProvidedMetadata()
         if self.provided_metadata_style == "legacy":

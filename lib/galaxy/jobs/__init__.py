@@ -1223,7 +1223,6 @@ class JobWrapper(HasResourceParameters):
         stderr,
         tool_exit_code=None,
         check_output_detected_state=None,
-        remote_working_directory=None,
         remote_metadata_directory=None,
     ):
         """
@@ -1231,8 +1230,6 @@ class JobWrapper(HasResourceParameters):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        # remote_working_directory not used with updated (7.0+ pulsar and 16.04+
-        # originated Galaxy job - keep for a few releases for older jobs)
         finish_timer = util.ExecutionTimer()
 
         # default post job setup
@@ -1382,11 +1379,8 @@ class JobWrapper(HasResourceParameters):
                         def path_rewriter(path):
                             if not path:
                                 return path
-                            normalized_remote_working_directory = remote_working_directory and os.path.normpath(remote_working_directory)
                             normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
                             normalized_path = os.path.normpath(path)
-                            if remote_working_directory and normalized_path.startswith(normalized_remote_working_directory):
-                                return normalized_path.replace(normalized_remote_working_directory, self.working_directory, 1)
                             if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
                                 return normalized_path.replace(normalized_remote_metadata_directory, self.working_directory, 1)
                             return path
@@ -1465,10 +1459,6 @@ class JobWrapper(HasResourceParameters):
         param_dict = self.tool.params_from_strings(param_dict, self.app)
         # Create generated output children and primary datasets and add to param_dict
         tool_working_directory = self.tool_working_directory
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(tool_working_directory):
-            # Maybe this is a legacy job, use the job working directory instead
-            tool_working_directory = self.working_directory
         collected_datasets = {
             'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }

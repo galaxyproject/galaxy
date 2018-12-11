@@ -531,10 +531,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
     new_primary_datasets = {}
     try:
         galaxy_json_path = os.path.join(job_working_directory, "working", tool.provide_metadata_file)
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(galaxy_json_path):
-            # Maybe this is a legacy job, use the job working directory instead
-            galaxy_json_path = os.path.join(job_working_directory, tool.provide_metadata_file)
         json_file = open(galaxy_json_path, 'r')
         for line in json_file:
             line = json.loads(line)
