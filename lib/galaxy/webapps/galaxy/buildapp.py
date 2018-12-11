@@ -563,6 +563,12 @@ def populate_api_routes(webapp, app):
                           action='index',
                           conditions=dict(method=["GET"]))
 
+    webapp.mapper.connect('reload',
+                          '/api/display_applications/reload',
+                          controller='display_applications',
+                          action='reload',
+                          conditions=dict(method=["POST"]))
+
     # =====================
     # ===== TOURS API =====
     # =====================
