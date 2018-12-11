@@ -42,7 +42,7 @@ class GFFInterval(GenomicInterval):
         self.score = self.fields[self.score_col]
 
         # GFF attributes.
-        self.attributes = parse_gff_attributes(fields[8])
+        self.attributes = parse_gff_attributes(fields[8] if 8 < self.nfields else "")
 
     def copy(self):
         return GFFInterval(self.reader, list(self.fields), self.chrom_col, self.feature_col, self.start_col,
