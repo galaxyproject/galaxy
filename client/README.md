@@ -4,13 +4,13 @@ Client Build System
 Installs, stages, and builds the client-side scripts necessary for running the
 Galaxy webapp. There's no need to use this system unless you are modifying or
 developing client-side scripts, or are running the development branch of
-Galaxy.  Additionally, Galaxy will now automatically build the client when it
-detects changes, unless that functionality is explicitly disabled.
+Galaxy.  Galaxy will also now (since 18.09) *automatically* build the client as
+a part of server startup, when it detects changes, unless that functionality is
+explicitly disabled.
 
-The base dependencies you will need are Node.js and Yarn.  Galaxy now includes
-these dependencies in the virtual environment, and they can be accessed by
-activating that with `source .venv/bin/activate` from the Galaxy root
-directory.
+The base dependencies used are Node.js and Yarn.  Galaxy now includes these in
+the virtual environment, and they can be accessed by activating that with
+`source .venv/bin/activate` from the Galaxy root directory.
 
 If you'd like to install your own dependencies, on OSX the easiest way to get
 set up is using homebrew and the command `brew install nodejs yarn`.  More
