@@ -10,34 +10,16 @@
             </a>
             display applications loaded.
         </div>
-        <table v-if="applicationsVisible" class="table table-striped">
-            <thead>
-                <tr>
-                    <th>Reload</th>
-                    <th>Name</th>
-                    <th>Identifier</th>
-                    <th>Version</th>
-                    <th>Links</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="app in applications">
-                    <td>
-                        <a class="icon-btn" href="" title="Reload display application" data-placement="bottom" @click.prevent="reload(app.id)">
-                            <span class="fa fa-refresh"/>
-                        </a>
-                    </td>
-                    <td>{{ app.name }}</td>
-                    <td>{{ app.id }}</td>
-                    <td>{{ app.version }}</td>
-                    <td>
-                        <ul>
-                            <li v-for="link in app.links">{{ link.name }}</li>
-                        </ul>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+        <b-table v-if="applicationsVisible" striped :fields="applicationsAttributes" :items="applications">
+            <template slot="reload" slot-scope="data">
+                <a class="icon-btn" title="Reload display application" data-placement="bottom" @click.prevent="reload(data.item.id)">
+                    <span class="fa fa-refresh"/>
+                </a>
+            </template>
+            <template slot="links" slot-scope="data">
+                <li v-for="link in data.item.links">{{ link.name }}</li>
+            </template>
+        </b-table>
     </div>
 </template>
 <script>
@@ -52,6 +34,13 @@ export default {
     data() {
         return {
             applications: [],
+            applicationsAttributes: [
+                { key: 'reload' },
+                { key: 'name', sortable: true },
+                { key: 'id', sortable: true },
+                { key: 'version' },
+                { key: 'links' }
+            ],
             messageText: null,
             messageClass: null
         };
