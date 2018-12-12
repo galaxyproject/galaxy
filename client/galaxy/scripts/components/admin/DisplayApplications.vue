@@ -10,7 +10,7 @@
             </a>
             display applications loaded.
         </div>
-        <b-table v-if="applicationsVisible" striped :fields="applicationsAttributes" :items="applications">
+        <b-table id="display-applications-grid" v-if="applicationsVisible" striped :fields="applicationsAttributes" :items="applications">
             <template slot="reload" slot-scope="data">
                 <a class="icon-btn" title="Reload display application" data-placement="bottom" @click.prevent="reload(data.item.id, data.index)">
                     <span class="fa fa-refresh"/>
