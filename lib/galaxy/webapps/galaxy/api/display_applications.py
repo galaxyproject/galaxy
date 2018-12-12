@@ -51,12 +51,12 @@ class DisplayApplicationsController(BaseAPIController):
                                         kwargs={'display_application_ids': ids})
         reloaded, failed = trans.app.datatypes_registry.reload_display_applications(ids)
         if not reloaded and failed:
-            raise MessageException('Unable to reload any of the %i requested display applications ("%s").'
-                                    % (len(failed), '", "'.join(failed)))
-        if failed:
-            raise MessageException('Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").'
-                                    % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)))
-        if not reloaded:
-            raise MessageException('You need to request at least one display application to reload.')
-        return {'message': 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))}
+            message = 'Unable to reload any of the %i requested display applications ("%s").' % (len(failed), '", "'.join(failed))
+        elif failed:
+            message = 'Reloaded %i display applications ("%s"), but failed to reload %i display applications ("%s").' % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed))
+        elif not reloaded:
+            message = 'You need to request at least one display application to reload.'
+        else:
+            message = 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))
+        return {'message': message, 'reloaded': reloaded, 'failed': failed}
 

@@ -12,7 +12,7 @@
         </div>
         <b-table v-if="applicationsVisible" striped :fields="applicationsAttributes" :items="applications">
             <template slot="reload" slot-scope="data">
-                <a class="icon-btn" title="Reload display application" data-placement="bottom" @click.prevent="reload(data.item.id)">
+                <a class="icon-btn" title="Reload display application" data-placement="bottom" @click.prevent="reload(data.item.id, data.index)">
                     <span class="fa fa-refresh"/>
                 </a>
             </template>
@@ -46,6 +46,20 @@ export default {
         };
     },
     computed: {
+        applicationsIndex: function() {
+            let result = {};
+            for (let app of this.applications) {
+                result[app.id] = app;
+            }
+            return result;
+        },
+        applicationsAll: function() {
+            let result = [];
+            for (let app of this.applications) {
+                result.push(app.id);
+            }
+            return result;
+        },
         applicationsVisible: function() {
             return this.applications.length > 0;
         },
@@ -80,16 +94,27 @@ export default {
             this._reload(ids);
         },
         _reload: function(ids) {
+            this._highlightRows(this.applicationsAll, "default");
             let url = `${getAppRoot()}api/display_applications/reload`;
             axios
                 .post(url, {ids: ids})
                 .then(response => {
-                    this.messageText = response && response.data && response.data.message;
                     this.messageClass = successMessageClass;
+                    this.messageText = response.data.message;
+                    this._highlightRows(response.data.failed, "danger");
+                    this._highlightRows(response.data.reloaded, "success");
                 })
                 .catch(e => {
                     this._errorMessage(e);
                 });
+        },
+        _highlightRows: function(appList, status) {
+            for (let appIndex of appList) {
+                let app = this.applicationsIndex[appIndex];
+                if (app) {
+                    app._rowVariant = status;
+                }
+            }
         },
         _errorMessage: function(e) {
             let message = e && e.response && e.response.data && e.response.data.err_msg;
