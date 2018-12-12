@@ -52,8 +52,10 @@ class CloudController(BaseAPIController):
             *   history_id:    the (encoded) id of history to which the object should be received to.
             *   bucket:        the name of a bucket from which data should be fetched from (e.g., a bucket name on AWS S3).
             *   objects:       a list of the names of objects to be fetched.
-            *   credentials:   a dictionary containing all the credentials required to authenticated to the
-            specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+            *   authz_id:      the encoded ID of CloudAuthz to be used for authorizing access to the resource
+                               provider. You may get a list of the defined authorizations via
+                               `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a
+                               new authorization.
             *   input_args     [Optional; default value is an empty dict] a dictionary containing the following keys:
 
                                 **   `dbkey`:           [Optional; default value: is `?`]
