@@ -85,24 +85,31 @@ class PithosObjectStore(ObjectStore):
     Cache is ignored for the time being.
     """
 
-    def __init__(self, config, config_xml):
-        if KamakiClient is None:
-            raise Exception(NO_KAMAKI_ERROR_MESSAGE)
+    def __init__(self, config, config_dict):
         super(PithosObjectStore, self).__init__(config)
         self.staging_path = self.config.file_path
-        self.transfer_progress = 0
         log.info('Parse config_xml for pithos object store')
-        self.config_dict = parse_config_xml(config_xml)
+        self.config_dict = config_dict
         log.debug(self.config_dict)
+
+        log.info('Define extra_dirs')
+        extra_dirs = dict(
+            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        self.extra_dirs.update(extra_dirs)
+        self._initialize()
+
+    def _initialize(self):
+        if KamakiClient is None:
+            raise Exception(NO_KAMAKI_ERROR_MESSAGE)
 
         log.info('Authenticate Synnefo account')
         self._authenticate()
         log.info('Initialize Pithos+ client')
         self._init_pithos()
 
-        log.info('Define extra_dirs')
-        self.extra_dirs = dict(
-            (e['type'], e['path']) for e in self.config_dict['extra_dirs'])
+    @classmethod
+    def parse_xml(clazz, config_xml):
+        return parse_config_xml(config_xml)
 
     def _authenticate(self):
         auth = self.config_dict['auth']
