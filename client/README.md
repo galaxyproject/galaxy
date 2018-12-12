@@ -4,11 +4,17 @@ Client Build System
 Installs, stages, and builds the client-side scripts necessary for running the
 Galaxy webapp. There's no need to use this system unless you are modifying or
 developing client-side scripts, or are running the development branch of
-Galaxy.
+Galaxy.  Additionally, Galaxy will now automatically build the client when it
+detects changes, unless that functionality is explicitly disabled.
 
-The base dependencies you will need are Node.js and Yarn.  On OSX the easiest
-way to get set up is using homebrew and the command `brew install nodejs yarn`.
-More information including instructions for other platforms is available  at
+The base dependencies you will need are Node.js and Yarn.  Galaxy now includes
+these dependencies in the virtual environment, and they can be accessed by
+activating that with `source .venv/bin/activate` from the Galaxy root
+directory.
+
+If you'd like to install your own dependencies, on OSX the easiest way to get
+set up is using homebrew and the command `brew install nodejs yarn`.  More
+information including instructions for other platforms is available  at
 nodejs.org and yarnpkg.com.
 
 The Galaxy client build has necessarily grown more complex in the past several
@@ -22,7 +28,7 @@ https://gitter.im/galaxyproject/Lobby.
 Complete Client Build
 ================================================
 
-There are many moving parts to the client build system, but the entrypoint for
+There are many moving parts to the client build system, but the entry point for
 most people is the 'client' rule in the Makefile at the root of the Galaxy
 repository.  Execute the following to perform a complete build suitable for
 local development, including dependency staging, style building, script
