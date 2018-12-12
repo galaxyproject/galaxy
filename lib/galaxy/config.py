@@ -154,7 +154,7 @@ def find_root(kwargs):
 
 
 class Configuration(object):
-    deprecated_options = ('database_file', )
+    deprecated_options = ('database_file', 'track_jobs_in_database')
 
     def __init__(self, **kwargs):
         self.config_dict = kwargs

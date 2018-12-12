@@ -332,24 +332,76 @@
              used by Galaxy is no environment variable of the specified name is found.
         -->
     </plugins>
-    <handlers default="handlers">
-        <!-- Additional job handlers - the id should match the name of a
-             [server:<id>] in galaxy.ini.
+    <handlers>
+        <!-- Job handler processes - for a full discussion of job handlers, see the documentation at:
+             https://docs.galaxyproject.org/en/latest/admin/scaling.html
+
+             The <handlers> container tag takes two optional attributes:
+
+               <handlers assign_with="method" default="id_or_tag"/>
+
+               - `assign_with` - How jobs should be assigned to handlers. The value can be a single method or a
+                 comma-separated list that will be tried in order. The default depends on whether any handlers and a job
+                 handler "pool" (such as uWSGI mules in a `job-handlers` farm) are configured. Valid methods are:
+
+                   - `mem-self` - Jobs are assigned to the web worker that received the tool execution request from the
+                     user via an internal in-memory queue. If a tool is configured to use a specific handler, that
+                     configuration is ignored; the process that creates the job *always* handles it. This can be
+                     slightly faster than `db-self` but only makes sense in single process environments without
+                     dedicated job handlers. This option replaces the former `track_jobs_in_database` option in
+                     galaxy.yml.
+
+                   - `db-self` - Like `mem-self` but assignment occurs by setting a new job's 'handler' column in the
+                     database to the process that created the job at the time it is created. Additionally, if a tool is
+                     configured to use a specific handler (ID or tag), that handler is assigned (tags by
+                     `db-preassign`). This is the default if no handlers are defined and no `job-handlers` pool is
+                     present (the default for a completely unconfigured Galaxy).
+
+                   - `db-preassign` - Jobs are assigned a handler by selecting one at random from the configured tag or
+                      default handlers. This occurs by setting a new job's 'handler' column in the database to the
+                      chosen handler ID (hence "preassign"ment). This is the default if handlers are defined and no
+                      `job-handlers` pool is present.
+
+                   - `uwsgi-mule-message` - Jobs are assigned a handler via uWSGI mule messaging (see uWSGI
+                     documentation). A mule in the `job-handlers` (if sent to the default tag) or `job-handlers.<tag>`
+                     farm will recieve the message and assign itself. This the default if a `job-handlers` pool is
+                     present and no handlers are configured.
+
+                 In the event that both a `job-handlers` pool is present and handlers are configured, the default is
+                 `uwsgi-mule-message,db-preassign`. At present, only `uwsgi-mule-message` is capable of deferring
+                 handler assignment to a later method (which would occur in the event that a tool is configured to use
+                 a tag for which there is not a matching pool).
+
+                 In all cases, if a tool is configured to use a specific handler (by ID, not tag), configured assignment
+                 methods are ignored and that handler is directly assigned in the job's 'handler' column at job creation
+                 time.
+
+               - `default` - An ID or tag of the handler(s) that should handle any jobs not assigned to a specific
+                 handler (which is probably most of them). If unset, the default is any untagged handlers plus any
+                 handlers in the `job-handlers` (no tag) pool.
+
+                 Note that in the event such a mixed configuration environment exists (both a `job-handlers` pool (farm)
+                 and untagged handlers are configured), the default value of
+                 `assign_with="uwsgi-mule-message,db-preassign"` would prevent any of the configured handlers from being
+                 assigned since `uwsgi-mule-message` is the preferred assignment method.
+        -->
+        <!-- Explicitly defined job handlers - the id should match the handler process's `server_name`. For webless
+             handlers, this is the value of the `server-name` argument to `galaxy-main`.
          -->
-        <handler id="handler0" tags="handlers"/>
-        <handler id="handler1" tags="handlers"/>
+        <handler id="handler0"/>
+        <handler id="handler1"/>
         <!-- Handlers will load all plugins defined in the <plugins> collection
              above by default, but can be limited to a subset using <plugin>
              tags. This is useful for heterogenous environments where the DRMAA
              plugin would need to be loaded more than once with different
              configs.
-         -->
+        -->
         <handler id="sge_handler">
             <plugin id="sge"/>
         </handler>
+        <!-- Handlers are grouped by defining (comma-separated) tags -->
         <handler id="special_handler0" tags="special_handlers"/>
         <handler id="special_handler1" tags="special_handlers"/>
-        <handler id="trackster_handler"/>
     </handlers>
     <destinations default="local">
         <!-- Destinations define details about remote resources and how jobs
