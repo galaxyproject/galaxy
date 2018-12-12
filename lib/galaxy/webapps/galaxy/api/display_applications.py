@@ -45,9 +45,6 @@ class DisplayApplicationsController(BaseAPIController):
         :type   ids:  list
         """
         ids = payload.get('ids')
-        print (ids)
-        print (type(ids))
-        print (payload)
         queue_worker.send_control_task(trans.app,
                                         'reload_display_application',
                                         noop_self=True,
