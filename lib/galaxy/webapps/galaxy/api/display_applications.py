@@ -57,5 +57,5 @@ class DisplayApplicationsController(BaseAPIController):
                                     % (len(reloaded), '", "'.join(reloaded), len(failed), '", "'.join(failed)))
         if not reloaded:
             raise MessageException('You need to request at least one display application to reload.')
-        return {'message': 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded)))}
+        return {'message': 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))}
 

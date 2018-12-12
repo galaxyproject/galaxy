@@ -910,7 +910,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
 
     @web.expose
     @web.require_admin
-    def display_applications(self, trans, **kwd):
+    def display_applications_legacy(self, trans, **kwd):
         return trans.fill_template('admin/view_display_applications.mako', display_applications=trans.app.datatypes_registry.display_applications)
 
     @web.expose

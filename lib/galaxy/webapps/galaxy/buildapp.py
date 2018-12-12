@@ -103,6 +103,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_client_route('/admin/data_types', 'admin')
     webapp.add_client_route('/admin/data_manager{path_info:.*}', 'admin')
     webapp.add_client_route('/admin/users', 'admin')
+    webapp.add_client_route('/admin/display_applications', 'admin')
     webapp.add_client_route('/admin/roles', 'admin')
     webapp.add_client_route('/admin/forms', 'admin')
     webapp.add_client_route('/admin/groups', 'admin')

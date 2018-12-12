@@ -14,6 +14,7 @@ import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
+import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Vue from "vue";
 import { serverPath } from "utils/serverPath";
 
@@ -33,6 +34,7 @@ window.app = function app(options, bootstrapped) {
             "(/)admin(/)users": "show_users",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
+            "(/)admin(/)display_applications": "show_display_applications",
             "(/)admin(/)tool_versions": "show_tool_versions",
             "(/)admin(/)quotas": "show_quotas",
             "(/)admin(/)repositories": "show_repositories",
@@ -122,6 +124,10 @@ window.app = function app(options, bootstrapped) {
         },
         show_data_types: function() {
             this._display_vue_helper(DataTypes);
+        },
+
+        show_display_applications: function() {
+            this._display_vue_helper(DisplayApplications);
         },
 
         show_data_manager: function(path) {
