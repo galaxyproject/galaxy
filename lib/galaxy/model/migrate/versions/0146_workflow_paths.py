@@ -29,7 +29,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
 
-    __drop_column(from_path_column, "stored_workflow", metadata)
+    __drop_column("from_path", "stored_workflow", metadata)
 
 
 def __add_column(column, table_name, metadata, **kwds):
