@@ -1359,8 +1359,15 @@ def size_to_bytes(size):
     4096
     >>> size_to_bytes('2.2 TB')
     2418925581107
+    >>> size_to_bytes('.01 TB')
+    10995116277
+    >>> size_to_bytes('1.b')
+    1
+    >>> size_to_bytes('1.2E2k')
+    122880
     """
-    size_re = re.compile(r'(?P<number>\d+(\.\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
+    # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
+    size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
     if size_match is None:
         raise ValueError("Could not parse string '%s'" % size)
