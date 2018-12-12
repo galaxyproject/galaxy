@@ -4,9 +4,10 @@ Client Build System
 Installs, stages, and builds the client-side scripts necessary for running the
 Galaxy webapp. There's no need to use this system unless you are modifying or
 developing client-side scripts, or are running the development branch of
-Galaxy.  Galaxy will also now (since 18.09) *automatically* build the client as
-a part of server startup, when it detects changes, unless that functionality is
-explicitly disabled.
+Galaxy.  When started through `run.sh` or any other method that utilizes
+`common_startup.sh`, Galaxy will also (since 18.09) *automatically* build
+the client as a part of server startup, when it detects changes, unless that
+functionality is explicitly disabled.
 
 The base dependencies used are Node.js and Yarn.  Galaxy now includes these in
 the virtual environment, and they can be accessed by activating that with
@@ -70,8 +71,8 @@ using `make client-watch`.
 Changing Styles/CSS
 ===================
 
-Galaxy uses Sass for its styling, which is a a superset of CSS that compiles
-down to regular CSS.  Most Galaxy styling source (.scss) files are kept in
+Galaxy uses Sass for its styling, which is a superset of CSS that compiles down
+to regular CSS.  Most Galaxy styling source (.scss) files are kept in
 `client/galaxy/style/scss.  There are additionally style blocks alongside some
 Vue components -- styles that are particular to that individual component and
 do not apply site-wide.
