@@ -1319,6 +1319,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~
+``helpsite_url``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Help" link in the "Help" menu.
+:Default: ````
+:Type: str
+
+
 ~~~~~~~~~~~~
 ``wiki_url``
 ~~~~~~~~~~~~
@@ -2822,6 +2832,17 @@
 :Description:
     Enable beta workflow modules that should not yet be considered
     part of Galaxy's stable API.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_workflow_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable import and export of workflows as Galaxy Format 2
+    workflows.
 :Default: ``false``
 :Type: bool
 

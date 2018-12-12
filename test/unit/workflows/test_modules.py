@@ -40,7 +40,7 @@ def test_data_input_step_modified_state():
 
 def test_data_input_compute_runtime_state_default():
     module = __from_step(type="data_input")
-    state, errors = module.compute_runtime_state(module.trans)
+    state, errors = module.compute_runtime_state(module.trans, module.test_step)
     assert not errors
     assert "input" in state.inputs
     assert state.inputs["input"] is None
@@ -52,7 +52,7 @@ def test_data_input_compute_runtime_state_args():
     hda = model.HistoryDatasetAssociation()
     with mock.patch("galaxy.workflow.modules.check_param") as check_method:
         check_method.return_value = (hda, None)
-        state, errors = module.compute_runtime_state(module.trans, {"input": 4, "tool_state": tool_state})
+        state, errors = module.compute_runtime_state(module.trans, module.test_step, {"input": 4, "tool_state": tool_state})
     assert not errors
     assert "input" in state.inputs
     assert state.inputs["input"] is hda
@@ -166,25 +166,28 @@ steps:
     label: "input2"
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "output"
+    inputs:
+      input1:
+        connections:
+        - "@output_step": 0
+          output_name: "output"
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "output"
+    inputs:
+      input1:
+        connections:
+        - "@output_step": 0
+          output_name: "output"
     workflow_outputs:
     -   output_name: "out_file1"
         label: "out1"
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 2
-       output_name: "out_file1"
+    inputs:
+      input1:
+        connections:
+        - "@output_step": 2
+          output_name: "out_file1"
     workflow_outputs:
     -   output_name: "out_file1"
 """

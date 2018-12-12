@@ -124,10 +124,10 @@ def extract_steps(trans, history=None, job_ids=None, dataset_ids=None, dataset_c
                 else:
                     log.info("Cannot find implicit input collection for %s" % input_name)
             if other_hid in hid_to_output_pair:
+                step_input = step.get_or_add_input(input_name)
                 other_step, other_name = hid_to_output_pair[other_hid]
                 conn = model.WorkflowStepConnection()
-                conn.input_step = step
-                conn.input_name = input_name
+                conn.input_step_input = step_input
                 # Should always be connected to an earlier step
                 conn.output_step = other_step
                 conn.output_name = other_name

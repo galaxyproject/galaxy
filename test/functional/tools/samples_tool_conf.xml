@@ -62,6 +62,7 @@
   <tool file="version_command_tool_dir.xml" />
   <tool file="exit_code_oom.xml" />
   <tool file="exit_code_from_file.xml" />
+  <tool file="exit_code_from_env.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />

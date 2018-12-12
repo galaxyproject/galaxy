@@ -477,7 +477,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
         try:
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
-            remote_working_directory = run_results.get("working_directory", None)
             remote_metadata_directory = run_results.get("metadata_directory", None)
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
@@ -510,7 +509,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 stdout,
                 stderr,
                 exit_code,
-                remote_working_directory=remote_working_directory,
                 remote_metadata_directory=remote_metadata_directory,
             )
         except Exception:
@@ -519,7 +517,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def fail_job(self, job_state, message=GENERIC_REMOTE_ERROR, full_status=None):
         """Seperated out so we can use the worker threads for it."""
-        self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+        self.stop_job(job_state.job_wrapper)
         stdout = ""
         stderr = ""
         if full_status:
@@ -538,7 +536,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 log.warning("check_pid(): Got errno %s when attempting to check PID %d: %s" % (errno.errorcode[e.errno], pid, e.strerror))
             return False
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
+        job = job_wrapper.get_job()
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         client = self.get_client(job.destination_params, job.job_runner_external_id)
         job_ext_output_metadata = job.get_external_output_metadata()
@@ -577,7 +576,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
         if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
-            log.debug("(Pulsar/%s) is still in running state, adding to the Pulsar queue" % (job.get_id()))
+            log.debug("(Pulsar/%s) is still in running state, adding to the Pulsar queue" % (job.id))
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put(job_state)

@@ -127,12 +127,12 @@ def inherit(context):
         });
     </script>
 
-    <div id="registrationForm" class="toolForm">
+    <div id="registrationForm" class="card">
         ## only display the prepopulate form to admins
         %if show_user_prepopulate_form:
             <form name="registration" id="prepopulateform" action="${form_action}" method="post" >
                 <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
-                <div class="toolFormTitle">Pre-populate an account through LDAP</div>
+                <div class="card-header">Pre-populate an account through LDAP</div>
                 <div class="form-row">
                     <label>Email address:</label>
                     <input id="email_input" type="text" name="email" value="${email | h}" size="40"/>
@@ -154,7 +154,7 @@ def inherit(context):
         %endif
         <form name="registration" id="registration" action="${form_action}" method="post" >
             <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
-            <div class="toolFormTitle">Create account</div>
+            <div class="card-header">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>
                 <input id="email_input" type="text" name="email" value="${email | h}" size="40"/>

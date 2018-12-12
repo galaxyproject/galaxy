@@ -200,7 +200,6 @@ def cached_id(galaxy_model_object):
 
 
 class JobLike(object):
-
     MAX_NUMERIC = 10**(JOB_METRIC_PRECISION - JOB_METRIC_SCALE) - 1
 
     def _init_metrics(self):
@@ -700,10 +699,6 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         # This is defined in the SQL Alchemy mapper as a relation to the User.
         return self.user
 
-    def get_id(self):
-        # This is defined in the SQL Alchemy's Job table (and not in the model).
-        return self.id
-
     def get_tasks(self):
         # The tasks member is pert of a reference in the SQL Alchemy schema:
         return self.tasks
@@ -984,16 +979,12 @@ class Task(JobLike, RepresentById):
         param_dict = tool.params_from_strings(param_dict, app)
         return param_dict
 
-    def get_id(self):
-        # This is defined in the SQL Alchemy schema:
-        return self.id
-
     def get_id_tag(self):
         """
         Return an id tag suitable for identifying the task.
         This combines the task's job id and the task's own id.
         """
-        return "%s_%s" % (self.job.get_id(), self.get_id())
+        return "%s_%s" % (self.job.id, self.id)
 
     def get_command_line(self):
         return self.command_line
@@ -3941,6 +3932,13 @@ class StoredWorkflow(HasTags, Dictifiable, RepresentById):
             raise Exception("Version does not exist")
         return list(reversed(self.workflows))[version]
 
+    def show_in_tool_panel(self, user_id):
+        sa_session = object_session(self)
+        return bool(sa_session.query(StoredWorkflowMenuEntry).filter(
+            StoredWorkflowMenuEntry.stored_workflow_id == self.id,
+            StoredWorkflowMenuEntry.user_id == user_id,
+        ).count())
+
     def copy_tags_from(self, target_user, source_workflow):
         # Override to only copy owner tags.
         for src_swta in source_workflow.owner_tags:
@@ -4071,12 +4069,44 @@ class WorkflowStep(RepresentById):
         self.tool_inputs = None
         self.tool_errors = None
         self.position = None
-        self.input_connections = []
+        self.inputs = []
         self.config = None
         self.label = None
         self.uuid = uuid4()
         self.workflow_outputs = []
         self._input_connections_by_name = None
+
+    def get_input(self, input_name):
+        for step_input in self.inputs:
+            if step_input.name == input_name:
+                return step_input
+
+        return None
+
+    def get_or_add_input(self, input_name):
+        step_input = self.get_input(input_name)
+
+        if step_input is None:
+            step_input = WorkflowStepInput(self)
+            step_input.name = input_name
+        return step_input
+
+    def add_connection(self, input_name, output_name, output_step, input_subworkflow_step_index=None):
+        step_input = self.get_or_add_input(input_name)
+
+        conn = WorkflowStepConnection()
+        conn.input_step_input = step_input
+        conn.output_name = output_name
+        conn.output_step = output_step
+        if input_subworkflow_step_index is not None:
+            input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
+            conn.input_subworkflow_step = input_subworkflow_step
+        return conn
+
+    @property
+    def input_connections(self):
+        connections = [_ for step_input in self.inputs for _ in step_input.connections]
+        return connections
 
     @property
     def unique_workflow_outputs(self):
@@ -4151,7 +4181,7 @@ class WorkflowStep(RepresentById):
         copied_step.position = self.position
         copied_step.config = self.config
         copied_step.label = self.label
-        copied_step.input_connections = copy_list(self.input_connections)
+        copied_step.inputs = copy_list(self.inputs, copied_step)
 
         subworkflow_step_mapping = {}
         subworkflow = self.subworkflow
@@ -4162,8 +4192,7 @@ class WorkflowStep(RepresentById):
                 subworkflow_step_mapping[subworkflow_step.id] = copied_subworkflow_step
 
         for old_conn, new_conn in zip(self.input_connections, copied_step.input_connections):
-            # new_conn.input_step = new_
-            new_conn.input_step = step_mapping[old_conn.input_step_id]
+            new_conn.input_step_input = copied_step.get_or_add_input(old_conn.input_name)
             new_conn.output_step = step_mapping[old_conn.output_step_id]
             if old_conn.input_subworkflow_step_id:
                 new_conn.input_subworkflow_step = subworkflow_step_mapping[old_conn.input_subworkflow_step_id]
@@ -4178,6 +4207,30 @@ class WorkflowStep(RepresentById):
         return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
 
 
+class WorkflowStepInput(RepresentById):
+    default_merge_type = None
+    default_scatter_type = None
+
+    def __init__(self, workflow_step):
+        self.workflow_step = workflow_step
+        self.name = None
+        self.default_value = None
+        self.default_value_set = False
+        self.merge_type = self.default_merge_type
+        self.scatter_type = self.default_scatter_type
+
+    def copy(self, copied_step):
+        copied_step_input = WorkflowStepInput(copied_step)
+        copied_step_input.name = self.name
+        copied_step_input.default_value = self.default_value
+        copied_step_input.default_value_set = self.default_value_set
+        copied_step_input.merge_type = self.merge_type
+        copied_step_input.scatter_type = self.scatter_type
+
+        copied_step_input.connections = copy_list(self.connections)
+        return copied_step_input
+
+
 class WorkflowStepConnection(RepresentById):
     # Constant used in lieu of output_name and input_name to indicate an
     # implicit connection between two steps that is not dependent on a dataset
@@ -4189,18 +4242,29 @@ class WorkflowStepConnection(RepresentById):
     def __init__(self):
         self.output_step_id = None
         self.output_name = None
-        self.input_step_id = None
-        self.input_name = None
+        self.input_step_input_id = None
 
     @property
     def non_data_connection(self):
         return (self.output_name == self.input_name == WorkflowStepConnection.NON_DATA_CONNECTION)
 
+    @property
+    def input_name(self):
+        return self.input_step_input.name
+
+    @property
+    def input_step(self):
+        return self.input_step_input and self.input_step_input.workflow_step
+
+    @property
+    def input_step_id(self):
+        input_step = self.input_step
+        return input_step and input_step.id
+
     def copy(self):
         # TODO: handle subworkflow ids...
         copied_connection = WorkflowStepConnection()
         copied_connection.output_name = self.output_name
-        copied_connection.input_name = self.input_name
         return copied_connection
 
 
