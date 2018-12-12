@@ -20,6 +20,7 @@ from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
 import six
+from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
 import galaxy
 from galaxy import model, util
@@ -809,6 +810,10 @@ class JobWrapper(HasResourceParameters):
         return param_dict
 
     def get_version_string_path(self):
+        return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
+
+    # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
+    def get_version_string_path_legacy(self):
         return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
 
     def __prepare_upload_paramfile(self, tool_evaluator):
@@ -1250,6 +1255,9 @@ class JobWrapper(HasResourceParameters):
 
         if self.tool.version_string_cmd:
             version_filename = self.get_version_string_path()
+            # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
+            if not os.path.exists(version_filename):
+                version_filename = self.get_version_string_path_legacy()
             if os.path.exists(version_filename):
                 self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
