@@ -1,42 +1,40 @@
 <template>
     <div>
-        <div v-if="errorVisible" class="alert alert-danger">
-            {{ errorMessage }}
+        <div v-if="messageVisible" :class="messageClass">
+            {{ messageText }}
         </div>
         <div v-if="applicationsVisible" class="card-header">
             There are currently {{ applicationsLength }}
-            <a class="icon-btn" href="" title="Reload all display applications" data-placement="bottom">
+            <a class="icon-btn" @click.prevent="reloadAll()" title="Reload all display applications" data-placement="bottom">
                 <span class="fa fa-refresh"/>
             </a>
             display applications loaded.
         </div>
-        <table class="table table-striped">
+        <table v-if="applicationsVisible" class="table table-striped">
             <thead>
                 <tr>
                     <th>Reload</th>
                     <th>Name</th>
-                    <th>ID</th>
+                    <th>Identifier</th>
                     <th>Version</th>
                     <th>Links</th>
-                    <th>Filename</th>
                 </tr>
             </thead>
             <tbody>
-                <tr v-for="display_app in applications">
+                <tr v-for="app in applications">
                     <td>
-                        <a class="icon-btn" href="" title="Reload display application" data-placement="bottom">
+                        <a class="icon-btn" href="" title="Reload display application" data-placement="bottom" @click.prevent="reload(app.id)">
                             <span class="fa fa-refresh"/>
                         </a>
                     </td>
-                    <td>{{ display_app.name }}</td>
-                    <td>{{ display_app.id }}</td>
-                    <td>{{ display_app.version }}</td>
+                    <td>{{ app.name }}</td>
+                    <td>{{ app.id }}</td>
+                    <td>{{ app.version }}</td>
                     <td>
                         <ul>
-                            <li v-for="link in display_app.links">{{  link.name }}</li>
+                            <li v-for="link in app.links">{{ link.name }}</li>
                         </ul>
                     </td>
-                    <td>{{ display_app._filename }}</td>
                 </tr>
             </tbody>
         </table>
@@ -47,11 +45,15 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 
+const errorMessageClass = "alert alert-danger";
+const successMessageClass = "alert alert-info";
+
 export default {
     data() {
         return {
             applications: [],
-            errorMessage: null
+            messageText: null,
+            messageClass: null
         };
     },
     computed: {
@@ -61,8 +63,8 @@ export default {
         applicationsLength: function() {
             return this.applications.length;
         },
-        errorVisible: function() {
-            return this.error != null;
+        messageVisible: function() {
+            return this.messageText != null;
         }
     },
     created() {
@@ -74,17 +76,36 @@ export default {
                 this.applications = response.data;
             })
             .catch(e => {
-                this.errorMessage = this._errorMessage(e);
+                this._errorMessage(e);
             });
     },
     methods: {
-        reload: function() {
+        reload: function(id) {
+            this._reload([id]);
         },
         reloadAll: function() {
+            let ids = [];
+            for (let app of this.applications) {
+                ids.push(app.id);
+            }
+            this._reload(ids);
+        },
+        _reload: function(ids) {
+            let url = `${getAppRoot()}api/display_applications/reload`;
+            axios
+                .post(url, {ids: ids})
+                .then(response => {
+                    this.messageText = response && response.data && response.data.message;
+                    this.messageClass = successMessageClass;
+                })
+                .catch(e => {
+                    this._errorMessage(e);
+                });
         },
         _errorMessage: function(e) {
             let message = e && e.response && e.response.data && e.response.data.err_msg;
-            return message || "Request failed for an unknown reason.";
+            this.messageText = message || "Request failed for an unknown reason.";
+            this.messageClass = errorMessageClass;
         }
     }
 };
