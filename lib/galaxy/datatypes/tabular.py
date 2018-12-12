@@ -1982,12 +1982,16 @@ class Psl(Tabular):
         if count > 0:
             return True
 
+
+@build_sniff_from_prefix
 class GSuite(Tabular):
+    edam_format = "format_3775"
+    file_ext = "gsuite"
+
     MetadataElement(name="data_lines", default=0, desc="Number of data lines", readonly=True,
                     visible=False, optional=True, no_value=0)
     MetadataElement(name="header_lines", default=0, desc="Number of header lines",
                     readonly=False, optional=True, no_value=0)
-
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
                     visible=False, no_value=0)
     MetadataElement(name="column_types", default=[], desc="Column types",
@@ -1997,9 +2001,36 @@ class GSuite(Tabular):
     MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
                     visible=False, optional=True, no_value=[])
 
+    schemes = ['ftp', 'http', 'https', 'rsync', 'file', 'galaxy', 'hb']
 
     def sniff_prefix(self, file_prefix):
-        print "sniff"
+        hash_count_to_lines, num_data_lines, data_lines = GSuite._parse_file(file_prefix.string_io(),
+                                                                           True)
+        column_line = None
+        if hash_count_to_lines[3]:
+            column_line = hash_count_to_lines[3][0].lower()
+
+        if not column_line:
+            #assuming only one column
+            cols_num = 1
+        else:
+            cols = column_line.split('\t')
+            if cols[0] != 'uri':
+                return False
+            cols_num = len(cols)
+
+        for line in data_lines[:-1]:
+            line_cols = line.split('\t')
+            if len(line_cols) != cols_num:
+                return False
+            from urlparse import urlparse
+            parsed_url = urlparse(line_cols[0])
+            if parsed_url.scheme not in self.schemes:
+                return False
+            if not parsed_url.netloc and parsed_url.scheme not in ('file', 'hb', 'galaxy'):
+                return False
+
+        return True
 
     def set_meta(self, dataset, **kwd):
         with open(dataset.file_name) as input_file:
@@ -2012,13 +2043,12 @@ class GSuite(Tabular):
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            dataset.blurb = 'GTrack file contains: {} comment lines, ' \
+            dataset.blurb = 'GSuite file contains: {} comment lines, ' \
                             '{} header lines (incl. colspec), ' \
-                            '{} bounding regions, and {} data lines ' \
+                            '{} data lines ' \
                             'of {} columns'.format(
                 dataset.metadata.comment_lines,
                 dataset.metadata.header_lines,
-                #dataset.metadata.bounding_regions,
                 dataset.metadata.data_lines,
                 dataset.metadata.columns
             )
@@ -2032,7 +2062,6 @@ class GSuite(Tabular):
         dataset.metadata.comment_lines = len(hash_count_to_lines[1])
         dataset.metadata.data_lines = num_data_lines
         dataset.metadata.header_lines = sum(len(hash_count_to_lines[i]) for i in (2, 3))
-        dataset.metadata.bounding_regions = len(hash_count_to_lines[4])
 
     def _set_meta_for_column_line(self, dataset, column_line):
         cols = column_line.lower().split('\t')
@@ -2043,8 +2072,11 @@ class GSuite(Tabular):
         col_types = ['string' for i in range(len(cols))]
         dataset.metadata.column_types = col_types
 
+    def get_mime(self):
+        return 'text/plain'
 
-    def _parse_file(self, input_file, include_data = False):
+    @staticmethod
+    def _parse_file(input_file, include_data = False):
         from collections import defaultdict
         hash_count_to_lines = defaultdict(list)
         num_data_lines = 0

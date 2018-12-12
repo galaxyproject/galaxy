@@ -1643,9 +1643,8 @@ class GTrack(Interval):
                     visible=False, optional=True, no_value=0)
     MetadataElement(name="header_lines", default=0, desc="Number of header lines",
                     readonly=False, optional=True, no_value=0)
-    # MetadataElement(name="bounding_regions", default=0, desc="Number of bounding regions",
-    #                 readonly=False, optional=True, no_value=0)
-
+    MetadataElement(name="bounding_regions", default=0, desc="Number of bounding regions",
+                    readonly=False, optional=True, no_value=0)
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True,
                     visible=False, no_value=0)
     MetadataElement(name="column_types", default=[], desc="Column types",
@@ -1654,7 +1653,6 @@ class GTrack(Interval):
                     visible=False, optional=True, no_value=[])
     MetadataElement(name="delimiter", default='\t', desc="Data delimiter", readonly=True,
                     visible=False, optional=True, no_value=[])
-
     MetadataElement(name="chromCol", default=1, desc="Sequence id (chrom) column",
                     param=metadata.ColumnParameter)
     MetadataElement(name="startCol", default=2, desc="Start column",
@@ -1813,7 +1811,7 @@ class GTrack(Interval):
                             'of {} columns'.format(
                 dataset.metadata.comment_lines,
                 dataset.metadata.header_lines,
-                #dataset.metadata.bounding_regions,
+                dataset.metadata.bounding_regions,
                 dataset.metadata.data_lines,
                 dataset.metadata.columns
             )
