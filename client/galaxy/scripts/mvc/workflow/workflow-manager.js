@@ -95,7 +95,7 @@ class Workflow {
             if (node.type === "tool" && node.workflow_outputs && node.workflow_outputs.length > 0) {
                 using_workflow_outputs = true;
             }
-            $.each(node.post_job_actions, (pja_using_workflow_outputsid, pja) => {
+            $.each(node.post_job_actions, (pja_id, pja) => {
                 if (pja.action_type === "HideDatasetAction") {
                     has_existing_pjas = true;
                 }
