@@ -140,6 +140,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.default_handler_id = None
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
+        self.handler_max_grab = 1
         self.destinations = {}
         self.destination_tags = {}
         self.default_destination_id = None

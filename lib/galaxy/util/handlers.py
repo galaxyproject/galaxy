@@ -20,7 +20,9 @@ from ..exceptions import HandlerAssignmentError
 
 log = logging.getLogger(__name__)
 
-_handler_assignment_methods = ('MEM_SELF', 'DB_SELF', 'DB_PREASSIGN', 'UWSGI_MULE_MESSAGE')
+_handler_assignment_methods = (
+    'MEM_SELF', 'DB_SELF', 'DB_PREASSIGN', 'DB_TRANSACTION_ISOLATION', 'DB_SKIP_LOCKED', 'UWSGI_MULE_MESSAGE'
+)
 HANDLER_ASSIGNMENT_METHODS = namedtuple('JOB_HANDLER_ASSIGNMENT_METHODS', _handler_assignment_methods)(
     *[x.lower().replace('_', '-') for x in _handler_assignment_methods]
 )
@@ -71,6 +73,8 @@ class ConfiguresHandlers(object):
             HANDLER_ASSIGNMENT_METHODS.MEM_SELF: self._assign_mem_self_handler,
             HANDLER_ASSIGNMENT_METHODS.DB_SELF: self._assign_db_self_handler,
             HANDLER_ASSIGNMENT_METHODS.DB_PREASSIGN: self._assign_db_preassign_handler,
+            HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION: self._assign_db_tag,
+            HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED: self._assign_db_tag,
             HANDLER_ASSIGNMENT_METHODS.UWSGI_MULE_MESSAGE: self._assign_uwsgi_mule_message_handler,
         }
         if config_element is not None:
@@ -86,6 +90,7 @@ class ConfiguresHandlers(object):
                     self.handler_assignment_methods = [method]
             if self.handler_assignment_methods == [HANDLER_ASSIGNMENT_METHODS.MEM_SELF]:
                 self.app.config.track_jobs_in_database = False
+            self.handler_max_grab = int(config_element.attrib.get('max_grab', self.handler_max_grab))
 
     def _set_default_handler_assignment_methods(self):
         if not self.handler_assignment_methods_configured:
@@ -214,14 +219,13 @@ class ConfiguresHandlers(object):
         else:
             return collection[index % len(collection)]
 
+    @property
     def handler_tags(self):
-        rval = []
-        for tag, handlers in self.handlers.items():
-            for handler in handlers:
-                if self.app.config.server_name == handler and tag != self.app.config.server_name:
-                    rval.append(tag)
-                    break
-        return rval
+        return filter(lambda k: isinstance(self.handlers[k], list), self.handlers.keys())
+
+    @property
+    def self_handler_tags(self):
+        return filter(lambda k: self.app.config.server_name in self.handlers[k], self.handler_tags)
 
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class
 
@@ -319,6 +323,23 @@ class ConfiguresHandlers(object):
         obj.set_handler(handler_id)
         _timed_flush_obj(obj)
         return handler_id
+
+    def _assign_db_tag(self, obj, method, configured, **kwargs):
+        """Assign object to a handler by setting its ``handler`` column in the database to either the configured handler
+        ID or tag, or to the default tag (or ``_default_``)
+
+        :param obj:             Same as :method:`ConfiguresHandlers.assign_handler()`.
+        :param method:          Same as :method:`ConfiguresHandlers._assign_db_preassign_handler()`.
+        :param configured:      Same as :method:`ConfiguresHandlers.assign_handler()`.
+
+        :returns: str -- The assigned handler pool.
+        """
+        handler = configured
+        if handler is None:
+            handler = self.default_handler_id or self.DEFAULT_HANDLER_TAG
+        obj.set_handler(handler)
+        _timed_flush_obj(obj)
+        return handler
 
     def _assign_uwsgi_mule_message_handler(self, obj, method, configured, message_callback=None, **kwargs):
         """Assign object to a handler by sending a setup message to the appropriate handler pool (farm), where a handler

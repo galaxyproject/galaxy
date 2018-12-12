@@ -30,6 +30,7 @@ from galaxy.jobs import (
     TaskWrapper
 )
 from galaxy.jobs.mapper import JobNotReadyException
+from galaxy.util.handlers import HANDLER_ASSIGNMENT_METHODS
 from galaxy.util.logging import get_logger
 from galaxy.util.monitors import Monitors
 from galaxy.web.stack.message import JobHandlerMessage
@@ -45,13 +46,13 @@ DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration o
 JOB_GRAB_SQL = """
    UPDATE job
       SET handler = %(handler)s
-    WHERE id = (
+    WHERE id IN (
                 SELECT id
                   FROM job
                  WHERE handler IN %(tags)s
                        AND state = 'new'
               ORDER BY id
-                  %(for_update)s
+                  {for_update}
                  LIMIT %(maxgrab)s)
 RETURNING id
 """
@@ -80,32 +81,37 @@ class JobHandler(object):
 
 
 class JobGrabber(threading.Thread):
-    def __init__(self, server_name=None, url=None, handler_tags=None, mode=None, **kwargs):
+    def __init__(self, server_name=None, url=None, handler_tags=None, method=None, max_grab=None, **kwargs):
         super(JobGrabber, self).__init__(**kwargs)
-        log.debug('Handler job grabber initializing for handler %s, tags: %s', server_name,
-                  ', '.join([str(x) for x in handler_tags]))
+        log.info(
+            'Handler job grabber initializing for handler %s, tags: %s', server_name,
+            ', '.join([str(x) for x in handler_tags])
+        )
         self.server_name = server_name
         self.handler_tags = handler_tags
         self.url = url
-        self.mode = mode
-        if mode == 'db-skip-locked':
+        self.method = method
+        self.max_grab = max_grab or 1
+        if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             self.isolation_level = 'READ_COMMITTED'
-            self.for_update = 'FOR UPDATE SKIP LOCKED'
-        else:
+            for_update = 'FOR UPDATE SKIP LOCKED'
+        elif method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self.isolation_level = 'SERIALIZABLE'
-            self.for_update = ''
+            for_update = ''
+        else:
+            raise RuntimeError("Unknown handler assignment method: %s", method)
+        self.sql = JOB_GRAB_SQL.format(for_update=for_update)
         self.stop = False
 
     def run(self):
-        log.trace('Handler job grabber loop starting')
+        log.info('Handler job grabber loop starting')
         args = {
             'handler': self.server_name,
             'tags': tuple(self.handler_tags) or (None,),  # FIXME: correct?
-            'maxgrab': 1,
-            'for_update': self.for_update,
+            'maxgrab': self.max_grab,
         }
-        log.trace('Grabber SQL is: %s', (JOB_GRAB_SQL % args))
-        self.engine = create_engine(self.url, isolation_level=self.isolation_level)
+        log.trace('Grabber SQL is: %s', (self.sql % args))
+        self.engine = create_engine(self.url, isolation_level=self.isolation_level, echo=True)
         self.conn = self.engine.connect()
         while not self.stop:
             self.__grab_until_none(args)
@@ -113,16 +119,15 @@ class JobGrabber(threading.Thread):
         log.info('Handler job grabber thread exiting')
 
     def __grab_until_none(self, args):
-        log.debug('######## __grab_until_none() entered')
+        #log.debug('######## __grab_until_none() entered')
         rows = True
         while rows:
             rows = False
             with self.conn.begin() as trans:
                 try:
-                    rows = self.conn.execute(JOB_GRAB_SQL, args).fetchall()
-                    for row in rows:
-                        log.debug('Grabbed job: %s', row[0])
+                    rows = self.conn.execute(self.sql, args).fetchall()
                     if rows:
+                        log.debug('Grabbed job(s): %s', ', '.join([str(row[0]) for row in rows]))
                         trans.commit()
                     else:
                         trans.rollback()
@@ -130,8 +135,7 @@ class JobGrabber(threading.Thread):
                     # FIXME: can you pick out just serialization failures?
                     log.trace('Grabbing job failed (serialization failures are ok): %s', str(e))
                     trans.rollback()
-            log.trace('######## rows is: %s', str(rows))
-        log.trace('######## __grab_until_none() return')
+        #log.trace('######## __grab_until_none() return')
 
     def shutdown(self):
         self.stop = True
@@ -169,14 +173,21 @@ class JobHandlerQueue(Monitors):
         self.__initialize_job_grabber()
 
     def __initialize_job_grabber(self):
-        if self.app.config.job_handler_assignment_method in ('db-transaction-isolation', 'db-skip-locked'):
+        grabber_methods = set([
+            HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
+            HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
+        ])
+        grab_methods = filter(lambda x: x in grabber_methods, self.app.job_config.handler_assignment_methods)
+        if list(grab_methods):
             name = "JobHandlerQueue.job_grabber_thread"
             self._grabber = JobGrabber(
                 name=name,
                 url=get_database_url(self.app.config),
                 server_name=self.app.config.server_name,
-                handler_tags=self.app.job_config.handler_tags(),
-                mode=self.app.config.job_handler_assignment_method)
+                handler_tags=self.app.job_config.self_handler_tags,
+                method=grab_methods[0],
+                max_grab=self.app.job_config.handler_max_grab,
+            )
             self._grabber.daemon = True
         else:
             self._grabber = None

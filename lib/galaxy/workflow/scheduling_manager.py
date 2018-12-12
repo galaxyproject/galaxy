@@ -45,6 +45,7 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         self.handlers = {}
         self.handler_assignment_methods_configured = False
         self.handler_assignment_methods = None
+        self.handler_max_grab = 1
         self.default_handler_id = None
 
         self.__plugin_classes = self.__plugins_dict()

@@ -612,13 +612,6 @@ class Configuration(object):
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
 
         # Store advanced job management config
-        _valid_job_handler_assignment_methods = ('uwsgi', 'random', 'db-random', 'db-transaction-isolation', 'db-skip-locked')
-        self.job_handler_assignment_method = kwargs.get('job_handler_assignment_method', None)
-        if self.job_handler_assignment_method is not None:
-            self.job_handler_assignment_method = self.job_handler_assignment_method.lower()
-            assert self.job_handler_assignment_method in _valid_job_handler_assignment_methods, \
-                "Invalid job handler assignment method '%s', must be one of: %s" % (
-                    self.job_handler_assignment_method, ', '.join(_valid_job_handler_assignment_methods))
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
         # Galaxy internal control queue configuration.
