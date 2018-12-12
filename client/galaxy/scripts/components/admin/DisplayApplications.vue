@@ -10,6 +10,36 @@
             </a>
             display applications loaded.
         </div>
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Reload</th>
+                    <th>Name</th>
+                    <th>ID</th>
+                    <th>Version</th>
+                    <th>Links</th>
+                    <th>Filename</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="display_app in applications">
+                    <td>
+                        <a class="icon-btn" href="" title="Reload display application" data-placement="bottom">
+                            <span class="fa fa-refresh"/>
+                        </a>
+                    </td>
+                    <td>{{ display_app.name }}</td>
+                    <td>{{ display_app.id }}</td>
+                    <td>{{ display_app.version }}</td>
+                    <td>
+                        <ul>
+                            <li v-for="link in display_app.links">{{  link.name }}</li>
+                        </ul>
+                    </td>
+                    <td>{{ display_app._filename }}</td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 </template>
 <script>
