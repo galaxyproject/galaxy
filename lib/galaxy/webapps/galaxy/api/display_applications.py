@@ -4,7 +4,6 @@ API operations on annotations.
 import logging
 
 from galaxy import queue_worker
-from galaxy.exceptions import MessageException
 from galaxy.web import expose_api
 from galaxy.web.base.controller import BaseAPIController
 
@@ -46,9 +45,9 @@ class DisplayApplicationsController(BaseAPIController):
         """
         ids = payload.get('ids')
         queue_worker.send_control_task(trans.app,
-                                        'reload_display_application',
-                                        noop_self=True,
-                                        kwargs={'display_application_ids': ids})
+            'reload_display_application',
+            noop_self=True,
+            kwargs={'display_application_ids': ids})
         reloaded, failed = trans.app.datatypes_registry.reload_display_applications(ids)
         if not reloaded and failed:
             message = 'Unable to reload any of the %i requested display applications ("%s").' % (len(failed), '", "'.join(failed))
@@ -59,4 +58,3 @@ class DisplayApplicationsController(BaseAPIController):
         else:
             message = 'Reloaded %i requested display applications ("%s").' % (len(reloaded), '", "'.join(reloaded))
         return {'message': message, 'reloaded': reloaded, 'failed': failed}
-
