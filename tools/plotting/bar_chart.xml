@@ -1,9 +1,13 @@
 <tool id="barchart_gnuplot" name="Bar chart" version="1.0.0">
   <description>for multiple columns</description>
-  <command interpreter="python">
-    #if $xtic.userSpecified == "Yes" #bar_chart.py $input $xtic.xticColumn $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
-    #else                            #bar_chart.py $input 0 $colList "$title" "$ylabel" $ymin $ymax $out_file1 "$pdf_size"
-    #end if
+  <command>
+python '$__tool_directory__/bar_chart.py' '$input'
+#if $xtic.userSpecified == "Yes"
+    $xtic.xticColumn
+#else
+    0
+#end if
+$colList '$title' '$ylabel' $ymin $ymax '$out_file1' '$pdf_size'
   </command>
   <inputs>
     <param name="input" type="data" format="tabular" label="Dataset" help="Dataset missing? See TIP below"/>
@@ -18,11 +22,11 @@
         <when value="No">
         </when>
     </conditional>
-    <param name="colList" label="Numerical columns" type="data_column" numerical="True" multiple="True" data_ref="input" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
-    <param name="title" type="text" size="30" value="Bar Chart" label="Plot title"/>
-    <param name="ylabel" type="text" size="30" value="V1" label="Label for Y axis"/>
-    <param name="ymin" type="integer" size="4" value="0" label="Minimal value on Y axis" help="set to 0 for autoscaling"/>
-    <param name="ymax" type="integer" size="4" value="0" label="Maximal value on Y axis" help="set to 0 for autoscaling"/>
+    <param name="colList" type="data_column" numerical="true" multiple="true" data_ref="input" label="Numerical columns" help="Multi-select list - hold the appropriate key while clicking to select multiple columns" />
+    <param name="title" type="text" value="Bar Chart" label="Plot title"/>
+    <param name="ylabel" type="text" value="V1" label="Label for Y axis"/>
+    <param name="ymin" type="integer" value="0" label="Minimal value on Y axis" help="set to 0 for autoscaling"/>
+    <param name="ymax" type="integer" value="0" label="Maximal value on Y axis" help="set to 0 for autoscaling"/>
     <param name="pdf_size" type="select" label="Choose chart size (pixels)">
         <option value="800,600">Normal: 800 by 600</option>
         <option value="640,480">Small: 640 by 480</option>
@@ -33,7 +37,7 @@
     </param>
   </inputs>
   <outputs>
-    <data format="png" name="out_file1" />
+    <data name="out_file1" format="png" />
   </outputs>
   <requirements>
     <requirement type="package">gnuplot-py</requirement>
@@ -53,5 +57,5 @@ Graphing columns 2 and 3 while using column 1 for X Tick Labels will produce the
 .. image:: ${static_path}/images/bar_chart.png
    :height: 324
    :width: 540
-</help>
+  </help>
 </tool>

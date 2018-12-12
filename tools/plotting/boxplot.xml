@@ -6,10 +6,10 @@
   </requirements>
   <inputs>
     <param name="input_file" type="data" format="tabular" label="Quality Statistics File"/>
-    <param name="title" type="text" value="Box plot in Galaxy" label="Title for plot" size="50"/>
+    <param name="title" type="text" value="Box plot in Galaxy" label="Title for plot" />
     <param name="graph_size" type="text" value="2048,768" label="Dimensions of Graph"/>
-    <param name="xlabel" type="text" value="X Axis Label" label="X axis label" size="50"/>
-    <param name="ylabel" type="text" value="Score Value" label="Y axis label" size="50"/>
+    <param name="xlabel" type="text" value="X Axis Label" label="X axis label" />
+    <param name="ylabel" type="text" value="Score Value" label="Y axis label" />
     <param name="xcol" type="data_column" data_ref="input_file" label="Column for X axis position" default_value="1" help="A unique number; c1 if plotting output of FASTQ summary"/>
     <param name="q1col" type="data_column" data_ref="input_file" label="Column for Q1" default_value="7" help="c7 if plotting output of FASTQ summary"/>
     <param name="medcol" type="data_column" data_ref="input_file" label="Column for Median" default_value="8" help="c8 if plotting output of FASTQ summary"/>
