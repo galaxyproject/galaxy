@@ -1,9 +1,15 @@
 <template>
     <div>
-        <div v-if="error" class="alert alert-danger">
-            {{ error }}
+        <div v-if="errorVisible" class="alert alert-danger">
+            {{ errorMessage }}
         </div>
-        <div>Display Applications</div>
+        <div v-if="applicationsVisible" class="card-header">
+            There are currently {{ applicationsLength }}
+            <a class="icon-btn" href="" title="Reload all display applications" data-placement="bottom">
+                <span class="fa fa-refresh"/>
+            </a>
+            display applications loaded.
+        </div>
     </div>
 </template>
 <script>
@@ -15,8 +21,19 @@ export default {
     data() {
         return {
             applications: [],
-            error: null
+            errorMessage: null
         };
+    },
+    computed: {
+        applicationsVisible: function() {
+            return this.applications.length > 0;
+        },
+        applicationsLength: function() {
+            return this.applications.length;
+        },
+        errorVisible: function() {
+            return this.error != null;
+        }
     },
     created() {
         let Galaxy = getGalaxyInstance();
@@ -27,7 +44,7 @@ export default {
                 this.applications = response.data;
             })
             .catch(e => {
-                this.error = this._errorMessage(e);
+                this.errorMessage = this._errorMessage(e);
             });
     },
     methods: {

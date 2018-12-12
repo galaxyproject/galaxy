@@ -113,15 +113,18 @@ window.app = function app(options, bootstrapped) {
                 })
             );
         },
+
         _display_vue_helper: function(component, props) {
             let instance = Vue.extend(component);
             let vm = document.createElement("div");
             this.page.display(vm);
             new instance(props).$mount(vm);
         },
+
         show_data_tables: function() {
             this._display_vue_helper(DataTables);
         },
+
         show_data_types: function() {
             this._display_vue_helper(DataTypes);
         },
