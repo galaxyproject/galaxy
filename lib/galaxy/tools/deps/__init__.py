@@ -13,11 +13,18 @@ from galaxy.util import (
     plugin_config
 )
 from galaxy.util.oset import OrderedSet
+
+from .container_resolvers import ContainerResolver
+from .containers import ToolInfo
 from .requirements import (
+    ContainerDescription,
     ToolRequirement,
     ToolRequirements
 )
-from .resolvers import NullDependency
+from .resolvers import (
+    ContainerDependency,
+    NullDependency,
+)
 from .resolvers.conda import CondaDependencyResolver
 from .resolvers.galaxy_packages import GalaxyPackageDependencyResolver
 from .resolvers.tool_shed_packages import ToolShedPackageDependencyResolver
@@ -133,6 +140,7 @@ class DependencyManager(object):
         return_null_dependencies = kwds.get('return_null', False)
 
         resolvable_requirements = requirements.resolvable
+        tool_info = ToolInfo(requirements=resolvable_requirements)
 
         for i, resolver in enumerate(self.dependency_resolvers):
             if index is not None and i != index:
@@ -142,12 +150,31 @@ class DependencyManager(object):
                 # Shortcut - resolution complete.
                 break
 
+            if resolver.resolver_type.startswith('build_mulled'):
+                # don't want to build images here
+                continue
+
             # Check requirements all at once
             all_unmet = len(requirement_to_dependency) == 0
-            if all_unmet and hasattr(resolver, "resolve_all"):
+            if hasattr(resolver, "resolve_all"):
+                resolve = resolver.resolve_all
+            elif isinstance(resolver, ContainerResolver):
+                if not resolver.resolver_type.startswith('Cached'):
+                    # These would look up available containers using the quay API,
+                    # we only want ot do this if we search for containers
+                    continue
+                resolve = resolver.resolve
+            else:
+                resolve = None
+            if all_unmet and resolve is not None:
                 # TODO: Handle specs.
-                dependencies = resolver.resolve_all(resolvable_requirements, **kwds)
+                dependencies = resolve(requirements=resolvable_requirements,
+                                       enabled_container_types=['docker', 'singularity'],
+                                       tool_info=tool_info,
+                                       **kwds)
                 if dependencies:
+                    if isinstance(dependencies, ContainerDescription):
+                        dependencies = [ContainerDependency(dependencies, name=r.name, version=r.version) for r in resolvable_requirements]
                     assert len(dependencies) == len(resolvable_requirements)
                     for requirement, dependency in zip(resolvable_requirements, dependencies):
                         log.debug(dependency.resolver_msg)
@@ -156,21 +183,23 @@ class DependencyManager(object):
                     # Shortcut - resolution complete.
                     break
 
-            # Check individual requirements
-            for requirement in resolvable_requirements:
-                if requirement in requirement_to_dependency:
-                    continue
+            if not isinstance(resolver, ContainerResolver):
 
-                dependency = resolver.resolve(requirement, **kwds)
-                if require_exact and not dependency.exact:
-                    continue
+                # Check individual requirements
+                for requirement in resolvable_requirements:
+                    if requirement in requirement_to_dependency:
+                        continue
 
-                if not isinstance(dependency, NullDependency):
-                    log.debug(dependency.resolver_msg)
-                    requirement_to_dependency[requirement] = dependency
-                elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
-                    log.debug(dependency.resolver_msg)
-                    requirement_to_dependency[requirement] = dependency
+                    dependency = resolver.resolve(requirement, **kwds)
+                    if require_exact and not dependency.exact:
+                        continue
+
+                    if not isinstance(dependency, NullDependency):
+                        log.debug(dependency.resolver_msg)
+                        requirement_to_dependency[requirement] = dependency
+                    elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
+                        log.debug(dependency.resolver_msg)
+                        requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
 
