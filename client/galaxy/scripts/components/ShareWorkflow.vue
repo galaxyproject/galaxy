@@ -7,7 +7,7 @@
         </div>
         <ul class="manage-table-actions">
             <li>
-                <a class="btn btn-secondary" type="button" title='Back to workflows list' :href="wfListUrl"> Back to workflows list</a>
+                <a class="btn btn-secondary" role="button" title='Back to workflows list' :href="wfListUrl"> Back to workflows list</a>
             </li>
         </ul>
         <hr>
@@ -21,7 +21,7 @@
                     <span id="item-url-text" style="display: none">
                         {{ lastButOneComp }}/<span id='item-identifier'>{{ lastComp }}</span>
                     </span>
-                    <a class="btn btn-secondary btn-sm" type="button" href="#" id="edit-identifier" title="Edit workflow url"><span class="fa fa-pencil"></span></a>
+                    <a class="btn btn-secondary btn-sm" role="button" href="#" id="edit-identifier" title="Edit workflow url"><span class="fa fa-pencil"></span></a>
                     <span id="save-hint" style="display: none"><i>hit ENTER to save</i></span>
                 </div>
                 <div>
@@ -34,15 +34,15 @@
                 <div>
                     <form>
                         <div v-if="!workflowItem.published">
-                            <button class="btn btn-secondary" type="button" name="disable_link_access" v-on:click="submit" title="Disable access to workflow link">Disable access
+                            <button class="btn btn-secondary" role="button" name="disable_link_access" v-on:click="submit" title="Disable access to workflow link">Disable access
                             </button>
-                            <button class="btn btn-secondary" type="button" name="publish" v-on:click="submit" title="Publish workflow and make it searchable">Publish workflow
+                            <button class="btn btn-secondary" role="button" name="publish" v-on:click="submit" title="Publish workflow and make it searchable">Publish workflow
                             </button>
                         </div>
                         <div v-else>
-                            <button class="btn btn-secondary" type="button" name="unpublish" v-on:click="submit" title="Unpublish workflow">Unpublish workflow
+                            <button class="btn btn-secondary" role="button" name="unpublish" v-on:click="submit" title="Unpublish workflow">Unpublish workflow
                             </button>
-                            <button class="btn btn-secondary" type="button" name="disable_link_access_and_unpublish" v-on:click="submit" title="Disable access to workflow via link and unpublish">Disable access
+                            <button class="btn btn-secondary" role="button" name="disable_link_access_and_unpublish" v-on:click="submit" title="Disable access to workflow via link and unpublish">Disable access
                             </button>
                         </div>
                     </form>
@@ -51,9 +51,9 @@
             <div v-else>
                 <p>This workflow is currently restricted so that only you and the users listed below can access it.</p>
                 <form>
-                    <button class="btn btn-secondary" type="button" name="make_accessible_via_link" v-on:click="submit" title="Make Workflow Accessible via Link"> Make Workflow Accessible via Link
+                    <button class="btn btn-secondary" role="button" name="make_accessible_via_link" v-on:click="submit" title="Make Workflow Accessible via Link"> Make Workflow Accessible via Link
                     </button>
-                    <button class="btn btn-secondary" type="button" name="make_accessible_and_publish" v-on:click="submit" title="Make Workflow Accessible and Publish"">Make Workflow Accessible and Publish
+                    <button class="btn btn-secondary" role="button" name="make_accessible_and_publish" v-on:click="submit" title="Make Workflow Accessible and Publish"">Make Workflow Accessible and Publish
                     </button>
                 </form>
             </div>
@@ -71,17 +71,17 @@
                                 {{item.user_email}}
                             </td>
                             <td>
-                                 <button class="btn btn-secondary btn-sm" type="button" v-on:click="unshareWorkflow(item.user_id)"
+                                 <button class="btn btn-secondary btn-sm" role="button" v-on:click="unshareWorkflow(item.user_id)"
                                  v-bind:title="'Stop sharing with ' + item.user_email">Remove
                                  </button>
                             </td>
                         </tr>
                     </table>
-                    <a class="btn btn-secondary" type="button" :href="shareWfUrl" title="Share the workflow with a different user">Share with another user</a>
+                    <a class="btn btn-secondary" role="button" :href="shareWfUrl" title="Share the workflow with a different user">Share with another user</a>
                 </div>
                 <div v-else>
                     <p>You have not shared this workflow with any users yet.</p>
-                    <a class="btn btn-secondary" type="button" :href="shareWfUrl">Share with a user</a>
+                    <a class="btn btn-secondary" role="button" :href="shareWfUrl">Share with a user</a>
                 </div>
             </div>
             <div v-if="workflowItem.importable" class="sharing-section">
@@ -130,8 +130,8 @@
                     This workflow must be accessible. Please use the option above to "Make Workflow Accessible and Publish" before receiving a URL for importing to another Galaxy.</a>
                 </div>
             </div>
-            <a class="btn btn-secondary" type="button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
-            <a class="btn btn-secondary" type="button" :href="createSVGUrl" title="Download image of workflow in SVG format">Download as image</a>
+            <a class="btn btn-secondary" role="button" :href="createUsernameSlugUrl()" title="Download workflow as a file so that it can be saved or imported into another Galaxy server">Download</a>
+            <a class="btn btn-secondary" role="button" :href="createSVGUrl" title="Download image of workflow in SVG format">Download as image</a>
             <div class="sharing-section">
                 <span>Export to the <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.</span>
                 <form :action="createMyExperimentUrl" method="POST">
