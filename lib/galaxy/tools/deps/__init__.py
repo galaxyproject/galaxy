@@ -13,7 +13,6 @@ from galaxy.util import (
     plugin_config
 )
 from galaxy.util.oset import OrderedSet
-
 from .container_resolvers import ContainerResolver
 from .containers import ToolInfo
 from .requirements import (
@@ -143,10 +142,13 @@ class DependencyManager(object):
         tool_info = ToolInfo(requirements=resolvable_requirements)
 
         for i, resolver in enumerate(self.dependency_resolvers):
+
+            _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
+
             if index is not None and i != index:
                 continue
 
-            if len(requirement_to_dependency) == len(resolvable_requirements):
+            if len(_requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
                 break
 
@@ -155,11 +157,11 @@ class DependencyManager(object):
                 continue
 
             # Check requirements all at once
-            all_unmet = len(requirement_to_dependency) == 0
+            all_unmet = len(_requirement_to_dependency) == 0
             if hasattr(resolver, "resolve_all"):
                 resolve = resolver.resolve_all
             elif isinstance(resolver, ContainerResolver):
-                if not resolver.resolver_type.startswith('Cached'):
+                if not resolver.resolver_type.startswith(('cached', 'explicit')):
                     # These would look up available containers using the quay API,
                     # we only want ot do this if we search for containers
                     continue
@@ -187,7 +189,7 @@ class DependencyManager(object):
 
                 # Check individual requirements
                 for requirement in resolvable_requirements:
-                    if requirement in requirement_to_dependency:
+                    if requirement in _requirement_to_dependency:
                         continue
 
                     dependency = resolver.resolve(requirement, **kwds)
@@ -197,8 +199,9 @@ class DependencyManager(object):
                     if not isinstance(dependency, NullDependency):
                         log.debug(dependency.resolver_msg)
                         requirement_to_dependency[requirement] = dependency
-                    elif return_null_dependencies and (resolver == self.dependency_resolvers[-1] or i == index):
+                    elif return_null_dependencies:
                         log.debug(dependency.resolver_msg)
+                        dependency.version = requirement.version
                         requirement_to_dependency[requirement] = dependency
 
         return requirement_to_dependency
