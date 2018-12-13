@@ -3,7 +3,7 @@
         <div v-if="messageVisible" :class="messageClass">
             {{ messageText }}
         </div>
-        <div v-if="!applicationsVisible" class="alert alert-warning">
+        <div v-if="!applicationsVisible && applicationsLoaded" class="alert alert-warning">
             No display applications available.
         </div>
         <div v-if="applicationsVisible" class="card-header">
@@ -37,6 +37,7 @@ export default {
     data() {
         return {
             applications: [],
+            applicationsLoaded: false,
             applicationsAttributes: [
                 { key: 'reload' },
                 { key: 'name', sortable: true },
@@ -80,6 +81,7 @@ export default {
             .get(url)
             .then(response => {
                 this.applications = response.data;
+                this.applicationsLoaded = true;
             })
             .catch(e => {
                 this._errorMessage(e);
