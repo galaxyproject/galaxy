@@ -40,7 +40,7 @@ var FrameView = Backbone.View.extend({
     render: function() {
         var self = this;
         var options = this.model.attributes;
-        this.$title.html(options.title || "");
+        this.$title.html(_.escape(options.title) || "");
         this.$header.find(".f-icon-left").remove();
         _.each(options.menu, option => {
             var $option = $("<div/>")
