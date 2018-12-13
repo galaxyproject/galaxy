@@ -75,7 +75,7 @@ class ContainerFinder(object):
         self.app_info = app_info
         self.container_registry = ContainerRegistry(app_info)
 
-    def __enabled_container_types(self, destination_info):
+    def _enabled_container_types(self, destination_info):
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
 
     def find_best_container_description(self, enabled_container_types, tool_info):
@@ -86,7 +86,7 @@ class ContainerFinder(object):
         return container_description
 
     def find_container(self, tool_info, destination_info, job_info):
-        enabled_container_types = self.__enabled_container_types(destination_info)
+        enabled_container_types = self._enabled_container_types(destination_info)
 
         # Short-cut everything else and just skip checks if no container type is enabled.
         if not enabled_container_types:
