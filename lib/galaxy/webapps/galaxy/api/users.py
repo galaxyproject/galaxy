@@ -97,14 +97,14 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         query = trans.sa_session.query(trans.app.model.User)
         deleted = util.string_as_bool(deleted)
 
-        if f_email and (trans.user_is_admin() or trans.app.config.expose_user_email):
+        if f_email and (trans.user_is_admin or trans.app.config.expose_user_email):
             query = query.filter(trans.app.model.User.email.like("%%%s%%" % f_email))
 
-        if f_name and (trans.user_is_admin() or trans.app.config.expose_user_name):
+        if f_name and (trans.user_is_admin or trans.app.config.expose_user_name):
             query = query.filter(trans.app.model.User.username.like("%%%s%%" % f_name))
 
         if f_any:
-            if trans.user_is_admin():
+            if trans.user_is_admin:
                 query = query.filter(or_(
                     trans.app.model.User.email.like("%%%s%%" % f_any),
                     trans.app.model.User.username.like("%%%s%%" % f_any)
@@ -123,21 +123,21 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         if deleted:
             query = query.filter(trans.app.model.User.table.c.deleted == true())
             # only admins can see deleted users
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 return []
         else:
             query = query.filter(trans.app.model.User.table.c.deleted == false())
             # special case: user can see only their own user
             # special case2: if the galaxy admin has specified that other user email/names are
             #   exposed, we don't want special case #1
-            if not trans.user_is_admin() and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
+            if not trans.user_is_admin and not trans.app.config.expose_user_name and not trans.app.config.expose_user_email:
                 item = trans.user.to_dict(value_mapper={'id': trans.security.encode_id})
                 return [item]
         for user in query:
             item = user.to_dict(value_mapper={'id': trans.security.encode_id})
             # If NOT configured to expose_email, do not expose email UNLESS the user is self, or
             # the user is an admin
-            if user is not trans.user and not trans.user_is_admin():
+            if user is not trans.user and not trans.user_is_admin:
                 expose_keys = ["id"]
                 if trans.app.config.expose_user_name:
                     expose_keys.append("username")
@@ -176,7 +176,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             else:
                 user = self.get_user(trans, id, deleted=deleted)
             # check that the user is requesting themselves (and they aren't del'd) unless admin
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 assert trans.user == user
                 assert not user.deleted
         except Exception:
@@ -189,11 +189,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         POST /api/users
         Creates a new Galaxy user.
         """
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             raise exceptions.ConfigDoesNotAllowException('User creation is not allowed in this Galaxy instance')
-        if trans.app.config.use_remote_user and trans.user_is_admin():
+        if trans.app.config.use_remote_user and trans.user_is_admin:
             user = trans.get_or_create_remote_user(remote_user_email=payload['remote_user_email'])
-        elif trans.user_is_admin():
+        elif trans.user_is_admin:
             username = payload['username']
             email = payload['email']
             password = payload['password']
@@ -568,13 +568,13 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         ''' Validate email and username using regex '''
         if email == '' or not isinstance(email, six.string_types):
             return 'Please provide your email address.'
-        if not re.match('^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
+        if not re.match(r'^(([^<>()[\]\.,;:\s@"]+(\.[^<>()[\]\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$', email):
             return 'Please provide your valid email address.'
         if len(email) > 255:
             return 'Email cannot be more than 255 characters in length.'
 
     def _validate_publicname(self, username):
-        if not re.match('^[a-z0-9\-]{3,255}$', username):
+        if not re.match(r'^[a-z0-9\-]{3,255}$', username):
             return 'Public name must contain only lowercase letters, numbers and "-". It also has to be shorter than 255 characters but longer than 2.'
 
     @expose_api
@@ -940,6 +940,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         user = self.get_user(trans, id)
         if not user:
             raise MessageException('Invalid user (%s).' % id)
-        if user != trans.user and not trans.user_is_admin():
+        if user != trans.user and not trans.user_is_admin:
             raise MessageException('Access denied.')
         return user

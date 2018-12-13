@@ -1,6 +1,10 @@
+import _ from "underscore";
+import Backbone from "backbone";
 import _l from "utils/localization";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
+import { getGalaxyInstance } from "app";
+
 /**
  * This view represents the top part of the library page.
  * It contains the tool bar with controls.
@@ -26,6 +30,7 @@ var LibraryToolbarView = Backbone.View.extend({
     },
 
     render: function() {
+        let Galaxy = getGalaxyInstance();
         var toolbar_template = this.templateToolBar();
         var is_admin = false;
         var is_anonym = true;
@@ -46,6 +51,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Renders the element that shows pages into its div within the toolbar.
      */
     renderPaginator: function(options) {
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         var paginator_template = this.templatePaginator();
         this.$el.find(".library-paginator").html(
@@ -66,6 +72,7 @@ var LibraryToolbarView = Backbone.View.extend({
     createLibraryFromModal: function(event) {
         event.preventDefault();
         event.stopPropagation();
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.modal = Galaxy.modal;
         this.modal.show({
@@ -87,6 +94,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Create the new library using the API asynchronously.
      */
     createNewLibrary: function() {
+        let Galaxy = getGalaxyInstance();
         var libraryDetails = this.serializeNewLibrary();
         if (this.validateNewLibrary(libraryDetails)) {
             var library = new mod_library_model.Library();
@@ -118,6 +126,7 @@ var LibraryToolbarView = Backbone.View.extend({
      */
     showPageSizePrompt: function(e) {
         e.preventDefault();
+        let Galaxy = getGalaxyInstance();
         var library_page_size = prompt(
             "How many libraries per page do you want to see?",
             Galaxy.libraries.preferences.get("library_page_size")
@@ -161,6 +170,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Include or exclude deleted libraries in the view.
      */
     includeDeletedChecked: function(event) {
+        let Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ with_deleted: true });
             Galaxy.libraries.libraryListView.fetchDeleted();
@@ -174,6 +184,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * Include or exclude restricted libraries in the view.
      */
     excludeRestrictedChecked: function(event) {
+        let Galaxy = getGalaxyInstance();
         if (event.target.checked) {
             Galaxy.libraries.preferences.set({ without_restricted: true });
         } else {
@@ -187,6 +198,7 @@ var LibraryToolbarView = Backbone.View.extend({
      * to query the collection of libraries.
      */
     searchLibraries: function(event) {
+        let Galaxy = getGalaxyInstance();
         var search_term = $(".library-search-input").val();
         this.options.search_term = search_term;
         Galaxy.libraries.libraryListView.searchLibraries(search_term);

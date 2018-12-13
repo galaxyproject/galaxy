@@ -1,15 +1,15 @@
-<tool id="qual_stats_boxplot" name="Boxplot" version="1.0.0">
+<tool id="qual_stats_boxplot" name="Boxplot" version="1.0.1">
   <description>of quality statistics</description>
   <command>gnuplot &lt; '$gnuplot_commands' 2&gt;&amp;1 || echo "Error running gnuplot." >&amp;2</command>
   <requirements>
-    <requirement type="package" version="4.6">gnuplot</requirement>
+    <requirement type="package" version="5.2.3">gnuplot</requirement>
   </requirements>
   <inputs>
     <param name="input_file" type="data" format="tabular" label="Quality Statistics File"/>
-    <param name="title" type="text" value="Box plot in Galaxy" label="Title for plot" size="50"/>
+    <param name="title" type="text" value="Box plot in Galaxy" label="Title for plot" />
     <param name="graph_size" type="text" value="2048,768" label="Dimensions of Graph"/>
-    <param name="xlabel" type="text" value="X Axis Label" label="X axis label" size="50"/>
-    <param name="ylabel" type="text" value="Score Value" label="Y axis label" size="50"/>
+    <param name="xlabel" type="text" value="X Axis Label" label="X axis label" />
+    <param name="ylabel" type="text" value="Score Value" label="Y axis label" />
     <param name="xcol" type="data_column" data_ref="input_file" label="Column for X axis position" default_value="1" help="A unique number; c1 if plotting output of FASTQ summary"/>
     <param name="q1col" type="data_column" data_ref="input_file" label="Column for Q1" default_value="7" help="c7 if plotting output of FASTQ summary"/>
     <param name="medcol" type="data_column" data_ref="input_file" label="Column for Median" default_value="8" help="c8 if plotting output of FASTQ summary"/>
@@ -44,7 +44,7 @@ set offsets 1, 1, 1, 1
 plot '${input_file}' using ${xcol}:${q1col}:${lwcol}:${rwcol}:${q3col} with candlesticks lt 1  lw 1 title 'Quartiles' whiskerbars, \
       ''         using ${xcol}:${medcol}:${medcol}:${medcol}:${medcol} with candlesticks lt -1 lw 2 title 'Medians'\
 #if str( $use_outliers['use_outliers_type'] ) == 'use_outliers':
-,      "&lt; python -c \"for xval, yvals in [ ( fields[${xcol} - 1], fields[${use_outliers['outliercol']} - 1].split( ',' ) ) for fields in [ line.rstrip( '\\n\\r' ).split( '\\t' ) for line in open( '${input_file}' ) if not line.startswith( '#' ) ] if len( fields ) &gt; max( ${xcol} - 1, ${use_outliers['outliercol']} - 1 ) ]: print '\\n'.join( [ '%s\\t%s' % ( xval, yval ) for yval in yvals if yval ] )\"" using 1:2 with points pt 29 title 'Outliers'
+,      "&lt; python -c \"for xval, yvals in [ ( fields[${xcol} - 1], fields[${use_outliers['outliercol']} - 1].split( ',' ) ) for fields in [ line.rstrip( '\\n\\r' ).split( '\\t' ) for line in open( '${input_file}' ) if not line.startswith( '#' ) ] if len( fields ) &gt; max( ${xcol} - 1, ${use_outliers['outliercol']} - 1 ) ]: print('\\n'.join( [ '%s\\t%s' % ( xval, yval ) for yval in yvals if yval ] ))\"" using 1:2 with points pt 29 title 'Outliers'
 #end if
     </configfile>
   </configfiles>
@@ -66,7 +66,7 @@ plot '${input_file}' using ${xcol}:${q1col}:${lwcol}:${rwcol}:${q3col} with cand
       <param name="rwcol" value="12" />
       <param name="use_outliers_type" value="use_outliers" />
       <param name="outliercol" value="13" />
-      <output name="output_file" file="boxplot_summary_statistics_out.png" />
+      <output name="output_file" file="boxplot_summary_statistics_out.png" compare="sim_size"/>
     </test>
   </tests>
   <help>

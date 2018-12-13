@@ -39,7 +39,7 @@ SINGULARITY_CONTAINER_TYPE = "singularity"
 DEFAULT_CONTAINER_TYPE = DOCKER_CONTAINER_TYPE
 ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 
-LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = '''
+LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r'''
 python << EOF
 from __future__ import print_function
 
@@ -57,7 +57,7 @@ cmd = "${images_cmd}"
 proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 stdo, stde = proc.communicate()
 found = False
-for line in stdo.split("\\n"):
+for line in stdo.split("\n"):
     tmp = re.split(r'\s+', line)
     if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
         found = True

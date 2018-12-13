@@ -7,6 +7,7 @@ import subprocess
 
 import six
 
+from galaxy.util import unicodify
 from ..container_resolvers import (
     ContainerResolver,
 )
@@ -54,7 +55,7 @@ CachedV2MulledImageMultiTarget.package_hash = _package_hash
 
 def list_docker_cached_mulled_images(namespace=None, hash_func="v2"):
     command = build_docker_images_command(truncate=True, sudo=False, to_str=False)
-    images_and_versions = six.text_type(subprocess.check_output(command)).strip().splitlines()
+    images_and_versions = unicodify(subprocess.check_output(command)).strip().splitlines()
     images_and_versions = [l.split()[0:2] for l in images_and_versions[1:]]
     name_filter = get_filter(namespace)
 
@@ -350,11 +351,11 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         self.hash_func = hash_func
         self._mulled_kwds = {
             'namespace': namespace,
-            'channels': self._get_config_option("channels", DEFAULT_CHANNELS, prefix="mulled"),
+            'channels': self._get_config_option("mulled_channels", DEFAULT_CHANNELS),
             'hash_func': self.hash_func,
             'command': 'build-and-test',
         }
-        self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
+        self.auto_init = self._get_config_option("involucro_auto_init", True)
 
     def resolve(self, enabled_container_types, tool_info):
         if tool_info.requires_galaxy_python_environment:
@@ -395,13 +396,13 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
         self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
         self.hash_func = hash_func
         self._mulled_kwds = {
-            'channels': self._get_config_option("channels", DEFAULT_CHANNELS, prefix="mulled"),
+            'channels': self._get_config_option("mulled_channels", DEFAULT_CHANNELS),
             'hash_func': self.hash_func,
             'command': 'build-and-test',
             'singularity': True,
             'singularity_image_dir': self.cache_directory,
         }
-        self.auto_init = self._get_config_option("auto_init", DEFAULT_CHANNELS, prefix="involucro")
+        self.auto_init = self._get_config_option("involucro_auto_init", True)
 
     def resolve(self, enabled_container_types, tool_info):
         if tool_info.requires_galaxy_python_environment:

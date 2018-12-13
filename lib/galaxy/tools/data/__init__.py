@@ -15,6 +15,7 @@ import string
 import time
 from glob import glob
 from tempfile import NamedTemporaryFile
+from xml.etree import ElementTree
 
 import requests
 
@@ -185,11 +186,12 @@ class ToolDataTableManager(object):
         # add new elems
         out_elems.extend(new_elems)
         out_path_is_new = not os.path.exists(full_path)
-        with RenamedTemporaryFile(full_path) as out:
-            out.write('<?xml version="1.0"?>\n<tables>\n')
-            for elem in out_elems:
-                out.write(util.xml_to_string(elem, pretty=True))
-            out.write('</tables>\n')
+
+        root = ElementTree.fromstring('<?xml version="1.0"?>\n<tables></tables>')
+        for elem in out_elems:
+            root.append(elem)
+        with RenamedTemporaryFile(full_path, mode='w') as out:
+            out.write(util.xml_to_string(root, pretty=True))
         os.chmod(full_path, 0o644)
         if out_path_is_new:
             self.tool_data_path_files.update_files()
@@ -622,13 +624,14 @@ class TabularToolDataTable(ToolDataTable, Dictifiable):
                 except IOError as e:
                     log.warning('Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s', filename, e)
                     data_table_fh = open(filename, 'wb')
-                if os.stat(filename)[6] != 0:
+                if os.stat(filename).st_size != 0:
                     # ensure last existing line ends with new line
                     data_table_fh.seek(-1, 2)  # last char in file
                     last_char = data_table_fh.read(1)
-                    if last_char not in ['\n', '\r']:
-                        data_table_fh.write('\n')
-                data_table_fh.write("%s\n" % (self.separator.join(fields)))
+                    if last_char not in [b'\n', b'\r']:
+                        data_table_fh.write(b'\n')
+                fields = "%s\n" % self.separator.join(fields)
+                data_table_fh.write(fields.encode('utf-8'))
         return not is_error
 
     def _remove_entry(self, values):

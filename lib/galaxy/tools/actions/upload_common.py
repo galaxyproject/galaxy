@@ -185,7 +185,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
 
 def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state=None):
     current_user_roles = trans.get_current_user_roles()
-    if not ((trans.user_is_admin() and cntrller in ['library_admin', 'api']) or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
+    if not ((trans.user_is_admin and cntrller in ['library_admin', 'api']) or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
         raise Exception("User is not authorized to add datasets to this library.")
     folder = library_bunch.folder

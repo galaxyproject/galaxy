@@ -1,6 +1,10 @@
 /** Generic form view */
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Form from "mvc/form/form-view";
 import Ui from "mvc/ui/ui-misc";
+
 var View = Backbone.View.extend({
     initialize: function(options) {
         this.model = new Backbone.Model(options);
@@ -16,7 +20,7 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         $.ajax({
-            url: Galaxy.root + this.url,
+            url: getAppRoot() + this.url,
             type: "GET"
         })
             .done(response => {
@@ -35,7 +39,7 @@ var View = Backbone.View.extend({
                             tooltip: options.submit_tooltip,
                             title: options.submit_title || "Save",
                             icon: options.submit_icon || "fa-save",
-                            cls: "btn btn-primary ui-clear-float",
+                            cls: "btn btn-primary",
                             onclick: function() {
                                 self._submit(form);
                             }
@@ -58,7 +62,7 @@ var View = Backbone.View.extend({
     _submit: function(form) {
         var self = this;
         $.ajax({
-            url: Galaxy.root + self.url,
+            url: getAppRoot() + self.url,
             data: JSON.stringify(form.data.create()),
             type: "PUT",
             contentType: "application/json"
@@ -75,7 +79,7 @@ var View = Backbone.View.extend({
                     };
                 }
                 if (self.redirect) {
-                    window.location = `${Galaxy.root + self.redirect}?${$.param(params)}`;
+                    window.location = `${getAppRoot() + self.redirect}?${$.param(params)}`;
                 } else {
                     form.data.matchModel(response, (input, input_id) => {
                         form.field_list[input_id].value(input.value);

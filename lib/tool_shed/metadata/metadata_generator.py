@@ -886,7 +886,7 @@ class MetadataGenerator(object):
                     # installation from proceeding.  Reaching here implies a bug in the Tool Shed
                     # framework.
                     error_message = 'Installation encountered an invalid repository dependency definition:\n'
-                    error_message += xml_util.xml_to_string(repository_elem, use_indent=True)
+                    error_message += util.xml_to_string(repository_elem, pretty=True)
                     log.error(error_message)
                     return repository_dependency_tup, False, error_message
         if not toolshed:

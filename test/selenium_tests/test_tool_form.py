@@ -179,6 +179,11 @@ class LoggedInToolFormTestCase(SeleniumTestCase):
         self.screenshot("tool_apply_rules_example_3_final")
 
     @selenium_test
+    def test_run_apply_rules_4(self):
+        self._apply_rules_and_check(rules_test_data.EXAMPLE_4)
+        self.screenshot("tool_apply_rules_example_4_final")
+
+    @selenium_test
     @managed_history
     def test_run_apply_rules_tutorial(self):
         self.home()

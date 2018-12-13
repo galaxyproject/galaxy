@@ -1,4 +1,6 @@
-import * as _ from "underscore";
+import $ from "jquery";
+import _ from "underscore";
+import { getGalaxyInstance } from "app";
 import HISTORY_VIEW from "mvc/history/history-view";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_LI_EDIT from "mvc/history/hda-li-edit";
@@ -12,10 +14,6 @@ import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";
-
-/* global Galaxy */
-/* global jQuery */
-/* global $ */
 
 /* =============================================================================
 TODO:
@@ -115,6 +113,8 @@ var HistoryViewEdit = _super.extend(
         // ------------------------------------------------------------------------ panel rendering
         /** In this override, add tag and annotation editors and a btn to toggle the selectors */
         _buildNewRender: function() {
+            var Galaxy = getGalaxyInstance();
+
             // create a new render using a skeleton template, render title buttons, render body, and set up events, etc.
             var $newRender = _super.prototype._buildNewRender.call(this);
             if (!this.model) {
@@ -204,6 +204,8 @@ var HistoryViewEdit = _super.extend(
          *  In this override, make the name editable
          */
         _setUpBehaviors: function($where) {
+            var Galaxy = getGalaxyInstance();
+
             $where = $where || this.$el;
             _super.prototype._setUpBehaviors.call(this, $where);
             if (!this.model) {

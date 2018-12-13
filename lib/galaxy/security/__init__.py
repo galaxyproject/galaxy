@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from sqlalchemy import and_, false, not_, or_
 from sqlalchemy.orm import eagerload_all
 
+import galaxy.model
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
 
@@ -253,8 +254,8 @@ class GalaxyRBACAgent(RBACAgent):
         else:
             is_public_item = False
         # Admins can always choose from all non-deleted roles
-        if trans.user_is_admin() or trans.app.config.expose_user_email:
-            if trans.user_is_admin():
+        if trans.user_is_admin or trans.app.config.expose_user_email:
+            if trans.user_is_admin:
                 db_query = trans.sa_session.query(trans.app.model.Role).filter(self.model.Role.table.c.deleted == false())
             else:
                 # User is not an admin but the configuration exposes all private roles to all users.
@@ -319,7 +320,7 @@ class GalaxyRBACAgent(RBACAgent):
         """
         Return a sorted list of legitimate roles that can be associated with a permission on
         item where item is a Library or a Dataset.  The cntrller param is the controller from
-        which the request is sent.  We cannot use trans.user_is_admin() because the controller is
+        which the request is sent.  We cannot use trans.user_is_admin because the controller is
         what is important since admin users do not necessarily have permission to do things
         on items outside of the admin view.
 
@@ -607,6 +608,17 @@ class GalaxyRBACAgent(RBACAgent):
         retval = self.dataset_is_public(dataset) or self.allow_action(user_roles, self.permitted_actions.DATASET_ACCESS, dataset)
         return retval
 
+    def can_access_datasets(self, user_roles, action_tuples):
+        user_role_ids = [galaxy.model.cached_id(r) for r in user_roles]
+
+        # For DATASET_ACCESS, user must have ALL associated roles
+        for action, user_role_id in action_tuples:
+            if action == self.permitted_actions.DATASET_ACCESS.action:
+                if user_role_id not in user_role_ids:
+                    return False
+
+        return True
+
     def can_manage_dataset(self, roles, dataset):
         return self.allow_action(roles, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset)
 
@@ -717,6 +729,27 @@ class GalaxyRBACAgent(RBACAgent):
                         perms[action].extend([_ for _ in roles if _ not in perms[action]])
         return perms
 
+    def guess_derived_permissions(self, all_input_permissions):
+        """Returns a dict of { action : [ role_id, role_id, ... ] } for the output dataset based upon input dataset permissions.
+
+        all_input_permissions should be of the form {action_name: set(role_ids)}
+        """
+        perms = {}
+        for action_name, role_ids in all_input_permissions.items():
+            if not role_ids:
+                continue
+            action = self.get_action(action_name)
+            if action not in perms.keys():
+                perms[action] = list(role_ids)
+            else:
+                if action.model == 'grant':
+                    # intersect existing roles with new roles
+                    perms[action] = [_ for _ in role_ids if _ in perms[action]]
+                elif action.model == 'restrict':
+                    # join existing roles with new roles
+                    perms[action].extend([_ for _ in role_ids if _ not in perms[action]])
+        return perms
+
     def associate_components(self, **kwd):
         if 'user' in kwd:
             if 'group' in kwd:
@@ -766,7 +799,8 @@ class GalaxyRBACAgent(RBACAgent):
 
     def get_private_user_role(self, user, auto_create=False):
         role = self.sa_session.query(self.model.Role) \
-                              .filter(and_(self.model.Role.table.c.name == user.email,
+                              .filter(and_(self.model.UserRoleAssociation.table.c.user_id == user.id,
+                                           self.model.Role.table.c.id == self.model.UserRoleAssociation.table.c.role_id,
                                            self.model.Role.table.c.type == self.model.Role.types.PRIVATE)) \
                               .first()
         if not role:
@@ -922,7 +956,11 @@ class GalaxyRBACAgent(RBACAgent):
             if isinstance(action, Action):
                 action = action.action
             for role in roles:
-                dp = self.model.DatasetPermissions(action, dataset, role_id=role.id)
+                if hasattr(role, "id"):
+                    role_id = role.id
+                else:
+                    role_id = role
+                dp = self.model.DatasetPermissions(action, dataset, role_id=role_id)
                 self.sa_session.add(dp)
                 flush_needed = True
         if flush_needed and flush:
@@ -1129,11 +1167,11 @@ class GalaxyRBACAgent(RBACAgent):
 
     def dataset_is_private_to_user(self, trans, dataset):
         """
-        If the LibraryDataset object has exactly one access role and that is
+        If the Dataset object has exactly one access role and that is
         the current user's private role then we consider the dataset private.
         """
         private_role = self.get_private_user_role(trans.user)
-        access_roles = dataset.library_dataset_dataset_association.get_access_roles(trans)
+        access_roles = dataset.get_access_roles(trans)
 
         if len(access_roles) != 1:
             return False

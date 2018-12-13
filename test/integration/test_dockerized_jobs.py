@@ -1,7 +1,6 @@
 """Integration tests for running tools in Docker containers."""
 
 import os
-import tempfile
 
 from base import integration_util
 from base.populators import (
@@ -21,7 +20,7 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        cls.jobs_directory = tempfile.mkdtemp()
+        cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
         # Disable tool dependency resolution.

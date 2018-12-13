@@ -1,5 +1,6 @@
-import jQuery from "jquery";
-var $ = jQuery;
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import QUERY_STRING from "utils/query-string-parsing";
 import Ui from "mvc/ui/ui-misc";
 
@@ -19,12 +20,14 @@ var Router = Backbone.Router.extend({
             .substr(2);
         url += url.indexOf("?") == -1 ? "?" : "&";
         url += $.param(data, true);
+        let Galaxy = getGalaxyInstance();
         Galaxy.params = data;
         this.navigate(url, { trigger: true });
     },
 
     /** override to parse query string into obj and send to each route */
     execute: function(callback, args, name) {
+        let Galaxy = getGalaxyInstance();
         Galaxy.debug("router execute:", callback, args, name);
         var queryObj = QUERY_STRING.parse(args.pop());
         args.push(queryObj);

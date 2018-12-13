@@ -22,7 +22,7 @@ from six import string_types, with_metaclass
 from six.moves import shlex_quote
 
 from galaxy.exceptions import ContainerCLIError
-from galaxy.util.submodules import submodules
+from galaxy.util.submodules import import_submodules
 
 
 DEFAULT_CONTAINER_TYPE = 'docker'
@@ -380,7 +380,7 @@ def parse_containers_config(containers_config_file):
 
 def _get_interface_modules():
     interfaces = []
-    modules = submodules(sys.modules[__name__])
+    modules = import_submodules(sys.modules[__name__])
     for module in modules:
         module_names = [getattr(module, _) for _ in dir(module)]
         classes = [_ for _ in module_names if inspect.isclass(_) and

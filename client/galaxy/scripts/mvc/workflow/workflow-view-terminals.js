@@ -80,10 +80,12 @@ var BaseInputTerminalView = TerminalView.extend({
         this.el.terminal = terminal;
         this.$el.attr("input-name", name);
         this.$el.attr("id", id);
+        this.$el.append($("<icon/>"));
         this.id = id;
 
         terminal.node = node;
         terminal.name = name;
+        terminal.label = input.label;
         node.input_terminals[name] = terminal;
     },
     events: {
@@ -114,37 +116,26 @@ var BaseInputTerminalView = TerminalView.extend({
         new Connector(d.drag.terminal, terminal).redraw();
     },
     onHover: function() {
-        var element = this.el;
-        var terminal = element.terminal;
+        let element = this.el;
+        let terminal = element.terminal;
         // If connected, create a popup to allow disconnection
         if (terminal.connectors.length > 0) {
-            // Create callout
-            var t = $("<div class='callout'></div>")
-                .css({ display: "none" })
-                .appendTo("body")
-                .append(
-                    $("<div class='button'></div>").append(
-                        $("<div/>")
-                            .addClass("fa-icon-button fa fa-times")
-                            .click(() => {
-                                $.each(terminal.connectors, (_, x) => {
-                                    if (x) {
-                                        x.destroy();
-                                    }
-                                });
-                                t.remove();
-                            })
-                    )
-                )
-                .bind("mouseleave", function() {
-                    $(this).remove();
+            let t = $("<div/>")
+                .addClass("delete-terminal")
+                .click(() => {
+                    $.each(terminal.connectors, (_, x) => {
+                        if (x) {
+                            x.destroy();
+                        }
+                    });
+                    t.remove();
+                })
+                .on("mouseleave", () => {
+                    t.remove();
                 });
-            // Position it and show
-            t.css({
-                top: $(element).offset().top - 2,
-                left: $(element).offset().left - t.width(),
-                "padding-right": $(element).width()
-            }).show();
+            $(element)
+                .parent()
+                .append(t);
         }
     }
 });
@@ -154,6 +145,17 @@ var InputTerminalView = BaseInputTerminalView.extend({
     terminalMappingViewClass: InputTerminalMappingView,
     terminalForInput: function(input) {
         return new Terminals.InputTerminal({
+            element: this.el,
+            input: input
+        });
+    }
+});
+
+var InputParameterTerminalView = BaseInputTerminalView.extend({
+    terminalMappingClass: Terminals.TerminalMapping,
+    terminalMappingViewClass: InputTerminalMappingView,
+    terminalForInput: function(input) {
+        return new Terminals.InputParameterTerminal({
             element: this.el,
             input: input
         });
@@ -183,8 +185,10 @@ var BaseOutputTerminalView = TerminalView.extend({
         this.el.terminal = terminal;
         this.$el.attr("output-name", name);
         this.$el.attr("id", id);
+        this.$el.append($("<icon/>"));
         terminal.node = node;
         terminal.name = name;
+        terminal.label = output.label;
         node.output_terminals[name] = terminal;
     },
     events: {
@@ -217,7 +221,7 @@ var BaseOutputTerminalView = TerminalView.extend({
         // Save PJAs in the case of change datatype actions.
         window.workflow_globals.workflow.check_changes_in_active_form();
         // Drag proxy div
-        var h = $('<div class="drag-terminal" style="position: absolute;"></div>')
+        var h = $("<div class='drag-terminal'/>")
             .appendTo("#canvas-container")
             .get(0);
         // Terminal and connection to display noodle while dragging
@@ -276,9 +280,25 @@ var OutputCollectionTerminalView = BaseOutputTerminalView.extend({
     }
 });
 
+var OutputParameterTerminalView = BaseOutputTerminalView.extend({
+    terminalMappingClass: Terminals.TerminalMapping,
+    terminalMappingViewClass: TerminalMappingView,
+    terminalForOutput: function(output) {
+        var collection_type = output.collection_type;
+        var collection_type_source = output.collection_type_source;
+        var terminal = new Terminals.OutputCollectionTerminal({
+            element: this.el,
+            type: output.type
+        });
+        return terminal;
+    }
+});
+
 export default {
     InputTerminalView: InputTerminalView,
+    InputParameterTerminalView: InputParameterTerminalView,
     OutputTerminalView: OutputTerminalView,
+    OutputParameterTerminalView: OutputParameterTerminalView,
     InputCollectionTerminalView: InputCollectionTerminalView,
     OutputCollectionTerminalView: OutputCollectionTerminalView
 };

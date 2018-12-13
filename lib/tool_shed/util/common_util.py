@@ -140,7 +140,7 @@ def get_non_shed_tool_panel_configs(app):
     config_filenames = []
     for config_filename in app.config.tool_configs:
         # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
-        # <toolbox tool_path="../shed_tools">
+        # <toolbox tool_path="database/shed_tools">
         tree, error_message = xml_util.parse_xml(config_filename)
         if tree is None:
             continue

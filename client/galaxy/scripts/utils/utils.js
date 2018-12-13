@@ -2,11 +2,12 @@
  * Galaxy utilities comprises small functions, which at this point
  * do not require their own classes/files
  */
-import _l from "utils/localization";
-import * as _ from "underscore";
 
-/* global $ */
-/* global Galaxy */
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
 
 /** Builds a basic iframe */
 export function iframe(src) {
@@ -228,7 +229,7 @@ export function cssGetAttribute(classname, name) {
  */
 export function cssLoadFile(url) {
     if (!$(`link[href^="${url}"]`).length) {
-        $(`<link href="${Galaxy.root}${url}" rel="stylesheet">`).appendTo("head");
+        $(`<link href="${getAppRoot()}${url}" rel="stylesheet">`).appendTo("head");
     }
 }
 
@@ -340,14 +341,101 @@ export function getQueryString(key) {
 }
 
 export function setWindowTitle(title) {
+    let Galaxy = getGalaxyInstance();
     if (title) {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""} | ${_l(
-            title
-        )}`;
+        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""} | ${_l(title)}`;
     } else {
-        window.document.title = `Galaxy ${window.Galaxy.config.brand ? ` | ${window.Galaxy.config.brand}` : ""}`;
+        window.document.title = `Galaxy ${Galaxy.config.brand ? ` | ${Galaxy.config.brand}` : ""}`;
     }
 }
+
+/**
+ * Calculate a 32 bit FNV-1a hash
+ * Found here: https://gist.github.com/vaiorabbit/5657561
+ * Ref.: http://isthe.com/chongo/tech/comp/fnv/
+ *
+ * @param {string} str the input value
+ * @returns {integer}
+ */
+function hashFnv32a(str) {
+    var i, l,
+        hval = 0x811c9dc5;
+
+    for (i = 0, l = str.length; i < l; i++) {
+        hval ^= str.charCodeAt(i);
+        hval += (hval << 1) + (hval << 4) + (hval << 7) + (hval << 8) + (hval << 24);
+    }
+    return hval >>> 0;
+}
+
+/**
+ * Implement W3C contrasting color algorithm
+ * http://www.w3.org/TR/AERT#color-contrast
+ *
+ * @param   {number}  r       Red
+ * @param   {number}  g       Green
+ * @param   {number}  b       Blue
+ * @return  {string}          Either 'white' or 'black'
+ *
+ * Assumes r, g, b are in the set [0, 1]
+ */
+function contrastingColor(r, g, b) {
+    var o = ((r * 255 * 299) +
+             (g * 255 * 587) +
+             (b * 255 * 114)) / 1000;
+    return (o > 125) ? 'black' : 'white';
+}
+
+/**
+ * Converts an HSL color value to RGB. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes h, s, and l are contained in the set [0, 1] and
+ * returns r, g, and b in the set [0, 1].
+ *
+ * @param   {number}  h       The hue
+ * @param   {number}  s       The saturation
+ * @param   {number}  l       The lightness
+ * @return  {Array}           The RGB representation
+ */
+function hslToRgb(h, s, l){
+    var r, g, b;
+
+    if(s == 0){
+        r = g = b = l; // achromatic
+    }else{
+        var hue2rgb = function hue2rgb(p, q, t){
+            if(t < 0) t += 1;
+            if(t > 1) t -= 1;
+            if(t < 1/6) return p + (q - p) * 6 * t;
+            if(t < 1/2) return q;
+            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+            return p;
+        }
+
+        var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        var p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1/3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1/3);
+    }
+
+    return [r, g, b];
+}
+
+export function generateTagStyle(tag) {
+    var hash = hashFnv32a(tag);
+    var hue = Math.abs((hash >> 4) % 360);
+    var lightnessOffset = 75;
+    var lightness = lightnessOffset + (hash & 0xf);
+    var bgColor = `hsl(${hue}, 100%, ${lightness}%)`;
+    var brColor = `hsl(${hue}, 100%, ${lightness - 40}%)`;
+
+    var [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
+    var fgColor = contrastingColor(r, g, b)
+
+    return `background-color: ${bgColor}; color: ${fgColor}; border: 1px solid ${brColor}`
+}
+
 
 export default {
     cssLoadFile: cssLoadFile,
@@ -368,5 +456,6 @@ export default {
     linkify: linkify,
     appendScriptStyle: appendScriptStyle,
     getQueryString: getQueryString,
-    setWindowTitle: setWindowTitle
+    setWindowTitle: setWindowTitle,
+    generateTagStyle: generateTagStyle
 };

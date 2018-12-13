@@ -1,54 +1,50 @@
-/** Creates a generic/global Galaxy environment, loads shared libraries and a fake server */
-/* global define */
+/** Creates a generic/global Galaxy environment, loads shared libraries and a
+ * fake server */
 
-define([
-    "jquery",
-    "sinon",
-    "bootstrap",
-    "backbone",
-    "qunit/test-data/bootstrapped",
-    "qunit/test-data/fakeserver",
-    "galaxy",
-    "libs/jquery/select2",
-    "libs/jquery/jstorage",
-    "libs/jquery/jquery-ui"
-], function($, sinon, bootstrap, Backbone, bootstrapped, serverdata, appBase) {
-    var Galaxy = {
-        root: "/"
-    };
+import $ from "jquery";
 
-    window.Galaxy = Galaxy;
+// jQuery.fn.tooltip lives on one of these 2 libs
+import "bootstrap";
+import "bootstrap-tour";
 
-    $("head").append(
-        $('<link rel="stylesheet" type="text/css"  />').attr("href", "/base/galaxy/scripts/qunit/assets/base.css")
-    );
+import sinon from "sinon";
+import Backbone from "backbone";
+import { setGalaxyInstance } from "app";
+import galaxyOptions from "qunit/test-data/bootstrapped";
+import serverdata from "qunit/test-data/fakeserver";
+import "./assets/base.css";
 
-    appBase = appBase.default;
-    return {
-        create: function() {
-            window.Galaxy = new appBase.GalaxyApp(bootstrapped);
-            window.Galaxy.currHistoryPanel = { model: new Backbone.Model() };
-            window.Galaxy.emit = {
+export default {
+    create() {
+        setGalaxyInstance(GalaxyApp => {
+            let galaxy = new GalaxyApp(galaxyOptions);
+            galaxy.currHistoryPanel = {
+                model: new Backbone.Model()
+            };
+            galaxy.emit = {
                 debug: function() {},
                 error: function(v) {
                     window.console.error(v);
                 }
             };
-            window.WAIT_FADE = 300;
-            window.fakeserver = sinon.fakeServer.create();
-            for (var route in serverdata) {
-                window.fakeserver.respondWith("GET", window.Galaxy.root + route, [
-                    200,
-                    { "Content-Type": "application/json" },
-                    serverdata[route].data
-                ]);
-            }
-        },
-        destroy: function() {
-            if (window.fakeserver) {
-                window.fakeserver.restore();
-                delete window.fakeserver;
-            }
+            return galaxy;
+        });
+
+        window.WAIT_FADE = 300;
+        window.fakeserver = sinon.fakeServer.create();
+        for (var route in serverdata) {
+            window.fakeserver.respondWith("GET", window.Galaxy.root + route, [
+                200,
+                { "Content-Type": "application/json" },
+                serverdata[route].data
+            ]);
         }
-    };
-});
+    },
+
+    destroy() {
+        if (window.fakeserver) {
+            window.fakeserver.restore();
+            delete window.fakeserver;
+        }
+    }
+};

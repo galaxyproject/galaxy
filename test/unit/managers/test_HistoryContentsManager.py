@@ -35,8 +35,10 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
         return hda
 
     def add_list_collection_to_history(self, history, hdas, name='test collection', **kwargs):
-        hdca = self.collection_manager.create(self.trans, history, name, 'list',
-            element_identifiers=self.build_element_identifiers(hdas))
+        hdca = self.collection_manager.create(self.trans,
+                                              history, name, 'list',
+                                              element_identifiers=self.build_element_identifiers(hdas),
+                                              **kwargs)
         return hdca
 
 
@@ -72,6 +74,16 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         hdas = [self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)]
         self.add_list_collection_to_history(history, hdas)
         self.assertEqual(list(self.contents_manager.contained(history)), hdas)
+
+    def test_copy_elements_on_collection_creation(self):
+        user2 = self.user_manager.create(**user2_data)
+        history = self.history_manager.create(name='history', user=user2)
+        hdas = [self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)]
+        hdca = self.add_list_collection_to_history(history, hdas)
+        self.assertEqual(hdas, hdca.dataset_instances)
+
+        hdca = self.add_list_collection_to_history(history, hdas, copy_elements=True)
+        self.assertNotEqual(hdas, hdca.dataset_instances)
 
     def test_subcontainers(self):
         user2 = self.user_manager.create(**user2_data)

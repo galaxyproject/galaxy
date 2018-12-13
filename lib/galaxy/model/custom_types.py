@@ -7,6 +7,8 @@ from collections import deque
 from itertools import chain
 from sys import getsizeof
 
+import numpy
+import six
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import (
@@ -16,13 +18,28 @@ from sqlalchemy.types import (
     TypeDecorator
 )
 
-from galaxy.util import unicodify
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 from galaxy.util.aliaspickler import AliasPickleModule
 
 log = logging.getLogger(__name__)
 
-# Default JSON encoder and decoder
-json_encoder = json.JSONEncoder(sort_keys=True)
+
+class SafeJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, numpy.int_):
+            return int(obj)
+        elif isinstance(obj, numpy.float_):
+            return float(obj)
+        elif isinstance(obj, six.binary_type):
+            return unicodify(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
+json_encoder = SafeJsonEncoder(sort_keys=True)
 json_decoder = json.JSONDecoder()
 
 # Galaxy app will set this if configured to avoid circular dependency
@@ -36,12 +53,30 @@ def _sniffnfix_pg9_hex(value):
     try:
         if value[0] == 'x':
             return binascii.unhexlify(value[1:])
-        elif value.startswith('\\x'):
+        elif smart_str(value).startswith(b'\\x'):
             return binascii.unhexlify(value[2:])
         else:
             return value
     except Exception:
         return value
+
+
+class GalaxyLargeBinary(LargeBinary):
+
+    # This hack is necessary because the LargeBinary result processor
+    # does not specify an encoding in the `bytes` call ,
+    # likely because `result` should be binary.
+    # This doesn't seem to be the case in galaxy.
+    if six.PY3:
+        def result_processor(self, dialect, coltype):
+            def process(value):
+                if value is not None:
+                    if isinstance(value, str):
+                        value = bytes(value, encoding='utf-8')
+                    else:
+                        value = bytes(value)
+                return value
+            return process
 
 
 class JSONType(sqlalchemy.types.TypeDecorator):
@@ -55,7 +90,7 @@ class JSONType(sqlalchemy.types.TypeDecorator):
     # TODO: Figure out why this is a large binary, and provide a migratino to
     # something like sqlalchemy.String, or even better, when applicable, native
     # sqlalchemy.dialects.postgresql.JSON
-    impl = LargeBinary
+    impl = GalaxyLargeBinary
 
     def process_bind_param(self, value, dialect):
         if value is not None:

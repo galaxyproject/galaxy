@@ -5,8 +5,8 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolForm">
-    <div class="toolFormTitle">Reset Password</div>
+<div class="card">
+    <div class="card-header">Reset Password</div>
     <form name="reset_password" id="reset_password" action="${h.url_for( controller='user', action='reset_password' )}" method="post" >
         <div class="form-row">
             <label>Email:</label>

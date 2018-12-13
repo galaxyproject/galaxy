@@ -6,7 +6,10 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
-from galaxy.util import unicodify
+from galaxy.util import (
+    strip_control_characters,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
@@ -135,6 +138,8 @@ class TagManager(object):
             tag_name = tag
         elif isinstance(tag, galaxy.model.Tag):
             tag_name = tag.name
+        elif isinstance(tag, galaxy.model.ItemTagAssociation):
+            tag_name = tag.user_tname
         # Check for an item-tag association to see if item has a given tag.
         item_tag_assoc = self._get_item_tag_assoc(user, item, tag_name)
         if item_tag_assoc:
@@ -255,6 +260,8 @@ class TagManager(object):
         # Gracefully handle None.
         if not tag_str:
             return dict()
+        # Strip unicode control characters
+        tag_str = strip_control_characters(tag_str)
         # Split tags based on separators.
         reg_exp = re.compile('[' + self.tag_separators + ']')
         raw_tags = reg_exp.split(tag_str)
@@ -274,7 +281,7 @@ class TagManager(object):
         if not value:
             return None
         # Remove whitespace from value.
-        reg_exp = re.compile('\s')
+        reg_exp = re.compile(r'\s')
         scrubbed_value = re.sub(reg_exp, "", value)
         return scrubbed_value
 
@@ -284,7 +291,7 @@ class TagManager(object):
         if not name:
             return None
         # Remove whitespace from name.
-        reg_exp = re.compile('\s')
+        reg_exp = re.compile(r'\s')
         scrubbed_name = re.sub(reg_exp, "", name)
         # Ignore starting ':' char.
         if scrubbed_name.startswith(self.hierarchy_separator):

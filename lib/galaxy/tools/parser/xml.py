@@ -348,6 +348,20 @@ class XmlToolSource(ToolSource):
         return output
 
     def parse_stdio(self):
+        """
+        parse error handling from command and stdio tag
+
+        returns list of exit codes, list of regexes
+        - exit_codes contain all non-zero exit codes (:-1 and 1:) if
+          detect_errors is default (if not legacy), exit_code, or aggressive
+        - the oom_exit_code if given and detect_errors is exit_code
+        - exit codes and regexes from the stdio tag
+          these are prepended to the list, i.e. are evaluated prior to regexes
+          and exit codes derived from the properties of the command tag.
+          thus more specific regexes of the same or more severe error level
+          are triggered first.
+        """
+
         command_el = self._command_el
         detect_errors = None
         if command_el is not None:
@@ -360,16 +374,23 @@ class XmlToolSource(ToolSource):
                     oom_exit_code = command_el.get("oom_exit_code", None)
                 if oom_exit_code is not None:
                     int(oom_exit_code)
-                return error_on_exit_code(out_of_memory_exit_code=oom_exit_code)
+                exit_codes, regexes = error_on_exit_code(out_of_memory_exit_code=oom_exit_code)
             elif detect_errors == "aggressive":
-                return aggressive_error_checks()
+                exit_codes, regexes = aggressive_error_checks()
             else:
                 raise ValueError("Unknown detect_errors value encountered [%s]" % detect_errors)
         elif len(self.root.findall('stdio')) == 0 and not self.legacy_defaults:
-            return error_on_exit_code()
+            exit_codes, regexes = error_on_exit_code()
         else:
+            exit_codes = []
+            regexes = []
+
+        if len(self.root.findall('stdio')) > 0:
             parser = StdioParser(self.root)
-            return parser.stdio_exit_codes, parser.stdio_regexes
+            exit_codes = parser.stdio_exit_codes + exit_codes
+            regexes = parser.stdio_regexes + regexes
+
+        return exit_codes, regexes
 
     def parse_strict_shell(self):
         command_el = self._command_el
@@ -744,8 +765,8 @@ class StdioParser(object):
                 # Also note that whitespace is eliminated.
                 # TODO: Turn this into a single match - it should be
                 # more efficient.
-                code_range = re.sub("\s", "", code_range)
-                code_ranges = re.split(":", code_range)
+                code_range = re.sub(r"\s", "", code_range)
+                code_ranges = re.split(r":", code_range)
                 if (len(code_ranges) == 2):
                     if (code_ranges[0] is None or '' == code_ranges[0]):
                         exit_code.range_start = float("-inf")
@@ -827,8 +848,8 @@ class StdioParser(object):
                     output_srcs = regex_elem.get("sources")
                 if output_srcs is None:
                     output_srcs = "output,error"
-                output_srcs = re.sub("\s", "", output_srcs)
-                src_list = re.split(",", output_srcs)
+                output_srcs = re.sub(r"\s", "", output_srcs)
+                src_list = re.split(r",", output_srcs)
                 # Just put together anything to do with "out", including
                 # "stdout", "output", etc. Repeat for "stderr", "error",
                 # and anything to do with "err". If neither stdout nor

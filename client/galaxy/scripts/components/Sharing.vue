@@ -1,7 +1,7 @@
 <template>
     <div v-if="ready">
         <h2>Share or Publish {{model_class}} `{{item.title}}`</h2>
-        <b-alert variant="danger" :show="err_msg">
+        <b-alert :show="show_danger" variant="danger" dismissible>
             {{ err_msg }}
         </b-alert>
         </br>
@@ -53,9 +53,17 @@
             <div v-else>
                 <p>This {{model_class_lc}} is currently restricted so that only you and the users listed below can access it. You can:</p>
                 <b-button @click="setSharing('make_accessible_via_link')">Make {{model_class}} Accessible via Link</b-button>
+                <span v-if="has_possible_members" class="chkk">
+                Also make all objects within the {{model_class}} accessible.
+                <input type="checkbox" v-model="make_members_public" id="chk_make_members_public">
+                </span>
                 <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the {{model_class_lc}}.</div>
                 <br/>
                 <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')">Make {{model_class}} Accessible and Publish</b-button>
+                <span v-if="has_possible_members" class="chkk">
+                Also make all objects within the {{model_class}} accessible.
+                <input type="checkbox" v-model="make_members_public" id="chk_make_members_public">
+                </span>
                 <div class="toolParamHelp">Makes the {{model_class_lc}} accessible via link (see above) and publishes the {{model_class_lc}} to Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section, where it is publicly listed and searchable.</div>
             </div>
             <br/><br/>
@@ -81,6 +89,8 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import axios from "axios";
 import async_save_text from "utils/async-save-text";
 import Vue from "vue";
@@ -114,7 +124,7 @@ export default {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
         item_url() {
-            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${Galaxy.root}${
+            return `${window.location.protocol}//${window.location.hostname}:${window.location.port}${getAppRoot()}${
                 this.item.username_and_slug
             }`;
         },
@@ -124,22 +134,29 @@ export default {
             return [str.substring(0, index + 1), str.substring(index + 1)];
         },
         published_url() {
-            return `${Galaxy.root}${this.plural_name_lc}/list_published`;
+            return `${getAppRoot()}${this.plural_name_lc}/list_published`;
         },
         share_url() {
-            return `${Galaxy.root}${this.model_class_lc}/share/?id=${this.id}`;
+            return `${getAppRoot()}${this.model_class_lc}/share/?id=${this.id}`;
         },
         slug_url() {
-            return `${Galaxy.root}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
+            return `${getAppRoot()}${this.model_class_lc}/set_slug_async/?id=${this.id}`;
+        },
+        has_possible_members() {
+            return ["history"].indexOf(this.model_class_lc) > -1;
+        },
+        show_danger() {
+            return this.err_msg !== null;
         }
     },
     data() {
+        let Galaxy = getGalaxyInstance();
         return {
             ready: false,
             has_username: Galaxy.user.get("username"),
             new_username: "",
             err_msg: null,
-            pencil_url: `${Galaxy.root}static/images/fugue/pencil.png`,
+            pencil_url: `${getAppRoot()}static/images/fugue/pencil.png`,
             item: {
                 title: "title",
                 username_and_slug: "username_and_slug",
@@ -147,7 +164,8 @@ export default {
                 published: false,
                 users_shared_with: []
             },
-            share_fields: ["email", { key: "id", label: "" }]
+            share_fields: ["email", { key: "id", label: "" }],
+            make_members_public: false
         };
     },
     created: function() {
@@ -160,7 +178,7 @@ export default {
         getModel: function() {
             this.ready = false;
             axios
-                .get(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`)
+                .get(`${getAppRoot()}api/${this.plural_name_lc}/${this.id}/sharing`)
                 .then(response => {
                     this.item = response.data;
                     this.ready = true;
@@ -168,8 +186,9 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setUsername: function() {
+            let Galaxy = getGalaxyInstance();
             axios
-                .put(`${Galaxy.root}api/users/${Galaxy.user.id}/information/inputs`, {
+                .put(`${getAppRoot()}api/users/${Galaxy.user.id}/information/inputs`, {
                     username: this.new_username || ""
                 })
                 .then(response => {
@@ -180,13 +199,20 @@ export default {
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
         setSharing: function(action, user_id) {
+            let data = {
+                action: action,
+                user_id: user_id
+            };
+            if (this.has_possible_members) {
+                data.make_members_public = this.make_members_public;
+            }
             axios
-                .post(`${Galaxy.root}api/${this.plural_name_lc}/${this.id}/sharing`, {
-                    action: action,
-                    user_id: user_id
-                })
+                .post(`${getAppRoot()}api/${this.plural_name_lc}/${this.id}/sharing`, data)
                 .then(response => {
                     Object.assign(this.item, response.data);
+                    if (response.data.skipped) {
+                        this.err_msg = "Some of the items within this object were not published due to an error.";
+                    }
                 })
                 .catch(error => (this.err_msg = error.response.data.err_msg));
         },
@@ -233,3 +259,8 @@ export default {
     }
 };
 </script>
+<style>
+.chkk {
+    display: inline-block;
+}
+</style>

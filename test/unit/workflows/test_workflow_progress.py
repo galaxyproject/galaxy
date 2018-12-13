@@ -12,22 +12,25 @@ steps:
     tool_inputs: {"name": "input2"}
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "output"
+    inputs:
+      "input1":
+        connections:
+        - "@output_step": 0
+          output_name: "output"
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "output"
+    inputs:
+      input1:
+        connections:
+        - "@output_step": 0
+          output_name: "output"
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 2
-       output_name: "out_file1"
+    inputs:
+      "input1":
+        connections:
+        - "@output_step": 2
+          output_name: "out_file1"
 """
 
 TEST_SUBWORKFLOW_YAML = """
@@ -41,15 +44,17 @@ steps:
             tool_inputs: {"name": "inner_input"}
           - type: "tool"
             tool_id: "cat1"
-            input_connections:
-            -  input_name: "input1"
-               "@output_step": 0
-               output_name: "output"
-    input_connections:
-    -  input_name: "inner_input"
-       "@output_step": 0
-       output_name: "output"
-       "@input_subworkflow_step": 0
+            inputs:
+              "input1":
+                  connections:
+                  - "@output_step": 0
+                    output_name: "output"
+    inputs:
+      inner_input:
+        connections:
+        - "@output_step": 0
+          output_name: "output"
+          "@input_subworkflow_step": 0
 """
 
 UNSCHEDULED_STEP = object()
@@ -69,7 +74,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
 
     def _new_workflow_progress(self):
         return WorkflowProgress(
-            self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress)
+            self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {}
         )
 
     def _set_previous_progress(self, outputs):
@@ -121,8 +126,12 @@ class WorkflowProgressTestCase(unittest.TestCase):
         self.inputs_by_step_id = {100: hda}
         progress = self._new_workflow_progress()
         progress.set_outputs_for_input(self._invocation_step(0))
-
-        replacement = progress.replacement_for_tool_input(self._step(2), MockInput(), "input1")
+        step_dict = {
+            "name": "input1",
+            "input_type": "dataset",
+            "multiple": False,
+        }
+        replacement = progress.replacement_for_input(self._step(2), step_dict)
         assert replacement is hda
 
     def test_connect_tool_output(self):
@@ -152,8 +161,12 @@ class WorkflowProgressTestCase(unittest.TestCase):
         assert len(steps) == 1, steps
         step, invocation_step = steps[0]
         assert step is self.invocation.workflow.steps[4]
-
-        replacement = progress.replacement_for_tool_input(self._step(4), MockInput(), "input1")
+        step_dict = {
+            "name": "input1",
+            "input_type": "dataset",
+            "multiple": False,
+        }
+        replacement = progress.replacement_for_input(self._step(4), step_dict)
         assert replacement is hda3
 
     # TODO: Replace multiple true HDA with HDCA
@@ -168,14 +181,15 @@ class WorkflowProgressTestCase(unittest.TestCase):
             (100, {"output": hda}),
             (101, UNSCHEDULED_STEP),
         ])
-        self.invocation.create_subworkflow_invocation_for_step(
+        subworkflow_invocation = self.invocation.create_subworkflow_invocation_for_step(
             self.invocation.workflow.step_by_index(1)
         )
         progress = self._new_workflow_progress()
         remaining_steps = progress.remaining_steps()
         (subworkflow_step, subworkflow_invocation_step) = remaining_steps[0]
-        subworkflow_progress = progress.subworkflow_progress(subworkflow_step)
+        subworkflow_progress = progress.subworkflow_progress(subworkflow_invocation, subworkflow_step, {})
         subworkflow = subworkflow_step.subworkflow
+        assert subworkflow_progress.workflow_invocation == subworkflow_invocation
         assert subworkflow_progress.workflow_invocation.workflow == subworkflow
 
         subworkflow_input_step = subworkflow.step_by_index(0)
@@ -187,19 +201,15 @@ class WorkflowProgressTestCase(unittest.TestCase):
         subworkflow_progress.set_outputs_for_input(subworkflow_invocation_step)
 
         subworkflow_cat_step = subworkflow.step_by_index(1)
-
-        assert hda is subworkflow_progress.replacement_for_tool_input(
+        step_dict = {
+            "name": "input1",
+            "input_type": "dataset",
+            "multiple": False,
+        }
+        assert hda is subworkflow_progress.replacement_for_input(
             subworkflow_cat_step,
-            MockInput(),
-            "input1",
+            step_dict,
         )
-
-
-class MockInput(object):
-
-    def __init__(self, type="data", multiple=False):
-        self.multiple = multiple
-        self.type = type
 
 
 class MockModuleInjector(object):
@@ -207,7 +217,7 @@ class MockModuleInjector(object):
     def __init__(self, progress):
         self.progress = progress
 
-    def inject(self, step):
+    def inject(self, step, step_args={}):
         step.module = MockModule(self.progress)
 
 

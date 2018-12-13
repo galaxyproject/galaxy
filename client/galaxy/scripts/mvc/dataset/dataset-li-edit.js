@@ -1,3 +1,7 @@
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
 import TAGS from "mvc/tag";
@@ -55,10 +59,11 @@ var DatasetListItemEdit = _super.extend(
 
             var editBtnData = {
                 title: _l("Edit attributes"),
-                href: `${Galaxy.root}datasets/edit?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/edit?dataset_id=${this.model.attributes.id}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/edit", {
@@ -100,8 +105,7 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-times",
                 classes: "delete-btn",
                 onclick: function() {
-                    // ...bler... tooltips being left behind in DOM (hover out never called on deletion)
-                    self.$el.find(".icon-btn.delete-btn").trigger("mouseout");
+                    self.$el.find(".icon-btn.delete-btn").tooltip("dispose");
                     self.model["delete"]();
                 }
             });
@@ -147,7 +151,7 @@ var DatasetListItemEdit = _super.extend(
             };
             var parseToolID = data => {
                 $.ajax({
-                    url: `${Galaxy.root}api/tools/${data.tool_id}/build`
+                    url: `${getAppRoot()}api/tools/${data.tool_id}/build`
                 })
                     .done(data => {
                         parseToolBuild(data);
@@ -156,9 +160,12 @@ var DatasetListItemEdit = _super.extend(
                         parseToolBuild({});
                     });
             };
+
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.id === null) {
                 return null;
             }
+
             return faIconButton({
                 title: _l("Tool Help"),
                 classes: "icon-btn",
@@ -169,7 +176,7 @@ var DatasetListItemEdit = _super.extend(
                         self.$el.find(".toolhelp").toggle();
                     } else {
                         $.ajax({
-                            url: `${Galaxy.root}api/jobs/${jobID}`
+                            url: `${getAppRoot()}api/jobs/${jobID}`
                         })
                             .done(data => {
                                 parseToolID(data);
@@ -212,10 +219,11 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
-                href: `${Galaxy.root}datasets/error?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/error?dataset_id=${this.model.attributes.id}`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
@@ -237,6 +245,7 @@ var DatasetListItemEdit = _super.extend(
                     target: this.linkTarget,
                     faIcon: "fa-refresh",
                     onclick: function(ev) {
+                        let Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("/", {
@@ -261,30 +270,28 @@ var DatasetListItemEdit = _super.extend(
             }
 
             if (visualizations.length >= 1) {
-                var url = Galaxy.root + "visualizations?dataset_id=" + this.model.get("id");
-                return $("<a/>")
-                    .addClass("visualization-link icon-btn")
-                    .attr("href", url)
-                    .append($("<span/>").addClass("fa fa-bar-chart-o"))
-                    .on("click", function(e) {
-                        Galaxy.frame.add({ url: url, title: "Visualization" });
-                        e.preventDefault();
-                    });
+                let dsid = this.model.get("id");
+                let url = getAppRoot() + "visualizations?dataset_id=" + dsid;
+                return faIconButton({
+                    title: _l("Visualize this data"),
+                    href: url,
+                    classes: "visualization-link",
+                    faIcon: "fa-bar-chart-o",
+                    onclick: ev => {
+                        let Galaxy = getGalaxyInstance();
+                        if (Galaxy.frame && Galaxy.frame.active) {
+                            ev.preventDefault();
+                            Galaxy.frame.add({ url: url, title: "Visualization" });
+                        } else if (Galaxy.router) {
+                            ev.preventDefault();
+                            Galaxy.router.push("visualizations", {
+                                dataset_id: dsid
+                            });
+                            Galaxy.trigger("activate-hda", dsid);
+                        }
+                    }
+                });
             }
-        },
-
-        /** add scratchbook functionality to visualization links */
-        _addScratchBookFn: function($links) {
-            $links.click(ev => {
-                if (Galaxy.frame && Galaxy.frame.active) {
-                    Galaxy.frame.add({
-                        title: _l("Visualization"),
-                        url: $(this).attr("href")
-                    });
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                }
-            });
         },
 
         //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
@@ -393,7 +400,7 @@ var DatasetListItemEdit = _super.extend(
 
         /** listener for item purge (in the messages section) */
         _clickPurgeLink: function(ev) {
-            if (confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
+            if (window.confirm(_l("This will permanently remove the data in your dataset. Are you sure?"))) {
                 this.model.purge();
             }
             return false;

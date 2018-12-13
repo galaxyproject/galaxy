@@ -479,9 +479,33 @@ class WorkflowStep(object):
         self.tool_inputs = None
         self.tool_errors = None
         self.position = None
-        self.input_connections = []
+        self.inputs = []
         self.config = None
         self.label = None
+
+    def get_or_add_input(self, input_name):
+        for step_input in self.inputs:
+            if step_input.name == input_name:
+                return step_input
+
+        step_input = WorkflowStepInput()
+        step_input.workflow_step = self
+        step_input.name = input_name
+        self.inputs.append(step_input)
+        return step_input
+
+    @property
+    def input_connections(self):
+        connections = [_ for step_input in self.inputs for _ in step_input.connections]
+        return connections
+
+
+class WorkflowStepInput(object):
+
+    def __init__(self):
+        self.id = None
+        self.name = None
+        self.connections = []
 
 
 class WorkflowStepConnection(object):

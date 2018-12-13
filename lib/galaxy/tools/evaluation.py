@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -31,6 +32,10 @@ from galaxy.tools.wrappers import (
     RawObjectWrapper,
     SelectToolParameterWrapper,
     ToolParameterValueWrapper,
+)
+from galaxy.util import (
+    find_instance_nested,
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
@@ -278,17 +283,20 @@ class ToolEvaluator(object):
         #        another reason for this?
         # - Only necessary when self.check_values is False (==external dataset
         #   tool?: can this be abstracted out as part of being a datasouce tool?)
-        # - But we still want (ALWAYS) to wrap input datasets (this should be
-        #   checked to prevent overhead of creating a new object?)
-        # Additionally, datasets go in the param dict. We wrap them such that
-        # if the bare variable name is used it returns the filename (for
-        # backwards compatibility). We also add any child datasets to the
-        # the param dict encoded as:
-        #   "_CHILD___{dataset_name}___{child_designation}",
-        # but this should be considered DEPRECATED, instead use:
-        #   $dataset.get_child( 'name' ).filename
+        # For now we try to not wrap unnecessarily, but this should be untangled at some point.
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
+            if data and param_dict_value is None:
+                # We may have a nested parameter that is not fully prefixed.
+                # We try recovering from param_dict, but tool authors should really use fully-qualified
+                # variables
+                wrappers = find_instance_nested(param_dict,
+                                                instances=(DatasetFilenameWrapper, DatasetListWrapper),
+                                                match_key=name)
+                if len(wrappers) == 1:
+                    wrapper = wrappers[0]
+                    param_dict[name] = wrapper
+                    continue
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
@@ -573,8 +581,8 @@ class ToolEvaluator(object):
         if is_template:
             value = fill_template(content, context=context)
         else:
-            value = content
-        with open(config_filename, "w") as f:
+            value = unicodify(content)
+        with io.open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, 0o644)

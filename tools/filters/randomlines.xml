@@ -1,13 +1,14 @@
-<tool id="random_lines1" name="Select random lines" version="2.0.1">
+<tool id="random_lines1" name="Select random lines" version="2.0.2">
   <description>from a file</description>
-  <command interpreter="python">random_lines_two_pass.py "${input}" "${out_file1}" "${num_lines}"
-  #if str( $seed_source.seed_source_selector ) == "set_seed":
-      --seed "${seed_source.seed}"
-  #end if
+  <command>
+python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}' '${num_lines}'
+#if str( $seed_source.seed_source_selector ) == "set_seed":
+    --seed '${seed_source.seed}'
+#end if
   </command>
   <inputs>
-    <param name="num_lines" size="5" type="integer" value="1" label="Randomly select" help="lines"/>
-    <param format="txt" name="input" type="data" label="from"/>
+    <param name="num_lines" type="integer" value="1" label="Randomly select" help="lines"/>
+    <param name="input" type="data" format="txt" label="from"/>
     <conditional name="seed_source">
       <param name="seed_source_selector" type="select" label="Set a random seed">
         <option value="no_seed" selected="True">Don't set seed</option>
@@ -16,13 +17,13 @@
       <when value="no_seed">
         <!-- Do nothing here -->
       </when>
-      <when value="set_seed"> 
+      <when value="set_seed">
         <param name="seed" type="text" label="Random seed" />
       </when>
     </conditional>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data name="out_file1" format="input" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -40,7 +41,6 @@
     </test>
   </tests>
   <help>
-
 **What it does**
 
 This tool selects N random lines from a file, with no repeats, and preserving ordering.
@@ -61,6 +61,5 @@ Selecting 2 random lines might return this::
 
     chr7  56736  56756   D17003_CTCF_R7  354  +
     chr7  56775  56795   D17003_CTCF_R4  207  +
-
     </help>
 </tool>

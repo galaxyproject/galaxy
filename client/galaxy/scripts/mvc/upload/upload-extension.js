@@ -15,14 +15,12 @@ export default Backbone.View.extend({
             id: options.extension
         });
         this.extension_popup && this.extension_popup.remove();
-        this.extension_popup = new Popover.View({
+        this.extension_popup = new Popover({
+            title: options.title,
             placement: options.placement || "bottom",
             container: options.$el
         });
-        this.extension_popup.title(options.title);
-        this.extension_popup.empty();
-        this.extension_popup.append(this._templateDescription(description));
-        this.extension_popup.show();
+        this.extension_popup.show(this._templateDescription(description));
     },
 
     /** Template for extensions description */

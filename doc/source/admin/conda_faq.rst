@@ -227,9 +227,9 @@ Admin panel (under Tool Management → Manage dependencies).
 The simple answer is: you don't need to do much to make Conda work for a tool.
 
 The ``<requirement>`` tag in the tool XML file is enough. The name and the
-version should correspond to a Conda package in the ``default``, ``r``,
-``bioconda`` or ``iuc`` Conda channel (you can extend this list if you
-like in your ``galaxy.yml`` ). If this is the case you are ready to go. Read
+version should correspond to a Conda package in one of the enabled channels
+(which are specified by the ``conda_ensure_channels`` directive in
+``galaxy.yml`` ). If this is the case you are ready to go. Read
 more about `Conda channels`_  and browse their packages on https://anaconda.org/ url followed by the channel name (e.g.
 `https://anaconda.org/bioconda <https://anaconda.org/bioconda>`__
 ).
@@ -258,7 +258,7 @@ With Conda package manager installed on your system, run:
 
 .. code-block:: bash
 
-   $ conda search <package_name> -c bioconda -c iuc
+   $ conda search <package_name> -c iuc -c conda-forge -c bioconda
 
 This will search in all channels that are activated by default in
 Galaxy. If you find your package, you are ready to go. If not please
@@ -404,13 +404,13 @@ you let Galaxy install Conda prior to the release of 17.01 you probably have ver
 The command can obviously be adapted to install any version of Conda.
 
 
-.. _Conda documentation: http://conda.pydata.org/docs/building/build.html
-.. _Conda quick-start: http://conda.pydata.org/docs/get-started.html
+.. _Conda documentation: https://conda.io/docs/
+.. _Conda quick-start: https://conda.io/docs/user-guide/getting-started.html
 .. _ansible role: https://github.com/galaxyproject/ansible-galaxy-tools
 .. _BioBlend: https://github.com/galaxyproject/bioblend
 .. _resolver docs: https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
-.. _Conda channels: http://conda.pydata.org/docs/custom-channels.html
-.. _create a Conda package: http://conda.pydata.org/docs/building/recipe.html#conda-recipe-files-overview
+.. _Conda channels: https://conda.io/docs/user-guide/tasks/manage-channels.html
+.. _create a Conda package: https://conda.io/docs/user-guide/tasks/build-packages/recipe.html
 .. _submit: https://bioconda.github.io/#step-4-join-the-team
 .. _BioConda: https://bioconda.github.io
 .. _contact with the IUC: https://gitter.im/galaxy-iuc/iuc

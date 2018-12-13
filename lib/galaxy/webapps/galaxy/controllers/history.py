@@ -17,7 +17,6 @@ from galaxy.model.item_attrs import (
 from galaxy.util import listify, Params, parse_int, sanitize_text
 from galaxy.util.create_history_template import render_item
 from galaxy.util.odict import odict
-from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
     BaseUIController,
@@ -491,7 +490,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         ).get(id)
         if not (history and ((history.user and trans.user and history.user.id == trans.user.id) or
                              (trans.history and history.id == trans.history.id) or
-                             trans.user_is_admin())):
+                             trans.user_is_admin)):
             return trans.show_error_message("Cannot display history structure.")
         # Resolve jobs and workflow invocations for the datasets in the history
         # items is filled with items (hdas, jobs, or workflows) that go at the
@@ -693,6 +692,42 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 permissions[trans.app.security_agent.get_action(action.action)] = in_roles
             trans.app.security_agent.history_set_default_permissions(history, permissions)
             return {'message': 'Default history \'%s\' dataset permissions have been changed.' % history.name}
+
+    @web.expose_api
+    @web.require_login("make datasets private")
+    def make_private(self, trans, history_id=None, all_histories=False, **kwd):
+        """
+        Sets the datasets within a history to private.  Also sets the default
+        permissions for the history to private, for future datasets.
+        """
+        histories = []
+        if all_histories:
+            histories = trans.user.histories
+        elif history_id:
+            history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+            if history:
+                histories.append(history)
+        if not histories:
+            return self.message_exception(trans, 'Invalid history or histories specified.')
+        private_role = trans.app.security_agent.get_private_user_role(trans.user)
+        user_roles = trans.user.all_roles()
+        private_permissions = {
+            trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS: [private_role],
+            trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
+        }
+        for history in histories:
+            # Set default role for history to private
+            trans.app.security_agent.history_set_default_permissions(history, private_permissions)
+            # Set private role for all datasets
+            for hda in history.datasets:
+                if (not hda.dataset.library_associations
+                        and not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset)
+                        and trans.app.security_agent.can_manage_dataset(user_roles, hda.dataset)):
+                    # If it's not private to me, and I can manage it, set fixed private permissions.
+                    trans.app.security_agent.set_all_dataset_permissions(hda.dataset, private_permissions)
+                    if not trans.app.security_agent.dataset_is_private_to_user(trans, hda.dataset):
+                        raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
+        return {'message': 'Success, requested permissions have been changed in %s.' % ("all histories" if all_histories else history.name)}
 
     @web.expose
     @web.require_login("share histories with other users")
@@ -1207,8 +1242,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     messages.append('History \'%s\' does not appear to belong to you.' % cur_name)
                 # skip if it wouldn't be a change
                 elif new_name != cur_name:
-                    # escape, sanitize, set, and log the change
-                    h.name = sanitize_html(escape(new_name))
+                    h.name = new_name
                     trans.sa_session.add(h)
                     trans.sa_session.flush()
                     trans.log_event('History renamed: id: %s, renamed to: %s' % (str(h.id), new_name))

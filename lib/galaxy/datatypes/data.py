@@ -248,11 +248,23 @@ class Data(object):
             try:
                 if params.do_action == 'zip':
                     # Can't use mkstemp - the file must not exist first
-                    tmpd = tempfile.mkdtemp()
+                    tmpd = tempfile.mkdtemp(dir=trans.app.config.new_file_path, prefix='gx_composite_archive_')
                     util.umask_fix_perms(tmpd, trans.app.config.umask, 0o777, trans.app.config.gid)
                     tmpf = os.path.join(tmpd, 'library_download.' + params.do_action)
                     archive = zipfile.ZipFile(tmpf, 'w', zipfile.ZIP_DEFLATED, True)
-                    archive.add = lambda x, y: archive.write(x, y.encode('CP437'))
+
+                    def zipfile_add(fpath, arcname):
+                        encoded_arcname = arcname.encode('CP437')
+                        try:
+                            archive.write(fpath, encoded_arcname)
+                        except TypeError:
+                            # Despite documenting the need for CP437 encoded arcname,
+                            # python 3 actually needs this to be a unicode string ...
+                            # https://bugs.python.org/issue24110
+                            archive.write(fpath, arcname)
+
+                    archive.add = zipfile_add
+
                 elif params.do_action == 'tgz':
                     archive = util.streamball.StreamBall('w|gz')
                 elif params.do_action == 'tbz':
@@ -285,7 +297,7 @@ class Data(object):
                 if not error:
                     if params.do_action == 'zip':
                         archive.close()
-                        tmpfh = open(tmpf)
+                        tmpfh = open(tmpf, 'rb')
                         # CANNOT clean up - unlink/rmdir was always failing because file handle retained to return - must rely on a cron job to clean up tmp
                         trans.response.set_content_type("application/x-zip-compressed")
                         trans.response.headers["Content-Disposition"] = 'attachment; filename="%s.zip"' % outfname
@@ -341,10 +353,11 @@ class Data(object):
         return zip(file_paths, rel_paths)
 
     def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
-        """ Old display method, for transition - though still used by API and
-        test framework. Datatypes should be very careful if overridding this
-        method and this interface between datatypes and Galaxy will likely
-        change.
+        """
+        Displays data in central pane if preview is `True`, else handles download.
+
+        Datatypes should be very careful if overridding this method and this interface
+        between datatypes and Galaxy will likely change.
 
         TOOD: Document alternatives to overridding this method (data
         providers?).
@@ -362,7 +375,7 @@ class Data(object):
             file_path = trans.app.object_store.get_filename(data.dataset, extra_dir='dataset_%s_files' % data.dataset.id, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp_fh:
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False, dir=trans.app.config.new_file_path, prefix='gx_html_autocreate_') as tmp_fh:
                         tmp_file_name = tmp_fh.name
                         dir_items = sorted(os.listdir(file_path))
                         base_path, item_name = os.path.split(file_path)
@@ -432,7 +445,7 @@ class Data(object):
             # This is returning to the browser, it needs to be encoded.
             # TODO Ideally this happens a layer higher, but this is a bad
             # issue affecting many tools
-            return sanitize_html(open(filename, 'rb').read()).encode('utf-8')
+            return sanitize_html(open(filename, 'r').read()).encode('utf-8')
 
         return open(filename, mode='rb')
 
@@ -440,7 +453,9 @@ class Data(object):
         def escape(raw_identifier):
             return ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in raw_identifier)[0:150]
 
-        if not to_ext:
+        if not to_ext or to_ext == "data":
+            # If a client requests to_ext with the extension 'data', they are
+            # deferring to the server, set it based on datatype.
             to_ext = dataset.extension
 
         template_values = {
@@ -786,10 +801,11 @@ class Text(Data):
         skipping all blank lines and comments.
         """
         data_lines = 0
-        for line in open(dataset.file_name):
-            line = line.strip()
-            if line and not line.startswith('#'):
-                data_lines += 1
+        with compression_utils.get_fileobj(dataset.file_name) as in_file:
+            for line in in_file:
+                line = line.strip()
+                if line and not line.startswith('#'):
+                    data_lines += 1
         return data_lines
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None, line_wrap=True):
@@ -912,6 +928,10 @@ class Text(Data):
         """
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
+
+
+class Directory(Data):
+    """Class representing a directory of files."""
 
 
 class GenericAsn1(Text):

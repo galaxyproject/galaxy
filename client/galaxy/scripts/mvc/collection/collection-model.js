@@ -1,3 +1,5 @@
+import _ from "underscore";
+import { getAppRoot } from "onload/loadConfig";
 import DATASET_MODEL from "mvc/dataset/dataset-model";
 import BASE_MVC from "mvc/base-mvc";
 import Utils from "utils/utils";
@@ -128,10 +130,10 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
                 if (!this.has("history_id")) {
                     console.warn("no endpoint for non-hdas within a collection yet");
                     // (a little silly since this api endpoint *also* points at hdas)
-                    return `${Galaxy.root}api/datasets`;
+                    return `${getAppRoot()}api/datasets`;
                 }
                 const datasetId = this._getDatasetId();
-                const url = `${Galaxy.root}api/histories/${this.get("history_id")}/contents/${datasetId}`;
+                const url = `${getAppRoot()}api/histories/${this.get("history_id")}/contents/${datasetId}`;
                 return url;
             },
 
@@ -149,7 +151,9 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             ),
 
             _downloadQueryParameters: function() {
-                var fileExt = this.get("file_ext");
+                // Setting the file extension to just 'data' defers that
+                // decision to the serverside, setting based on the datatype.
+                var fileExt = this.get("file_ext") || "data";
                 var elementIdentifier = this.get("element_identifier");
                 var parentHdcaId = this.get("parent_hdca_id");
                 return `?to_ext=${fileExt}&hdca_id=${parentHdcaId}&element_identifier=${elementIdentifier}`;

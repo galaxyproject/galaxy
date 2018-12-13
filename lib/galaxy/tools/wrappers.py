@@ -1,5 +1,4 @@
 import logging
-import os
 import tempfile
 
 from six import string_types, text_type
@@ -121,7 +120,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
     attributes are accessible.
     """
 
-    class SelectToolParameterFieldWrapper:
+    class SelectToolParameterFieldWrapper(object):
         """
         Provide access to any field by name or index for this particular value.
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
@@ -183,7 +182,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     attributes are accessible.
     """
 
-    class MetadataWrapper:
+    class MetadataWrapper(object):
         """
         Wraps a Metadata Collection to return MetadataParameters wrapped
         according to the metadata spec. Methods implemented to match behavior
@@ -318,10 +317,10 @@ class HasDatasets(object):
         return DatasetFilenameWrapper(dataset, **wrapper_kwds)
 
     def paths_as_file(self, sep="\n"):
-        handle, filepath = tempfile.mkstemp(prefix="gx_file_list", dir=self.job_working_directory)
         contents = sep.join(map(str, self))
-        os.write(handle, contents)
-        os.close(handle)
+        with tempfile.NamedTemporaryFile(mode='w+', prefix="gx_file_list", dir=self.job_working_directory, delete=False) as fh:
+            fh.write(contents)
+            filepath = fh.name
         return filepath
 
 
@@ -330,6 +329,7 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
     """
 
     def __init__(self, job_working_directory, datasets, dataset_paths=[], **kwargs):
+        self._dataset_elements_cache = {}
         if not isinstance(datasets, list):
             datasets = [datasets]
 
@@ -358,6 +358,16 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
             else:
                 dataset_instances.extend(dataset_instance_source.collection.dataset_elements)
         return dataset_instances
+
+    def get_datasets_for_group(self, group):
+        group = text_type(group).lower()
+        if not self._dataset_elements_cache.get(group):
+            wrappers = []
+            for element in self:
+                if any([t for t in element.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                    wrappers.append(element)
+            self._dataset_elements_cache[group] = wrappers
+        return self._dataset_elements_cache[group]
 
     def __str__(self):
         return ','.join(map(str, self))
@@ -435,6 +445,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         return True
 
     @property
+    def element_identifier(self):
+        return self.name
+
+    @property
     def is_input_supplied(self):
         return self.__input_supplied
 
@@ -449,7 +463,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def __getattr__(self, key):
         if not self.__input_supplied:
             return None
-        return self.__element_instances[key]
+        try:
+            return self.__element_instances[key]
+        except KeyError:
+            raise AttributeError()
 
     def __iter__(self):
         if not self.__input_supplied:

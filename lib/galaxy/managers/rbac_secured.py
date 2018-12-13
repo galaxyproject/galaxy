@@ -16,7 +16,7 @@ class RBACPermissionFailedException(galaxy.exceptions.InsufficientPermissionsExc
 
 class RBACPermission(object):
     """
-    Base class for wrangling/controlling the permissions ORM models (\*Permissions, Roles)
+    Base class for wrangling/controlling the permissions ORM models (*Permissions, Roles)
     that control which users can perform certain actions on their associated models
     (Libraries, Datasets).
     """
@@ -33,11 +33,11 @@ class RBACPermission(object):
 
     # TODO: implement group
     # TODO: how does admin play into this?
-    def is_permitted(self, item, user):
+    def is_permitted(self, item, user, trans=None):
         raise NotImplementedError("abstract parent class")
 
-    def error_unless_permitted(self, item, user):
-        if not self.is_permitted(item, user):
+    def error_unless_permitted(self, item, user, trans=None):
+        if not self.is_permitted(item, user, trans=trans):
             error_info = dict(model_class=item.__class__, id=getattr(item, 'id', None))
             raise self.permission_failed_error_class(**error_info)
 
@@ -172,7 +172,10 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
     permission_failed_error_class = DatasetManagePermissionFailedException
 
     # ---- interface
-    def is_permitted(self, dataset, user):
+    def is_permitted(self, dataset, user, trans=None):
+        if trans and trans.user_is_admin:
+            return True
+
         # anonymous users cannot manage permissions on datasets
         if self.user_manager.is_anonymous(user):
             return False
@@ -228,7 +231,10 @@ class AccessDatasetRBACPermission(DatasetRBACPermission):
     permission_failed_error_class = DatasetAccessPermissionFailedException
 
     # ---- interface
-    def is_permitted(self, dataset, user):
+    def is_permitted(self, dataset, user, trans=None):
+        if trans and trans.user_is_admin:
+            return True
+
         current_roles = self._roles(dataset)
         # NOTE: that because of short circuiting this allows
         #   anonymous access to public datasets

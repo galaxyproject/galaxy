@@ -47,7 +47,7 @@
 # errors InfluxDB allowing you to notice relationships between tool errors and
 # other infrastructure issues.
 # - type: influxdb
-#   # All arguments prefixed with `influxdb_` are per http://influxdb-python.readthedocs.io/en/latest/api-documentation.html#influxdbclient
+#   # All arguments prefixed with `influxdb_` are per https://influxdb-python.readthedocs.io/en/latest/api-documentation.html#influxdbclient
 #   influxdb_host: 127.0.0.1
 #   influxdb_port: 8086
 #   influxdb_database: galaxy

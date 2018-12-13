@@ -480,7 +480,7 @@ class Bed(Interval):
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
         True
-        >>> fname = get_test_fname( 'interval1.bed' )
+        >>> fname = get_test_fname( 'interv1.bed' )
         >>> Bed().sniff( fname )
         True
         >>> fname = get_test_fname( 'complete.bed' )
@@ -831,7 +831,7 @@ class Gff(Tabular, _RemoteCallMixin):
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('gff_version_3.gff')
+        >>> fname = get_test_fname('gff.gff3')
         >>> Gff().sniff( fname )
         False
         >>> fname = get_test_fname('test.gff')
@@ -966,7 +966,7 @@ class Gff3(Gff):
         >>> fname = get_test_fname( 'test.gtf' )
         >>> Gff3().sniff( fname )
         False
-        >>> fname = get_test_fname('gff_version_3.gff')
+        >>> fname = get_test_fname('gff.gff3')
         >>> Gff3().sniff( fname )
         True
         """
@@ -1235,7 +1235,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'interval1.bed' )
+        >>> fname = get_test_fname( 'interv1.bed' )
         >>> Wiggle().sniff( fname )
         False
         >>> fname = get_test_fname( 'wiggle.wig' )

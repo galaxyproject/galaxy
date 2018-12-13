@@ -67,7 +67,7 @@ class User(BaseUser):
     @web.require_login("to manage the public name")
     def edit_username(self, trans, cntrller, **kwd):
         params = util.Params(kwd)
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        is_admin = cntrller == 'admin' and trans.user_is_admin
         message = util.restore_text(params.get('message', ''))
         status = params.get('status', 'done')
         user_id = params.get('user_id', None)
@@ -99,7 +99,7 @@ class User(BaseUser):
         Edit user information = username, email or password.
         """
         params = util.Params(kwd)
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        is_admin = cntrller == 'admin' and trans.user_is_admin
         message = util.restore_text(params.get('message', ''))
         status = params.get('status', 'done')
         user_id = params.get('user_id', None)

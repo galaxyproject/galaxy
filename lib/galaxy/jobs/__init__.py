@@ -731,6 +731,7 @@ class JobWrapper(HasResourceParameters):
         self.__commands_in_new_shell = True
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
+        self.__working_directory = None
 
     @property
     def _job_dataset_path_rewriter(self):
@@ -816,7 +817,7 @@ class JobWrapper(HasResourceParameters):
         return self.sa_session.query(model.Job).get(self.job_id)
 
     def get_id_tag(self):
-        # For compatability with drmaa, which uses job_id right now, and TaskWrapper
+        # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
 
     def get_param_dict(self):
@@ -901,10 +902,9 @@ class JobWrapper(HasResourceParameters):
             job = self.get_job()
         try:
             working_directory = self._create_working_directory(job)
-            self.working_directory = working_directory
+            self.__working_directory = working_directory
             # The tool execution is given a working directory beneath the
             # "job" working directory.
-            self.tool_working_directory = os.path.join(self.working_directory, "working")
             safe_makedirs(self.tool_working_directory)
             log.debug('(%s) Working directory for job is: %s',
                       self.job_id, self.working_directory)
@@ -912,10 +912,30 @@ class JobWrapper(HasResourceParameters):
             raise Exception('(%s) Unable to create job working directory',
                             job.id)
 
+    @property
+    def working_directory(self):
+        if self.__working_directory is None:
+            job = self.get_job()
+
+            # object_store_id needs to be set before get_filename can be called, this
+            # will also create the directory on the worker.
+            # It is possible these next two lines are not needed - if a job a cannot be recovered
+            # before enqueue is called (seems likely) - this shouldn't be needed.
+            if job.object_store_id:
+                self._set_object_store_ids(job)
+
+            self.__working_directory = self.app.object_store.get_filename(
+                job, base_dir='job_work', dir_only=True, obj_dir=True)
+        return self.__working_directory
+
+    @property
+    def tool_working_directory(self):
+        return os.path.join(self.working_directory, "working")
+
     def _create_working_directory(self, job):
-        self.app.object_store.create(
+        self.object_store.create(
             job, base_dir='job_work', dir_only=True, obj_dir=True)
-        working_directory = self.app.object_store.get_filename(
+        working_directory = self.object_store.get_filename(
             job, base_dir='job_work', dir_only=True, obj_dir=True)
         return working_directory
 
@@ -928,10 +948,10 @@ class JobWrapper(HasResourceParameters):
                         self.working_directory)
             return
 
-        self.app.object_store.create(
+        self.object_store.create(
             job, base_dir='job_work', dir_only=True, obj_dir=True,
             extra_dir='_cleared_contents', extra_dir_at_root=True)
-        base = self.app.object_store.get_filename(
+        base = self.object_store.get_filename(
             job, base_dir='job_work', dir_only=True, obj_dir=True,
             extra_dir='_cleared_contents', extra_dir_at_root=True)
         date_str = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
@@ -1158,34 +1178,31 @@ class JobWrapper(HasResourceParameters):
         """ Get a destination parameter that can be defaulted back
         in app.config if it needs to be applied globally.
         """
-        # this is called by self._job_dataset_path_rewriter, which is called by self.job_destination(), so to access
-        # self.job_destination directly would cause infinite recursion
-        dest_params = {}
-        if hasattr(self, 'job_runner_mapper') and hasattr(self.job_runner_mapper, 'cached_job_destination'):
-            dest_params = self.job_runner_mapper.cached_job_destination.params
+        dest_params = self.job_destination.params
         return self.get_job().get_destination_configuration(
             dest_params, self.app.config, key, default
         )
 
     def enqueue(self):
         job = self.get_job()
-        self._set_object_store_ids(job)
         # Change to queued state before handing to worker thread so the runner won't pick it up again
         self.change_state(model.Job.states.QUEUED, flush=False, job=job)
         # Persist the destination so that the job will be included in counts if using concurrency limits
         self.set_job_destination(self.job_destination, None, flush=False, job=job)
+        # Set object store after job destination so can leverage parameters...
+        self._set_object_store_ids(job)
         self.sa_session.flush()
 
     def _set_object_store_ids(self, job):
-        if self.app.config.legacy_eager_objectstore_initialization:
-            return
-
         if job.object_store_id:
             # We aren't setting this during job creation anymore, but some existing
             # jobs may have this set. Skip this following code if that is the case.
             return
 
         object_store_populator = ObjectStorePopulator(self.app)
+        object_store_id = self.get_destination_configuration("object_store_id", None)
+        if object_store_id:
+            object_store_populator.object_store_id = object_store_id
 
         # Ideally we would do this without loading the actual job association
         # objects but change_state isn't yet optimized to do that so we need to
@@ -1206,7 +1223,6 @@ class JobWrapper(HasResourceParameters):
         stderr,
         tool_exit_code=None,
         check_output_detected_state=None,
-        remote_working_directory=None,
         remote_metadata_directory=None,
     ):
         """
@@ -1214,8 +1230,6 @@ class JobWrapper(HasResourceParameters):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        # remote_working_directory not used with updated (7.0+ pulsar and 16.04+
-        # originated Galaxy job - keep for a few releases for older jobs)
         finish_timer = util.ExecutionTimer()
 
         # default post job setup
@@ -1316,7 +1330,7 @@ class JobWrapper(HasResourceParameters):
                     dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
-                    self.app.object_store.update_from_file(dataset.dataset, create=True)
+                    self.object_store.update_from_file(dataset.dataset, create=True)
                 self.__update_output(job, dataset)
                 if not purged:
                     self._collect_extra_files(dataset.dataset, self.working_directory)
@@ -1326,7 +1340,7 @@ class JobWrapper(HasResourceParameters):
                         with NamedTemporaryFile() as temp_fh:
                             temp_fh.write(dataset.datatype.generate_primary_file(dataset))
                             temp_fh.flush()
-                            self.app.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
+                            self.object_store.update_from_file(dataset.dataset, file_name=temp_fh.name, create=True)
                             dataset.set_size()
                     except Exception as e:
                         log.warning('Unable to generate primary composite file automatically for %s: %s', dataset.dataset.id, e)
@@ -1365,21 +1379,20 @@ class JobWrapper(HasResourceParameters):
                         def path_rewriter(path):
                             if not path:
                                 return path
-                            normalized_remote_working_directory = remote_working_directory and os.path.normpath(remote_working_directory)
                             normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
                             normalized_path = os.path.normpath(path)
-                            if remote_working_directory and normalized_path.startswith(normalized_remote_working_directory):
-                                return normalized_path.replace(normalized_remote_working_directory, self.working_directory, 1)
                             if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
                                 return normalized_path.replace(normalized_remote_metadata_directory, self.working_directory, 1)
                             return path
 
                         dataset.metadata.from_JSON_dict(output_filename, path_rewriter=path_rewriter)
+                    line_count = context.get('line_count', None)
                     try:
-                        assert context.get('line_count', None) is not None
-                        dataset.set_peek(line_count=context['line_count'])
-                    except Exception:
-                        dataset.set_peek()
+                        # Certain datatype's set_peek methods contain a line_count argument
+                        dataset_assoc.dataset.set_peek(line_count=line_count)
+                    except TypeError:
+                        # ... and others don't
+                        dataset_assoc.dataset.set_peek()
                 else:
                     # Handle purged datasets.
                     dataset.blurb = "empty"
@@ -1446,10 +1459,6 @@ class JobWrapper(HasResourceParameters):
         param_dict = self.tool.params_from_strings(param_dict, self.app)
         # Create generated output children and primary datasets and add to param_dict
         tool_working_directory = self.tool_working_directory
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(tool_working_directory):
-            # Maybe this is a legacy job, use the job working directory instead
-            tool_working_directory = self.working_directory
         collected_datasets = {
             'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         }
@@ -1464,9 +1473,9 @@ class JobWrapper(HasResourceParameters):
         param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
-        self.tool.exec_after_process(self.queue.app, inp_data, out_data, param_dict, job=job)
+        self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
         # Call 'exec_after_process' hook
-        self.tool.call_hook('exec_after_process', self.queue.app, inp_data=inp_data,
+        self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
                             out_data=out_data, param_dict=param_dict,
                             tool=self.tool, stdout=job.stdout, stderr=job.stderr)
         job.command_line = unicodify(self.command_line)
@@ -1522,7 +1531,7 @@ class JobWrapper(HasResourceParameters):
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper(self.job_id).cleanup_after_job(self.sa_session)
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper(self.app, self.job_id).cleanup_after_job()
             if delete_files:
-                self.app.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
+                self.object_store.delete(self.get_job(), base_dir='job_work', entire_dir=True, dir_only=True, obj_dir=True)
         except Exception:
             log.exception("Unable to cleanup job %d", self.job_id)
 
@@ -1537,7 +1546,7 @@ class JobWrapper(HasResourceParameters):
             for root, dirs, files in os.walk(temp_file_path):
                 extra_dir = root.replace(job_working_directory, '', 1).lstrip(os.path.sep)
                 for f in files:
-                    self.app.object_store.update_from_file(
+                    self.object_store.update_from_file(
                         dataset,
                         extra_dir=extra_dir,
                         alt_name=f,
@@ -1683,6 +1692,10 @@ class JobWrapper(HasResourceParameters):
         return None
 
     @property
+    def object_store(self):
+        return self.app.object_store
+
+    @property
     def tmp_dir_creation_statement(self):
         tmp_dir = self.get_destination_configuration("tmp_dir", None)
         if not tmp_dir or tmp_dir.lower() == "true":
@@ -1815,15 +1828,16 @@ class JobWrapper(HasResourceParameters):
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
-                self.app.object_store.update_from_file(dataset, create=True)
+                self.object_store.update_from_file(dataset, create=True)
             else:
                 # If the dataset is purged and Galaxy is configured to write directly
                 # to the object store from jobs - be sure that file is cleaned up. This
                 # is a bit of hack - our object store abstractions would be stronger
                 # and more consistent if tools weren't writing there directly.
-                target = dataset.file_name
-                if os.path.exists(target):
-                    os.remove(target)
+                try:
+                    dataset.full_delete()
+                except ObjectNotFound:
+                    pass
 
     def __link_file_check(self):
         """ outputs_to_working_directory breaks library uploads where data is

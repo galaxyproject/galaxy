@@ -39,5 +39,5 @@ def check_python():
 if __name__ == '__main__':
     try:
         check_python()
-    except Exception as e:
+    except Exception:
         sys.exit(1)

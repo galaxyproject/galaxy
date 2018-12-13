@@ -1,8 +1,10 @@
+import * as Toastr from "libs/toastr";
+
 function Connector(handle1, handle2) {
     this.canvas = null;
     this.dragging = false;
     this.inner_color = "#FFFFFF";
-    this.outer_color = "#D8B365";
+    this.outer_color = "#25537b";
     if (handle1 && handle2) {
         this.connect(
             handle1,
@@ -30,8 +32,11 @@ $.extend(Connector.prototype, {
         }
         $(this.canvas).remove();
     },
-    destroyIfInvalid: function() {
+    destroyIfInvalid: function(warn) {
         if (this.handle1 && this.handle2 && !this.handle2.attachable(this.handle1)) {
+            if (warn) {
+                Toastr.warning("Destroying a connection because collection type has changed.");
+            }
             this.destroy();
         }
     },

@@ -10,7 +10,7 @@ import requests
 
 sites = ['http://genome.ucsc.edu/cgi-bin/',
          'http://archaea.ucsc.edu/cgi-bin/',
-         'http://genome-test.cse.ucsc.edu/cgi-bin/']
+         'http://genome-test.gi.ucsc.edu/cgi-bin/']
 names = ['main', 'archaea', 'test']
 
 

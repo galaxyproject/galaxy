@@ -2,7 +2,7 @@
 # environment.  To tune the application for a multi-user production
 # environment, see the documentation at:
 # 
-#  http://usegalaxy.org/production
+#  https://docs.galaxyproject.org/en/master/admin/production.html
 # 
 # Throughout this sample configuration file, except where stated otherwise,
 # uncommented values override the default if left unset, whereas commented
@@ -46,6 +46,9 @@ uwsgi:
 
   # Mapping to serve the remainder of the static content.
   static-map: /static=static
+
+  # Mapping to serve the favicon.
+  static-map: /favicon.ico=static/favicon.ico
 
   # Enable the master process manager. Disabled by default for maximum
   # compatibility with CTRL+C, but should be enabled for use with
@@ -97,7 +100,7 @@ galaxy:
   # path as the prefix in the filter above.  This value becomes the
   # "path" attribute set in the cookie so the cookies from each instance
   # will not clobber each other.
-  #cookie_path: null
+  #cookie_path: ''
 
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
@@ -137,7 +140,7 @@ galaxy:
   # an existing template database. This will set that. This is probably
   # only useful for testing but documentation is included here for
   # completeness.
-  #database_template: null
+  #database_template: ''
 
   # Slow query logging.  Queries slower than the threshold indicated
   # below will be logged to debug.  A value of '0' is disabled.  For
@@ -235,9 +238,12 @@ galaxy:
   # Pass debug flag to conda commands.
   #conda_debug: false
 
-  # conda channels to enable by default (http://conda.pydata.org/docs
-  # /custom-channels.html)
-  #conda_ensure_channels: 'iuc,bioconda,conda-forge,defaults'
+  # conda channels to enable by default (https://conda.io/docs/user-
+  # guide/tasks/manage-channels.html)
+  #conda_ensure_channels: 'iuc,conda-forge,bioconda,defaults'
+
+  # Use locally-built conda packages.
+  #conda_use_local: false
 
   # Set to True to instruct Galaxy to look for and install missing tool
   # dependencies before each job runs.
@@ -283,18 +289,18 @@ galaxy:
   # Set to True to enable monitoring of tools and tool directories
   # listed in any tool config file specified in tool_config_file option.
   # If changes are found, tools are automatically reloaded.  Watchdog (
-  # https://pypi.python.org/pypi/watchdog ) must be installed and
-  # available to Galaxy to use this option. Other options include 'auto'
-  # which will attempt to watch tools if the watchdog library is
-  # available but won't fail to load Galaxy if it is not and 'polling'
-  # which will use a less efficient monitoring scheme that may work in
-  # wider range of scenarios than the watchdog default.
-  #watch_tools: false
+  # https://pypi.org/project/watchdog/ ) must be installed and available
+  # to Galaxy to use this option. Other options include 'auto' which
+  # will attempt to watch tools if the watchdog library is available but
+  # won't fail to load Galaxy if it is not and 'polling' which will use
+  # a less efficient monitoring scheme that may work in wider range of
+  # scenarios than the watchdog default.
+  #watch_tools: 'false'
 
   # Set to True to enable monitoring of dynamic job rules. If changes
   # are found, rules are automatically reloaded. Takes the same values
   # as the 'watch_tools' option.
-  #watch_job_rules: false
+  #watch_job_rules: 'false'
 
   # As of 18.09, Galaxy defaults to setting up the object store
   # configuration for output datasets during the job queue step in job
@@ -313,7 +319,7 @@ galaxy:
   # Enable Galaxy to fetch Docker containers registered with quay.io
   # generated from tool requirements resolved through conda. These
   # containers (when available) have been generated using mulled -
-  # https://github.com/mulled. These containers are highly beta and
+  # https://github.com/mulled . These containers are highly beta and
   # availability will vary by tool. This option will additionally only
   # be used for job destinations with Docker enabled.
   #enable_beta_mulled_containers: false
@@ -322,7 +328,7 @@ galaxy:
   # container resolvers to use when discovering containers for Galaxy.
   # If this is set to None, the default containers loaded is determined
   # by enable_beta_mulled_containers.
-  #containers_resolvers_config_file: null
+  #containers_resolvers_config_file: ''
 
   # involucro is a tool used to build Docker containers for tools from
   # Conda dependencies referenced in tools as `requirement`s. The
@@ -382,13 +388,13 @@ galaxy:
   # shed_tool_data_path directories. If changes in tool data table files
   # are found, the tool data tables for that data manager are
   # automatically reloaded. Watchdog (
-  # https://pypi.python.org/pypi/watchdog ) must be installed and
-  # available to Galaxy to use this option. Other options include 'auto'
-  # which will attempt to use the watchdog library if it is available
-  # but won't fail to load Galaxy if it is not and 'polling' which will
-  # use a less efficient monitoring scheme that may work in wider range
-  # of scenarios than the watchdog default.
-  #watch_tool_data_dir: false
+  # https://pypi.org/project/watchdog/ ) must be installed and available
+  # to Galaxy to use this option. Other options include 'auto' which
+  # will attempt to use the watchdog library if it is available but
+  # won't fail to load Galaxy if it is not and 'polling' which will use
+  # a less efficient monitoring scheme that may work in wider range of
+  # scenarios than the watchdog default.
+  #watch_tool_data_dir: 'false'
 
   # File containing old-style genome builds
   #builds_file_path: tool-data/shared/ucsc/builds.txt
@@ -403,6 +409,12 @@ galaxy:
   # (though the first sniffer is used so limit sniffer definitions to
   # one file).
   #datatypes_config_file: config/datatypes_conf.xml
+
+  # Enable sniffing of compressed datatypes. This can be
+  # configured/overridden on a per-datatype basis in the
+  # datatypes_conf.xml file. With this option set to False the
+  # compressed datatypes will be unpacked before sniffing.
+  #sniff_compressed_dynamic_datatypes_default: true
 
   # Disable the 'Auto-detect' option for file uploads
   #datatypes_disable_auto: false
@@ -524,17 +536,17 @@ galaxy:
   # mail through an SMTP server, which you may define here (host:port).
   # Galaxy will automatically try STARTTLS but will continue upon
   # failure.
-  #smtp_server: null
+  #smtp_server: ''
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_username: null
+  #smtp_username: ''
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_password: null
+  #smtp_password: ''
 
   # If your SMTP server requires SSL from the beginning of the
   # connection
@@ -551,14 +563,14 @@ galaxy:
   # disabled if no address is set.  Also this email is shown as a
   # contact to user in case of Galaxy misconfiguration and other events
   # user may encounter.
-  #error_email_to: null
+  #error_email_to: ''
 
   # Email address to use in the 'From' field when sending emails for
   # account activations, workflow step notifications and password
   # resets. We recommend using string in the following format: Galaxy
   # Project <galaxy-no-reply@example.com> If not configured, '<galaxy-
   # no-reply@HOSTNAME>' will be used.
-  #email_from: null
+  #email_from: ''
 
   # URL of the support resource for the galaxy instance.  Used in
   # activation emails.
@@ -605,7 +617,7 @@ galaxy:
 
   # You can enter tracking code here to track visitor's behavior through
   # your Google Analytics account.  Example: UA-XXXXXXXX-Y
-  #ga_code: null
+  #ga_code: ''
 
   # Galaxy can display data at various external browsers.  These options
   # specify which browsers should be available.  URLs and builds
@@ -638,21 +650,20 @@ galaxy:
   #message_box_visible: false
 
   # Show a message box under the masthead.
-  #message_box_content: null
+  #message_box_content: ''
 
   # Show a message box under the masthead.
   #message_box_class: info
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
-  #brand: null
+  #brand: ''
 
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
   # function (see
-  # https://docs.python.org/2/library/time.html#time.strftime ), -
-  # $locale (complete format string for the server locale), - $iso8601
-  # (complete format string as specified by ISO 8601 international
-  # standard).
+  # https://docs.python.org/library/time.html#time.strftime ), - $locale
+  # (complete format string for the server locale), - $iso8601 (complete
+  # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
   # Default localization for Galaxy UI. Allowed values are listed at the
@@ -689,20 +700,23 @@ galaxy:
   # The URL linked by the "Galaxy/brand" text.
   #logo_url: /
 
+  # The URL linked by the "Galaxy Help" link in the "Help" menu.
+  #helpsite_url: ''
+
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: 'https://galaxyproject.org/'
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: 'https://galaxyproject.org/support'
+  #support_url: 'https://galaxyproject.org/support/'
 
   # Enable integration with a custom Biostar instance.
-  #biostar_url: null
+  #biostar_url: ''
 
   # Enable integration with a custom Biostar instance.
-  #biostar_key_name: null
+  #biostar_key_name: ''
 
   # Enable integration with a custom Biostar instance.
-  #biostar_key: null
+  #biostar_key: ''
 
   # Enable integration with a custom Biostar instance.
   #biostar_enable_bug_reports: true
@@ -729,7 +743,7 @@ galaxy:
   # The URL linked by the "Terms and Conditions" link in the "Help"
   # menu, as well as on the user registration and login forms and in the
   # activation emails.
-  #terms_url: null
+  #terms_url: ''
 
   # The URL linked by the "Galaxy Q&A" link in the "Help" menu The
   # Galaxy Q&A site is under development; when the site is done, this
@@ -788,16 +802,17 @@ galaxy:
   #display_chunk_size: 65536
 
   # For help on configuring the Advanced proxy features, see:
-  # http://usegalaxy.org/production  Apache can handle file downloads
-  # (Galaxy-to-user) via mod_xsendfile.  Set this to True to inform
-  # Galaxy that mod_xsendfile is enabled upstream.
+  # https://docs.galaxyproject.org/en/master/admin/production.html
+  # Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.
+  # Set this to True to inform Galaxy that mod_xsendfile is enabled
+  # upstream.
   #apache_xsendfile: false
 
   # The same download handling can be done by nginx using X-Accel-
   # Redirect.  This should be set to the path defined in the nginx
   # config as an internal redirect with access to Galaxy's data files
   # (see documentation linked above).
-  #nginx_x_accel_redirect_base: null
+  #nginx_x_accel_redirect_base: ''
 
   # If using compression in the upstream proxy server, use this option
   # to disable gzipping of library .tar.gz and .zip archives, since the
@@ -819,24 +834,24 @@ galaxy:
   # in detail in the documentation linked above.  The upload store is a
   # temporary directory in which files uploaded by the upload module
   # will be placed.
-  #nginx_upload_store: null
+  #nginx_upload_store: ''
 
   # This value overrides the action set on the file upload form, e.g.
   # the web path where the nginx_upload_module has been configured to
   # intercept upload requests.
-  #nginx_upload_path: null
+  #nginx_upload_path: ''
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_store: null
+  #nginx_upload_job_files_store: ''
 
   # Galaxy can also use nginx_upload_module to receive files staged out
   # upon job completion by remote job runners (i.e. Pulsar) that
   # initiate staging operations on the remote end.  See the Galaxy nginx
   # documentation for the corresponding nginx configuration.
-  #nginx_upload_job_files_path: null
+  #nginx_upload_job_files_path: ''
 
   # Galaxy can upload user files in chunks without using nginx. Enable
   # the chunk uploader by specifying a chunk size larger than 0. The
@@ -901,16 +916,15 @@ galaxy:
   # Galaxy instead of a JSON or SQLite file for IPC. If you do not
   # specify this, it will be set randomly for you. You should set this
   # if you are managing the proxy manually.
-  #dynamic_proxy_golang_api_key: null
+  #dynamic_proxy_golang_api_key: ''
 
   # If True, Galaxy will attempt to configure a simple root logger if a
   # "loggers" section does not appear in this configuration file.
   #auto_configure_logging: true
 
   # Verbosity of console log messages.  Acceptable values can be found
-  # here: https://docs.python.org/2/library/logging.html#logging-levels
-  # A custom debug level of "TRACE" is available for even more
-  # verbosity.
+  # here: https://docs.python.org/library/logging.html#logging-levels A
+  # custom debug level of "TRACE" is available for even more verbosity.
   #log_level: DEBUG
 
   # Controls where and how the server logs messages. If unset, the
@@ -918,7 +932,7 @@ galaxy:
   # defined by the `log_level` configuration option. Configuration is
   # described in the documentation at:
   # https://docs.galaxyproject.org/en/master/admin/config_logging.html
-  #logging: galaxy.config.LOGGING_CONFIG_DEFAULT
+  #logging: null
 
   # Print database operations to the server log (warning, quite
   # verbose!).
@@ -976,9 +990,8 @@ galaxy:
   # separated list of hostname strings or regular expressions beginning
   # and ending with /. E.g.
   # mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/ See:
-  # https://developer.mozilla.org/en-
-  # US/docs/Web/HTTP/Access_control_CORS
-  #allowed_origin_hostnames: null
+  # https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
+  #allowed_origin_hostnames: ''
 
   # Set the following to True to use Jupyter nbconvert to build HTML
   # from Jupyter notebooks in Galaxy histories.  This process may allow
@@ -1009,9 +1022,14 @@ galaxy:
 
   # When stopping Galaxy cleanly, how much time to give various
   # monitoring/polling threads to finish before giving up on joining
-  # them. Set to 0 to disable this and restore the pre-18.01 default
-  # behavior.
-  #monitor_thread_join_timeout: 5
+  # them. Set to 0 to disable this and terminate without waiting. Among
+  # others, these threads include the job handler workers, which are
+  # responsible for preparing/submitting and collecting/finishing jobs,
+  # and which can cause job errors if not shut down cleanly. If using
+  # supervisord, consider also increasing the value of `stopwaitsecs`.
+  # If using job handler mules, consider also setting the `mule-reload-
+  # mercy` uWSGI option. See the Galaxy Admin Documentation for more.
+  #monitor_thread_join_timeout: 30
 
   # Write thread status periodically to 'heartbeat.log',  (careful, uses
   # disk space rapidly!).  Useful to determine why your processes may be
@@ -1033,14 +1051,14 @@ galaxy:
   # errors will be sent to the indicated sentry instance.  This
   # connection string is available in your sentry instance under
   # <project_name> -> Settings -> API Keys.
-  #sentry_dsn: null
+  #sentry_dsn: ''
 
   # Sentry slow request logging.  Requests slower than the threshold
   # indicated below will be sent as events to the configured Sentry
   # server (above, sentry_dsn).  A value of '0' is disabled.  For
   # example, you would set this to .005 to log all queries taking longer
   # than 5 milliseconds.
-  #sentry_sloreq_threshold: 0
+  #sentry_sloreq_threshold: 0.0
 
   # Log to statsd Statsd is an external statistics aggregator
   # (https://github.com/etsy/statsd) Enabling the following options will
@@ -1074,7 +1092,7 @@ galaxy:
 
   # Add an option to the library upload form which allows administrators
   # to upload a directory of files.
-  #library_import_dir: null
+  #library_import_dir: ''
 
   # Add an option to the library upload form which allows authorized
   # non-administrators to upload a directory of files.  The configured
@@ -1082,7 +1100,7 @@ galaxy:
   # admin user's Galaxy login ( email ).  The non-admin user is
   # restricted to uploading files or sub-directories of files contained
   # in their directory.
-  #user_library_import_dir: null
+  #user_library_import_dir: ''
 
   # If user_library_import_dir is set, this option will auto create a
   # library import directory for every user (based on their email) upon
@@ -1096,7 +1114,7 @@ galaxy:
   # user with library import permissions can import from anywhere in
   # these directories (assuming they are able to create symlinks to
   # them).
-  #user_library_import_symlink_whitelist: null
+  #user_library_import_symlink_whitelist: ''
 
   # In conjunction or alternatively, Galaxy can restrict user library
   # imports to those files that the user can read (by checking basic
@@ -1133,31 +1151,31 @@ galaxy:
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_name_boost: 9
+  #tool_name_boost: 9.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_section_boost: 3
+  #tool_section_boost: 3.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_description_boost: 2
+  #tool_description_boost: 2.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_label_boost: 1
+  #tool_label_boost: 1.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
   # the given field.  Section refers to the tool group in the tool
   # panel.  Rest of the fields are tool's attributes.
-  #tool_stub_boost: 5
+  #tool_stub_boost: 5.0
 
   # Boosts are used to customize this instance's toolbox search. The
   # higher the boost, the more importance the scoring algorithm gives to
@@ -1201,15 +1219,15 @@ galaxy:
   # User authentication can be delegated to an upstream proxy server
   # (usually Apache).  The upstream proxy should set a REMOTE_USER
   # header in the request. Enabling remote user disables regular logins.
-  # For more information, see:   https://galaxyproject.org/admin/config
-  # /apache-proxy
+  # For more information, see: https://docs.galaxyproject.org/en/master/
+  # admin/special_topics/apache.html
   #use_remote_user: false
 
   # If use_remote_user is enabled and your external authentication
   # method just returns bare usernames, set a default mail domain to be
   # appended to usernames, to become your Galaxy usernames (email
   # addresses).
-  #remote_user_maildomain: null
+  #remote_user_maildomain: ''
 
   # If use_remote_user is enabled, the header that the upstream proxy
   # provides the remote username in defaults to HTTP_REMOTE_USER (the
@@ -1229,7 +1247,7 @@ galaxy:
 
   # If use_remote_user is enabled, you can set this to a URL that will
   # log your users out.
-  #remote_user_logout_href: null
+  #remote_user_logout_href: ''
 
   # If your proxy and/or authentication source does not normalize e-mail
   # addresses or user names being passed to Galaxy - set the following
@@ -1248,7 +1266,7 @@ galaxy:
   # Admin section of the server, and will have access to create users,
   # groups, roles, libraries, and more.  For more information, see:
   # https://galaxyproject.org/admin/
-  #admin_users: null
+  #admin_users: ''
 
   # Force everyone to log in (disable anonymous access).
   #require_login: false
@@ -1348,6 +1366,9 @@ galaxy:
   # of Galaxy's stable API.
   #enable_beta_workflow_modules: false
 
+  # Enable import and export of workflows as Galaxy Format 2 workflows.
+  #enable_beta_workflow_format: false
+
   # Following options only apply to workflows scheduled using the legacy
   # workflow run API (running workflows via a POST to /api/workflows).
   # Force usage of Galaxy's beta workflow scheduler under certain
@@ -1431,7 +1452,7 @@ galaxy:
 
   # Optional list of email addresses of API users who can make calls on
   # behalf of other users.
-  #api_allow_run_as: null
+  #api_allow_run_as: ''
 
   # Master key that allows many API admin actions to be used without
   # actually having a defined admin user in the database/config.  Only
@@ -1463,11 +1484,11 @@ galaxy:
   # options. This should point to a directory containing subdirectories
   # matching users' identifier (defaults to e-mail), where Galaxy will
   # look for files.
-  #ftp_upload_dir: null
+  #ftp_upload_dir: ''
 
   # This should be the hostname of your FTP server, which will be
   # provided to users in the help text.
-  #ftp_upload_site: null
+  #ftp_upload_site: ''
 
   # User attribute to use as subdirectory in calculating default
   # ftp_upload_dir pattern. By default this will be email so a user's
@@ -1518,7 +1539,7 @@ galaxy:
   # can separate Galaxy into multiple processes.  There are more than
   # one way to do this, and they are explained in detail in the
   # documentation:
-  # https://galaxyproject.org/admin/config/performance/scaling  By
+  # https://docs.galaxyproject.org/en/master/admin/scaling.html  By
   # default, Galaxy manages and executes jobs from within a single
   # process and notifies itself of new jobs via in-memory queues.  Jobs
   # are run locally on the system on which Galaxy is started.  Advanced
@@ -1617,26 +1638,26 @@ galaxy:
   #cleanup_job: always
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
   # #submitting-jobs-as-the-real-user) this script is used to run the
   # job script Galaxy generates for a tool execution.
   #drmaa_external_runjob_script: sudo -E scripts/drmaa_external_runner.py --assign_all_groups
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
   # #submitting-jobs-as-the-real-user) this script is used to kill such
   # jobs by Galaxy (e.g. if the user cancels the job).
   #drmaa_external_killjob_script: sudo -E scripts/drmaa_external_killer.py
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
   # #submitting-jobs-as-the-real-user) this script is used transfer
   # permissions back and forth between the Galaxy user and the user that
   # is running the job.
   #external_chown_script: sudo -E scripts/external_chown_script.py
 
   # When running DRMAA jobs as the Galaxy user
-  # (https://docs.galaxyproject.org/en/latest/admin/cluster.html
+  # (https://docs.galaxyproject.org/en/master/admin/cluster.html
   # #submitting-jobs-as-the-real-user) Galaxy can extract the user name
   # from the email address (actually the local-part before the @) or the
   # username which are both stored in the Galaxy data base. The latter
@@ -1658,7 +1679,7 @@ galaxy:
   # prior to running tools.  This can be especially useful for running
   # jobs as the actual user, to remove the need to configure each user's
   # environment individually.
-  #environment_setup_file: null
+  #environment_setup_file: ''
 
   # Optional file containing job resource data entry fields definition.
   # These fields will be presented to users in the tool forms and allow
@@ -1726,7 +1747,7 @@ galaxy:
 
   # The base module(s) that are searched for modules for toolbox
   # filtering (https://galaxyproject.org/user-defined-toolbox-filters/)
-  # producedures.
+  # functions.
   #toolbox_filter_base_modules: 'galaxy.tools.toolbox.filters,galaxy.tools.filters'
 
   # Galaxy uses AMQP internally for communicating between processes.
@@ -1753,4 +1774,9 @@ galaxy:
   # persistent_communication_rooms is a comma-separated list of rooms
   # that should be always available.
   #persistent_communication_rooms: null
+
+  # Allow disabling pbkdf2 hashing of passwords for legacy situations.
+  # This should normally be left enabled unless there is a specific
+  # reason to disable it.
+  #use_pbkdf2: true
 
