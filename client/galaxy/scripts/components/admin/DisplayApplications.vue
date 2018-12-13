@@ -26,9 +26,7 @@
     </div>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
-import axios from "axios";
+import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices.js"
 
 const errorMessageClass = "alert alert-danger";
 const infoMessageClass = "alert alert-info";
@@ -75,10 +73,7 @@ export default {
         }
     },
     created() {
-        let Galaxy = getGalaxyInstance();
-        let url = `${getAppRoot()}api/display_applications`;
-        axios
-            .get(url)
+        getDisplayApplications()
             .then(response => {
                 this.applications = response.data;
                 this.applicationsLoaded = true;
@@ -100,9 +95,7 @@ export default {
         },
         _reload: function(ids) {
             this._highlightRows(this.applicationsAll, "default");
-            let url = `${getAppRoot()}api/display_applications/reload`;
-            axios
-                .post(url, {ids: ids})
+            reloadDisplayApplications(ids)
                 .then(response => {
                     this.messageClass = infoMessageClass;
                     this.messageText = response.data.message;
