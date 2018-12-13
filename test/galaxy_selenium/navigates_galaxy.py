@@ -1005,7 +1005,7 @@ class NavigatesGalaxy(HasDriver):
         form_button.click()
 
     def workflow_sharing_click_publish(self):
-        self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
+        self.wait_for_and_click_selector("button[name='make_accessible_and_publish']")
 
     def tagging_add(self, tags, auto_closes=True, parent_selector=""):
 
