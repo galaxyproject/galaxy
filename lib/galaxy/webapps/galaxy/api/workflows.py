@@ -491,7 +491,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         elif 'unshare_user' in kwargs:
             user = session.query(model.User).get(trans.security.decode_id(kwargs['unshare_user']))
             if not user:
-                error("User not found for provided id")
+                return("User not found for provided id")
             association = session.query(model.StoredWorkflowUserShareAssociation) \
                                  .filter_by(user=user, stored_workflow=stored).one()
             session.delete(association)

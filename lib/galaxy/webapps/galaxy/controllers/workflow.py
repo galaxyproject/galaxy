@@ -329,7 +329,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         if kwargs:
             message = kwargs.get('message', False)
             if message:
-                status= kwargs.get('status', 'error')
+                status = kwargs.get('status', 'error')
                 redirect_url += '&message=' + message + '&status=' + status
         return trans.response.send_redirect(url_for('/') + redirect_url)
 
