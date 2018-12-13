@@ -360,7 +360,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         if job.history_id == history.id and not job.finished:
                             # No need to check other outputs since the job's parent history is this history
                             job.mark_deleted(trans.app.config.track_jobs_in_database)
-                            trans.app.job_manager.job_stop_queue.put(job.id)
+                            trans.app.job_manager.stop(job)
         trans.sa_session.flush()
         if n_deleted:
             part = "Deleted %d %s" % (n_deleted, iff(n_deleted != 1, "histories", "history"))

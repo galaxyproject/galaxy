@@ -1648,7 +1648,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     job.set_state(trans.app.model.Job.states.DELETED_NEW)
                     trans.sa_session.add(job)
                 else:
-                    trans.app.job_manager.job_stop_queue.put(job_id, error_msg=error_msg)
+                    trans.app.job_manager.stop(job, message=error_msg)
                 deleted.append(str(job_id))
         if deleted:
             msg = 'Queued job'

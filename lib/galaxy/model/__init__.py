@@ -561,6 +561,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                    RUNNING='running',
                    OK='ok',
                    ERROR='error',
+                   FAILED='failed',
                    PAUSED='paused',
                    DELETED='deleted',
                    DELETED_NEW='deleted_new')
@@ -861,6 +862,22 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
                 dataset.blurb = 'deleted'
                 dataset.peek = 'Job deleted'
                 dataset.info = 'Job output deleted by user before job completed'
+
+    def mark_failed(self, info="Job execution failed", blurb=None, peek=None):
+        """
+        Mark this job as failed, and mark any output datasets as errored.
+        """
+        self.state = self.states.FAILED
+        self.info = info
+        for jtod in self.output_datasets:
+            jtod.dataset.state = jtod.dataset.states.ERROR
+            for hda in jtod.dataset.dataset.history_associations:
+                hda.state = hda.states.ERROR
+                if blurb:
+                    hda.blurb = blurb
+                if peek:
+                    hda.peek = peek
+                hda.info = info
 
     def resume(self, flush=True):
         if self.state == self.states.PAUSED:
@@ -4389,6 +4406,17 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
         return target_invocation_step
 
     @staticmethod
+    def poll_unhandled_workflow_ids(sa_session):
+        and_conditions = [
+            WorkflowInvocation.state == WorkflowInvocation.states.NEW,
+            WorkflowInvocation.handler.is_(None)
+        ]
+        query = sa_session.query(
+            WorkflowInvocation.id
+        ).filter(and_(*and_conditions)).order_by(WorkflowInvocation.table.c.id.asc())
+        return [wid for wid in query.all()]
+
+    @staticmethod
     def poll_active_workflow_ids(
         sa_session,
         scheduler=None,
@@ -4535,6 +4563,18 @@ class WorkflowInvocation(UsesCreateAndUpdateTime, Dictifiable, RepresentById):
             if content.workflow_step_id == step_id:
                 return True
         return False
+
+    def set_handler(self, handler):
+        self.handler = handler
+
+    def log_str(self):
+        extra = ""
+        safe_id = getattr(self, "id", None)
+        if safe_id is not None:
+            extra += "id=%s" % safe_id
+        else:
+            extra += "unflushed"
+        return "%s[%s]" % (self.__class__.__name__, extra)
 
 
 class WorkflowInvocationToSubworkflowInvocationAssociation(Dictifiable, RepresentById):
