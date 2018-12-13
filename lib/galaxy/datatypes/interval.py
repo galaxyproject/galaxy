@@ -1695,24 +1695,6 @@ class GTrack(Interval):
     VALUE_TYPE = 'value type:'
     VALUE_DIMENSION = 'value dimension:'
 
-    # TODO: Implement GTrack sniffer
-    # Rules for being a GTrack file, if either
-    # 1. "GTrack version" header exists
-    # 2. "GTrack subtype" header exists
-    # 3. "Subtype URL" header exists, and points to a real URL
-    # 4. Column spec line exists, and:
-    #   - At least one of the core reserved columns (start, end, value, edges) exist
-    #     - Although to be complicated value and edges column might have another name if
-    #       the "value column" and "edges column" headers is set
-    #     - The number of columns in the data lines and column lines are the same (expect for
-    #         the last line, which might be cut short due to the cutoff)
-    #
-    # NB: Try to reuse and refine existing parse function instead of implementing them twice
-    # Example files: GTrack files to try can be found at:
-    #    https://github.com/gtrack/gtrackcore/tree/master/gtrackcore/data/gtrack
-    #    Just try by uploading the files into Galaxy with and without sniffing (autodetect type)
-    #    You unfortunately need to restart Galaxy for each code change..
-    # Note: file_prefix is a string of the beginning 1 MB of the file (or so)
     def sniff_prefix(self, file_prefix):
         hash_count_to_lines, num_data_lines, data_lines = self._parse_file(file_prefix.string_io(), True)
         column_line = None
@@ -1780,7 +1762,6 @@ class GTrack(Interval):
         for col in cols:
             col_type = self.GTRACK_STD_COLUMN_TYPES.get(col)
             if not col_type:
-                # TODO: Handle "value column", "value type" and "value dimensions" header lines
                 if col == 'value':
                     if value_type:
                         col_type = value_type
@@ -1791,7 +1772,6 @@ class GTrack(Interval):
             col_types.append(col_type)
         dataset.metadata.column_types = col_types
 
-        # TODO: Set the Galaxy std columns to match GTrack file
         if 'seqid' in cols:
             dataset.metadata.chromCol = cols.index('seqid')
         if 'start' in cols:
@@ -1803,7 +1783,6 @@ class GTrack(Interval):
 
 
     def set_peek(self, dataset, is_multi_byte=False):
-        # hash_count_to_lines, num_data_lines = self._parse_file(dataset.file_name)
         if not dataset.dataset.purged:
             dataset.blurb = 'GTrack file contains: {} comment lines, ' \
                             '{} header lines (incl. colspec), ' \
@@ -1821,34 +1800,11 @@ class GTrack(Interval):
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
 
-    # TODO: You probably need this to properly handle the value column
-    # Note: Header variables are case insensitive, so handle them as lower-case
-    # def _parse_headers(self, header_lines):
-
     def _parse_file(self, input_file, include_data = False):
-        from collections import defaultdict
-        hash_count_to_lines = defaultdict(list)
-        num_data_lines = 0
-        data_lines = []
+        from galaxy.datatypes.tabular import GSuite
 
-        for line in input_file:
-            line = line.strip()
-            if not line:
-                continue
-            if line.startswith('#'):
-                num_hashes = len(line) - len(line.lstrip('#'))
-                # More than 4 hashes do not have a meaning, handle as comment
-                if num_hashes > 4:
-                    num_hashes = 1
-                hash_count_to_lines[num_hashes].append(line.lstrip('#').strip())
-            else:
-                num_data_lines += 1
-                if include_data:
-                    data_lines.append(line.strip())
-        if include_data:
-            return hash_count_to_lines, num_data_lines, data_lines
+        return GSuite._parse_file(input_file, include_data)
 
-        return hash_count_to_lines, num_data_lines
 
     def get_mime(self):
         return 'text/plain'
@@ -1859,22 +1815,6 @@ class GTrack(Interval):
             column_line = column_line.replace(value_column, self.GTRACK_COLUMN_NAMES_MAPPING[column_name])
 
         return column_line
-
-    # TODO: I have not investigated whether we neet to implement the below functions.
-    # TODO: Might also be other functions we might need to implement
-    # def as_ucsc_display_file(self, dataset, **kwd):
-    #     """
-    #         Returns file contents as is with no modifications.
-    #         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
-    #     """
-    #     return open(dataset.file_name)
-    #
-    # def get_estimated_display_viewport(self, dataset, chrom_col=0, start_col=1, end_col=2):
-    #     """
-    #         Set viewport based on dataset's first 100 lines.
-    #     """
-    #     return Interval.get_estimated_display_viewport(self, dataset, chrom_col=chrom_col,
-    #                                                    start_col=start_col, end_col=end_col)
 
 
 class ENCODEPeak(Interval):

@@ -1,0 +1,7 @@
+##subtype url: http://gtrack.no/bed_direct.gtrack
+
+# Note: the BED subtype has here been extended with an extra description column.
+
+###seqid	start	end	name	value	strand	thickStart	thickEnd	itemRgb	blockCount	blockSizes	blockStarts	description
+chr22	1000	5000	cloneA	960	+	1000	5000	0	2	567,488,	0,3512	Not interesting
+chr22	2000	6000	cloneB	900	-	2000	6000	0	2	433,399,	0,3601	A very interesting gene

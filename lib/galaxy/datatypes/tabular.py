@@ -2040,6 +2040,9 @@ class GSuite(Tabular):
         column_lines = hash_count_to_lines[3]
         if column_lines:
             self._set_meta_for_column_line(dataset, column_lines[0])
+        else:
+            dataset.metadata.columns = 1
+            dataset.metadata.column_types = ['string']
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
