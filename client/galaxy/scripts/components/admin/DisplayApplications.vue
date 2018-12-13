@@ -3,6 +3,9 @@
         <div v-if="messageVisible" :class="messageClass">
             {{ messageText }}
         </div>
+        <div v-if="!applicationsVisible" class="alert alert-warning">
+            No display applications available.
+        </div>
         <div v-if="applicationsVisible" class="card-header">
             There are currently {{ applicationsLength }}
             <a class="icon-btn" @click.prevent="reloadAll()" title="Reload all display applications" data-placement="bottom">
@@ -28,7 +31,7 @@ import { getGalaxyInstance } from "app";
 import axios from "axios";
 
 const errorMessageClass = "alert alert-danger";
-const successMessageClass = "alert alert-info";
+const infoMessageClass = "alert alert-info";
 
 export default {
     data() {
@@ -99,7 +102,7 @@ export default {
             axios
                 .post(url, {ids: ids})
                 .then(response => {
-                    this.messageClass = successMessageClass;
+                    this.messageClass = infoMessageClass;
                     this.messageText = response.data.message;
                     this._highlightRows(response.data.failed, "danger");
                     this._highlightRows(response.data.reloaded, "success");
