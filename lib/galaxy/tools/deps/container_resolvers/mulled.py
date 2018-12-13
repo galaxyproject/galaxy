@@ -112,7 +112,8 @@ def identifier_to_cached_target(identifier, hash_func, namespace=None):
         build = None
         if version and "--" in version:
             version, build = split_tag(version)
-
+        if prefix and image_name.startswith(prefix):
+            image_name = image_name[len(prefix):]
         image = CachedMulledImageSingleTarget(image_name, version, build, identifier)
     return image
 
