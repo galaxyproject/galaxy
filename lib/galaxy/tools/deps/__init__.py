@@ -137,6 +137,7 @@ class DependencyManager(object):
         index = kwds.get('index', None)
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
+        enabled_container_types = kwds.pop('enabled_container_types', [])
 
         resolvable_requirements = requirements.resolvable
         tool_info = ToolInfo(requirements=resolvable_requirements)
@@ -171,7 +172,7 @@ class DependencyManager(object):
             if all_unmet and resolve is not None:
                 # TODO: Handle specs.
                 dependencies = resolve(requirements=resolvable_requirements,
-                                       enabled_container_types=['docker', 'singularity'],
+                                       enabled_container_types=enabled_container_types,
                                        tool_info=tool_info,
                                        **kwds)
                 if dependencies:

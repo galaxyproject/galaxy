@@ -46,10 +46,17 @@ class DependencyResolversView(object):
         """
         Resolves dependencies to build a requirements status in the admin panel/API
         """
+        enabled_container_types = set()
+        for destinations in self._app.job_config.destinations.values():
+            for destination in destinations:
+                enabled_container_types.update(self._app.container_finder._enabled_container_types(destination.params))
         kwds = {'install': False,
                 'return_null': True,
                 'installed_tool_dependencies': installed_tool_dependencies}
-        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements, **kwds) for tool, requirements in tool_requirements_d.items()}
+        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements,
+                                                                                             enabled_container_types=enabled_container_types,
+                                                                                             **kwds)
+                                 for tool, requirements in tool_requirements_d.items()}
         return dependencies_per_tool
 
     def uninstall_dependencies(self, index=None, **payload):
