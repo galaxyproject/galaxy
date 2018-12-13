@@ -13,7 +13,7 @@ class ExplicitContainerResolver(ContainerResolver):
 
     resolver_type = "explicit"
 
-    def resolve(self, enabled_container_types, tool_info):
+    def resolve(self, enabled_container_types, tool_info, **kwds):
         """Find a container explicitly mentioned in tool description.
 
         This ignores the tool requirements and assumes the tool author crafted
