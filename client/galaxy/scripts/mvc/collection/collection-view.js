@@ -1,3 +1,5 @@
+import _ from "underscore";
+import { getAppRoot } from "onload/loadConfig";
 import LIST_VIEW from "mvc/list/list-view";
 import DC_MODEL from "mvc/collection/collection-model";
 import DC_LI from "mvc/collection/collection-li";
@@ -40,7 +42,7 @@ var CollectionView = _super.extend(
             this.parentName = attributes.parentName;
             /** foldout or drilldown */
             this.foldoutStyle = attributes.foldoutStyle || "foldout";
-            this.downloadUrl = `${Galaxy.root}api/dataset_collections/${this.model.attributes.id}/download`;
+            this.downloadUrl = `${getAppRoot()}api/dataset_collections/${this.model.attributes.id}/download`;
         },
 
         getNestedDCDCEViewClass: function() {

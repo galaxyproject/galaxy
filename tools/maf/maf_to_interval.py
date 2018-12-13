@@ -35,9 +35,9 @@ def __main__():
     all_species.sort()
     for spec in species:
         if spec == primary_spec:
-            out_files[spec] = open(output_filename, 'wb+')
+            out_files[spec] = open(output_filename, 'w+')
         else:
-            out_files[spec] = open(os.path.join(database_tmp_dir, 'primary_%s_%s_visible_interval_%s' % (output_id, spec, spec)), 'wb+')
+            out_files[spec] = open(os.path.join(database_tmp_dir, 'primary_%s_%s_visible_interval_%s' % (output_id, spec, spec)), 'w+')
         out_files[spec].write('#chrom\tstart\tend\tstrand\tscore\tname\t%s\n' % ('\t'.join(all_species)))
     num_species = len(all_species)
 

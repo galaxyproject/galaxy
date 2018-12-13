@@ -84,8 +84,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         assert pair_1_element["element_index"] == 0, pair_1_element
         pair_1_object = pair_1_element["object"]
         self._assert_has_keys(pair_1_object, "collection_type", "elements", "element_count")
-        self.assertEquals(pair_1_object["collection_type"], "paired")
-        self.assertEquals(pair_1_object["populated"], True)
+        self.assertEqual(pair_1_object["collection_type"], "paired")
+        self.assertEqual(pair_1_object["populated"], True)
         pair_elements = pair_1_object["elements"]
         assert len(pair_elements) == 2
         pair_1_element_1 = pair_elements[0]
@@ -160,7 +160,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
 
     def test_hda_security(self):
         element_identifiers = self.dataset_collection_populator.pair_identifiers(self.history_id)
-
+        self.dataset_populator.make_private(self.history_id, element_identifiers[0]["id"])
         with self._different_user():
             history_id = self.dataset_populator.new_history()
             payload = dict(
@@ -169,11 +169,8 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
                 element_identifiers=json.dumps(element_identifiers),
                 collection_type="paired",
             )
-
-            self._post("dataset_collections", payload)
-            # TODO: re-enable once there is a way to restrict access
-            # to this dataset via the API.
-            # self._assert_status_code_is( create_response, 403 )
+            create_response = self._post("dataset_collections", payload)
+            self._assert_status_code_is(create_response, 403)
 
     def test_enforces_unique_names(self):
         element_identifiers = self.dataset_collection_populator.list_identifiers(self.history_id)
@@ -204,7 +201,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
-        self.assertEquals(hdca["name"], "Test upload")
+        self.assertEqual(hdca["name"], "Test upload")
         hdca_tags = hdca["tags"]
         assert len(hdca_tags) == 1
         assert "name:collection1" in hdca_tags
@@ -231,7 +228,7 @@ class DatasetCollectionApiTestCase(api.ApiTestCase):
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
-        self.assertEquals(hdca["name"], "Test upload")
+        self.assertEqual(hdca["name"], "Test upload")
         assert len(hdca["elements"]) == 1, hdca
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "samp1"

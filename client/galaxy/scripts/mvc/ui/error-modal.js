@@ -1,4 +1,7 @@
+import _ from "underscore";
+import $ from "jquery";
 import _l from "utils/localization";
+import { getGalaxyInstance } from "app";
 
 //TODO: toastr is another possibility - I didn't see where I might add details, tho
 
@@ -32,6 +35,7 @@ var DETAILS_MSG = _l("The following information can assist the developers in fin
 
 /** private helper that builds the modal and handles adding details */
 function _errorModal(message, title, details) {
+    let Galaxy = getGalaxyInstance();
     // create and return the modal, adding details button only if needed
     Galaxy.modal.show({
         title: title,
@@ -71,9 +75,10 @@ function errorModal(message, title, details) {
         return;
     }
 
+    let Galaxy = getGalaxyInstance();
     message = _l(message);
     title = _l(title) || _l("Error:");
-    if (window.Galaxy && Galaxy.modal) {
+    if (Galaxy && Galaxy.modal) {
         return _errorModal(message, title, details);
     }
 
@@ -108,6 +113,7 @@ function ajaxErrorModal(model, xhr, options, message, title) {
 
 /** build details which may help debugging the ajax call */
 function _ajaxDetails(model, xhr, options) {
+    let Galaxy = getGalaxyInstance();
     return {
         //TODO: still can't manage Raven id
         raven: _.result(window.Raven, "lastEventId"),

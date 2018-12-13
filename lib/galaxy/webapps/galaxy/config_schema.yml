@@ -5,7 +5,7 @@ desc: |
   environment.  To tune the application for a multi-user production
   environment, see the documentation at:
 
-   http://usegalaxy.org/production
+   https://docs.galaxyproject.org/en/master/admin/production.html
 
   Throughout this sample configuration file, except where stated otherwise,
   uncommented values override the default if left unset, whereas commented
@@ -45,7 +45,7 @@ mapping:
 
       cookie_path:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If proxy-prefix is enabled and you're running more than one Galaxy instance
@@ -109,7 +109,7 @@ mapping:
 
       database_template:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If auto-creating a postgres database on startup - it can be based on an existing
@@ -271,10 +271,18 @@ mapping:
 
       conda_ensure_channels:
         type: str
-        default: iuc,bioconda,conda-forge,defaults
+        default: iuc,conda-forge,bioconda,defaults
         required: false
         desc: |
-          conda channels to enable by default (http://conda.pydata.org/docs/custom-channels.html)
+          conda channels to enable by default
+          (https://conda.io/docs/user-guide/tasks/manage-channels.html)
+
+      conda_use_local:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Use locally-built conda packages.
 
       conda_auto_install:
         type: bool
@@ -342,13 +350,13 @@ mapping:
 
       watch_tools:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of tools and tool directories
           listed in any tool config file specified in tool_config_file option.
           If changes are found, tools are automatically reloaded.  Watchdog (
-          https://pypi.python.org/pypi/watchdog ) must be installed and
+          https://pypi.org/project/watchdog/ ) must be installed and
           available to Galaxy to use this option. Other options include 'auto'
           which will attempt to watch tools if the watchdog library is available
           but won't fail to load Galaxy if it is not and 'polling' which will use
@@ -357,7 +365,7 @@ mapping:
 
       watch_job_rules:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of dynamic job rules. If changes are
@@ -386,14 +394,14 @@ mapping:
         desc: |
           Enable Galaxy to fetch Docker containers registered with quay.io generated
           from tool requirements resolved through conda. These containers (when
-          available) have been generated using mulled - https://github.com/mulled.
+          available) have been generated using mulled - https://github.com/mulled .
           These containers are highly beta and availability will vary by tool.
           This option will additionally only be used for job destinations with
           Docker enabled.
 
       containers_resolvers_config_file:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Container resolvers configuration (beta). Setup a file describing container
@@ -489,13 +497,13 @@ mapping:
 
       watch_tool_data_dir:
         type: str
-        default: false
+        default: 'false'
         required: false
         desc: |
           Set to True to enable monitoring of the tool_data and shed_tool_data_path
           directories. If changes in tool data table files are found, the tool data
           tables for that data manager are automatically reloaded.
-          Watchdog ( https://pypi.python.org/pypi/watchdog ) must be installed and
+          Watchdog ( https://pypi.org/project/watchdog/ ) must be installed and
           available to Galaxy to use this option. Other options include 'auto'
           which will attempt to use the watchdog library if it is available but won't
           fail to load Galaxy if it is not and 'polling' which will use a less
@@ -525,6 +533,17 @@ mapping:
           Galaxy (.sample is used if default does not exist).  If a datatype appears in
           multiple files, the last definition is used (though the first sniffer is used
           so limit sniffer definitions to one file).
+
+      sniff_compressed_dynamic_datatypes_default:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Enable sniffing of compressed datatypes. This can be configured/overridden
+          on a per-datatype basis in the datatypes_conf.xml file.
+          With this option set to False the compressed datatypes will be unpacked
+          before sniffing.
+
 
       datatypes_disable_auto:
         type: bool
@@ -641,7 +660,7 @@ mapping:
           Number of checks to execute if check_job_script_integrity is enabled.
 
       check_job_script_integrity_sleep:
-        type: str
+        type: float
         default: .25
         required: false
         desc: |
@@ -708,7 +727,7 @@ mapping:
 
       smtp_server:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Galaxy sends mail for various things: subscribing users to the mailing list
@@ -719,7 +738,7 @@ mapping:
 
       smtp_username:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -728,7 +747,7 @@ mapping:
 
       smtp_password:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -753,7 +772,7 @@ mapping:
 
       error_email_to:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Datasets in an error state include a link to report the error.  Those reports
@@ -763,7 +782,7 @@ mapping:
 
       email_from:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Email address to use in the 'From' field when sending emails for
@@ -847,7 +866,7 @@ mapping:
 
       ga_code:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           You can enter tracking code here to track visitor's behavior
@@ -899,7 +918,7 @@ mapping:
 
       message_box_content:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Show a message box under the masthead.
@@ -913,7 +932,7 @@ mapping:
 
       brand:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -926,7 +945,7 @@ mapping:
           Format string used when showing date and time information.
           The string may contain:
           - the directives used by Python time.strftime() function (see
-            https://docs.python.org/2/library/time.html#time.strftime ),
+            https://docs.python.org/library/time.html#time.strftime ),
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
@@ -985,6 +1004,13 @@ mapping:
         desc: |
           The URL linked by the "Galaxy/brand" text.
 
+      helpsite_url:
+        type: str
+        default: ''
+        required: false
+        desc: |
+          The URL linked by the "Galaxy Help" link in the "Help" menu.
+
       wiki_url:
         type: str
         default: https://galaxyproject.org/
@@ -994,28 +1020,28 @@ mapping:
 
       support_url:
         type: str
-        default: https://galaxyproject.org/support
+        default: https://galaxyproject.org/support/
         required: false
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
 
       biostar_url:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable integration with a custom Biostar instance.
 
       biostar_key_name:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable integration with a custom Biostar instance.
 
       biostar_key:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable integration with a custom Biostar instance.
@@ -1072,7 +1098,7 @@ mapping:
 
       terms_url:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
@@ -1179,14 +1205,14 @@ mapping:
         required: false
         desc: |
           For help on configuring the Advanced proxy features, see:
-          http://usegalaxy.org/production
+          https://docs.galaxyproject.org/en/master/admin/production.html
 
           Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.  Set
           this to True to inform Galaxy that mod_xsendfile is enabled upstream.
 
       nginx_x_accel_redirect_base:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           The same download handling can be done by nginx using X-Accel-Redirect.  This
@@ -1218,7 +1244,7 @@ mapping:
 
       nginx_upload_store:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -1228,7 +1254,7 @@ mapping:
 
       nginx_upload_path:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           This value overrides the action set on the file upload form, e.g. the web
@@ -1237,7 +1263,7 @@ mapping:
 
       nginx_upload_job_files_store:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1247,7 +1273,7 @@ mapping:
 
       nginx_upload_job_files_path:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -1362,7 +1388,7 @@ mapping:
 
       dynamic_proxy_golang_api_key:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           The golang proxy uses a RESTful HTTP API for communication with Galaxy
@@ -1384,12 +1410,12 @@ mapping:
         required: false
         desc: |
           Verbosity of console log messages.  Acceptable values can be found here:
-          https://docs.python.org/2/library/logging.html#logging-levels
+          https://docs.python.org/library/logging.html#logging-levels
           A custom debug level of "TRACE" is available for even more verbosity.
 
       logging:
         type: map
-        default: galaxy.config.LOGGING_CONFIG_DEFAULT
+        allowempty: True
         desc: |
           Controls where and how the server logs messages. If unset, the default is to log all messages to standard
           output at the level defined by the `log_level` configuration option. Configuration is described in the
@@ -1482,7 +1508,7 @@ mapping:
 
       allowed_origin_hostnames:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Return a Access-Control-Allow-Origin response header that matches the Origin
@@ -1490,7 +1516,7 @@ mapping:
           regular expressions listed here. This is a comma separated list of hostname
           strings or regular expressions beginning and ending with /.
           E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
-          See: https://developer.mozilla.org/en-US/docs/Web/HTTP/Access_control_CORS
+          See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 
       trust_jupyter_notebook_conversion:
         type: bool
@@ -1544,12 +1570,17 @@ mapping:
 
       monitor_thread_join_timeout:
         type: int
-        default: 5
+        default: 30
         required: false
         desc: |
           When stopping Galaxy cleanly, how much time to give various monitoring/polling
           threads to finish before giving up on joining them. Set to 0 to disable this and
-          restore the pre-18.01 default behavior.
+          terminate without waiting. Among others, these threads include the job handler
+          workers, which are responsible for preparing/submitting and collecting/finishing
+          jobs, and which can cause job errors if not shut down cleanly. If using
+          supervisord, consider also increasing the value of `stopwaitsecs`. If using job
+          handler mules, consider also setting the `mule-reload-mercy` uWSGI option. See
+          the Galaxy Admin Documentation for more.
 
       use_heartbeat:
         type: bool
@@ -1579,7 +1610,7 @@ mapping:
 
       sentry_dsn:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Log to Sentry
@@ -1590,7 +1621,7 @@ mapping:
 
       sentry_sloreq_threshold:
         type: float
-        default: 0
+        default: 0.0
         required: false
         desc: |
           Sentry slow request logging.  Requests slower than the threshold
@@ -1646,7 +1677,7 @@ mapping:
 
       library_import_dir:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows administrators to
@@ -1654,7 +1685,7 @@ mapping:
 
       user_library_import_dir:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Add an option to the library upload form which allows authorized
@@ -1673,7 +1704,7 @@ mapping:
 
       user_library_import_symlink_whitelist:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           For security reasons, users may not import any files that actually lie
@@ -1727,7 +1758,7 @@ mapping:
 
       tool_name_boost:
         type: float
-        default: 9
+        default: 9.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1737,7 +1768,7 @@ mapping:
 
       tool_section_boost:
         type: float
-        default: 3
+        default: 3.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1747,7 +1778,7 @@ mapping:
 
       tool_description_boost:
         type: float
-        default: 2
+        default: 2.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1757,7 +1788,7 @@ mapping:
 
       tool_label_boost:
         type: float
-        default: 1
+        default: 1.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1767,7 +1798,7 @@ mapping:
 
       tool_stub_boost:
         type: float
-        default: 5
+        default: 5.0
         required: false
         desc: |
           Boosts are used to customize this instance's toolbox search.
@@ -1849,11 +1880,11 @@ mapping:
           User authentication can be delegated to an upstream proxy server (usually
           Apache).  The upstream proxy should set a REMOTE_USER header in the request.
           Enabling remote user disables regular logins.  For more information, see:
-            https://galaxyproject.org/admin/config/apache-proxy
+          https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html
 
       remote_user_maildomain:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If use_remote_user is enabled and your external authentication
@@ -1885,7 +1916,7 @@ mapping:
 
       remote_user_logout_href:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           If use_remote_user is enabled, you can set this to a URL that will log your
@@ -1912,7 +1943,7 @@ mapping:
 
       admin_users:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Administrative users - set this to a comma-separated list of valid Galaxy
@@ -2088,6 +2119,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
+      enable_beta_workflow_format:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable import and export of workflows as Galaxy Format 2 workflows.
+
       force_beta_workflow_scheduled_min_steps:
         type: int
         default: 250
@@ -2143,7 +2181,7 @@ mapping:
           invocation to schedule indefinitely. The default corresponds to 1 month.
 
       maximum_workflow_jobs_per_scheduling_iteration:
-        type: str
+        type: int
         default: -1
         required: false
         desc: |
@@ -2216,7 +2254,7 @@ mapping:
 
       api_allow_run_as:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Optional list of email addresses of API users who can make calls on behalf of
@@ -2262,7 +2300,7 @@ mapping:
 
       ftp_upload_dir:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
@@ -2273,7 +2311,7 @@ mapping:
 
       ftp_upload_site:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           This should be the hostname of your FTP server, which will be provided to
@@ -2374,7 +2412,7 @@ mapping:
           separate Galaxy into multiple processes.  There are more than one way to do
           this, and they are explained in detail in the documentation:
 
-            https://galaxyproject.org/admin/config/performance/scaling
+            https://docs.galaxyproject.org/en/master/admin/scaling.html
 
           By default, Galaxy manages and executes jobs from within a single process and
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
@@ -2403,9 +2441,8 @@ mapping:
         default: true
         required: false
         desc: |
-          In multiprocess configurations, notification between processes about new jobs
-          must be done via the database.  In single process configurations, this can be
-          done in memory, which is a bit quicker.
+          This option is deprecated, use the `mem-self` handler assignment option in the
+          job configuration instead.
 
       use_tasked_jobs:
         type: bool
@@ -2512,7 +2549,7 @@ mapping:
         required: false
         desc: |
           When running DRMAA jobs as the Galaxy user
-          (https://docs.galaxyproject.org/en/latest/admin/cluster.html#submitting-jobs-as-the-real-user)
+          (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
           this script is used to run the job script Galaxy generates for a tool execution.
 
       drmaa_external_killjob_script:
@@ -2521,7 +2558,7 @@ mapping:
         required: false
         desc: |
           When running DRMAA jobs as the Galaxy user
-          (https://docs.galaxyproject.org/en/latest/admin/cluster.html#submitting-jobs-as-the-real-user)
+          (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
           this script is used to kill such jobs by Galaxy (e.g. if the user cancels
           the job).
 
@@ -2531,7 +2568,7 @@ mapping:
         required: false
         desc: |
           When running DRMAA jobs as the Galaxy user
-          (https://docs.galaxyproject.org/en/latest/admin/cluster.html#submitting-jobs-as-the-real-user)
+          (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
           this script is used transfer permissions back and forth between the Galaxy user
           and the user that is running the job.
 
@@ -2541,7 +2578,7 @@ mapping:
         required: false
         desc: |
           When running DRMAA jobs as the Galaxy user
-          (https://docs.galaxyproject.org/en/latest/admin/cluster.html#submitting-jobs-as-the-real-user)
+          (https://docs.galaxyproject.org/en/master/admin/cluster.html#submitting-jobs-as-the-real-user)
           Galaxy can extract the user name from the email address (actually the local-part before the @)
           or the username which are both stored in the Galaxy data base.
           The latter option is particularly useful for installations that get the
@@ -2553,7 +2590,7 @@ mapping:
 
       environment_setup_file:
         type: str
-        default: null
+        default: ''
         required: false
         desc: |
           File to source to set up the environment when running jobs.  By default, the
@@ -2664,7 +2701,7 @@ mapping:
         required: false
         desc: |
           The base module(s) that are searched for modules for toolbox filtering
-          (https://galaxyproject.org/user-defined-toolbox-filters/) producedures.
+          (https://galaxyproject.org/user-defined-toolbox-filters/) functions.
 
       amqp_internal_connection:
         type: str
@@ -2708,3 +2745,12 @@ mapping:
         required: false
         desc: |
           persistent_communication_rooms is a comma-separated list of rooms that should be always available.
+
+      use_pbkdf2:
+        type: bool
+        default: true
+        required: false
+        desc: |
+          Allow disabling pbkdf2 hashing of passwords for legacy situations.
+          This should normally be left enabled unless there is a specific
+          reason to disable it.

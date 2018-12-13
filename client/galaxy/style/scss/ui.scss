@@ -6,11 +6,7 @@
     -ms-user-select: none; /* IE10+ */
 }
 
-// remove padding
-.no-padding {
-    padding: 0px !important;
-}
-
+// prevents transitions i.e. when reseting a progress bar
 .no-transition {
     -webkit-transition: none !important;
     -moz-transition: none !important;
@@ -19,6 +15,7 @@
     transition: none !important;
 }
 
+// rotates an element i.e. used for font-awesome icons
 .fa-rotate-45 {
     -webkit-transform: rotate(45deg);
     -moz-transform: rotate(45deg);
@@ -27,80 +24,17 @@
     transform: rotate(45deg);
 }
 
+// utility class from: https://github.com/twbs/bootstrap/pull/27268
+.overflow-auto {
+    overflow: auto !important;
+}
+
 // default margins
-$ui-margin-vertical: 5px;
-$ui-margin-vertical-large: 10px;
-$ui-margin-horizontal: 5px;
-$ui-margin-horizontal-small: 4px;
-$ui-margin-horizontal-large: 10px;
-
-// helpers
-.ui-clear-float {
-    clear: both !important;
-    float: none !important;
-}
-
-// margins
-.ui-margin-top {
-    padding-top: $ui-margin-vertical !important;
-}
-
-.ui-margin-top-large {
-    padding-top: $ui-margin-vertical-large !important;
-}
-
-.ui-margin-bottom {
-    margin-bottom: $ui-margin-vertical !important;
-}
-
-.ui-margin-right {
-    margin-right: $ui-margin-horizontal-small !important;
-}
-
-.ui-margin-both {
-    @extend .ui-margin-top;
-    @extend .ui-margin-bottom;
-}
-
-// non-interactive elements
-.ui-error {
-    -moz-border-radius: $border-radius-base;
-    border-radius: $border-radius-base;
-    background: $state-danger-bg;
-    padding: $ui-margin-vertical;
-}
-
-.ui-label {
-    font-weight: bold;
-}
-
-.ui-tags {
-    word-wrap: break-word;
-    padding-right: 25px;
-}
-
-.ui-column {
-    .ui-column-left {
-        width: 49%;
-        float: left;
-        .ui-message {
-            margin-top: 5px;
-        }
-    }
-    .ui-column-right {
-        width: 49%;
-        float: right;
-        margin-top: 5px;
-    }
-}
-
-.ui-message {
-    padding: 2px 10px 2px 10px;
-    margin-top: $ui-margin-vertical-large;
-    margin-bottom: 0px;
-    width: 100%;
-    word-wrap: break-word;
-}
+$ui-margin-vertical: $margin-v * 0.25;
+$ui-margin-vertical-large: $margin-v * 0.5;
+$ui-margin-horizontal: $margin-h;
+$ui-margin-horizontal-small: $margin-h * 0.5;
+$ui-margin-horizontal-large: $margin-v * 2;
 
 .ui-modal {
     display: none;
@@ -123,34 +57,10 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
-.ui-modal-styled {
-    @extend .ui-modal;
-    ul {
-        list-style-type: square;
-        padding: 5px 25px;
-    }
-}
-
-// icons
-.ui-icon {
-    font-size: 1.2em;
-    width: 1.2em;
-}
-.ui-icon-button {
-    @extend .ui-icon;
-    cursor: pointer;
-}
-
 // buttons
 .ui-button-default {
     float: right;
-    .icon {
-        font-size: 1.1em;
-    }
     .progress {
-        height: 4px;
-        margin: 0px;
-        margin-top: 2px;
         .progress-bar {
             @extend .no-transition;
             background: darken($state-success-bg, 30%);
@@ -158,121 +68,25 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
-.ui-button-icon {
-    @extend .icon-btn;
-    @extend .no-highlight;
-    height: auto !important;
-    width: auto !important;
-    float: right;
-    ul {
-        i {
-            width: 1.2em;
-            font-size: 1.2em;
-            margin-right: $ui-margin-horizontal;
-            position: relative;
-            top: 1px;
-        }
-    }
-    .button {
-        margin-right: $ui-margin-horizontal;
-        margin-left: $ui-margin-horizontal;
-        .title {
-            position: relative;
-            font-size: 0.8em;
-            font-weight: normal;
-            top: -1px;
-            word-wrap: break-word;
-        }
-    }
-    .button.disabled {
-        opacity: 0.65;
-    }
-}
-
-.ui-button-menu {
-    .dropdown-menu {
-        min-width: 50px;
-    }
-    .dropdown-item {
-        text-align: left;
-    }
-    .dropdown-toggle::after {
-        display: none;
-    }
-}
-
 .ui-button-icon-plain {
     @extend .icon-btn;
+    @extend .p-0;
     border: none !important;
     background: none !important;
-    height: inherit !important;
-    width: inherit !important;
-    padding-right: 3px !important;
     float: right;
 }
 
-// side panel
-.ui-side-panel {
-    color: $base-text-color;
-    background: $side-panel-bg;
-    padding: 10px;
-    min-height: 100%;
-    .ui-side-section-title {
-        font-weight: bold;
+.ui-button-check {
+    .icon {
+        font-size: 1.2em;
+        width: 1em;
     }
-    .ui-side-section-body {
-        .ui-side-section-body-title {
-            padding-top: 5px;
-            padding-bottom: 5px;
-            margin-left: 16px;
-            margin-right: 10px;
-            display: list-item;
-            list-style: square outside;
-        }
-        .ui-side-section-body-title:last-child {
-            padding-bottom: 15px;
-        }
-    }
-}
-
-// panel
-.ui-panel {
-    .ui-panel-table {
-        margin-left: 20px;
-        margin-right: 20px;
-        .ui-panel-icon {
-            margin: 10px;
-            margin-right: 20px;
-            font-size: 1.6em;
-        }
-        .ui-panel-anchor {
-            font-weight: bold;
-        }
-    }
-    .ui-panel-footer {
-        margin-top: 10px;
-    }
+    cursor: pointer;
 }
 
 // tabs
-.ui-tabs {
-    .tab-operations {
-        float: right;
-        margin-bottom: 4px;
-        .ui-button-icon {
-            margin-left: 4px;
-        }
-    }
-    .tab-element {
-        cursor: pointer;
-    }
-    .tab-icon {
-        font-size: 1.1em;
-        margin-right: $ui-margin-horizontal;
-    }
-    .tab-delete {
-        font-size: 0.8em;
-        margin-left: $ui-margin-horizontal;
+.tabbable {
+    .nav-item {
         cursor: pointer;
     }
 }
@@ -304,57 +118,6 @@ $ui-margin-horizontal-large: 10px;
         .ui-thumbnails-text {
             text-decoration: underline;
         }
-    }
-}
-
-// tables
-.ui-table {
-    @extend .grid;
-    tbody {
-        cursor: pointer;
-        td {
-            // TODO: Fixme -- figure out what this actually pulled in.
-            //@extend .grid.tbody.td;
-        }
-    }
-}
-
-.ui-table-striped {
-    @extend .table;
-    @extend .table-striped;
-    width: 100%;
-    margin-bottom: 0px;
-    th {
-        text-align: center;
-        white-space: nowrap;
-        padding: 0.5rem;
-    }
-    td {
-        margin: 0px;
-        padding: 0.5rem;
-        .ui-button-icon {
-            line-height: 1.2em;
-        }
-    }
-}
-
-.ui-table-plain {
-    @extend .ui-table;
-    table-layout: fixed;
-
-    tbody {
-        cursor: auto !important;
-        td {
-            padding: 0px !important;
-            border: none !important;
-        }
-    }
-
-    .ui-table-section {
-        border-left: solid 3px $form-heading-bg;
-        border-radius: $border-radius-large !important;
-        margin-bottom: $ui-margin-vertical;
-        padding-left: 10px;
     }
 }
 
@@ -411,9 +174,6 @@ $ui-margin-horizontal-large: 10px;
         box-shadow: none !important;
         height: auto !important;
     }
-    .workflow-right .right-content {
-        margin-bottom: 10px;
-    }
 }
 
 .ui-form-element-disabled {
@@ -423,142 +183,45 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
-.ui-form-separator {
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-.ui-form-help {
-    overflow: auto;
-    word-wrap: break-word;
-}
-
-.ui-form-info {
-    @extend .toolParamHelp;
-    clear: both !important;
-    word-wrap: break-word;
-    i {
-        font-size: 1.2em;
-        padding: 2px 5px;
-    }
-    .ui-form-title {
-        clear: both;
-        font-weight: bold;
-        padding-right: $ui-margin-horizontal;
-    }
-}
-
-.ui-form-error {
-    display: none;
-    .ui-form-error-text {
-        padding-left: $ui-margin-horizontal;
-    }
-}
-
-.ui-form-section {
-    border-left: solid 3px $form-heading-bg;
-    border-radius: $border-radius-large !important;
-    padding-left: 10px;
-}
-
 .ui-form-composite {
-    max-width: 900px;
     height: 100%;
     flex-direction: column;
     display: flex;
-    .ui-form-header {
-        @extend h3;
-        margin-top: 0px;
-        .ui-label {
-            width: calc(100% - 200px);
-        }
-    }
     .ui-steps {
         overflow: auto;
-        margin-top: 15px;
-        border: dashed 1px darken($form-heading-bg, 30%);
-        border-radius: $border-radius-base;
-        padding: $ui-margin-horizontal;
-        .ui-portlet-narrow {
-            .portlet-header {
-                padding: 1px 5px 0px 8px;
-            }
-            padding: 0px $ui-margin-horizontal 0px $ui-margin-horizontal;
-            .portlet-content {
-                padding: 0px $ui-margin-horizontal 0px $ui-margin-horizontal;
-            }
-            .ui-table-section,
-            .ui-portlet-repeat .portlet-content {
-                padding-left: $ui-margin-horizontal-large;
-            }
-        }
-    }
-    .ui-message {
-        margin-top: 0px;
-        margin-bottom: 10px;
     }
 }
 
 // portlets
 .ui-portlet {
-    border: solid $form-border 1px;
-    border-radius: $border-radius-base;
-    position: relative;
-    clear: both;
-    width: auto;
-    height: auto;
-    .portlet-header {
-        background: $form-heading-bg;
-        border-bottom: solid $form-border 1px;
-        padding: 2px 8px;
-        overflow: visible;
-        width: 100%;
+    @extend .card;
+    border: none;
+    height: 100%;
+    .portlet-header:first-child {
+        @extend .card-header;
+        @extend .rounded;
+        background: $gray-200;
         .portlet-title {
-            word-wrap: break-word;
-            display: inline;
-            vertical-align: middle;
-            font-weight: bold;
-            .portlet-title-text {
-                vertical-align: middle;
-                line-height: 22px;
-            }
-            .portlet-title-text.no-highlight.collapsible {
+            .portlet-title-text.collapsible {
                 cursor: pointer;
                 text-decoration: underline;
             }
-            .portlet-title-icon {
-                font-size: 1.2em;
-                vertical-align: middle;
-                margin-right: 5px;
-            }
         }
         .portlet-operations {
-            .ui-button-icon {
-                margin-left: $ui-margin-horizontal;
+            button {
+                @extend .ml-1;
             }
         }
     }
-    .portlet-content {
-        height: inherit;
-        padding-left: 10px;
-        padding-right: 10px;
-        clear: both;
-        .portlet-body {
-            padding: 0px;
-            height: 100%;
-            width: 100%;
-        }
-        .portlet-buttons {
-            margin-top: $ui-margin-vertical-large;
-            margin-bottom: $ui-margin-vertical-large;
-            > .btn {
-                margin-right: 5px;
-            }
+    .portlet-buttons {
+        button {
+            @extend .float-left;
+            @extend .mr-1;
         }
     }
-    .portlet-content.nopadding,
-    .portlet-body.nopadding {
-        padding: 0px;
+    > .portlet-content {
+        @extend .card-body;
+        @extend .p-0;
     }
     .portlet-backdrop {
         display: none;
@@ -573,210 +236,50 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
-.ui-portlet-repeat {
-    @extend .ui-portlet;
-    border: none;
-    border-left: solid 3px $form-heading-bg;
-    border-radius: $border-radius-large;
-    margin-bottom: $ui-margin-vertical;
-    .portlet-header {
-        background: $form-heading-bg;
-        border-radius: $border-radius-large;
-        border-bottom-left-radius: 0px;
-        border-top-left-radius: 0px;
-        padding: 0px 2px;
-        .portlet-title-text {
-            vertical-align: middle;
-            line-height: 20px !important;
-        }
-    }
-    .portlet-content {
-        padding-right: 0px;
-    }
-}
-
-.ui-portlet-panel {
-    @extend .ui-portlet-repeat;
-    margin-top: $ui-margin-vertical;
-    border-left: solid 3px $side-panel-bg;
-    .portlet-header {
-        background: $side-panel-bg;
-        border-bottom: solid darken($side-panel-bg, 10%) 1px;
-    }
-}
-
 .ui-portlet-section {
-    @extend .ui-portlet-panel;
-    .portlet-highlight {
-        text-decoration: underline;
-    }
-}
-
-.ui-portlet-narrow {
-    @extend .ui-portlet-limited;
-    border: none;
-    margin-bottom: $ui-margin-vertical-large;
-    .portlet-header {
-        border-radius: $border-radius-base;
-        .portlet-operations {
-            .ui-button-icon {
-                margin-left: 3px;
-            }
-        }
-    }
-    .ui-portlet-repeat {
-        .portlet-header {
-            border-radius: $border-radius-large;
-            border-bottom-left-radius: 0px;
-            border-top-left-radius: 0px;
-        }
-    }
-    .portlet-content {
-        padding: 0px;
-    }
-    .ui-table-section,
-    .ui-portlet-repeat .portlet-content {
-        padding-left: $ui-margin-horizontal;
-    }
-}
-
-.ui-portlet-limited {
     @extend .ui-portlet;
-    max-width: 900px;
-}
-
-.ui-portlet-plain {
-    @extend .ui-portlet;
+    @extend .mb-2;
     border: none;
-    .portlet-content {
-        padding: 0px;
+    border-left: solid 3px $gray-200;
+    border-radius: $border-radius-large;
+    .portlet-header:first-child {
+        background: $gray-200;
+        @extend .rounded-0;
+        border-top-right-radius: $border-radius-large !important;
+        padding: 5px;
+    }
+    > .portlet-content {
+        @extend .pl-2;
+        @extend .pr-0;
     }
 }
 
 // popovers
-.ui-popover {
+.popover {
     max-width: 700px;
-    display: none;
-    opacity: 1;
-    margin-top: 0.5rem;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1010;
-    display: none;
-    padding: 1px;
-    text-align: left;
-    background-color: #ffffff;
-    background-clip: padding-box;
-    border: 1px solid #ccc;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 0.25rem;
-    -webkit-box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
-    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2);
-    white-space: normal;
-    .popover-close {
-        position: absolute;
-        right: 10px;
-        top: 7px;
-        font-size: 1.2em;
-        cursor: pointer;
-    }
-    .popover-title {
-        margin: 0;
-        padding: 0.5em 1rem;
-        font-size: inherit;
-        font-weight: normal;
-        line-height: 1rem;
-        background-color: #f7f7f7;
-        border-bottom: 1px solid #ebebeb;
-        border-radius: 0.25rem 0.25rem 0 0;
-    }
-    .popover-content {
-        padding: 0.6em 1rem;
-    }
-    .arrow {
-        border-width: 0.68rem;
-    }
-    .arrow::after {
-        border-width: 0.68rem;
-        content: "";
-    }
-    .arrow,
-    .arrow::after {
-        position: absolute;
-        display: block;
-        width: 0;
-        height: 0;
-        border-color: transparent;
-        border-bottom-color: transparent;
-        border-style: solid;
-    }
-    &.bottom {
-        .arrow {
-            left: 50%;
-            margin-left: -0.65rem;
-            border-top-width: 0;
-            border-bottom-color: #999;
-            border-bottom-color: rgba(0, 0, 0, 0.25);
-            top: -0.72rem;
-        }
-
-        .arrow::after {
-            content: " ";
-            top: 0.05rem;
-            margin-left: -0.6rem;
-            border-top-width: 0;
-            border-bottom-color: #ffffff;
-        }
-    }
-    &.top {
-        margin-top: -0.6rem;
-        .arrow {
-            left: 50%;
-            margin-left: -0.65rem;
-            border-width: 0.4rem;
-            border-bottom-width: 0;
-            border-top-color: #999;
-            border-top-color: rgba(0, 0, 0, 0.25);
-            bottom: -0.65rem;
-        }
-        .arrow::after {
-            content: " ";
-            bottom: 0.05rem;
-            margin-left: -0.6rem;
-            border-bottom-width: 0;
-            border-top-color: #ffffff;
+    .popover-header {
+        i {
+            @extend .float-right;
+            @extend .pl-4;
+            font-size: 1.1em;
+            cursor: pointer;
         }
     }
 }
 
 // input elements
 .ui-input {
-    width: 100%;
-    display: block;
+    @extend .form-control;
+    @extend .pt-1;
+    @extend .pl-2;
     height: $input-height;
-    padding: $padding-base-vertical $ui-margin-horizontal !important;
-    font-size: $font-size-base;
-    line-height: $line-height-base;
-    color: $input-color;
-    border: 1px solid $input-border;
-    border-radius: $input-border-radius;
-    @include box-shadow(inset 0 1px 1px rgba(0, 0, 0, 0.075));
-    background-image: none;
     background: transparent;
-    -webkit-appearance: none;
-    -moz-border-radius: $border-radius-base;
     &[disabled],
     &[readonly],
     fieldset[disabled] & {
         cursor: not-allowed;
-        background-color: $input-bg-disabled;
+        background-color: $gray-200;
     }
-}
-
-.ui-input-basic {
-    @extend .ui-input;
-    @include box-shadow(inset 0 -1px 1px rgba(0, 0, 0, 0.075));
 }
 
 .ui-textarea {
@@ -838,46 +341,6 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
-.ui-form-slider {
-    display: inline-block;
-    width: 100%;
-    .ui-form-slider-text {
-        @extend .ui-input;
-    }
-
-    .ui-form-slider-left {
-        float: left;
-        width: 100px;
-    }
-
-    .ui-form-slider-element {
-        width: calc(100% - 110px);
-        float: left;
-        top: 8px;
-        left: 10px;
-    }
-}
-
-.ui-radiobutton {
-    top: -2px;
-    input {
-        display: none;
-    }
-    label {
-        padding: 2px 10px;
-        margin: 0px;
-    }
-}
-
-.ui-button-check {
-    .icon {
-        font-size: 1.2em;
-        width: 1.2em;
-    }
-    cursor: pointer;
-    margin-bottom: $ui-margin-vertical;
-}
-
 .ui-color-picker {
     .ui-color-picker-header {
         cursor: pointer;
@@ -937,78 +400,29 @@ $ui-margin-horizontal-large: 10px;
     }
 }
 
-.ui-list {
-    .ui-list-select {
-        float: left;
-        width: calc(100% - 30px);
-    }
-    .ui-list-button {
-        .ui-button-icon {
-            margin-top: 3px;
-            margin-right: 5px;
-            float: left;
-        }
-    }
-    .ui-list-message,
-    .ui-list-portlet {
-        clear: both;
-        padding-top: 1px;
-    }
-    .ui-list-id {
-        cursor: pointer;
-        margin-top: 5px;
-        .ui-list-delete {
-            font-size: 1.2em;
-            margin-right: 5px;
-        }
-    }
-}
-
-.ui-gs-select-file {
-    .ui-gs-filename-textbox {
-        float: right;
-        width: calc(100% - 76px);
-    }
-    .ui-gs-browse-button {
-        float: left;
-        .ui-button-icon {
-            margin-top: 3px;
-            margin-right: 5px;
-        }
-    }
-    .ui-gs-browse-field {
-        height: $input-height;
-        line-height: $line-height-base;
-    }
-}
-
 .ui-select {
     position: relative;
     .icon-dropdown {
         position: absolute;
-        top: 7px;
-        right: 8px;
+        top: 0.7rem;
+        right: 0.5rem;
         cursor: pointer;
-    }
-    .icon-resize {
-        display: none;
     }
     select {
-        position: relative;
-        top: 0px;
-        height: 27px;
-        width: 100%;
-        padding-right: 20px;
-        @extend .ui-input-basic;
+        @extend .ui-input;
         cursor: pointer;
-        padding-left: 5px;
+        -webkit-appearance: none;
+        -moz-border-radius: $border-radius-base;
     }
     .select2-container {
         width: 100%;
         .select2-choice {
-            height: 27px;
-            @extend .ui-input-basic;
-            padding-left: 5px;
+            @extend .ui-input;
+            background-image: none;
+            background: transparent;
+            -webkit-appearance: none;
+            -moz-border-radius: $border-radius-base;
+            line-height: 1.5rem;
             .select2-arrow {
                 display: none;
             }
@@ -1017,36 +431,29 @@ $ui-margin-horizontal-large: 10px;
     .select2-container-multi {
         .select2-choices {
             @extend .ui-input;
-            padding: 0px;
         }
     }
 }
 
 .ui-select-multiple {
     .icon-resize {
-        display: block;
         position: absolute;
-        bottom: 0px;
-        right: 0px;
-        width: 20px;
-        height: 20px;
+        right: 0rem;
         cursor: row-resize;
         i {
             position: absolute;
-            right: 3px;
-            bottom: 2px;
+            right: 0.2rem;
+            bottom: 0.2rem;
         }
     }
     select {
-        height: 80px;
-        @include box-shadow(inset 0 1px 1px rgba(0, 0, 0, 0.075));
+        min-height: 8rem;
     }
 }
 
 .ui-select-content {
     .ui-options {
-        float: left;
-        padding-top: 2px;
+        @extend .float-left;
     }
 }
 
@@ -1069,45 +476,11 @@ $ui-margin-horizontal-large: 10px;
     background: lighten($state-success-bg, 10%) !important;
 }
 
-.ui-limitloader {
-    padding: 10px;
-    float: left;
-    font-weight: bold;
-    display: none;
-}
-
-// global select2 adjustments
-.select2-container .select2-choice,
-.select2-container .select2-choices {
+// select2 adjustments
+.select2-drop-active,
+.select2-drop-above.select2-drop-active {
     border: 1px solid $input-border;
-}
-.select2-dropdown-open .select2-choice,
-.select2-dropdown-open .select2-choices {
-    border: 1px solid $input-border;
-    border-bottom-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-}
-.select2-dropdown-open.select2-drop-above .select2-choice,
-.select2-dropdown-open.select2-drop-above .select2-choices {
-    border: 1px solid $input-border;
-    border-top-left-radius: 0px;
-    border-top-right-radius: 0px;
-}
-.select2-drop-active {
-    border: 1px solid $input-border;
-    border-radius: $input-border-radius;
-    border-top-left-radius: 0px;
-    border-top-right-radius: 0px;
     .select2-search {
-        padding-top: 5px;
-    }
-}
-.select2-drop.select2-drop-above.select2-drop-active {
-    border: 1px solid $input-border;
-    border-radius: $input-border-radius;
-    border-bottom-left-radius: 0px;
-    border-bottom-right-radius: 0px;
-    .select2-search {
-        padding-top: 0px;
+        @extend .pt-1;
     }
 }

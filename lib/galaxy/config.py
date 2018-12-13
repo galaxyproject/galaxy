@@ -154,7 +154,7 @@ def find_root(kwargs):
 
 
 class Configuration(object):
-    deprecated_options = ('database_file', )
+    deprecated_options = ('database_file', 'track_jobs_in_database')
 
     def __init__(self, **kwargs):
         self.config_dict = kwargs
@@ -382,6 +382,8 @@ class Configuration(object):
         # workflows built using these modules may not function in the
         # future.
         self.enable_beta_workflow_modules = string_as_bool(kwargs.get('enable_beta_workflow_modules', 'False'))
+        # Enable use of gxformat2 workflows.
+        self.enable_beta_workflow_format = string_as_bool(kwargs.get('enable_beta_workflow_format', 'False'))
         # These are not even beta - just experiments - don't use them unless
         # you want yours tools to be broken in the future.
         self.enable_beta_tool_formats = string_as_bool(kwargs.get('enable_beta_tool_formats', 'False'))
@@ -423,7 +425,7 @@ class Configuration(object):
         self.use_heartbeat = string_as_bool(kwargs.get('use_heartbeat', 'False'))
         self.heartbeat_interval = int(kwargs.get('heartbeat_interval', 20))
         self.heartbeat_log = kwargs.get('heartbeat_log', None)
-        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 5))
+        self.monitor_thread_join_timeout = int(kwargs.get("monitor_thread_join_timeout", 30))
         self.log_actions = string_as_bool(kwargs.get('log_actions', 'False'))
         self.log_events = string_as_bool(kwargs.get('log_events', 'False'))
         self.sanitize_all_html = string_as_bool(kwargs.get('sanitize_all_html', True))
@@ -445,6 +447,7 @@ class Configuration(object):
         self.message_box_class = kwargs.get('message_box_class', 'info')
         self.support_url = kwargs.get('support_url', 'https://galaxyproject.org/support')
         self.citation_url = kwargs.get('citation_url', 'https://galaxyproject.org/citing-galaxy')
+        self.helpsite_url = kwargs.get('helpsite_url', None)
         self.wiki_url = kwargs.get('wiki_url', 'https://galaxyproject.org/')
         self.blog_url = kwargs.get('blog_url', None)
         self.screencasts_url = kwargs.get('screencasts_url', None)
@@ -466,7 +469,7 @@ class Configuration(object):
         # allow_path_paste value.
         self.allow_library_path_paste = string_as_bool(kwargs.get('allow_library_path_paste', self.allow_path_paste))
         self.disable_library_comptypes = kwargs.get('disable_library_comptypes', '').lower().split(',')
-        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", False))
+        self.sniff_compressed_dynamic_datatypes_default = string_as_bool(kwargs.get("sniff_compressed_dynamic_datatypes_default", True))
         self.check_upload_content = string_as_bool(kwargs.get('check_upload_content', True))
         self.watch_tools = kwargs.get('watch_tools', 'false')
         self.watch_tool_data_dir = kwargs.get('watch_tool_data_dir', 'false')

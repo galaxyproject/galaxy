@@ -59,7 +59,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
         # ... effectively a good fit to have this here, but not semantically
-        if self.user_manager.is_admin(user):
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
         return item.user == user
 
@@ -244,7 +244,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         """
         Returns true if `slug` is valid.
         """
-        VALID_SLUG_RE = re.compile("^[a-z0-9\-]+$")
+        VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
         return VALID_SLUG_RE.match(slug)
 
     def _existing_set_of_slugs(self, user):
@@ -259,9 +259,9 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
 
     def _slugify(self, start_with):
         # Replace whitespace with '-'
-        slug_base = re.sub("\s+", "-", start_with)
+        slug_base = re.sub(r"\s+", "-", start_with)
         # Remove all non-alphanumeric characters.
-        slug_base = re.sub("[^a-zA-Z0-9\-]", "", slug_base)
+        slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
         # Remove trailing '-'.
         if slug_base.endswith('-'):
             slug_base = slug_base[:-1]

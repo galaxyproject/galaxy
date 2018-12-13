@@ -2,6 +2,7 @@
 API operations on the contents of a history dataset.
 """
 import logging
+import os
 
 from six import string_types
 
@@ -13,6 +14,9 @@ from galaxy import (
     web
 )
 from galaxy.datatypes import dataproviders
+from galaxy.util.path import (
+    safe_walk
+)
 from galaxy.visualization.data_providers.genome import (
     BamDataProvider,
     FeatureLocationIndexDataProvider,
@@ -33,6 +37,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         super(DatasetsController, self).__init__(app)
         self.hda_manager = managers.hdas.HDAManager(app)
         self.hda_serializer = managers.hdas.HDASerializer(self.app)
+        self.ldda_manager = managers.lddas.LDDAManager(app)
 
     def _parse_serialization_params(self, kwd, default_view):
         view = kwd.get('view', None)
@@ -92,6 +97,26 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             log.error(rval + ": %s" % str(e), exc_info=True)
             trans.response.status = 500
         return rval
+
+    @web._future_expose_api
+    def update_permissions(self, trans, dataset_id, payload, **kwd):
+        """
+        PUT /api/datasets/{encoded_dataset_id}/permissions
+        Updates permissions of a dataset.
+
+        :rtype:     dict
+        :returns:   dictionary containing new permissions
+        """
+        if payload:
+            kwd.update(payload)
+        hda_ldda = kwd.get('hda_ldda', 'hda')
+        dataset_assoc = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
+        if hda_ldda == "hda":
+            self.hda_manager.update_permissions(trans, dataset_assoc, **kwd)
+            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+        else:
+            self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
+            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
 
     def _dataset_state(self, trans, dataset, **kwargs):
         """
@@ -280,6 +305,25 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
         data = data_provider.get_data(**kwargs)
 
         return data
+
+    @web.expose_api_anonymous
+    def extra_files(self, trans, history_content_id, history_id, **kwd):
+        """
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/extra_files
+        Generate list of extra files.
+        """
+        decoded_content_id = self.decode_id(history_content_id)
+
+        hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
+        extra_files_path = hda.extra_files_path
+        rval = []
+        for root, directories, files in safe_walk(extra_files_path):
+            for directory in directories:
+                rval.append({"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)})
+            for file in files:
+                rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
+
+        return rval
 
     @web.expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,

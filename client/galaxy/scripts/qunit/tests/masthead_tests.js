@@ -1,8 +1,7 @@
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import Masthead from "layout/masthead";
-
-/* global QUnit */
-/* global $ */
 
 QUnit.module("Masthead test", {
     beforeEach: function() {
@@ -32,10 +31,12 @@ QUnit.module("Masthead test", {
             enable_cloud_launch: true,
             user_requests: true
         });
-        $("body").append(this.masthead.render().$el);
+        this.container = this.masthead.render().$el;
+        $("body").append(this.container);
     },
     afterEach: function() {
         testApp.destroy();
+        this.container.remove();
     }
 });
 

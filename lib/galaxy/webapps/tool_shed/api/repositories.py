@@ -68,7 +68,7 @@ class RepositoriesController(BaseAPIController):
         :param owner (required): the owner of the Repository
         """
         response_dict = {}
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             response_dict['status'] = 'error'
             response_dict['message'] = "You are not authorized to add entries to this Tool Shed's repository registry."
             return response_dict
@@ -317,7 +317,7 @@ class RepositoriesController(BaseAPIController):
         irm = capsule_manager.ImportRepositoryManager(self.app,
                                                       trans.request.host,
                                                       trans.user,
-                                                      trans.user_is_admin())
+                                                      trans.user_is_admin)
         capsule_dict['tar_archive'] = tar_archive
         capsule_dict['capsule_file_name'] = capsule_file_name
         capsule_dict = irm.extract_capsule_files(**capsule_dict)
@@ -532,7 +532,7 @@ class RepositoriesController(BaseAPIController):
         :param owner (required): the owner of the Repository
         """
         response_dict = {}
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             response_dict['status'] = 'error'
             response_dict['message'] = "You are not authorized to remove entries from this Tool Shed's repository registry."
             return response_dict
@@ -573,7 +573,7 @@ class RepositoriesController(BaseAPIController):
                                        in addition to those repositories of type tool_dependency_definition.  This param is ignored
                                        if the current user is not an admin user, in which case this same restriction is automatic.
         """
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             my_writable = util.asbool(my_writable)
         else:
             my_writable = True
@@ -660,7 +660,7 @@ class RepositoriesController(BaseAPIController):
                     # Skip comments.
                     continue
                 encoded_ids_to_skip.append(line.rstrip('\n'))
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             my_writable = util.asbool(payload.get('my_writable', False))
         else:
             my_writable = True
@@ -1056,7 +1056,7 @@ class RepositoriesController(BaseAPIController):
 
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
 
-        if not (trans.user_is_admin() or
+        if not (trans.user_is_admin or
                 self.app.security_agent.user_can_administer_repository(trans.user, repository) or
                 self.app.security_agent.can_push(self.app, trans.user, repository)):
             trans.response.status = 400

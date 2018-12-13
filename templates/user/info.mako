@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 
-<% is_admin = cntrller == 'admin' and trans.user_is_admin() %>
+<% is_admin = cntrller == 'admin' and trans.user_is_admin %>
 
 <%def name="render_user_info()">
 
@@ -18,24 +18,24 @@
             }
 
             function renderError(message) {
-                $(".donemessage").hide();
-                if ($(".errormessage").length === 1) {
-                    $(".errormessage").html(message);
+                $(".alert-info").hide();
+                if ($(".alert-danger").length === 1) {
+                    $(".alert-danger").html(message);
                 } else {
                     var div = document.createElement( "div" );
-                    div.className = "errormessage";
+                    div.className = "alert alert-danger";
                     div.innerHTML = message;
                     document.body.insertBefore( div, document.body.firstChild );
                 }
             }
 
             function renderDone(message) {
-                $(".errormessage").hide();
-                if ($(".donemessage").length === 1) {
-                    $(".donemessage").html(message);
+                $(".alert-danger").hide();
+                if ($(".alert-info").length === 1) {
+                    $(".alert-info").html(message);
                 } else {
                     var div = document.createElement( "div" );
-                    div.className = "donemessage";
+                    div.className = "alert alert-info";
                     div.innerHTML = message;
                     document.body.insertBefore( div, document.body.firstChild );
                 }

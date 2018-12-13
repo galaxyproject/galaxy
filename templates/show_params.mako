@@ -26,7 +26,7 @@
         if upgrade_messages is None:
             upgrade_messages = {}
     %>
-    %for input_index, input in enumerate( input_params.itervalues() ):
+    %for input_index, input in enumerate( input_params.values() ):
         %if input.name in param_values:
             %if input.type == "repeat":
                 %for i in range( len(param_values[input.name]) ):
@@ -176,28 +176,28 @@
         %endif
         <tr><td>History Content API ID:</td>
         <td>${encoded_hda_id}
-            %if trans.user_is_admin():
+            %if trans.user_is_admin:
                 (${hda.id})
             %endif
         </td></tr>
         %if job:
             <tr><td>Job API ID:</td>
             <td>${trans.security.encode_id( job.id )}
-                %if trans.user_is_admin():
+                %if trans.user_is_admin:
                     (${job.id})
                 %endif
             </td></tr>
         %endif
         <tr><td>History API ID:</td>
         <td>${encoded_history_id}
-            %if trans.user_is_admin():
+            %if trans.user_is_admin:
                 (${hda.history_id})
             %endif
         </td></tr>
         %if hda.dataset.uuid:
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif
-        %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+        %if trans.user_is_admin or trans.app.config.expose_dataset_path:
             %if not hda.purged:
                 <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
             %endif
@@ -242,18 +242,18 @@
 
 
 
-%if job and job.command_line and (trans.user_is_admin() or trans.app.config.expose_dataset_path):
+%if job and job.command_line and (trans.user_is_admin or trans.app.config.expose_dataset_path):
 <h3>Command Line</h3>
 <pre class="code">
 ${ job.command_line | h }</pre>
 %endif
 
-%if job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics):
+%if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
 <h3>Job Metrics</h3>
 <% job_metrics = trans.app.job_metrics %>
 <% plugins = set([metric.plugin for metric in job.metrics]) %>
     %for plugin in sorted(plugins):
-    %if trans.user_is_admin() or plugin != 'env':
+    %if trans.user_is_admin or plugin != 'env':
     <h4>${ plugin | h }</h4>
     <table class="tabletip info_data_table">
         <tbody>
@@ -271,7 +271,7 @@ ${ job.command_line | h }</pre>
     %endfor
 %endif
 
-%if trans.user_is_admin():
+%if trans.user_is_admin:
 <h3>Destination Parameters</h3>
     <table class="tabletip">
         <tbody>
@@ -303,7 +303,7 @@ ${ job.command_line | h }</pre>
             <th>Dependency</th>
             <th>Dependency Type</th>
             <th>Version</th>
-            %if trans.user_is_admin():
+            %if trans.user_is_admin:
             <th>Path</th>
             %endif
         </tr>
@@ -314,7 +314,7 @@ ${ job.command_line | h }</pre>
                 <tr><td>${ dependency['name'] | h }</td>
                     <td>${ dependency['dependency_type'] | h }</td>
                     <td>${ dependency['version'] | h }</td>
-                    %if trans.user_is_admin():
+                    %if trans.user_is_admin:
                         %if 'environment_path' in dependency:
                         <td>${ dependency['environment_path'] | h }</td>
                         %elif 'path' in dependency:

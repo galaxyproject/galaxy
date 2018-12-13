@@ -1517,7 +1517,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         # Purging a deleted User deletes all of the following:
         # - History where user_id = User.id
         #    - HistoryDatasetAssociation where history_id = History.id
-        #    - Dataset where HistoryDatasetAssociation.dataset_id = Dataset.id
         # - UserGroupAssociation where user_id == User.id
         # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
         # - UserAddress where user_id == User.id
@@ -1533,11 +1532,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                 trans.sa_session.refresh(h)
                 for hda in h.active_datasets:
                     # Delete HistoryDatasetAssociation
-                    d = trans.sa_session.query(trans.app.model.Dataset).get(hda.dataset_id)
-                    # Delete Dataset
-                    if not d.deleted:
-                        d.deleted = True
-                        trans.sa_session.add(d)
                     hda.deleted = True
                     trans.sa_session.add(hda)
                 h.deleted = True
@@ -1654,7 +1648,7 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                     job.set_state(trans.app.model.Job.states.DELETED_NEW)
                     trans.sa_session.add(job)
                 else:
-                    trans.app.job_manager.job_stop_queue.put(job_id, error_msg=error_msg)
+                    trans.app.job_manager.stop(job, message=error_msg)
                 deleted.append(str(job_id))
         if deleted:
             msg = 'Queued job'

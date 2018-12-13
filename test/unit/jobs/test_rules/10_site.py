@@ -1,3 +1,4 @@
+from galaxy.jobs import JobDestination
 
 
 def upload():
@@ -13,6 +14,20 @@ def tool1():
     # function name in dynamic destination - this function should be used by
     # default.
     return 'tool1_dest_id'
+
+
+def dynamic_chain_1():
+    # Check whether chaining dynamic job destinations work
+    return JobDestination(runner="dynamic",
+                          params={'type': 'python',
+                                  'function': 'dynamic_chain_2',
+                                  'test_param': 'my_test_param'})
+
+
+def dynamic_chain_2(test_param):
+    # Check whether chaining dynamic job destinations work
+    assert test_param == "my_test_param"
+    return "final_destination"
 
 
 def check_rule_params(

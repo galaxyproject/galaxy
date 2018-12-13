@@ -39,7 +39,7 @@ from .nose_util import run
 from .test_logging import logging_config_file
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
-DEFAULT_WEB_HOST = "localhost"
+DEFAULT_WEB_HOST = socket.gethostbyname('localhost')
 DEFAULT_CONFIG_PREFIX = "GALAXY"
 GALAXY_TEST_DIRECTORY = os.path.join(galaxy_root, "test")
 GALAXY_TEST_FILE_DIR = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
@@ -172,6 +172,9 @@ def setup_galaxy_config(
     galaxy_data_manager_data_path = tempfile.mkdtemp(prefix='data_manager_tool-data', dir=tmpdir)
 
     tool_conf = os.environ.get('GALAXY_TEST_TOOL_CONF', default_tool_conf)
+    conda_auto_install = os.environ.get('GALAXY_TEST_CONDA_AUTO_INSTALL', conda_auto_install)
+    conda_auto_init = os.environ.get('GALAXY_TEST_CONDA_AUTO_INIT', conda_auto_init)
+    conda_prefix = os.environ.get('GALAXY_TEST_CONDA_PREFIX')
     if tool_conf is None:
         # As a fallback always at least allow upload.
         tool_conf = FRAMEWORK_UPLOAD_TOOL_CONF
@@ -192,11 +195,13 @@ def setup_galaxy_config(
         auto_configure_logging=logging_config_file is None,
         check_migrate_tools=False,
         chunk_upload_size=100,
+        conda_prefix=conda_prefix,
         conda_auto_init=conda_auto_init,
         conda_auto_install=conda_auto_install,
         cleanup_job='onsuccess',
         data_manager_config_file=data_manager_config_file,
         enable_beta_tool_formats=True,
+        enable_beta_workflow_format=True,
         expose_dataset_path=True,
         file_path=file_path,
         ftp_upload_purge=False,
@@ -223,6 +228,7 @@ def setup_galaxy_config(
         user_library_import_dir=user_library_import_dir,
         webhooks_dir=TEST_WEBHOOKS_DIR,
         logging=LOGGING_CONFIG_DEFAULT,
+        monitor_thread_join_timeout=5,
     )
     config.update(database_conf(tmpdir, prefer_template_database=prefer_template_database))
     config.update(install_database_conf(tmpdir, default_merged=default_install_db_merged))
@@ -390,7 +396,7 @@ def _get_static_settings():
         static_images_dir=os.path.join(static_dir, 'images', ''),
         static_favicon_dir=os.path.join(static_dir, 'favicon.ico'),
         static_scripts_dir=os.path.join(static_dir, 'scripts', ''),
-        static_style_dir=os.path.join(static_dir, 'june_2007_style', 'blue'),
+        static_style_dir=os.path.join(static_dir, 'style', 'blue'),
         static_robots_txt=os.path.join(static_dir, 'robots.txt'),
     )
 
@@ -411,10 +417,11 @@ def wait_for_http_server(host, port, sleep_amount=0.1, sleep_tries=150):
         conn = http_client.HTTPConnection(host, port)
         try:
             conn.request("GET", "/")
-            if conn.getresponse().status == 200:
+            response = conn.getresponse()
+            if response.status == 200:
                 break
         except socket.error as e:
-            if e[0] not in [61, 111]:
+            if e.errno not in [61, 111]:
                 raise
         time.sleep(sleep_amount)
     else:
@@ -552,7 +559,7 @@ def get_ip_address(ifname):
     return socket.inet_ntoa(fcntl.ioctl(
         s.fileno(),
         0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
+        struct.pack('256s', ifname[:15].encode('utf-8'))
     )[20:24])
 
 
@@ -670,8 +677,6 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "uwsgi",
             "--http",
             "%s:%s" % (host, port),
-            "--pythonpath",
-            os.path.join(galaxy_root, "lib"),
             "--yaml",
             yaml_config_path,
             "--module",
@@ -679,6 +684,9 @@ def launch_uwsgi(kwargs, tempdir, prefix=DEFAULT_CONFIG_PREFIX, config_object=No
             "--enable-threads",
             "--die-on-term",
         ]
+        for p in sys.path:
+            uwsgi_command.append('--pythonpath')
+            uwsgi_command.append(p)
 
         handle_uwsgi_cli_command = getattr(
             config_object, "handle_uwsgi_cli_command", None
@@ -756,10 +764,14 @@ class TestDriver(object):
 
     def tear_down(self):
         """Cleanup resources tracked by this object."""
-        for server_wrapper in self.server_wrappers:
-            server_wrapper.stop()
+        self.stop_servers()
         for temp_directory in self.temp_directories:
             cleanup_directory(temp_directory)
+
+    def stop_servers(self):
+        for server_wrapper in self.server_wrappers:
+            server_wrapper.stop()
+        self.server_wrappers = []
 
     def mkdtemp(self):
         """Return a temp directory that is properly cleaned up or not based on the config."""
@@ -792,14 +804,9 @@ class GalaxyTestDriver(TestDriver):
 
     testing_shed_tools = False
 
-    def setup(self, config_object=None):
-        """Setup a Galaxy server for functional test (if needed).
-
-        Configuration options can be specified as attributes on the supplied
-        ```config_object``` (defaults to self).
-        """
-        if config_object is None:
-            config_object = self
+    def _configure(self, config_object=None):
+        """Setup various variables used to launch a Galaxy server."""
+        config_object = self._ensure_config_object(config_object)
         self.external_galaxy = os.environ.get('GALAXY_TEST_EXTERNAL', None)
 
         # Allow a particular test to force uwsgi or any test to use uwsgi with
@@ -817,10 +824,12 @@ class GalaxyTestDriver(TestDriver):
                          "[p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] " \
                          "[%(threadName)s] %(message)s"
 
+        self.log_format = log_format
+
         self.galaxy_test_tmp_dir = get_galaxy_test_tmp_dir()
         self.temp_directories.append(self.galaxy_test_tmp_dir)
 
-        testing_shed_tools = getattr(config_object, "testing_shed_tools", False)
+        self.testing_shed_tools = getattr(config_object, "testing_shed_tools", False)
 
         if getattr(config_object, "framework_tool_and_types", False):
             default_tool_conf = FRAMEWORK_SAMPLE_TOOLS_CONF
@@ -829,35 +838,59 @@ class GalaxyTestDriver(TestDriver):
             default_tool_conf = getattr(config_object, "default_tool_conf", None)
             datatypes_conf_override = getattr(config_object, "datatypes_conf_override", None)
 
+        self.default_tool_conf = default_tool_conf
+        self.datatypes_conf_override = datatypes_conf_override
+
+    def setup(self, config_object=None):
+        """Setup a Galaxy server for functional test (if needed).
+
+        Configuration options can be specified as attributes on the supplied
+        ```config_object``` (defaults to self).
+        """
+        self._saved_galaxy_config = None
+        self._configure(config_object)
+        self._register_and_run_servers(config_object)
+
+    def restart(self, config_object=None, handle_config=None):
+        self.stop_servers()
+        self._register_and_run_servers(config_object, handle_config=handle_config)
+
+    def _register_and_run_servers(self, config_object=None, handle_config=None):
+        config_object = self._ensure_config_object(config_object)
         self.app = None
 
         if self.external_galaxy is None:
-            tempdir = tempfile.mkdtemp(dir=self.galaxy_test_tmp_dir)
-            # Configure the database path.
-            galaxy_db_path = database_files_path(tempdir)
-            # Allow config object to specify a config dict or a method to produce
-            # one - other just read the properties above and use the default
-            # implementation from this file.
-            galaxy_config = getattr(config_object, "galaxy_config", None)
-            if hasattr(galaxy_config, '__call__'):
-                galaxy_config = galaxy_config()
-            if galaxy_config is None:
-                setup_galaxy_config_kwds = dict(
-                    use_test_file_dir=not testing_shed_tools,
-                    default_install_db_merged=True,
-                    default_tool_conf=default_tool_conf,
-                    datatypes_conf=datatypes_conf_override,
-                    prefer_template_database=getattr(config_object, "prefer_template_database", False),
-                    log_format=log_format,
-                    conda_auto_init=getattr(config_object, "conda_auto_init", False),
-                    conda_auto_install=getattr(config_object, "conda_auto_install", False),
-                )
-                galaxy_config = setup_galaxy_config(
-                    galaxy_db_path,
-                    **setup_galaxy_config_kwds
-                )
+            if self._saved_galaxy_config is not None:
+                galaxy_config = self._saved_galaxy_config
+            else:
+                tempdir = tempfile.mkdtemp(dir=self.galaxy_test_tmp_dir)
+                # Configure the database path.
+                galaxy_db_path = database_files_path(tempdir)
+                # Allow config object to specify a config dict or a method to produce
+                # one - other just read the properties above and use the default
+                # implementation from this file.
+                galaxy_config = getattr(config_object, "galaxy_config", None)
+                if hasattr(galaxy_config, '__call__'):
+                    galaxy_config = galaxy_config()
+                if galaxy_config is None:
+                    setup_galaxy_config_kwds = dict(
+                        use_test_file_dir=not self.testing_shed_tools,
+                        default_install_db_merged=True,
+                        default_tool_conf=self.default_tool_conf,
+                        datatypes_conf=self.datatypes_conf_override,
+                        prefer_template_database=getattr(config_object, "prefer_template_database", False),
+                        log_format=self.log_format,
+                        conda_auto_init=getattr(config_object, "conda_auto_init", False),
+                        conda_auto_install=getattr(config_object, "conda_auto_install", False),
+                    )
+                    galaxy_config = setup_galaxy_config(
+                        galaxy_db_path,
+                        **setup_galaxy_config_kwds
+                    )
+                    self._saved_galaxy_config = galaxy_config
 
-                handle_galaxy_config_kwds = getattr(
+            if galaxy_config is not None:
+                handle_galaxy_config_kwds = handle_config or getattr(
                     config_object, "handle_galaxy_config_kwds", None
                 )
                 if handle_galaxy_config_kwds is not None:
@@ -885,6 +918,11 @@ class GalaxyTestDriver(TestDriver):
             # Ensure test file directory setup even though galaxy config isn't built.
             ensure_test_file_dir_set()
 
+    def _ensure_config_object(self, config_object):
+        if config_object is None:
+            config_object = self
+        return config_object
+
     def setup_shed_tools(self, testing_migrated_tools=False, testing_installed_tools=True):
         setup_shed_tools_for_test(
             self.app,
@@ -893,7 +931,7 @@ class GalaxyTestDriver(TestDriver):
             testing_installed_tools
         )
 
-    def build_tool_tests(self, testing_shed_tools=None):
+    def build_tool_tests(self, testing_shed_tools=None, return_test_classes=False):
         if self.app is None:
             return
 
@@ -907,12 +945,14 @@ class GalaxyTestDriver(TestDriver):
         import functional.test_toolbox
         functional.test_toolbox.toolbox = self.app.toolbox
         # When testing data managers, do not test toolbox.
-        functional.test_toolbox.build_tests(
+        test_classes = functional.test_toolbox.build_tests(
             app=self.app,
             testing_shed_tools=testing_shed_tools,
             master_api_key=get_master_api_key(),
             user_api_key=get_user_api_key(),
         )
+        if return_test_classes:
+            return test_classes
         return functional.test_toolbox
 
     def run_tool_test(self, tool_id, index=0, resource_parameters={}):
@@ -949,7 +989,7 @@ def setup_keep_outdir():
 
 
 def target_url_parts():
-    host = os.environ.get('GALAXY_TEST_HOST')
+    host = socket.gethostbyname(os.environ.get('GALAXY_TEST_HOST', DEFAULT_WEB_HOST))
     port = os.environ.get('GALAXY_TEST_PORT')
     default_url = "http://%s:%s" % (host, port)
     url = os.environ.get('GALAXY_TEST_EXTERNAL', default_url)

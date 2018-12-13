@@ -64,7 +64,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         :returns:   list of dictionaries containing summary job information
         """
         state = kwd.get('state', None)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         user_details = kwd.get('user_details', False)
 
         if is_admin:
@@ -130,7 +130,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         :returns:   dictionary containing full description of job data
         """
         job = self.__get_job(trans, id)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         job_dict = self.encode_all_ids(trans, job.to_dict('element', system_details=is_admin), True)
         full_output = util.asbool(kwd.get('full', 'false'))
         if full_output:
@@ -203,7 +203,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
             trans.sa_session.flush()
-            self.app.job_manager.job_stop_queue.put(job.id)
+            self.app.job_manager.stop(job)
             return True
         else:
             return False
@@ -279,7 +279,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         if job is None:
             raise exceptions.ObjectNotFound()
         belongs_to_user = (job.user == trans.user) if job.user else (job.session_id == trans.get_galaxy_session().id)
-        if not trans.user_is_admin() and not belongs_to_user:
+        if not trans.user_is_admin and not belongs_to_user:
             # Check access granted via output datasets.
             if not job.output_datasets:
                 raise exceptions.ItemAccessibilityException("Job has no output datasets.")
@@ -341,7 +341,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
                 jobs.append(job)
         return [self.encode_all_ids(trans, single_job.to_dict('element'), True) for single_job in jobs]
 
-    @expose_api
+    @expose_api_anonymous
     def error(self, trans, id, **kwd):
         """
         error( trans, id )
@@ -364,10 +364,17 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         # Get job
         job = self.__get_job(trans, id)
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        email = kwd.get('email')
+        if not email and not trans.anonymous:
+            email = trans.user.email
         messages = trans.app.error_reports.default_error_plugin.submit_report(
-            dataset, job, tool, user_submission=True, user=trans.user,
-            email=kwd.get('email', trans.user.email),
-            message=kwd.get('message', None)
+            dataset=dataset,
+            job=job,
+            tool=tool,
+            user_submission=True,
+            user=trans.user,
+            email=email,
+            message=kwd.get('message')
         )
 
         return {'messages': messages}

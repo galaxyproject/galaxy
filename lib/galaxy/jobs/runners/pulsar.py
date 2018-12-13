@@ -1,6 +1,6 @@
 """Job runner used to execute Galaxy jobs through Pulsar.
 
-More infromation on Pulsar can be found at http://pulsar.readthedocs.org/.
+More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
 from __future__ import absolute_import  # Need to import pulsar_client absolutely.
 
@@ -131,7 +131,7 @@ PULSAR_PARAM_SPECS = dict(
         map=specs.to_str_or_none,
         default=None,
     ),
-    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Producer.publish
+    # https://kombu.readthedocs.io/en/latest/reference/kombu.html#kombu.Producer.publish
     amqp_publish_retry=dict(
         map=specs.to_bool,
         default=False,
@@ -141,7 +141,7 @@ PULSAR_PARAM_SPECS = dict(
         valid=lambda x: 0 <= x and x <= 9,
         default=0,
     ),
-    # http://kombu.readthedocs.org/en/latest/reference/kombu.html#kombu.Exchange.delivery_mode
+    # https://kombu.readthedocs.io/en/latest/reference/kombu.html#kombu.Exchange.delivery_mode
     amqp_publish_delivery_mode=dict(
         map=str,
         valid=specs.is_in("transient", "persistent"),
@@ -477,7 +477,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
         try:
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
-            remote_working_directory = run_results.get("working_directory", None)
             remote_metadata_directory = run_results.get("metadata_directory", None)
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
@@ -510,7 +509,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 stdout,
                 stderr,
                 exit_code,
-                remote_working_directory=remote_working_directory,
                 remote_metadata_directory=remote_metadata_directory,
             )
         except Exception:
@@ -519,7 +517,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def fail_job(self, job_state, message=GENERIC_REMOTE_ERROR, full_status=None):
         """Seperated out so we can use the worker threads for it."""
-        self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+        self.stop_job(job_state.job_wrapper)
         stdout = ""
         stderr = ""
         if full_status:
@@ -538,7 +536,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 log.warning("check_pid(): Got errno %s when attempting to check PID %d: %s" % (errno.errorcode[e.errno], pid, e.strerror))
             return False
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
+        job = job_wrapper.get_job()
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         client = self.get_client(job.destination_params, job.job_runner_external_id)
         job_ext_output_metadata = job.get_external_output_metadata()
@@ -577,7 +576,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
         if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
-            log.debug("(Pulsar/%s) is still in running state, adding to the Pulsar queue" % (job.get_id()))
+            log.debug("(Pulsar/%s) is still in running state, adding to the Pulsar queue" % (job.id))
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put(job_state)

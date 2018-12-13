@@ -3,7 +3,7 @@ import logging
 
 from galaxy import web
 from galaxy.util import string_as_bool, unicodify
-from ..plugins import ErrorPlugin
+from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 

@@ -1,8 +1,10 @@
 import logging
 import os
-import threading
 import time
+from xml.etree import ElementTree
 
+from galaxy.util import xml_to_string
+from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from tool_shed.galaxy_install.tools import tool_panel_manager
 from tool_shed.util import xml_util
 
@@ -28,22 +30,18 @@ class DataManagerHandler(object):
         of config_filename.
         """
         data_managers_path = self.data_managers_path
-        lock = threading.Lock()
-        lock.acquire(True)
+        if data_managers_path:
+            root_str = '<?xml version="1.0"?><data_managers tool_path="%s"></data_managers>' % data_managers_path
+        else:
+            root_str = '<?xml version="1.0"?><data_managers></data_managers>'
+        root = ElementTree.fromstring(root_str)
+        for elem in config_elems:
+            root.append(elem)
         try:
-            fh = open(config_filename, 'wb')
-            if data_managers_path is not None:
-                fh.write('<?xml version="1.0"?>\n<data_managers tool_path="%s">\n    ' % data_managers_path)
-            else:
-                fh.write('<?xml version="1.0"?>\n<data_managers>\n    ')
-            for elem in config_elems:
-                fh.write(xml_util.xml_to_string(elem))
-            fh.write('</data_managers>\n')
-            fh.close()
+            with RenamedTemporaryFile(config_filename, mode='w') as fh:
+                fh.write(xml_to_string(root))
         except Exception:
             log.exception("Exception in DataManagerHandler.data_manager_config_elems_to_xml_file")
-        finally:
-            lock.release()
 
     def install_data_managers(self, shed_data_manager_conf_filename, metadata_dict, shed_config_dict,
                               relative_install_dir, repository, repository_tools_tups):
@@ -74,7 +72,7 @@ class DataManagerHandler(object):
                     data_manager_id = elem.get('id', None)
                     if data_manager_id is None:
                         log.error("A data manager was defined that does not have an id and will not be installed:\n%s" %
-                                  xml_util.xml_to_string(elem))
+                                  xml_to_string(elem))
                         continue
                     data_manager_dict = metadata_dict['data_manager'].get('data_managers', {}).get(data_manager_id, None)
                     if data_manager_dict is None:
@@ -120,7 +118,7 @@ class DataManagerHandler(object):
                     if data_manager:
                         rval.append(data_manager)
                 else:
-                    log.warning("Encountered unexpected element '%s':\n%s" % (elem.tag, xml_util.xml_to_string(elem)))
+                    log.warning("Encountered unexpected element '%s':\n%s" % (elem.tag, xml_to_string(elem)))
                 config_elems.append(elem)
                 data_manager_config_has_changes = True
             # Persist the altered shed_data_manager_config file.

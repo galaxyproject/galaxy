@@ -1,7 +1,11 @@
 /**
  *  This class defines a queue to ensure that multiple deferred callbacks are executed sequentially.
  */
+import $ from "jquery";
+import Backbone from "backbone";
 import Utils from "utils/utils";
+import { getGalaxyInstance } from "app";
+
 export default Backbone.Model.extend({
     initialize: function() {
         this.active = {};
@@ -15,6 +19,7 @@ export default Backbone.Model.extend({
         var self = this;
         var id = Utils.uid();
         var has_deferred = callback.length > 0;
+        let Galaxy = getGalaxyInstance();
 
         // register process
         this.active[id] = true;
@@ -48,6 +53,7 @@ export default Backbone.Model.extend({
     /** Resets the promise queue. All currently queued but unexecuted callbacks/promises will be rejected.
      */
     reset: function() {
+        let Galaxy = getGalaxyInstance();
         Galaxy.emit.debug("deferred::execute()", "Reset");
         for (var i in this.active) {
             this.active[i] = false;

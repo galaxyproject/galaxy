@@ -1,3 +1,8 @@
+import _ from "underscore";
+import jQuery from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import levenshteinDistance from "utils/levenshtein";
 import naturalSort from "utils/natural-sort";
 import baseCreator from "mvc/collection/base-creator";
@@ -554,6 +559,15 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
                 revName.replace(new RegExp(this.filters[1]), "")
             );
 
+            /** remove url prefix if files were uploaded by url */
+            var lastSlashIndex = lcs.lastIndexOf("/");
+            if (lastSlashIndex > 0) {
+                var urlprefix = lcs.slice(0, lastSlashIndex + 1);
+                lcs = lcs.replace(urlprefix, "");
+                fwdName = fwdName.replace(extension, "");
+                revName = revName.replace(extension, "");
+            }
+
             if (removeExtensions) {
                 var lastDotIndex = lcs.lastIndexOf(".");
                 if (lastDotIndex > 0) {
@@ -620,12 +634,13 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
         createList: function(name) {
             var self = this;
 
-            var url = `${Galaxy.root}api/histories/${this.historyId}/contents/dataset_collections`;
+            var url = `${getAppRoot()}api/histories/${this.historyId}/contents/dataset_collections`;
 
             var ajaxData = {
                 type: "dataset_collection",
                 collection_type: "list:paired",
                 hide_source_items: self.hideOriginals || false,
+                copy_elements: self.copyElements,
                 name: _.escape(name || self.$(".collection-name").val()),
                 element_identifiers: self.paired.map(pair => self._pairToJSON(pair))
             };
@@ -1781,6 +1796,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 //=============================================================================
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datasets, options) {
+    var Galaxy = getGalaxyInstance();
     var deferred = jQuery.Deferred();
     var creator;
 
@@ -1797,7 +1813,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
         title: _l("Create a collection of paired datasets")
     });
 
-    if (!window.Galaxy || !Galaxy.modal) {
+    if (!Galaxy || !Galaxy.modal) {
         throw new Error("Galaxy or Galaxy.modal not found");
     }
 
@@ -1822,7 +1838,8 @@ function createListOfPairsCollection(collection, defaultHideSourceItems) {
     //TODO: validate elements
     return pairedCollectionCreatorModal(elements, {
         historyId: collection.historyId,
-        defaultHideSourceItems: defaultHideSourceItems
+        defaultHideSourceItems: defaultHideSourceItems,
+        copyElements: !defaultHideSourceItems
     });
 }
 

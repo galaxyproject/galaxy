@@ -551,9 +551,9 @@ view_mapping = {
     'page_revision': PageRevisionView,
 }
 
-# The GQL gramar is defined in Parsley syntax ( http://parsley.readthedocs.org/en/latest/ )
+# The GQL gramar is defined in Parsley syntax ( https://parsley.readthedocs.io/ )
 
-gqlGrammar = """
+gqlGrammar = r"""
 expr = 'select' bs field_desc:f bs 'from' bs word:t (
     bs 'where' bs conditional:c ws -> GalaxyQuery(f,t,c)
     | ws -> GalaxyQuery(f, t, None) )

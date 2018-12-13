@@ -31,5 +31,5 @@ if [ -z "$TOOL_SHED_CONFIG_FILE" ]; then
 fi
 
 find_server ${TOOL_SHED_CONFIG_FILE:-none} tool_shed
-echo "Executing: $run_server $server_args $pid_log_paster_args"
-eval $run_server $server_args $pid_log_paster_args
+echo "Executing: $run_server $server_args"
+eval $run_server $server_args

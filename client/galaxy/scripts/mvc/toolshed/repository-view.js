@@ -1,14 +1,13 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import jstree from "libs/jquery/jstree";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import Utils from "utils/utils";
 import Modal from "mvc/ui/ui-modal";
 import FormView from "mvc/form/form-view";
 import toolshed_util from "mvc/toolshed/util";
-
-/* global $ */
-/* global Galaxy */
 
 var ToolShedRepositoryView = Backbone.View.extend({
     el: "#center",
@@ -58,7 +57,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             shed_tool_confs: models.get("shed_conf")
         });
         this.options.panel_section_dict = models.get("panel_section_dict");
-        this.options.api_url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
+        this.options.api_url = `${getAppRoot()}api/tool_shed_repositories/install?async=True`;
         this.options = _.extend(this.options, options);
         this.$el.html(repo_details_template(this.options));
         this.checkInstalled(this.options.current_metadata);
@@ -145,7 +144,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
             var changeset = $("#changeset")
                 .find("option:selected")
                 .val();
-            var api_url = `${Galaxy.root}api/tool_shed/tool_json`;
+            var api_url = `${getAppRoot()}api/tool_shed/tool_json`;
             var params = {
                 guid: guid,
                 tool_shed_url: tool_shed_url,
@@ -153,7 +152,6 @@ var ToolShedRepositoryView = Backbone.View.extend({
                 changeset: changeset
             };
             $.get(api_url, params, data => {
-                data.cls = "ui-portlet-plain";
                 var toolform = new FormView(data);
                 Utils.deepeach(data.inputs, input => {
                     if (input.type) {
@@ -201,7 +199,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
     checkInstalled: function(metadata) {
         var params = { name: metadata.name, owner: metadata.owner };
         var already_installed = false;
-        $.get(`${Galaxy.root}api/tool_shed_repositories`, params, data => {
+        $.get(`${getAppRoot()}api/tool_shed_repositories`, params, data => {
             for (var index = 0; index < data.length; index++) {
                 var repository = data[index];
                 var installed = !repository.deleted && !repository.uninstalled;
@@ -309,7 +307,7 @@ var ToolShedRepositoryView = Backbone.View.extend({
     },
 
     doInstall: function(params) {
-        var controller_url = `${Galaxy.root}admin_toolshed/install_repositories`;
+        var controller_url = `${getAppRoot()}admin_toolshed/install_repositories`;
         var repositories = params.repositories;
         var new_route = `status/r/${repositories.join("|")}`;
         $.post(controller_url, params, data => {

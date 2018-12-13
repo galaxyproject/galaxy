@@ -19,9 +19,7 @@ DRMAA_jobTemplate_attributes = ['args', 'remoteCommand', 'outputPath', 'errorPat
                                 'workingDirectory', 'jobName', 'email', 'project']
 
 
-def load_job_template_from_file(jt, filename):
-    f = open(filename, 'r')
-    data = json.load(f)
+def load_job_template(jt, data):
     for attr in DRMAA_jobTemplate_attributes:
         if attr in data:
             setattr(jt, attr, data[attr])
@@ -116,15 +114,20 @@ def set_user(uid, assign_all_groups):
 
 def main():
     userid, json_filename, assign_all_groups = validate_paramters()
-    set_user(userid, assign_all_groups)
+    # load JSON job template data before changing the user
+    # then the pbs cluster_files_directory does not need to
+    # be readable by all users
     json_file_exists(json_filename)
+    with open(json_filename, 'r') as f:
+        data = json.load(f)
+    set_user(userid, assign_all_groups)
     # Added to disable LSF generated messages that would interfer with this
     # script. Fix thank to Chong Chen at IBM.
     os.environ['BSUB_QUIET'] = 'Y'
     s = drmaa.Session()
     s.initialize()
     jt = s.createJobTemplate()
-    load_job_template_from_file(jt, json_filename)
+    load_job_template(jt, data)
     # runJob will raise if there's a submittion error
     jobId = s.runJob(jt)
     s.deleteJobTemplate(jt)

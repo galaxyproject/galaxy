@@ -1,12 +1,13 @@
 <tool id="Show tail1" name="Select last" version="1.0.0">
   <description>lines from a dataset</description>
-  <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
+  <command detect_errors="exit_code">
+perl '$__tool_directory__/tailWrapper.pl' '$input' $lineNum '$out_file1'</command>
   <inputs>
-    <param name="lineNum" size="5" type="integer" value="10" label="Select last" help="lines"/>
-    <param format="txt" name="input" type="data" label="from"/>
+    <param name="lineNum" type="integer" value="10" label="Select last" help="lines"/>
+    <param name="input" type="data" format="txt" label="from"/>
   </inputs>
   <outputs>
-    <data format="input" name="out_file1" metadata_source="input"/>
+    <data name="out_file1" format_source="input" metadata_source="input"/>
   </outputs>
   <tests>
     <test>
@@ -16,7 +17,6 @@
     </test>
   </tests>
   <help>
-
 **What it does**
 
 This tool outputs specified number of lines from the **end** of a dataset
@@ -37,6 +37,5 @@ This tool outputs specified number of lines from the **end** of a dataset
 
     chr7    57341   57361   D17003_CTCF_R7  375     +
     chr7    57457   57477   D17003_CTCF_R3  188     +
-
   </help>
 </tool>

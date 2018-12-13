@@ -13,11 +13,11 @@ export var View = Backbone.View.extend({
             max: null,
             min: null
         });
-        this.button_new = new Ui.ButtonIcon({
+        this.button_new = new Ui.Button({
             icon: "fa-plus",
             title: `Insert ${this.options.title}`,
             tooltip: `Add new ${this.options.title} block`,
-            cls: "ui-button-icon ui-clear-float form-repeat-add",
+            cls: "btn btn-secondary float-none form-repeat-add",
             onclick: function() {
                 if (options.onnew) {
                     options.onnew();
@@ -42,7 +42,7 @@ export var View = Backbone.View.extend({
             Galaxy.emit.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
             return;
         }
-        var button_delete = new Ui.ButtonIcon({
+        var button_delete = new Ui.Button({
             icon: "fa-trash-o",
             tooltip: _l("Delete this repeat block"),
             cls: "ui-button-icon-plain form-repeat-delete",
@@ -55,7 +55,7 @@ export var View = Backbone.View.extend({
         var portlet = new Portlet.View({
             id: options.id,
             title: _l("placeholder"),
-            cls: options.cls || "ui-portlet-repeat",
+            cls: options.cls || "ui-portlet-section",
             operations: { button_delete: button_delete }
         });
         portlet.append(options.$el);
@@ -96,7 +96,7 @@ export var View = Backbone.View.extend({
         if (_.isEmpty(this.list)) {
             this.$el.append(
                 $("<div/>")
-                    .addClass("ui-form-info")
+                    .addClass("form-text text-muted")
                     .html(this.options.empty_text)
             );
         }

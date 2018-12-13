@@ -260,6 +260,7 @@ var pairCollectionCreatorModal = function _pairCollectionCreatorModal(elements, 
  */
 function createPairCollection(contents, defaultHideSourceItems) {
     var elements = contents.toJSON();
+    const copyElements = !defaultHideSourceItems;
 
     var promise = pairCollectionCreatorModal(elements, {
         defaultHideSourceItems: defaultHideSourceItems,
@@ -268,7 +269,7 @@ function createPairCollection(contents, defaultHideSourceItems) {
                 { name: "forward", src: "hda", id: elements[0].id },
                 { name: "reverse", src: "hda", id: elements[1].id }
             ];
-            return contents.createHDCA(elements, "paired", name, hideSourceItems);
+            return contents.createHDCA(elements, "paired", name, hideSourceItems, copyElements);
         }
     });
 

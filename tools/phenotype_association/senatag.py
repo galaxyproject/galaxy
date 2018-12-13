@@ -25,6 +25,7 @@ from __future__ import print_function
 
 import heapq
 import os
+from functools import total_ordering
 from getopt import getopt, GetoptError
 from sys import argv, exit, stderr
 
@@ -35,7 +36,8 @@ __email__ = "ratan@bx.psu.edu"
 debug_flag = False
 
 
-class node:
+@total_ordering
+class node(object):
     def __init__(self, name):
         self.name = name
         self.edges = []
@@ -50,14 +52,20 @@ class node:
                 num += 1
         return num
 
-    def __cmp__(self, other):
-        return other.num_not_visited() - self.num_not_visited()
+    def __eq__(self, other):
+        return self.num_not_visited() == other.num_not_visited()
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __lt__(self, other):
+        return other.num_not_visited() < self.num_not_visited()
 
     def __str__(self):
         return self.name
 
 
-class graph:
+class graph(object):
     def __init__(self):
         self.nodes = {}
 
@@ -165,7 +173,7 @@ def main(ldfile, snpsfile, required, excluded):
         neighbors[t.name] = list(set(ns))
 
     # find the tag SNPs for this graph
-    data = g.nodes.values()[:]
+    data = list(g.nodes.values())[:]
     heapq.heapify(data)
 
     while data:

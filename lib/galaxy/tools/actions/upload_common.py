@@ -185,7 +185,7 @@ def __new_history_upload(trans, uploaded_dataset, history=None, state=None):
 
 def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, state=None):
     current_user_roles = trans.get_current_user_roles()
-    if not ((trans.user_is_admin() and cntrller in ['library_admin', 'api']) or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
+    if not ((trans.user_is_admin and cntrller in ['library_admin', 'api']) or trans.app.security_agent.can_add_library_item(current_user_roles, library_bunch.folder)):
         # This doesn't have to be pretty - the only time this should happen is if someone's being malicious.
         raise Exception("User is not authorized to add datasets to this library.")
     folder = library_bunch.folder
@@ -432,15 +432,13 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
 
     job.object_store_id = object_store_id
     job.set_state(job.states.NEW)
-    job.set_handler(tool.get_job_handler(None))
     if job_params:
         for name, value in job_params.items():
             job.add_parameter(name, value)
     trans.sa_session.add(job)
-    trans.sa_session.flush()
 
     # Queue the job for execution
-    trans.app.job_manager.job_queue.put(job.id, job.tool_id)
+    trans.app.job_manager.enqueue(job, tool=tool)
     trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
     output = odict()
     for i, v in enumerate(outputs):

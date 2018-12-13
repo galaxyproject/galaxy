@@ -603,7 +603,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None):
+    def editor(self, trans, id=None, version=None):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
@@ -619,10 +619,18 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             .order_by(desc(model.StoredWorkflow.table.c.update_time)) \
             .options(joinedload('latest_workflow').joinedload('steps')) \
             .all()
-        return trans.fill_template("workflow/editor.mako", workflows=workflows, stored=stored, annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
+        if version is None:
+            version = len(stored.workflows) - 1
+        else:
+            version = int(version)
+        return trans.fill_template("workflow/editor.mako",
+                                   workflows=workflows,
+                                   stored=stored,
+                                   version=version,
+                                   annotation=self.get_item_annotation_str(trans.sa_session, trans.user, stored))
 
     @web.json
-    def load_workflow(self, trans, id):
+    def load_workflow(self, trans, id, version=None):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be read by the workflow editor
@@ -631,7 +639,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
         workflow_contents_manager = workflows.WorkflowContentsManager(trans.app)
-        return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor")
+        return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
     @web.expose
     @web.require_login("use workflows")

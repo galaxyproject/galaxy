@@ -1,7 +1,7 @@
 <template>
     <div>
-        <div class="page-container share-wf">
-            <h2>
+        <div class="page-container share-wf p-2">
+            <h4>
               Workflow: {{ workflowItem.name }}
             </h2>
         </div>

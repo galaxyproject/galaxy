@@ -9,6 +9,14 @@ tool\_shed\.util package
 Submodules
 ----------
 
+tool\_shed\.util\.admin\_util module
+------------------------------------
+
+.. automodule:: tool_shed.util.admin_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 tool\_shed\.util\.basic\_util module
 ------------------------------------
 

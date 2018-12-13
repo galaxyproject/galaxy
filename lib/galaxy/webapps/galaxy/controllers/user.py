@@ -276,7 +276,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         username = kwd.get('username', '')
         redirect = kwd.get('redirect', '').strip()
         params = util.Params(kwd)
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        is_admin = cntrller == 'admin' and trans.user_is_admin
         openids = trans.galaxy_session.openids
         user = None
         if not openids:
@@ -320,7 +320,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
             subscribe = params.get('subscribe', '')
             subscribe_checked = CheckboxField.is_checked(subscribe)
             error = ''
-            if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+            if not trans.app.config.allow_user_creation and not trans.user_is_admin:
                 error = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             else:
                 # Check email and password validity
@@ -525,7 +525,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         """
         Does the autoregistration if enabled. Returns a message
         """
-        skip_login_handling = cntrller == 'admin' and trans.user_is_admin()
+        skip_login_handling = cntrller == 'admin' and trans.user_is_admin
         autoreg = trans.app.auth_manager.check_auto_registration(trans, login, password, no_password_check=no_password_check)
         user = None
         success = False
@@ -723,9 +723,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         subscribe_checked = CheckboxField.is_checked(subscribe)
         referer = trans.request.referer or ''
         redirect = kwd.get('redirect', referer).strip()
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        is_admin = cntrller == 'admin' and trans.user_is_admin
         show_user_prepopulate_form = is_admin and trans.app.config.show_user_prepopulate_form
-        if not trans.app.config.allow_user_creation and not trans.user_is_admin():
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
             message = 'User registration is disabled.  Please contact your local Galaxy administrator for an account.'
             if trans.app.config.error_email_to is not None:
                 message += ' Contact: %s' % trans.app.config.error_email_to
@@ -813,7 +813,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesUsersMixin, Create
         username = util.restore_text(kwd.get('username', ''))
         message = escape(kwd.get('message', ''))
         status = kwd.get('status', 'done')
-        is_admin = cntrller == 'admin' and trans.user_is_admin()
+        is_admin = cntrller == 'admin' and trans.user_is_admin
         user = self.create_user(trans=trans, email=email, username=username, password=password)
         error = ''
         success = True

@@ -48,10 +48,12 @@ export default Backbone.View.extend({
             skipResize = false;
         }
         var terminalView = this.terminalViews[input.name];
-        var terminalViewClass =
-            input.input_type == "dataset_collection"
-                ? TerminalViews.InputCollectionTerminalView
-                : TerminalViews.InputTerminalView;
+        var terminalViewClass = TerminalViews.InputTerminalView;
+        if (input.input_type == "dataset_collection") {
+            terminalViewClass = TerminalViews.InputCollectionTerminalView;
+        } else if (input.input_type == "parameter") {
+            terminalViewClass = TerminalViews.InputParameterTerminalView;
+        }
         if (terminalView && !(terminalView instanceof terminalViewClass)) {
             terminalView.el.terminal.destroy();
             terminalView = null;
@@ -80,14 +82,19 @@ export default Backbone.View.extend({
     },
 
     addDataOutput: function(output) {
-        var terminalViewClass = output.collection
-            ? TerminalViews.OutputCollectionTerminalView
-            : TerminalViews.OutputTerminalView;
+        var terminalViewClass = TerminalViews.OutputTerminalView;
+        var outputViewClass = DataViews.DataOutputView;
+        if (output.collection) {
+            terminalViewClass = TerminalViews.OutputCollectionTerminalView;
+        } else if (output.parameter) {
+            terminalViewClass = TerminalViews.OutputParameterTerminalView;
+            outputViewClass = DataViews.ParameterOutputView;
+        }
         var terminalView = new terminalViewClass({
             node: this.node,
             output: output
         });
-        var outputView = new DataViews.DataOutputView({
+        var outputView = new outputViewClass({
             output: output,
             terminalElement: terminalView.el,
             nodeView: this

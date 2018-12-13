@@ -5,6 +5,8 @@ from __future__ import absolute_import
 import logging
 import threading
 
+from galaxy.util import unicodify
+
 try:
     import uwsgi
 except ImportError:
@@ -26,6 +28,9 @@ class ApplicationStackTransport(object):
         self.running = False
         self.dispatcher = dispatcher
         self.dispatcher_thread = None
+
+    def init_late_prefork(self):
+        pass
 
     def _dispatch_messages(self):
         pass
@@ -68,13 +73,12 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
     # Define any static lock names here, additional locks will be appended for each configured farm's message handler
     _locks = []
 
-    def __initialize_locks(self):
+    def init_late_prefork(self):
         num = int(uwsgi.opt.get('locks', 0)) + 1
-        farms = self.stack._configured_farms.keys()
-        need = len(farms)
+        need = len(self.stack._lock_farms)
         if num < need:
             raise RuntimeError('Need %i uWSGI locks but only %i exist(s): Set `locks = %i` in uWSGI configuration' % (need, num, need - 1))
-        self._locks.extend(['RECV_MSG_FARM_' + x for x in farms])
+        self._locks.extend(['RECV_MSG_FARM_' + x for x in sorted(self.stack._lock_farms)])
         # this would be nice, but in my 2.0.15 uWSGI, the uwsgi module has no set_option function, and I don't know if it'd work even if the function existed as documented
         # if len(self.lock_map) > 1:
         #     uwsgi.set_option('locks', len(self.lock_map))
@@ -82,7 +86,6 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
 
     def __init__(self, app, stack, dispatcher=None):
         super(UWSGIFarmMessageTransport, self).__init__(app, stack, dispatcher=dispatcher)
-        self.__initialize_locks()
 
     def __lock(self, name_or_id):
         try:
@@ -109,7 +112,7 @@ class UWSGIFarmMessageTransport(ApplicationStackTransport):
             self.__lock(lock)
             try:
                 log.debug('Acquired message lock, waiting for new message')
-                msg = uwsgi.farm_get_msg()
+                msg = unicodify(uwsgi.farm_get_msg())
                 log.debug('Received message: %s', msg)
                 if msg == self.SHUTDOWN_MSG:
                     self.running = False

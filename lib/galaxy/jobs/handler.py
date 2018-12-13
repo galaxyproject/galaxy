@@ -110,19 +110,6 @@ class JobHandlerQueue(Monitors):
         job = self.sa_session.query(model.Job).get(id)
         return job, self.job_wrapper(job, use_persisted_destination=True)
 
-    def __write_registry_file_if_absent(self, job):
-        # TODO: remove this and the one place it is called in late 2018, this
-        # hack attempts to minimize the job failures due to upgrades from 17.05
-        # Galaxies.
-        job_wrapper = self.job_wrapper(job)
-        cwd = job_wrapper.working_directory
-        datatypes_config = os.path.join(cwd, "registry.xml")
-        if not os.path.exists(datatypes_config):
-            try:
-                self.app.datatypes_registry.to_xml_file(path=datatypes_config)
-            except OSError:
-                pass
-
     def __check_jobs_at_startup(self):
         """
         Checks all jobs that are in the 'new', 'queued' or 'running' state in
@@ -150,7 +137,6 @@ class JobHandlerQueue(Monitors):
                         (model.Job.handler == self.app.config.server_name)).all()
 
         for job in jobs_at_startup:
-            self.__write_registry_file_if_absent(job)
             if not self.app.toolbox.has_tool(job.tool_id, job.tool_version, exact=True):
                 log.warning("(%s) Tool '%s' removed from tool config, unable to recover job" % (job.id, job.tool_id))
                 self.job_wrapper(job).fail('This tool was disabled before the job completed.  Please contact your Galaxy administrator.')
@@ -415,11 +401,17 @@ class JobHandlerQueue(Monitors):
             pause_message = ", ".join(jobs_to_pause[job_id])
             pause_message = "%s. To resume this job fix the input dataset(s)." % pause_message
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.pause(job=job, message=pause_message)
+            try:
+                job_wrapper.pause(job=job, message=pause_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to pause job.", job_id)
         for job_id in sorted(jobs_to_fail):
             fail_message = ", ".join(jobs_to_fail[job_id])
             job, job_wrapper = self.job_pair_for_id(job_id)
-            job_wrapper.fail(fail_message)
+            try:
+                job_wrapper.fail(fail_message)
+            except Exception:
+                log.exception("(%s) Caught exception while attempting to fail job.", job_id)
         jobs_to_ignore.update(jobs_to_pause)
         jobs_to_ignore.update(jobs_to_fail)
         return [j for j in jobs if j.id not in jobs_to_ignore]
@@ -457,6 +449,10 @@ class JobHandlerQueue(Monitors):
         if state == JOB_READY:
             # PASS.  increase usage by one job (if caching) so that multiple jobs aren't dispatched on this queue iteration
             self.increase_running_job_count(job.user_id, job_destination.id)
+            for job_to_input_dataset_association in job.input_datasets:
+                # We record the input dataset version, now that we know the inputs are ready
+                if job_to_input_dataset_association.dataset:
+                    job_to_input_dataset_association.dataset_version = job_to_input_dataset_association.dataset.version
         return state
 
     def __verify_job_ready(self, job, job_wrapper):
@@ -498,7 +494,7 @@ class JobHandlerQueue(Monitors):
                     usage = self.app.quota_agent.get_usage(user=job.user, history=job.history)
                     if usage > quota:
                         return JOB_USER_OVER_QUOTA, job_destination
-                except AssertionError as e:
+                except AssertionError:
                     pass  # No history, should not happen with an anon user
         # Check total walltime limits
         if (state == JOB_READY and
@@ -747,14 +743,6 @@ class JobHandlerQueue(Monitors):
         if not self.track_jobs_in_database:
             self.queue.put((job_id, tool_id))
             self.sleeper.wake()
-        else:
-            # Workflow invocations farmed out to workers will submit jobs through here. If a handler is unassigned, we
-            # will submit for one, or else claim it ourself. TODO: This should be moved to a higher level as it's now
-            # implemented here and in MessageJobQueue
-            job = self.sa_session.query(model.Job).get(job_id)
-            if job.handler is None and self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
-                msg = JobHandlerMessage(task='setup', job_id=job_id)
-                self.app.application_stack.send_message(self.app.application_stack.pools.JOB_HANDLERS, msg)
 
     def shutdown(self):
         """Attempts to gracefully shut down the worker thread"""
@@ -862,7 +850,8 @@ class JobHandlerStopQueue(Monitors):
             self.sa_session.flush()
             if job.job_runner_name is not None:
                 # tell the dispatcher to stop the job
-                self.dispatcher.stop(job)
+                job_wrapper = JobWrapper(job, self, use_persisted_destination=True)
+                self.dispatcher.stop(job, job_wrapper)
 
     def put(self, job_id, error_msg=None):
         if not self.app.config.track_jobs_in_database:
@@ -926,7 +915,7 @@ class DefaultJobDispatcher(object):
             log.error('put(): (%s) Invalid job runner: %s' % (job_wrapper.job_id, runner_name))
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
-    def stop(self, job):
+    def stop(self, job, job_wrapper):
         """
         Stop the given job. The input variable job may be either a Job or a Task.
         """
@@ -935,33 +924,22 @@ class DefaultJobDispatcher(object):
         # Note that Jobs and Tasks have runner_names, which are distinct from
         # the job_runner_name and task_runner_name.
 
-        if (isinstance(job, model.Job)):
-            log.debug("Stopping job %d:", job.get_id())
-        elif(isinstance(job, model.Task)):
-            log.debug("Stopping job %d, task %d"
-                      % (job.get_job().get_id(), job.get_id()))
-        else:
-            log.debug("Unknown job to stop")
-
         # The runner name is not set until the job has started.
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
-        if (job.get_job_runner_name() is not None):
-            runner_name = (job.get_job_runner_name().split(":", 1))[0]
-            if (isinstance(job, model.Job)):
-                log.debug("stopping job %d in %s runner" % (job.get_id(), runner_name))
-            elif (isinstance(job, model.Task)):
-                log.debug("Stopping job %d, task %d in %s runner"
-                          % (job.get_job().get_id(), job.get_id(), runner_name))
+        job_runner_name = job.get_job_runner_name()
+        if job_runner_name is not None:
+            runner_name = job_runner_name.split(":", 1)[0]
+            log.debug("Stopping job %s in %s runner" % (job_wrapper.get_id_tag(), runner_name))
             try:
-                self.job_runners[runner_name].stop_job(job)
+                self.job_runners[runner_name].stop_job(job_wrapper)
             except KeyError:
-                log.error('stop(): (%s) Invalid job runner: %s' % (job.get_id(), runner_name))
+                log.error('stop(): (%s) Invalid job runner: %s' % (job_wrapper.get_id_tag(), runner_name))
                 # Job and output dataset states have already been updated, so nothing is done here.
 
     def recover(self, job, job_wrapper):
         runner_name = (job.job_runner_name.split(":", 1))[0]
-        log.debug("recovering job %d in %s runner" % (job.get_id(), runner_name))
+        log.debug("recovering job %d in %s runner" % (job.id, runner_name))
         try:
             self.job_runners[runner_name].recover(job, job_wrapper)
         except KeyError:
@@ -969,8 +947,12 @@ class DefaultJobDispatcher(object):
             job_wrapper.fail(DEFAULT_JOB_PUT_FAILURE_MESSAGE)
 
     def shutdown(self):
-        for runner in self.job_runners.values():
+        failures = []
+        for name, runner in self.job_runners.items():
             try:
                 runner.shutdown()
             except Exception:
-                raise Exception("Failed to shutdown runner %s" % runner)
+                failures.append(name)
+                log.exception("Failed to shutdown runner %s", name)
+        if failures:
+            raise Exception("Failed to shutdown runners: %s" % ', '.join(failures))

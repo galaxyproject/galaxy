@@ -233,8 +233,8 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
 This is a container tag set for the ``requirement`` and ``container`` tags
 described in greater detail below. ``requirement``s describe software packages
 and other individual computing requirements required to execute a tool, while
-``container``s describe Docker containers that should be able to serve as
-complete descriptions of the runtime of a tool.
+``container``s describe Docker or Singularity containers that should be able to
+serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -248,12 +248,12 @@ complete descriptions of the runtime of a tool.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This tag set is contained within the ``requirements`` tag set. Third party
+This tag set is contained within the ``<requirements>`` tag set. Third party
 programs or modules that the tool depends upon are included in this tag set.
 
 When a tool runs, Galaxy attempts to *resolve* these requirements (also called
 dependencies). ``requirement``s are meant to be abstract and resolvable by
-multiple different systems (e.g. [conda](http://conda.pydata.org/docs/), the
+multiple different systems (e.g. [conda](https://conda.io/), the
 [Galaxy Tool Shed dependency management system](https://galaxyproject.org/toolshed/tool-features/#Automatic_third-party_tool_dependency_installation_and_compilation_with_installed_repositories),
 or [environment modules](http://modules.sourceforge.net/)).
 
@@ -297,12 +297,12 @@ resolver.
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="RequirementType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> This value defines the which type of the 3rd party module required by this tool. </xs:documentation>
+            <xs:documentation xml:lang="en">This value defines the type of the 3rd party module required by this tool.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="version" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> For package type requirements this value defines a specific version of the tool dependency. </xs:documentation>
+            <xs:documentation xml:lang="en">For requirements of type ``package`` this value defines a specific version of the tool dependency.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -311,22 +311,32 @@ resolver.
   <xs:complexType name="Container">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-
 This tag set is contained within the 'requirements' tag set. Galaxy can be
-configured to run tools within [Docker](https://www.docker.com/) containers -
-this tag allows the tool to suggest possible valid Docker containers for this
-tool.
+configured to run tools within [Docker](https://www.docker.com/) or [Singularity](https://www.sylabs.io/singularity/)
+containers - this tag allows the tool to suggest possible valid containers for this tool. The contents of the tag should
+be a container image identifier appropriate for the particular container runtime being used, e.g. 
+``quay.io/biocontainers/fastqc:0.11.2--1`` for Docker or ``docker://quay.io/biocontainers/fastqc:0.11.2--1``
+(or alternatively ``/opt/containers/fastqc.simg`` if your Galaxy installation will be loading the image from a filesystem path)
+for Singularity. The ``requirements`` tag can contain multiple ``container`` tags describing suitable container options, in
+which case the first container that is found by the Galaxy container resolver at runtime will be used.
+
+Example:
+
+```xml
+<requirements>
+  <container type="docker">quay.io/biocontainers/fastqc:0.11.2--1</container>
+<requirements>
+```
 
 Read more about configuring Galaxy to run Docker jobs
 [here](https://galaxyproject.org/admin/tools/docker/).
-
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ContainerType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> This value describes the type of container that the tool may be executed in and currently must be ``docker``. </xs:documentation>
+            <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently may be ``docker`` or ``singularity``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -349,7 +359,7 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="split_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A comma separated list of data inputs to split for job parallelization.</xs:documentation>
+        <xs:documentation xml:lang="en">A comma-separated list of data inputs to split for job parallelization.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="split_size" type="xs:string">
@@ -364,14 +374,14 @@ Read more about configuring Galaxy to run Docker jobs
     </xs:attribute>
     <xs:attribute name="shared_inputs" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">A comma separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
+        <xs:documentation xml:lang="en">A comma-separated list of data inputs that should not be split for this tool, Galaxy will infer this if not present and so this potentially never needs to be set.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
   <xs:complexType name="Code">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-**Deprecated** Do not use this unless absolutely necessary.
+*Deprecated*. Do not use this unless absolutely necessary.
 
 The extensions described here can cause problems using your tool with certain components
 of Galaxy (like the workflow system). It is highly recommended to avoid these constructs
@@ -549,7 +559,7 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
   </xs:complexType>
   <xs:complexType name="CodeHook">
     <xs:annotation>
-      <xs:documentation xml:lang="en">**Deprecated** Map a hook to a function defined in the code file.</xs:documentation>
+      <xs:documentation xml:lang="en">*Deprecated*. Map a hook to a function defined in the code file.</xs:documentation>
     </xs:annotation>
     <xs:attribute name="exec_after_process" type="xs:string">
       <xs:annotation>
@@ -572,9 +582,9 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
     <xs:annotation>
       <xs:documentation xml:lang="en">This directive is used to specify some rarely modified options.</xs:documentation>
     </xs:annotation>
-    <xs:attribute name="refresh" type="PermissiveBoolean">
+    <xs:attribute name="refresh" type="PermissiveBoolean" gxdocs:deprecated="true">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Deprecated, likely unused attribute.</xs:documentation>
+        <xs:documentation xml:lang="en">*Deprecated*. Unused attribute.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="sanitize" type="PermissiveBoolean" default="true">
@@ -613,8 +623,8 @@ The content of ``stdout`` and ``stderr`` are strings containing the output of th
     <xs:annotation gxdocs:best_practices="tests">
       <xs:documentation xml:lang="en"><![CDATA[
 
-Container tag set to specify tests via the <test> tag sets. Any number of tests can be included,
-and each test is wrapped within separate <test> tag sets. Functional tests are
+Container tag set to specify tests via the ``<test>`` tag sets. Any number of tests can be included,
+and each test is wrapped within separate ``<test>`` tag sets. Functional tests are
 executed via [Planemo](https://planemo.readthedocs.io/) or the
 [run_tests.sh](https://github.com/galaxyproject/galaxy/blob/dev/run_tests.sh)
 shell script distributed with Galaxy.
@@ -1076,6 +1086,11 @@ referenced input dataset. This is only valid if the corresponding parameter is
 of ``type`` ``data``.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="tags" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
   <xs:complexType name="TestCompositeData">
     <xs:annotation>
@@ -1102,6 +1117,11 @@ non-optional composite inputs must be specified as part of the ``param``.
     <xs:attribute name="type" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="tags" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -1199,7 +1219,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 
-If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
+If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -1876,7 +1896,7 @@ This part is contained in the ``<inputs>`` tag set.
 This Cheetah code can be used in the ``<command>`` tag set or the
 ``<configfile>`` tag set.
 
-```xml
+```
 #for $i, $s in enumerate($series)
     rank_of_series=$i
     input_path='${s.input}'
@@ -1907,7 +1927,7 @@ This is an example test case with multiple repeat elements for the example above
 
 See the documentation on the [repeat test directive](#tool-tests-test-repeat).
 
-An older way to specify repeats in a test is by instances that are created by referring to names with a special format: "<repeat name>_<repeat index>|<param name>"
+An older way to specify repeats in a test is by instances that are created by referring to names with a special format: ``<repeat name>_<repeat index>|<param name>``
 
 ```xml
 <test>
@@ -1938,22 +1958,22 @@ demonstrates both testing strategies.
         </xs:attribute>
         <xs:attribute name="title" type="xs:string" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The title of the repeat section, which will be displayed on the tool form. </xs:documentation>
+            <xs:documentation xml:lang="en">The title of the repeat section, which will be displayed on the tool form.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="min" type="xs:integer">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The minimum number of repeat units. </xs:documentation>
+            <xs:documentation xml:lang="en">The minimum number of repeat units.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="max" type="xs:integer">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The maximum number of repeat units. </xs:documentation>
+            <xs:documentation xml:lang="en">The maximum number of repeat units.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="default" type="xs:integer" default="1">
           <xs:annotation>
-            <xs:documentation xml:lang="en"> The default number of repeat units. </xs:documentation>
+            <xs:documentation xml:lang="en">The default number of repeat units.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="help" type="xs:string">
@@ -2047,21 +2067,21 @@ in the tool form.
 ##### Examples
 
 Sometimes you need labels for data or graph axes, chart titles, etc. This can be
-done using a text field. The following will create a text box 30 characters wide
-with the default value of "V1".
+done using a text field. The following will create a text box with the default
+value of "V1".
 
 ```xml
-<param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
+<param name="xlab" type="text" value="V1" label="Label for x axis" />
 ```
 
-The ``size`` parameter can be two dimensional, if it is the textbox will be
-rendered on the tool form as a text area instead of a single line text box.
+The ``area`` boolean attribute can be used to change the ``text`` parameter to a
+two-dimensional text area instead of a single line text box.
 
 ```xml
-<param name="foo" type="text" area="true" size="5x25" />
+<param name="foo" type="text" area="true" />
 ```
 
-As of 17.01, ``text`` parameters can also supply a static list of preset
+Since release 17.01, ``text`` parameters can also supply a static list of preset
 defaults options. The user **may** be presented with the option to select one of
 these but will be allowed to supply an arbitrary text value.
 
@@ -2083,8 +2103,8 @@ These parameters represent whole number and real numbers, respectively.
 
 ##### Example
 
-```
-<param name="region_size" size="4" type="integer" value="1" label="flanking regions of size" />
+```xml
+<param name="region_size" type="integer" value="1" label="Size of the flanking regions" />
 ```
 
 $attribute_list:value,min,max:5
@@ -2270,8 +2290,8 @@ periods (e.g. ``.``). Some "reserved" names are ``REDIRECT_URL``,
         <xs:attribute name="area" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Boolean indicating if this should be
-rendered as a one line text box (if ``false``) or a multi-line text area (if
-``true``).</xs:documentation>
+rendered as a one line text box (if ``false``, the default) or a multi-line text
+ area (if ``true``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="argument" type="xs:string">
@@ -2309,7 +2329,7 @@ parameter.</xs:documentation>
         </xs:attribute>
         <xs:attribute name="default_value" type="xs:string" gxdocs:deprecated="true">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Deprecated way to specify default value for column parameters (use ``value`` instead).</xs:documentation>
+            <xs:documentation xml:lang="en">*Deprecated*. Specify default value for column parameters (use ``value`` instead).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="optional" type="xs:string" default="false">
@@ -2352,7 +2372,7 @@ file. Use the file extension.</xs:documentation>
 This is only valid if ``type`` is ``data_collection``. Restrict the kind of
 collection that can be consumed by this parameter (e.g. ``paired``,
 ``list:paired``, ``list``). Multiple such collection types can be specified here
-as a comma separated list.
+as a comma-separated list.
 
               ]]></xs:documentation>
           </xs:annotation>
@@ -2381,7 +2401,7 @@ this parameter depends (usually but not always the tool's input dataset).
         </xs:attribute>
         <xs:attribute name="force_select" type="PermissiveBoolean" gxdocs:deprecated="true">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Used only if the ``type`` attribute
+            <xs:documentation xml:lang="en">*Deprecated*. Used only if the ``type`` attribute
 value is ``data_column``, this is deprecated and the inverse of ``optional``.
 Set to ``false`` to not force user to select an option in the list.</xs:documentation>
           </xs:annotation>
@@ -2442,13 +2462,11 @@ template if the parameter is ``false`` or not checked by the user. Only valid if
 ``type`` is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="size" type="xs:string">
+        <xs:attribute name="size" type="xs:string" gxdocs:deprecated="true">
           <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>
-            <xs:documentation xml:lang="en">Used only if ``type`` attribute
-value is ``text``. To create a multi-line text box add an ``area="true"``
-attribute to the param tag. This can be one dimensional (e.g. ``size="40"``)
-or two dimensional (e.g. ``size="5x25"``).</xs:documentation>
+            <xs:documentation xml:lang="en">*Deprecated*. Used only if ``type`` attribute
+value is ``text``. Completely ignored since release 16.10.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <!-- metadata_name appears in some wrappers but I think this is a copy
@@ -2537,7 +2555,9 @@ to the interpreter specified in the corresponding attribute (if any).
 The following uses a compiled executable ([bedtools](https://bedtools.readthedocs.io/en/latest/)).
 
 ```xml
-<command>bed12ToBed6 -i '$input' > '$output'</command>
+<command><![CDATA[
+bed12ToBed6 -i '$input' > '$output'
+]]]]><![CDATA[></command>
 ```
 
 A few things to note about even this simple example:
@@ -2559,26 +2579,26 @@ tool.
 ```xml
 <command><![CDATA[
 bedtools annotate
-        -i "${inputA}"
-        #if $names.names_select == 'yes':
-            -files
-            #for $bed in $names.beds:
-                '${bed.input}'
-            #end for
-            -names
-            #for $bed in $names.beds:
-                '${bed.inputName}'
-            #end for
-        #else:
-            #set files = '" "'.join([str($file) for $file in $names.beds])
-            -files '${files}'
-            #set names = '" "'.join([str($name.display_name) for $name in $names.beds])
-            -names '${names}'
-        #end if
-        $strand
-        $counts
-        $both
-        > "${output}"
+-i '${inputA}'
+#if $names.names_select == 'yes':
+    -files
+    #for $bed in $names.beds:
+        '${bed.input}'
+    #end for
+    -names
+    #for $bed in $names.beds:
+        '${bed.inputName}'
+    #end for
+#else:
+    #set files = '" "'.join([str($file) for $file in $names.beds])
+    -files '${files}'
+    #set names = '" "'.join([str($name.display_name) for $name in $names.beds])
+    -names '${names}'
+#end if
+$strand
+$counts
+$both
+> '${output}'
 ]]]]><![CDATA[></command>
 ```
 
@@ -2675,64 +2695,42 @@ Name | Description
 See the [Planemo docs](https://planemo.readthedocs.io/en/latest/writing_advanced.html#cluster-usage)
 on the topic of ``GALAXY_SLOTS`` for more information and examples.
 
-### Attributes
+### Error detection
 
-#### ``detect_errors``
+The ``detect_errors`` attribute of ``command``, if present, loads a preset of error detection checks (for exit codes and content of stdio to indicate fatal tool errors or fatal out of memory errors). It can be one of:
 
-If present on the ``command`` tag, this attribute can be one of:
+* ``default``: for non-legacy tools with absent stdio block non-zero exit codes are added. For legacy tools or if a stdio block is present nothing is added.
+* ``exit_code``: adds checks for non zero exit codes (The @jmchilton recommendation). The ``oom_exit_code`` parameter can be used to add an additional out of memory indicating exit code.
+* ``aggressive``: adds checks for non zero exit codes, and checks for ``Exception:``, ``Error:`` in the standard error. Additionally checks for messages in the standard error that indicate an out of memory error (``MemoryError``, ``std::bad_alloc``, ``java.lang.OutOfMemoryError``, ``Out of memory``). (The @bgruening recommendation).
 
-* ``default`` no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
-* ``exit_code`` error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive`` error if tool exit code is not 0 or ``Exception:``, ``Error:``, or
-  various messages related to being out of memory appear in the standard error or output.
-  (The @bgruening recommendation).
-
-For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
-Legacy tools default to ``default`` behavior described above (erroring if the tool
-produces any standard error output).
-
-See [pull request 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
-information and discussion on the ``detect_errors`` attribute.
-
-#### ``strict``
-
-This boolean forces the ``#set -e`` directive on in shell scripts - so that in a
-multi-part command if any part fails the job exits with a non-zero exit code.
-This is enabled by default for tools with ``profile>=16.04`` and disabled on
-legacy tools.
-
-#### ``interpreter``
-
-Older tools may define an ``intepreter`` attribute on the command, but this is
-deprecated and using the ``$__tool_directory__`` variable is superior.
-
+Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy tools using ``default``. From release 19.01 checks defined in the stdio tag are prepended to the checks defined by the presets loaded in the command block.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="detect_errors" type="xs:string">
           <xs:annotation>
-            <xs:documentation></xs:documentation>
+            <xs:documentation>One of ``default``, ``exit_code``, ``aggressive``. See "Error detection" above for details.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="oom_exit_code" type="xs:integer">
           <xs:annotation>
-            <xs:documentation>Only used if ``detect_errors="exit_code", tells Galaxy the specified exit code indicates an out of memory error. Galaxy instances may be configured to retry such jobs on resources with more memory.</xs:documentation>
+            <xs:documentation>Only used if ``detect_errors="exit_code"``, tells Galaxy the specified exit code indicates an out of memory error. Galaxy instances may be configured to retry such jobs on resources with more memory.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="use_shared_home" type="xs:string">
           <xs:annotation>
-            <xs:documentation>When running a job for this tool, do not isolate its $HOME directory within the job's directory - use either the shared_home_dir setting in Galaxy or the default $HOME specified in the job's default environment.</xs:documentation>
+            <xs:documentation>When running a job for this tool, do not isolate its ``$HOME`` directory within the job's directory - use either the ``shared_home_dir`` setting in Galaxy or the default ``$HOME`` specified in the job's default environment.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="interpreter" type="xs:string" gxdocs:deprecated="true">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This attribute defines the programming language in which the tool's executable file is written. Any language can be used (tools can be written in Python, C, Perl, Java, etc.). The executable file must be in the same directory of the XML file. If instead this attribute is not specified, the tag content should be a Bash command calling executable(s) available in the $PATH. </xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*. This will prefix the command with the value of this attribute (e.g. ``python`` or ``perl``) and the tool directory, in order to run an executable file shipped with the tool. It is recommended to instead use ``<interpreter> '$__tool_directory__/<executable_name>'`` in the tag content. If this attribute is not specified, the tag should contain a Bash command calling executable(s) available in the ``$PATH``, as modified after loading the requirements.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="strict" type="xs:boolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en"></xs:documentation>
+            <xs:documentation xml:lang="en">This boolean forces the ``#set -e`` directive on in shell scripts - so that in a multi-part command if any part fails the job exits with a non-zero exit code. This is enabled by default for tools with ``profile>=16.04`` and disabled on legacy tools.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -2898,7 +2896,7 @@ and demonstrates generating options from a dataset directly.
 
 ```xml
 <param name="taxonomy" type="data" format="mothur.seq.taxonomy" label="taxonomy - Taxonomy" help="please make sure your file has no quotation marks in it"/>
-<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+<param name="taxons" type="select" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
     <options from_dataset="taxonomy">
         <column name="name" index="1"/>
         <column name="value" index="1"/>
@@ -3073,7 +3071,7 @@ target file.</xs:documentation>
 See the
 [annotation_profiler](https://github.com/galaxyproject/tools-devteam/blob/master/tools/annotation_profiler/annotation_profiler.xml)
 tool for an example of how to use this tag set. This tag set is contained within
-the <param> tag set - it applies a validator to the containing parameter.
+the ``<param>`` tag set - it applies a validator to the containing parameter.
 
 ### Examples
 
@@ -3142,7 +3140,7 @@ Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
         <xs:attribute name="message" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">
-The error message displayed on the tool form if validation fails. </xs:documentation>
+The error message displayed on the tool form if validation fails.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="check" type="xs:string">
@@ -3259,10 +3257,12 @@ of the default ``X``, so invalid characters are effectively dropped instead of
 replaced with ``X``) and indicates that the only valid characters for this input
 are ASCII letters, digits, and ``_``.
 
-```
+```xml
 <param name="mystring" type="text" label="Say something interesting">
     <sanitizer invalid_char="">
-        <valid initial="string.ascii_letters,string.digits"><add value="_" /> </valid>
+        <valid initial="string.ascii_letters,string.digits">
+            <add value="_" />
+        </valid>
     </sanitizer>
 </param>
 ```
@@ -3270,7 +3270,7 @@ are ASCII letters, digits, and ``_``.
 This example allows many more valid characters and specifies that ``&`` will just
 be dropped from the input.
 
-```
+```xml
 <sanitizer>
     <valid initial="string.printable">
         <remove value="&amp;"/>
@@ -3365,7 +3365,7 @@ is the ``none`` preset.</xs:documentation>
   </xs:group>
   <xs:complexType name="SanitizerMapping">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Contained within the <sanitizer> tag set. Used to specify a mapping of disallowed character to replacement string. Contains <add> and <remove> tags.]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Contained within the ``<sanitizer>`` tag set. Used to specify a mapping of disallowed character to replacement string. Contains ``<add>`` and ``<remove>`` tags.]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
       <xs:group ref="SanitizerMappingElement" minOccurs="0" maxOccurs="unbounded"/>
@@ -3435,7 +3435,7 @@ tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
 <param name="taxonomy" type="data" format="mothur.cons.taxonomy" label="constaxonomy - Constaxonomy file. Provide either a constaxonomy file or a taxonomy file" help="please make sure your file has no quotation marks in it"/>
-<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+<param name="taxons" type="select" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
     <options from_dataset="taxonomy">
         <column name="name" index="2"/>
         <column name="value" index="2"/>
@@ -3617,24 +3617,24 @@ the ``<inputs>`` documentation.
     <xs:attribute name="provided_metadata_style" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-          Style used for tool provided metadata file (i.e.
-          [galaxy.json](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata))
-          - this can be either "legacy" or "default". The default of tools with
-          a profile of 17.09 or newer are "default", and "legacy" for older and
-          tools and tools without a specified profile. A discussion of the
-          differences between the styles can be found at
-          https://github.com/galaxyproject/galaxy/pull/4437.
+Style used for tool provided metadata file (i.e.
+[galaxy.json](https://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata))
+- this can be either "legacy" or "default". The default of tools with a profile
+of 17.09 or newer are "default", and "legacy" for older and tools and tools
+without a specified profile. A discussion of the differences between the styles
+can be found at https://github.com/galaxyproject/galaxy/pull/4437 .
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="provided_metadata_file" type="xs:string" default="galaxy.json">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-          Path relative to tool's working directory to load tool provided
-          metadata from. This metadata can describe dynamic datasets to load,
-          dynamic collection contents, as well as simple metadata (e.g. name, dbkey, etc...) and datatype specific metadata for declared outputs.
-          More information can be found [here](http://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata). The
-          default is galaxy.json.
+Path relative to tool's working directory to load tool provided metadata from.
+This metadata can describe dynamic datasets to load, dynamic collection
+contents, as well as simple metadata (e.g. name, dbkey, etc...) and
+datatype-specific metadata for declared outputs. More information can be found
+[here](https://planemo.readthedocs.io/en/latest/writing_advanced.html#tool-provided-metadata).
+The default is ``galaxy.json``.
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -3661,7 +3661,7 @@ This tag set is contained within the ``<outputs>`` tag set, and it defines the
 output data description for the files resulting from the tool's execution. The
 value of the attribute ``label`` can be acquired from input parameters or metadata
 in the same way that the command line parameters are (discussed in the
-<command> tag set section above).
+``<command>`` tag set section above).
 
 ### Examples
 
@@ -3775,7 +3775,7 @@ The valid values for format can be found in
     <xs:attribute name="default_identifier_source" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Sets the source of element identifier to the specified input.
-This only applies to collections that are mapped over a non-collection input and that have equivalent structures. If this references input elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead of ``input`` if ``input`` is in a conditional with ``name="cond"``). </xs:documentation>
+This only applies to collections that are mapped over a non-collection input and that have equivalent structures. If this references input elements in conditionals, this value should be qualified (e.g. ``cond|input`` instead of ``input`` if ``input`` is in a conditional with ``name="cond"``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="metadata_source" type="xs:string">
@@ -3902,7 +3902,12 @@ tool ultimately creates. If the code, when executed, returns ``True``,
 the output dataset is retained. In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
-conditionals are accessed using a hash named after the conditional.
+conditionals are accessed using a dictionary named after the conditional. Boolean
+parameters appear as booleans, not the value of their ``truevalue`` and
+``falsevalue`` attributes. In the example below, ``options["selection_mode"]`` would
+appear as ``$options.selection_mode`` in Cheetah. Similarly ``options["vcf_output"]``
+would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true and
+``''`` when false in Cheetah.
 
 ### Example
 
@@ -3915,7 +3920,7 @@ conditionals are accessed using a hash named after the conditional.
           <option selected="true" value="defaults">Use default options</option>
           <option value="advanced">Use advanced options</option>
         </param>
-        <when value="defaults"> </when>
+        <when value="defaults" />
         <when value="advanced">
           <param name="vcf_output" type="boolean" checked="false" label="VCF output"
             truevalue="--vcf" falsevalue="" />
@@ -4061,7 +4066,7 @@ The ``<actions>`` in the Bowtie 2 wrapper is used in lieu of the deprecated
 ``<code>`` tag to set the ``dbkey`` of the output dataset. In
 [bowtie2_wrapper.xml](https://github.com/galaxyproject/tools-devteam/blob/master/tools/bowtie2/bowtie2_wrapper.xml)
 (see below), according to the first action block, if the
-```reference_genome.source`` is ``indexed`` (not ``history``), then it will assign
+``reference_genome.source`` is ``indexed`` (not ``history``), then it will assign
 the ``dbkey`` of the output file to be the same as that of the reference file. It
 does this by looking at through the data table and finding the entry that has the
 value that's been selected in the index dropdown box as column 1 of the loc file
@@ -4178,7 +4183,7 @@ In addition to demonstrating this lower-level direct access of .loc files, it
 demonstrates an unconditional action. The second block would not be needed for
 most cases - it was required in this tool to handle the specific case of a small
 reference file used for functional testing. It says that if the dbkey has been
-set to ``equCab2chrM`` (which is what the ```<filter type="metadata_value"...
+set to ``equCab2chrM`` (which is what the ``<filter type="metadata_value"...
 column="1" />`` tag does), then it should be changed to ``equCab2`` (which is the
 ``<option type="from_param" ... column="0" ...>`` tag does).
 
@@ -4560,7 +4565,7 @@ the path to the file created with this directive.</xs:documentation>
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 
-This tag set is contained within the <configfiles> tag set. It tells Galaxy to
+This tag set is contained within the ``<configfiles>`` tag set. It tells Galaxy to
 write out a JSON representation of the tool parameters.
 
 *Example*
@@ -4653,7 +4658,7 @@ Examples are included in the test tools directory including:
       <xs:extension base="xs:string">
         <xs:attribute name="interpreter" type="xs:string">
           <xs:annotation>
-            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*: Prefix the version command with an interpreter and the tool directory in order to execute a script shipped with the tool. It is better to just use ``<interpreter> '$__tool_directory__/<script_name>'``.]]></xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[*Deprecated*. This will prefix the version command with the value of this attribute (e.g. ``python`` or ``perl``) and the tool directory, in order to to run an executable file shipped with the tool. It is recommended to instead use ``<interpreter> '$__tool_directory__/<executable_name>'`` in the tag content. If this attribute is not specified, the tag should contain a Bash command calling executable(s) available in the ``$PATH``, as modified after loading the requirements.]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -4832,7 +4837,7 @@ The target value (e.g. for setting data format: the list of supported data forma
 Legacy tools (ones with ``profile`` unspecified or a ``profile`` of less than
 16.04) will default to checking stderr for errors as described above. Newer
 tools will instead treat an exit code other than 0 as an error. The
-``detect_error`` on ``command`` can swap between these behaviors but the
+``detect_errors`` on ``command`` can swap between these behaviors but the
 ``stdio`` directive allows more options in defining error conditions (though
 these aren't always intuitive).
 
@@ -4869,13 +4874,13 @@ checked.]]></xs:documentation>
   <xs:complexType name="ExitCode">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
-Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. Each <exit_code> tag defines a range of exit codes, and each range can be associated with a description of the error (e.g., "Out of Memory", "Invalid Sequence File") and an error level. The description just describes the condition and can be anything. The error level is either log, warning, fatal error, or fatal_oom. A warning means that stderr will be updated with the error's description. A fatal error means that the tool's execution will be marked as having an error and the workflow will stop. A fatal_oom indicates an out of memory condition and the job might be resubmitted if Galaxy is configured appropriately. Note that, if the error level is not supplied, then a fatal error is assumed to have occurred.
+Tools may use exit codes to indicate specific execution errors. Many programs use 0 to indicate success and non-zero exit codes to indicate errors. Galaxy allows each tool to specify exit codes that indicate errors. Each ``<exit_code>`` tag defines a range of exit codes, and each range can be associated with a description of the error (e.g., "Out of Memory", "Invalid Sequence File") and an error level. The description just describes the condition and can be anything. The error level is either log, warning, fatal error, or fatal_oom. A warning means that stderr will be updated with the error's description. A fatal error means that the tool's execution will be marked as having an error and the workflow will stop. A fatal_oom indicates an out of memory condition and the job might be resubmitted if Galaxy is configured appropriately. Note that, if the error level is not supplied, then a fatal error is assumed to have occurred.
 
-The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied <exit_code> tags' ranges, then no errors are applied to the tool's execution.
+The exit code's range can be any consecutive group of integers. More advanced ranges, such as noncontiguous ranges, are currently not supported. Ranges can be specified in the form "m:n", where m is the start integer and n is the end integer. If ":n" is specified, then the exit code will be compared against all integers less than or equal to n. If "m:" is used, then the exit code will be compared against all integers greater than or equal to m. If the exit code matches, then the error level is applied and the error's description is added to stderr. If a tool's exit code does not match any of the supplied ``<exit_code>`` tags' ranges, then no errors are applied to the tool's execution.
 
 Note that most Unix and Linux variants only support positive integers 0 to 255 for exit codes. If an exit code falls out of the range 0 to 255, the usual convention is to only use the lower 8 bits for the exit code. The only known exception is if a job is broken into subtasks using the tasks runner and one of those tasks is stopped with a POSIX signal. (Note that signals should be used as a last resort for terminating processes.) In those cases, the task will receive -1 times the signal number. For example, suppose that a job uses the tasks runner and 8 tasks are created for the job. If one of the tasks hangs, then a sysadmin may choose to send the "kill" signal, SIGKILL, to the process. In that case, the task (and its job) will exit with an exit code of -9. More on POSIX signals can be found at https://en.wikipedia.org/wiki/Unix_signal as well as man pages on "signal".
 
-The <exit_code> tag's supported attributes are as follows:
+The ``<exit_code>`` tag's supported attributes are as follows:
 
 * ``range``: This indicates the range of exit codes to check. The range can be one of the following:
   * ``n``: the exit code will only be compared to n;
@@ -4884,11 +4889,11 @@ The <exit_code> tag's supported attributes are as follows:
   * ``[:n]``: the exit code must be less than or equal to n.
 * ``level``: This indicates the error level of the exit code. If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
   * ``log`` and ``warning``: If an exit code falls in the given range, then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
-  * ``fatal``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail. 
-  * ``fatal_oom``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. Depending on the job configuration, a fatal_oom-level error will cause the tool to be resubmitted or fail. 
+  * ``fatal``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. A fatal-level error will cause the tool to fail.
+  * ``fatal_oom``: If an exit code falls in the given range, then a description of the error will be added to the beginning of stderr. Depending on the job configuration, a fatal_oom-level error will cause the tool to be resubmitted or fail.
 * ``description``: This is an optional description of the error that corresponds to the exit code.
 
-The following is an example of the <exit_code> tag:
+The following is an example of the ``<exit_code>`` tag:
 
 ```xml
 <stdio>
@@ -4950,10 +4955,10 @@ A regular expression includes the following attributes:
   * ``stdout``: the regular expression will be applied to stdout;
   * ``stderr``: the regular expression will be applied to stderr;
   * ``both``: the regular expression will be applied to both stderr and stdout (which is the default case).
-* ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the <regex> tag does not contain the match attribute, then the <regex> tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
-* ``level``: This works very similarly to the <exit_code> tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
+* ``match``: This is the regular expression that will be used to match against stdout and/or stderr. If the ``<regex>`` tag does not contain the match attribute, then the ``<regex>`` tag will be ignored. The regular expression can be any valid Python regular expression. All regular expressions are performed case insensitively. For example, if match contains the regular expression "actg", then the regular expression will match against "actg", "ACTG", "AcTg", and so on. Also note that, if double quotes (") are to be used in the match attribute, then the value " can be used in place of double quotes. Likewise, if single quotes (') are to be used in the match attribute, then the value ' can be used if necessary.
+* ``level``: This works very similarly to the ``<exit_code>`` tag, except that, when a regular expression matches against its source, the description is added to the beginning of the source. For example, if stdout matches on a regular expression, then the regular expression's description is added to the beginning of stdout (instead of stderr). If no level is specified, then the fatal error level will be assumed to have occurred. The level can have one of following values:
   * ``log`` and ``warning``: If the regular expression matches against its source input (i.e., stdout and/or stderr), then a description of the error will be added to the beginning of the source, prepended with either 'Log:' or 'Warning:'. A log-level/warning-level error will not cause the tool to fail.
-  * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail. 
+  * ``fatal``: If the regular expression matches against its source input, then a description of the error will be added to the beginning of the source. A fatal-level error will cause the tool to fail.
   * ``fatal_oom``: In contrast to fatal the job might be resubmitted if possible according to the job configuration.
 * ``description``: Just like its ``exit_code`` counterpart, this is an optional description of the regular expression that has matched.
 
@@ -4998,7 +5003,7 @@ stderr contained ``error``, ``ERROR``, or ``ErRor`` then it would not matter -
 stderr was not being scanned.
 
 If the second regular expression does not match, the regular expression "out of memory"
-is checked on stdout. If found, Galaxy tries to resubmit the job with more memory 
+is checked on stdout. If found, Galaxy tries to resubmit the job with more memory
 if configured correctly, otherwise the job fails.
 
 If the previous regular expressions does not match, then the fourth regular
@@ -5022,12 +5027,12 @@ prepended with the warning ``Warning: Branch A was taken in execution``.
     </xs:annotation>
     <xs:attribute name="source" type="SourceType">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the follwing values: </xs:documentation>
+        <xs:documentation xml:lang="en">This tells whether the regular expression should be matched against stdout, stderr, or both. If this attribute is missing or is incorrect, then both stdout and stderr will be checked. The source can be one of the following values:</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="match" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">This is the regular expression that will be used to match against stdout and/or stderr. </xs:documentation>
+        <xs:documentation xml:lang="en">This is the regular expression that will be used to match against stdout and/or stderr.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="level" type="LevelType">
@@ -5121,12 +5126,12 @@ for a list of supported formats.</xs:documentation>
     </xs:attribute>
     <xs:attribute name="input_dataset" type="xs:string" gxdocs:deprecated="true">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
+        <xs:documentation xml:lang="en">*Deprecated*.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="attribute" type="xs:string" gxdocs:deprecated="true">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Deprecated.</xs:documentation>
+        <xs:documentation xml:lang="en">*Deprecated*.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>

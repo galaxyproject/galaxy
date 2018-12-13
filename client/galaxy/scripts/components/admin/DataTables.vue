@@ -12,6 +12,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Message from "../Message.vue";
 import DataTablesGrid from "./DataTablesGrid.vue";
@@ -61,7 +62,7 @@ export default {
     methods: {
         showDataManager(dataManagerTableName) {
             axios
-                .get(`${Galaxy.root}data_manager/tool_data_table_items`, {
+                .get(`${getAppRoot()}data_manager/tool_data_table_items`, {
                     params: {
                         table_name: dataManagerTableName
                     }
@@ -84,7 +85,7 @@ export default {
 
         reloadDataManager(dataManagerTableName) {
             axios
-                .get(`${Galaxy.root}data_manager/reload_tool_data_table`, {
+                .get(`${getAppRoot()}data_manager/reload_tool_data_table`, {
                     params: {
                         table_name: dataManagerTableName
                     }
@@ -105,7 +106,7 @@ export default {
 
     created() {
         axios
-            .get(`${Galaxy.root}admin/data_tables_list`)
+            .get(`${getAppRoot()}admin/data_tables_list`)
             .then(response => {
                 this.isLoaded = true;
                 this.dataTables = response.data.data;

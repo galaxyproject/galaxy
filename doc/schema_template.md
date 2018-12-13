@@ -26,7 +26,7 @@ $tag:tool|stdio://complexType[@name='Stdio']
 $tag:tool|stdio|exit_code://complexType[@name='ExitCode'] hide_attributes
 $tag:tool|stdio|regex://complexType[@name='Regex'] hide_attributes
 $tag:tool|version_command://complexType[@name='VersionCommand']
-$tag:tool|command://element[@name='tool']//element[@name='command'] hide_attributes
+$tag:tool|command://complexType[@name='Command']
 $tag:tool|environment_variables://complexType[@name='EnvironmentVariables']
 $tag:tool|environment_variables|environment_variable://complexType[@name='EnvironmentVariable']
 $tag:tool|configfiles://complexType[@name='ConfigFiles']
@@ -73,6 +73,7 @@ $tag:tool|outputs|collection|discover_datasets://complexType[@name='OutputCollec
 $tag:tool|tests://complexType[@name='Tests']
 $tag:tool|tests|test://complexType[@name='Test']
 $tag:tool|tests|test|param://complexType[@name='TestParam']
+$tag:tool|tests|test|param|collection://complexType[@name='TestCollection']
 $tag:tool|tests|test|repeat://complexType[@name='TestRepeat']
 $tag:tool|tests|test|section://complexType[@name='TestSection']
 $tag:tool|tests|test|conditional://complexType[@name='TestConditional']

@@ -145,6 +145,11 @@ class AdminRequiredException(MessageException):
     err_code = error_codes.ADMIN_REQUIRED
 
 
+class UserActivationRequiredException(MessageException):
+    status_code = 403
+    err_code = error_codes.USER_ACTIVATION_REQUIRED
+
+
 class ObjectNotFound(MessageException):
     """ Accessed object was not found """
     status_code = 404
@@ -178,6 +183,15 @@ class InconsistentDatabase(MessageException):
 class InternalServerError(MessageException):
     status_code = 500
     err_code = error_codes.INTERNAL_SERVER_ERROR
+
+
+class ToolExecutionError(MessageException):
+    status_code = 500
+    err_code = error_codes.TOOL_EXECUTION_ERROR
+
+    def __init__(self, err_msg, type="error", job=None):
+        super(ToolExecutionError, self).__init__(err_msg, type)
+        self.job = job
 
 
 class NotImplemented(MessageException):
@@ -216,3 +230,9 @@ class ContainerRunError(Exception):
         super(ContainerRunError, self).__init__(msg, **kwargs)
         self.image = image
         self.command = command
+
+
+class HandlerAssignmentError(Exception):
+    def __init__(self, msg=None, obj=None, **kwargs):
+        super(HandlerAssignmentError, self).__init__(msg, **kwargs)
+        self.obj = obj

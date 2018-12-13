@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import time
+from collections import OrderedDict
 from json import dumps
 from logging import getLogger
 
@@ -22,7 +23,6 @@ from six import StringIO, text_type
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef, TestCollectionOutputDef
 from galaxy.util.bunch import Bunch
-from galaxy.util.odict import odict
 from .asserts import verify_assertions
 from ..verify import verify
 
@@ -41,6 +41,28 @@ DEFAULT_FTYPE = 'auto'
 # restore this behavior by setting GALAXY_TEST_DEFAULT_DBKEY to hg17.
 DEFAULT_DBKEY = os.environ.get("GALAXY_TEST_DEFAULT_DBKEY", "?")
 DEFAULT_MAX_SECS = DEFAULT_TOOL_TEST_WAIT
+
+
+class OutputsDict(OrderedDict):
+    """Ordered dict that can also be accessed by index.
+
+    >>> out = OutputsDict()
+    >>> out['item1'] = 1
+    >>> out['item2'] = 2
+    >>> out[1] == 2 == out['item2']
+    True
+    """
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return self[list(self.keys())[item]]
+        else:
+            # ideally we'd do `return super(OutputsDict, self)[item]`,
+            # but this fails because OrderedDict has no `__getitem__`. (!?)
+            item = self.get(item)
+            if item is None:
+                raise KeyError(item)
+            return item
 
 
 def stage_data_in_history(galaxy_interactor, tool_id, all_test_data, history):
@@ -66,6 +88,8 @@ class GalaxyInteractorApi(object):
         self.api_url = "%s/api" % kwds["galaxy_url"].rstrip("/")
         self.master_api_key = kwds["master_api_key"]
         self.api_key = self.__get_user_key(kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user"))
+        if kwds.get('user_api_key_is_admin_key', False):
+            self.master_api_key = self.api_key
         self.keep_outputs_dir = kwds["keep_outputs_dir"]
 
         self.uploads = {}
@@ -241,7 +265,7 @@ class GalaxyInteractorApi(object):
             output_id = output_data
         return output_id
 
-    def stage_data_async(self, test_data, history_id, tool_id, async=True):
+    def stage_data_async(self, test_data, history_id, tool_id):
         fname = test_data['fname']
         tool_input = {
             "file_type": test_data['ftype'],
@@ -359,27 +383,26 @@ class GalaxyInteractorApi(object):
             else:
                 element = self.uploads[element_def["value"]].copy()
                 element["name"] = element_identifier
+                tags = element_def.get("attributes").get("tags")
+                if tags:
+                    element["tags"] = tags.split(",")
             element_identifiers.append(element)
         return element_identifiers
 
     def __dictify_output_collections(self, submit_response):
-        output_collections_dict = odict()
+        output_collections_dict = OrderedDict()
         for output_collection in submit_response['output_collections']:
             output_collections_dict[output_collection.get("output_name")] = output_collection
         return output_collections_dict
 
     def __dictify_outputs(self, datasets_object):
         # Convert outputs list to a dictionary that can be accessed by
-        # output_name so can be more flexiable about ordering of outputs
+        # output_name so can be more flexible about ordering of outputs
         # but also allows fallback to legacy access as list mode.
-        outputs_dict = odict()
-        index = 0
+        outputs_dict = OutputsDict()
+
         for output in datasets_object['outputs']:
-            outputs_dict[index] = outputs_dict[output.get("output_name")] = output
-            index += 1
-        # Adding each item twice (once with index for backward compat),
-        # overiding length to reflect the real number of outputs.
-        outputs_dict.__len__ = lambda: index
+            outputs_dict[output.get("output_name")] = output
         return outputs_dict
 
     def output_hid(self, output_data):
@@ -725,10 +748,10 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
     maxseconds = testdef.maxseconds
     if testdef.num_outputs is not None:
         expected = testdef.num_outputs
-        actual = len(data_list)
+        actual = len(data_list) + len(data_collection_list)
         if expected != actual:
-            messaage_template = "Incorrect number of outputs - expected %d, found %s."
-            message = messaage_template % (expected, actual)
+            message_template = "Incorrect number of outputs - expected %d, found %s."
+            message = message_template % (expected, actual)
             raise Exception(message)
     found_exceptions = []
 

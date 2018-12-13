@@ -12,6 +12,7 @@
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="library_data.xml"/>
+  <tool file="remove_value.xml"/>
   <tool file="bibtex.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -61,6 +62,7 @@
   <tool file="version_command_tool_dir.xml" />
   <tool file="exit_code_oom.xml" />
   <tool file="exit_code_from_file.xml" />
+  <tool file="exit_code_from_env.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
@@ -100,6 +102,7 @@
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_single_in_repeat.xml" />
+  <tool file="identifier_in_conditional.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
@@ -157,6 +160,7 @@
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/mapper2.xml" />
+  <tool file="for_workflows/mapper_two.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/empty_list.xml" />
   <tool file="for_workflows/count_list.xml" />
@@ -195,5 +199,7 @@
   <tool file="${model_tools_path}/filter_from_file.xml" />
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
   <tool file="${model_tools_path}/apply_rules.xml" />
+  <tool file="${model_tools_path}/build_list.xml" />
+  <tool file="${model_tools_path}/extract_dataset.xml" />
 
 </toolbox>

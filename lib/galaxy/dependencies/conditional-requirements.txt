@@ -14,7 +14,7 @@ azure-storage==0.32.0
 # PyRods not in PyPI
 python-ldap==2.4.44
 python-pam
-cloudbridge==0.3.3
+cloudbridge==1.0.1
 
 # Chronos client
 chronos-python==0.38.0
