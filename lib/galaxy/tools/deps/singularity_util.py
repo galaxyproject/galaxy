@@ -28,6 +28,7 @@ def build_singularity_run_command(
         sudo=sudo,
         sudo_cmd=sudo_cmd,
     )
+    command_parts.append("-s")
     command_parts.append("exec")
     for volume in volumes:
         command_parts.extend(["-B", shlex_quote(str(volume))])
