@@ -183,4 +183,3 @@ if (process.env.GXY_BUILD_SOURCEMAPS || process.env.NODE_ENV == "development") {
 }
 
 module.exports = buildconfig;
-
