@@ -42,6 +42,7 @@
     "pyre-to-regexp": "^0.0.5",
     "raven-js": "^3.27.0",
     "requirejs": "2.3.6",
+    "rxjs": "^6.3.3",
     "underscore": "^1.9.1",
     "vue": "2.5.17",
     "vue-router": "3.0.1"

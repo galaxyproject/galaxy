@@ -11,8 +11,8 @@ import TerminalsView from "mvc/workflow/workflow-view-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 import { getAppRoot } from "onload/loadConfig";
 
-window.show_modal = function(a, b, c) {};
-window.hide_modal = function() {};
+// window.show_modal = function(a, b, c) {};
+// window.hide_modal = function() {};
 
 // create body and app
 var create_app = function() {

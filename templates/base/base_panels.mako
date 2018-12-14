@@ -20,78 +20,59 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
+    <!--- base/base_panels.mako stylesheets() -->
     ${h.css(
-        'jquery.rating',
         'bootstrap-tour',
         'base'
     )}
-    <style type="text/css">
-    #center {
-        %if not self.has_left_panel:
-            left: 0 !important;
-        %endif
-        %if not self.has_right_panel:
-            right: 0 !important;
-        %endif
-    }
-    </style>
 </%def>
 
 ## Default javascripts
+## TODO: remove when all libs are required directly in modules
 <%def name="javascripts()">
-    ## Send errors to Sentry server if configured
-    %if app.config.sentry_dsn:
-        ${h.js( "libs/raven" )}
-        <script>
-            Raven.config('${app.config.sentry_dsn_public}').install();
-            %if trans.user:
-                Raven.setUser( { email: "${trans.user.email | h}" } );
-            %endif
-        </script>
-    %endif
-
+    <!--- base/base_panels.mako javascripts() -->
     ${h.js(
-        ## TODO: remove when all libs are required directly in modules
-        'libs/require',
         'bundled/libs.chunk',
-        'bundled/base.chunk',
-        'bundled/extended.bundled'
+        'bundled/base.chunk'
     )}
-    
+    ${ javascript_entry() }
+</%def>
+
+<%def name="javascript_entry()">
+    <!-- base/base_panels.mako javascript_entry -->
+    ${ h.js('bundled/generic.bundled')}
 </%def>
 
 <%def name="javascript_app()">
-    ## load the Galaxy global js var
+    <!--- base/base_panels.mako javascript_app() -->
     ${ galaxy_client.load() }
 </%def>
 
 ## Default late-load javascripts
 <%def name="late_javascripts()">
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
+    <!--- base/base_panels.mako late_javascripts() -->
+
     <script type="text/javascript">
 
-    %if self.has_left_panel:
-        var lp = new panels.LeftPanel({ el: '#left' });
-        window.force_left_panel = function( x ) { lp.force_panel( x ) };
-    %endif
+        var panelConfig = {
+            left_panel: ${h.to_js_bool(self.has_left_panel)},
+            right_panel: ${h.to_js_bool(self.has_right_panel)},
+            rightPanelSelector: '#right',
+            leftPanelSelector: '#left'
+        };
 
-    %if self.has_right_panel:
-        var rp = new panels.RightPanel({ el: '#right' });
-        window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-        window.force_right_panel = function( x ) { rp.force_panel( x ) };
-    %endif
-
-    %if t.webapp.name == 'galaxy' and app.config.ga_code:
-          (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-          (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-          m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-          })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-          ga('create', '${app.config.ga_code}', 'auto');
-          ga('send', 'pageview');
-    %endif
+        // "late javascripts"
+        config.addInitialization(function() {
+            console.log("base/base_panels.mako, panel init");
+            window.bundleEntries.panelManagement(panelConfig);
+        });
 
     </script>
+
+    %if t.webapp.name == 'galaxy' and app.config.ga_code:
+        ${galaxy_client.config_google_analytics(app)}
+    %endif
+
 </%def>
 
 ## Masthead
@@ -149,11 +130,20 @@
             %endif
             | ${self.title()}
         </title>
+
         ## relative href for site root
         <link rel="index" href="${ h.url_for( '/' ) }"/>
+        
         ${self.stylesheets()}
+
+        ## Normally, we'd put all the javascripts at the bottom of the <body>
+        ## but during this transitional period we need access to the config
+        ## functions which are only available when these scripts are executed
+        ## and I can't yet control when the templates are going to write scripts
+        ## to the output
         ${self.javascripts()}
         ${self.javascript_app()}
+
     </head>
 
     <%
@@ -176,23 +166,29 @@
             </noscript>
         %endif
         <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+            
             ## Background displays first
             <div id="background"></div>
+            
             ## Layer iframes over backgrounds
             <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
                 ${self.masthead()}
             </div>
+            
             %if self.message_box_visible:
                 <div id="messagebox" class="panel-${app.config.message_box_class}-message" style="display:block">
                     ${app.config.message_box_content}
                 </div>
             %endif
+            
             %if self.show_inactivity_warning:
                 <div id="inactivebox" class="panel-warning-message">
                     ${app.config.inactivity_box_content} <a href="${h.url_for( controller='user', action='resend_verification' )}">Resend verification.</a>
                 </div>
             %endif
+            
             ${self.overlay(visible=self.overlay_visible)}
+            
             <div id="columns">
                 %if self.has_left_panel:
                     <div id="left">
@@ -217,6 +213,7 @@
                 %endif
             </div><!--end columns-->
         </div><!--end everything-->
+
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements
         ## Scripts can be loaded later since they progressively add features to

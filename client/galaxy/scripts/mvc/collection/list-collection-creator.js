@@ -1,3 +1,6 @@
+import _ from "underscore";
+import jQuery from "jquery";
+import Backbone from "backbone";
 import HDCA from "mvc/history/hdca-model";
 import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
@@ -7,10 +10,12 @@ import naturalSort from "utils/natural-sort";
 import _l from "utils/localization";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
 import Vue from "vue";
+import { getGalaxyInstance } from "app";
 
 import "ui/hoverhighlight";
 
 var logNamespace = "collections";
+var $ = jQuery;
 
 /*==============================================================================
 TODO:
@@ -1016,6 +1021,7 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
 
 const collectionCreatorModalSetup = function _collectionCreatorModalSetup(options) {
     const deferred = jQuery.Deferred();
+    let Galaxy = getGalaxyInstance();
     const modal = Galaxy.modal || new UI_MODAL.View();
 
     const creatorOptions = _.defaults(options || {}, {

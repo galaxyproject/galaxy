@@ -20,4 +20,6 @@ require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.dynatree");
 require("imports-loader?jQuery=jqueryVendor!jquery.complexify");
 require("imports-loader?jQuery=jqueryVendor!jquery-migrate");
 
+// require("imports-loader?jQuery=jqueryVendor!../ui/autocom_tagging");
+
 module.exports = jQuery;

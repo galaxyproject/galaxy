@@ -11,7 +11,7 @@ var paths = {
     scripts: [
         "galaxy/scripts/**/*.js",
         "!galaxy/scripts/qunit/**/*",
-        "!galaxy/scripts/apps/**/*",
+        "!galaxy/scripts/entry/**/*",
         "!galaxy/scripts/libs/**/*"
     ],
     plugin_dirs: ["../config/plugins/**/static/**/*", "!../config/plugins/**/node_modules{,/**}"],

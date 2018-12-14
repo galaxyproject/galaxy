@@ -123,3 +123,21 @@ def is_true(val):
     Returns true if input is a boolean and true or is a string and looks like a true value.
     """
     return val is True or val in ['True', 'true', 'T', 't']
+
+
+def to_js_bool(val):
+    """
+    Prints javascript boolean for passed value.
+    TODO: isn't there a standard python JSON parser we should
+    be using instead of all these manual conversions?
+    """
+    return iff(is_true(val), "true", "false")
+
+
+def js_nullable(val):
+    """
+    Prints javascript null instead of python None
+    TODO: isn't there a standard python JSON parser we should
+    be using instead of all these manual conversions?
+    """
+    return iff(val is None, "null", val);

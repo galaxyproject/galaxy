@@ -1,9 +1,11 @@
 import _ from "underscore";
+import $ from "jquery";
 import Backbone from "backbone";
 import _l from "utils/localization";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import { getGalaxyInstance } from "app";
+
 
 /**
  * This view represents the top part of the library page.

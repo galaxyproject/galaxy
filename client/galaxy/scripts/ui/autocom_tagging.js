@@ -1,7 +1,4 @@
-import jQuery from "jquery";
-("use_strict");
-
-var $ = jQuery;
+/* global jQuery, $ */
 
 // ============================================================================
 /**
@@ -12,7 +9,7 @@ var $ = jQuery;
 //
 // Initialize "tag click functions" for tags.
 //
-function init_tag_click_function(tag_elt, click_func) {
+export function init_tag_click_function(tag_elt, click_func) {
     $(tag_elt)
         .find(".tag-name")
         .each(function() {
@@ -377,6 +374,3 @@ jQuery.fn.autocomplete_tagging = function(options) {
         return tag_button;
     }
 };
-
-// ============================================================================
-export default init_tag_click_function;

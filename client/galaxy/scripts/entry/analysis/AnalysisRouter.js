@@ -1,12 +1,20 @@
-import $ from "jquery";
+/** define the 'Analyze Data'/analysis/main/home page for Galaxy
+ *  * has a masthead
+ *  * a left tool menu to allow the user to load tools in the center panel
+ *  * a right history menu that shows the user's current data
+ *  * a center panel
+ *  Both panels (generally) persist while the center panel shows any
+ *  UI needed for the current step of an analysis, like:
+ *      * tool forms to set tool parameters,
+ *      * tables showing the contents of datasets
+ *      * etc.
+ */
+
 import _ from "underscore";
-import { setGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
-import ToolPanel from "./panels/tool-panel";
-import HistoryPanel from "./panels/history-panel";
-import Page from "layout/page";
 import ToolForm from "mvc/tool/tool-form";
 import FormWrapper from "mvc/form/form-wrapper";
 import Sharing from "components/Sharing.vue";
@@ -31,26 +39,9 @@ import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import Vue from "vue";
 
-/** define the 'Analyze Data'/analysis/main/home page for Galaxy
- *  * has a masthead
- *  * a left tool menu to allow the user to load tools in the center panel
- *  * a right history menu that shows the user's current data
- *  * a center panel
- *  Both panels (generally) persist while the center panel shows any
- *  UI needed for the current step of an analysis, like:
- *      * tool forms to set tool parameters,
- *      * tables showing the contents of datasets
- *      * etc.
- */
-window.app = function app(options, bootstrapped) {
-    let Galaxy = setGalaxyInstance(GalaxyApp => {
-        let galaxy = new GalaxyApp(options, bootstrapped);
-        galaxy.debug("analysis app");
-        return galaxy;
-    });
-
-    /** Routes */
-    var AnalysisRouter = Router.extend({
+/** Routes */
+export const getAnalysisRouter = Galaxy =>
+    Router.extend({
         routes: {
             "(/)": "home",
             "(/)root*": "home",
@@ -88,6 +79,7 @@ window.app = function app(options, bootstrapped) {
         require_login: ["show_user", "show_user_form", "show_workflows"],
 
         authenticate: function(args, name) {
+            let Galaxy = getGalaxyInstance();
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
@@ -111,6 +103,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_user_form: function(form_id) {
+            let Galaxy = getGalaxyInstance();
             var model = new UserPreferences.Model({
                 user_id: Galaxy.params.id
             });
@@ -403,19 +396,3 @@ window.app = function app(options, bootstrapped) {
             });
         }
     });
-
-    // render and start the router
-    $(() => {
-        options.config = _.extend(options.config, {
-            hide_panels: Galaxy.params.hide_panels,
-            hide_masthead: Galaxy.params.hide_masthead
-        });
-        Galaxy.page = new Page.View(
-            _.extend(options, {
-                Left: ToolPanel,
-                Right: HistoryPanel,
-                Router: AnalysisRouter
-            })
-        );
-    });
-};

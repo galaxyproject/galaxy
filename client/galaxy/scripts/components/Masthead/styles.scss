@@ -1,0 +1,14 @@
+#masthead:empty {
+    display: none;
+}
+
+.framed {
+
+    #messagebox, #masthead {
+        display: none;
+    }
+
+    #center, #right, #left {
+        top: 0;
+    }
+}

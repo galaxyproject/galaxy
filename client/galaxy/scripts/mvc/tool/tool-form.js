@@ -143,14 +143,13 @@ var View = Backbone.View.extend({
 
         // remap feature
         if (options.job_id && options.job_remap) {
+            var label, help;
             if (options.job_remap === "job_produced_collection_elements") {
-                var label = "Replace elements in collection ?";
-                var help =
-                    "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
+                label = "Replace elements in collection ?";
+                help = "The previous run of this tool failed. Use this option to replace the failed element(s) in the dataset collection that were produced during the previous tool run.";
             } else {
-                var label = "Resume dependencies from this job ?";
-                var help =
-                    "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
+                label = "Resume dependencies from this job ?";
+                help = "The previous run of this tool failed and other tools were waiting for it to finish successfully. Use this option to resume those tools using the new output(s) of this tool run.";
             }
             options.inputs.push({
                 label: label,
