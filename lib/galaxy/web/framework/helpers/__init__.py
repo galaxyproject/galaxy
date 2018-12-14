@@ -140,4 +140,4 @@ def js_nullable(val):
     TODO: isn't there a standard python JSON parser we should
     be using instead of all these manual conversions?
     """
-    return iff(val is None, "null", val);
+    return iff(val is None, "null", val)
