@@ -20,12 +20,17 @@ from galaxy.model.store.discover import (
     persist_elements_to_hdca,
     persist_hdas,
     RegexCollectedDatasetMatch,
+    SessionlessModelPersistenceContext,
     UNSET,
 )
 from galaxy.tool_util.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
     ToolProvidedMetadataDatasetCollection,
+)
+from galaxy.tool_util.parser.output_objects import (
+    ToolOutput,
+    ToolOutputCollection,
 )
 from galaxy.util import (
     unicodify
@@ -153,8 +158,22 @@ def collect_dynamic_outputs(
             log.exception("Problem gathering output collection.")
             collection.handle_population_failed("Problem building datasets for collection.")
 
+        job_context.add_dataset_collection(has_collection)
 
-class JobContext(ModelPersistenceContext):
+
+class BaseJobContext(object):
+
+    def add_dataset_collection(self, collection):
+        pass
+
+    def find_files(self, output_name, collection, dataset_collectors):
+        filenames = OrderedDict()
+        for discovered_file in discover_files(output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection):
+            filenames[discovered_file.path] = discovered_file
+        return filenames
+
+
+class JobContext(ModelPersistenceContext, BaseJobContext):
 
     def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store):
         self.tool = tool
@@ -184,12 +203,6 @@ class JobContext(ModelPersistenceContext):
     @property
     def tag_handler(self):
         return self.app.tag_handler
-
-    def find_files(self, output_name, collection, dataset_collectors):
-        filenames = OrderedDict()
-        for discovered_file in discover_files(output_name, self.tool_provided_metadata, dataset_collectors, self.job_working_directory, collection):
-            filenames[discovered_file.path] = discovered_file
-        return filenames
 
     def persist_object(self, obj):
         self.sa_session.add(obj)
@@ -279,6 +292,64 @@ class JobContext(ModelPersistenceContext):
 
     def job_id(self):
         return self.job.id
+
+
+class SessionlessJobContext(SessionlessModelPersistenceContext, BaseJobContext):
+
+    def __init__(self, metadata_params, tool_provided_metadata, object_store, export_store, import_store, working_directory):
+        # TODO: use a metadata source provider... (pop from inputs and add parameter)
+        # TODO: handle input_dbkey...
+        input_dbkey = "?"
+        super(SessionlessJobContext, self).__init__(object_store, export_store, working_directory)
+        self.metadata_params = metadata_params
+        self.tool_provided_metadata = tool_provided_metadata
+        self.import_store = import_store
+        self.input_dbkey = input_dbkey
+
+    def output_collection_def(self, name):
+        tool_as_dict = self.metadata_params["tool"]
+        output_collection_defs = tool_as_dict["output_collections"]
+        if name not in output_collection_defs:
+            return False
+
+        output_collection_def_dict = output_collection_defs[name]
+        output_collection_def = ToolOutputCollection.from_dict(name, output_collection_def_dict)
+        return output_collection_def
+
+    def output_def(self, name):
+        tool_as_dict = self.metadata_params["tool"]
+        output_defs = tool_as_dict["outputs"]
+        if name not in output_defs:
+            return None
+
+        output_def_dict = output_defs[name]
+        output_def = ToolOutput.from_dict(name, output_def_dict)
+        return output_def
+
+    def job_id(self):
+        return "non-session bound job"
+
+    def get_hdca(self, object_id):
+        hdca = self.import_store.sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).find(int(object_id))
+        if hdca:
+            self.export_store.add_dataset_collection(hdca)
+            for collection_dataset in hdca.dataset_instances:
+                include_files = True
+                self.export_store.add_dataset(collection_dataset, include_files=include_files)
+                self.export_store.collection_datasets[collection_dataset.id] = True
+
+        return hdca
+
+    def add_dataset_collection(self, collection):
+        self.export_store.add_dataset_collection(collection)
+        for collection_dataset in collection.dataset_instances:
+            include_files = True
+            self.export_store.add_dataset(collection_dataset, include_files=include_files)
+            self.export_store.collection_datasets[collection_dataset.id] = True
+
+    def add_output_dataset_association(self, name, dataset_instance):
+        job_id = self.metadata_params["job_id_tag"]
+        self.export_store.add_job_output_dataset_associations(job_id, name, dataset_instance)
 
 
 def collect_primary_datasets(job_context, output, input_ext):

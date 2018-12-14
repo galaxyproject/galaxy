@@ -1400,3 +1400,10 @@ def get_export_dataset_filename(name, ext, hid):
     """
     base = ''.join(c in FILENAME_VALID_CHARS and c or '_' for c in name)
     return base + "_%s.%s" % (hid, ext)
+
+
+def imported_store_for_metadata(directory, object_store=None):
+    import_options = ImportOptions(allow_dataset_object_edit=True, allow_edit=True)
+    import_model_store = get_import_model_store_for_directory(directory, import_options=import_options, object_store=object_store)
+    import_model_store.perform_import()
+    return import_model_store
