@@ -213,3 +213,6 @@ class MockJobWrapper(object):
 
     def home_directory(self):
         return None
+
+    def reclaim_ownership(self):
+        pass
