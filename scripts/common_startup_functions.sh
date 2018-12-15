@@ -77,7 +77,7 @@ run_common_start_up() {
 }
 
 conda_activate() {
-    : ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}
+    : ${GALAXY_CONDA_ENV:="_galaxy_"}
     echo "Activating Conda environment: $GALAXY_CONDA_ENV"
     # Dash is actually supported by 4.4, but not with `. /path/to/activate`, only `conda activate`, which we
     # can't load unless we know the path to <conda_root>/etc/profile.d/conda.sh
@@ -106,7 +106,7 @@ setup_python() {
     elif [ -z "$skip_venv" ]; then
         set_conda_exe
         if [ -n "$CONDA_EXE" ] && \
-                check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}; then
+                check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_"}; then
             # You almost surely have pip >= 8.1 and running `conda install ... pip>=8.1` every time is slow
             REPLACE_PIP=0
             [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
@@ -181,10 +181,6 @@ find_server() {
     fi
 }
 
-get_galaxy_major_version() {
-    PYTHONPATH='lib' python -c 'from galaxy.version import VERSION_MAJOR; print(VERSION_MAJOR)'
-}
-
 # Prior to Conda 4.4, the setup method was to add <conda_root>/bin to $PATH. Beginning with 4.4, that method is still
 # possible, but the preferred method is to source <conda_root>/etc/profile.d/conda.sh. If the new method is used, the
 # base environment will *not* be on $PATH, unlike previous versions, and `conda` is a shell function not available to
@@ -235,11 +231,11 @@ check_conda_env() {
     # envs listed in ~/.conda/environments.txt show up in envs.txt but can't be activated by name. =/
     set_conda_info
     printf "%s" "$__CONDA_INFO" \
-        | python -c "import json, os.path, sys; info=json.load(sys.stdin); sys.exit(0 if '$1' in [os.path.basename(p) for p in info['envs'] if os.path.dirname(p) in info['envs_dirs']] else 1)"
+        | python -c "import json, os.path, sys; info = json.load(sys.stdin); sys.exit(0 if '$1' in [os.path.basename(p) for p in info['envs'] if os.path.dirname(p) in info['envs_dirs']] else 1)"
 }
 
 get_conda_env_path() {
     set_conda_info
     printf "%s" "$__CONDA_INFO" \
-        | python -c "import json, os.path, sys; info=json.load(sys.stdin); print([p for p in info['envs'] if os.path.basename(p) == '$1' and os.path.dirname(p) in info['envs_dirs']][0])"
+        | python -c "import json, os.path, sys; info = json.load(sys.stdin); print([p for p in info['envs'] if os.path.basename(p) == '$1' and os.path.dirname(p) in info['envs_dirs']][0])"
 }
