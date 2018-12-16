@@ -27,6 +27,9 @@ matrix:
   allow_failures:
   - env: TOX_ENV=check-python-dependencies
 
+before_install:
+  # Workaround for https://github.com/travis-ci/travis-ci/issues/7940
+  - sudo rm -f /etc/boto.cfg
 
 install:
   - pip install tox
