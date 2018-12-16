@@ -7,6 +7,10 @@ env:
   - TOX_ENV=py26-unit
   - TOX_ENV=qunit
 
+before_install:
+  # Workaround for https://github.com/travis-ci/travis-ci/issues/7940
+  - sudo rm -f /etc/boto.cfg
+
 install:
   - pip install tox
   - if [ "$TOX_ENV" == "qunit" ]; then bash -c 'cd test/qunit && npm install'; fi

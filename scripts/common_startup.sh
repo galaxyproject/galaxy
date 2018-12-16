@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-GXPIP_VERSION='8.0.2+gx2'
-
 SET_VENV=1
 for arg in "$@"; do
     [ "$arg" = "--skip-venv" ] && SET_VENV=0
@@ -134,31 +132,7 @@ fi
 
 : ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
 if [ $REPLACE_PIP -eq 1 ]; then
-    pip_version=`pip --version | awk '{print $2}'`
-    method=`python - << EOF
-from pkg_resources import parse_version
-from sys import stdout
-if parse_version('$pip_version') >= parse_version('6.0'):
-    stdout.write('req')
-elif parse_version('$pip_version') >= parse_version('1.5'):
-    stdout.write('wheel')
-else:
-    stdout.write('sdist')
-EOF`
-    case $method in
-        req)
-            pip install --no-index --find-links ${GALAXY_WHEELS_INDEX_URL}/pip --upgrade "pip==${GXPIP_VERSION}"
-            ;;
-        wheel)
-            pip install --upgrade "https://wheels.galaxyproject.org/packages/pip-${GXPIP_VERSION}-py2.py3-none-any.whl"
-            ;;
-        sdist)
-            pip install --upgrade "https://wheels.galaxyproject.org/packages/pip-${GXPIP_VERSION}.tar.gz"
-            ;;
-    esac
-
-    # binary-compatibility.cfg may need to be created (e.g. on CentOS)
-    [ -n "$VIRTUAL_ENV" -a ! -f ${VIRTUAL_ENV}/binary-compatibility.cfg ] && python ./scripts/binary_compatibility.py -o ${VIRTUAL_ENV}/binary-compatibility.cfg
+    pip install 'pip>=8.1'
 fi
 
 if [ $FETCH_WHEELS -eq 1 ]; then
