@@ -52,7 +52,7 @@ window.app = function app(options, bootstrapped) {
     /** Routes */
     var AnalysisRouter = Router.extend({
         routes: {
-            "(/)": "home",
+            "(/)(#)(_=_)": "home",
             "(/)root*": "home",
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",

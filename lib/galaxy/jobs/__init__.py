@@ -1373,10 +1373,10 @@ class JobWrapper(HasResourceParameters):
                     line_count = context.get('line_count', None)
                     try:
                         # Certain datatype's set_peek methods contain a line_count argument
-                        dataset_assoc.dataset.set_peek(line_count=line_count)
+                        dataset.set_peek(line_count=line_count)
                     except TypeError:
                         # ... and others don't
-                        dataset_assoc.dataset.set_peek()
+                        dataset.set_peek()
                 else:
                     # Handle purged datasets.
                     dataset.blurb = "empty"
