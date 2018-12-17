@@ -156,10 +156,12 @@ class DependencyManager(object):
 
         return requirement_to_dependency
 
-    def _requirements_to_dependencies_dict(self, requirements, **kwds):
+    def _requirements_to_dependencies_dict(self, requirements, search=False, **kwds):
         """Build simple requirements to dependencies dict for resolution."""
         requirement_to_dependency = OrderedDict()
-        index = kwds.get('index', None)
+        index = kwds.get('index')
+        install = kwds.get('install', False)
+        resolver_type = kwds.get('resolver_type')
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
 
@@ -171,6 +173,9 @@ class DependencyManager(object):
             _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
 
             if index is not None and i != index:
+                continue
+
+            if resolver_type is not None and resolver.resolver_type != resolver_type:
                 continue
 
             if len(_requirement_to_dependency) == len(resolvable_requirements):
@@ -186,9 +191,9 @@ class DependencyManager(object):
             if hasattr(resolver, "resolve_all"):
                 resolve = resolver.resolve_all
             elif isinstance(resolver, ContainerResolver):
-                if not resolver.resolver_type.startswith(('cached', 'explicit')):
+                if not resolver.resolver_type.startswith(('cached', 'explicit')) and not (search or install):
                     # These would look up available containers using the quay API,
-                    # we only want ot do this if we search for containers
+                    # we only want to do this if we search for containers
                     continue
                 resolve = resolver.resolve
             else:
