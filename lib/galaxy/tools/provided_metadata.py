@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 
 from galaxy.util import stringify_dictionary_keys
 
@@ -114,12 +115,19 @@ class LegacyToolProvidedMetadata(object):
                 # This isn't insecure.  We loop the job's output datasets in
                 # the finish method, so if a tool writes out metadata for a
                 # dataset id that it doesn't own, it'll just be ignored.
-                if job_wrapper and line['type'] == 'dataset' and 'dataset_id' not in line:
-                    try:
-                        line['dataset_id'] = job_wrapper.get_output_file_id(line['dataset'])
-                    except KeyError:
-                        log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
-                        continue
+                dataset_id_not_specified = line['type'] == 'dataset' and 'dataset_id' not in line
+                if dataset_id_not_specified:
+                    dataset_basename = line['dataset']
+                    if job_wrapper:
+                        try:
+                            line['dataset_id'] = job_wrapper.get_output_file_id(dataset_basename)
+                        except KeyError:
+                            log.warning('(%s) Tool provided job dataset-specific metadata without specifying a dataset' % job_wrapper.job_id)
+                            continue
+                    else:
+                        match = re.match(r'dataset_(\d+)\.dat', dataset_basename)
+                        line['dataset_id'] = int(match.group(1))
+
                 self.tool_provided_job_metadata.append(line)
 
     def get_dataset_meta(self, output_name, dataset_id):
