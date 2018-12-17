@@ -24,8 +24,7 @@ export default {
                 { key: 'file' },
                 { key: 'error' }
             ],
-            messageText: null,
-            messageClass: null
+            messageText: null
         };
     },
     computed: {
