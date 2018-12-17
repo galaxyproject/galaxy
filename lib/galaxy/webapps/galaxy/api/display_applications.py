@@ -4,7 +4,7 @@ API operations on annotations.
 import logging
 
 from galaxy import queue_worker
-from galaxy.web import expose_api
+from galaxy.web import expose_api, require_admin
 from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger(__name__)
@@ -13,6 +13,7 @@ log = logging.getLogger(__name__)
 class DisplayApplicationsController(BaseAPIController):
 
     @expose_api
+    @require_admin
     def index(self, trans, **kwd):
         """
         GET /api/display_applications/
@@ -34,6 +35,7 @@ class DisplayApplicationsController(BaseAPIController):
         return response
 
     @expose_api
+    @require_admin
     def reload(self, trans, payload={}, **kwd):
         """
         POST /api/display_applications/reload
