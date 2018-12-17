@@ -170,13 +170,13 @@ class DependencyManager(object):
 
         for i, resolver in enumerate(self.dependency_resolvers):
 
-            _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
-
             if index is not None and i != index:
                 continue
 
             if resolver_type is not None and resolver.resolver_type != resolver_type:
                 continue
+
+            _requirement_to_dependency = OrderedDict([(k, v) for k, v in requirement_to_dependency.items() if not isinstance(v, NullDependency)])
 
             if len(_requirement_to_dependency) == len(resolvable_requirements):
                 # Shortcut - resolution complete.
