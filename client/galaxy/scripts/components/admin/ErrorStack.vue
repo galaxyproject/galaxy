@@ -6,8 +6,7 @@
         <div v-if="!errorsVisible && errorsLoaded" class="alert alert-info">
             No errors available.
         </div>
-        <b-table v-if="errorsVisible" striped :fields="errorsAttributes" :items="errors">
-        </b-table>
+        <b-table v-if="errorsVisible" striped :fields="errorsAttributes" :items="errors"/>
     </div>
 </template>
 <script>
