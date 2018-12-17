@@ -3,7 +3,6 @@ Galaxy job handler, prepares, runs, tracks, and finishes Galaxy jobs
 """
 import datetime
 import os
-import threading
 import time
 from collections import defaultdict
 
@@ -11,7 +10,6 @@ from six.moves.queue import (
     Empty,
     Queue
 )
-from sqlalchemy import create_engine
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.sql.expression import (
     and_,
@@ -23,7 +21,6 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import model
-from galaxy.config import get_database_url
 from galaxy.jobs import (
     JobDestination,
     JobWrapper,
@@ -40,22 +37,6 @@ log = get_logger(__name__)
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA, JOB_USER_OVER_TOTAL_WALLTIME = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota', 'user_over_total_walltime'
 DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
-
-# an excellent discussion on PostgreSQL concurrency safety:
-# https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
-JOB_GRAB_SQL = """
-   UPDATE job
-      SET handler = %(handler)s
-    WHERE id IN (
-                SELECT id
-                  FROM job
-                 WHERE handler IN %(tags)s
-                       AND state = 'new'
-              ORDER BY id
-                  {for_update}
-                 LIMIT %(maxgrab)s)
-RETURNING id
-"""
 
 
 class JobHandler(object):
@@ -78,67 +59,6 @@ class JobHandler(object):
     def shutdown(self):
         self.job_queue.shutdown()
         self.job_stop_queue.shutdown()
-
-
-class JobGrabber(threading.Thread):
-    def __init__(self, server_name=None, url=None, handler_tags=None, method=None, max_grab=None, **kwargs):
-        super(JobGrabber, self).__init__(**kwargs)
-        log.info(
-            'Handler job grabber initializing for handler %s, tags: %s', server_name,
-            ', '.join([str(x) for x in handler_tags])
-        )
-        self.server_name = server_name
-        self.handler_tags = handler_tags
-        self.url = url
-        self.method = method
-        self.max_grab = max_grab or 1
-        if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
-            self.isolation_level = 'READ_COMMITTED'
-            for_update = 'FOR UPDATE SKIP LOCKED'
-        elif method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
-            self.isolation_level = 'SERIALIZABLE'
-            for_update = ''
-        else:
-            raise RuntimeError("Unknown handler assignment method: %s", method)
-        self.sql = JOB_GRAB_SQL.format(for_update=for_update)
-        self.stop = False
-
-    def run(self):
-        log.info('Handler job grabber loop starting')
-        args = {
-            'handler': self.server_name,
-            'tags': tuple(self.handler_tags) or (None,),  # FIXME: correct?
-            'maxgrab': self.max_grab,
-        }
-        log.trace('Grabber SQL is: %s', (self.sql % args))
-        self.engine = create_engine(self.url, isolation_level=self.isolation_level, echo=True)
-        self.conn = self.engine.connect()
-        while not self.stop:
-            self.__grab_until_none(args)
-            time.sleep(1)
-        log.info('Handler job grabber thread exiting')
-
-    def __grab_until_none(self, args):
-        #log.debug('######## __grab_until_none() entered')
-        rows = True
-        while rows:
-            rows = False
-            with self.conn.begin() as trans:
-                try:
-                    rows = self.conn.execute(self.sql, args).fetchall()
-                    if rows:
-                        log.debug('Grabbed job(s): %s', ', '.join([str(row[0]) for row in rows]))
-                        trans.commit()
-                    else:
-                        trans.rollback()
-                except OperationalError as e:
-                    # FIXME: can you pick out just serialization failures?
-                    log.trace('Grabbing job failed (serialization failures are ok): %s', str(e))
-                    trans.rollback()
-        #log.trace('######## __grab_until_none() return')
-
-    def shutdown(self):
-        self.stop = True
 
 
 class JobHandlerQueue(Monitors):
@@ -170,27 +90,37 @@ class JobHandlerQueue(Monitors):
         self.job_wrappers = {}
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
-        self.__initialize_job_grabber()
+        self.__grab_query = None
+        self.__grab_conn_opts = {'autocommit': False}
+        self.__initialize_job_grabbing()
 
-    def __initialize_job_grabber(self):
-        grabber_methods = set([
+    def __initialize_job_grabbing(self):
+        grabbable_methods = set([
             HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION,
             HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED,
         ])
-        grab_methods = filter(lambda x: x in grabber_methods, self.app.job_config.handler_assignment_methods)
-        if list(grab_methods):
-            name = "JobHandlerQueue.job_grabber_thread"
-            self._grabber = JobGrabber(
-                name=name,
-                url=get_database_url(self.app.config),
-                server_name=self.app.config.server_name,
-                handler_tags=self.app.job_config.self_handler_tags,
-                method=grab_methods[0],
-                max_grab=self.app.job_config.handler_max_grab,
-            )
-            self._grabber.daemon = True
-        else:
-            self._grabber = None
+        try:
+            method = [m for m in self.app.job_config.handler_assignment_methods if m in grabbable_methods][0]
+        except IndexError:
+            return
+        subq = select([model.Job.id]) \
+            .where(and_(
+                model.Job.table.c.handler.in_(self.app.job_config.self_handler_tags),
+                model.Job.table.c.state == model.Job.states.NEW)) \
+            .order_by(model.Job.table.c.id) \
+            .limit(self.app.job_config.handler_max_grab)
+        if method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
+            subq = subq.with_for_update(skip_locked=True)
+        self.__grab_query = model.Job.table.update() \
+            .returning(model.Job.table.c.id) \
+            .where(model.Job.table.c.id.in_(subq)) \
+            .values(handler=self.app.config.server_name)
+        if method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
+            self.__grab_conn_opts['isolation_level'] = 'SERIALIZABLE'
+        log.info(
+            "Handler job grabber initialized with '%s' assignment method for handler '%s', tag(s): %s", method,
+            self.app.config.server_name, ', '.join([str(x) for x in self.app.job_config.handler_tags])
+        )
 
     def start(self):
         """
@@ -201,8 +131,6 @@ class JobHandlerQueue(Monitors):
         self.__check_jobs_at_startup()
         # Start the queue
         self.monitor_thread.start()
-        if self._grabber:
-            self._grabber.start()
         # The stack code is initialized in the application
         JobHandlerMessage().bind_default_handler(self, '_handle_message')
         self.app.application_stack.register_message_handler(self._handle_message, name=JobHandlerMessage.target)
@@ -312,14 +240,43 @@ class JobHandlerQueue(Monitors):
 
     def __monitor_step(self):
         """
-        Called repeatedly by `monitor` to process waiting jobs. Gets any new
-        jobs (either from the database or from its own queue), then iterates
-        over all new and waiting jobs to check the state of the jobs each
-        depends on. If the job has dependencies that have not finished, it
-        goes to the waiting queue. If the job has dependencies with errors,
-        it is marked as having errors and removed from the queue. If the job
-        belongs to an inactive user it is ignored.
-        Otherwise, the job is dispatched.
+        Called repeatedly by `monitor` to process waiting jobs.
+        """
+        if self.__grab_query is not None:
+            self.__grab_unhandled_jobs()
+        self.__handle_waiting_jobs()
+
+    def __grab_unhandled_jobs(self):
+        """
+        Attempts to "grab" jobs (assign unassigned jobs to itself) using DB serialization methods, if enabled. This
+        simply sets `Job.handler` to the current server name, which causes the job to be picked up by
+        `__handle_waiting_jobs()`.
+        """
+        # an excellent discussion on PostgreSQL concurrency safety:
+        # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
+        self.sa_session.expunge_all()
+        conn = self.sa_session.connection(execution_options=self.__grab_conn_opts)
+        with conn.begin() as trans:
+            try:
+                rows = conn.execute(self.__grab_query).fetchall()
+                if rows:
+                    log.debug('Grabbed job(s): %s', ', '.join([str(row[0]) for row in rows]))
+                    trans.commit()
+                else:
+                    trans.rollback()
+            except OperationalError as e:
+                # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                # and should have attribute `code`. Other engines should just report the message and move on.
+                if int(getattr(e.orig, 'pgcode', -1)) != 40001:
+                    log.debug('Grabbing job failed (serialization failures are ok): %s', str(e))
+                trans.rollback()
+
+    def __handle_waiting_jobs(self):
+        """
+        Gets any new jobs (either from the database or from its own queue), then iterates over all new and waiting jobs
+        to check the state of the jobs each depends on. If the job has dependencies that have not finished, it goes to
+        the waiting queue. If the job has dependencies with errors, it is marked as having errors and removed from the
+        queue. If the job belongs to an inactive user it is ignored.  Otherwise, the job is dispatched.
         """
         # Pull all new jobs from the queue at once
         jobs_to_check = []
@@ -855,9 +812,6 @@ class JobHandlerQueue(Monitors):
             # We're not the real job queue, do nothing
             return
         else:
-            if self._grabber:
-                log.info("sending stop signal to job grabber thread")
-                self._grabber.shutdown()
             log.info("sending stop signal to worker thread")
             self.stop_monitoring()
             if not self.app.config.track_jobs_in_database:
