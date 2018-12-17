@@ -52,6 +52,10 @@ def build_dependency_manager(config):
 
 class NullDependencyManager(object):
     dependency_resolvers = []
+    enabled_container_types = []
+
+    def set_enabled_container_types(self, enabled_container_types):
+        return
 
     def uses_tool_shed_dependencies(self):
         return False
@@ -88,6 +92,27 @@ class DependencyManager(object):
         self.default_base_path = os.path.abspath(default_base_path)
         self.resolver_classes = self.__resolvers_dict()
         self.dependency_resolvers = self.__build_dependency_resolvers(conf_file)
+        self._enabled_container_types = []
+        self._destination_for_container_type = {}
+
+    def set_enabled_container_types(self, container_types_to_destinations):
+        """Set the union of all enabled container types."""
+        self._enabled_container_types = [container_type for container_type in container_types_to_destinations.keys()]
+        # Just pick first enabled destination for a container type, probably covers the most common deployment scenarios
+        self._destination_for_container_type = container_types_to_destinations
+
+    def get_destination_info_for_container_type(self, container_type, destination_id=None):
+        if destination_id is None:
+            return next(iter(self._destination_for_container_type[container_type])).params
+        else:
+            for destination in self._destination_for_container_type[container_type]:
+                if destination.id == destination_id:
+                    return destination.params
+
+    @property
+    def enabled_container_types(self):
+        """Returns the union of enabled container types."""
+        return self._enabled_container_types
 
     def get_resolver_option(self, resolver, key, explicit_resolver_options={}):
         """Look in resolver-specific settings for option and then fallback to global settings.
@@ -137,7 +162,6 @@ class DependencyManager(object):
         index = kwds.get('index', None)
         require_exact = kwds.get('exact', False)
         return_null_dependencies = kwds.get('return_null', False)
-        enabled_container_types = kwds.pop('enabled_container_types', [])
 
         resolvable_requirements = requirements.resolvable
         tool_info = ToolInfo(requirements=resolvable_requirements)
@@ -172,7 +196,8 @@ class DependencyManager(object):
             if all_unmet and resolve is not None:
                 # TODO: Handle specs.
                 dependencies = resolve(requirements=resolvable_requirements,
-                                       enabled_container_types=enabled_container_types,
+                                       enabled_container_types=self.enabled_container_types,
+                                       destination_for_container_type=self.get_destination_info_for_container_type,
                                        tool_info=tool_info,
                                        **kwds)
                 if dependencies:

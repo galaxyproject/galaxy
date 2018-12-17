@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import collections
 import ipaddress
 import logging
 import logging.config
@@ -1057,6 +1058,7 @@ class ConfiguresGalaxyMixin(object):
         self.container_finder = containers.ContainerFinder(app_info)
         self.toolbox.dependency_manager.resolver_classes.update(self.container_finder.container_registry.resolver_classes)
         self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.container_registry.container_resolvers)
+        self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
         self.reindex_tool_search()
@@ -1065,6 +1067,14 @@ class ConfiguresGalaxyMixin(object):
         # Call this when tools are added or removed.
         self.toolbox_search.build_index(tool_cache=self.tool_cache)
         self.tool_cache.reset_status()
+
+    def _set_enabled_container_types(self):
+        container_types_to_destinations = collections.defaultdict(list)
+        for destinations in self.job_config.destinations.values():
+            for destination in destinations:
+                for enabled_container_type in self.container_finder._enabled_container_types(destination.params):
+                    container_types_to_destinations[enabled_container_type].append(destination)
+        self.toolbox.dependency_manager.set_enabled_container_types(container_types_to_destinations)
 
     def _configure_tool_data_tables(self, from_shed_config):
         from galaxy.tools.data import ToolDataTableManager
