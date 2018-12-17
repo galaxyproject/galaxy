@@ -289,6 +289,21 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
 
     container_type = SINGULARITY_CONTAINER_TYPE
 
+    def get_singularity_target_kwds(self):
+        return dict(
+            singularity_cmd=self.prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
+            sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
+            sudo_cmd=self.prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
+        )
+
+    def build_mulled_singularity_pull_command(self, cache_directory, namespace="biocontainers"):
+        return singularity_util.pull_mulled_singularity_command(
+            docker_image_identifier=self.container_id,
+            cache_directory=cache_directory,
+            namespace=namespace,
+            **self.get_singularity_target_kwds()
+        )
+
     def containerize_command(self, command):
 
         env = []
@@ -311,11 +326,6 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
 
-        singularity_target_kwds = dict(
-            singularity_cmd=self.prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
-            sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
-            sudo_cmd=self.prop("sudo_cmd", singularity_util.DEFAULT_SUDO_COMMAND),
-        )
         run_command = singularity_util.build_singularity_run_command(
             command,
             self.container_id,
@@ -323,7 +333,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             env=env,
             working_directory=working_directory,
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
-            **singularity_target_kwds
+            **self.get_singularity_target_kwds()
         )
         return run_command
 

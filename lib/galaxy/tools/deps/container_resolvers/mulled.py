@@ -261,6 +261,55 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
         return "CachedMulledSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
 
 
+def targets_to_mulled_name(targets, hash_func, namespace):
+    name = None
+    if len(targets) == 1:
+        target = targets[0]
+        target_version = target.version
+        tags = mulled_tags_for(namespace, target.package_name)
+
+        if not tags:
+            return None
+
+        if target_version:
+            for tag in tags:
+                version, build = split_tag(tag)
+                if version == target_version:
+                    name = "%s:%s--%s" % (target.package_name, version, build)
+                    break
+        else:
+            version, build = split_tag(tags[0])
+            name = "%s:%s--%s" % (target.package_name, version, build)
+    else:
+        def tags_if_available(image_name):
+            if ":" in image_name:
+                repo_name, tag_prefix = image_name.split(":", 2)
+            else:
+                repo_name = image_name
+                tag_prefix = None
+            tags = mulled_tags_for(namespace, repo_name, tag_prefix=tag_prefix)
+            return tags
+
+        if hash_func == "v2":
+            base_image_name = v2_image_name(targets)
+            tags = tags_if_available(base_image_name)
+            if tags:
+                if ":" in base_image_name:
+                    # base_image_name of form <package_hash>:<version_hash>, expand tag
+                    # to include build number in tag.
+                    name = "%s:%s" % (base_image_name.split(":")[0], tags[0])
+                else:
+                    # base_image_name of form <package_hash>, simply add build number
+                    # as tag to fully qualify image.
+                    name = "%s:%s" % (base_image_name, tags[0])
+        elif hash_func == "v1":
+            base_image_name = v1_image_name(targets)
+            tags = tags_if_available(base_image_name)
+            if tags:
+                name = "%s:%s" % (base_image_name, tags[0])
+    return name
+
+
 @six.python_2_unicode_compatible
 class MulledDockerContainerResolver(ContainerResolver):
     """Look for mulled images matching tool dependencies."""
@@ -273,6 +322,13 @@ class MulledDockerContainerResolver(ContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
 
+    def cached_container_description(self, targets, namespace, hash_func):
+        return docker_cached_container_description(targets, namespace, hash_func)
+
+    def pull(self, container):
+        command = container.build_pull_command()
+        shell(command)
+
     def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
         if tool_info.requires_galaxy_python_environment:
             return None
@@ -281,72 +337,52 @@ class MulledDockerContainerResolver(ContainerResolver):
         if len(targets) == 0:
             return None
 
-        name = None
-
-        if len(targets) == 1:
-            target = targets[0]
-            target_version = target.version
-            tags = mulled_tags_for(self.namespace, target.package_name)
-
-            if not tags:
-                return None
-
-            if target_version:
-                for tag in tags:
-                    version, build = split_tag(tag)
-                    if version == target_version:
-                        name = "%s:%s--%s" % (target.package_name, version, build)
-                        break
-            else:
-                version, build = split_tag(tags[0])
-                name = "%s:%s--%s" % (target.package_name, version, build)
-        else:
-            def tags_if_available(image_name):
-                if ":" in image_name:
-                    repo_name, tag_prefix = image_name.split(":", 2)
-                else:
-                    repo_name = image_name
-                    tag_prefix = None
-                tags = mulled_tags_for(self.namespace, repo_name, tag_prefix=tag_prefix)
-                return tags
-
-            if self.hash_func == "v2":
-                base_image_name = v2_image_name(targets)
-                tags = tags_if_available(base_image_name)
-                if tags:
-                    if ":" in base_image_name:
-                        # base_image_name of form <package_hash>:<version_hash>, expand tag
-                        # to include build number in tag.
-                        name = "%s:%s" % (base_image_name.split(":")[0], tags[0])
-                    else:
-                        # base_image_name of form <package_hash>, simply add build number
-                        # as tag to fully qualify image.
-                        name = "%s:%s" % (base_image_name, tags[0])
-            elif self.hash_func == "v1":
-                base_image_name = v1_image_name(targets)
-                tags = tags_if_available(base_image_name)
-                if tags:
-                    name = "%s:%s" % (base_image_name, tags[0])
-
+        name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace)
         if name:
             container_description = ContainerDescription(
                 "quay.io/%s/%s" % (self.namespace, name),
                 type=self.container_type,
             )
             destination_for_container_type = kwds.get('destination_for_container_type')
-            if install and destination_for_container_type and not docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func):
+            if install and destination_for_container_type and not self.cached_container_description(targets,
+                                                                                                    namespace=self.namespace,
+                                                                                                    hash_func=self.hash_func):
                 container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
                                                                    self.app_info,
                                                                    tool_info,
                                                                    destination_for_container_type(self.container_type),
                                                                    {},
                                                                    container_description)
-                command = container.build_pull_command()
-                shell(command)
+                self.pull(container)
             return container_description
 
     def __str__(self):
         return "MulledDockerContainerResolver[namespace=%s]" % self.namespace
+
+
+@six.python_2_unicode_compatible
+class MulledSingularityContainerResolver(MulledDockerContainerResolver):
+
+    resolver_type = "mulled_singularity"
+    container_type = "singularity"
+
+    def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", **kwds):
+        super(MulledSingularityContainerResolver, self).__init__(app_info)
+        self.cache_directory = kwds.get("cache_directory", os.path.join(app_info.container_image_cache_path, "singularity", "mulled"))
+        self.namespace = namespace
+        self.hash_func = hash_func
+
+    def cached_container_description(self, targets, namespace, hash_func):
+        return singularity_cached_container_description(targets,
+                                                        cache_directory=self.cache_directory,
+                                                        hash_func=hash_func)
+
+    def pull(self, container):
+        cmds = container.build_mulled_singularity_pull_command(cache_directory=self.cache_directory, namespace=self.namespace)
+        shell(cmds=cmds)
+
+    def __str__(self):
+        return "MulledSingularityContainerResolver[namespace=%s]" % self.namespace
 
 
 @six.python_2_unicode_compatible

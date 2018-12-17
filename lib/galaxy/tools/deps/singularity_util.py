@@ -1,11 +1,33 @@
-from six.moves import shlex_quote
+import os
 
+from six.moves import shlex_quote
 
 DEFAULT_WORKING_DIRECTORY = None
 DEFAULT_SINGULARITY_COMMAND = "singularity"
 DEFAULT_SUDO = False
 DEFAULT_SUDO_COMMAND = "sudo"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
+
+
+def pull_mulled_singularity_command(docker_image_identifier,
+                                    cache_directory,
+                                    namespace=None,
+                                    singularity_cmd=DEFAULT_SINGULARITY_COMMAND,
+                                    sudo=DEFAULT_SUDO,
+                                    sudo_cmd=DEFAULT_SUDO_COMMAND):
+    command_parts = []
+    command_parts += _singularity_prefix(
+        singularity_cmd=singularity_cmd,
+        sudo=sudo,
+        sudo_cmd=sudo_cmd,
+    )
+    save_path = docker_image_identifier
+    if namespace:
+        prefix = "quay.io/%s/" % namespace
+        if docker_image_identifier.startswith(prefix):
+            save_path = docker_image_identifier[len(prefix):]
+    command_parts.extend(["build", os.path.join(cache_directory, save_path), "docker://%s" % docker_image_identifier])
+    return command_parts
 
 
 def build_singularity_run_command(
@@ -56,4 +78,4 @@ def _singularity_prefix(
     return command_parts
 
 
-__all__ = ("build_singularity_run_command",)
+__all__ = ("build_singularity_run_command", "pull_mulled_singularity_command")
