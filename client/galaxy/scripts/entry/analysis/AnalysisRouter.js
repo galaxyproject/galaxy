@@ -43,7 +43,7 @@ import Vue from "vue";
 export const getAnalysisRouter = Galaxy =>
     Router.extend({
         routes: {
-            "(/)": "home",
+            "(/)(#)(_=_)": "home",
             "(/)root*": "home",
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",

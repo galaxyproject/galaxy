@@ -48,7 +48,7 @@
     "vue-router": "3.0.1"
   },
   "scripts": {
-    "watch": "gulp staging && yarn run save-build-hash && concurrently -r \"yarn run webpack-watch\" \"yarn run gulp watch\"",
+    "watch": "gulp staging && gulp clean && gulp && yarn run save-build-hash && yarn run webpack-watch",
     "build": "NODE_ENV=development gulp staging && concurrently -r \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\" && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp staging && concurrently -r \"yarn run webpack-production\" \"yarn run gulp clean && yarn run gulp-production\" && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp staging && concurrently -r \"yarn run webpack-production-maps\" \"yarn run gulp clean && yarn run gulp-production-maps\" && yarn run save-build-hash",

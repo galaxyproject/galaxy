@@ -1315,9 +1315,6 @@ class JobWrapper(HasResourceParameters):
                 dataset.set_size()
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
-                # Update (non-library) job output datasets through the object store
-                if dataset not in job.output_library_datasets:
-                    self.object_store.update_from_file(dataset.dataset, create=True)
                 self.__update_output(job, dataset)
                 if not purged:
                     self._collect_extra_files(dataset.dataset, self.working_directory)
@@ -1376,10 +1373,10 @@ class JobWrapper(HasResourceParameters):
                     line_count = context.get('line_count', None)
                     try:
                         # Certain datatype's set_peek methods contain a line_count argument
-                        dataset_assoc.dataset.set_peek(line_count=line_count)
+                        dataset.set_peek(line_count=line_count)
                     except TypeError:
                         # ... and others don't
-                        dataset_assoc.dataset.set_peek()
+                        dataset.set_peek()
                 else:
                     # Handle purged datasets.
                     dataset.blurb = "empty"

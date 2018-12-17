@@ -106,8 +106,7 @@ fi
 # GALAXY_CONDA_ENV is not set here because we don't want to execute the Galaxy version check if we don't need to
 
 if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
-    if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
-    then
+    if [ ! -d "$GALAXY_VIRTUAL_ENV" ]; then
         # Locate `conda` and set $CONDA_EXE (if needed). If `python` is Conda Python and $GALAXY_VIRTUAL_ENV does not
         # exist, virtualenv will not be used. setup_python calls this as well but in this case we need it done
         # beforehand.
@@ -121,12 +120,12 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv>=16' -c 'conda-forge'
-                    source activate "$GALAXY_CONDA_ENV"
-                    virtualenv "$GALAXY_VIRTUAL_ENV"
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
+                conda_activate
             fi
+            virtualenv "$GALAXY_VIRTUAL_ENV"
         else
             # If .venv does not exist, and there is no conda available, attempt to create it.
             # Ensure Python is a supported version before creating .venv
