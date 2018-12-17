@@ -14,7 +14,7 @@ from galaxy.util import (
 )
 from galaxy.util.oset import OrderedSet
 from .container_resolvers import ContainerResolver
-from .containers import ToolInfo
+from .dependencies import ToolInfo
 from .requirements import (
     ContainerDescription,
     ToolRequirement,
