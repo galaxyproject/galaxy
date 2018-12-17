@@ -8,6 +8,8 @@ import subprocess
 import six
 
 from galaxy.util import unicodify
+from ..commands import shell
+from ..container_classes import CONTAINER_CLASSES
 from ..container_resolvers import (
     ContainerResolver,
 )
@@ -271,7 +273,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         self.namespace = namespace
         self.hash_func = hash_func
 
-    def resolve(self, enabled_container_types, tool_info, **kwds):
+    def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
         if tool_info.requires_galaxy_python_environment:
             return None
 
@@ -327,10 +329,21 @@ class MulledDockerContainerResolver(ContainerResolver):
                     name = "%s:%s" % (base_image_name, tags[0])
 
         if name:
-            return ContainerDescription(
+            container_description = ContainerDescription(
                 "quay.io/%s/%s" % (self.namespace, name),
                 type=self.container_type,
             )
+            destination_for_container_type = kwds.get('destination_for_container_type')
+            if install and destination_for_container_type and not docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func):
+                container = CONTAINER_CLASSES[self.container_type](container_description.identifier,
+                                                                   self.app_info,
+                                                                   tool_info,
+                                                                   destination_for_container_type(self.container_type),
+                                                                   {},
+                                                                   container_description)
+                command = container.build_pull_command()
+                shell(command)
+            return container_description
 
     def __str__(self):
         return "MulledDockerContainerResolver[namespace=%s]" % self.namespace
