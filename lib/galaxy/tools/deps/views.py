@@ -54,7 +54,7 @@ class DependencyResolversView(object):
                                  for tool, requirements in tool_requirements_d.items()}
         return dependencies_per_tool
 
-    def uninstall_dependencies(self, index=None, **payload):
+    def uninstall_dependencies(self, index=None, resolver_type=None, **payload):
         """Attempt to uninstall requirements. Returns 0 if successfull, else None."""
         requirements = payload.get('requirements')
         if not requirements:
@@ -63,6 +63,10 @@ class DependencyResolversView(object):
             resolver = self._dependency_resolvers[index]
             if resolver.can_uninstall_dependencies:
                 return resolver.uninstall(requirements)
+        elif resolver_type:
+            for resolver in self._dependency_resolvers:
+                if resolver.resolver_type == resolver_type and resolver.can_uninstall_dependencies:
+                    return resolver.uninstall(requirements)
         else:
             for index in self.uninstallable_resolvers:
                 return_code = self._dependency_resolvers[index].uninstall(requirements)
