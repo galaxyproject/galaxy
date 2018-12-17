@@ -99,8 +99,8 @@ class DependencyResolversView(object):
                     envs_to_remove = envs_to_remove.difference(can_remove)
         return list(removed_environments)
 
-    def install_dependencies(self, requirements):
-        return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
+    def install_dependencies(self, requirements, **kwds):
+        return self._dependency_manager._requirements_to_dependencies_dict(requirements, **kwds)
 
     def install_dependency(self, index=None, **payload):
         """
