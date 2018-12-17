@@ -409,7 +409,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
     @web.require_admin
     def error_stack(self, trans, **kwd):
         """
-        POST /api/tools/error_stack
+        GET /api/tools/error_stack
         Returns global tool error stack
         """
         return global_tool_errors.error_stack
