@@ -1486,13 +1486,14 @@ class JobWrapper(HasResourceParameters):
         # Create generated output children and primary datasets.
         tool_working_directory = self.tool_working_directory
         tool_provided_job_metadata = self.get_tool_provided_job_metadata()
-        self.tool.collect_primary_datasets(out_data, tool_provided_job_metadata, tool_working_directory, input_ext, input_dbkey)
-        self.tool.collect_dynamic_outputs(
+        self.tool.discover_outputs(
+            out_data,
             out_collections,
             tool_provided_job_metadata,
-            job_working_directory=tool_working_directory,
-            inp_data=inp_data,
             job=job,
+            tool_working_directory=tool_working_directory,
+            inp_data=inp_data,
+            input_ext=input_ext,
             input_dbkey=input_dbkey,
         )
 
