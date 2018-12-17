@@ -250,9 +250,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         DELETE /api/tools/{tool_id}/dependencies
         Attempts to uninstall requirements via the dependency resolver
 
+        parameters:
+            index:                   index of dependency resolver to use when installing dependency.
+                                     Defaults to using the highest ranking resolver
+            resolver_type:           Use the dependency resolver of this resolver_type to install dependency
         """
         tool = self._get_tool(id)
-        tool._view.uninstall_dependencies(index=None, requirements=tool.requirements)
+        tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)
         # TODO: rework resolver install system to log and report what has been done.
         return tool.tool_requirements_status
 
