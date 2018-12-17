@@ -20,7 +20,7 @@ export default {
             errorsAttributes: [
                 { key: 'time', sortable: true },
                 { key: 'phase', sortable: true },
-                { key: 'file' },
+                { key: 'file', sortable: true },
                 { key: 'error' }
             ],
             messageText: null
