@@ -1,6 +1,6 @@
 /**
  * Temporary function used to mount the masthead inside the current application.
- * This function is exposed with the rest of the page-globals in extended.
+ * This function is exposed with the rest of the page-globals in bundledEntries.
  */
 import Vue from "vue";
 import Masthead from "components/Masthead";

@@ -32,6 +32,6 @@ export function addIframeClass() {
     console.log("addIframeClass");
     if (window.self !== window.top) {
         console.log(">>> We are in an iframe");
-        $(document.documentElement).addClass("framed");
+        document.body.classList.add("framed");
     }
 }
