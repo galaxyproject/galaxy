@@ -40,12 +40,10 @@ class ConfiguresHandlers(object):
     UNSUPPORTED_HANDLER_ASSIGNMENT_METHODS = ()
 
     def add_handler(self, handler_id, tags):
-        if handler_id in self.handlers:
-            log.error("Handler '%s' already added, ignoring", handler_id)
-            return
-        self.handlers[handler_id] = (handler_id,)
+        if handler_id not in self.handlers:
+            self.handlers[handler_id] = (handler_id,)
         for tag in tags:
-            if tag in self.handlers:
+            if tag in self.handlers and handler_id not in self.handlers[tag]:
                 self.handlers[tag].append(handler_id)
             else:
                 self.handlers[tag] = [handler_id]
@@ -221,10 +219,14 @@ class ConfiguresHandlers(object):
 
     @property
     def handler_tags(self):
+        """Get an iteratable of all configured handler tags.
+        """
         return filter(lambda k: isinstance(self.handlers[k], list), self.handlers.keys())
 
     @property
     def self_handler_tags(self):
+        """Get an iterable of the current process's configured handler tags.
+        """
         return filter(lambda k: self.app.config.server_name in self.handlers[k], self.handler_tags)
 
     # If these get to be any more complex we should probably modularize them, or at least move to a separate class

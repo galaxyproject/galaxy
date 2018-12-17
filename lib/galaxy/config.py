@@ -611,6 +611,11 @@ class Configuration(object):
         self.galaxy_infrastructure_url = galaxy_infrastructure_url
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
 
+        # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
+        # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
+        # have to be explicitly defined as such in the job configuration.
+        self.attach_to_pools = kwargs.get('attach_to_pools', []) or []
+
         # Store advanced job management config
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
         self.default_job_handlers = [x.strip() for x in kwargs.get('default_job_handlers', ','.join(self.job_handlers)).split(',')]
