@@ -16,7 +16,8 @@ class ContainerResolver(Dictifiable):
     """Description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type']
+    dict_collection_visible_keys = ['resolver_type', 'can_uninstall_dependencies']
+    can_uninstall_dependencies = False
 
     def __init__(self, app_info=None, **kwds):
         """Default initializer for ``ContainerResolver`` subclasses."""
