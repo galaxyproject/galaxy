@@ -20,7 +20,7 @@ var _super = LIST_ITEM.ListItemView;
 /** @class Read only list view for either LDDAs, HDAs, or HDADCEs.
  *      Roughly, any DatasetInstance (and not a raw Dataset).
  */
-var DatasetListItemView = _super.extend(
+export var DatasetListItemView = _super.extend(
     /** @lends DatasetListItemView.prototype */ {
         _logNamespace: logNamespace,
 
