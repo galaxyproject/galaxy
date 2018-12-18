@@ -1939,15 +1939,6 @@ class TaskWrapper(JobWrapper):
         # For compatibility with drmaa job runner and TaskWrapper, instead of using job_id directly
         return self.get_task().get_id_tag()
 
-    def get_param_dict(self):
-        """
-        Restore the dictionary of parameters from the database.
-        """
-        job = self.sa_session.query(model.Job).get(self.job_id)
-        param_dict = dict([(p.name, p.value) for p in job.parameters])
-        param_dict = self.tool.params_from_strings(param_dict, self.app)
-        return param_dict
-
     def prepare(self, compute_environment=None):
         """
         Prepare the job to run by creating the working directory and the
