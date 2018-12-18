@@ -11,20 +11,24 @@ from .test_job_environments import RunsEnvironmentJobs
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf.xml")
+SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_conf.xml")
 
 
 @integration_util.skip_unless_docker()
 class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs):
 
     framework_tool_and_types = True
+    job_config_file = DOCKERIZED_JOB_CONFIG_FILE
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
-        config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
+        config["job_config_file"] = cls.job_config_file
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
+        config["conda_auto_init"] = False
+        config["conda_auto_install"] = False
         config["enable_beta_mulled_containers"] = "true"
 
     def setUp(self):
@@ -70,3 +74,8 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         # Should we change env_pass_through to just always include TMP and HOME for docker?
         # I'm not sure, if yes this would change.
         assert job_env.home == "/", job_env.home
+
+
+class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
+
+    job_config_file = SINGULARITY_JOB_CONFIG_FILE

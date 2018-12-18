@@ -316,6 +316,7 @@ class MulledDockerContainerResolver(ContainerResolver):
 
     resolver_type = "mulled"
     container_type = "docker"
+    protocol = None
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2"):
         super(MulledDockerContainerResolver, self).__init__(app_info)
@@ -339,8 +340,11 @@ class MulledDockerContainerResolver(ContainerResolver):
 
         name = targets_to_mulled_name(targets=targets, hash_func=self.hash_func, namespace=self.namespace)
         if name:
+            container_id = "quay.io/%s/%s" % (self.namespace, name)
+            if self.protocol:
+                container_id = "%s%s" % (self.protocol, container_id)
             container_description = ContainerDescription(
-                "quay.io/%s/%s" % (self.namespace, name),
+                container_id,
                 type=self.container_type,
             )
             destination_for_container_type = kwds.get('destination_for_container_type')
@@ -365,6 +369,7 @@ class MulledSingularityContainerResolver(MulledDockerContainerResolver):
 
     resolver_type = "mulled_singularity"
     container_type = "singularity"
+    protocol = 'docker://'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2", **kwds):
         super(MulledSingularityContainerResolver, self).__init__(app_info)

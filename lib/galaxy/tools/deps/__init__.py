@@ -53,6 +53,7 @@ def build_dependency_manager(config):
 class NullDependencyManager(object):
     dependency_resolvers = []
     enabled_container_types = []
+    resolver_classes = set()
 
     def set_enabled_container_types(self, enabled_container_types):
         return
