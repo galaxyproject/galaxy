@@ -24,12 +24,47 @@ DATASET_ID_TOKEN = "DATASET_ID"
 log = logging.getLogger(__name__)
 
 
+# PermissionProvider and MetadataSourceProvider are abstractions over input data used to
+# collect and produce dynamic outputs.
+class PermissionProvider(object):
+
+    def __init__(self, inp_data, security_agent, job):
+        self._job = job
+        self._security_agent = security_agent
+        self._inp_data = inp_data
+        self._permissions = None
+
+    @property
+    def permissions(self):
+        if self._permissions is None:
+            inp_data = self._inp_data
+            existing_datasets = [inp for inp in inp_data.values() if inp]
+            if existing_datasets:
+                permissions = self._security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+            else:
+                # No valid inputs, we will use history defaults
+                permissions = self._security_agent.history_get_default_permissions(self._job.history)
+            self._permissions = permissions
+
+        return self._permissions
+
+
+class MetadataSourceProvider(object):
+
+    def __init__(self, inp_data):
+        self._inp_data = inp_data
+
+    def get_metadata_source(self, input_name):
+        return self._inp_data[input_name]
+
+
 def collect_dynamic_outputs(
     tool,
     output_collections,
     tool_provided_metadata,
     job_working_directory,
-    inp_data={},
+    permission_provider,
+    metadata_source_provider,
     job=None,
     input_dbkey="?",
 ):
@@ -40,7 +75,8 @@ def collect_dynamic_outputs(
         tool_provided_metadata,
         job,
         job_working_directory,
-        inp_data,
+        permission_provider,
+        metadata_source_provider,
         input_dbkey,
     )
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
@@ -233,8 +269,9 @@ def collect_dynamic_outputs(
 
 class JobContext(object):
 
-    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, inp_data, input_dbkey):
-        self.inp_data = inp_data
+    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey):
+        self.metadata_source_provider = metadata_source_provider
+        self.permission_provider = permission_provider
         self.input_dbkey = input_dbkey
         self.app = tool.app
         self.sa_session = tool.sa_session
@@ -250,17 +287,7 @@ class JobContext(object):
 
     @property
     def permissions(self):
-        if self._permissions is None:
-            inp_data = self.inp_data
-            existing_datasets = [inp for inp in inp_data.values() if inp]
-            if existing_datasets:
-                permissions = self.app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
-            else:
-                # No valid inputs, we will use history defaults
-                permissions = self.app.security_agent.history_get_default_permissions(self.job.history)
-            self._permissions = permissions
-
-        return self._permissions
+        return self.permission_provider.permissions
 
     def find_files(self, output_name, collection, dataset_collectors):
         filenames = odict.odict()
@@ -415,7 +442,7 @@ class JobContext(object):
         # Copy metadata from one of the inputs if requested.
         metadata_source = None
         if metadata_source_name:
-            metadata_source = self.inp_data[metadata_source_name]
+            metadata_source = self.metadata_source_provider.get_metadata_source(metadata_source_name)
 
         if metadata_source:
             primary_data.init_meta(copy_from=metadata_source)

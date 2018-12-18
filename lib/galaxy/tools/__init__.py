@@ -1694,12 +1694,15 @@ class Tool(Dictifiable):
             input_ext,
             input_dbkey=input_dbkey,
         )
+        permission_provider = output_collect.PermissionProvider(inp_data, tool.app.security_agent, job)
+        metadata_source_provider = output_collect.MetadataSourceProvider(inp_data)
         output_collect.collect_dynamic_outputs(
             tool,
             out_collections,
             tool_provided_metadata,
             job_working_directory=tool_working_directory,
-            inp_data=inp_data,
+            permission_provider=permission_provider,
+            metadata_source_provider=metadata_source_provider,
             job=job,
             input_dbkey=input_dbkey,
         )
