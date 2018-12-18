@@ -1,7 +1,6 @@
 """
 SLURM job control via the DRMAA API.
 """
-import logging
 import os
 import re
 import shutil
@@ -11,8 +10,9 @@ import time
 
 from galaxy import model
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
+from galaxy.util.logging import get_logger
 
-log = logging.getLogger(__name__)
+log = get_logger(__name__)
 
 __all__ = ('SlurmJobRunner', )
 
