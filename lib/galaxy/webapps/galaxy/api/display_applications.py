@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 class DisplayApplicationsController(BaseAPIController):
 
     @expose_api
-    @require_admin
     def index(self, trans, **kwd):
         """
         GET /api/display_applications/
