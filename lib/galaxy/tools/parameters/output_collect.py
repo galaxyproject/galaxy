@@ -72,29 +72,17 @@ class UnusedMetadataSourceProvider(object):
 
 
 def collect_dynamic_outputs(
-    tool,
+    job_context,
     output_collections,
-    tool_provided_metadata,
-    job_working_directory,
-    permission_provider,
-    metadata_source_provider,
-    job=None,
-    input_dbkey="?",
 ):
+    tool = job_context.tool
     app = tool.app
-    collections_service = tool.app.dataset_collections_service
-    job_context = JobContext(
-        tool,
-        tool_provided_metadata,
-        job,
-        job_working_directory,
-        permission_provider,
-        metadata_source_provider,
-        input_dbkey,
-    )
+    collections_service = app.dataset_collections_service
+    job_working_directory = job_context.job_working_directory
+
     # unmapped outputs do not correspond to explicit outputs of the tool, they were inferred entirely
     # from the tool provided metadata (e.g. galaxy.json).
-    for unnamed_output_dict in tool_provided_metadata.get_unnamed_outputs():
+    for unnamed_output_dict in job_context.tool_provided_metadata.get_unnamed_outputs():
         assert "destination" in unnamed_output_dict
         assert "elements" in unnamed_output_dict
         destination = unnamed_output_dict["destination"]
@@ -155,7 +143,7 @@ def collect_dynamic_outputs(
             add_elements_to_folder(elements, library_folder)
         elif destination_type == "hdca":
             # create or populate a dataset collection in the history
-            history = job.history
+            history = job_context.job.history
             assert "collection_type" in unnamed_output_dict
             object_id = destination.get("object_id")
             if object_id:
@@ -193,7 +181,7 @@ def collect_dynamic_outputs(
             collection_builder.populate()
         elif destination_type == "hdas":
             # discover files as individual datasets for the target history
-            history = job.history
+            history = job_context.job.history
 
             datasets = []
 
@@ -240,7 +228,7 @@ def collect_dynamic_outputs(
                             datasets.append(dataset)
 
             collect_elements_for_history(elements)
-            job.history.add_datasets(job_context.sa_session, datasets)
+            job_context.job.history.add_datasets(job_context.sa_session, datasets)
 
     for name, has_collection in output_collections.items():
         if name not in tool.output_collections:
@@ -283,6 +271,7 @@ def collect_dynamic_outputs(
 class JobContext(object):
 
     def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey):
+        self.tool = tool
         self.metadata_source_provider = metadata_source_provider
         self.permission_provider = permission_provider
         self.input_dbkey = input_dbkey
@@ -515,18 +504,13 @@ class JobContext(object):
         return primary_data
 
 
-def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_directory, input_ext, job=None, input_dbkey="?"):
-    job_context = JobContext(
-        tool,
-        tool_provided_metadata,
-        job,
-        job_working_directory,
-        UnusedPermissionProvider(),
-        UnusedMetadataSourceProvider(),
-        input_dbkey,
-    )
+def collect_primary_datasets(job_context, output, input_ext):
+    tool = job_context.tool
     app = tool.app
+    job_working_directory = job_context.job_working_directory
     sa_session = tool.sa_session
+    job = job_context.job
+
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
     primary_output_assigned = False
@@ -537,7 +521,7 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
         if name in tool.outputs:
             dataset_collectors = [dataset_collector(description) for description in tool.outputs[name].dataset_collector_descriptions]
         filenames = odict.odict()
-        for discovered_file in discover_files(name, tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
+        for discovered_file in discover_files(name, job_context.tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
             filenames[discovered_file.path] = discovered_file
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
             extra_file_collector = discovered_file.collector
@@ -560,14 +544,14 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                 ext = input_ext
             dbkey = fields_match.dbkey
             if dbkey == INPUT_DBKEY_TOKEN:
-                dbkey = input_dbkey
+                dbkey = job_context.input_dbkey
             # Create new primary dataset
             new_primary_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
             info = outdata.info
 
             # TODO: should be able to disambiguate files in different directories...
             new_primary_filename = os.path.split(filename)[-1]
-            new_primary_datasets_attributes = tool_provided_metadata.get_new_dataset_meta_by_basename(name, new_primary_filename)
+            new_primary_datasets_attributes = job_context.tool_provided_metadata.get_new_dataset_meta_by_basename(name, new_primary_filename)
 
             primary_data = job_context.create_dataset(
                 ext,
