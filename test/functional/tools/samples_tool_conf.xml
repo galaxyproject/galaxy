@@ -29,6 +29,8 @@
   <tool file="tool_provided_metadata_8.xml" />
   <tool file="tool_provided_metadata_9.xml" />
   <tool file="tool_provided_metadata_10.xml" />
+  <tool file="tool_provided_metadata_11.xml" />
+  <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
