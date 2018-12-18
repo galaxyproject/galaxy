@@ -283,7 +283,9 @@ class JobSearch(object):
             # parameter as these are not passed along when expanding tool parameters
             # and they can differ without affecting the resulting dataset.
             for parameter in job.parameters:
-                if parameter.name in {'__workflow_invocation_uuid__', 'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
+                if parameter.name.startswith("__"):
+                    continue
+                if parameter.name in {'chromInfo', 'dbkey'} or parameter.name.endswith('|__identifier__'):
                     continue
                 n_parameters += 1
             if not n_parameters == len(param_dump):
