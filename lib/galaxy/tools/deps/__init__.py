@@ -141,7 +141,7 @@ class DependencyManager(object):
     def dependency_shell_commands(self, requirements, **kwds):
         requirements_to_dependencies = self.requirements_to_dependencies(requirements, **kwds)
         ordered_dependencies = OrderedSet(requirements_to_dependencies.values())
-        return [dependency.shell_commands() for dependency in ordered_dependencies]
+        return [dependency.shell_commands() for dependency in ordered_dependencies if not isinstance(dependency, ContainerDependency)]
 
     def requirements_to_dependencies(self, requirements, **kwds):
         """

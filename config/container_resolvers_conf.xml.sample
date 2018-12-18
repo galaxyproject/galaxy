@@ -3,7 +3,7 @@
   <!-- explicit: resolves container URI for a job through explict container
        tags in the tool XML wrapper. -->
 
-  <!-- All mulled flavors below only work if enable_beta_mulled_containers is 
+  <!-- All mulled flavors below only work if enable_beta_mulled_containers is
        set to true in the galaxy.yaml config file.
 
   <!-- <cached_mulled /> -->
@@ -21,15 +21,23 @@
   <!-- <mulled /> -->
   <!-- mulled: only resolves container URI through bioconda to mulled automatic
        mapping. Should be the method of choice if mulled resolution is required
-       but the container execution is handled by a container orchestration 
-       instead of docker directly (ie. Galaxy has no access to a docker client 
+       but the container execution is handled by a container orchestration
+       instead of docker directly (ie. Galaxy has no access to a docker client
        binary). It works of course with direct docker engine tool executions.
+       -->
+
+  <!-- <mulled_singularity /> -->
+  <!-- mulled: only resolves container URI through bioconda to mulled automatic
+       mapping. Should be the method of choice if mulled resolution is required
+       but the container execution is handled by a container orchestration
+       instead of singularity directly (ie. Galaxy has no access to a singularity client
+       binary). It works of course with direct singluarity tool executions.
        -->
 
   <!-- <build_mulled /> -->
   <!-- build_mulled: builds a docker image locally for one or more bioconda
        packages listed in the tools definition. -->
-       
+ 
   <!-- <build_mulled_singularity /> -->
   <!-- build_mulled_singularity: builds a singularity image locally for one
        or more package requirements listed as part of the tool's definition. -->
