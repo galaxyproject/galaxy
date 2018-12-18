@@ -48,7 +48,7 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         output = self.dataset_populator.get_history_dataset_content(self.history_id)
         assert "0.7.15-r1140" in output
 
-    def test_docker_job_enviornment(self):
+    def test_container_job_enviornment(self):
         job_env = self._run_and_get_environment_properties("job_environment_default")
 
         euid = os.geteuid()
@@ -61,7 +61,7 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert job_env.home.startswith(self.jobs_directory)
         assert job_env.home.endswith("/home")
 
-    def test_docker_job_environment_legacy(self):
+    def test_container_job_environment_legacy(self):
         job_env = self._run_and_get_environment_properties("job_environment_default_legacy")
 
         euid = os.geteuid()
@@ -76,6 +76,7 @@ class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, Ru
         assert job_env.home == "/", job_env.home
 
 
+@integration_util.skip_unless_singularity()
 class SingularityJobsIntegrationTestCase(DockerizedJobsIntegrationTestCase):
 
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
