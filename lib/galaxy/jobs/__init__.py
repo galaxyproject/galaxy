@@ -1441,11 +1441,9 @@ class JobWrapper(HasResourceParameters):
         # why not re-use self.param_dict here?
         param_dict = dict([(p.name, p.value) for p in job.parameters])
         param_dict = self.tool.params_from_strings(param_dict, self.app)
-        # Create generated output children and primary datasets and add to param_dict
+        # Create generated output children and primary datasets and dynamic outputs.
         tool_working_directory = self.tool_working_directory
-        collected_datasets = {
-            'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
-        }
+        self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         self.tool.collect_dynamic_outputs(
             out_collections,
             self.get_tool_provided_job_metadata(),
@@ -1454,7 +1452,6 @@ class JobWrapper(HasResourceParameters):
             job=job,
             input_dbkey=input_dbkey,
         )
-        param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
