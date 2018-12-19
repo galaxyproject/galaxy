@@ -1,12 +1,12 @@
 <template>
     <div>
-        <div v-if="messageVisible" class="alert alert-danger">
+        <b-alert :show="messageVisible" variant="danger">
             {{ messageText }}
-        </div>
-        <div v-if="!errorsVisible && errorsLoaded" class="alert alert-info">
+        </b-alert>
+        <b-alert :show="infoVisible" variant="info">
             No errors available.
-        </div>
-        <b-table v-if="errorsVisible" striped :fields="errorsAttributes" :items="errors"/>
+        </b-alert>
+        <b-table :show="errorsVisible" striped :fields="errorsAttributes" :items="errors"/>
     </div>
 </template>
 <script>
@@ -35,6 +35,9 @@ export default {
         },
         messageVisible: function() {
             return this.messageText != null;
+        },
+        infoVisible: function() {
+            return !this.errorsVisible && this.errorsLoaded;
         }
     },
     created() {
