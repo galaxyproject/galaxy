@@ -49,6 +49,13 @@ class PermissionProvider(object):
         return self._permissions
 
 
+class UnusedPermissionProvider(object):
+
+    @property
+    def permissions(self):
+        return UNSET
+
+
 class MetadataSourceProvider(object):
 
     def __init__(self, inp_data):
@@ -56,6 +63,12 @@ class MetadataSourceProvider(object):
 
     def get_metadata_source(self, input_name):
         return self._inp_data[input_name]
+
+
+class UnusedMetadataSourceProvider(object):
+
+    def get_metadata_source(self, input_name):
+        raise NotImplementedError()
 
 
 def collect_dynamic_outputs(
@@ -283,7 +296,11 @@ class JobContext(object):
     @property
     def work_context(self):
         from galaxy.work.context import WorkRequestContext
-        return WorkRequestContext(self.app, user=self.job.user)
+        if self.job:
+            user = self.job.user
+        else:
+            user = None
+        return WorkRequestContext(self.app, user=user)
 
     @property
     def permissions(self):
@@ -394,6 +411,8 @@ class JobContext(object):
         library_folder=None,
         link_data=False,
         primary_data=None,
+        init_from=None,
+        dataset_attributes=None,
         tag_list=[],
         sources=[],
         hashes=[],
@@ -401,15 +420,34 @@ class JobContext(object):
         app = self.app
         sa_session = self.sa_session
 
-        if primary_data is None:
-            if not library_folder:
-                primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey, self.permissions)
-            else:
-                primary_data = _new_ldda(self.work_context, name, ext, visible, dbkey, library_folder)
-        else:
+        # You can initialize a dataset or initialize from a dataset but not both.
+        if init_from:
+            assert primary_data is None
+        if primary_data:
+            assert init_from is None
+
+        if metadata_source_name:
+            assert init_from is None
+        if init_from:
+            assert metadata_source_name is None
+
+        if primary_data is not None:
             primary_data.extension = ext
             primary_data.visible = visible
             primary_data.dbkey = dbkey
+        else:
+            if not library_folder:
+                if init_from:
+                    permissions = UNSET
+                else:
+                    permissions = self.permissions
+                primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey, permissions)
+            else:
+                primary_data = _new_ldda(self.work_context, name, ext, visible, dbkey, library_folder)
+
+            if init_from:
+                app.security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
+                primary_data.state = init_from.state
 
         for source_dict in sources:
             source = galaxy.model.DatasetSource()
@@ -440,25 +478,55 @@ class JobContext(object):
         primary_data.name = name
 
         # Copy metadata from one of the inputs if requested.
-        metadata_source = None
         if metadata_source_name:
             metadata_source = self.metadata_source_provider.get_metadata_source(metadata_source_name)
-
-        if metadata_source:
             primary_data.init_meta(copy_from=metadata_source)
+        elif init_from:
+            metadata_source = init_from
+            primary_data.init_meta(copy_from=init_from)
+            # when coming from primary dataset - respect pattern of output - this makes sense
+            primary_data.dbkey = dbkey
         else:
             primary_data.init_meta()
 
         if info is not None:
             primary_data.info = info
 
-        primary_data.set_meta()
+        # add tool/metadata provided information
+        dataset_attributes = dataset_attributes or {}
+        if dataset_attributes:
+            # TODO: discover_files should produce a match that encorporates this -
+            # would simplify ToolProvidedMetadata interface and eliminate this
+            # crap path.
+            dataset_att_by_name = dict(ext='extension')
+            for att_set in ['name', 'info', 'ext', 'dbkey']:
+                dataset_att_name = dataset_att_by_name.get(att_set, att_set)
+                setattr(primary_data, dataset_att_name, dataset_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
+
+        metadata_dict = dataset_attributes.get('metadata', None)
+        if metadata_dict:
+            if "dbkey" in dataset_attributes:
+                metadata_dict["dbkey"] = dataset_attributes["dbkey"]
+            # branch tested with tool_provided_metadata_3 / tool_provided_metadata_10
+            primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
+        else:
+            primary_data.set_meta()
+
         primary_data.set_peek()
 
         return primary_data
 
 
-def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
+def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_directory, input_ext, job=None, input_dbkey="?"):
+    job_context = JobContext(
+        tool,
+        tool_provided_metadata,
+        job,
+        job_working_directory,
+        UnusedPermissionProvider(),
+        UnusedMetadataSourceProvider(),
+        input_dbkey,
+    )
     app = tool.app
     sa_session = tool.sa_session
     # Loop through output file names, looking for generated primary
@@ -496,39 +564,31 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             if dbkey == INPUT_DBKEY_TOKEN:
                 dbkey = input_dbkey
             # Create new primary dataset
-            primary_data = _new_hda(app, sa_session, ext, designation, visible, dbkey)
-            app.security_agent.copy_dataset_permissions(outdata.dataset, primary_data.dataset)
-            sa_session.flush()
-            # Move data from temp location to dataset location
-            app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
-            # We are sure there are no extra files, so optimize things that follow by settting total size also.
-            primary_data.set_size(no_extra_files=True)
-            # If match specified a name use otherwise generate one from
-            # designation.
-            primary_data.name = fields_match.name or "%s (%s)" % (outdata.name, designation)
-            primary_data.info = outdata.info
-            primary_data.init_meta(copy_from=outdata)
-            primary_data.dbkey = dbkey
+            new_primary_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
+            info = outdata.info
+
+            # TODO: should be able to disambiguate files in different directories...
+            new_primary_filename = os.path.split(filename)[-1]
+            new_primary_datasets_attributes = tool_provided_metadata.get_new_dataset_meta_by_basename(name, new_primary_filename)
+
+            primary_data = job_context.create_dataset(
+                ext,
+                designation,
+                visible,
+                dbkey,
+                new_primary_name,
+                filename,
+                info=info,
+                init_from=outdata,
+                dataset_attributes=new_primary_datasets_attributes,
+            )
             # Associate new dataset with job
-            job = None
-            for assoc in outdata.creating_job_associations:
-                job = assoc.job
-                break
             if job:
                 assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, designation), primary_data)
                 assoc.job = job
                 sa_session.add(assoc)
-                sa_session.flush()
-            primary_data.state = outdata.state
-            # TODO: should be able to disambiguate files in different directories...
-            new_primary_filename = os.path.split(filename)[-1]
-            new_primary_datasets_attributes = tool_provided_metadata.get_new_dataset_meta_by_basename(name, new_primary_filename)
-            # add tool/metadata provided information
+
             if new_primary_datasets_attributes:
-                dataset_att_by_name = dict(ext='extension')
-                for att_set in ['name', 'info', 'ext', 'dbkey']:
-                    dataset_att_name = dataset_att_by_name.get(att_set, att_set)
-                    setattr(primary_data, dataset_att_name, new_primary_datasets_attributes.get(att_set, getattr(primary_data, dataset_att_name)))
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
                 if extra_files_path:
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
@@ -544,14 +604,7 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                                 create=True,
                                 preserve_symlinks=True
                             )
-            metadata_dict = new_primary_datasets_attributes.get('metadata', None)
-            if metadata_dict:
-                if "dbkey" in new_primary_datasets_attributes:
-                    metadata_dict["dbkey"] = new_primary_datasets_attributes["dbkey"]
-                primary_data.metadata.from_JSON_dict(json_dict=metadata_dict)
-            else:
-                primary_data.set_meta()
-            primary_data.set_peek()
+
             outdata.history.add_dataset(primary_data)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
