@@ -120,12 +120,12 @@ var DatasetListItemEdit = _super.extend(
             var state = this.model.get("state");
 
             if (!this.model.isDeletedOrPurged()) {
-              //Enable tagging+annotation regardless of job state (see issue #6330) 
+                //Enable tagging+annotation regardless of job state (see issue #6330)
                 this._renderTags($details);
                 this._renderAnnotation($details);
 
                 if (_.contains([STATES.OK, STATES.FAILED_METADATA], state)) {
-                  this._makeDbkeyEditLink($details);
+                    this._makeDbkeyEditLink($details);
                 }
             }
 
