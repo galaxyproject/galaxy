@@ -370,15 +370,14 @@ class JobContext(object):
         sa_session = self.sa_session
         job = self.job
 
-        if job:
-            add_datasets_timer = ExecutionTimer()
-            job.history.add_datasets(sa_session, [d for (ei, d) in element_datasets])
-            log.debug(
-                "(%s) Add dynamic collection datasets to history for output [%s] %s",
-                self.job.id,
-                name,
-                add_datasets_timer,
-            )
+        add_datasets_timer = ExecutionTimer()
+        job.history.add_datasets(sa_session, [d for (ei, d) in element_datasets])
+        log.debug(
+            "(%s) Add dynamic collection datasets to history for output [%s] %s",
+            self.job.id,
+            name,
+            add_datasets_timer,
+        )
 
         for (element_identifiers, dataset) in element_datasets:
             current_builder = root_collection_builder
@@ -387,11 +386,10 @@ class JobContext(object):
             current_builder.add_dataset(element_identifiers[-1], dataset)
 
             # Associate new dataset with job
-            if job:
-                element_identifier_str = ":".join(element_identifiers)
-                # Below was changed from '__new_primary_file_%s|%s__' % (name, designation )
-                assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
-                assoc.job = self.job
+            element_identifier_str = ":".join(element_identifiers)
+            # Below was changed from '__new_primary_file_%s|%s__' % (name, designation )
+            assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
+            assoc.job = job
             sa_session.add(assoc)
 
             dataset.raw_set_dataset_state('ok')
@@ -583,10 +581,9 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                 dataset_attributes=new_primary_datasets_attributes,
             )
             # Associate new dataset with job
-            if job:
-                assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, designation), primary_data)
-                assoc.job = job
-                sa_session.add(assoc)
+            assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, designation), primary_data)
+            assoc.job = job
+            sa_session.add(assoc)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
