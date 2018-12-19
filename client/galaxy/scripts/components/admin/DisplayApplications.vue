@@ -1,11 +1,11 @@
 <template>
     <div>
-        <div v-if="messageVisible" :class="messageClass">
+        <b-alert :show="messageVisible" :variant="messageVariant">
             {{ messageText }}
-        </div>
-        <div v-if="!applicationsVisible && applicationsLoaded" class="alert alert-warning">
+        </b-alert>
+        <b-alert :show="warningVisible" variant="warning">
             No display applications available.
-        </div>
+        </b-alert>
         <div v-if="applicationsVisible" class="card-header">
             There are currently {{ applicationsLength }}
             <a class="icon-btn" @click.prevent="reloadAll()" title="Reload all display applications" data-placement="bottom">
@@ -28,9 +28,6 @@
 <script>
 import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices.js"
 
-const errorMessageClass = "alert alert-danger";
-const infoMessageClass = "alert alert-info";
-
 export default {
     data() {
         return {
@@ -44,7 +41,7 @@ export default {
                 { key: 'links' }
             ],
             messageText: null,
-            messageClass: null
+            messageVariant: null
         };
     },
     computed: {
@@ -70,6 +67,9 @@ export default {
         },
         messageVisible: function() {
             return this.messageText != null;
+        },
+        warningVisible: function() {
+            return !this.applicationsVisible && this.applicationsLoaded;
         }
     },
     created() {
@@ -97,7 +97,7 @@ export default {
             this._highlightRows(this.applicationsAll, "default");
             reloadDisplayApplications(ids)
                 .then(response => {
-                    this.messageClass = infoMessageClass;
+                    this.messageVariant = "info";
                     this.messageText = response.data.message;
                     this._highlightRows(response.data.failed, "danger");
                     this._highlightRows(response.data.reloaded, "success");
@@ -117,7 +117,7 @@ export default {
         _errorMessage: function(e) {
             let message = e && e.response && e.response.data && e.response.data.err_msg;
             this.messageText = message || "Request failed for an unknown reason.";
-            this.messageClass = errorMessageClass;
+            this.messageVariant = "danger";
         }
     }
 };
