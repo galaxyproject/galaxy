@@ -94,8 +94,8 @@
             <search-password>mysecret</search-password>
 -->
             <!-- Generate username or email from the LDAP results if they are not available from the filter -->
-<!--        <ldap-autogenerate>False</ldap-autogenerate>
--->
+            <ldap-autogenerate>False</ldap-autogenerate>
+
             <!-- Replacement fields: instances of {email}, {username},
                  {password}, {dn} plus all fields defined in <search-fields> are
                  replaced with the corresponding user's values inside the
