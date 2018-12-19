@@ -491,6 +491,7 @@ __all__ = (
     "CachedMulledDockerContainerResolver",
     "CachedMulledSingularityContainerResolver",
     "MulledDockerContainerResolver",
+    "MulledSingularityContainerResolver",
     "BuildMulledDockerContainerResolver",
     "BuildMulledSingularityContainerResolver",
 )
