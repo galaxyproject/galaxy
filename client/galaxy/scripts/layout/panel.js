@@ -218,10 +218,10 @@ var CenterPanel = Backbone.View.extend({
                 $(iframe).show();
                 this.$panel.empty().hide();
                 Galaxy.trigger("center-frame:load", {
-                    fullpath: "fullpath",
-                    pathname: "pathname",
-                    search: "search",
-                    hash: "hash"
+                    fullpath: location.pathname + location.search + location.hash,
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash
                 });
             }
         } catch(err) {
