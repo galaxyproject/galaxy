@@ -270,7 +270,7 @@ def collect_dynamic_outputs(
 
 class JobContext(object):
 
-    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey):
+    def __init__(self, tool, tool_provided_metadata, job, job_working_directory, permission_provider, metadata_source_provider, input_dbkey, object_store):
         self.tool = tool
         self.metadata_source_provider = metadata_source_provider
         self.permission_provider = permission_provider
@@ -280,6 +280,7 @@ class JobContext(object):
         self.job = job
         self.job_working_directory = job_working_directory
         self.tool_provided_metadata = tool_provided_metadata
+        self.object_store = object_store
         self._permissions = None
 
     @property
@@ -460,7 +461,7 @@ class JobContext(object):
 
         # Move data from temp location to dataset location
         if not link_data:
-            app.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
         else:
             primary_data.link_to(filename)
 
@@ -558,7 +559,7 @@ def collect_primary_datasets(job_context, output, input_ext):
             if filename_index == 0 and extra_file_collector.assign_primary_output and output_index == 0:
                 new_outdata_name = fields_match.name or "%s (%s)" % (outdata.name, designation)
                 # Move data from temp location to dataset location
-                app.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
+                job_context.object_store.update_from_file(outdata.dataset, file_name=filename, create=True)
                 primary_output_assigned = True
                 continue
             if name not in primary_datasets:
@@ -600,7 +601,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                         extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
                         extra_dir = os.path.normpath(extra_dir)
                         for f in files:
-                            app.object_store.update_from_file(
+                            job_context.object_store.update_from_file(
                                 primary_data.dataset,
                                 extra_dir=extra_dir,
                                 alt_name=f,
