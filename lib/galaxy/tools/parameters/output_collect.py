@@ -357,7 +357,6 @@ class JobContext(object):
             element_datasets.append((element_identifiers, dataset))
 
         sa_session = self.sa_session
-        job = self.job
 
         add_datasets_timer = ExecutionTimer()
         job.history.add_datasets(sa_session, [d for (ei, d) in element_datasets])
@@ -376,10 +375,8 @@ class JobContext(object):
 
             # Associate new dataset with job
             element_identifier_str = ":".join(element_identifiers)
-            # Below was changed from '__new_primary_file_%s|%s__' % (name, designation )
-            assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, element_identifier_str), dataset)
-            assoc.job = job
-            sa_session.add(assoc)
+            association_name = '__new_primary_file_%s|%s__' % (name, element_identifier_str)
+            self.add_output_dataset_association(association_name, dataset)
 
             dataset.raw_set_dataset_state('ok')
 
@@ -503,13 +500,17 @@ class JobContext(object):
 
         return primary_data
 
+    def add_output_dataset_association(self, name, dataset):
+        assoc = galaxy.model.JobToOutputDatasetAssociation(name, dataset)
+        assoc.job = self.job
+        self.sa_session.add(assoc)
+
 
 def collect_primary_datasets(job_context, output, input_ext):
     tool = job_context.tool
     app = tool.app
     job_working_directory = job_context.job_working_directory
     sa_session = tool.sa_session
-    job = job_context.job
 
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
@@ -565,9 +566,7 @@ def collect_primary_datasets(job_context, output, input_ext):
                 dataset_attributes=new_primary_datasets_attributes,
             )
             # Associate new dataset with job
-            assoc = galaxy.model.JobToOutputDatasetAssociation('__new_primary_file_%s|%s__' % (name, designation), primary_data)
-            assoc.job = job
-            sa_session.add(assoc)
+            job_context.add_output_dataset_association('__new_primary_file_%s|%s__' % (name, designation), primary_data)
 
             if new_primary_datasets_attributes:
                 extra_files_path = new_primary_datasets_attributes.get('extra_files', None)
