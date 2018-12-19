@@ -228,7 +228,7 @@ def collect_dynamic_outputs(
                             datasets.append(dataset)
 
             collect_elements_for_history(elements)
-            job_context.job.history.add_datasets(job_context.sa_session, datasets)
+            job_context.add_datasets_to_history(datasets)
 
     for name, has_collection in output_collections.items():
         if name not in tool.output_collections:
@@ -359,7 +359,7 @@ class JobContext(object):
         sa_session = self.sa_session
 
         add_datasets_timer = ExecutionTimer()
-        job.history.add_datasets(sa_session, [d for (ei, d) in element_datasets])
+        self.add_datasets_to_history([d for (ei, d) in element_datasets])
         log.debug(
             "(%s) Add dynamic collection datasets to history for output [%s] %s",
             self.job.id,
@@ -505,6 +505,21 @@ class JobContext(object):
         assoc.job = self.job
         self.sa_session.add(assoc)
 
+    def add_datasets_to_history(self, datasets, for_output_dataset=None):
+        sa_session = self.sa_session
+        self.job.history.add_datasets(sa_session, datasets)
+        if for_output_dataset is not None:
+            # Need to update all associated output hdas, i.e. history was
+            # shared with job running
+            for copied_dataset in for_output_dataset.dataset.history_associations:
+                if copied_dataset == for_output_dataset:
+                    continue
+                for dataset in datasets:
+                    new_data = dataset.copy()
+                    copied_dataset.history.add_dataset(new_data)
+                    sa_session.add(new_data)
+                    sa_session.flush()
+
 
 def collect_primary_datasets(job_context, output, input_ext):
     tool = job_context.tool
@@ -584,19 +599,9 @@ def collect_primary_datasets(job_context, output, input_ext):
                                 create=True,
                                 preserve_symlinks=True
                             )
-
-            outdata.history.add_dataset(primary_data)
+            job_context.add_datasets_to_history([primary_data], for_output_dataset=outdata)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
-            # Need to update all associated output hdas, i.e. history was
-            # shared with job running
-            for dataset in outdata.dataset.history_associations:
-                if outdata == dataset:
-                    continue
-                new_data = primary_data.copy()
-                dataset.history.add_dataset(new_data)
-                sa_session.add(new_data)
-                sa_session.flush()
         if primary_output_assigned:
             outdata.name = new_outdata_name
             outdata.init_meta()
