@@ -2011,7 +2011,7 @@ class GSuite(Tabular):
             column_line = hash_count_to_lines[3][0].lower()
 
         if not column_line:
-            #assuming only one column
+            #when column line is not present, assuming only one column
             cols_num = 1
         else:
             cols = column_line.split('\t')

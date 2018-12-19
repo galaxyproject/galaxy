@@ -1695,6 +1695,12 @@ class GTrack(Interval):
     VALUE_TYPE = 'value type:'
     VALUE_DIMENSION = 'value dimension:'
 
+    SEQID = 'seqid'
+    START = 'start'
+    END = 'end'
+    STRAND = 'strand'
+    VALUE = 'value'
+
     def sniff_prefix(self, file_prefix):
         hash_count_to_lines, num_data_lines, data_lines = self._parse_file(file_prefix.string_io(), True)
         column_line = None
@@ -1762,7 +1768,7 @@ class GTrack(Interval):
         for col in cols:
             col_type = self.GTRACK_STD_COLUMN_TYPES.get(col)
             if not col_type:
-                if col == 'value':
+                if col == self.VALUE:
                     if value_type:
                         col_type = value_type
                     else:
@@ -1772,15 +1778,14 @@ class GTrack(Interval):
             col_types.append(col_type)
         dataset.metadata.column_types = col_types
 
-        if 'seqid' in cols:
-            dataset.metadata.chromCol = cols.index('seqid')
-        if 'start' in cols:
-            dataset.metadata.startCol = cols.index('start')
-        if 'end' in cols:
-            dataset.metadata.endCol = cols.index('end')
-        if 'strand' in cols:
-            dataset.metadata.strandCol = cols.index('strand')
-
+        if self.SEQID in cols:
+            dataset.metadata.chromCol = cols.index(self.SEQID)
+        if self.START in cols:
+            dataset.metadata.startCol = cols.index(self.START)
+        if self.END in cols:
+            dataset.metadata.endCol = cols.index(self.END)
+        if self.STRAND in cols:
+            dataset.metadata.strandCol = cols.index(self.STRAND)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
@@ -1804,7 +1809,6 @@ class GTrack(Interval):
         from galaxy.datatypes.tabular import GSuite
 
         return GSuite._parse_file(input_file, include_data)
-
 
     def get_mime(self):
         return 'text/plain'
