@@ -83,7 +83,7 @@ var DatasetListItemEdit = _super.extend(
                 }
 
                 // disable if still uploading or new
-            } else if (_.contains([STATES.UPLOAD, STATES.NEW], this.model.get("state"))) {
+            } else if ([STATES.UPLOAD, STATES.NEW].includes(this.model.get("state"))) {
                 editBtnData.disabled = true;
                 editBtnData.title = _l("This dataset is not yet editable");
             }
@@ -123,8 +123,7 @@ var DatasetListItemEdit = _super.extend(
                 //Enable tagging+annotation regardless of job state (see issue #6330)
                 this._renderTags($details);
                 this._renderAnnotation($details);
-
-                if (_.contains([STATES.OK, STATES.FAILED_METADATA], state)) {
+                if ([STATES.OK, STATES.FAILED_METADATA].includes(state)) {
                     this._makeDbkeyEditLink($details);
                 }
             }
