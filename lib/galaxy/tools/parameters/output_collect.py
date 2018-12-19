@@ -631,8 +631,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             else:
                 primary_data.set_meta()
             primary_data.set_peek()
-            sa_session.add(primary_data)
-            sa_session.flush()
             outdata.history.add_dataset(primary_data)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
@@ -651,7 +649,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             outdata.set_meta()
             outdata.set_peek()
             sa_session.add(outdata)
-            sa_session.flush()
+
+    sa_session.flush()
     return primary_datasets
 
 
