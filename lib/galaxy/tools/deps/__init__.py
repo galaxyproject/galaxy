@@ -183,7 +183,7 @@ class DependencyManager(object):
                 # Shortcut - resolution complete.
                 break
 
-            if resolver.resolver_type.startswith('build_mulled'):
+            if resolver.resolver_type.startswith('build_mulled') and not install:
                 # don't want to build images here
                 continue
 
