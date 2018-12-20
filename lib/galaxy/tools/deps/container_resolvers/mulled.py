@@ -229,7 +229,7 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
         self.hash_func = hash_func
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
-        if tool_info.requires_galaxy_python_environment:
+        if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
         targets = mulled_targets(tool_info)
@@ -251,7 +251,7 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
         self.hash_func = hash_func
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
-        if tool_info.requires_galaxy_python_environment:
+        if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
         targets = mulled_targets(tool_info)
@@ -331,7 +331,7 @@ class MulledDockerContainerResolver(ContainerResolver):
         shell(command)
 
     def resolve(self, enabled_container_types, tool_info, install=False, **kwds):
-        if tool_info.requires_galaxy_python_environment:
+        if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
         targets = mulled_targets(tool_info)
@@ -413,7 +413,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
         self.auto_init = self._get_config_option("involucro_auto_init", True)
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
-        if tool_info.requires_galaxy_python_environment:
+        if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
         targets = mulled_targets(tool_info)
@@ -460,7 +460,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
         self.auto_init = self._get_config_option("involucro_auto_init", True)
 
     def resolve(self, enabled_container_types, tool_info, **kwds):
-        if tool_info.requires_galaxy_python_environment:
+        if tool_info.requires_galaxy_python_environment or self.container_type not in enabled_container_types:
             return None
 
         targets = mulled_targets(tool_info)
