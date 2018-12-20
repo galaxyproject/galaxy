@@ -38,10 +38,10 @@ export default Backbone.View.extend({
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
             ondragover: function() {
-                self.model.get("enabled") && self.$el.addClass("warning");
+                self.model.get("enabled") && self.$el.addClass("alert-success");
             },
             ondragleave: function() {
-                self.$el.removeClass("warning");
+                self.$el.removeClass("alert-success");
             },
             onchange: function(files) {
                 if (self.model.get("status") != "running" && files && files.length > 0) {

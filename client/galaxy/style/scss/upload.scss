@@ -279,6 +279,9 @@
     td {
         padding: 0.5rem;
     }
+    .alert-success {
+        background: $brand-success !important;
+    }
 }
 
 .upload-settings {
