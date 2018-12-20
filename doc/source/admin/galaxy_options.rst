@@ -922,22 +922,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~
-``collect_outputs_from``
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tools with a number of outputs not known until runtime can write
-    these outputs to a directory for collection by Galaxy when the job
-    is done. Previously, this directory was new_file_path, but using
-    one global directory can cause performance problems, so using
-    job_working_directory ('.' or cwd when a job is run) is
-    encouraged.  By default, both are checked to avoid breaking
-    existing tools.
-:Default: ``new_file_path,job_working_directory``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

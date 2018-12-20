@@ -297,7 +297,6 @@ class Configuration(object):
         self.allow_user_impersonation = string_as_bool(kwargs.get("allow_user_impersonation", "False"))
         self.show_user_prepopulate_form = string_as_bool(kwargs.get("show_user_prepopulate_form", "False"))
         self.new_user_dataset_access_role_default_private = string_as_bool(kwargs.get("new_user_dataset_access_role_default_private", "False"))
-        self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates"), self.root)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
