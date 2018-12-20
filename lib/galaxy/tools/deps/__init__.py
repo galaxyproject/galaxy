@@ -50,7 +50,6 @@ def build_dependency_manager(config):
     return dependency_manager
 
 
-
 class DependencyManager(object):
     """
     A DependencyManager attempts to resolve named and versioned dependencies by
