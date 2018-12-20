@@ -224,7 +224,7 @@ var CenterPanel = Backbone.View.extend({
                     hash: location.hash
                 });
             }
-        } catch(err) {
+        } catch (err) {
             console.warn("_iframeChangeHandler error", ev, location, Galaxy);
         }
     },
