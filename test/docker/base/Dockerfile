@@ -127,6 +127,10 @@ RUN  sudo mkdir -p /opt/selenium \
   && wget --no-verbose https://selenium-release.storage.googleapis.com/3.6/selenium-server-standalone-3.6.0.jar \
     -O /opt/selenium/selenium-server-standalone.jar
 
+USER galaxy
+
+RUN mkdir /home/galaxy/.singularity
+
 USER root
 
 #==============================
