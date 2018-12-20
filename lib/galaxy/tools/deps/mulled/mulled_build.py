@@ -68,7 +68,7 @@ From: bgruening/busybox-bash:0.1
 
 def involucro_link():
     if IS_OS_X:
-        url = "https://github.com/involucro/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
+        url = "https://github.com/mvdbeek/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
     else:
         url = "https://github.com/involucro/involucro/releases/download/v%s/involucro" % INVOLUCRO_VERSION
     return url
