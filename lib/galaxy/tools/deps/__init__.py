@@ -50,23 +50,6 @@ def build_dependency_manager(config):
     return dependency_manager
 
 
-class NullDependencyManager(object):
-    dependency_resolvers = []
-    enabled_container_types = []
-    resolver_classes = set()
-
-    def set_enabled_container_types(self, enabled_container_types):
-        return
-
-    def uses_tool_shed_dependencies(self):
-        return False
-
-    def dependency_shell_commands(self, requirements, **kwds):
-        return []
-
-    def find_dep(self, name, version=None, type='package', **kwds):
-        return NullDependency(version=version, name=name)
-
 
 class DependencyManager(object):
     """
@@ -337,3 +320,22 @@ class CachedDependencyManager(DependencyManager):
         """
         req_hashes = self.hash_dependencies(resolved_dependencies)
         return os.path.abspath(os.path.join(self.tool_dependency_cache_dir, req_hashes))
+
+
+class NullDependencyManager(DependencyManager):
+
+    def __init__(self, default_base_path=None, conf_file=None, app_config={}):
+        self.__app_config = app_config
+        self.resolver_classes = set()
+        self.dependency_resolvers = []
+        self._enabled_container_types = []
+        self._destination_for_container_type = {}
+
+    def uses_tool_shed_dependencies(self):
+        return False
+
+    def dependency_shell_commands(self, requirements, **kwds):
+        return []
+
+    def find_dep(self, name, version=None, type='package', **kwds):
+        return NullDependency(version=version, name=name)
