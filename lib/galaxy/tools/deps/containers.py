@@ -11,7 +11,10 @@ from .container_classes import (
     NULL_CONTAINER,
     SINGULARITY_CONTAINER_TYPE,
 )
-from .container_resolvers.explicit import ExplicitContainerResolver
+from .container_resolvers.explicit import (
+    ExplicitContainerResolver,
+    ExplicitSingularityContainerResolver,
+)
 from .container_resolvers.mulled import (
     BuildMulledDockerContainerResolver,
     BuildMulledSingularityContainerResolver,
@@ -198,6 +201,7 @@ class ContainerRegistry(object):
     def __default_containers_resolvers(self):
         default_resolvers = [
             ExplicitContainerResolver(self.app_info),
+            ExplicitSingularityContainerResolver(self.app_info),
         ]
         if self.enable_beta_mulled_containers:
             default_resolvers.extend([
