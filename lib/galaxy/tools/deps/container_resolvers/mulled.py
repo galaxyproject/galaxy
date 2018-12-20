@@ -480,7 +480,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
         return involucro_context
 
     def __str__(self):
-        return "BuildDockerContainerResolver[cache_directory=%s]" % self.cache_directory
+        return "BuildSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
 
 
 def mulled_targets(tool_info):
