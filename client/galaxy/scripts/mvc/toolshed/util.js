@@ -1,9 +1,11 @@
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+
 var searchShed = function(request, response) {
-    var that = this;
     var shed_url = this.shed_url;
-    var base_url = `${Galaxy.root}api/tool_shed/search`;
+    var base_url = `${getAppRoot()}api/tool_shed/search`;
     $.get(base_url, { term: request.term, tool_shed_url: shed_url }, data => {
-        var result_list = that.shedParser(data);
+        var result_list = this.shedParser(data);
         response(result_list);
     });
 };
@@ -27,17 +29,17 @@ var addToQueue = metadata => {
         metadata.tool_shed_url = metadata.tool_shed_url.substr(0, metadata.tool_shed_url.length - 1);
     }
     var key = `${metadata.tool_shed_url}|${metadata.repository_id}|${metadata.changeset_revision}`;
-    var queued_repos = new Object();
-    if (localStorage.repositories) {
-        queued_repos = JSON.parse(localStorage.repositories);
+    var queued_repos = {};
+    if (window.localStorage.repositories) {
+        queued_repos = JSON.parse(window.localStorage.repositories);
     }
     queued_repos[key] = metadata;
-    localStorage.repositories = JSON.stringify(queued_repos);
+    window.localStorage.repositories = JSON.stringify(queued_repos);
 };
 
 var queueLength = () => {
-    if (localStorage.hasOwnProperty("repositories")) {
-        var repo_queue = JSON.parse(localStorage.repositories);
+    if (window.localStorage.hasOwnProperty("repositories")) {
+        var repo_queue = JSON.parse(window.localStorage.repositories);
         var queue_length = Object.keys(repo_queue).length;
         return queue_length;
     } else {
@@ -45,9 +47,20 @@ var queueLength = () => {
     }
 };
 
+var toolByGuid = function(guid, changeset, tools) {
+    var returned_tool;
+    tools.forEach(function(tool) {
+        if (tool.guid == guid.value) {
+            returned_tool = tool;
+        }
+    });
+    return returned_tool;
+};
+
 export default {
     searchShed: searchShed,
     shedParser: shedParser,
     addToQueue: addToQueue,
-    queueLength: queueLength
+    queueLength: queueLength,
+    toolByGuid: toolByGuid
 };

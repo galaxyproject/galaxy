@@ -1,4 +1,7 @@
-import HISTORY_MODEL from "mvc/history/history-model";
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import HISTORY_VIEW_EDIT from "mvc/history/history-view-edit";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
@@ -108,29 +111,31 @@ var CurrentHistoryView = _super.extend(
         /** (re-)loads the user's current history & contents w/ details */
         loadCurrentHistory: function() {
             return this.loadHistory(null, {
-                url: `${Galaxy.root}history/current_history_json`
+                url: `${getAppRoot()}history/current_history_json`
             });
         },
 
         /** loads a history & contents w/ details and makes them the current history */
         switchToHistory: function(historyId, attributes) {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.isAnonymous()) {
                 this.trigger("error", _l("You must be logged in to switch histories"), _l("Anonymous user"));
                 return $.when();
             }
             return this.loadHistory(historyId, {
-                url: `${Galaxy.root}history/set_as_current?id=${historyId}`
+                url: `${getAppRoot()}history/set_as_current?id=${historyId}`
             });
         },
 
         /** creates a new history on the server and sets it as the user's current history */
         createNewHistory: function(attributes) {
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.isAnonymous()) {
                 this.trigger("error", _l("You must be logged in to create histories"), _l("Anonymous user"));
                 return $.when();
             }
             return this.loadHistory(null, {
-                url: `${Galaxy.root}history/create_new_current`
+                url: `${getAppRoot()}history/create_new_current`
             });
         },
 
@@ -348,6 +353,7 @@ var CurrentHistoryView = _super.extend(
         events: _.extend(_.clone(_super.prototype.events), {
             // the two links in the empty message
             "click .uploader-link": function(ev) {
+                let Galaxy = getGalaxyInstance();
                 Galaxy.upload.show(ev);
             },
             "click .get-data-link": function(ev) {
@@ -386,7 +392,18 @@ var CurrentHistoryView = _super.extend(
                 },
                 // when the center panel is given a new view, clear the current indicator
                 "center-panel:load": function(view) {
-                    this._setCurrentContentById();
+                    try {
+                        let hdaId = view.model.attributes.dataset_id || null;
+                        if (hdaId === null) {
+                            throw "Invalid id";
+                        }
+                        this._setCurrentContentById(`dataset-${hdaId}`);
+                    } catch (e) {
+                        this._setCurrentContentById();
+                    }
+                },
+                "activate-hda": function(hdaId) {
+                    this._setCurrentContentById(`dataset-${hdaId}`);
                 }
             });
         },
@@ -443,7 +460,7 @@ var CurrentHistoryView = _super.extend(
         /** unhide any hidden datasets */
         unhideHidden: function() {
             var self = this;
-            if (confirm(_l("Really unhide all hidden datasets?"))) {
+            if (window.confirm(_l("Really unhide all hidden datasets?"))) {
                 // get all hidden, regardless of deleted/purged
                 return self.model.contents
                     ._filterAndUpdate({ visible: false, deleted: "", purged: "" }, { visible: true })
@@ -454,13 +471,13 @@ var CurrentHistoryView = _super.extend(
                         }
                     });
             }
-            return jQuery.when();
+            return $.when();
         },
 
         /** delete any hidden datasets */
         deleteHidden: function() {
             var self = this;
-            if (confirm(_l("Really delete all hidden datasets?"))) {
+            if (window.confirm(_l("Really delete all hidden datasets?"))) {
                 return self.model.contents._filterAndUpdate(
                     // get all hidden, regardless of deleted/purged
                     { visible: false, deleted: "", purged: "" },
@@ -468,7 +485,7 @@ var CurrentHistoryView = _super.extend(
                     { deleted: true, visible: true }
                 );
             }
-            return jQuery.when();
+            return $.when();
         },
 
         /** Return a string rep of the history */

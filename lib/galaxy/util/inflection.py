@@ -45,9 +45,9 @@ class Base(object):
         "underscored_word".
         This can be really useful for creating friendly URLs.'''
 
-        return re.sub('[^A-Z^a-z^0-9^\/]+', '_',
-                      re.sub('([a-z\d])([A-Z])', '\\1_\\2',
-                             re.sub('([A-Z]+)([A-Z][a-z])', '\\1_\\2', re.sub('::', '/', word)))).lower()
+        return re.sub(r'[^A-Z^a-z^0-9^\/]+', r'_',
+                      re.sub(r'([a-z\d])([A-Z])', r'\1_\2',
+                             re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', re.sub(r'::', r'/', word)))).lower()
 
     def humanize(self, word, uppercase=''):
         '''Returns a human-readable string from word

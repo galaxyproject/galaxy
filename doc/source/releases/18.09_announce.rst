@@ -1,0 +1,132 @@
+
+===========================================================
+September 2018 Galaxy Release (v 18.09)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Extensive Workflow Enhancements**
+  Workflows got a lot of love this time around, with new runtime parameters for
+  subworkflows, exposed workflow versions, and zoom capability in the editor, to
+  name a few.  There were also a number of usability enhancements including
+  better labeling, links, overhauled workflow import interfaces, and many more.
+
+  `Pull Request 6664`_, `Pull Request 6683`_, `Pull Request 6142`_,
+  `Pull Request 6240`_, `Pull Request 6290`_, `Pull Request 6428`_,
+  `Pull Request 6441`_, `Pull Request 6580`_, `Pull Request 6596`_,
+  `Pull Request 6678`_, `Pull Request 6076`_, `Pull Request 6274`_,
+  `Pull Request 6570`_, `Pull Request 6680`_, `Pull Request 6774`_
+
+**Group Tags**
+  Galaxy now contains powerful new features for multiple factor analysis of collections
+  of datasets. The concept of group tags has been added to Galaxy. These are a special
+  class of tags that describe key-value pairs that can be attached to the contents of a
+  collection during upload or using collection operation tools. These tags can describe
+  multiple sets of variables for the contents of a collection. Once set, these tags can
+  be consumed intelligently by tools that need to divide collections into multiple
+  overlapping factors or sets of datasets. A special thanks to `@mvdbeek <https://github.com/mvdbeek>`__ for devising and implementing this approach.
+
+  `Pull Request 5457`_, `Pull Request 6491`_, `Pull Request 6661`_,
+  `Pull Request 6750`_, `Pull Request 6499`_, `Pull Request 6500`_,
+  `Pull Request 6572`_, `Pull Request 6545`_
+
+**Python 3 Beta Support**
+  After almost 3 years of work and more than 100 pull requests, we are proud
+  to announce the Beta-stage support for running Galaxy under Python 3.
+  Lint, unit, API, framework, integration and Selenium tests all pass, time
+  for you to give it a try and report any bug you find!
+
+  `Tracking issue <https://github.com/galaxyproject/galaxy/issues/1715>`__
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_18.09 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_18.09 && git pull --ff-only origin release_18.09
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+Upgrade Warning for Admins
+==========================
+
+This release includes changes to the way that non-terminal jobs are handled that greatly improve performance and the
+user experience. As a result, when upgrading a Galaxy server with a large number of jobs in the ``new`` state, job
+handlers will block on first startup (jobs will not run) as these old ``new`` state jobs are migrated to a terminal
+state. This process will generate messages of the format::
+
+    galaxy.jobs DEBUG 2018-10-18 22:40:36,900 Pausing Job '995223', Execution of this dataset's job is paused because its input datasets are in an error state.
+
+Once migration is complete, job handlers will resume normal operation.
+
+For more details, see `Pull Request 6036`_ and `Issue 5944 <https://github.com/galaxyproject/galaxy/issues/5944>`__.
+
+Security
+========
+
+Unauthorized File System Operations via New Upload API
+------------------------------------------------------
+
+Tracked as GX-2018-0006. Servers running Galaxy 18.05 should be updated as soon as possible.
+See `the public announcement for full details
+<http://announce.list.galaxyproject.org/GX-2018-0006-Unauthorized-File-System-Operations-via-New-Upload-API-td4639432.html>`__.
+
+
+Tool Vulnerabilities Discovered
+-------------------------------
+Older versions of certain repositories in the Tool Shed were identified as vulnerable. All of these are owned and maintained by the ``iuc``. The repository list follows:
+
+* ``gemini_query``
+* ``gemini_stats``
+* ``gemini_gene_wise``
+* ``iqtree``
+* ``shovill``
+* ``fastq_dump``
+* ``sam_dump``
+* ``sra_pileup``
+
+If you have any of these repositories installed in your Galaxy, please update them to the latest revision immediately and disable/uninstall all older versions.
+
+Galaxy Client Artifacts
+=======================
+
+New for 18.09, we no longer include pre-compiled JavaScript and other
+client-related artifacts in the GitHub repository.  Instead, Galaxy now
+includes in its dependencies all the components necessary to build on startup
+when it detects changes in the client code.  This will make it easier to
+integrate customizations to your local client, among other benefits moving
+forward with our continued client modernization.
+
+This client building code executes automatically via the 'common_startup.sh'
+script, but if you run Galaxy in a way that doesn't utilize that script, you
+should run it manually on deployment as documented in the `General Update
+Procedures <https://galaxyproject.org/admin/maintenance/>`__.
+
+Deprecation Notice
+==================
+
+With 19.01, all Galaxy users will be forced to have a username.  This
+requirement has been enforced on user creation for years, though we have never
+taken steps to coerce users created in the past who did not have one.  The
+19.01 release will come with a migration script that will coerce this in the
+database, which will allow us to have consistent handling of this field.
+
+
+Release Notes
+===========================================================
+
+.. include:: 18.09.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

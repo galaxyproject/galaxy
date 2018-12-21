@@ -13,7 +13,7 @@ mapping:
         required: false
         desc: |
           Verbosity of console log messages.  Acceptable values can be found here:
-          https://docs.python.org/2/library/logging.html#logging-levels
+          https://docs.python.org/library/logging.html#logging-levels
       
       database_connection:
         type: str
@@ -62,7 +62,7 @@ mapping:
           Format string used when showing date and time information.
           The string may contain:
           - the directives used by Python time.strftime() function (see
-            https://docs.python.org/2/library/time.html#time.strftime ),
+            https://docs.python.org/library/time.html#time.strftime ),
           - $locale (complete format string for the server locale),
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
@@ -187,7 +187,7 @@ mapping:
           User authentication can be delegated to an upstream proxy server (usually
           Apache).  The upstream proxy should set a REMOTE_USER header in the request.
           Enabling remote user disables regular logins.  For more information, see:
-          https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
+          https://galaxyproject.org/admin/config/apache-external-user-auth/
       
       remote_user_secret:
         type: str
@@ -327,7 +327,7 @@ mapping:
       
       support_url:
         type: str
-        default: https://wiki.galaxyproject.org/Support
+        default: https://galaxyproject.org/support/
         required: false
         desc: |
           The URL linked by the "Support" link in the "Help" menu.
@@ -450,7 +450,7 @@ mapping:
         required: false
         desc: |
           For help on configuring the Advanced proxy features, see:
-          http://usegalaxy.org/production
+          https://docs.galaxyproject.org/en/master/admin/production.html
 
           Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.  Set
           this to True to inform Galaxy that mod_xsendfile is enabled upstream.

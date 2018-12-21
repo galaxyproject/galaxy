@@ -1,21 +1,22 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
 import visualization from "viz/visualization";
 import viz_views from "viz/viz_views";
 import util from "viz/trackster/util";
 import slotting from "viz/trackster/slotting";
 import painters from "viz/trackster/painters";
 import filters_mod from "viz/trackster/filters";
-import data from "mvc/dataset/data";
+import { Dataset } from "mvc/dataset/data";
 import tools_mod from "mvc/tool/tools";
 import config_mod from "utils/config";
 import bbi from "viz/bbi-data-manager";
 import "ui/editable-text";
-var extend = _.extend;
 
-/* global $ */
-/* global Galaxy */
+var extend = _.extend;
 
 // ---- Web UI specific utilities ----
 
@@ -1165,7 +1166,9 @@ var TracksterView = Backbone.View.extend({
             .bind("drag", function(e, d) {
                 var delta = d.offsetX - this.current_x;
                 this.current_x = d.offsetX;
-                var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.max_high - view.max_low));
+                var delta_chrom = Math.round(
+                    (delta / view.viewport_container.width()) * (view.max_high - view.max_low)
+                );
                 view.move_delta(-delta_chrom);
             });
 
@@ -1193,7 +1196,7 @@ var TracksterView = Backbone.View.extend({
                 container.scrollTop(new_scroll);
                 d.current_height = e.clientY;
                 d.current_x = d.offsetX;
-                var delta_chrom = Math.round(delta / view.viewport_container.width() * (view.high - view.low));
+                var delta_chrom = Math.round((delta / view.viewport_container.width()) * (view.high - view.low));
                 view.move_delta(delta_chrom);
             });
         /*
@@ -1232,8 +1235,8 @@ var TracksterView = Backbone.View.extend({
                 var span = view.high - view.low;
                 var width = view.viewport_container.width();
                 view.update_location(
-                    Math.round(min / width * span) + view.low,
-                    Math.round(max / width * span) + view.low
+                    Math.round((min / width) * span) + view.low,
+                    Math.round((max / width) * span) + view.low
                 );
             })
             .bind("dragend", (e, d) => {
@@ -1242,8 +1245,8 @@ var TracksterView = Backbone.View.extend({
                 var span = view.high - view.low;
                 var width = view.viewport_container.width();
                 var old_low = view.low;
-                view.low = Math.round(min / width * span) + old_low;
-                view.high = Math.round(max / width * span) + old_low;
+                view.low = Math.round((min / width) * span) + old_low;
+                view.high = Math.round((max / width) * span) + old_low;
                 $(d.proxy).remove();
                 view.request_redraw();
             });
@@ -1350,7 +1353,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
 
         var chrom_data = $.Deferred();
         $.ajax({
-            url: `${Galaxy.root}api/genomes/${this.dbkey}`,
+            url: `${getAppRoot()}api/genomes/${this.dbkey}`,
             data: url_parms,
             dataType: "json",
             success: result => {
@@ -1663,8 +1666,8 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
 
         // Overview
-        var left_px = this.low / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
-        var width_px = (this.high - this.low) / (this.max_high - this.max_low) * this.overview_viewport.width() || 0;
+        var left_px = (this.low / (this.max_high - this.max_low)) * this.overview_viewport.width() || 0;
+        var width_px = ((this.high - this.low) / (this.max_high - this.max_low)) * this.overview_viewport.width() || 0;
         var min_width_px = 13;
 
         this.overview_box
@@ -1707,7 +1710,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         var cur_center = span / 2 + this.low;
         var new_half = span / this.zoom_factor / 2;
         if (point) {
-            cur_center = point / this.viewport_container.width() * (this.high - this.low) + this.low;
+            cur_center = (point / this.viewport_container.width()) * (this.high - this.low) + this.low;
         }
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
@@ -1722,7 +1725,7 @@ extend(TracksterView.prototype, DrawableCollection.prototype, {
         }
         var span = this.high - this.low;
         var cur_center = span / 2 + this.low;
-        var new_half = span * this.zoom_factor / 2;
+        var new_half = (span * this.zoom_factor) / 2;
         this.low = Math.round(cur_center - new_half);
         this.high = Math.round(cur_center + new_half);
         this.changed();
@@ -1944,6 +1947,7 @@ var TracksterToolView = Backbone.View.extend({
      */
     run_on_dataset: function() {
         var tool = this.model;
+        let Galaxy = getGalaxyInstance();
         this.run(
             // URL params.
             {
@@ -2035,7 +2039,7 @@ var TracksterToolView = Backbone.View.extend({
 
         // Run tool.
         this.run(url_params, new_track, track_data => {
-            new_track.set_dataset(new data.Dataset(track_data));
+            new_track.set_dataset(new Dataset(track_data));
             new_track.tiles_div.text("Running job.");
             new_track.init();
         });
@@ -2049,7 +2053,7 @@ var TracksterToolView = Backbone.View.extend({
         url_params.inputs = this.model.get_inputs_dict();
         var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
-                url: `${Galaxy.root}api/tools`,
+                url: `${getAppRoot()}api/tools`,
                 data: JSON.stringify(url_params),
                 dataType: "json",
                 contentType: "application/json",
@@ -2340,8 +2344,7 @@ var Track = function(view, container, obj_dict) {
     this.dataset = null;
     if (obj_dict.dataset) {
         // Dataset can be a Backbone model or a dict that can be used to create a model.
-        this.dataset =
-            obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new data.Dataset(obj_dict.dataset);
+        this.dataset = obj_dict.dataset instanceof Backbone.Model ? obj_dict.dataset : new Dataset(obj_dict.dataset);
     }
     this.dataset_check_type = "converted_datasets_state";
     this.data_url_extra_params = {};
@@ -2444,6 +2447,8 @@ extend(Track.prototype, Drawable.prototype, {
             title: _l("Tool parameter space visualization"),
             css_class: "arrow-split",
             on_click_fn: track => {
+                let Galaxy = getGalaxyInstance();
+
                 var html = `
                     <strong>Tool</strong>:${track.tool.get("name")}<br/>
                     <strong>Dataset</strong>:${track.config.get_value("name")}<br/>
@@ -2493,7 +2498,7 @@ extend(Track.prototype, Drawable.prototype, {
                     Galaxy.modal.hide();
 
                     // Go to visualization.
-                    window.top.location.href = `${Galaxy.root}visualization/sweepster?${$.param({
+                    window.top.location.href = `${getAppRoot()}visualization/sweepster?${$.param({
                         dataset_id: track.dataset.id,
                         hda_ldda: track.dataset.get("hda_ldda"),
                         regions: JSON.stringify(new Backbone.Collection(regions).toJSON())
@@ -2709,6 +2714,7 @@ extend(Track.prototype, Drawable.prototype, {
                         $("<a href='javascript:void(0);'></a>")
                             .text("View error")
                             .click(() => {
+                                let Galaxy = getGalaxyInstance();
                                 Galaxy.modal.show({
                                     title: _l("Trackster Error"),
                                     body: `<pre>${result.message}</pre>`,
@@ -3592,7 +3598,7 @@ extend(LabelTrack.prototype, Track.prototype, {
         var width = this.view.container.width();
         var new_div = $("<div/>").addClass("label-container");
         while (position < view.high) {
-            var screenPosition = Math.floor((position - view.low) / range * width);
+            var screenPosition = Math.floor(((position - view.low) / range) * width);
             new_div.append(
                 $("<div/>")
                     .addClass("pos-label")
@@ -3875,7 +3881,7 @@ var ReferenceTrack = function(view) {
     // Use offset to ensure that bases at tile edges are drawn.
     this.left_offset = view.canvas_manager.char_width_px;
     this.container_div.addClass("reference-track");
-    this.data_url = `${Galaxy.root}api/genomes/${this.view.dbkey}`;
+    this.data_url = `${getAppRoot()}api/genomes/${this.view.dbkey}`;
     this.data_url_extra_params = { reference: true };
     this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,
@@ -3974,7 +3980,7 @@ var LineTrack = function(view, container, obj_dict) {
     // If server has byte-range support, use BBI data manager to read directly from the BBI file.
     // FIXME: there should be a flag to wait for this check to complete before loading the track.
     var self = this;
-    $.when(supportsByteRanges(`${Galaxy.root}datasets/${this.dataset.id}/display`)).then(supportsByteRanges => {
+    $.when(supportsByteRanges(`${getAppRoot()}datasets/${this.dataset.id}/display`)).then(supportsByteRanges => {
         if (supportsByteRanges) {
             self.data_manager = new bbi.BBIDataManager({
                 dataset: self.dataset

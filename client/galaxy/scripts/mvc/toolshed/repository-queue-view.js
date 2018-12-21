@@ -1,52 +1,55 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
+
 var View = Backbone.View.extend({
     el: "#center",
 
-    defaults: [{}],
+    defaults: [],
 
     initialize: function(options) {
-        var that = this;
         this.model = new toolshed_model.RepoQueue();
         this.listenTo(this.model, "sync", this.render);
         this.model.fetch();
-        that.render();
+        this.render();
     },
 
     render: function(options) {
-        var that = this;
-        var repo_queue_template = that.templateRepoQueue;
-        var repositories = that.model.models;
-        that.$el.html(
+        var repo_queue_template = this.templateRepoQueue;
+        var repositories = this.model.models;
+        this.$el.html(
             repo_queue_template({
                 title: _l("Repository Installation Queue"),
                 repositories: repositories,
+                empty: _l("No repositories in queue."),
                 queue: toolshed_util.queueLength()
             })
         );
         $("#center").css("overflow", "auto");
-        that.bindEvents();
+        this.bindEvents();
     },
 
     bindEvents: function() {
-        var that = this;
-        $(".install_one").on("click", function() {
-            var repository_metadata = that.loadFromQueue($(this).attr("data-repokey"));
-            that.installFromQueue(repository_metadata, $(this).attr("data-repokey"));
+        $(".install_one").on("click", ev => {
+            var repository_metadata = this.loadFromQueue($(ev.target).attr("data-repokey"));
+            this.installFromQueue(repository_metadata, $(ev.target).attr("data-repokey"));
         });
-        $(".remove_one").on("click", function() {
-            var queue_key = $(this).attr("data-repokey");
-            var repo_queue = JSON.parse(localStorage.repositories);
+        $(".remove_one").on("click", ev => {
+            var queue_key = $(ev.target).attr("data-repokey");
+            var repo_queue = JSON.parse(window.localStorage.repositories);
             if (repo_queue.hasOwnProperty(queue_key)) {
                 var repository_id = repo_queue[queue_key].repository.id;
                 delete repo_queue[queue_key];
                 $(`#queued_repository_${repository_id}`).remove();
             }
-            localStorage.repositories = JSON.stringify(repo_queue);
+            window.localStorage.repositories = JSON.stringify(repo_queue);
         });
         $("#clear_queue").on("click", () => {
-            localStorage.repositories = "{}";
+            window.localStorage.repositories = "{}";
         });
         $("#from_workflow").on("click", () => {
             Backbone.history.navigate("workflows", {
@@ -57,8 +60,7 @@ var View = Backbone.View.extend({
     },
 
     installFromQueue: function(repository_metadata, queue_key) {
-        var that = this;
-        var params = Object();
+        var params = {};
         params.install_tool_dependencies = repository_metadata.install_tool_dependencies;
         params.install_repository_dependencies = repository_metadata.install_repository_dependencies;
         params.install_resolver_dependencies = repository_metadata.install_resolver_dependencies;
@@ -70,16 +72,16 @@ var View = Backbone.View.extend({
         params.tool_shed_repository_ids = JSON.stringify([repository_metadata.repository.id]);
         params.tool_shed_url = queue_key.split("|")[0];
         params.changeset = repository_metadata.changeset_revision;
-        var url = `${Galaxy.root}api/tool_shed_repositories/install?async=True`;
+        var url = `${getAppRoot()}api/tool_shed_repositories/install?async=True`;
         $(`#queued_repository_${repository_metadata.repository.id}`).remove();
-        if (localStorage.repositories) {
+        if (window.localStorage.repositories) {
             if (queue_key === undefined) {
                 queue_key = toolshed_util.queueKey(repository_metadata);
             }
-            var repository_queue = JSON.parse(localStorage.repositories);
+            var repository_queue = JSON.parse(window.localStorage.repositories);
             if (repository_queue.hasOwnProperty(queue_key)) {
                 delete repository_queue[queue_key];
-                localStorage.repositories = JSON.stringify(repository_queue);
+                window.localStorage.repositories = JSON.stringify(repository_queue);
             }
         }
 
@@ -87,7 +89,7 @@ var View = Backbone.View.extend({
             var iri_params = JSON.parse(data);
             var repositories = iri_params.repositories;
             var new_route = `status/r/${repositories.join("|")}`;
-            $.post(`${Galaxy.root}admin_toolshed/install_repositories`, iri_params, data => {
+            $.post(`${getAppRoot()}admin_toolshed/install_repositories`, iri_params, data => {
                 console.log("Initializing repository installation succeeded");
             });
             Backbone.history.navigate(new_route, {
@@ -98,25 +100,17 @@ var View = Backbone.View.extend({
     },
 
     loadFromQueue: function(queue_key) {
-        var repository_queue = JSON.parse(localStorage.repositories);
+        var repository_queue = JSON.parse(window.localStorage.repositories);
         if (repository_queue.hasOwnProperty(queue_key)) {
             return repository_queue[queue_key];
         }
-        return undefined;
-    },
-
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
-        this.model.fetch();
-        this.render(options);
+        return this.defaults;
     },
 
     templateRepoQueue: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner"><%= title %></div>',
-            '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<div class="tab-pane" id="panel_header" id="repository_queue">',
             '<table id="queued_repositories" class="grid" border="0" cellpadding="2" cellspacing="2" width="100%">',
@@ -131,6 +125,7 @@ var View = Backbone.View.extend({
             "</tr>",
             "</thead>",
             "<tbody>",
+            "<% if (repositories.length > 0) { %>",
             "<% _.each(repositories, function(repository) { %>",
             '<tr id="queued_repository_<%= repository.get("id") %>">',
             '<td class="datasetRow"><%= repository.get("repository").name %></td>',
@@ -145,6 +140,9 @@ var View = Backbone.View.extend({
             "</td>",
             "</tr>",
             "<% }); %>",
+            "<% } else { %>",
+            '<tr><td colspan="6"><%= empty %></td></tr>',
+            "<% } %>",
             "</tbody>",
             "</table>",
             '<input type="button" class="btn btn-primary" id="from_workflow" value="Add from workflow" />',

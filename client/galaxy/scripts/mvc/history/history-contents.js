@@ -1,3 +1,7 @@
+import _ from "underscore";
+import jQuery from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDCA_MODEL from "mvc/history/hdca-model";
@@ -5,11 +9,6 @@ import HISTORY_PREFS from "mvc/history/history-preferences";
 import JOB_STATES_MODEL from "mvc/history/job-states-model";
 import BASE_MVC from "mvc/base-mvc";
 import AJAX_QUEUE from "utils/ajax-queue";
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
-
-/* global Galaxy */
-/* global jQuery */
 
 const limitPerPageDefault = window.localStorage.getItem("historyContentsLimitPerPageDefault") || 500;
 
@@ -23,7 +22,7 @@ var _super = CONTROLLED_FETCH_COLLECTION.PaginatedCollection;
  *          HDAs or child dataset collections on one level.
  *      This is why this does not inherit from any of the DatasetCollections (currently).
  */
-var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
+export var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     _logNamespace: "history",
 
     // ........................................................................ set up
@@ -47,7 +46,7 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         });
 
         options = options || {};
-        this.urlRoot = `${Galaxy.root}api/histories`;
+        this.urlRoot = `${getAppRoot()}api/histories`;
         _super.prototype.initialize.call(this, models, options);
 
         this.history = options.history || null;
@@ -461,16 +460,21 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
     },
 
     /** create a new HDCA in this collection */
-    createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, options) {
+    createHDCA: function(elementIdentifiers, collectionType, name, hideSourceItems, copyElements, options) {
         // normally collection.create returns the new model, but we need the promise from the ajax, so we fake create
         //precondition: elementIdentifiers is an array of plain js objects
         //  in the proper form to create the collectionType
+        if (copyElements === undefined) {
+            copyElements = true;
+        }
+
         var hdca = this.model({
             history_content_type: "dataset_collection",
             collection_type: collectionType,
             history_id: this.historyId,
             name: name,
             hide_source_items: hideSourceItems || false,
+            copy_elements: copyElements,
             // should probably be able to just send in a bunch of json here and restruct per class
             // note: element_identifiers is now (incorrectly) an attribute
             element_identifiers: elementIdentifiers
@@ -512,8 +516,3 @@ var HistoryContents = _super.extend(BASE_MVC.LoggableMixin).extend({
         return ["HistoryContents(", [this.historyId, this.length].join(), ")"].join("");
     }
 });
-
-//==============================================================================
-export default {
-    HistoryContents: HistoryContents
-};

@@ -49,7 +49,7 @@ class InteractiveEnvironmentRequest(object):
         self.attr.redact_username_in_logs = trans.app.config.redact_username_in_logs
         self.attr.galaxy_root_dir = os.path.abspath(self.attr.galaxy_config.root)
         self.attr.root = web.url_for("/")
-        self.attr.app_root = self.attr.root + "plugins/interactive_environments/" + self.attr.viz_id + "/static/"
+        self.attr.app_root = self.attr.root + "static/plugins/interactive_environments/" + self.attr.viz_id + "/static/"
         self.attr.import_volume = True
 
         plugin_path = os.path.abspath(plugin.path)
@@ -294,7 +294,22 @@ class InteractiveEnvironmentRequest(object):
         def _flag_opts(flag, opts):
             return [arg for pair in product((flag,), opts) for arg in pair]
 
+        def _check_uid_and_gid(cmd_inject):
+            """
+            Check and replace shell uid and gid using os
+            :param cmd_inject:
+            """
+            # --user="$(id -u):$(id -g)"
+            # https://docs.docker.com/engine/reference/run/#user
+            # -e USER_UID=$(id -u) -e USER_GID=$(id -g)
+            uid_gid_subs = {"$(id -u)": "{}".format(os.geteuid()), "$(id -g)": "{}".format(os.getgid())}
+            subs = sorted(uid_gid_subs)
+            regex = re.compile('|'.join(map(re.escape, subs)))
+            return regex.sub(lambda match: uid_gid_subs[match.group(0)], cmd_inject)
+
         command_inject = self.attr.viz_config.get("docker", "command_inject")
+        command_inject = _check_uid_and_gid(command_inject)
+
         # --name should really not be set, but we'll try to honor it anyway
         name = ['--name=%s' % self._get_name_for_run()] if '--name' not in command_inject else []
         env = self._get_env_for_run(env_override)
@@ -429,7 +444,7 @@ class InteractiveEnvironmentRequest(object):
             host_port = self._find_port_mapping(port_mappings)[-1]
             log.debug("Container host/port: %s:%s", self.attr.docker_hostname, host_port)
 
-            # Now we configure our proxy_requst object and we manually specify
+            # Now we configure our proxy_request object and we manually specify
             # the port to map to and ensure the proxy is available.
             self.attr.proxy_request = self.trans.app.proxy_manager.setup_proxy(
                 self.trans,

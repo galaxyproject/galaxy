@@ -1,28 +1,38 @@
 import contextlib
 import json
 import os
+import random
+import string
 import time
 import unittest
+from collections import namedtuple
 from functools import wraps
 from operator import itemgetter
 
+try:
+    from nose.tools import nottest
+except ImportError:
+    def nottest(x):
+        return x
 import requests
+import yaml
+from gxformat2 import (
+    convert_and_import_workflow,
+    ImporterGalaxyInterface,
+)
 from pkg_resources import resource_string
 from six import StringIO
 
 from galaxy.tools.verify.test_data import TestDataResolver
+from galaxy.util import unicodify
 from . import api_asserts
-from .workflows_format_2 import (
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
 
 
 # Simple workflow that takes an input and call cat wrapper on it.
-workflow_str = resource_string(__name__, "data/test_workflow_1.ga")
+workflow_str = unicodify(resource_string(__name__, "data/test_workflow_1.ga"))
 # Simple workflow that takes an input and filters with random lines twice in a
 # row - first grabbing 8 lines at random and then 6.
-workflow_random_x2_str = resource_string(__name__, "data/test_workflow_2.ga")
+workflow_random_x2_str = unicodify(resource_string(__name__, "data/test_workflow_2.ga"))
 
 
 DEFAULT_TIMEOUT = 60  # Secs to wait for state to turn ok
@@ -108,6 +118,22 @@ def summarize_instance_history_on_error(method):
     return wrapped_method
 
 
+@nottest
+def uses_test_history(**test_history_kwd):
+    """Can override require_new and cancel_executions using kwds to decorator.
+    """
+
+    def method_wrapper(method):
+        @wraps(method)
+        def wrapped_method(api_test_case, *args, **kwds):
+            with api_test_case.dataset_populator.test_history(**test_history_kwd) as history_id:
+                method(api_test_case, history_id, *args, **kwds)
+
+        return wrapped_method
+
+    return method_wrapper
+
+
 def _raise_skip_if(check):
     if check:
         from nose.plugins.skip import SkipTest
@@ -116,7 +142,7 @@ def _raise_skip_if(check):
 
 # Deprecated mixin, use dataset populator instead.
 # TODO: Rework existing tests to target DatasetPopulator in a setup method instead.
-class TestsDatasets:
+class TestsDatasets(object):
 
     def _new_dataset(self, history_id, content='TestData123', **kwds):
         return DatasetPopulator(self.galaxy_interactor).new_dataset(history_id, content=content, **kwds)
@@ -185,17 +211,9 @@ class BaseDatasetPopulator(object):
             raise
 
     def wait_for_history_jobs(self, history_id, assert_ok=False, timeout=DEFAULT_TIMEOUT):
-        query_params = {"history_id": history_id}
-
-        def get_jobs():
-            jobs_response = self._get("jobs", query_params)
-            assert jobs_response.status_code == 200
-            return jobs_response.json()
 
         def has_active_jobs():
-            jobs = get_jobs()
-            active_jobs = [j for j in jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
-
+            active_jobs = self.active_history_jobs(history_id)
             if len(active_jobs) == 0:
                 return True
             else:
@@ -204,8 +222,8 @@ class BaseDatasetPopulator(object):
         try:
             wait_on(has_active_jobs, "active jobs", timeout=timeout)
         except TimeoutAssertionError as e:
-            jobs = get_jobs()
-            message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e.message)
+            jobs = self.history_jobs(history_id)
+            message = "Failed waiting on active jobs to complete, current jobs are [%s]. %s" % (jobs, e)
             raise TimeoutAssertionError(message)
 
         if assert_ok:
@@ -217,6 +235,22 @@ class BaseDatasetPopulator(object):
     def get_job_details(self, job_id, full=False):
         return self._get("jobs/%s?full=%s" % (job_id, full))
 
+    def cancel_history_jobs(self, history_id, wait=True):
+        active_jobs = self.active_history_jobs(history_id)
+        for active_job in active_jobs:
+            self.cancel_job(active_job["id"])
+
+    def history_jobs(self, history_id):
+        query_params = {"history_id": history_id, "order_by": "create_time"}
+        jobs_response = self._get("jobs", query_params)
+        assert jobs_response.status_code == 200
+        return jobs_response.json()
+
+    def active_history_jobs(self, history_id):
+        all_history_jobs = self.history_jobs(history_id)
+        active_jobs = [j for j in all_history_jobs if j["state"] in ["new", "upload", "waiting", "queued", "running"]]
+        return active_jobs
+
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
 
@@ -225,24 +259,36 @@ class BaseDatasetPopulator(object):
 
     @contextlib.contextmanager
     def test_history(self, **kwds):
-        # TODO: In the future allow targetting a specfic history here
-        # and/or deleting everything in the resulting history when done.
-        # These would be cool options for remote Galaxy test execution.
+        cleanup = "GALAXY_TEST_NO_CLEANUP" not in os.environ
+
+        def wrap_up():
+            cancel_executions = kwds.get("cancel_executions", True)
+            if cleanup and cancel_executions:
+                self.cancel_history_jobs(history_id)
+
+        require_new = kwds.get("require_new", True)
         try:
-            history_id = self.new_history()
+            history_id = None
+            if not require_new:
+                history_id = kwds.get("GALAXY_TEST_HISTORY_ID", None)
+
+            history_id = history_id or self.new_history()
             yield history_id
+            wrap_up()
         except Exception:
             self._summarize_history(history_id)
+            wrap_up()
             raise
 
     def new_history(self, **kwds):
         name = kwds.get("name", "API Test History")
         create_history_response = self._post("histories", data=dict(name=name))
+        assert "id" in create_history_response.json(), create_history_response.json()
         history_id = create_history_response.json()["id"]
         return history_id
 
     def upload_payload(self, history_id, content=None, **kwds):
-        name = kwds.get("name", "Test Dataset")
+        name = kwds.get("name", "Test_Dataset")
         dbkey = kwds.get("dbkey", "?")
         file_type = kwds.get("file_type", 'txt')
         upload_params = {
@@ -277,9 +323,14 @@ class BaseDatasetPopulator(object):
         return self._get("remote_files", data={"target": target}).json()
 
     def run_tool_payload(self, tool_id, inputs, history_id, **kwds):
-        if "files_0|file_data" in inputs:
-            kwds["__files"] = {"files_0|file_data": inputs["files_0|file_data"]}
-            del inputs["files_0|file_data"]
+        # Remove files_%d|file_data parameters from inputs dict and attach
+        # as __files dictionary.
+        for key, value in list(inputs.items()):
+            if key.startswith("files_") and key.endswith("|file_data"):
+                if "__files" not in kwds:
+                    kwds["__files"] = {}
+                kwds["__files"][key] = value
+                del inputs[key]
 
         return dict(
             tool_id=tool_id,
@@ -301,19 +352,30 @@ class BaseDatasetPopulator(object):
         tool_response = self._post(url, data=payload)
         return tool_response
 
-    def get_history_dataset_content(self, history_id, wait=True, filename=None, **kwds):
+    def get_history_dataset_content(self, history_id, wait=True, filename=None, type='text', raw=False, **kwds):
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
             data["filename"] = filename
+        if raw:
+            data['raw'] = True
         display_response = self._get_contents_request(history_id, "/%s/display" % dataset_id, data=data)
-        assert display_response.status_code == 200, display_response.content
-        return display_response.content
+        assert display_response.status_code == 200, display_response.text
+        if type == 'text':
+            return display_response.text
+        else:
+            return display_response.content
 
     def get_history_dataset_details(self, history_id, **kwds):
         dataset_id = self.__history_content_id(history_id, **kwds)
         details_response = self._get_contents_request(history_id, "/datasets/%s" % dataset_id)
         assert details_response.status_code == 200
+        return details_response.json()
+
+    def get_history_dataset_extra_files(self, history_id, **kwds):
+        dataset_id = self.__history_content_id(history_id, **kwds)
+        details_response = self._get_contents_request(history_id, "/%s/extra_files" % dataset_id)
+        assert details_response.status_code == 200, details_response.content
         return details_response.json()
 
     def get_history_collection_details(self, history_id, **kwds):
@@ -364,7 +426,9 @@ class BaseDatasetPopulator(object):
                 history_content_id = history_contents[-1]["id"]
         return history_content_id
 
-    def _get_contents_request(self, history_id, suffix="", data={}):
+    def _get_contents_request(self, history_id, suffix="", data=None):
+        if data is None:
+            data = {}
         url = "histories/%s/contents" % history_id
         if suffix:
             url = "%s%s" % (url, suffix)
@@ -376,23 +440,86 @@ class BaseDatasetPopulator(object):
             src = 'hdca'
         return dict(src=src, id=history_content["id"])
 
+    def get_roles(self):
+        roles_response = self.galaxy_interactor.get("roles", admin=True)
+        assert roles_response.status_code == 200
+        return roles_response.json()
+
+    def user_email(self):
+        users_response = self.galaxy_interactor.get("users")
+        users = users_response.json()
+        assert len(users) == 1
+        return users[0]["email"]
+
+    def user_id(self):
+        users_response = self.galaxy_interactor.get("users")
+        users = users_response.json()
+        assert len(users) == 1
+        return users[0]["id"]
+
+    def user_private_role_id(self):
+        user_email = self.user_email()
+        roles = self.get_roles()
+        users_roles = [r for r in roles if r["name"] == user_email]
+        assert len(users_roles) == 1
+        return users_roles[0]["id"]
+
+    def create_role(self, user_ids, description=None):
+        payload = {
+            "name": self.get_random_name(prefix="testpop"),
+            "description": description or "Test Role",
+            "user_ids": json.dumps(user_ids),
+        }
+        role_response = self.galaxy_interactor.post("roles", data=payload, admin=True)
+        assert role_response.status_code == 200
+        return role_response.json()[0]
+
+    def make_private(self, history_id, dataset_id):
+        role_id = self.user_private_role_id()
+        # Give manage permission to the user.
+        payload = {
+            "access": json.dumps([role_id]),
+            "manage": json.dumps([role_id]),
+        }
+        url = "histories/%s/contents/%s/permissions" % (history_id, dataset_id)
+        update_response = self.galaxy_interactor._put(url, payload, admin=True)
+        assert update_response.status_code == 200, update_response.content
+        return update_response.json()
+
+    def get_random_name(self, prefix=None, suffix=None, len=10):
+        # stolen from navigates_galaxy.py
+        return '%s%s%s' % (
+            prefix or '',
+            ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len)),
+            suffix or '',
+        )
+
 
 class DatasetPopulator(BaseDatasetPopulator):
 
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
 
-    def _post(self, route, data={}, files=None):
+    def _post(self, route, data=None, files=None):
+        if data is None:
+            data = {}
+
         files = data.get("__files", None)
         if files is not None:
             del data["__files"]
 
         return self.galaxy_interactor.post(route, data, files=files)
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.get(route, data=data)
 
-    def _delete(self, route, data={}):
+    def _delete(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.delete(route, data=data)
 
     def _summarize_history(self, history_id):
@@ -422,12 +549,20 @@ class BaseWorkflowPopulator(object):
     def load_workflow_from_resource(self, name, filename=None):
         if filename is None:
             filename = "data/%s.ga" % name
-        content = resource_string(__name__, filename)
+        content = unicodify(resource_string(__name__, filename))
         return self.load_workflow(name, content=content)
 
     def simple_workflow(self, name, **create_kwds):
         workflow = self.load_workflow(name)
         return self.create_workflow(workflow, **create_kwds)
+
+    def import_workflow_from_path(self, from_path):
+        data = dict(
+            from_path=from_path
+        )
+        import_response = self._post("workflows", data=data)
+        api_asserts.assert_status_code_is(import_response, 200)
+        return import_response.json()["id"]
 
     def create_workflow(self, workflow, **create_kwds):
         upload_response = self.create_workflow_response(workflow, **create_kwds)
@@ -443,8 +578,18 @@ class BaseWorkflowPopulator(object):
         return upload_response
 
     def upload_yaml_workflow(self, has_yaml, **kwds):
+        round_trip_conversion = kwds.get("round_trip_format_conversion", False)
+        client_convert = kwds.pop("client_convert", not round_trip_conversion)
+        kwds["convert"] = client_convert
         workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
-        return workflow["id"]
+        workflow_id = workflow["id"]
+        if round_trip_conversion:
+            workflow_yaml_wrapped = self.download_workflow(workflow_id, style="format2_wrapped_yaml")
+            assert "yaml_content" in workflow_yaml_wrapped, workflow_yaml_wrapped
+            round_trip_converted_content = workflow_yaml_wrapped["yaml_content"]
+            workflow_id = self.upload_yaml_workflow(round_trip_converted_content, client_convert=False, round_trip_conversion=False)
+
+        return workflow_id
 
     def wait_for_invocation(self, workflow_id, invocation_id, timeout=DEFAULT_TIMEOUT):
         url = "workflows/%s/usage/%s" % (workflow_id, invocation_id)
@@ -456,13 +601,23 @@ class BaseWorkflowPopulator(object):
         self.wait_for_invocation(workflow_id, invocation_id, timeout=timeout)
         self.dataset_populator.wait_for_history_jobs(history_id, assert_ok=assert_ok, timeout=timeout)
 
-    def invoke_workflow(self, history_id, workflow_id, inputs={}, request={}, assert_ok=True):
+    def invoke_workflow_raw(self, workflow_id, request):
+        url = "workflows/%s/usage" % (workflow_id)
+        invocation_response = self._post(url, data=request)
+        return invocation_response
+
+    def invoke_workflow(self, history_id, workflow_id, inputs=None, request=None, assert_ok=True):
+        if inputs is None:
+            inputs = {}
+
+        if request is None:
+            request = {}
+
         request["history"] = "hist_id=%s" % history_id,
         if inputs:
             request["inputs"] = json.dumps(inputs)
             request["inputs_by"] = 'step_index'
-        url = "workflows/%s/usage" % (workflow_id)
-        invocation_response = self._post(url, data=request)
+        invocation_response = self.invoke_workflow_raw(workflow_id, request)
         if assert_ok:
             api_asserts.assert_status_code_is(invocation_response, 200)
             invocation_id = invocation_response.json()["id"]
@@ -470,17 +625,117 @@ class BaseWorkflowPopulator(object):
         else:
             return invocation_response
 
+    def download_workflow(self, workflow_id, style=None):
+        params = {}
+        if style is not None:
+            params["style"] = style
+        response = self._get("workflows/%s/download" % workflow_id, data=params)
+        api_asserts.assert_status_code_is(response, 200)
+        return response.json()
+
+    def update_workflow(self, workflow_id, workflow_object):
+        data = dict(
+            workflow=workflow_object
+        )
+        raw_url = 'workflows/%s' % workflow_id
+        put_response = self.galaxy_interactor._put(raw_url, data=json.dumps(data))
+        return put_response
+
+    @contextlib.contextmanager
+    def export_for_update(self, workflow_id):
+        workflow_object = self.download_workflow(workflow_id)
+        yield workflow_object
+        self.update_workflow(workflow_id, workflow_object)
+
+    def run_workflow(self, has_workflow, test_data=None, history_id=None, wait=True, source_type=None, jobs_descriptions=None, expected_response=200, assert_ok=True, client_convert=None, round_trip_format_conversion=False, raw_yaml=False):
+        """High-level wrapper around workflow API, etc. to invoke format 2 workflows."""
+        workflow_populator = self
+
+        def read_test_data(test_dict):
+            test_data_resolver = TestDataResolver()
+            filename = test_data_resolver.get_filename(test_dict["value"])
+            content = open(filename, "r").read()
+            return content
+
+        if client_convert is None:
+            client_convert = not round_trip_format_conversion
+
+        workflow_id = workflow_populator.upload_yaml_workflow(has_workflow, source_type=source_type, client_convert=client_convert, round_trip_format_conversion=round_trip_format_conversion, raw_yaml=raw_yaml)
+
+        if test_data is None:
+            if jobs_descriptions is None:
+                assert source_type != "path"
+                jobs_descriptions = yaml.safe_load(has_workflow)
+
+            test_data = jobs_descriptions.get("test_data", {})
+
+        if not isinstance(test_data, dict):
+            test_data = yaml.safe_load(test_data)
+
+        parameters = test_data.pop('step_parameters', {})
+        replacement_parameters = test_data.pop("replacement_parameters", {})
+        inputs, label_map, has_uploads = load_data_dict(history_id, test_data, self.dataset_populator, self.dataset_collection_populator)
+        workflow_request = dict(
+            history="hist_id=%s" % history_id,
+            workflow_id=workflow_id,
+        )
+        workflow_request["inputs"] = json.dumps(label_map)
+        workflow_request["inputs_by"] = 'name'
+        if parameters:
+            workflow_request["parameters"] = json.dumps(parameters)
+            workflow_request["parameters_normalized"] = True
+        if replacement_parameters:
+            workflow_request["replacement_params"] = json.dumps(replacement_parameters)
+        if has_uploads:
+            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        invocation_response = workflow_populator.invoke_workflow_raw(workflow_id, workflow_request)
+        api_asserts.assert_status_code_is(invocation_response, expected_response)
+        invocation = invocation_response.json()
+        invocation_id = invocation.get('id')
+        if invocation_id:
+            # Wait for workflow to become fully scheduled and then for all jobs
+            # complete.
+            if wait:
+                workflow_populator.wait_for_workflow(workflow_id, invocation_id, history_id, assert_ok=assert_ok)
+            jobs = self.dataset_populator.history_jobs(history_id)
+            return RunJobsSummary(
+                history_id=history_id,
+                workflow_id=workflow_id,
+                invocation_id=invocation_id,
+                inputs=inputs,
+                jobs=jobs,
+                invocation=invocation,
+                workflow_request=workflow_request
+            )
+
+    def dump_workflow(self, workflow_id, style=None):
+        raw_workflow = self.download_workflow(workflow_id, style=style)
+        if style == "format2_wrapped_yaml":
+            print(raw_workflow["yaml_content"])
+        else:
+            print(json.dumps(raw_workflow, sort_keys=True, indent=2))
+
+
+RunJobsSummary = namedtuple('RunJobsSummary', ['history_id', 'workflow_id', 'invocation_id', 'inputs', 'jobs', 'invocation', 'workflow_request'])
+
 
 class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
 
     def __init__(self, galaxy_interactor):
         self.galaxy_interactor = galaxy_interactor
         self.dataset_populator = DatasetPopulator(galaxy_interactor)
+        self.dataset_collection_populator = DatasetCollectionPopulator(galaxy_interactor)
 
-    def _post(self, route, data={}):
+    def _post(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.post(route, data)
 
-    def _get(self, route, data={}):
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
         return self.galaxy_interactor.get(route, data=data)
 
     # Required for ImporterGalaxyInterface interface - so we can recurisvely import
@@ -492,7 +747,7 @@ class WorkflowPopulator(BaseWorkflowPopulator, ImporterGalaxyInterface):
         }
         data.update(**kwds)
         upload_response = self._post("workflows", data=data)
-        assert upload_response.status_code == 200, upload_response
+        assert upload_response.status_code == 200, upload_response.content
         return upload_response.json()
 
 
@@ -531,20 +786,16 @@ class LibraryPopulator(object):
             LIBRARY_ADD_in=perm_list,
             LIBRARY_MANAGE_in=perm_list,
         )
-        self.galaxy_interactor.post("libraries/%s/permissions" % library_id, data=permissions, admin=True)
+        response = self.galaxy_interactor.post("libraries/%s/permissions" % library_id, data=permissions, admin=True)
+        api_asserts.assert_status_code_is(response, 200)
 
     def user_email(self):
-        users_response = self.galaxy_interactor.get("users")
-        users = users_response.json()
-        assert len(users) == 1
-        return users[0]["email"]
+        # deprecated - use DatasetPopulator
+        return self.dataset_populator.user_email()
 
     def user_private_role_id(self):
-        user_email = self.user_email()
-        roles_response = self.galaxy_interactor.get("roles", admin=True)
-        users_roles = [r for r in roles_response.json() if r["name"] == user_email]
-        assert len(users_roles) == 1
-        return users_roles[0]["id"]
+        # deprecated - use DatasetPopulator
+        return self.dataset_populator.user_private_role_id()
 
     def create_dataset_request(self, library, **kwds):
         upload_option = kwds.get("upload_option", "upload_file")
@@ -585,7 +836,10 @@ class LibraryPopulator(object):
         wait_on_state(show, assert_ok=True, timeout=DEFAULT_TIMEOUT)
         return show().json()
 
-    def raw_library_contents_create(self, library_id, payload, files={}):
+    def raw_library_contents_create(self, library_id, payload, files=None):
+        if files is None:
+            files = {}
+
         url_rel = "libraries/%s/contents" % library_id
         return self.galaxy_interactor.post(url_rel, payload, files=files)
 
@@ -683,8 +937,15 @@ class BaseDatasetCollectionPopulator(object):
         return self.__create(payload)
 
     def create_list_of_pairs_in_history(self, history_id, **kwds):
-        pair1 = self.create_pair_in_history(history_id, **kwds).json()["id"]
-        return self.create_list_from_pairs(history_id, [pair1])
+        return self.upload_collection(history_id, "list:paired", elements=[
+            {
+                "name": "test0",
+                "elements": [
+                    {"src": "pasted", "paste_content": "TestData123", "name": "forward"},
+                    {"src": "pasted", "paste_content": "TestData123", "name": "reverse"},
+                ]
+            }
+        ])
 
     def create_list_of_list_in_history(self, history_id, **kwds):
         # create_nested_collection will generate nested collection from just datasets,
@@ -718,13 +979,91 @@ class BaseDatasetCollectionPopulator(object):
         )
         return self.__create(payload)
 
+    def upload_collection(self, history_id, collection_type, elements, **kwds):
+        payload = self.__create_payload_fetch(history_id, collection_type, contents=elements, **kwds)
+        return self.__create(payload)
+
     def create_list_payload(self, history_id, **kwds):
         return self.__create_payload(history_id, identifiers_func=self.list_identifiers, collection_type="list", **kwds)
 
     def create_pair_payload(self, history_id, **kwds):
         return self.__create_payload(history_id, identifiers_func=self.pair_identifiers, collection_type="paired", **kwds)
 
-    def __create_payload(self, history_id, identifiers_func, collection_type, **kwds):
+    def __create_payload(self, *args, **kwds):
+        direct_upload = kwds.pop("direct_upload", False)
+        if direct_upload:
+            return self.__create_payload_fetch(*args, **kwds)
+        else:
+            return self.__create_payload_collection(*args, **kwds)
+
+    def __create_payload_fetch(self, history_id, collection_type, **kwds):
+        files = []
+        contents = None
+        if "contents" in kwds:
+            contents = kwds["contents"]
+            del kwds["contents"]
+
+        elements = []
+        if contents is None:
+            if collection_type == "paired":
+                contents = [("forward", "TestData123"), ("reverse", "TestData123")]
+            elif collection_type == "list":
+                contents = ["TestData123", "TestData123", "TestData123"]
+            else:
+                raise Exception("Unknown collection_type %s" % collection_type)
+
+        if isinstance(contents, list):
+            for i, contents_level in enumerate(contents):
+                # If given a full collection definition pass as is.
+                if isinstance(contents_level, dict):
+                    elements.append(contents_level)
+                    continue
+
+                element = {"src": "pasted", "ext": "txt"}
+                # Else older style list of contents or element ID and contents,
+                # convert to fetch API.
+                if isinstance(contents_level, tuple):
+                    # (element_identifier, contents)
+                    element_identifier = contents_level[0]
+                    dataset_contents = contents_level[1]
+                else:
+                    dataset_contents = contents_level
+                    if collection_type == "list":
+                        element_identifier = "data%d" % i
+                    elif collection_type == "paired" and i == 0:
+                        element_identifier = "forward"
+                    else:
+                        element_identifier = "reverse"
+                element["name"] = element_identifier
+                element["paste_content"] = dataset_contents
+                elements.append(element)
+
+        name = kwds.get("name", "Test Dataset Collection")
+
+        files_request_part = {}
+        for i, content in enumerate(files):
+            files_request_part["files_%d|file_data" % i] = StringIO(content)
+
+        targets = [{
+            "destination": {"type": "hdca"},
+            "elements": elements,
+            "collection_type": collection_type,
+            "name": name,
+        }]
+        payload = dict(
+            history_id=history_id,
+            targets=json.dumps(targets),
+            __files=files_request_part,
+        )
+        return payload
+
+    def wait_for_fetched_collection(self, fetch_response):
+        self.dataset_populator.wait_for_job(fetch_response["jobs"][0]["id"], assert_ok=True)
+        initial_dataset_collection = fetch_response["outputs"][0]
+        dataset_collection = self.dataset_populator.get_history_collection_details(initial_dataset_collection["history_id"], hid=initial_dataset_collection["hid"])
+        return dataset_collection
+
+    def __create_payload_collection(self, history_id, identifiers_func, collection_type, **kwds):
         contents = None
         if "contents" in kwds:
             contents = kwds["contents"]
@@ -770,7 +1109,13 @@ class BaseDatasetCollectionPopulator(object):
         return element_identifiers
 
     def __create(self, payload):
-        return self._create_collection(payload)
+        # Create a colleciton - either from existing datasets using collection creation API
+        # or from direct uploads with the fetch API. Dispatch on "targets" keyword in payload
+        # to decide which to use.
+        if "targets" not in payload:
+            return self._create_collection(payload)
+        else:
+            return self.dataset_populator.fetch(payload)
 
     def __datasets(self, history_id, count, contents=None):
         datasets = []
@@ -821,25 +1166,35 @@ def load_data_dict(history_id, test_data, dataset_populator, dataset_collection_
             elements_data = value.get("elements", [])
             elements = []
             for element_data in elements_data:
-                identifier = element_data["identifier"]
+                # Adapt differences between test_data dict and fetch API description.
+                if "name" not in element_data:
+                    identifier = element_data["identifier"]
+                    element_data["name"] = identifier
                 input_type = element_data.get("type", "raw")
+                content = None
                 if input_type == "File":
                     content = read_test_data(element_data)
                 else:
                     content = element_data["content"]
-                elements.append((identifier, content))
+                if content is not None:
+                    element_data["src"] = "pasted"
+                    element_data["paste_content"] = content
+                elements.append(element_data)
             # TODO: make this collection_type
             collection_type = value["type"]
             new_collection_kwds = {}
             if "name" in value:
                 new_collection_kwds["name"] = value["name"]
             if collection_type == "list:paired":
-                hdca = dataset_collection_populator.create_list_of_pairs_in_history(history_id, **new_collection_kwds).json()
+                fetch_response = dataset_collection_populator.create_list_of_pairs_in_history(history_id, contents=elements, **new_collection_kwds).json()
             elif collection_type == "list":
-                hdca = dataset_collection_populator.create_list_in_history(history_id, contents=elements, **new_collection_kwds).json()
+                fetch_response = dataset_collection_populator.create_list_in_history(history_id, contents=elements, direct_upload=True, **new_collection_kwds).json()
             else:
-                hdca = dataset_collection_populator.create_pair_in_history(history_id, contents=elements, **new_collection_kwds).json()
-            label_map[key] = dataset_populator.ds_entry(hdca)
+                fetch_response = dataset_collection_populator.create_pair_in_history(history_id, contents=elements or None, direct_upload=True, **new_collection_kwds).json()
+            hdca_output = fetch_response["outputs"][0]
+            hdca = dataset_populator.ds_entry(hdca_output)
+            hdca["hid"] = hdca_output["hid"]
+            label_map[key] = hdca
             inputs[key] = hdca
             has_uploads = True
         elif is_dict and "type" in value:
@@ -885,14 +1240,17 @@ def wait_on_state(state_func, desc="state", skip_states=["running", "queued", "n
         return wait_on(get_state, desc=desc, timeout=timeout)
     except TimeoutAssertionError as e:
         response = state_func()
-        raise TimeoutAssertionError("%s Current response containing state [%s]." % (e.message, response.json()))
+        raise TimeoutAssertionError("%s Current response containing state [%s]." % (e, response.json()))
 
 
-class GiPostGetMixin:
+class GiPostGetMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to bioblend."""
 
-    def _get(self, route, data={}):
-        return self._gi.make_get_request(self.__url(route), data)
+    def _get(self, route, data=None):
+        if data is None:
+            data = {}
+
+        return self._gi.make_get_request(self.__url(route), data=data)
 
     def _post(self, route, data={}):
         data = data.copy()
@@ -925,6 +1283,7 @@ class GiDatasetCollectionPopulator(BaseDatasetCollectionPopulator, GiPostGetMixi
         """Construct a dataset collection populator from a bioblend GalaxyInstance."""
         self._gi = gi
         self.dataset_populator = GiDatasetPopulator(gi)
+        self.dataset_collection_populator = GiDatasetCollectionPopulator(gi)
 
     def _create_collection(self, payload):
         create_response = self._post("dataset_collections", data=payload)

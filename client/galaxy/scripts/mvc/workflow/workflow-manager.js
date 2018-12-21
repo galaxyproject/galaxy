@@ -1,8 +1,6 @@
+import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
 import * as Toastr from "libs/toastr";
-
-/* global $ */
-/* global Galaxy */
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -14,6 +12,7 @@ class Workflow {
         this.has_changes = false;
         this.active_form_has_changes = false;
         this.workflowOutputLabels = {};
+        this.workflow_version = 0;
     }
     canLabelOutputWith(label) {
         if (label) {
@@ -215,6 +214,7 @@ class Workflow {
         var max_id = offset;
         // First pass, nodes
         var using_workflow_outputs = false;
+        wf.workflow_version = data.version;
         $.each(data.steps, (id, step) => {
             var node = wf.app.prebuildNode(step.type, step.name, step.content_id);
             // If workflow being copied into another, wipe UUID and let
@@ -263,7 +263,10 @@ class Workflow {
                     $.each(v, (l, x) => {
                         var other_node = wf.nodes[parseInt(x.id) + offset];
                         var c = new Connector();
-                        c.connect(other_node.output_terminals[x.output_name], node.input_terminals[k]);
+                        c.connect(
+                            other_node.output_terminals[x.output_name],
+                            node.input_terminals[k]
+                        );
                         c.redraw();
                     });
                 }
@@ -273,8 +276,8 @@ class Workflow {
                 $.each(node.output_terminals, (ot_id, ot) => {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
-                        var callout = $(node.element).find(`.callout.${ot.name}`);
-                        callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                        var callout = $(node.element).find(`.callout-terminal.${ot.name.replace(/(?=[()])/g, "\\")}`);
+                        callout.find("icon").addClass("mark-terminal-active");
                         wf.has_changes = true;
                     }
                 });
@@ -436,6 +439,7 @@ class Workflow {
             return 0;
         }
         // Span of all elements
+        var canvasZoom = this.app.canvas_manager.canvasZoom;
         var bounds = this.bounds_for_all_nodes();
         var position = this.canvas_container.position();
         var parent = this.canvas_container.parent();
@@ -454,16 +458,16 @@ class Workflow {
         height = Math.max(height, -top + parent.height());
         // Grow the canvas container
         this.canvas_container.css({
-            left: left,
-            top: top,
+            left: left / canvasZoom,
+            top: top / canvasZoom,
             width: width,
             height: height
         });
         // Move elements back if needed
         this.canvas_container.children().each(function() {
             var p = $(this).position();
-            $(this).css("left", p.left + xmin_delta);
-            $(this).css("top", p.top + ymin_delta);
+            $(this).css("left", (p.left + xmin_delta) / canvasZoom);
+            $(this).css("top", (p.top + ymin_delta) / canvasZoom);
         });
     }
 }

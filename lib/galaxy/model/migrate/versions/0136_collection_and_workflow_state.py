@@ -93,14 +93,6 @@ def upgrade(migrate_engine):
     for table in tables.values():
         __create(table)
 
-    def nextval(table, col='id'):
-        if migrate_engine.name in ['postgres', 'postgresql']:
-            return "nextval('%s_%s_seq')" % (table, col)
-        elif migrate_engine.name in ['mysql', 'sqlite']:
-            return "null"
-        else:
-            raise Exception("Unhandled database type")
-
     # Set default for creation to scheduled, actual mapping has new as default.
     workflow_invocation_step_state_column = Column("state", TrimmedString(64), default="scheduled")
     if migrate_engine.name in ['postgres', 'postgresql']:
@@ -153,7 +145,7 @@ def downgrade(migrate_engine):
     __drop_column("element_count", "dataset_collection", metadata)
 
     tables = get_new_tables()
-    for table in reversed(tables.values()):
+    for table in reversed(list(tables.values())):
         __drop(table)
 
 

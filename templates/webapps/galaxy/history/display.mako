@@ -22,16 +22,10 @@
     encoded_history_id = history_dict[ 'id' ]
     switch_url = h.url_for( controller='history', action='switch_to_history', hist_id=encoded_history_id )
 %>
-    ## Needed to overwide initial width so that link is floated left appropriately.
     %if not user_is_owner:
-    <a class="history-copy-link" title="${_('Make a copy of this history and switch to it')}"
-       href="javascript:void(0)" style="width: 100%" >
-        ${_('Import history')}
-    </a>
+        <a href="javascript:void(0)" class="history-copy-link btn btn-secondary fa fa-plus float-right" title="Import history"></a>
     %else:
-    <a href="${switch_url}" style="width: 100%" title="${_('Make this history your current history')}">
-        ${_('Switch to this history')}
-    </a>
+        <a href="${switch_url}" class="btn btn-secondary fa fa-plus float-right" title="${_('Switch to this history')}"></a>
     %endif
 </%def>
 

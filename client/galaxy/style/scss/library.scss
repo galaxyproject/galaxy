@@ -1,5 +1,4 @@
-@import "galaxy_bootstrap/variables.scss";
-@import "galaxy_variables.scss";
+@import "theme/blue.scss";
 
 .library_style_container {
     width: 95%;
@@ -31,7 +30,7 @@
     }
     li.folderRow,
     li.datasetRow {
-        border-top: solid 1px $table-border;
+        border-top: solid 1px $table-border-color;
     }
     li.folderRow:hover,
     li.datasetRow:hover {
@@ -57,7 +56,7 @@
         a {
             color: #0a143d;
             &:hover {
-                color: maroon;
+                color: $brand-info;
             }
         }
     }

@@ -69,6 +69,9 @@ def verify(
             errmsg += str(err)
             raise AssertionError(errmsg)
 
+    if attributes is None:
+        attributes = {}
+
     if filename is not None:
         local_name = get_filename(filename)
         temp_name = make_temp_fname(fname=filename)
@@ -88,8 +91,6 @@ def verify(
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
         try:
-            if attributes is None:
-                attributes = {}
             compare = attributes.get('compare', 'diff')
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
                 local_fh, temp_name = _bam_to_sam(local_name, temp_name)
@@ -110,10 +111,6 @@ def verify(
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
                 raise Exception('Unimplemented Compare type: %s' % compare)
-            if verify_extra_files:
-                extra_files = attributes.get('extra_files', None)
-                if extra_files:
-                    verify_extra_files(extra_files)
         except AssertionError as err:
             errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
             errmsg += "( %s v. %s )\n" % (local_name, temp_name)
@@ -122,6 +119,11 @@ def verify(
         finally:
             if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
                 os.remove(temp_name)
+
+    if verify_extra_files:
+        extra_files = attributes.get('extra_files', None)
+        if extra_files:
+            verify_extra_files(extra_files)
 
 
 def make_temp_fname(fname=None):
@@ -190,6 +192,7 @@ def files_diff(file1, file2, attributes=None):
             else:
                 raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):
+            local_file.sort()
             history_data.sort()
         allowed_diff_count = int(attributes.get('lines_diff', 0))
         diff = list(difflib.unified_diff(local_file, history_data, "local_file", "history_data"))

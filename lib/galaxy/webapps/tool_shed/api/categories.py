@@ -103,7 +103,7 @@ class CategoriesController(BaseAPIController):
         """
         category_dicts = []
         deleted = util.asbool(deleted)
-        if deleted and not trans.user_is_admin():
+        if deleted and not trans.user_is_admin:
             raise exceptions.AdminRequiredException('Only administrators can query deleted categories.')
         for category in trans.sa_session.query(self.app.model.Category) \
                                         .filter(self.app.model.Category.table.c.deleted == deleted) \

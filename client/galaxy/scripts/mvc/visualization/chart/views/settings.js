@@ -26,7 +26,7 @@ export default Backbone.View.extend({
         } else {
             this.chart.settings.set("__use_panels", panel_option == "yes" ? "true" : "false");
         }
-        this.$el.empty().addClass("ui-margin-bottom");
+        this.$el.empty();
         if (_.size(inputs) > 0) {
             FormData.visitInputs(inputs, function(input, name) {
                 var model_value = self.chart.settings.get(name);
@@ -36,7 +36,6 @@ export default Backbone.View.extend({
             });
             this.form = new Form({
                 inputs: inputs,
-                cls: "ui-portlet-plain",
                 onchange: function() {
                     self.chart.settings.set(self.form.data.create());
                     self.chart.trigger("redraw");

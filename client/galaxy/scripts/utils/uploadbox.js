@@ -1,6 +1,11 @@
 /*
     galaxy upload plugins - requires FormData and XMLHttpRequest
 */
+
+import _ from "underscore";
+import jQuery from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+
 ($ => {
     // add event properties
     jQuery.event.props.push("dataTransfer");
@@ -111,7 +116,7 @@
             form.append("session_start", start);
             form.append("session_chunk", slicer.bind(file)(start, end));
             _uploadrequest({
-                url: `${Galaxy.root}api/uploads`,
+                url: `${getAppRoot()}api/uploads`,
                 data: form,
                 success: upload_response => {
                     var new_start = start + chunk_size;
@@ -127,7 +132,7 @@
                         };
                         data.payload.inputs = JSON.stringify(data.payload.inputs);
                         $.ajax({
-                            url: `${Galaxy.root}api/tools`,
+                            url: `${getAppRoot()}api/tools`,
                             method: "POST",
                             data: data.payload,
                             success: tool_response => {
@@ -157,7 +162,7 @@
                 },
                 progress: e => {
                     if (e.lengthComputable) {
-                        cnf.progress(Math.min(Math.round((start + e.loaded) * 100 / file.size), 100));
+                        cnf.progress(Math.min(Math.round(((start + e.loaded) * 100) / file.size), 100));
                     }
                 }
             });
@@ -218,7 +223,7 @@
             error: cnf.error,
             progress: e => {
                 if (e.lengthComputable) {
-                    cnf.progress(Math.round(e.loaded * 100 / e.total));
+                    cnf.progress(Math.round((e.loaded * 100) / e.total));
                 }
             }
         });

@@ -5,6 +5,7 @@ from __future__ import absolute_import
 
 import codecs
 import gzip
+import io
 import logging
 import os
 import re
@@ -18,7 +19,10 @@ from six.moves import filter
 from six.moves.urllib.request import urlopen
 
 from galaxy import util
-from galaxy.util import compression_utils
+from galaxy.util import (
+    compression_utils,
+    smart_str
+)
 from galaxy.util.checkers import (
     check_binary,
     check_bz2,
@@ -70,14 +74,14 @@ def stream_to_open_named_file(stream, fd, filename, source_encoding=None, source
             break
         if not data_checked:
             # See if we're uploading a compressed file
-            if zipfile.is_zipfile(filename):
-                is_compressed = True
-            else:
-                try:
-                    if text_type(chunk[:2]) == text_type(util.gzip_magic):
-                        is_compressed = True
-                except Exception:
-                    pass
+            try:
+                # Convert chunk to a bytestring if it is not already.
+                # Check if the first 2 bytes of the chunk are equal to the
+                # gzip magic number.
+                if smart_str(chunk)[:2] == util.gzip_magic:
+                    is_compressed = True
+            except Exception:
+                pass
             if not is_compressed:
                 is_binary = util.is_binary(chunk)
             data_checked = True
@@ -105,16 +109,17 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     to Posix line endings.
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write("1 2\\r3 4")
     >>> convert_newlines(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
     '1 2\\n3 4\\n'
     """
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with os.fdopen(fd, "wt") as fp:
+    with io.open(fd, mode="wt", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(open(fname, "U")):
+        for i, line in enumerate(io.open(fname, mode="U", encoding='utf-8')):
             fp.write("%s\n" % line.rstrip("\r\n"))
     if i is None:
         i = 0
@@ -128,12 +133,13 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
         return (i, temp_name)
 
 
-def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
+def sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Transforms in place a 'sep' separated file to a tab separated one
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\n3 4\\n")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write(u"1 2\\n3 4\\n")
     >>> sep2tabs(fname)
     (2, None)
     >>> open(fname).read()
@@ -141,17 +147,17 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with os.fdopen(fd, "wt") as fp:
+    with io.open(fd, mode="wt", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(open(fname)):
+        for i, line in enumerate(io.open(fname, encoding='utf-8')):
             if line.endswith("\r"):
                 line = line.rstrip('\r')
                 elems = regexp.split(line)
-                fp.write("%s\r" % '\t'.join(elems))
+                fp.write(u"%s\r" % '\t'.join(elems))
             else:
                 line = line.rstrip('\n')
                 elems = regexp.split(line)
-                fp.write("%s\n" % '\t'.join(elems))
+                fp.write(u"%s\n" % '\t'.join(elems))
     if i is None:
         i = 0
     else:
@@ -164,13 +170,14 @@ def sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxuplo
         return (i, temp_name)
 
 
-def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, tmp_prefix="gxupload"):
+def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, tmp_prefix="gxupload"):
     """
     Combines above methods: convert_newlines() and sep2tabs()
     so that files do not need to be read twice
 
     >>> fname = get_test_fname('temp.txt')
-    >>> open(fname, 'wt').write("1 2\\r3 4")
+    >>> with open(fname, 'wt') as fh:
+    ...     _ = fh.write(u"1 2\\r3 4")
     >>> convert_newlines_sep2tabs(fname, tmp_prefix="gxtest", tmp_dir=tempfile.gettempdir())
     (2, None)
     >>> open(fname).read()
@@ -178,11 +185,11 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt="\\s+", tmp_dir=None, t
     """
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
-    with os.fdopen(fd, "wt") as fp:
-        for i, line in enumerate(open(fname, "U")):
+    with io.open(fd, mode="wt", encoding='utf-8') as fp:
+        for i, line in enumerate(codecs.open(fname, mode="U", encoding='utf-8')):
             line = line.rstrip('\r\n')
             elems = regexp.split(line)
-            fp.write("%s\n" % '\t'.join(elems))
+            fp.write(u"%s\n" % '\t'.join(elems))
     if in_place:
         shutil.move(temp_name, fname)
         # Return number of lines in file.
@@ -248,7 +255,7 @@ def is_column_based(fname_or_file_prefix, sep='\t', skip=0):
     False
     >>> is_column_based(fname, sep=' ')
     True
-    >>> fname = get_test_fname('test_ensembl.tab')
+    >>> fname = get_test_fname('test_ensembl.tabular')
     >>> is_column_based(fname)
     True
     >>> fname = get_test_fname('test_tab1.tabular')
@@ -290,13 +297,16 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
     >>> datatypes_registry = example_datatype_registry_for_sample()
     >>> sniff_order = datatypes_registry.sniff_order
+    >>> fname = get_test_fname('empty.txt')
+    >>> guess_ext(fname, sniff_order)
+    'txt'
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
     'blastxml'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname, sniff_order)
     'interval'
-    >>> fname = get_test_fname('interval1.bed')
+    >>> fname = get_test_fname('interv1.bed')
     >>> guess_ext(fname, sniff_order)
     'bed'
     >>> fname = get_test_fname('test_tab.bed')
@@ -323,7 +333,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('test.gff')
     >>> guess_ext(fname, sniff_order)
     'gff'
-    >>> fname = get_test_fname('gff_version_3.gff')
+    >>> fname = get_test_fname('gff.gff3')
     >>> guess_ext(fname, sniff_order)
     'gff3'
     >>> fname = get_test_fname('2.txt')
@@ -350,7 +360,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('3unsorted.bam')
     >>> guess_ext(fname, sniff_order)
     'unsorted.bam'
-    >>> fname = get_test_fname('test.idpDB')
+    >>> fname = get_test_fname('test.idpdb')
     >>> guess_ext(fname, sniff_order)
     'idpdb'
     >>> fname = get_test_fname('test.mz5')
@@ -409,10 +419,10 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('diamond_db.dmnd')
     >>> guess_ext(fname, sniff_order)
     'dmnd'
-    >>> fname = get_test_fname('1.xls')
-    >>> guess_ext(fname, sniff_order)
+    >>> fname = get_test_fname('1.excel.xls')
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'excel.xls'
-    >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom')
+    >>> fname = get_test_fname('biom2_sparse_otu_table_hdf5.biom2')
     >>> guess_ext(fname, sniff_order)
     'biom2'
     >>> fname = get_test_fname('454Score.pdf')
@@ -430,7 +440,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> fname = get_test_fname('1.owl')
     >>> guess_ext(fname, sniff_order)
     'owl'
-    >>> fname = get_test_fname('Acanium.hmm')
+    >>> fname = get_test_fname('Acanium.snaphmm')
     >>> guess_ext(fname, sniff_order)
     'snaphmm'
     >>> fname = get_test_fname('wiggle.wig')
@@ -458,7 +468,7 @@ def guess_ext(fname, sniff_order, is_binary=False):
     >>> guess_ext(fname, sniff_order)
     'ttl'
     >>> fname = get_test_fname('1.hdt')
-    >>> guess_ext(fname, sniff_order)
+    >>> guess_ext(fname, sniff_order, is_binary=True)
     'hdt'
     >>> fname = get_test_fname('1.phyloxml')
     >>> guess_ext(fname, sniff_order)
@@ -593,10 +603,11 @@ class FilePrefix(object):
 
     def line_iterator(self):
         s = self.string_io()
+        s_len = len(s.getvalue())
         for line in s:
             if line.endswith("\n") or line.endswith("\r"):
                 yield line
-            elif s.pos == s.len and not self.truncated:
+            elif s.tell() == s_len and not self.truncated:
                 # At the end, return the last line if it wasn't truncated when reading it in.
                 yield line
 
@@ -749,6 +760,14 @@ def handle_uploaded_dataset_file_internal(
 
         # This needs to be checked again after decompression
         is_binary = check_binary(converted_path)
+        guessed_ext = ext
+        if ext in AUTO_DETECT_EXTENSIONS:
+            guessed_ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
+            guessed_datatype = datatypes_registry.get_datatype_by_extension(guessed_ext)
+            if not is_binary and guessed_datatype.is_binary:
+                # It's possible to have a datatype that is binary but not within the first 1024 bytes,
+                # so check_binary might return a false negative. This is for instance true for PDF files
+                is_binary = True
 
         if not is_binary and (convert_to_posix_lines or convert_spaces_to_tabs):
             # Convert universal line endings to Posix line endings, spaces to tabs (if desired)
@@ -761,9 +780,10 @@ def handle_uploaded_dataset_file_internal(
                 if converted_path and filename != converted_path:
                     os.unlink(converted_path)
                 converted_path = _converted_path
-
-        if ext in AUTO_DETECT_EXTENSIONS:
-            ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
+            if ext in AUTO_DETECT_EXTENSIONS:
+                ext = guess_ext(converted_path, sniff_order=datatypes_registry.sniff_order, is_binary=is_binary)
+        else:
+            ext = guessed_ext
 
         if not is_binary and check_content and check_html(converted_path):
             raise InappropriateDatasetContentError('The uploaded file contains invalid HTML content')

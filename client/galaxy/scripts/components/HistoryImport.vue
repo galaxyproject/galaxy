@@ -14,7 +14,12 @@
     </b-form>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
+import Vue from "vue";
+import BootstrapVue from "bootstrap-vue";
+
+Vue.use(BootstrapVue);
 
 export default {
     data() {
@@ -39,15 +44,15 @@ export default {
                 formData.append("archive_file", this.sourceFile);
                 formData.append("archive_source", this.sourceURL);
                 axios
-                    .post(`${Galaxy.root}api/histories`, formData)
+                    .post(`${getAppRoot()}api/histories`, formData)
                     .then(response => {
-                        window.location = `${Galaxy.root}histories/list?message=${
+                        window.location = `${getAppRoot()}histories/list?message=${
                             response.data.message
                         }&status=success`;
                     })
-                    .catch(response => {
-                        let message = response.responseJSON && response.responseJSON.err_msg;
-                        this.errorMessage = message || "Import failed for unkown reason.";
+                    .catch(error => {
+                        let message = error.response.data && error.response.data.err_msg;
+                        this.errorMessage = message || "Import failed for an unknown reason.";
                     });
             }
         }

@@ -12,6 +12,7 @@
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="library_data.xml"/>
+  <tool file="remove_value.xml"/>
   <tool file="bibtex.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -27,8 +28,12 @@
   <tool file="tool_provided_metadata_7.xml" />
   <tool file="tool_provided_metadata_8.xml" />
   <tool file="tool_provided_metadata_9.xml" />
+  <tool file="tool_provided_metadata_10.xml" />
+  <tool file="tool_provided_metadata_11.xml" />
+  <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
+  <tool file="inputs_as_json_with_paths.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_output_action.xml" />
@@ -60,6 +65,7 @@
   <tool file="version_command_tool_dir.xml" />
   <tool file="exit_code_oom.xml" />
   <tool file="exit_code_from_file.xml" />
+  <tool file="exit_code_from_env.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
@@ -83,6 +89,7 @@
   <tool file="paths_as_file.xml" />
   <tool file="param_text_option.xml" />
   <tool file="column_param.xml" />
+  <tool file="column_param_configfile.xml" />
   <tool file="column_multi_param.xml" />
   <tool file="special_params.xml" />
   <tool file="section.xml" />
@@ -98,6 +105,7 @@
   <tool file="identifier_source.xml" />
   <tool file="identifier_single.xml" />
   <tool file="identifier_single_in_repeat.xml" />
+  <tool file="identifier_in_conditional.xml" />
   <tool file="identifier_multiple.xml" />
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
@@ -129,6 +137,8 @@
   <tool file="collection_type_source_map_over.xml" />
   <tool file="collection_creates_list_fail.xml" />
   <tool file="collection_creates_dynamic_nested_fail.xml" />
+  <tool file="collection_cat_group_tag.xml" />
+  <tool file="collection_cat_group_tag_multiple.xml" />
   <tool file="cheetah_casting.xml" />
 
   <tool file="cheetah_problem_unbound_var.xml" />
@@ -153,6 +163,7 @@
   <tool file="for_workflows/pileup.xml" />
   <tool file="for_workflows/mapper.xml" />
   <tool file="for_workflows/mapper2.xml" />
+  <tool file="for_workflows/mapper_two.xml" />
   <tool file="for_workflows/split.xml" />
   <tool file="for_workflows/empty_list.xml" />
   <tool file="for_workflows/count_list.xml" />
@@ -183,6 +194,7 @@
   <tool file="${model_tools_path}/unzip_collection.xml" />
   <tool file="${model_tools_path}/zip_collection.xml" />
   <tool file="${model_tools_path}/filter_failed_collection.xml" />
+  <tool file="${model_tools_path}/filter_empty_collection.xml" />
   <tool file="${model_tools_path}/flatten_collection.xml" />
   <tool file="${model_tools_path}/sort_collection_list.xml" />
   <tool file="${model_tools_path}/merge_collection.xml" />
@@ -190,5 +202,7 @@
   <tool file="${model_tools_path}/filter_from_file.xml" />
   <tool file="${model_tools_path}/tag_collection_from_file.xml" />
   <tool file="${model_tools_path}/apply_rules.xml" />
+  <tool file="${model_tools_path}/build_list.xml" />
+  <tool file="${model_tools_path}/extract_dataset.xml" />
 
 </toolbox>

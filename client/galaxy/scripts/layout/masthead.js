@@ -1,14 +1,15 @@
-import * as Backbone from "backbone";
+import $ from "jquery";
+import Backbone from "backbone";
 import Menu from "layout/menu";
 import Scratchbook from "layout/scratchbook";
 import QuotaMeter from "mvc/user/user-quotameter";
-
-/* global Galaxy */
-/* global $ */
+import { getGalaxyInstance } from "app";
 
 /** Masthead **/
 var View = Backbone.View.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
+
         var self = this;
         this.options = options;
         this.setElement(this._template());
@@ -96,7 +97,7 @@ var View = Backbone.View.extend({
     /** body template */
     _template: function() {
         return `
-            <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
+            <nav id="masthead" class="navbar navbar-expand justify-content-center navbar-dark">
                 <a class="navbar-brand">
                     <img class="navbar-brand-image"/>
                     <span class="navbar-brand-title"/>

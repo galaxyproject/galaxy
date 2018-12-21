@@ -1,5 +1,8 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
@@ -11,8 +14,6 @@ import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
-/* global $ */
-/* global Galaxy */
 // TODO: make show_message and the other utility functions importable/used
 // everywhere, instead of this global model
 /* global show_message */
@@ -94,6 +95,7 @@ export default Backbone.View.extend({
                 window.document.location = self.urls.workflow_index;
             }
         };
+        var workflow_index = self.urls.workflow_index;
         var save_current_workflow = (eventObj, success_callback) => {
             show_message("Saving workflow", "progress");
             self.workflow.check_changes_in_active_form();
@@ -106,7 +108,7 @@ export default Backbone.View.extend({
             }
             self.workflow.rectify_workflow_outputs();
             Utils.request({
-                url: `${Galaxy.root}api/workflows/${self.options.id}`,
+                url: `${getAppRoot()}api/workflows/${self.options.id}`,
                 type: "PUT",
                 data: { workflow: self.workflow.to_simple() },
                 success: function(data) {
@@ -126,7 +128,9 @@ export default Backbone.View.extend({
                     self.workflow.name = data.name;
                     self.workflow.has_changes = false;
                     self.workflow.stored = true;
+                    self.workflow.workflow_version = data.version;
                     self.showWorkflowParameters();
+                    self.build_version_select();
                     if (data.errors) {
                         window.show_modal("Saving workflow", body, {
                             Ok: hide_modal
@@ -253,7 +257,7 @@ export default Backbone.View.extend({
         // get available datatypes for post job action options
         this.datatypes = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes`,
+                url: `${getAppRoot()}api/datatypes`,
                 async: false
             }).responseText
         );
@@ -261,7 +265,7 @@ export default Backbone.View.extend({
         // get datatype mapping options
         this.datatypes_mapping = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes/mapping`,
+                url: `${getAppRoot()}api/datatypes/mapping`,
                 async: false
             }).responseText
         );
@@ -270,58 +274,128 @@ export default Backbone.View.extend({
         this.ext_to_type = this.datatypes_mapping.ext_to_class_name;
         this.type_to_type = this.datatypes_mapping.class_to_classes;
 
-        // Load workflow definition
-        this._workflowLoadAjax(self.options.id, {
-            success: function(data) {
-                self.reset();
-                self.workflow.from_simple(data, true);
-                self.workflow.has_changes = false;
-                self.workflow.fit_canvas_to_nodes();
-                self.scroll_to_nodes();
-                self.canvas_manager.draw_overview();
-                // Determine if any parameters were 'upgraded' and provide message
-                var upgrade_message = "";
-                _.each(data.steps, (step, step_id) => {
-                    var details = "";
-                    if (step.errors) {
-                        details += `<li>${step.errors}</li>`;
-                    }
-                    _.each(data.upgrade_messages[step_id], m => {
-                        details += `<li>${m}</li>`;
-                    });
-                    if (details) {
-                        upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
-                            self.workflow.nodes[step_id].name
-                        }<ul>${details}</ul></li>`;
-                    }
-                });
-                if (upgrade_message) {
-                    window.show_modal(
-                        "Issues loading this workflow",
-                        `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
-                        { Continue: hide_modal }
-                    );
-                } else {
-                    hide_modal();
-                }
-                self.showWorkflowParameters();
-            },
-            beforeSubmit: function(data) {
-                show_message("Loading workflow", "progress");
-            }
-        });
+        this.get_workflow_versions = function() {
+            let _workflow_version_dropdown = {};
+            let workflow_versions = JSON.parse(
+                $.ajax({
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
+                    async: false
+                }).responseText
+            );
 
+            for (let i = 0; i < workflow_versions.length; i++) {
+                let current_wf = workflow_versions[i];
+                let version_text = `Version ${current_wf["version"]}, ${current_wf["steps"]} steps`;
+                let selected = false;
+                if (i == self.workflow.workflow_version) {
+                    version_text = `${version_text} (active)`;
+                    selected = true;
+                }
+                _workflow_version_dropdown[version_text] = {
+                    version: i,
+                    selected: selected
+                };
+            }
+            return _workflow_version_dropdown;
+        };
+
+        this.build_version_select = function() {
+            let versions = this.get_workflow_versions();
+            $("#workflow-version-switch").empty();
+            $.each(versions, function(k, v) {
+                $("#workflow-version-switch").append(
+                    $("<option></option>")
+                        .html(k)
+                        .val(v.version)
+                        .selected(v.selected)
+                );
+            });
+            $("#workflow-version-switch").on("change", function() {
+                $("#workflow-version-switch").unbind("change");
+                if (this.value != self.workflow.workflow_version) {
+                    if (self.workflow && self.workflow.has_changes) {
+                        let r = confirm("There are unsaved changes to your workflow which will be lost. Continue ?");
+                        if (r == false) {
+                            // We rebuild the version select list, to reset the selected version
+                            self.build_version_select();
+                            return;
+                        }
+                    }
+                    self.load_workflow(self.options.id, this.value);
+                }
+            });
+        };
+
+        this.load_workflow = function load_workflow(id, version) {
+            this._workflowLoadAjax(id, version, {
+                success: function(data) {
+                    self.reset();
+                    self.workflow.from_simple(data, true);
+                    self.workflow.has_changes = false;
+                    self.workflow.fit_canvas_to_nodes();
+                    self.scroll_to_nodes();
+                    self.canvas_manager.draw_overview();
+                    // make_popupmenu($("#workflow-versions-switch"), self.get_workflow_versions());
+                    self.build_version_select();
+
+                    // Determine if any parameters were 'upgraded' and provide message
+                    var upgrade_message = "";
+                    _.each(data.steps, (step, step_id) => {
+                        var details = "";
+                        if (step.errors) {
+                            details += `<li>${step.errors}</li>`;
+                        }
+                        _.each(data.upgrade_messages[step_id], m => {
+                            details += `<li>${m}</li>`;
+                        });
+                        if (details) {
+                            upgrade_message += `<li>Step ${parseInt(step_id, 10) + 1}: ${
+                                self.workflow.nodes[step_id].name
+                            }<ul>${details}</ul></li>`;
+                        }
+                    });
+                    if (upgrade_message) {
+                        window.show_modal(
+                            "Issues loading this workflow",
+                            `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
+                            { Continue: hide_modal }
+                        );
+                    } else {
+                        hide_modal();
+                    }
+                    self.showWorkflowParameters();
+                },
+                error: function(response) {
+                    window.show_modal("Loading workflow failed.", response.err_msg, {
+                        Ok: function(response) {
+                            window.onbeforeunload = undefined;
+                            window.document.location = workflow_index;
+                        }
+                    });
+                },
+                beforeSubmit: function(data) {
+                    show_message("Loading workflow", "progress");
+                }
+            });
+        };
+
+        // Load workflow definition
+        this.load_workflow(self.options.id, self.options.version);
         if (window.make_popupmenu) {
             make_popupmenu($("#workflow-options-button"), {
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
                 Run: function() {
-                    window.location = `${Galaxy.root}workflows/run?id=${self.options.id}`;
+                    window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`;
                 },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
                 },
                 "Auto Re-layout": layout_editor,
+                Download: {
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
+                    action: function() {}
+                },
                 Close: close_editor
             });
         }
@@ -352,7 +426,7 @@ export default Backbone.View.extend({
                     })
                         .done(id => {
                             window.onbeforeunload = undefined;
-                            window.location = `${Galaxy.root}workflow/editor?id=${id}`;
+                            window.location = `${getAppRoot()}workflow/editor?id=${id}`;
                             hide_modal();
                         })
                         .fail(() => {
@@ -372,48 +446,20 @@ export default Backbone.View.extend({
         }
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = $.jStorage.get("overview-size");
+        var overview_size = localStorage.getItem("overview-size");
         if (overview_size !== undefined) {
-            $("#overview-border").css({
+            $(".workflow-overview").css({
                 width: overview_size,
                 height: overview_size
             });
         }
 
-        // Show viewport on load unless pref says it's off
-        if ($.jStorage.get("overview-off")) {
-            hide_overview();
-        } else {
-            show_overview();
-        }
-
         // Stores the size of the overview into local storage when it's resized
-        $("#overview-border").bind("dragend", function(e, d) {
+        $(".workflow-overview").bind("dragend", function(e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            $.jStorage.set("overview-size", `${new_size}px`);
-        });
-
-        function show_overview() {
-            $.jStorage.set("overview-off", false);
-            $("#overview-border").css("right", "0px");
-            $("#close-viewport").css("background-position", "0px 0px");
-        }
-
-        function hide_overview() {
-            $.jStorage.set("overview-off", true);
-            $("#overview-border").css("right", "20000px");
-            $("#close-viewport").css("background-position", "12px 0px");
-        }
-
-        // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
-        $("#close-viewport").click(() => {
-            if ($("#overview-border").css("right") === "0px") {
-                hide_overview();
-            } else {
-                show_overview();
-            }
+            localStorage.setItem("overview-size", `${new_size}px`);
         });
 
         // Unload handler
@@ -481,11 +527,12 @@ export default Backbone.View.extend({
         );
         _.each(this.options.workflows, workflow => {
             if (workflow.id !== self.options.id) {
-                var copy = new Ui.ButtonIcon({
+                var copy = new Ui.Button({
                     icon: "fa fa-copy",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
+                        let Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
@@ -526,7 +573,7 @@ export default Backbone.View.extend({
     copy_into_workflow: function(workflowId) {
         // Load workflow definition
         var self = this;
-        this._workflowLoadAjax(workflowId, {
+        this._workflowLoadAjax(workflowId, None, {
             success: function(data) {
                 self.workflow.from_simple(data, false);
                 // Determine if any parameters were 'upgraded' and provide message
@@ -580,11 +627,11 @@ export default Backbone.View.extend({
         cc.css({ left: left, top: top });
     },
 
-    _workflowLoadAjax: function(workflowId, options) {
+    _workflowLoadAjax: function(workflowId, version, options) {
         $.ajax(
             Utils.merge(options, {
                 url: this.urls.load_workflow,
-                data: { id: workflowId, _: "true" },
+                data: { id: workflowId, _: "true", version: version },
                 dataType: "json",
                 cache: false
             })
@@ -595,7 +642,7 @@ export default Backbone.View.extend({
         var self = this;
         Utils.request({
             type: "POST",
-            url: `${Galaxy.root}api/workflows/build_module`,
+            url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
                 node.init_field_data(data);
@@ -661,9 +708,11 @@ export default Backbone.View.extend({
                 $.each(node.post_job_actions, (k, pja) => {
                     if (pja.action_arguments) {
                         $.each(pja.action_arguments, (k, action_argument) => {
-                            var arg_matches = action_argument.match(parameter_re);
-                            if (arg_matches) {
-                                matches = matches.concat(arg_matches);
+                            if (typeof action_argument === "string") {
+                                let arg_matches = action_argument.match(parameter_re);
+                                if (arg_matches) {
+                                    matches = matches.concat(arg_matches);
+                                }
                             }
                         });
                     }
@@ -698,13 +747,14 @@ export default Backbone.View.extend({
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
+        let Galaxy = getGalaxyInstance();
         if (content && $container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;
             content.workflow = this.workflow;
             content.datatypes = this.datatypes;
             content.icon = WorkflowIcons[node.type];
-            content.cls = "ui-portlet-narrow";
+            content.cls = "ui-portlet-section";
             if (node) {
                 var form_type = node.type == "tool" ? "Tool" : "Default";
                 $el.append(new FormWrappers[form_type](content).form.$el);
@@ -737,9 +787,7 @@ export default Backbone.View.extend({
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp = `<div><img height='16' align='middle' src='${
-            Galaxy.root
-        }static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
+        var tmp = `<div><img height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width
         // Now add floats
@@ -774,10 +822,9 @@ export default Backbone.View.extend({
         buttons.prependTo($f.find(".toolFormTitle"));
         width += buttons.width() + 10;
         $f.css("width", width);
-        $f
-            .bind("dragstart", () => {
-                self.workflow.activate_node(node);
-            })
+        $f.bind("dragstart", () => {
+            self.workflow.activate_node(node);
+        })
             .bind("dragend", function() {
                 self.workflow.node_changed(this);
                 self.workflow.fit_canvas_to_nodes();
@@ -791,9 +838,9 @@ export default Backbone.View.extend({
                 var po = $(this)
                     .offsetParent()
                     .offset();
-
-                var x = d.offsetX - po.left;
-                var y = d.offsetY - po.top;
+                // Find relative offset and scale by zoom
+                var x = (d.offsetX - po.left) / self.canvas_manager.canvasZoom;
+                var y = (d.offsetY - po.top) / self.canvas_manager.canvasZoom;
                 $(this).css({ left: x, top: y });
                 // Redraw
                 $(this)

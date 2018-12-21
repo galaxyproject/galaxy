@@ -1,13 +1,13 @@
 /** Masthead Collection **/
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
 import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
-import _l from "utils/localization";
 import Utils from "utils/utils";
-
-/* global Galaxy */
-/* global $ */
 
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
@@ -19,6 +19,8 @@ var Collection = Backbone.Collection.extend({
     fetch: function(options) {
         options = options || {};
         this.reset();
+
+        let Galaxy = getGalaxyInstance();
 
         //
         // Chat server tab
@@ -33,7 +35,8 @@ var Collection = Backbone.Collection.extend({
             id: "analysis",
             title: _l("Analyze Data"),
             url: "",
-            tooltip: _l("Analysis home view")
+            tooltip: _l("Analysis home view"),
+            target: "__use_router__"
         });
 
         //
@@ -44,7 +47,8 @@ var Collection = Backbone.Collection.extend({
             title: _l("Workflow"),
             tooltip: _l("Chain tools into workflows"),
             disabled: !Galaxy.user.id,
-            url: "workflows/list"
+            url: "workflows/list",
+            target: "__use_router__"
         });
 
         //
@@ -58,7 +62,8 @@ var Collection = Backbone.Collection.extend({
             menu: [
                 {
                     title: _l("Create Visualization"),
-                    url: "visualizations"
+                    url: "visualizations",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Interactive Environments"),
@@ -83,19 +88,23 @@ var Collection = Backbone.Collection.extend({
                 },
                 {
                     title: _l("Histories"),
-                    url: "histories/list_published"
+                    url: "histories/list_published",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Workflows"),
-                    url: "workflows/list_published"
+                    url: "workflows/list_published",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Visualizations"),
-                    url: "visualizations/list_published"
+                    url: "visualizations/list_published",
+                    target: "__use_router__"
                 },
                 {
                     title: _l("Pages"),
-                    url: "pages/list_published"
+                    url: "pages/list_published",
+                    target: "__use_router__"
                 }
             ]
         });
@@ -120,6 +129,7 @@ var Collection = Backbone.Collection.extend({
                             };
 
                             // Galaxy.page is undefined for data libraries, workflows pages
+                            let Galaxy = getGalaxyInstance();
                             if (Galaxy.page) {
                                 Galaxy.page.masthead.collection.add(obj);
                             } else if (Galaxy.masthead) {
@@ -212,6 +222,13 @@ var Collection = Backbone.Collection.extend({
                 target: "_blank"
             });
         }
+        if (options.helpsite_url) {
+            helpTab.menu.unshift({
+                title: _l("Galaxy Help"),
+                url: options.helpsite_url,
+                target: "_blank"
+            });
+        }
         this.add(helpTab);
 
         //
@@ -263,11 +280,13 @@ var Collection = Backbone.Collection.extend({
                     },
                     {
                         title: _l("Preferences"),
-                        url: "user"
+                        url: "user",
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Custom Builds"),
-                        url: "custom_builds"
+                        url: "custom_builds",
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Logout"),
@@ -278,22 +297,22 @@ var Collection = Backbone.Collection.extend({
                     {
                         title: _l("Saved Datasets"),
                         url: "datasets/list",
-                        target: "_top"
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Saved Histories"),
                         url: "histories/list",
-                        target: "_top"
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Saved Pages"),
                         url: "pages/list",
-                        target: "_top"
+                        target: "__use_router__"
                     },
                     {
                         title: _l("Saved Visualizations"),
                         url: "visualizations/list",
-                        target: "_top"
+                        target: "__use_router__"
                     }
                 ]
             };
@@ -400,7 +419,16 @@ var Tab = Backbone.View.extend({
                 if (options.onclick) {
                     options.onclick();
                 } else {
-                    Galaxy.frame.add(options);
+                    let Galaxy = getGalaxyInstance();
+                    if (options.target == "__use_router__" && typeof Galaxy.page != "undefined") {
+                        Galaxy.page.router.push(options.url);
+                    } else {
+                        try {
+                            Galaxy.frame.add(options);
+                        } catch (err) {
+                            console.warn("Missing frame element on galaxy instance", err);
+                        }
+                    }
                 }
             });
     },
@@ -409,7 +437,7 @@ var Tab = Backbone.View.extend({
         return $("<div/>")
             .append(
                 $("<a/>")
-                    .attr("href", Galaxy.root + url)
+                    .attr("href", getAppRoot() + url)
                     .html(label)
             )
             .html();
@@ -430,7 +458,12 @@ var Tab = Backbone.View.extend({
                 if (model.get("onclick")) {
                     model.get("onclick")();
                 } else {
-                    Galaxy.frame.add(model.attributes);
+                    let Galaxy = getGalaxyInstance();
+                    if (model.attributes.target == "__use_router__" && typeof Galaxy.page != "undefined") {
+                        Galaxy.page.router.push(model.attributes.url);
+                    } else {
+                        Galaxy.frame.add(model.attributes);
+                    }
                 }
             } else {
                 model.set("show_menu", true);
@@ -457,7 +490,7 @@ var Tab = Backbone.View.extend({
 
     /** Url formatting */
     _formatUrl: function(url) {
-        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? Galaxy.root + url : url;
+        return typeof url == "string" && url.indexOf("//") === -1 && url.charAt(0) != "/" ? getAppRoot() + url : url;
     },
 
     /** body tempate */

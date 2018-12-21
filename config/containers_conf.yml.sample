@@ -97,12 +97,12 @@ containers:
         #     - tcp://swarm2.example.org:2376
         #host: null
 
-        # [`--resverve-cpu` and `--limit-cpu`] Reserve the given number of CPUs when containers are run to prevent other
+        # [`--reserve-cpu` and `--limit-cpu`] Reserve the given number of CPUs when containers are run to prevent other
         # containers from being scheduled on the same node once all of its CPUs are allocated. Additionally, prevent
         # container from using more than the given number of CPUs.
         #cpus: null
 
-        # [`--resverve-memory` and `--limit-memory`] Reserve the given amount of memory when containers are run to
+        # [`--reserve-memory` and `--limit-memory`] Reserve the given amount of memory when containers are run to
         # prevent other containers from being scheduled on the same node once all of its memory is allocated.
         # Additionally, prevent container from using more than the given amount of memory.
         #memory: null

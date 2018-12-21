@@ -1,5 +1,9 @@
 /** Workflow view */
+import _ from "underscore";
+import Backbone from "backbone";
+// import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
+
 /** Build messages after user action */
 function build_messages(self) {
     var $el_message = self.$el.find(".response-message");
@@ -29,7 +33,7 @@ var View = Backbone.View.extend({
         self.$el.empty().append("<h1>Testing</h1>");
         //var self = this,
         //min_query_length = 3;
-        //$.getJSON( Galaxy.root + 'api/workflows/', function( workflows ) {
+        //$.getJSON( getAppRoot() + 'api/workflows/', function( workflows ) {
         //var $el_workflow = null;
         //// Add workflow header
         //// Add user actions message if any

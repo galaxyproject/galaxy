@@ -23,15 +23,12 @@ class ContainerResolver(Dictifiable):
         self.app_info = app_info
         self.resolver_kwds = kwds
 
-    def _get_config_option(self, key, default=None, config_prefix=None, **kwds):
+    def _get_config_option(self, key, default=None):
         """Look in resolver-specific settings for option and then fallback to
         global settings.
         """
-        global_key = "%s_%s" % (config_prefix, key)
-        if key in kwds:
-            return kwds.get(key)
-        elif self.app_info and hasattr(self.app_info, global_key):
-            return getattr(self.app_info, global_key)
+        if self.app_info and hasattr(self.app_info, key):
+            return getattr(self.app_info, key)
         else:
             return default
 

@@ -1,4 +1,6 @@
 <%!
+    import six
+    from galaxy.util import unicodify
     from galaxy.webapps.reports.framework.grids import TextColumn
 
     def inherit(context):
@@ -55,9 +57,9 @@
         "autocomplete_tagging",
         "jquery.rating"
     )}
-    ${h.js(
-        "libs/jquery/jquery.autocomplete",
-    )}
+    ## ${h.js(
+    ##     "libs/jquery/jquery.autocomplete",
+    ## )}
 
     ## grid container
     <div id="grid-container"></div>
@@ -216,8 +218,8 @@
                 value = column.get_value( trans, grid, item )
 
                 # Handle non-ascii chars.
-                if isinstance(value, str):
-                    value = unicode(value, 'utf-8')
+                if isinstance(value, six.binary_type):
+                    value = unicodify(value, 'utf-8')
                     value = value.replace('/', '//')
                 endif
 

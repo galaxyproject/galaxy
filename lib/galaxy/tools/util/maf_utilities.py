@@ -5,10 +5,10 @@ Provides wrappers and utilities for working with MAF files and alignments.
 # Dan Blankenberg
 from __future__ import print_function
 
+import functools
 import logging
 import os
 import resource
-import string
 import sys
 import tempfile
 from copy import deepcopy
@@ -19,10 +19,14 @@ import bx.interval_index_file
 import bx.intervals
 from six.moves import xrange
 
+try:
+    from string import maketrans
+except ImportError:
+    maketrans = str.maketrans
+
 assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
-
 
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
@@ -138,7 +142,7 @@ class TempFileHandler(object):
 # an object corresponding to a reference layered alignment
 class RegionAlignment(object):
 
-    DNA_COMPLEMENT = string.maketrans("ACGTacgt", "TGCAtgca")
+    DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
     def __init__(self, size, species=[], temp_file_handler=None):
@@ -222,7 +226,7 @@ class GenomicRegionAlignment(RegionAlignment):
 
 class SplicedAlignment(object):
 
-    DNA_COMPLEMENT = string.maketrans("ACGTacgt", "TGCAtgca")
+    DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
     def __init__(self, exon_starts, exon_ends, species=[], temp_file_handler=None):
         if not isinstance(exon_starts, list):
@@ -652,7 +656,7 @@ def sort_block_components_by_block(block1, block2):
     # orders the components in block1 by the index of the component in block2
     # block1 must be a subset of block2
     # occurs in-place
-    return block1.components.sort(cmp=lambda x, y: block2.components.index(x) - block2.components.index(y))
+    return block1.components.sort(key=functools.cmp_to_key(lambda x, y: block2.components.index(x) - block2.components.index(y)))
 
 
 def get_species_in_maf(maf_filename):
@@ -727,7 +731,7 @@ def get_attributes_from_fasta_header(header):
 
 
 def iter_fasta_alignment(filename):
-    class fastaComponent:
+    class fastaComponent(object):
         def __init__(self, species, text=""):
             self.species = species
             self.text = text

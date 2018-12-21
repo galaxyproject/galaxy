@@ -11,7 +11,10 @@ import yaml
 from base import integration_util
 from base.populators import DatasetPopulator
 
-from galaxy.util import galaxy_directory
+from galaxy.util import (
+    galaxy_directory,
+    unicodify
+)
 
 
 def skip_unless_module(module):
@@ -131,7 +134,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         json_file = os.path.join(self.config_dir, json_files[0])
         with open(json_file, "r") as f:
             export = json.load(f)
-        assert export["version"] == 1
+        assert export["version"] == 2
 
     def test_admin_cleanup_datasets(self):
         self._scripts_check_argparse_help("cleanup_datasets/admin_cleanup_datasets.py")
@@ -157,6 +160,9 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         # TODO: test creating a smaller database - e.g. tool install database based on fresh
         # config file.
 
+    def test_galaxy_main(self):
+        self._scripts_check_argparse_help("galaxy-main")
+
     def test_runtime_stats(self):
         self._skip_if_not_postgres()
         self._scripts_check_argparse_help("runtime_stats.py")
@@ -166,7 +172,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
             raise unittest.SkipTest("Test only valid for postgres")
 
     def _scripts_check_argparse_help(self, script):
-        # Test imports and argparse repsonse to --help with 0 exit code.
+        # Test imports and argparse response to --help with 0 exit code.
         output = self._scripts_check_output(script, ["--help"])
         # Test -h, --help in printed output message.
         assert "-h, --help" in output
@@ -177,7 +183,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         clean_env = {
             "PATH": os.environ.get("PATH", None),
         }  # Don't let testing environment variables interfere with config.
-        return subprocess.check_output(cmd, cwd=cwd, env=clean_env)
+        return unicodify(subprocess.check_output(cmd, cwd=cwd, env=clean_env))
 
     def write_config_file(self):
         config_dir = self.config_dir

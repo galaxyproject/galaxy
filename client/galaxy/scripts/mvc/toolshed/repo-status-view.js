@@ -1,41 +1,40 @@
+import * as Backbone from "backbone";
+import * as _ from "underscore";
 import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
+
+/* global $ */
+
 var ToolShedRepoStatusView = Backbone.View.extend({
     el: "#center",
 
     initialize: function(options) {
-        var self = this;
         this.options = _.defaults(this.options || [{}], options, this.defaults);
         this.model = new toolshed_model.RepoStatus();
         this.listenTo(this.model, "sync", this.render);
         this.model.url += `?repositories=${this.options.repositories.join("|")}`;
         this.model.fetch();
-        this.timer = setInterval(
-            self => {
-                var terminal_states = ["installed", "error"];
-                var all_done = true;
-                _.some(self.model.models, repository => {
-                    repo_id = repository.get("id");
-                    var repo_status = repository.get("status").toLowerCase();
-                    if (terminal_states.indexOf(repo_status) === -1) {
-                        all_done = false;
-                        return true;
-                    }
-                });
-                if (all_done) {
-                    clearInterval(self.timer);
-                } else {
-                    self.model.fetch();
+        this.timer = window.setInterval(() => {
+            var terminal_states = ["installed", "error"];
+            var all_done = true;
+            _.some(this.model.models, repository => {
+                var repo_status = repository.get("status").toLowerCase();
+                if (terminal_states.indexOf(repo_status) === -1) {
+                    all_done = false;
+                    return true;
                 }
-            },
-            2000,
-            this
-        );
+            });
+            if (all_done) {
+                window.clearInterval(this.timer);
+            } else {
+                this.model.fetch();
+            }
+        }, 2000);
     },
 
     close: function() {
-        clearInterval(this.timer);
+        window.clearInterval(this.timer);
     },
 
     render: function(options) {
@@ -49,23 +48,12 @@ var ToolShedRepoStatusView = Backbone.View.extend({
             })
         );
         $("#center").css("overflow", "auto");
-        this.bindEvents();
-    },
-
-    bindEvents: function() {
-        var that = this;
-    },
-
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
     },
 
     templateRepoStatus: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner"><%= title %></div>',
-            '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<style type="text/css">',
             ".state-color-new,",

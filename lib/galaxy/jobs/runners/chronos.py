@@ -12,9 +12,15 @@ CHRONOS_IMPORT_MSG = ('The Python \'chronos\' package is required to use '
 
 try:
     import chronos
+    chronos_exceptions = (
+        chronos.ChronosAPIError,
+        chronos.UnauthorizedError,
+        chronos.MissingFieldError,
+        chronos.OneOfViolationError,
+    )
 except ImportError as e:
     chronos = None
-    CHRONOS_IMPORT_MSG.format(msg=e.message)
+    CHRONOS_IMPORT_MSG.format(msg=str(e))
 
 
 __all__ = ('ChronosJobRunner',)
@@ -28,19 +34,13 @@ class ChronosRunnerException(Exception):
 def handle_exception_call(func):
     # Catch chronos exceptions. The latest version of chronos-python does
     # support a hierarchy over the exceptions.
-    chronos_exceptions = (
-        chronos.ChronosAPIError,
-        chronos.UnauthorizedError,
-        chronos.MissingFieldError,
-        chronos.OneOfViolationError,
-    )
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except chronos_exceptions as e:
-            LOGGER.error(e.message)
+            LOGGER.error(str(e))
 
     return wrapper
 
@@ -145,8 +145,8 @@ class ChronosJobRunner(AsynchronousJobRunner):
         return None
 
     @handle_exception_call
-    def stop_job(self, job):
-        job_id = job.get_id_tag()
+    def stop_job(self, job_wrapper):
+        job_id = job_wrapper.get_id_tag()
         job_name = self.JOB_NAME_PREFIX + job_id
         job = self._retrieve_job(job_name)
         if job:

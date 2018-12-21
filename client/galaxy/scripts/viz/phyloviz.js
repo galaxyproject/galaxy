@@ -1,7 +1,10 @@
+/* global Backbone */
+/* global $ */
+
 import _l from "utils/localization";
 import * as d3 from "libs/d3";
 import visualization_mod from "viz/visualization";
-import data_mod from "mvc/dataset/data";
+import { Dataset } from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";
 /**
  * Base class of any menus that takes in user interaction. Contains checking methods.
@@ -236,7 +239,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
     initialize: function(options) {
         this.set(
             "dataset",
-            new data_mod.Dataset({
+            new Dataset({
                 id: options.dataset_id
             })
         );
@@ -306,7 +309,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
             }
         }
 
-        var config = jQuery.extend(true, {}, this.attributes);
+        var config = $.extend(true, {}, this.attributes);
         config.selectedNode = null;
 
         show_message("Saving to Galaxy", "progress");
@@ -581,7 +584,7 @@ var PhylovizLinearView = PhylovizLayoutBase.extend({
     }
 });
 
-var PhylovizView = Backbone.View.extend({
+export var PhylovizView = Backbone.View.extend({
     className: "phyloviz",
 
     initialize: function(options) {
@@ -986,7 +989,7 @@ var NodeSelectionView = UserMenuBase.extend({
                     }
                 });
             };
-        })(jQuery);
+        })($);
 
         self.UI.enableEdit.off().on("click", () => {
             self.toggleUI();
@@ -1102,7 +1105,3 @@ var PhyloVizSearch = UserMenuBase.extend({
         });
     }
 });
-
-export default {
-    PhylovizView: PhylovizView
-};

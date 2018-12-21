@@ -6,8 +6,10 @@ import logging
 import os
 import string
 import subprocess
+import sys
 import threading
 import time
+import traceback
 
 from six.moves.queue import (
     Empty,
@@ -60,7 +62,7 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner(object):
-    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: x >= 0, default=0))
+    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
         """Start the job runner
@@ -85,9 +87,20 @@ class BaseJobRunner(object):
         log.debug('Starting %s %s workers' % (self.nworkers, self.runner_name))
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
-            worker.setDaemon(True)
+            worker.daemon = True
             self.app.application_stack.register_postfork_function(worker.start)
             self.work_threads.append(worker)
+
+    def _alive_worker_threads(self, cycle=False):
+        # yield endlessly as long as there are alive threads if cycle is True
+        alive = True
+        while alive:
+            alive = False
+            for thread in self.work_threads:
+                if thread.is_alive():
+                    if cycle:
+                        alive = True
+                    yield thread
 
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
@@ -119,12 +132,7 @@ class BaseJobRunner(object):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
         put_timer = ExecutionTimer()
-        job = job_wrapper.get_job()
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state(model.Job.states.QUEUED, flush=False, job=job)
-        # Persist the destination so that the job will be included in counts if using concurrency limits
-        job_wrapper.set_job_destination(job_wrapper.job_destination, None, flush=False, job=job)
-        self.sa_session.flush()
+        job_wrapper.enqueue()
         self.mark_as_queued(job_wrapper)
         log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
 
@@ -134,22 +142,36 @@ class BaseJobRunner(object):
     def shutdown(self):
         """Attempts to gracefully shut down the worker threads
         """
-        log.info("%s: Sending stop signal to %s worker threads" % (self.runner_name, len(self.work_threads)))
+        log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
         for i in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
         join_timeout = self.app.config.monitor_thread_join_timeout
         if join_timeout > 0:
-            exception = None
-            for thread in self.work_threads:
+            log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
+            start = time.time()
+            # NOTE: threads that have already joined by now are not going to be logged
+            for thread in self._alive_worker_threads(cycle=True):
+                if time.time() > (start + join_timeout):
+                    break
                 try:
-                    thread.join(join_timeout)
-                except Exception as e:
-                    exception = e
-                    log.exception("Faild to shutdown worker thread")
+                    thread.join(2)
+                except Exception:
+                    log.exception("Caught exception attempting to shutdown job worker thread %s:", thread.name)
+                if not thread.is_alive():
+                    log.debug("Job worker thread terminated: %s", thread.name)
+            else:
+                log.info("All job worker threads shutdown cleanly")
+                return
 
-            if exception:
-                raise exception
+            for thread in self._alive_worker_threads():
+                try:
+                    frame = sys._current_frames()[thread.ident]
+                except KeyError:
+                    # thread is now stopped
+                    continue
+                log.warning("Timed out waiting for job worker thread %s to terminate, shutdown will be unclean! Thread "
+                            "stack is:\n%s", thread.name, ''.join(traceback.format_stack(frame)))
 
     # Most runners should override the legacy URL handler methods and destination param method
     def url_to_destination(self, url):
@@ -198,7 +220,7 @@ class BaseJobRunner(object):
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail(e.message if hasattr(e, 'message') else "Job preparation failed", exception=True)
+            job_wrapper.fail(str(e), exception=True)
             return False
 
         if not job_wrapper.runner_command_line:
@@ -211,7 +233,7 @@ class BaseJobRunner(object):
     def queue_job(self, job_wrapper):
         raise NotImplementedError()
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         raise NotImplementedError()
 
     def recover(self, job, job_wrapper):
@@ -400,7 +422,8 @@ class BaseJobRunner(object):
 
     def fail_job(self, job_state, exception=False):
         if getattr(job_state, 'stop_job', True):
-            self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+            self.stop_job(job_state.job_wrapper)
+        job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state('failure', job_state)
         # Not convinced this is the best way to indicate this state, but
         # something necessary
@@ -648,8 +671,9 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
         collect_output_success = True
         while which_try < self.app.config.retry_job_output_collection + 1:
             try:
-                stdout = shrink_stream_by_size(open(job_state.output_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-                stderr = shrink_stream_by_size(open(job_state.error_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+                with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, 'rb') as stderr_file:
+                    stdout = shrink_stream_by_size(stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+                    stderr = shrink_stream_by_size(stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
                 break
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:

@@ -8,7 +8,6 @@ import logging
 import sys
 
 from sqlalchemy import Index, MetaData, Table
-from sqlalchemy.orm import scoped_session, sessionmaker
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -24,7 +23,6 @@ metadata = MetaData()
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
-    db_session = scoped_session(sessionmaker(bind=migrate_engine, autoflush=False, autocommit=True))
     HistoryDatasetAssociation_table = Table("history_dataset_association", metadata, autoload=True)
     # Load existing tables
     metadata.reflect()
@@ -38,12 +36,12 @@ def upgrade(migrate_engine):
     # Set the default data in the galaxy_user table, but only for null values
     cmd = "UPDATE history_dataset_association SET extension = 'qual454' WHERE extension = 'qual' and peek like \'>%%\'"
     try:
-        db_session.execute(cmd)
+        migrate_engine.execute(cmd)
     except Exception:
         log.exception("Resetting extension qual to qual454 in history_dataset_association failed.")
     cmd = "UPDATE history_dataset_association SET extension = 'qualsolexa' WHERE extension = 'qual' and peek not like \'>%%\'"
     try:
-        db_session.execute(cmd)
+        migrate_engine.execute(cmd)
     except Exception:
         log.exception("Resetting extension qual to qualsolexa in history_dataset_association failed.")
     # Add 1 index to the history_dataset_association table

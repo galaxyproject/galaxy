@@ -1,10 +1,16 @@
-/* global define */
+/**
+ * mvc/tool/tool-form is unused.
+ */
+
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import InputElement from "mvc/form/form-input";
 import Ui from "mvc/ui/ui-misc";
 import FormData from "mvc/form/form-data";
 import ToolForm from "mvc/tool/tool-form";
 import Utils from "utils/utils";
+import { getAppRoot } from "onload/loadConfig";
 
 QUnit.module("Form test", {
     beforeEach: function() {
@@ -18,14 +24,15 @@ QUnit.module("Form test", {
 });
 
 QUnit.test("tool-form", function(assert) {
-    // Huh? The following seems to be needed by tool-form.js - once the global usage
-    // is cleaned up in that module this can be deleted I assume.
-    window.parent.Galaxy = window.Galaxy;
+    // // Huh? The following seems to be needed by tool-form.js - once the global usage
+    // // is cleaned up in that module this can be deleted I assume.
+    // window.parent.Galaxy = window.Galaxy;
 
     var toolform = new ToolForm.View({ id: "test" });
-    var form = toolform.form;
     $("body").prepend(toolform.$el);
     window.fakeserver.respond();
+
+    var form = toolform.form;
     var output = "";
     for (var property in assert) {
         output += property + ": ; ";
@@ -62,7 +69,7 @@ QUnit.test("tool-form", function(assert) {
         .parent()
         .click();
     assert.ok(
-        form.$(".ui-message").html() ===
+        form.$(".alert").html() ===
             '<span>This tool requires req_name_a (Version req_version_a) and req_name_b (Version req_version_b). Click <a target="_blank" href="https://galaxyproject.org/tools/requirements/">here</a> for more information.</span>',
         "Check requirements message"
     );
@@ -91,7 +98,7 @@ QUnit.test("tool-form", function(assert) {
 QUnit.test("data", function(assert) {
     var visits = [];
     Utils.get({
-        url: Galaxy.root + "api/tools/test/build",
+        url: getAppRoot() + "api/tools/test/build",
         success: function(response) {
             FormData.visitInputs(response.inputs, function(node, name, context) {
                 visits.push({ name: name, node: node });

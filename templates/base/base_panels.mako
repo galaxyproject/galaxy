@@ -21,9 +21,9 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     ${h.css(
-        'base',
         'jquery.rating',
-        'bootstrap-tour'
+        'bootstrap-tour',
+        'base'
     )}
     <style type="text/css">
     #center {
@@ -52,38 +52,12 @@
 
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
         'libs/require',
+        'bundled/libs.chunk',
+        'bundled/base.chunk',
         'bundled/extended.bundled'
     )}
-
-    <script type="text/javascript">
-        // configure require for base panels
-        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
-        window.Galaxy = window.Galaxy || {};
-        window.Galaxy.root = '${h.url_for( "/" )}';
-        window.jQuery = window.jquery = window.$;
-        define( 'jquery', [], function(){ return window.$; })
-        // TODO: use one system
-
-        // shims and paths
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts') }",
-            shim: {
-                "libs/underscore": {
-                    exports: "_"
-                },
-                "libs/backbone": {
-                    deps: [ 'jquery', 'libs/underscore' ],
-                    exports: "Backbone"
-                }
-            },
-            // cache busting using time server was restarted
-            urlArgs: 'v=${app.server_starttime}',
-        });
-    </script>
-
+    
 </%def>
 
 <%def name="javascript_app()">
@@ -219,27 +193,29 @@
                 </div>
             %endif
             ${self.overlay(visible=self.overlay_visible)}
-            %if self.has_left_panel:
-                <div id="left">
-                    ${self.left_panel()}
-                    <div class="unified-panel-footer">
-                        <div id="left-panel-collapse" class="panel-collapse"></div>
-                        <div id="left-panel-drag" class="drag"></div>
-                    </div>
-                </div><!--end left-->
-            %endif
-            <div id="center" class="inbound">
-                ${self.center_panel()}
-            </div><!--end center-->
-            %if self.has_right_panel:
-                <div id="right">
-                    ${self.right_panel()}
-                    <div class="unified-panel-footer">
-                        <div id="right-panel-collapse" class="panel-collapse right"></div>
-                        <div id="right-panel-drag" class="drag"></div>
-                    </div>
-                </div><!--end right-->
-            %endif
+            <div id="columns">
+                %if self.has_left_panel:
+                    <div id="left">
+                        ${self.left_panel()}
+                        <div class="unified-panel-footer">
+                            <div id="left-panel-collapse" class="panel-collapse"></div>
+                            <div id="left-panel-drag" class="drag"></div>
+                        </div>
+                    </div><!--end left-->
+                %endif
+                <div id="center" class="inbound">
+                    ${self.center_panel()}
+                </div><!--end center-->
+                %if self.has_right_panel:
+                    <div id="right">
+                        ${self.right_panel()}
+                        <div class="unified-panel-footer">
+                            <div id="right-panel-collapse" class="panel-collapse right"></div>
+                            <div id="right-panel-drag" class="drag"></div>
+                        </div>
+                    </div><!--end right-->
+                %endif
+            </div><!--end columns-->
         </div><!--end everything-->
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

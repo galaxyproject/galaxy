@@ -69,14 +69,14 @@ in_conda_env() {
 }
 
 if [ $COPY_SAMPLE_FILES -eq 1 ]; then
-	# Create any missing config/location files
-	for sample in $SAMPLES; do
-		file=${sample%.sample}
-	    if [ ! -f "$file" -a -f "$sample" ]; then
-	        echo "Initializing $file from $(basename "$sample")"
-	        cp "$sample" "$file"
-	    fi
-	done
+    # Create any missing config/location files
+    for sample in $SAMPLES; do
+        file=${sample%.sample}
+        if [ ! -f "$file" -a -f "$sample" ]; then
+            echo "Initializing $file from $(basename "$sample")"
+            cp "$sample" "$file"
+        fi
+    done
 fi
 
 # remove problematic cached files
@@ -89,11 +89,10 @@ if command -v git >/dev/null && [ -d .git ]; then
     GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
     case $GIT_BRANCH in
         release_*|master)
-            # All non-release branches should build the client as necessary
-            SKIP_CLIENT_BUILD=1
+            # All branches should now build the client as necessary, turn this
+            # back into an if?  Or is there more we need to do here?
             ;;
         *)
-            # Ensure nodeenv is installed
             DEV_WHEELS=1
             # SKIP_CLIENT_BUILD will default to false, but can be overridden by the command line argument
             ;;
@@ -107,25 +106,26 @@ fi
 # GALAXY_CONDA_ENV is not set here because we don't want to execute the Galaxy version check if we don't need to
 
 if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
-    if [ ! -d "$GALAXY_VIRTUAL_ENV" ]
-    then
+    if [ ! -d "$GALAXY_VIRTUAL_ENV" ]; then
         # Locate `conda` and set $CONDA_EXE (if needed). If `python` is Conda Python and $GALAXY_VIRTUAL_ENV does not
         # exist, virtualenv will not be used. setup_python calls this as well but in this case we need it done
         # beforehand.
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
-            echo "Found Conda, virtualenv will not be used."
+            echo "Found Conda, will set up a virtualenv using conda."
             echo "To use a virtualenv instead, create one with a non-Conda Python 2.7 at $GALAXY_VIRTUAL_ENV"
-            : ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}
+            : ${GALAXY_CONDA_ENV:="_galaxy_"}
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 if ! check_conda_env "$GALAXY_CONDA_ENV"; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
+                conda_activate
             fi
+            virtualenv "$GALAXY_VIRTUAL_ENV"
         else
             # If .venv does not exist, and there is no conda available, attempt to create it.
             # Ensure Python is a supported version before creating .venv
@@ -136,9 +136,9 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
             if command -v virtualenv >/dev/null; then
                 virtualenv -p "$(command -v python)" "$GALAXY_VIRTUAL_ENV"
             else
-                vvers=13.1.2
-                vurl="https://pypi.python.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
-                vsha="aabc8ef18cddbd8a2a9c7f92bc43e2fea54b1147330d65db920ef3ce9812e3dc"
+                vvers=16.1.0
+                vurl="https://files.pythonhosted.org/packages/source/v/virtualenv/virtualenv-${vvers}.tar.gz"
+                vsha=f899fafcd92e1150f40c8215328be38ff24b519cd95357fa6e78e006c7638208
                 vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                 vsrc="$vtmp/$(basename $vurl)"
                 # SSL certificates are not checked to prevent problems with messed
@@ -150,12 +150,16 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                 elif command -v wget >/dev/null; then
                     wget --no-check-certificate -O "$vsrc" "$vurl"
                 else
-                    python -c "import urllib; urllib.urlretrieve('$vurl', '$vsrc')"
+                    python -c "try:
+    from urllib import urlretrieve
+except:
+    from urllib.request import urlretrieve
+urllib.urlretrieve('$vurl', '$vsrc')"
                 fi
                 echo "Verifying $vsrc checksum is $vsha"
                 python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
                 tar zxf "$vsrc" -C "$vtmp"
-                python "$vtmp/virtualenv-$vvers/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
+                python "$vtmp/virtualenv-$vvers/src/virtualenv.py" "$GALAXY_VIRTUAL_ENV"
                 rm -rf "$vtmp"
             fi
         fi
@@ -226,7 +230,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     if [ -n "$VIRTUAL_ENV" ]; then
         if ! in_venv "$(command -v node)"; then
             echo "Installing node into $VIRTUAL_ENV with nodeenv."
-            nodeenv -n 9.11.1 -p
+            nodeenv -n 10.13.0 -p
         fi
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
@@ -242,8 +246,18 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
 
     # Build client
-    if ! make client; then
-        echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+    cd client
+    if yarn install --network-timeout 120000 --check-files; then
+        if ! yarn run build-production-maps; then
+            echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+            exit 1
+        fi
+    else
+        echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
         exit 1
     fi
+    cd -
+else
+    echo "Regenerating static plugin directories."
+    python ./scripts/plugin_staging.py
 fi

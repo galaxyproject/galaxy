@@ -1,6 +1,11 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
 import "libs/jquery/jquery-ui";
+
 var ToolShedCategories = Backbone.View.extend({
     el: "#center",
 
@@ -9,7 +14,6 @@ var ToolShedCategories = Backbone.View.extend({
     },
 
     initialize: function(options) {
-        var self = this;
         var shed = options.tool_shed.replace(/\//g, "%2f");
         this.options = _.defaults(this.options || options, this.defaults);
         this.model = new toolshed_model.Categories();
@@ -30,11 +34,10 @@ var ToolShedCategories = Backbone.View.extend({
     },
 
     bindEvents: function() {
-        var that = this;
         $("#search_box").autocomplete({
-            source: function(request, response) {
-                var shed_url = that.model.tool_shed.replace(/%2f/g, "/");
-                var base_url = `${Galaxy.root}api/tool_shed/search`;
+            source: (request, response) => {
+                var shed_url = this.model.tool_shed.replace(/%2f/g, "/");
+                var base_url = `${getAppRoot()}api/tool_shed/search`;
                 var params = {
                     term: request.term,
                     tool_shed_url: shed_url
@@ -46,26 +49,15 @@ var ToolShedCategories = Backbone.View.extend({
                 });
             },
             minLength: 3,
-            select: function(event, ui) {
+            select: (event, ui) => {
                 var tsr_id = ui.item.value;
-                var api_url = `${Galaxy.root}api/tool_shed/repository`;
-                var params = {
-                    tool_shed_url: that.model.tool_shed,
-                    tsr_id: tsr_id
-                };
-                var new_route = `repository/s/${that.model.tool_shed}/r/${tsr_id}`;
+                var new_route = `repository/s/${this.model.tool_shed}/r/${tsr_id}`;
                 Backbone.history.navigate(new_route, {
                     trigger: true,
                     replace: true
                 });
             }
         });
-    },
-
-    reDraw: function(options) {
-        this.$el.empty();
-        this.model.url = `${this.model.url}?tool_shed_url=${this.options.tool_shed}`;
-        this.initialize(options);
     },
 
     templateCategoryList: _.template(
@@ -75,8 +67,7 @@ var ToolShedCategories = Backbone.View.extend({
             "li.ui-menu-item { list-style-type: none; }",
             "</style>",
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner" style="layout: inline;">Categories in <%= tool_shed.replace(/%2f/g, "/") %></div>',
-            '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner" style="layout: inline;">Categories in <%= tool_shed.replace(/%2f/g, "/") %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<div class="unified-panel-body" id="list_categories">',
             '<div id="standard-search" style="height: 2em; margin: 1em;">',

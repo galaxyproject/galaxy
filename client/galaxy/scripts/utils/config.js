@@ -1,9 +1,8 @@
-import * as _ from "libs/underscore";
-import * as Backbone from "libs/backbone";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import util_mod from "viz/trackster/util";
-
-/* global $ */
-/* global Galaxy */
+import { getGalaxyInstance } from "app";
 
 /**
  * A configuration setting. Currently key is used as id.
@@ -286,14 +285,12 @@ var ConfigSettingCollectionView = Backbone.View.extend({
                         var tip = $(this)
                             .siblings(".tooltip")
                             .addClass("in");
-                        tip
-                            .css({
-                                // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
-                                // top: $(this).position().top + $(this.height)
-                                left: $(this).position().left + $(this).width() + 5,
-                                top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
-                            })
-                            .show();
+                        tip.css({
+                            // left: $(this).position().left + ( $(input).width() / 2 ) - 60,
+                            // top: $(this).position().top + $(this.height)
+                            left: $(this).position().left + $(this).width() + 5,
+                            top: $(this).position().top - $(tip).height() / 2 + $(this).height() / 2
+                        }).show();
 
                         // Click management:
 
@@ -367,6 +364,7 @@ var ConfigSettingCollectionView = Backbone.View.extend({
     render_in_modal: function(title) {
         // Set up handlers for cancel, ok button and for handling esc key.
         var self = this;
+        let Galaxy = getGalaxyInstance();
 
         var cancel_fn = () => {
             Galaxy.modal.hide();

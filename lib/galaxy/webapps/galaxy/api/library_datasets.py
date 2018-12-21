@@ -20,6 +20,7 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
     folders,
+    lddas,
     library_datasets,
     roles
 )
@@ -43,6 +44,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         self.folder_manager = folders.FolderManager()
         self.role_manager = roles.RoleManager(app)
         self.ld_manager = library_datasets.LibraryDatasetsManager(app)
+        self.ldda_manager = lddas.LDDAManager(app)
 
     @expose_api_anonymous
     def show(self, trans, id, **kwd):
@@ -115,7 +117,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         dataset = library_dataset.library_dataset_dataset_association.dataset
         # User has to have manage permissions permission in order to see the roles.
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions.')
         scope = kwd.get('scope', None)
@@ -153,18 +155,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        dataset = library_dataset.library_dataset_dataset_association.dataset
-
-        # Omit duplicated roles by converting to set
-        access_roles = set(dataset.get_access_roles(trans))
-        modify_roles = set(trans.app.security_agent.get_roles_for_action(library_dataset, trans.app.security_agent.permitted_actions.LIBRARY_MODIFY))
-        manage_roles = set(dataset.get_manage_permissions_roles(trans))
-
-        access_dataset_role_list = [(access_role.name, trans.security.encode_id(access_role.id)) for access_role in access_roles]
-        manage_dataset_role_list = [(manage_role.name, trans.security.encode_id(manage_role.id)) for manage_role in manage_roles]
-        modify_item_role_list = [(modify_role.name, trans.security.encode_id(modify_role.id)) for modify_role in modify_roles]
-
-        return dict(access_dataset_roles=access_dataset_role_list, modify_item_roles=modify_item_role_list, manage_dataset_roles=manage_dataset_role_list)
+        return self.serialize_dataset_association_roles(library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -230,7 +221,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         # Some permissions are attached directly to the underlying dataset.
         dataset = library_dataset.library_dataset_dataset_association.dataset
         current_user_roles = trans.get_current_user_roles()
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to manage permissions on this dataset.')
         new_access_roles_ids = util.listify(kwd.get('access_ids[]', None))
@@ -241,12 +232,12 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             if not trans.app.security_agent.dataset_is_public(dataset):
                 raise exceptions.InternalServerError('An error occured while making dataset public.')
         elif action == 'make_private':
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
                 dp = trans.app.model.DatasetPermissions(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role)
                 trans.sa_session.add(dp)
                 trans.sa_session.flush()
-            if not trans.app.security_agent.dataset_is_private_to_user(trans, library_dataset):
+            if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
         elif action == 'set_permissions':
@@ -319,7 +310,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         current_user_roles = trans.get_current_user_roles()
         allowed = trans.app.security_agent.can_modify_library_item(current_user_roles, library_dataset)
-        if (not allowed) and (not trans.user_is_admin()):
+        if (not allowed) and (not trans.user_is_admin):
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to delete this dataset.')
 
         if undelete:
@@ -399,7 +390,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if source not in ['userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path']:
             raise exceptions.RequestParameterMissingException('You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". ')
         elif source in ['importdir_file', 'importdir_folder']:
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from importdir.')
             if not trans.app.config.library_import_dir:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from importdir.')
@@ -446,7 +437,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         elif source == 'admin_path':
             if not trans.app.config.allow_library_path_paste:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from path.')
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from path.')
 
         # Set up the traditional tool state/params
@@ -553,7 +544,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             current_user_roles = trans.get_current_user_roles()
 
             def traverse(folder):
-                admin = trans.user_is_admin()
+                admin = trans.user_is_admin
                 rval = []
                 for subfolder in folder.active_folders:
                     if not admin:

@@ -99,9 +99,13 @@ tool-data/toolshed.g2.bx.psu.edu/
 tool-data/**/*.fa
 
 # Test output
+.pytest_cache/
+assets/
 test-data-cache
 run_framework_tests.html
 run_functional_tests.html
+run_integration_tests.html
+run_selenium_tests.html
 run_toolshed_tests.html
 run_api_tests.html
 test/tool_shed/tmp/*
@@ -113,15 +117,15 @@ test/unit/**.log
 
 # Project files
 *.kpf
+.vscode
+client/**/jsconfig.json
+
 
 # Chrom len files
 *.len
 
 # Jars
 tool-data/shared/jars/
-
-# CSS build artifacts.
-sprite-*.scss
 
 # JS, Local node_modules, and bower_components directories
 static/maps
@@ -140,9 +144,13 @@ doc/source/api/api.rst
 doc/source/api/ts_api.rst
 doc/source/dev/schema.rst
 
+# webpack stats
+client/webpack-stats.json
+
 # Misc
 *.orig
 .DS_Store
 *.rej
 *~
 .idea
+.vscode

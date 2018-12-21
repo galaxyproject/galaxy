@@ -39,7 +39,7 @@ SINGULARITY_CONTAINER_TYPE = "singularity"
 DEFAULT_CONTAINER_TYPE = DOCKER_CONTAINER_TYPE
 ALL_CONTAINER_TYPES = [DOCKER_CONTAINER_TYPE, SINGULARITY_CONTAINER_TYPE]
 
-LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = '''
+LOAD_CACHED_IMAGE_COMMAND_TEMPLATE = r'''
 python << EOF
 from __future__ import print_function
 
@@ -57,7 +57,7 @@ cmd = "${images_cmd}"
 proc = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE)
 stdo, stde = proc.communicate()
 found = False
-for line in stdo.split("\\n"):
+for line in stdo.split("\n"):
     tmp = re.split(r'\s+', line)
     if tmp[0] == tag and tmp[1] == rev and tmp[2] == rev_value:
         found = True
@@ -106,12 +106,18 @@ class ContainerFinder(object):
             )
             return container
 
+        def container_from_description_from_dicts(destination_container_dicts):
+            for destination_container_dict in destination_container_dicts:
+                container_description = ContainerDescription.from_dict(destination_container_dict)
+                if container_description:
+                    container = __destination_container(container_description)
+                    if container:
+                        return container
+
         if "container_override" in destination_info:
-            container_description = ContainerDescription.from_dict(destination_info["container_override"][0])
-            if container_description:
-                container = __destination_container(container_description)
-                if container:
-                    return container
+            container = container_from_description_from_dicts(destination_info["container_override"])
+            if container:
+                return container
 
         # If destination forcing Galaxy to use a particular container do it,
         # this is likely kind of a corner case. For instance if deployers
@@ -132,11 +138,9 @@ class ContainerFinder(object):
         # If we still don't have a container, check to see if any container
         # types define a default container id and use that.
         if "container" in destination_info:
-            container_description = ContainerDescription.from_dict(destination_info["container"][0])
-            if container_description:
-                container = __destination_container(container_description)
-                if container:
-                    return container
+            container = container_from_description_from_dicts(destination_info["container"])
+            if container:
+                return container
 
         for container_type in CONTAINER_CLASSES.keys():
             container_id = self.__default_container_id(container_type, destination_info)

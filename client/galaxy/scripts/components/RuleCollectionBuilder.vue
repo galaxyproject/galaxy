@@ -59,6 +59,18 @@
                                 </select>
                             </label>
                         </rule-component>
+                        <rule-component rule-type="add_column_group_tag_value"
+                                        :display-rule-type="displayRuleType"
+                                        :builder="this">
+                            <label>
+                                {{ l("Value") }}
+                                <input type="text" v-model="addColumnGroupTagValueValue" />
+                            </label>
+                            <label>
+                                {{ l("Default") }}
+                                <input type="text" v-model="addColumnGroupTagValueDefault" />
+                            </label>
+                        </rule-component>
                         <rule-component rule-type="add_column_regex"
                                         :display-rule-type="displayRuleType"
                                         :builder="this">
@@ -206,7 +218,7 @@
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
-                                <button v-b-tooltip.hover :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
+                                <button type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
@@ -286,6 +298,7 @@
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
                                         <rule-target-component :builder="this" rule-type="add_column_metadata" v-if="metadataOptions"/>
+                                        <rule-target-component :builder="this" rule-type="add_column_group_tag_value" v-if="hasTagsMetadata"/>
                                         <rule-target-component :builder="this" rule-type="add_column_regex" />
                                         <rule-target-component :builder="this" rule-type="add_column_concatenate" />
                                         <rule-target-component :builder="this" rule-type="add_column_rownum" />
@@ -343,6 +356,10 @@
                         <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
                     </select2>
                 </div>
+                <label v-if="showAddNameTag">
+                    {{ l("Add nametag for name") }}:
+                </label>
+                <input type="checkbox" v-model="addNameTag" v-if="showAddNameTag"/>
                 <div class="rule-footer-name-group" v-if="showCollectionNameInput">
                     <b-input class="collection-name"
                     :placeholder="namePlaceholder" :title="namePlaceholder" v-b-tooltip.hover v-model="collectionName" />
@@ -395,6 +412,7 @@
     </state-div>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
@@ -886,7 +904,6 @@ export default {
             titleColumMenu: _l("Rules that generate new columns"),
             titleRemoveMapping: _l("Remove column definition assignment"),
             titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
-            titleAddColumnDefinition: _l("Assign a new piece of metadata as being derived from a column of the table"),
             titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
             namePlaceholder: _l("Enter a name for your new collection"),
             activeRuleIndex: null,
@@ -897,6 +914,8 @@ export default {
             addColumnRegexGroupCount: null,
             addColumnRegexType: "global",
             addColumnMetadataValue: 0,
+            addColumnGroupTagValueValue: "",
+            addColumnGroupTagValueDefault: "",
             addColumnConcatenateTarget0: 0,
             addColumnConcatenateTarget1: 0,
             addColumnRownumStart: 1,
@@ -932,6 +951,7 @@ export default {
             genomes: [],
             genome: null,
             hideSourceItems: this.defaultHideSourceItems,
+            addNameTag: false,
             orientation: orientation
         };
     },
@@ -1006,6 +1026,9 @@ export default {
                 this.elementsType != "collection_contents" &&
                 !this.mappingAsDict.collection_name
             );
+        },
+        showAddNameTag() {
+            return this.importType == "collections" && this.elementsType != "collection_contents";
         },
         titleFinish() {
             if (this.elementsType == "datasets" || this.elementsType == "library_datasets") {
@@ -1174,6 +1197,7 @@ export default {
                         metadataOptions["identifier" + index] = _l("Paired Identifier");
                     }
                 }
+                metadataOptions["tags"] = _l("Tags");
             } else if (this.elementsType == "ftp") {
                 metadataOptions["path"] = _l("Path");
             } else if (this.elementsType == "library_datasets") {
@@ -1185,6 +1209,10 @@ export default {
                 metadataOptions = null;
             }
             return metadataOptions;
+        },
+        hasTagsMetadata() {
+            // TODO: allow for dataset, library_datasets also - here and just above in metadataOptions.
+            return this.elementsType == "collection_contents";
         },
         collectionType() {
             let identifierColumns = [];
@@ -1374,7 +1402,7 @@ export default {
             };
             const doJobCheck = () => {
                 axios
-                    .get(`${Galaxy.root}api/jobs/${jobId}`)
+                    .get(`${getAppRoot()}api/jobs/${jobId}`)
                     .then(handleJobShow)
                     .catch(this.renderFetchError);
             };
@@ -1394,7 +1422,7 @@ export default {
                 }
             };
             axios
-                .get(`${Galaxy.root}api/jobs/${jobId}?full=True`)
+                .get(`${getAppRoot()}api/jobs/${jobId}?full=True`)
                 .then(handleJobShow)
                 .catch(this.renderFetchError);
         },
@@ -1464,6 +1492,9 @@ export default {
                             collection_type: collectionType,
                             name: collectionName
                         };
+                        if (this.addNameTag) {
+                            target["tags"] = ["name:" + collectionName];
+                        }
                         targets.push(target);
                     }
                 } else {
@@ -1479,7 +1510,7 @@ export default {
 
                 if (this.state !== "error") {
                     axios
-                        .post(`${Galaxy.root}api/tools/fetch`, {
+                        .post(`${getAppRoot()}api/tools/fetch`, {
                             history_id: historyId,
                             targets: targets,
                             auto_decompress: true
@@ -1610,12 +1641,14 @@ export default {
         creationElementsFromDatasets() {
             const sources = this.hotData["sources"];
             const data = this.hotData["data"];
+            const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
                 (dataIndex, identifier) => {
                     const source = sources[dataIndex];
+                    const res = this._datasetFor(dataIndex, data, mappingAsDict);
                     const src = this.elementsType == "datasets" ? "hda" : "ldda";
-                    return { id: source["id"], name: identifier, src: src };
+                    return { id: source["id"], name: identifier, src: src, tags: res.tags };
                 },
                 identifier => {
                     return { name: identifier, src: "new_collection" };
@@ -1669,9 +1702,9 @@ export default {
                 if (collectionTypeLevelSepIndex === -1) {
                     // Flat collection at this depth.
                     // sources are the elements
-                    // TOOD: right thing is probably this: data.push([]);
                     data.push([]);
-                    sources.push({ identifiers: identifiers, dataset: elementObject });
+                    const source = { identifiers: identifiers, dataset: elementObject, tags: elementObject.tags };
+                    sources.push(source);
                 } else {
                     const restCollectionType = collectionType.slice(collectionTypeLevelSepIndex + 1);
                     let elementObj = this.populateElementsFromCollectionDescription(
@@ -1705,11 +1738,17 @@ export default {
                 const urlColumn = mappingAsDict.url.columns[0];
                 let url = data[dataIndex][urlColumn];
                 if (url.indexOf("://") == -1) {
-                    url = "http://" + url;
+                    // special case columns containing SRA links. EBI serves these a lot
+                    // faster over FTP.
+                    if (url.indexOf("ftp.sra.") !== -1) {
+                        url = "ftp://" + url;
+                    } else {
+                        url = "http://" + url;
+                    }
                 }
                 res["url"] = url;
                 res["src"] = "url";
-            } else {
+            } else if (mappingAsDict.ftp_path) {
                 const ftpPathColumn = mappingAsDict.ftp_path.columns[0];
                 const ftpPath = data[dataIndex][ftpPathColumn];
                 res["ftp_path"] = ftpPath;
@@ -1738,6 +1777,29 @@ export default {
                 const infoColumn = mappingAsDict.info.columns[0];
                 const info = data[dataIndex][infoColumn];
                 res["info"] = info;
+            }
+            const tags = [];
+            if (mappingAsDict.tags) {
+                const tagColumns = mappingAsDict.tags.columns;
+                for (var tagColumn of tagColumns) {
+                    const tag = data[dataIndex][tagColumn];
+                    tags.push(tag);
+                }
+            }
+            if (mappingAsDict.group_tags) {
+                const groupTagColumns = mappingAsDict.group_tags.columns;
+                for (var groupTagColumn of groupTagColumns) {
+                    const tag = data[dataIndex][groupTagColumn];
+                    tags.push("group:" + tag);
+                }
+            }
+            if (mappingAsDict.name_tag) {
+                const nameTagColumn = mappingAsDict.name_tag.columns[0];
+                const nameTag = data[dataIndex][nameTagColumn];
+                tags.push("name:" + nameTag);
+            }
+            if (tags.length > 0) {
+                res["tags"] = tags;
             }
             return res;
         }

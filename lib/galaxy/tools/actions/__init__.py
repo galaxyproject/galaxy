@@ -6,9 +6,9 @@ from json import dumps
 from six import string_types
 
 from galaxy import model
-from galaxy.exceptions import ObjectInvalid
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import LibraryDatasetDatasetAssociation, WorkflowRequestInputParameter
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue
 from galaxy.tools.parameters.wrapped import WrappedParameters
@@ -29,6 +29,19 @@ class ToolExecutionCache(object):
     def __init__(self, trans):
         self.trans = trans
         self.current_user_roles = trans.get_current_user_roles()
+        self.chrom_info = {}
+
+    def get_chrom_info(self, tool_id, input_dbkey):
+        genome_builds = self.trans.app.genome_builds
+        custom_build_hack_get_len_from_fasta_conversion = tool_id != 'CONVERTER_fasta_to_len'
+        if custom_build_hack_get_len_from_fasta_conversion and input_dbkey in self.chrom_info:
+            return self.chrom_info[input_dbkey]
+
+        chrom_info_pair = genome_builds.get_chrom_info(input_dbkey, trans=self.trans, custom_build_hack_get_len_from_fasta_conversion=custom_build_hack_get_len_from_fasta_conversion)
+        if custom_build_hack_get_len_from_fasta_conversion:
+            self.chrom_info[input_dbkey] = chrom_info_pair
+
+        return chrom_info_pair
 
 
 class ToolAction(object):
@@ -45,7 +58,7 @@ class ToolAction(object):
 class DefaultToolAction(object):
     """Default tool action is to run an external command"""
 
-    def _collect_input_datasets(self, tool, param_values, trans, history, current_user_roles=None):
+    def _collect_input_datasets(self, tool, param_values, trans, history, current_user_roles=None, dataset_collection_elements=None, collection_info=None):
         """
         Collect any dataset inputs from incoming. Returns a mapping from
         parameter name to Dataset instance for each tool parameter that is
@@ -54,6 +67,12 @@ class DefaultToolAction(object):
         if current_user_roles is None:
             current_user_roles = trans.get_current_user_roles()
         input_datasets = odict()
+        all_permissions = {}
+
+        def record_permission(action, role_id):
+            if action not in all_permissions:
+                all_permissions[action] = set()
+            all_permissions[action].add(role_id)
 
         def visitor(input, value, prefix, parent=None, **kwargs):
 
@@ -72,8 +91,22 @@ class DefaultToolAction(object):
                         else:
                             data = data.get_converted_dataset(trans, target_ext, target_context=parent, history=history)
 
-                if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                    raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                input_name = prefix + input.name
+                # Checked security of whole collection all at once if mapping over this input, else
+                # fetch dataset details for this input from the database.
+                if collection_info and collection_info.is_mapped_over(input_name):
+                    action_tuples = collection_info.map_over_action_tuples(input_name)
+                    if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
+                        raise Exception("User does not have permission to use a dataset provided for input.")
+                    for action, role_id in action_tuples:
+                        record_permission(action, role_id)
+                else:
+                    if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
+                        raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                    permissions = trans.app.security_agent.get_permissions(data.dataset)
+                    for action, roles in permissions.items():
+                        for role in roles:
+                            record_permission(action.action, model.cached_id(role))
                 return data
             if isinstance(input, DataToolParameter):
                 if isinstance(value, list):
@@ -124,25 +157,28 @@ class DefaultToolAction(object):
                 if not value:
                     return
 
-                dataset_instances = []
+                collection = None
                 if hasattr(value, 'child_collection'):
                     # if we are mapping a collection over a tool, we only require the child_collection
-                    dataset_instances = value.child_collection.dataset_instances
+                    collection = value.child_collection
                 else:
                     # else the tool takes a collection as input so we need everything
-                    dataset_instances = value.collection.dataset_instances
+                    collection = value.collection
 
-                for i, v in enumerate(dataset_instances):
-                    data = v
-                    if not trans.app.security_agent.can_access_dataset(current_user_roles, data.dataset):
-                        raise Exception("User does not have permission to use a dataset (%s) provided for input." % data.id)
+                action_tuples = collection.dataset_action_tuples
+                if not trans.app.security_agent.can_access_datasets(current_user_roles, action_tuples):
+                    raise Exception("User does not have permission to use a dataset provided for input.")
+                for action, role_id in action_tuples:
+                    record_permission(action, role_id)
+
+                for i, v in enumerate(collection.dataset_instances):
                     # Skipping implicit conversion stuff for now, revisit at
                     # some point and figure out if implicitly converting a
                     # dataset collection makes senese.
-                    input_datasets[prefix + input.name + str(i + 1)] = data
+                    input_datasets[prefix + input.name + str(i + 1)] = v
 
         tool.visit_inputs(param_values, visitor)
-        return input_datasets
+        return input_datasets, all_permissions
 
     def collect_input_dataset_collections(self, tool, param_values):
         def append_to_key(the_dict, key, value):
@@ -185,7 +221,7 @@ class DefaultToolAction(object):
     def _check_access(self, tool, trans):
         assert tool.allow_user_access(trans.user), "User (%s) is not allowed to access this tool." % (trans.user)
 
-    def _collect_inputs(self, tool, trans, incoming, history, current_user_roles):
+    def _collect_inputs(self, tool, trans, incoming, history, current_user_roles, collection_info):
         """ Collect history as well as input datasets and collections. """
         app = trans.app
         # Set history.
@@ -198,7 +234,7 @@ class DefaultToolAction(object):
         # input datasets can process these normally.
         inp_dataset_collections = self.collect_input_dataset_collections(tool, incoming)
         # Collect any input datasets from the incoming parameters
-        inp_data = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles)
+        inp_data, all_permissions = self._collect_input_datasets(tool, incoming, trans, history=history, current_user_roles=current_user_roles, collection_info=collection_info)
 
         # grap tags from incoming HDAs
         preserved_tags = {}
@@ -206,7 +242,7 @@ class DefaultToolAction(object):
             if not data:
                 continue
 
-            for tag in [t for t in data.tags if t.user_tname == 'name']:
+            for tag in data.auto_propagated_tags:
                 preserved_tags[tag.value] = tag
 
         # grap tags from incoming HDCAs
@@ -215,25 +251,24 @@ class DefaultToolAction(object):
                 # if sub-collection mapping, this will be an DC not an HDCA
                 # (e.g. part of collection not a collection instance) and thus won't have tags.
                 if hasattr(collection, "tags"):
-                    for tag in [t for t in collection.tags if t.user_tname == 'name']:
+                    for tag in collection.auto_propagated_tags:
                         preserved_tags[tag.value] = tag
+        return history, inp_data, inp_dataset_collections, preserved_tags, all_permissions
 
-        return history, inp_data, inp_dataset_collections, preserved_tags
-
-    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None):
+    def execute(self, tool, trans, incoming=None, return_job=False, set_output_hid=True, history=None, job_params=None, rerun_remap_job_id=None, execution_cache=None, dataset_collection_elements=None, completed_job=None, collection_info=None):
         """
         Executes a tool, creating job and tool outputs, associating them, and
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
+        trans.check_user_activation()
         incoming = incoming or {}
         self._check_access(tool, trans)
         app = trans.app
         if execution_cache is None:
             execution_cache = ToolExecutionCache(trans)
         current_user_roles = execution_cache.current_user_roles
-        history, inp_data, inp_dataset_collections, preserved_tags = self._collect_inputs(tool, trans, incoming, history, current_user_roles)
-
+        history, inp_data, inp_dataset_collections, preserved_tags, all_permissions = self._collect_inputs(tool, trans, incoming, history, current_user_roles, collection_info)
         # Build name for output datasets based on tool name and input names
         on_text = self._get_on_text(inp_data)
 
@@ -242,7 +277,7 @@ class DefaultToolAction(object):
         # format.
         input_ext = 'data' if tool.profile < 16.04 else "input"
         input_dbkey = incoming.get("dbkey", "?")
-        for name, data in reversed(inp_data.items()):
+        for name, data in reversed(list(inp_data.items())):
             if not data:
                 data = NoneDataset(datatypes_registry=app.datatypes_registry)
                 continue
@@ -263,7 +298,8 @@ class DefaultToolAction(object):
                 incoming["%s|__identifier__" % name] = identifier
 
         # Collect chromInfo dataset and add as parameters to incoming
-        (chrom_info, db_dataset) = app.genome_builds.get_chrom_info(input_dbkey, trans=trans, custom_build_hack_get_len_from_fasta_conversion=tool.id != 'CONVERTER_fasta_to_len')
+        (chrom_info, db_dataset) = execution_cache.get_chrom_info(tool.id, input_dbkey)
+
         if db_dataset:
             inp_data.update({"chromInfo": db_dataset})
         incoming["chromInfo"] = chrom_info
@@ -272,7 +308,7 @@ class DefaultToolAction(object):
             # Determine output dataset permission/roles list
             existing_datasets = [inp for inp in inp_data.values() if inp]
             if existing_datasets:
-                output_permissions = app.security_agent.guess_derived_permissions_for_datasets(existing_datasets)
+                output_permissions = app.security_agent.guess_derived_permissions(all_permissions)
             else:
                 # No valid inputs, we will use history defaults
                 output_permissions = app.security_agent.history_get_default_permissions(history)
@@ -350,11 +386,9 @@ class DefaultToolAction(object):
                     trans.app.security_agent.set_all_dataset_permissions(data.dataset, output_permissions, new=True)
             data.copy_tags_to(preserved_tags)
 
-            # Must flush before setting object store id currently.
-            # TODO: optimize this.
-
-            trans.sa_session.flush()
-            if not completed_job:
+            if not completed_job and trans.app.config.legacy_eager_objectstore_initialization:
+                # Must flush before setting object store id currently.
+                trans.sa_session.flush()
                 object_store_populator.set_object_store_id(data)
 
             # This may not be neccesary with the new parent/child associations
@@ -402,6 +436,7 @@ class DefaultToolAction(object):
                     collections_manager = app.dataset_collections_service
                     element_identifiers = []
                     known_outputs = output.known_outputs(input_collections, collections_manager.type_registry)
+                    created_element_datasets = []
                     # Just to echo TODO elsewhere - this should be restructured to allow
                     # nested collections.
                     for output_part_def in known_outputs:
@@ -428,22 +463,19 @@ class DefaultToolAction(object):
 
                         effective_output_name = output_part_def.effective_output_name
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
+                        created_element_datasets.append(element)
                         # TODO: this shouldn't exist in the top-level of the history at all
                         # but for now we are still working around that by hiding the contents
                         # there.
                         # Following hack causes dataset to no be added to history...
                         child_dataset_names.add(effective_output_name)
-
-                        history.add_dataset(element, set_hid=set_output_hid, quota=False)
                         trans.sa_session.add(element)
-                        trans.sa_session.flush()
-
                         current_element_identifiers.append({
                             "__object__": element,
                             "name": output_part_def.element_identifier,
                         })
-                        log.info(element_identifiers)
 
+                    history.add_datasets(trans.sa_session, created_element_datasets, set_hid=set_output_hid, quota=False, flush=True)
                     if output.dynamic_structure:
                         assert not element_identifiers  # known_outputs must have been empty
                         element_kwds = dict(elements=collections_manager.ELEMENTS_UNINITIALIZED)
@@ -468,8 +500,6 @@ class DefaultToolAction(object):
                 datasets_to_persist.append(data)
         # Set HID and add to history.
         # This is brand new and certainly empty so don't worry about quota.
-        # TOOL OPTIMIZATION NOTE - from above loop to the job create below 99%+
-        # of execution time happens within in history.add_datasets.
         history.add_datasets(trans.sa_session, datasets_to_persist, set_hid=set_output_hid, quota=False, flush=False)
 
         # Add all the children to their parents
@@ -482,12 +512,11 @@ class DefaultToolAction(object):
         job_setup_timer = ExecutionTimer()
         # Create the job object
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
-        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles)
+        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = dumps(job_params)
-        job.set_handler(tool.get_job_handler(job_params))
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
@@ -499,11 +528,8 @@ class DefaultToolAction(object):
                                      rerun_remap_job_id=rerun_remap_job_id,
                                      current_job=job,
                                      out_data=out_data)
-        log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
+        log.info("Setup for job %s complete, ready to be enqueued %s" % (job.log_str(), job_setup_timer))
 
-        job_flush_timer = ExecutionTimer()
-        trans.sa_session.flush()
-        log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
@@ -525,8 +551,8 @@ class DefaultToolAction(object):
             trans.sa_session.flush()
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
         else:
-            # Put the job in the queue if tracking in memory
-            app.job_manager.job_queue.put(job.id, job.tool_id)
+            # Dispatch to a job handler. enqueue() is responsible for flushing the job
+            app.job_manager.enqueue(job, tool=tool)
             trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data
 
@@ -616,7 +642,7 @@ class DefaultToolAction(object):
 
     def _get_on_text(self, inp_data):
         input_names = []
-        for data in reversed(inp_data.values()):
+        for data in reversed(list(inp_data.values())):
             if getattr(data, "hid", None):
                 input_names.append('data %s' % data.hid)
 
@@ -630,10 +656,10 @@ class DefaultToolAction(object):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
             if type(galaxy_session) == trans.model.GalaxySession:
-                job.session_id = galaxy_session.id
+                job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
-            job.user_id = trans.user.id
-        job.history_id = history.id
+            job.user_id = model.cached_id(trans.user)
+        job.history_id = model.cached_id(history)
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.
@@ -642,7 +668,7 @@ class DefaultToolAction(object):
             job.tool_version = "1.0.0"
         return job, galaxy_session
 
-    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections, current_user_roles):
+    def _record_inputs(self, trans, tool, job, incoming, inp_data, inp_dataset_collections):
         # FIXME: Don't need all of incoming here, just the defined parameters
         #        from the tool. We need to deal with tools that pass all post
         #        parameters to the command as a special case.
@@ -673,16 +699,16 @@ class DefaultToolAction(object):
                 target_dict[input.name] = []
                 for reduced_collection in reductions[prefixed_name]:
                     if hasattr(reduced_collection, "child_collection"):
-                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'dce'})
+                        target_dict[input.name].append({'id': model.cached_id(reduced_collection), 'src': 'dce'})
                     else:
-                        target_dict[input.name].append({'id': reduced_collection.id, 'src': 'hdca'})
+                        target_dict[input.name].append({'id': model.cached_id(reduced_collection), 'src': 'hdca'})
 
         if reductions:
             tool.visit_inputs(incoming, restore_reduction_visitor)
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
             job.add_parameter(name, value)
-        self._check_input_data_access(trans, job, inp_data, current_user_roles)
+        self._record_input_datasets(trans, job, inp_data)
 
     def _record_outputs(self, job, out_data, output_collections):
         out_collections = output_collections.out_collections
@@ -695,20 +721,10 @@ class DefaultToolAction(object):
             job.add_output_dataset_collection(name, dataset_collection_instance)
             dataset_collection_instance.job = job
 
-    def _check_input_data_access(self, trans, job, inp_data, current_user_roles):
-        access_timer = ExecutionTimer()
+    def _record_input_datasets(self, trans, job, inp_data):
         for name, dataset in inp_data.items():
-            if dataset:
-                if not trans.app.security_agent.can_access_dataset(current_user_roles, dataset.dataset):
-                    raise Exception("User does not have permission to use a dataset (%s) provided for input." % dataset.id)
-                if dataset in trans.sa_session:
-                    job.add_input_dataset(name, dataset=dataset)
-                else:
-                    job.add_input_dataset(name, dataset_id=dataset.id)
-            else:
-                job.add_input_dataset(name, None)
-        job_str = job.log_str()
-        log.info("Verified access to datasets for %s %s" % (job_str, access_timer))
+            # TODO: figure out why can't pass dataset_id here.
+            job.add_input_dataset(name, dataset=dataset)
 
     def get_output_name(self, output, dataset, tool, on_text, trans, incoming, history, params, job_params):
         if output.label:
@@ -739,27 +755,6 @@ class DefaultToolAction(object):
         if on_text:
             name += (" on " + on_text)
         return name
-
-
-class ObjectStorePopulator(object):
-    """ Small helper for interacting with the object store and making sure all
-    datasets from a job end up with the same object_store_id.
-    """
-
-    def __init__(self, app):
-        self.object_store = app.object_store
-        self.object_store_id = None
-
-    def set_object_store_id(self, data):
-        # Create an empty file immediately.  The first dataset will be
-        # created in the "default" store, all others will be created in
-        # the same store as the first.
-        data.dataset.object_store_id = self.object_store_id
-        try:
-            self.object_store.create(data.dataset)
-        except ObjectInvalid:
-            raise Exception('Unable to create output dataset: object store is full')
-        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output
 
 
 class OutputCollections(object):
@@ -824,10 +819,10 @@ class OutputCollections(object):
                     for value in elements.values():
                         # Either a HDA (if) or a DatasetCollection or a recursive dict.
                         if getattr(value, "history_content_type", None) == "dataset":
-                            assert value.history is not None
+                            assert value.history is not None or value.history_id is not None
                         elif hasattr(value, "dataset_instances"):
                             for dataset in value.dataset_instances:
-                                assert dataset.history is not None
+                                assert dataset.history is not None or dataset.history_id is not None
                         else:
                             assert value["src"] == "new_collection"
                             check_elements(value["elements"])

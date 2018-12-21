@@ -23,8 +23,8 @@
       </param>
       <when value="preset" />
       <when value="full">
-        <param name="blockSize" size="4" type="integer" value="256" label="Items to bundle in r-tree" help="Default is 256 (blockSize)" />
-        <param name="itemsPerSlot" size="4" type="integer" value="512" label="Data points bundled at lowest level" help="Default is 512 (itemsPerSlot)" />
+        <param name="blockSize" type="integer" value="256" label="Items to bundle in r-tree" help="Default is 256 (blockSize)" />
+        <param name="itemsPerSlot" type="integer" value="512" label="Data points bundled at lowest level" help="Default is 512 (itemsPerSlot)" />
         <param name="unc" type="boolean" truevalue="-unc" falsevalue="" checked="False" label="Do not use compression" help="(unc)"/>
       </when>
     </conditional>
@@ -39,12 +39,12 @@
       <param name="blockSize" value="256" />
       <param name="itemsPerSlot" value="512" />
       <param name="unc" value="False" />
-      <output name="out_file1" file="7.bigbed"/>
+      <output name="out_file1" file="7.bigbed" compare="sim_size"/>
     </test>
     <test>
       <param name="input1" value="7.bed" dbkey="hg17" />
       <param name="settingsType" value="preset" />
-      <output name="out_file1" file="7.bigbed"/>
+      <output name="out_file1" file="7.bigbed" compare="sim_size"/>
     </test>
   </tests>
   <help>

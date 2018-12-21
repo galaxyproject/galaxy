@@ -1,22 +1,22 @@
 <tool id="hgv_gpass" name="GPASS" version="1.0.0">
-  <description>significant single-SNP associations in case-control studies</description>
+    <description>significant single-SNP associations in case-control studies</description>
+    <requirements>
+        <requirement type="package">gpass</requirement>
+    </requirements>
 
-  <command interpreter="perl">
-    gpass.pl ${input1.extra_files_path}/${input1.metadata.base_name}.map ${input1.extra_files_path}/${input1.metadata.base_name}.ped $output $fdr
-  </command>
+    <command>
+perl '$__tool_directory__/gpass.pl' '${input1.extra_files_path}/${input1.metadata.base_name}.map' '${input1.extra_files_path}/${input1.metadata.base_name}.ped' '$output' $fdr
+    </command>
 
-  <inputs>
-    <param name="input1" type="data" format="lped" label="Dataset"/>
-    <param name="fdr" type="float" value="0.05" label="FDR"/>
-  </inputs>
+    <inputs>
+        <param name="input1" type="data" format="lped" label="Dataset"/>
+        <param name="fdr" type="float" value="0.05" label="FDR"/>
+    </inputs>
 
-  <outputs>
-    <data name="output" format="tabular" />
-  </outputs>
+    <outputs>
+        <data name="output" format="tabular" />
+    </outputs>
 
-  <requirements>
-    <requirement type="package">gpass</requirement>
-  </requirements>
 
   <!-- we need to be able to set the seed for the random number generator
   <tests>
@@ -33,7 +33,7 @@
   </tests>
   -->
 
-  <help>
+    <help>
 **Dataset formats**
 
 The input dataset must be in lped_ format, and the output is tabular_.
@@ -64,8 +64,8 @@ The program has two main functionalities:
    a proper FDR in terms of "proportion of false positive loci".
 
 2. Approximate the significance of a list of candidate SNPs, adjusting for
-   multiple comparisons. If you have isolated a few SNPs of interest and want 
-   to know their significance in a GWAS, you can supply the GWAS data and let 
+   multiple comparisons. If you have isolated a few SNPs of interest and want
+   to know their significance in a GWAS, you can supply the GWAS data and let
    the program specifically test those SNPs.
 
 
@@ -107,9 +107,8 @@ Otherwise use permutation.
 Zhang Y, Liu JS. (2010)
 Fast and accurate significance approximation for genome-wide association studies.
 Submitted.
-
-  </help>
-  <citations>
-    <citation type="doi">10.1198/jasa.2011.ap10657</citation>
-  </citations>
+    </help>
+    <citations>
+        <citation type="doi">10.1198/jasa.2011.ap10657</citation>
+    </citations>
 </tool>

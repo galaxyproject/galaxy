@@ -17,6 +17,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -25,6 +26,7 @@ from galaxy.util import (
     sanitize_text,
     smart_str
 )
+from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
@@ -124,7 +126,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
-        return (allow_admin and trans.user_is_admin()) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
+        return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
 
     @web.expose
     def errors(self, trans, id):
@@ -203,7 +205,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin() or (data.history and trans.get_user() == data.history.user)):
+        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message("Please wait until this dataset finishes uploading before attempting to view it.")
@@ -459,6 +461,24 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     message = 'Changed the type to %s.' % datatype
             else:
                 return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
+        elif operation == 'datatype_detect':
+            # The user clicked the 'Detect datatype' button on the 'Change data type' form
+            if data.datatype.allow_datatype_change:
+                # prevent modifying datatype when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata(data.id):
+                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
+                else:
+                    path = data.dataset.file_name
+                    is_binary = check_binary(path)
+                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                    trans.app.datatypes_registry.change_datatype(data, datatype)
+                    trans.sa_session.flush()
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                        trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                        overwrite=False)  # overwrite is False as per existing behavior
+                    message = 'Detection was finished and changed the datatype to %s.' % datatype
+            else:
+                return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             # prevent modifying metadata when dataset is queued or running as input/output
@@ -872,9 +892,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Dataset id %s marked as deleted" % str(id))
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
-        except Exception as e:
+        except Exception:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % (dataset_id, id)
-            log.exception(msg + ': ' + str(e))
+            log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
             status = 'error'
@@ -966,8 +986,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 except Exception:
                     log.exception('Unable to purge dataset (%s) on purge of HDA (%s):' % (hda.dataset.id, hda.id))
             trans.sa_session.flush()
-        except Exception as exc:
-            msg = 'HDA purge failed (encoded: %s, decoded: %s): %s' % (dataset_id, id, exc)
+        except Exception:
+            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % (dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'
@@ -1151,13 +1171,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         for hist in target_histories:
                             if content.history_content_type == "dataset":
-                                hist.add_dataset(content.copy())
+                                copy = content.copy()
+                                hist.add_dataset(copy)
                             else:
                                 copy_collected_datasets = True
                                 copy_kwds = {}
                                 if copy_collected_datasets:
                                     copy_kwds["element_destination"] = hist
-                                hist.add_dataset_collection(content.copy(**copy_kwds))
+                                copy = content.copy(**copy_kwds)
+                                hist.add_dataset_collection(copy)
+                            if user:
+                                copy.copy_tags_from(user, content)
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()

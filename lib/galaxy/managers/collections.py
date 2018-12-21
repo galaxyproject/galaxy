@@ -25,7 +25,7 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 ERROR_INVALID_ELEMENTS_SPECIFICATION = "Create called with invalid parameters, must specify element identifiers."
-ERROR_NO_COLLECTION_TYPE = "Create called without specifing a collection type."
+ERROR_NO_COLLECTION_TYPE = "Create called without specifying a collection type."
 
 
 class DatasetCollectionManager(object):
@@ -46,11 +46,11 @@ class DatasetCollectionManager(object):
         self.tag_manager = tags.GalaxyTagManager(app.model.context)
         self.ldda_manager = lddas.LDDAManager(app)
 
-    def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None):
+    def precreate_dataset_collection_instance(self, trans, parent, name, structure, implicit_inputs=None, implicit_output_name=None, tags=None):
         # TODO: prebuild all required HIDs and send them in so no need to flush in between.
         dataset_collection = self.precreate_dataset_collection(structure, allow_unitialized_element=implicit_output_name is not None)
         instance = self._create_instance_for_collection(
-            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False
+            trans, parent, name, dataset_collection, implicit_inputs=implicit_inputs, implicit_output_name=implicit_output_name, flush=False, tags=tags
         )
         return instance
 
@@ -87,7 +87,7 @@ class DatasetCollectionManager(object):
 
     def create(self, trans, parent, name, collection_type, element_identifiers=None,
                elements=None, implicit_collection_info=None, trusted_identifiers=None,
-               hide_source_items=False, tags=None):
+               hide_source_items=False, tags=None, copy_elements=False):
         """
         PRECONDITION: security checks on ability to add to parent
         occurred during load.
@@ -105,6 +105,7 @@ class DatasetCollectionManager(object):
             element_identifiers=element_identifiers,
             elements=elements,
             hide_source_items=hide_source_items,
+            copy_elements=copy_elements,
         )
 
         implicit_inputs = []
@@ -148,11 +149,18 @@ class DatasetCollectionManager(object):
             log.exception(message)
             raise MessageException(message)
 
-        tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
+        # Tags may be coming in as a dictionary of tag model objects if copying them from other
+        # existing Galaxy objects or as a list of strings if the tags are coming from user supplied
+        # values.
+        if isinstance(tags, list):
+            assert implicit_inputs is None, implicit_inputs
+            tags = self.tag_manager.add_tags_from_list(trans.user, dataset_collection_instance, tags)
+        else:
+            tags = self._append_tags(dataset_collection_instance, implicit_inputs, tags)
         return self.__persist(dataset_collection_instance, flush=flush)
 
     def create_dataset_collection(self, trans, collection_type, element_identifiers=None, elements=None,
-                                  hide_source_items=None):
+                                  hide_source_items=None, copy_elements=False):
         # Make sure at least one of these is None.
         assert element_identifiers is None or elements is None
 
@@ -166,43 +174,54 @@ class DatasetCollectionManager(object):
         # If we have elements, this is an internal request, don't need to load
         # objects from identifiers.
         if elements is None:
-            elements = self._element_identifiers_to_elements(trans, collection_type_description, element_identifiers)
+            elements = self._element_identifiers_to_elements(trans,
+                                                             collection_type_description=collection_type_description,
+                                                             element_identifiers=element_identifiers,
+                                                             hide_source_items=hide_source_items,
+                                                             copy_elements=copy_elements)
         else:
             if has_subcollections:
                 # Nested collection - recursively create collections as needed.
-                self.__recursively_create_collections_for_elements(trans, elements)
+                self.__recursively_create_collections_for_elements(trans, elements, hide_source_items, copy_elements=copy_elements)
         # else if elements is set, it better be an ordered dict!
 
         if elements is not self.ELEMENTS_UNINITIALIZED:
             type_plugin = collection_type_description.rank_type_plugin()
             dataset_collection = builder.build_collection(type_plugin, elements)
-            if hide_source_items:
-                log.debug("Hiding source items during dataset collection creation")
-                for dataset in dataset_collection.dataset_instances:
-                    dataset.visible = False
         else:
             dataset_collection = model.DatasetCollection(populated=False)
         dataset_collection.collection_type = collection_type
         return dataset_collection
 
-    def _element_identifiers_to_elements(self, trans, collection_type_description, element_identifiers):
+    def _element_identifiers_to_elements(self,
+                                         trans,
+                                         collection_type_description,
+                                         element_identifiers,
+                                         hide_source_items=False,
+                                         copy_elements=False):
         if collection_type_description.has_subcollections():
             # Nested collection - recursively create collections and update identifiers.
-            self.__recursively_create_collections_for_identifiers(trans, element_identifiers)
+            self.__recursively_create_collections_for_identifiers(trans, element_identifiers, hide_source_items, copy_elements)
         new_collection = False
         for element_identifier in element_identifiers:
             if element_identifier.get("src") == "new_collection" and element_identifier.get('collection_type') == '':
                 new_collection = True
-                elements = self.__load_elements(trans, element_identifier['element_identifiers'])
+                elements = self.__load_elements(trans=trans,
+                                                element_identifiers=element_identifier['element_identifiers'],
+                                                hide_source_items=hide_source_items,
+                                                copy_elements=copy_elements)
         if not new_collection:
-            elements = self.__load_elements(trans, element_identifiers)
+            elements = self.__load_elements(trans=trans,
+                                            element_identifiers=element_identifiers,
+                                            hide_source_items=hide_source_items,
+                                            copy_elements=copy_elements)
         return elements
 
     def _append_tags(self, dataset_collection_instance, implicit_inputs=None, tags=None):
         tags = tags or {}
         implicit_inputs = implicit_inputs or []
         for _, v in implicit_inputs:
-            for tag in [t for t in v.tags if t.user_tname == 'name']:
+            for tag in v.auto_propagated_tags:
                 tags[tag.value] = tag
         for _, tag in tags.items():
             dataset_collection_instance.tags.append(tag.copy(cls=model.HistoryDatasetCollectionTagAssociation))
@@ -314,7 +333,7 @@ class DatasetCollectionManager(object):
             context.flush()
         return dataset_collection_instance
 
-    def __recursively_create_collections_for_identifiers(self, trans, element_identifiers):
+    def __recursively_create_collections_for_identifiers(self, trans, element_identifiers, hide_source_items, copy_elements):
         for index, element_identifier in enumerate(element_identifiers):
             try:
                 if element_identifier.get("src", None) != "new_collection":
@@ -330,12 +349,14 @@ class DatasetCollectionManager(object):
                 trans=trans,
                 collection_type=collection_type,
                 element_identifiers=element_identifier["element_identifiers"],
+                hide_source_items=hide_source_items,
+                copy_elements=copy_elements,
             )
             element_identifier["__object__"] = collection
 
         return element_identifiers
 
-    def __recursively_create_collections_for_elements(self, trans, elements):
+    def __recursively_create_collections_for_elements(self, trans, elements, hide_source_items, copy_elements):
         if elements is self.ELEMENTS_UNINITIALIZED:
             return
 
@@ -355,17 +376,22 @@ class DatasetCollectionManager(object):
                 trans=trans,
                 collection_type=collection_type,
                 elements=sub_elements,
+                hide_source_items=hide_source_items,
+                copy_elements=copy_elements
             )
             new_elements[key] = collection
         elements.update(new_elements)
 
-    def __load_elements(self, trans, element_identifiers):
+    def __load_elements(self, trans, element_identifiers, hide_source_items=False, copy_elements=False):
         elements = odict.odict()
         for element_identifier in element_identifiers:
-            elements[element_identifier["name"]] = self.__load_element(trans, element_identifier)
+            elements[element_identifier["name"]] = self.__load_element(trans,
+                                                                       element_identifier=element_identifier,
+                                                                       hide_source_items=hide_source_items,
+                                                                       copy_elements=copy_elements)
         return elements
 
-    def __load_element(self, trans, element_identifier):
+    def __load_element(self, trans, element_identifier, hide_source_items, copy_elements):
         # if not isinstance( element_identifier, dict ):
         #    # Is allowing this to just be the id of an hda too clever? Somewhat
         #    # consistent with other API methods though.
@@ -381,7 +407,7 @@ class DatasetCollectionManager(object):
                     the_object = context.query(type(the_object)).get(the_object.id)
             return the_object
 
-        # dateset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
+        # dataset_identifier is dict {src=hda|ldda|hdca|new_collection, id=<encoded_id>}
         try:
             src_type = element_identifier.get('src', 'hda')
         except AttributeError:
@@ -392,11 +418,24 @@ class DatasetCollectionManager(object):
             message = message_template % element_identifier
             raise RequestParameterInvalidException(message)
 
+        tags = element_identifier.pop('tags', None)
+        tag_str = ''
+        if tags:
+            tag_str = ",".join(str(_) for _ in tags)
         if src_type == 'hda':
             decoded_id = int(trans.app.security.decode_id(encoded_id))
-            element = self.hda_manager.get_accessible(decoded_id, trans.user)
+            hda = self.hda_manager.get_accessible(decoded_id, trans.user)
+            if copy_elements:
+                element = self.hda_manager.copy(hda, history=trans.history, hide_copy=True)
+            else:
+                element = hda
+            if hide_source_items and self.hda_manager.get_owned(hda.id, user=trans.user, current_history=trans.history):
+                hda.visible = False
+            self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'ldda':
-            element = self.ldda_manager.get(trans, encoded_id)
+            element = self.ldda_manager.get(trans, encoded_id, check_accessible=True)
+            element = element.to_history_dataset_association(trans.history, add_to_history=True)
+            self.tag_manager.apply_item_tags(user=trans.user, item=element, tags_str=tag_str)
         elif src_type == 'hdca':
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
             element = self.__get_history_collection_instance(trans, encoded_id).collection
@@ -485,7 +524,8 @@ class DatasetCollectionManager(object):
             identifiers = parent_identifiers + [element.element_identifier]
             if not element.is_collection:
                 data.append([])
-                sources.append({"identifiers": identifiers, "dataset": element_object})
+                source = {"identifiers": identifiers, "dataset": element_object, "tags": element_object.make_tag_string_list()}
+                sources.append(source)
             else:
                 child_collection_type_description = collection_type_description.child_collection_type_description()
                 element_data, element_sources = self.__init_rule_data(
@@ -508,7 +548,7 @@ class DatasetCollectionManager(object):
 
     def __get_library_collection_instance(self, trans, id, check_ownership=False, check_accessible=True):
         if check_ownership:
-            raise NotImplemented("Functionality (getting library dataset collection with ownership check) unimplemented.")
+            raise NotImplementedError("Functionality (getting library dataset collection with ownership check) unimplemented.")
         instance_id = int(trans.security.decode_id(id))
         collection_instance = trans.sa_session.query(trans.app.model.LibraryDatasetCollectionAssociation).get(instance_id)
         if check_accessible:

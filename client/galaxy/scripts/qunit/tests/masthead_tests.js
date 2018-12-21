@@ -1,8 +1,7 @@
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import Masthead from "layout/masthead";
-
-/* global QUnit */
-/* global $ */
 
 QUnit.module("Masthead test", {
     beforeEach: function() {
@@ -32,10 +31,12 @@ QUnit.module("Masthead test", {
             enable_cloud_launch: true,
             user_requests: true
         });
-        $("body").append(this.masthead.render().$el);
+        this.container = this.masthead.render().$el;
+        $("body").append(this.container);
     },
     afterEach: function() {
         testApp.destroy();
+        this.container.remove();
     }
 });
 
@@ -48,9 +49,6 @@ QUnit.test("tabs", function(assert) {
     assert.ok(tab && $tab.length == 1, "Found analysis tab");
     tab.set("title", "Analyze");
     assert.ok($toggle.html() == "Analyze", "Correct title");
-    assert.ok(tab.get("target") == "_parent", "Correct initial target");
-    tab.set("target", "_target");
-    assert.ok($toggle.attr("target") == "_target", "Correct test target");
     assert.ok($toggle.css("visibility") == "visible", "Tab visible");
     tab.set("visible", false);
     assert.ok($toggle.css("visibility") == "hidden", "Tab hidden");

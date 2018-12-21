@@ -1,11 +1,18 @@
-import _l from "utils/localization";
 /** User Preferences view */
-import Form from "mvc/form/form-view";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Form from "mvc/form/form-view";
 import Ui from "mvc/ui/ui-misc";
 import QueryStringParsing from "utils/query-string-parsing";
+
 /** Contains descriptive dictionaries describing user forms */
 var Model = Backbone.Model.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         options = options || {};
         options.user_id = options.user_id || Galaxy.user.id;
         this.set({
@@ -41,6 +48,40 @@ var Model = Backbone.Model.extend({
                 submit_title: "Save permissions",
                 redirect: "user"
             },
+            make_data_private: {
+                title: _l("Make all data private"),
+                description: _l("Click here to make all data private."),
+                icon: "fa-lock",
+                onclick: function() {
+                    if (
+                        confirm(
+                            _l(
+                                "WARNING: This will make all datasets (excluding library datasets) for which you have " +
+                                    "'management' permissions, in all of your histories " +
+                                    "private, and will set permissions such that all " +
+                                    "of your new data in these histories is created as private.  Any " +
+                                    "datasets within that are currently shared will need " +
+                                    "to be re-shared or published.  Are you sure you " +
+                                    "want to do this?"
+                            )
+                        )
+                    ) {
+                        $.post(`${Galaxy.root}history/make_private`, { all_histories: true }, () => {
+                            Galaxy.modal.show({
+                                title: _l("Datasets are now private"),
+                                body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${
+                                    Galaxy.root
+                                }user/permissions">User Permissions</a> interface.`,
+                                buttons: {
+                                    Close: function() {
+                                        Galaxy.modal.hide();
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            },
             api_key: {
                 title: _l("Manage API key"),
                 description: _l("Access your current API key or create a new one."),
@@ -62,7 +103,7 @@ var Model = Backbone.Model.extend({
                 description: _l("Associate OpenIDs with your account."),
                 icon: "fa-openid",
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}openids/list`;
+                    Galaxy.page.router.push(`${getAppRoot()}openids/list`);
                 }
             },
             custom_builds: {
@@ -70,7 +111,7 @@ var Model = Backbone.Model.extend({
                 description: _l("Add or remove custom builds using history datasets."),
                 icon: "fa-cubes",
                 onclick: function() {
-                    window.location.href = `${Galaxy.root}custom_builds`;
+                    Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
                 }
             },
             logout: {
@@ -86,7 +127,7 @@ var Model = Backbone.Model.extend({
                                 Galaxy.modal.hide();
                             },
                             "Sign out": function() {
-                                window.location.href = `${Galaxy.root}user/logout?session_csrf_token=${
+                                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
                                     Galaxy.session_csrf_token
                                 }`;
                             }
@@ -110,13 +151,13 @@ var View = Backbone.View.extend({
 
     render: function() {
         var self = this;
+        let Galaxy = getGalaxyInstance();
         var config = Galaxy.config;
-        $.getJSON(`${Galaxy.root}api/users/${Galaxy.user.id}`, data => {
+        $.getJSON(`${getAppRoot()}api/users/${Galaxy.user.id}`, data => {
             self.$preferences = $("<div/>")
-                .addClass("ui-panel")
                 .append($("<h2/>").append("User preferences"))
                 .append($("<p/>").append(`You are logged in as <strong>${_.escape(data.email)}</strong>.`))
-                .append((self.$table = $("<table/>").addClass("ui-panel-table")));
+                .append((self.$table = $("<table/>")));
             var message = QueryStringParsing.get("message");
             var status = QueryStringParsing.get("status");
             if (message && status) {
@@ -131,6 +172,7 @@ var View = Backbone.View.extend({
             }
             self._addLink("custom_builds");
             self._addLink("permissions");
+            self._addLink("make_data_private");
             self._addLink("api_key");
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");
@@ -155,25 +197,30 @@ var View = Backbone.View.extend({
                 options.onclick();
             });
         } else {
-            $a.attr("href", `${Galaxy.root}user/${action}`);
+            $a.attr("href", `${getAppRoot()}user/${action}`);
         }
         this.$table.append($row);
     },
 
     _templateLink: function(options) {
-        return `<tr><td><div class="ui-panel-icon fa ${
-            options.icon
-        }"></td><td><a class="ui-panel-anchor" href="javascript:void(0)">${
-            options.title
-        }</a><div class="ui-form-info">${options.description}</div></td></tr>`;
+        return `<tr>
+                    <td class="align-top">
+                        <i class="ml-3 mr-3 fa fa-lg ${options.icon}">
+                    </td>
+                    <td>
+                        <a href="javascript:void(0)"><b>${options.title}</b></a>
+                        <div class="form-text text-muted">${options.description}</div>
+                    </td>
+                </tr>`;
     },
 
     _templateFooter: function(options) {
-        return `<p class="ui-panel-footer">You are using <strong>${
+        let Galaxy = getGalaxyInstance();
+        return `<p class="mt-2">You are using <strong>${
             options.nice_total_disk_usage
         }</strong> of disk space in this Galaxy instance. ${
             Galaxy.config.enable_quotas ? `Your disk quota is: <strong>${options.quota}</strong>. ` : ""
-        }Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank">documentation</a> for tips on how to find all of the data in your account.</p>`;
+        }Is your usage more than expected? See the <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b>documentation</b></a> for tips on how to find all of the data in your account.</p>`;
     }
 });
 

@@ -82,8 +82,8 @@ def inherit(context):
     %if header:
         ${header}
     %endif
-    <div class="toolForm">
-        <div class="toolFormTitle">Login</div>
+    <div class="card">
+        <div class="card-header">Login</div>
         <form name="login" id="login" action="${form_action}" method="post" >
             <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
             <div class="form-row">
@@ -116,8 +116,8 @@ def inherit(context):
     %if header:
         ${header}
     %endif
-    <div class="toolForm">
-        <div class="toolFormTitle">OR</div>
+    <div class="card">
+        <div class="card-header">OR</div>
         <form name="oidc" id="oidc" action="${form_action}" method="post" >
             <div class="form-row">
                 <input type="submit" value="Login with Google"/>
@@ -128,8 +128,8 @@ def inherit(context):
 </%def>
 
 <%def name="render_openid_form( redirect, auto_associate, openid_providers )">
-    <div class="toolForm">
-        <div class="toolFormTitle">OpenID Login</div>
+    <div class="card">
+        <div class="card-header">OpenID Login</div>
         <form name="openid" id="openid" action="${h.url_for( controller='user', action='openid_auth' )}" method="post" target="_parent" >
             <div class="form-row">
                 <label>OpenID URL:</label>

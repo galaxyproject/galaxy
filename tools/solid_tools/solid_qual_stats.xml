@@ -1,7 +1,7 @@
 <tool id="solid_qual_stats" name="Compute quality statistics" version="1.0.0">
     <description>for SOLiD data</description>
-    <command interpreter="python">solid_qual_stats.py $input $output1</command>
-
+    <command>
+python '$__tool_directory__/solid_qual_stats.py' '$input' '$output1'</command>
     <inputs>
         <param format="qualsolid" name="input" type="data" label="SOLiD qual file" help="If your dataset doesn't show up in the menu, click the pencil icon next to your dataset and set the datatype to 'qualsolid'" />
     </inputs>
@@ -11,7 +11,7 @@
     <tests>
         <test>
             <param name="input" value="qualscores.qualsolid" />
-            <output name="output1" file="qualsolid.stats" />
+            <output name="output1" file="qualsolid.stats" compare="sim_size" />
         </test>
     </tests>
 

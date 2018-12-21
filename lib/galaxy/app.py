@@ -194,7 +194,7 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
 
             def postfork_sentry_client():
                 import raven
-                self.sentry_client = raven.Client(self.config.sentry_dsn)
+                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
@@ -211,6 +211,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+
+        # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
+        # it becomes more commonly needed we could create a prefork function registration method like we do with
+        # postfork functions.
+        self.application_stack.init_late_prefork()
 
         self.containers = {}
         if self.config.enable_beta_containers_interface:

@@ -1,9 +1,9 @@
 <template>
     <div class="ui-thumbnails">
-        <div v-if="error" class="ui-message ui-show alert alert-danger">
+        <div v-if="error" class="alert alert-danger">
             {{ error }}
         </div>
-        <div v-else class="ui-thumbnails-grid">
+        <div v-else>
             <input class="search-query parent-width" name="query" placeholder="search visualizations" autocomplete="off" type="text" v-model="search">
             <div v-for="plugin in plugins">
                 <table v-if="match(plugin)">
@@ -13,10 +13,10 @@
                             <div v-else class="ui-thumbnails-icon fa fa-eye"/>
                         </td>
                         <td>
-                            <div class="ui-thumbnails-description-title ui-form-info">
+                            <div class="ui-thumbnails-title font-weight-bold text-dark">
                                 {{ plugin.html }}
                             </div>
-                            <div class="ui-thumbnails-description-text ui-form-info">
+                            <div class="ui-thumbnails-text text-dark">
                                 {{ plugin.description }}
                             </div>
                         </td>
@@ -25,19 +25,19 @@
                         <td/>
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
-                                <div class="ui-form-info ui-bold">Select a dataset to visualize:</div>
+                                <div class="font-weight-bold text-dark">Select a dataset to visualize:</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :value="file.id">{{ file.name }}</option>
                                     </select>
                                     <div class="icon-dropdown fa fa-caret-down"/>
                                 </div>
-                                <button type="button" class="ui-button-default ui-float-left btn btn-primary" @click="create(plugin)">
-                                    <i class="icon fa fa-check ui-margin-right"/>
+                                <button type="button" class="ui-button-default float-left mt-3 btn btn-primary" @click="create(plugin)">
+                                    <i class="icon fa fa-check"/>
                                     <span class="title">Create Visualization</span>
                                 </button>
                             </div>
-                            <div v-else class="ui-message ui-show alert alert-danger">
+                            <div v-else class="alert alert-danger">
                                 There is no suitable dataset in your current history which can be visualized with this plugin.
                             </div>
                         </td>
@@ -48,7 +48,10 @@
     </div>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import axios from "axios";
+
 export default {
     data() {
         return {
@@ -62,7 +65,8 @@ export default {
         };
     },
     created() {
-        let url = `${Galaxy.root}api/plugins`;
+        let Galaxy = getGalaxyInstance();
+        let url = `${getAppRoot()}api/plugins`;
         let dataset_id = Galaxy.params.dataset_id;
         if (dataset_id) {
             this.fixed = true;
@@ -83,10 +87,11 @@ export default {
             if (this.fixed) {
                 this.create(plugin);
             } else {
+                let Galaxy = getGalaxyInstance();
                 let history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
                 if (history_id) {
                     axios
-                        .get(`${Galaxy.root}api/plugins/${plugin.name}?history_id=${history_id}`)
+                        .get(`${getAppRoot()}api/plugins/${plugin.name}?history_id=${history_id}`)
                         .then(response => {
                             this.name = plugin.name;
                             this.hdas = response.data && response.data.hdas;
@@ -119,22 +124,8 @@ export default {
         },
         _errorMessage: function(e) {
             let message = e && e.response && e.response.data && e.response.data.err_msg;
-            return message || "Request failed for unkown reason.";
+            return message || "Request failed for an unknown reason.";
         }
     }
 };
 </script>
-<style>
-.ui-show {
-    display: block;
-    margin-top: 0px;
-}
-.ui-bold {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.ui-float-left {
-    float: left;
-    margin-top: 10px;
-}
-</style>

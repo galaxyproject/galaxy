@@ -39,7 +39,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEquals(len(datasets[DEFAULT_TOOL_OUTPUT]), 2)
+        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 2)
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2"]
@@ -68,7 +68,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
 
         datasets = self._collect()
         assert DEFAULT_TOOL_OUTPUT in datasets
-        self.assertEquals(len(datasets[DEFAULT_TOOL_OUTPUT]), 3)
+        self.assertEqual(len(datasets[DEFAULT_TOOL_OUTPUT]), 3)
 
         # Test default order of collection.
         assert list(datasets[DEFAULT_TOOL_OUTPUT].keys()) == ["test1", "test2", "test3"]
@@ -189,7 +189,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         assert len(self.job.output_datasets) == 1
         self._collect_default_extra()
         assert len(self.job.output_datasets) == 2
-        extra_job_assoc = filter(lambda job_assoc: job_assoc.name.startswith("__"), self.job.output_datasets)[0]
+        extra_job_assoc = [job_assoc for job_assoc in self.job.output_datasets if job_assoc.name.startswith("__")][0]
         assert extra_job_assoc.name == "__new_primary_file_out1|test1__"
 
     def test_pattern_override_designation(self):

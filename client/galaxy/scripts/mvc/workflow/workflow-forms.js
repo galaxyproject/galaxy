@@ -1,7 +1,12 @@
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
+
 /** Default form wrapper for non-tool modules in the workflow editor. */
 var Default = Backbone.View.extend({
     initialize: function(options) {
@@ -12,7 +17,7 @@ var Default = Backbone.View.extend({
                 onchange: function() {
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/workflows/build_module`,
+                        url: `${getAppRoot()}api/workflows/build_module`,
                         data: {
                             id: node.id,
                             type: node.type,
@@ -42,7 +47,7 @@ var Tool = Backbone.View.extend({
                 text_disable: "Set at Runtime",
                 narrow: true,
                 initial_errors: true,
-                cls: "ui-portlet-narrow",
+                cls: "ui-portlet-section",
                 initialmodel: function(process, form) {
                     self._customize(form);
                     process.resolve();
@@ -51,6 +56,7 @@ var Tool = Backbone.View.extend({
                     form.model.get("postchange")(process, form);
                 },
                 postchange: function(process, form) {
+                    let Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
                         tool_id: options.id,
@@ -61,7 +67,7 @@ var Tool = Backbone.View.extend({
                     Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/workflows/build_module`,
+                        url: `${getAppRoot()}api/workflows/build_module`,
                         data: current_state,
                         success: function(data) {
                             form.model.set(data.config_form);
@@ -90,6 +96,7 @@ var Tool = Backbone.View.extend({
         var options = form.model.attributes;
         Utils.deepeach(options.inputs, input => {
             if (input.type) {
+                input.connectable = true;
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
                     input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
@@ -105,6 +112,7 @@ var Tool = Backbone.View.extend({
         });
         Utils.deepeach(options.inputs, input => {
             if (input.type === "conditional") {
+                input.connectable = false;
                 input.test_param.collapsible_value = undefined;
             }
         });
@@ -191,10 +199,27 @@ function _visit(head, head_list, output_id, options) {
     }
 }
 
+function _makeRenameHelp(name_labels) {
+    let help_section = `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid input variables are:`;
+    let li = `
+        <ul>
+            ${name_labels
+                .map(
+                    name_label => `<li><strong>${name_label.name.replace(/\|/g, ".")}</strong>
+                                                         ${name_label.label ? `(${name_label.label})` : ""}
+                                             </li>`
+                )
+                .join("")}
+        </ul>
+    `;
+    help_section += li;
+    return help_section;
+}
+
 /** Builds sub section with step actions/annotation */
-function _makeSection(output_id, options) {
+function _makeSection(output_id, label, options) {
     var extensions = [];
-    var input_terminal_names = [];
+    var name_label_map = [];
     var datatypes = options.datatypes;
     var node = options.node;
     var workflow = options.workflow;
@@ -202,9 +227,10 @@ function _makeSection(output_id, options) {
     for (var key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
-    for (key in node.input_terminals) {
-        input_terminal_names.push(node.input_terminals[key].name);
+    for (var key in node.input_terminals) {
+        name_label_map.push({ name: node.input_terminals[key].name, label: node.input_terminals[key].label });
     }
+    var rename_help = _makeRenameHelp(name_label_map);
     extensions.sort((a, b) => (a.label > b.label ? 1 : a.label < b.label ? -1 : 0));
     extensions.unshift({
         0: "Sequences",
@@ -220,7 +246,7 @@ function _makeSection(output_id, options) {
     });
     var output;
     var input_config = {
-        title: `Configure Output: '${output_id}'`,
+        title: `Configure Output: '${label}'`,
         type: "section",
         flat: true,
         inputs: [
@@ -240,9 +266,7 @@ function _makeSection(output_id, options) {
                 type: "text",
                 value: "",
                 ignore: "",
-                help: `This action will rename the output dataset. Click <a href="https://galaxyproject.org/learn/advanced-workflow/variables/">here</a> for more information. Valid inputs are: <strong>${input_terminal_names
-                    .join(", ")
-                    .replace(/\|/g, ".")}</strong>.`
+                help: rename_help
             },
             {
                 action: "ChangeDatatypeAction",
@@ -355,8 +379,9 @@ function _addSections(form) {
             help:
                 "Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
         });
-        for (var i in node.output_terminals) {
-            inputs.push(_makeSection(i, options));
+        for (let output_id in node.output_terminals) {
+            let label = node.output_terminals[output_id].label || output_id;
+            inputs.push(_makeSection(output_id, label, options));
         }
     }
 }

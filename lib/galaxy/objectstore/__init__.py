@@ -13,6 +13,7 @@ import threading
 import time
 from xml.etree import ElementTree
 
+import yaml
 try:
     from sqlalchemy.orm import object_session
 except ImportError:
@@ -205,9 +206,22 @@ class ObjectStore(object):
         """Return the percentage indicating how full the store is."""
         raise NotImplementedError()
 
+    @classmethod
+    def parse_xml(clazz, config_xml):
+        """Parse an XML description of a configuration for this object store.
+
+        Return a configuration dictionary (such as would correspond to the YAML configuration)
+        for the object store.
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def from_xml(clazz, config, config_xml, **kwd):
+        config_dict = clazz.parse_xml(config_xml)
+        return clazz(config, config_dict, **kwd)
+
 
 class DiskObjectStore(ObjectStore):
-
     """
     Standard Galaxy object store.
 
@@ -217,14 +231,14 @@ class DiskObjectStore(ObjectStore):
     >>> import tempfile
     >>> file_path=tempfile.mkdtemp()
     >>> obj = Bunch(id=1)
-    >>> s = DiskObjectStore(Bunch(umask=0o077, jobs_directory=file_path, new_file_path=file_path, object_store_check_old_style=False), file_path=file_path)
+    >>> s = DiskObjectStore(Bunch(umask=0o077, jobs_directory=file_path, new_file_path=file_path, object_store_check_old_style=False), dict(files_dir=file_path))
     >>> s.create(obj)
     >>> s.exists(obj)
     True
     >>> assert s.get_filename(obj) == file_path + '/000/dataset_1.dat'
     """
 
-    def __init__(self, config, config_xml=None, file_path=None, extra_dirs=None):
+    def __init__(self, config, config_dict):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -234,8 +248,6 @@ class DiskObjectStore(ObjectStore):
             * file_path -- Default directory to store objects to disk in.
             * umask -- the permission bits for newly created files.
 
-        :type config_xml: ElementTree
-
         :type file_path: str
         :param file_path: Override for the `config.file_path` value.
 
@@ -243,16 +255,28 @@ class DiskObjectStore(ObjectStore):
         :param extra_dirs: Keys are string, values are directory paths.
         """
         super(DiskObjectStore, self).__init__(config)
-        self.file_path = file_path or config.file_path
-        # The new config_xml overrides universe settings.
+        self.file_path = config_dict.get("files_dir") or config.file_path
+        extra_dirs = dict(
+            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        self.extra_dirs.update(extra_dirs)
+
+    @classmethod
+    def parse_xml(clazz, config_xml):
+        extra_dirs = []
+        file_path = None
+
         if config_xml is not None:
             for e in config_xml:
                 if e.tag == 'files_dir':
-                    self.file_path = e.get('path')
+                    file_path = e.get('path')
                 else:
-                    self.extra_dirs[e.get('type')] = e.get('path')
-        if extra_dirs is not None:
-            self.extra_dirs.update(extra_dirs)
+                    extra_dirs.append({"type": e.get('type'), "path": e.get('path')})
+
+        config_dict = {
+            "files_dir": file_path,
+            "extra_dirs": extra_dirs,
+        }
+        return config_dict
 
     def _get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
@@ -516,6 +540,13 @@ class NestedObjectStore(ObjectStore):
         """For the first backend that has this `obj`, get its URL."""
         return self._call_method('get_object_url', obj, None, False, **kwargs)
 
+    def _repr_object_for_exception(self, obj):
+        try:
+            # there are a few objects in python that don't have __class__
+            return '{}(id={})'.format(obj.__class__.__name__, obj.id)
+        except AttributeError:
+            return str(obj)
+
     def _call_method(self, method, obj, default, default_is_exception,
             **kwargs):
         """Check all children object stores for the first one with the dataset."""
@@ -524,7 +555,7 @@ class NestedObjectStore(ObjectStore):
                 return store.__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
-                          % (method, str(obj), str(kwargs)))
+                          % (method, self._repr_object_for_exception(obj), str(kwargs)))
         else:
             return default
 
@@ -539,7 +570,7 @@ class DistributedObjectStore(NestedObjectStore):
     with weighting.
     """
 
-    def __init__(self, config, config_xml=None, fsmon=False):
+    def __init__(self, config, config_dict, fsmon=False):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -554,21 +585,34 @@ class DistributedObjectStore(NestedObjectStore):
         :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
-        super(DistributedObjectStore, self).__init__(config,
-                config_xml=config_xml)
-        if config_xml is None:
-            self.distributed_config = config.distributed_object_store_config_file
-            assert self.distributed_config is not None, \
-                "distributed object store ('object_store = distributed') " \
-                "requires a config file, please set one in " \
-                "'distributed_object_store_config_file')"
+        super(DistributedObjectStore, self).__init__(config)
+
         self.backends = {}
         self.weighted_backend_ids = []
         self.original_weighted_backend_ids = []
         self.max_percent_full = {}
-        self.global_max_percent_full = 0.0
+        self.global_max_percent_full = config_dict.get("global_max_percent_full", 0)
         random.seed()
-        self.__parse_distributed_config(config, config_xml)
+
+        backends_def = config_dict["backends"]
+        for backend_def in backends_def:
+            backened_id = backend_def["id"]
+            file_path = backend_def["files_dir"]
+            extra_dirs = backend_def.get("extra_dirs", [])
+            maxpctfull = backend_def.get("max_percent_full", 0)
+            weight = backend_def["weight"]
+            disk_config_dict = dict(files_dir=file_path, extra_dirs=extra_dirs)
+            self.backends[backened_id] = DiskObjectStore(config, disk_config_dict)
+            self.max_percent_full[backened_id] = maxpctfull
+            log.debug("Loaded disk backend '%s' with weight %s and file_path: %s" % (backened_id, weight, file_path))
+
+            for i in range(0, weight):
+                # The simplest way to do weighting: add backend ids to a
+                # sequence the number of times equalling weight, then randomly
+                # choose a backend from that sequence at creation
+                self.weighted_backend_ids.append(backened_id)
+        self.original_weighted_backend_ids = self.weighted_backend_ids
+
         self.sleeper = None
         if fsmon and (self.global_max_percent_full or [_ for _ in self.max_percent_full.values() if _ != 0.0]):
             self.sleeper = Sleeper()
@@ -577,40 +621,65 @@ class DistributedObjectStore(NestedObjectStore):
             self.filesystem_monitor_thread.start()
             log.info("Filesystem space monitor started")
 
-    def __parse_distributed_config(self, config, config_xml=None):
-        if config_xml is None:
-            root = ElementTree.parse(self.distributed_config).getroot()
-            log.debug('Loading backends for distributed object store from %s', self.distributed_config)
+    @classmethod
+    def parse_xml(clazz, config_xml, legacy=False):
+        if legacy:
+            backends_root = config_xml
         else:
-            root = config_xml.find('backends')
-            log.debug('Loading backends for distributed object store from %s', config_xml.get('id'))
-        self.global_max_percent_full = float(root.get('maxpctfull', 0))
-        for elem in [e for e in root if e.tag == 'backend']:
+            backends_root = config_xml.find('backends')
+
+        backends = []
+        config_dict = {
+            'global_max_percent_full': float(backends_root.get('maxpctfull', 0)),
+            'backends': backends,
+        }
+
+        for elem in [e for e in backends_root if e.tag == 'backend']:
             id = elem.get('id')
             weight = int(elem.get('weight', 1))
             maxpctfull = float(elem.get('maxpctfull', 0))
-            if elem.get('type', 'disk'):
+            elem_type = elem.get('type', 'disk')
+
+            if elem_type:
                 path = None
-                extra_dirs = {}
+                extra_dirs = []
                 for sub in elem:
                     if sub.tag == 'files_dir':
                         path = sub.get('path')
                     elif sub.tag == 'extra_dir':
                         type = sub.get('type')
-                        extra_dirs[type] = sub.get('path')
-                self.backends[id] = DiskObjectStore(config, file_path=path, extra_dirs=extra_dirs)
-                self.max_percent_full[id] = maxpctfull
-                log.debug("Loaded disk backend '%s' with weight %s and file_path: %s" % (id, weight, path))
-                if extra_dirs:
-                    log.debug("    Extra directories:")
-                    for type, dir in extra_dirs.items():
-                        log.debug("        %s: %s" % (type, dir))
-            for i in range(0, weight):
-                # The simplest way to do weighting: add backend ids to a
-                # sequence the number of times equalling weight, then randomly
-                # choose a backend from that sequence at creation
-                self.weighted_backend_ids.append(id)
-        self.original_weighted_backend_ids = self.weighted_backend_ids
+                        extra_dirs.append({"type": type, "path": sub.get('path')})
+
+                backend_dict = {
+                    'id': id,
+                    'weight': weight,
+                    'max_percent_full': maxpctfull,
+                    'files_dir': path,
+                    'extra_dirs': extra_dirs,
+                    'type': elem_type,
+                }
+                backends.append(backend_dict)
+
+        return config_dict
+
+    @classmethod
+    def from_xml(clazz, config, config_xml, fsmon=False):
+        legacy = False
+        if config_xml is None:
+            distributed_config = config.distributed_object_store_config_file
+            assert distributed_config is not None, \
+                "distributed object store ('object_store = distributed') " \
+                "requires a config file, please set one in " \
+                "'distributed_object_store_config_file')"
+
+            log.debug('Loading backends for distributed object store from %s', distributed_config)
+            config_xml = ElementTree.parse(distributed_config).getroot()
+            legacy = True
+        else:
+            log.debug('Loading backends for distributed object store from %s', config_xml.get('id'))
+
+        config_dict = clazz.parse_xml(config_xml, legacy=legacy)
+        return clazz(config, config_dict, fsmon=fsmon)
 
     def shutdown(self):
         """Shut down. Kill the free space monitor if there is one."""
@@ -632,7 +701,7 @@ class DistributedObjectStore(NestedObjectStore):
     def create(self, obj, **kwargs):
         """The only method in which obj.object_store_id may be None."""
         if obj.object_store_id is None or not self.exists(obj, **kwargs):
-            if obj.object_store_id is None or obj.object_store_id not in self.weighted_backend_ids:
+            if obj.object_store_id is None or obj.object_store_id not in self.backends:
                 try:
                     obj.object_store_id = random.choice(self.weighted_backend_ids)
                 except IndexError:
@@ -653,7 +722,7 @@ class DistributedObjectStore(NestedObjectStore):
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
             raise default('objectstore, _call_method failed: %s on %s, kwargs: %s'
-                          % (method, str(obj), str(kwargs)))
+                          % (method, self._repr_object_for_exception(obj), str(kwargs)))
         else:
             return default
 
@@ -686,12 +755,27 @@ class HierarchicalObjectStore(NestedObjectStore):
     When creating objects only the first store is used.
     """
 
-    def __init__(self, config, config_xml=None, fsmon=False):
+    def __init__(self, config, config_dict, fsmon=False):
         """The default contructor. Extends `NestedObjectStore`."""
-        super(HierarchicalObjectStore, self).__init__(config, config_xml=config_xml)
-        self.backends = odict()
+        super(HierarchicalObjectStore, self).__init__(config)
+
+        backends = odict()
+        for order, backend_def in enumerate(config_dict["backends"]):
+            backends[order] = build_object_store_from_config(config, config_dict=backend_def, fsmon=fsmon)
+
+        self.backends = backends
+
+    @classmethod
+    def parse_xml(clazz, config_xml):
+        backends_list = []
         for b in sorted(config_xml.find('backends'), key=lambda b: int(b.get('order'))):
-            self.backends[int(b.get('order'))] = build_object_store_from_config(config, fsmon=fsmon, config_xml=b)
+            store_type = b.get("type")
+            objectstore_class, _ = type_to_object_store_class(store_type)
+            backend_config_dict = objectstore_class.parse_xml(b)
+            backend_config_dict["type"] = store_type
+            backends_list.append(backend_config_dict)
+
+        return {"backends": backends_list}
 
     def exists(self, obj, **kwargs):
         """Check all child object stores."""
@@ -705,7 +789,44 @@ class HierarchicalObjectStore(NestedObjectStore):
         self.backends[0].create(obj, **kwargs)
 
 
-def build_object_store_from_config(config, fsmon=False, config_xml=None):
+def type_to_object_store_class(store, fsmon=False):
+    objectstore_class = None
+    objectstore_constructor_kwds = {}
+    if store == 'disk':
+        objectstore_class = DiskObjectStore
+    elif store == 's3':
+        from .s3 import S3ObjectStore
+        objectstore_class = S3ObjectStore
+    elif store == 'cloud':
+        from .cloud import Cloud
+        objectstore_class = Cloud
+    elif store == 'swift':
+        from .s3 import SwiftObjectStore
+        objectstore_class = SwiftObjectStore
+    elif store == 'distributed':
+        objectstore_class = DistributedObjectStore
+        objectstore_constructor_kwds["fsmon"] = fsmon
+    elif store == 'hierarchical':
+        objectstore_class = HierarchicalObjectStore
+        objectstore_constructor_kwds["fsmon"] = fsmon
+    elif store == 'irods':
+        from .rods import IRODSObjectStore
+        objectstore_class = IRODSObjectStore
+    elif store == 'azure_blob':
+        from .azure_blob import AzureBlobObjectStore
+        objectstore_class = AzureBlobObjectStore
+    elif store == 'pithos':
+        from .pithos import PithosObjectStore
+        objectstore_class = PithosObjectStore
+    # Disable the Pulsar object store for now until it receives some attention
+    # elif store == 'pulsar':
+    #    from .pulsar import PulsarObjectStore
+    #    return PulsarObjectStore(config=config, config_xml=config_xml)
+
+    return objectstore_class, objectstore_constructor_kwds
+
+
+def build_object_store_from_config(config, fsmon=False, config_xml=None, config_dict=None):
     """
     Invoke the appropriate object store.
 
@@ -715,51 +836,39 @@ def build_object_store_from_config(config, fsmon=False, config_xml=None):
     Or you can specify the object store type in the `object_store` attribute of
     the `config` object. Currently 'disk', 's3', 'swift', 'distributed',
     'hierarchical', 'irods', and 'pulsar' are supported values.
-
     """
-    if config_xml is None and os.path.exists(config.object_store_config_file):
-        # This is a top level invocation of build_object_store_from_config, and
-        # we have an object_store_conf.xml -- read the .xml and build
-        # accordingly
-        root = ElementTree.parse(config.object_store_config_file).getroot()
-        store = root.get('type')
-        config_xml = root
+    from_object = 'xml'
+
+    if config_xml is None and config_dict is None:
+        config_file = config.object_store_config_file
+        if os.path.exists(config_file):
+            if config_file.endswith(".xml") or config_file.endswith(".xml.sample"):
+                # This is a top level invocation of build_object_store_from_config, and
+                # we have an object_store_conf.xml -- read the .xml and build
+                # accordingly
+                config_xml = ElementTree.parse(config.object_store_config_file).getroot()
+                store = config_xml.get('type')
+            else:
+                with open(config_file, "rt") as f:
+                    config_dict = yaml.safe_load(f)
+                from_object = 'dict'
+                store = config_dict.get('type')
+        else:
+            store = config.object_store
     elif config_xml is not None:
         store = config_xml.get('type')
-    else:
-        store = config.object_store
+    elif config_dict is not None:
+        from_object = 'dict'
+        store = config_dict.get('type')
 
-    if store == 'disk':
-        return DiskObjectStore(config=config, config_xml=config_xml)
-    elif store == 's3':
-        from .s3 import S3ObjectStore
-        return S3ObjectStore(config=config, config_xml=config_xml)
-    elif store == 'cloud':
-        from .cloud import Cloud
-        return Cloud(config=config, config_xml=config_xml)
-    elif store == 'swift':
-        from .s3 import SwiftObjectStore
-        return SwiftObjectStore(config=config, config_xml=config_xml)
-    elif store == 'distributed':
-        return DistributedObjectStore(
-            config=config, fsmon=fsmon, config_xml=config_xml)
-    elif store == 'hierarchical':
-        return HierarchicalObjectStore(config=config, config_xml=config_xml)
-    elif store == 'irods':
-        from .rods import IRODSObjectStore
-        return IRODSObjectStore(config=config, config_xml=config_xml)
-    elif store == 'azure_blob':
-        from .azure_blob import AzureBlobObjectStore
-        return AzureBlobObjectStore(config=config, config_xml=config_xml)
-    elif store == 'pithos':
-        from .pithos import PithosObjectStore
-        return PithosObjectStore(config=config, config_xml=config_xml)
-    # Disable the Pulsar object store for now until it receives some attention
-    # elif store == 'pulsar':
-    #    from .pulsar import PulsarObjectStore
-    #    return PulsarObjectStore(config=config, config_xml=config_xml)
-    else:
+    objectstore_class, objectstore_constructor_kwds = type_to_object_store_class(store, fsmon=fsmon)
+    if objectstore_class is None:
         log.error("Unrecognized object store definition: {0}".format(store))
+
+    if from_object == 'xml':
+        return objectstore_class.from_xml(config=config, config_xml=config_xml, **objectstore_constructor_kwds)
+    else:
+        return objectstore_class(config=config, config_dict=config_dict, **objectstore_constructor_kwds)
 
 
 def local_extra_dirs(func):
@@ -808,3 +917,24 @@ def _create_object_in_session(obj):
         object_session(obj).flush()
     else:
         raise Exception(NO_SESSION_ERROR_MESSAGE)
+
+
+class ObjectStorePopulator(object):
+    """ Small helper for interacting with the object store and making sure all
+    datasets from a job end up with the same object_store_id.
+    """
+
+    def __init__(self, app):
+        self.object_store = app.object_store
+        self.object_store_id = None
+
+    def set_object_store_id(self, data):
+        # Create an empty file immediately.  The first dataset will be
+        # created in the "default" store, all others will be created in
+        # the same store as the first.
+        data.dataset.object_store_id = self.object_store_id
+        try:
+            self.object_store.create(data.dataset)
+        except ObjectInvalid:
+            raise Exception('Unable to create output dataset: object store is full')
+        self.object_store_id = data.dataset.object_store_id  # these will be the same thing after the first output

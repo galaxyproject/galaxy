@@ -52,11 +52,7 @@
 </%def>
 
 <%def name="javascripts()">
-    <script>
-        window.Galaxy = window.Galaxy || {};
-        window.Galaxy.root = '${h.url_for( "/" )}';
-        window.jQuery = window.jquery = window.$;
-    </script>
+
     ## Send errors to Sentry server if configured
     %if app.config.sentry_dsn:
         ${h.js( "libs/raven" )}
@@ -71,52 +67,19 @@
     ## load jscript libraries
     ${h.js(
         ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
-        'bundled/extended.bundled',
         'libs/d3',
         'libs/require',
+        'bundled/libs.chunk',
+        'bundled/base.chunk',
+        'bundled/extended.bundled',
     )}
 
     <script type="text/javascript">
-        // configure require
-        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        window.jQuery = window.jquery = window.$;
-        define( 'jquery', [], function(){ return window.$; })
-
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts')}",
-            // cache buster based on templated server (re)start time
-            urlArgs: 'v=${app.server_starttime}',
-            shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone": {
-                    deps: [ 'jquery', 'libs/underscore' ],
-                    exports: "Backbone"
-                },
-                "libs/d3": { exports: "d3" },
-            },
-        });
-
-        // console protection
-        // TODO: Only needed for IE <9 which I believe we dropped
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-
         // extra configuration global
         var galaxy_config = ${ h.dumps( self.galaxy_config ) };
         window.galaxy_config = galaxy_config;
     </script>
-
-    ${h.js(
-        'libs/jquery/jquery-ui'
-    )}
-
+    
 </%def>
 
 <%def name="javascript_app()">
@@ -198,51 +161,57 @@
             %if self.galaxy_config['message_box']:
                 <div id="messagebox" class="panel-message"></div>
             %endif
-            ## left panel
-            %if self.galaxy_config['left_panel']:
-                <div id="left">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <div class="unified-panel-icons" style="float: right"></div>
-                            <div class="unified-panel-title"></div>
+
+            <div id="columns">
+
+                ## left panel
+                %if self.galaxy_config['left_panel']:
+                    <div id="left">
+                        <div class="unified-panel-header" unselectable="on">
+                            <div class="unified-panel-header-inner">
+                                <div class="unified-panel-icons" style="float: right"></div>
+                                <div class="unified-panel-title"></div>
+                            </div>
+                        </div>
+                        <div class="unified-panel-body" style="overflow: auto;"></div>
+                        <div class="unified-panel-footer">
+                            <div id="left-panel-collapse" class="panel-collapse right"></span></div>
+                            <div id="left-panel-drag" class="drag"></div>
                         </div>
                     </div>
-                    <div class="unified-panel-body" style="overflow: auto;"></div>
-                    <div class="unified-panel-footer">
-                        <div id="left-panel-collapse" class="panel-collapse right"></span></div>
-                        <div id="left-panel-drag" class="drag"></div>
-                    </div>
-                </div>
-            %endif
+                %endif
 
-            ## center panel
-            <div id="center">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <div class="unified-panel-title" style="float:left;"></div>
+                ## center panel
+                <div id="center">
+                    <div class="unified-panel-header" unselectable="on">
+                        <div class="unified-panel-header-inner">
+                            <div class="unified-panel-title" style="float:left;"></div>
+                        </div>
+                        <div style="clear: both"></div>
                     </div>
-                    <div style="clear: both"></div>
+                    <div class="unified-panel-body"></div>
                 </div>
-                <div class="unified-panel-body"></div>
+
+                ## right panel
+                %if self.galaxy_config['right_panel']:
+                    <div id="right">
+                        <div class="unified-panel-header" unselectable="on">
+                            <div class="unified-panel-header-inner">
+                                <div class="unified-panel-icons" style="float: right"></div>
+                                <div class="unified-panel-title"></div>
+                            </div>
+                        </div>
+                        <div class="unified-panel-body" style="overflow: auto;"></div>
+                        <div class="unified-panel-footer">
+                            <div id="right-panel-collapse" class="panel-collapse right"></span></div>
+                            <div id="right-panel-drag"  class="drag"></div>
+                        </div>
+                    </div>
+                %endif
             </div>
 
-            ## right panel
-            %if self.galaxy_config['right_panel']:
-                <div id="right">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <div class="unified-panel-icons" style="float: right"></div>
-                            <div class="unified-panel-title"></div>
-                        </div>
-                    </div>
-                    <div class="unified-panel-body" style="overflow: auto;"></div>
-                    <div class="unified-panel-footer">
-                        <div id="right-panel-collapse" class="panel-collapse right"></span></div>
-                        <div id="right-panel-drag"  class="drag"></div>
-                    </div>
-                </div>
-            %endif
         </div>
+
         <div id='dd-helper' style="display: none;"></div>
         ## Scripts can be loaded later since they progressively add features to
         ## the panels, but do not change layout

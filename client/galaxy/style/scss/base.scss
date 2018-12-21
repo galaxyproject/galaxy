@@ -1,20 +1,14 @@
 // Bootstrap variables and core framework
 @import "../../../node_modules/bootstrap/scss/_functions.scss";
-@import "galaxy_bootstrap/variables.scss";
+@import "theme/blue.scss";
 @import "../../../node_modules/bootstrap/scss/bootstrap.scss";
 
-// Fontawesome configuration.
-$fa-font-path: "../images/fonts";
-@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
-
 // Bootstrap-related style overrides
-@import "galaxy_bootstrap/overrides.scss";
+@import "overrides.scss";
 
-// Galaxy specific variables
-@import "galaxy_variables.scss";
-
-$white: #fff;
-$black: #000;
+// Fontawesome configuration.
+$fa-font-path: "../../../node_modules/font-awesome/fonts/";
+@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
 
 .fa-icon {
     // TODO: remove fa-icon and replace with fa
@@ -22,6 +16,8 @@ $black: #000;
 }
 
 @import "select2.scss";
+@import "jquery.rating.scss";
+
 /* fix for zero width select2 - remove when fixed there */
 .select2-minwidth {
     min-width: 256px;
@@ -33,6 +29,8 @@ $black: #000;
 @import "upload.scss";
 @import "ui.scss";
 @import "library.scss";
+@import "trackster.scss";
+@import "autocomplete_tagging.scss";
 @import "toastr.scss";
 @import "jstree.scss";
 @import "tour.scss";
@@ -73,8 +71,8 @@ $black: #000;
 }
 
 body {
-    background: $base-bg;
-    color: $base-text-color;
+    background: $body-bg;
+    color: $text-color;
     margin: 10px;
 
     // For panel layout pages
@@ -89,13 +87,26 @@ body {
 
 // ==== Panel layout styles ====
 
-$panel-message-height: 30px; //1.875rem;
+// Layout the paneled UI using flexbox.
 
-$layout_top_padding: 0px;
-$border-default-color_padding: 0px;
+#everything {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
 
-$panel_header_height: 30px;
-$panel_footer_height: 25px;
+#columns {
+    // Fill extra space in parent
+    flex: 1;
+    // Allow columns to be absolutely positioned inside
+    position: relative;
+}
 
 #background {
     position: absolute;
@@ -110,9 +121,9 @@ $panel_footer_height: 25px;
 }
 
 #messagebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
+    // position: absolute;
+    // top: $navbar-height + $layout_top_padding + 1;
+    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -122,9 +133,9 @@ $panel_footer_height: 25px;
 }
 
 #inactivebox {
-    position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    left: 0;
+    // position: absolute;
+    // top: $navbar-height + $layout_top_padding + 1;
+    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -136,35 +147,23 @@ $panel_footer_height: 25px;
 // Panels
 
 #left,
-#left-border,
 #center,
-#right-border,
 #right {
     position: absolute;
-    top: $navbar-height + $layout_top_padding + 1;
-    bottom: 0px;
+    top: 0;
+    height: 100%;
     overflow: hidden;
     background: #fff;
 }
-#left,
-#center,
-#right,
-#left-border,
-#right-border {
-    // border-top: solid $border-default-color 1px;
-}
 #left {
     left: 0px;
-    width: 250px;
+    width: $panel-width;
     z-index: 200;
-    border-right: solid $layout-border-color 1px;
-}
-#left-border {
-    left: 250px;
+    border-right: $layout-border;
 }
 #center {
-    left: 250 + $border-default-color_padding;
-    right: 250 + $border-default-color_padding;
+    left: $panel-width;
+    right: $panel-width;
     overflow: hidden;
     z-index: 1;
     .center-container {
@@ -176,7 +175,7 @@ $panel_footer_height: 25px;
             position: absolute;
             width: 100%;
             height: 100%;
-            padding: 10px;
+            padding: $margin-h $margin-v;
             overflow: auto;
         }
         .center-frame {
@@ -186,84 +185,94 @@ $panel_footer_height: 25px;
         }
     }
 }
-#right-border {
-    right: 250px;
-}
+
 #right {
-    width: 250px;
+    width: $panel-width;
     right: 0px;
     z-index: 200;
-    border-left: solid $layout-border-color 1px;
+    border-left: $layout-border;
 }
 
-// If the message box or inactivity box is visible
-body.has-message-box,
-body.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
+#left,
+#right,
+.unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
 }
 
-// If both are visible
-body.has-message-box.has-inactivity-box {
-    #left,
-    #left-border,
-    #center,
-    #right-border,
-    #right {
-        top: 2 * $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
-    #inactivebox {
-        top: $panel-message-height + $navbar-height + $layout_top_padding + 1;
-    }
+#left,
+#right,
+.unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
 }
 
 .unified-panel-header {
     @extend .unselectable;
+    @extend .mx-3;
     height: $panel_header_height;
     z-index: 1000;
-    text-shadow: rgba(255, 255, 255, 0.8) 0 1px 0;
-    background: $navbar-default-bg;
-    border-bottom: solid $layout-border-color 1px;
-    margin: 0;
-    padding: 0;
-    padding-right: 10px;
-    padding-left: 10px;
+    font-size: 1rem;
     font-weight: bold;
-
-    color: #555;
+    display: flex;
+    align-items: center;
+    color: $panel-header-text-color;
     a {
-        color: #555;
+        color: $panel-header-text-color;
     }
-    .fa {
-        font-size: 1.2em;
+    .unified-panel-header-inner {
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .panel-header-buttons {
+        order: 9999;
+        float: right;
+    }
+    .panel-header-button {
+        text-decoration: none;
+        display: inline-block;
+        cursor: pointer;
+        width: 1.2rem;
+        text-align: center;
+        padding: 0px;
+        &:not(:last-child) {
+            margin-right: 2px;
+        }
+        &:hover {
+            color: $brand-info;
+        }
+        // Bootstrap style span caret needs positioning
+        .caret {
+            margin-top: 7px;
+        }
+        // Another way to get a caret
+        &.popup {
+            padding-right: 1.75em;
+            background: url(../../images/dropdownarrow.png) no-repeat right 7px;
+        }
     }
 }
 
-.unified-panel-header-inner {
-    padding-top: 8px;
+.unified-panel-controls {
+    @extend .px-3;
 }
 
 .unified-panel-footer {
     @extend .unselectable;
-    position: absolute;
-    bottom: 0;
+    position: relative;
     height: $panel_footer_height;
     line-height: $panel_footer_height;
     width: 100%;
     z-index: 1000; // Above #dd-helper
-    border-top: solid $layout-border-color 1px;
+    border-top: $layout-border;
     background: $navbar-default-bg;
-
     color: #555;
     a {
         color: #555;
     }
-
     .drag {
         position: absolute;
         top: 0;
@@ -272,10 +281,10 @@ body.has-message-box.has-inactivity-box {
         text-align: center;
         height: $panel_footer_height;
         width: $panel_footer_height - 5;
-        background-image: url(../images/visualization/draggable_horizontal.png);
+        background-image: url(../../images/visualization/draggable_horizontal.png);
         background-repeat: no-repeat;
         background-position: 50% 50%;
-        cursor: w-resize;
+        cursor: col-resize;
     }
 }
 
@@ -309,14 +318,14 @@ body.has-message-box.has-inactivity-box {
     line-height: $panel_footer_height;
     width: $panel_footer_height - 5;
     background: none;
-    border-right: solid $layout-border-color 1px;
-    border-top: solid $layout-border-color 1px;
+    border-right: $layout-border;
+    border-top: $layout-border;
     background: $navbar-default-bg;
     &.right {
         left: inherit;
         right: 0;
         border-right: none;
-        border-left: solid $border-default-color 1px;
+        border-left: $layout_border;
         &.right:before {
             content: "\f054";
         }
@@ -331,48 +340,15 @@ body.has-message-box.has-inactivity-box {
 }
 
 div.unified-panel-body {
-    position: absolute;
-    top: $panel_header_height;
-    bottom: 0;
     width: 100%;
+    height: 100%;
     padding: 0px;
+    flex: 1;
+    overflow: auto;
 }
 
 div.unified-panel-body-background {
     background: none repeat scroll 0 0 $panel-bg-color;
-}
-
-#left > div.unified-panel-body,
-#right > div.unified-panel-body {
-    bottom: $panel_footer_height;
-    overflow: auto;
-}
-
-.panel-header-button {
-    color: #333;
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    margin: -1px;
-    padding: 1px;
-    margin-top: -0.2em;
-    // border: solid #999 1px;
-    padding-right: 0.5em;
-    padding-left: 0.5em;
-    // Fade to maroon on hover
-    &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
-    }
-    // Bootstrap style span caret needs positioning
-    .caret {
-        margin-top: 7px;
-    }
-    // Another way to get a caret
-    &.popup {
-        padding-right: 1.75em;
-        background: url(../images/dropdownarrow.png) no-repeat right 7px;
-    }
 }
 
 // Used for dragging panels, popup menus, to deal with capturing clicks in iframes
@@ -397,35 +373,46 @@ div.unified-panel-body-background {
     height: $panel-message-height;
     line-height: $panel-message-height;
     padding: 0px;
-    padding-left: 26px;
+    padding-left: 2.5rem;
     background-color: $state-danger-bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
-    background-position: 6px 50%;
+    background-position: 0.5rem 50%;
 }
 
 .panel-warning-message {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
     background-color: $state-warning-bg;
 }
 
 .panel-done-message {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
     background-color: $state-success-bg;
 }
 
 .panel-info-message {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_icon.svg);
+    background-size: 1.5rem;
     background-color: $state-info-bg;
+    svg:path {
+        fill: black;
+    }
 }
 
 // Masthead
 #masthead {
     padding: 0;
     margin-bottom: 0px;
-    background-color: #2c3143;
+    background-color: $base-color-1;
+    height: $masthead-height;
     .navbar-nav {
+        min-height: 100%;
         > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
             &.active {
                 background: black;
             }
@@ -446,21 +433,21 @@ div.unified-panel-body-background {
                 font-weight: bold;
                 font-size: 10px;
                 position: relative;
-                left: 30px;
-                top: -15px;
+                right: 5px;
+                top: 10px;
                 color: gold;
-                height: 0px;
+                width: 0px;
             }
         }
     }
     .navbar-brand {
         position: absolute;
         left: 0;
-        top: 0;
+        // top: 0;
         font-family: verdana;
         font-weight: bold;
         font-size: 20px;
-        line-height: 1;
+        // line-height: 1;
         color: white;
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
@@ -469,7 +456,7 @@ div.unified-panel-body-background {
         .navbar-brand-image {
             display: inline;
             width: 26px;
-            vertical-align: top;
+            // vertical-align: top;
             margin-left: 0.35em;
             border: none;
         }
@@ -481,7 +468,7 @@ div.unified-panel-body-background {
 
 .quota-meter-container {
     position: absolute;
-    top: 0;
+    // top: 0;
     right: 0;
     height: 32px;
 }
@@ -572,13 +559,6 @@ div.metadataHelpBody {
     overflow: auto;
 }
 
-div.titleRow {
-    font-weight: bold;
-    border-bottom: dotted gray 1px;
-    margin-bottom: 0.5em;
-    padding-bottom: 0.25em;
-}
-
 // Forms
 
 div.toolFormBody div.toolFormTitle {
@@ -608,22 +588,63 @@ div.toolHelpBody {
 }
 
 // In workflow
+div.toolTitleDisabled {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: square outside;
+    font-style: italic;
+    color: gray;
+}
+
+div.toolTitleNoSectionDisabled {
+    padding-bottom: 0px;
+    font-style: italic;
+    color: gray;
+}
+
+div.toolFormRow {
+    position: relative;
+}
 
 .toolForm.toolFormInCanvas {
-    border: solid $form-border 1px;
-    @include border-radius(2px);
-    background: $white;
-    margin: 0px;
+    @extend .card;
+    z-index: 100;
+    position: absolute;
+    border-color: $brand-primary;
     &.toolForm-active {
-        box-shadow: 0 0 0 3px $brand-primary;
-        @include border-radius(1px);
+        z-index: 1001;
+        box-shadow: 0 0 0 2px $brand-primary;
     }
     .toolFormTitle {
-        font-size: $font-size-base;
-        line-height: $line-height-base;
+        @extend .card-header;
+        @extend .py-1;
+        @extend .px-2;
+        cursor: move;
+        background: $panel-bg-color;
+    }
+    .toolFormBody {
+        @extend .card-body;
+        @extend .p-0;
+        @extend .mx-2;
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted black 1px;
+            margin: 0 5px;
+        }
     }
 }
 
+.toolForm.toolFormInCanvas.tool-node-error {
+    border-color: #aa6666;
+    .toolFormTitle {
+        background: #ffcccc;
+        border-color: #aa6666;
+    }
+}
 div.form,
 div.toolForm {
     border: solid $form-border 1px;
@@ -645,6 +666,7 @@ div.form-body {
 }
 
 div.form-row {
+    position: relative;
     padding: 5px 10px;
 }
 
@@ -706,6 +728,14 @@ div.form-row-error-message {
     margin-top: 5px;
 }
 
+.workflow-right {
+    background: white;
+}
+
+.workflow-right .right-content {
+    margin: 3px;
+}
+
 .workflow-right .right-content .section-row {
     margin-bottom: 10px;
 }
@@ -761,7 +791,7 @@ button {
     padding: 4px;
     font-size: $font-size-base;
     line-height: $line-height-base;
-    color: $gray;
+    color: $gray-700;
     border: 1px solid $input-border;
     padding-left: 14px !important;
     padding-right: 14px;
@@ -781,22 +811,26 @@ button {
     position: absolute;
     display: none;
     right: 6px;
-    top: 9px;
+    top: 5px;
     font-size: 1.4em;
     color: #888;
 }
 
-#search-clear-btn {
-    position: absolute;
-    right: 6px;
-    top: 9px;
-    display: block;
-    font-size: 1.4em !important;
-    text-decoration: none;
-    color: #888;
-    @extend .fa-icon;
-    &:before {
-        content: "\f057";
+#tool-search {
+    position: relative;
+    @extend .mb-2;
+    #search-clear-btn {
+        position: absolute;
+        right: 6px;
+        top: 5px;
+        display: block;
+        font-size: 1.4em !important;
+        text-decoration: none;
+        color: #888;
+        @extend .fa-icon;
+        &:before {
+            content: "\f057";
+        }
     }
 }
 
@@ -812,7 +846,7 @@ button {
     @extend .alert;
     min-height: 36px;
     padding-left: 52px;
-    background-image: url(error_large.png);
+    background-image: url(../../images/error_large.png);
     background-repeat: no-repeat;
     background-position: 10px 5px;
     .messagerow {
@@ -828,18 +862,18 @@ button {
 .warningmessagelarge {
     @extend .alert-warning;
     padding-left: 52px;
-    background-image: url(warn_large.png);
+    background-image: url(../../images/warn_large.png);
 }
 
 .donemessagelarge {
     @extend .alert-success;
     padding-left: 52px;
-    background-image: url(ok_large.png);
+    background-image: url(../../images/ok_large.png);
 }
 
 .infomessagelarge {
     @extend .alert-info;
-    background-image: url(info_large.png);
+    background-image: url(../../images/info_large.png);
 }
 
 .screencastBox {
@@ -866,7 +900,7 @@ button {
     min-height: 15px;
     //border: 1px solid $error_message_border;
     //background-color: $error_message_bg;
-    background-image: url(error_small.png);
+    background-image: url(../../images/error_small.png);
     background-repeat: no-repeat;
     background-position: 5px 6px;
 }
@@ -881,20 +915,20 @@ button {
 .warningmessagesmall,
 .ui-form-help .warning {
     @extend .alert-warning;
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemessage,
 .donemessagesmall {
     @extend .alert-success;
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomessage,
 .infomessagesmall,
 .ui-form-help .note {
     @extend .alert-info;
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 .errormark,
@@ -905,20 +939,20 @@ button {
 .err_bgr {
     padding-left: 20px;
     min-height: 15px;
-    background: url(error_small.png) no-repeat;
+    background: url(../../images/error_small.png) no-repeat;
 }
 
 .warningmark {
-    background-image: url(warn_small.png);
+    background-image: url(../../images/warn_small.png);
 }
 
 .donemark {
-    background-image: url(ok_small.png);
+    background-image: url(../../images/ok_small.png);
 }
 
 .infomark,
 .ok_bgr {
-    background-image: url(info_small.png);
+    background-image: url(../../images/info_small.png);
 }
 
 /* I think this is only used in view details */
@@ -972,7 +1006,7 @@ table.colored th {
 
 table.colored tr.header {
     background: $table-heading-bg;
-    color: contrast($complement-color-3);
+    color: contrast(spin($base-color-3, 180));
     background-repeat: repeat-x;
     background-position: top;
     border-bottom: solid $table-border-color 1px;
@@ -1081,7 +1115,7 @@ div.debug {
     border-collapse: separate;
 }
 .delete-search-icon {
-    background: url(../images/delete_tag_icon_gray.png) center no-repeat;
+    background: url(../../images/delete_tag_icon_gray.png) center no-repeat;
     display: inline-block;
     width: 10px;
     cursor: pointer;
@@ -1388,7 +1422,7 @@ a.action-button {
 }
 
 .menubutton.popup.split:hover {
-    //background: url(../images/ddarrowsplit.png) no-repeat right -39px;
+    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
 }
 
 // Popup menu styles
@@ -1434,7 +1468,7 @@ ul.dropdown-menu {
         font-size: 11px;
         font-weight: bold;
         line-height: $line-height-base;
-        color: $gray-light;
+        color: $gray-500;
         text-transform: uppercase;
     }
 
@@ -1529,11 +1563,8 @@ div.permissionContainer {
     cursor: pointer;
     width: 16px;
     height: 16px;
-    line-height: 8px;
-    // Fade to maroon on hover
     &:hover {
-        color: maroon;
-        @include transition(color 0.25s linear);
+        color: $brand-info;
     }
 }
 
@@ -1547,7 +1578,7 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput {
-    background: url(../images/documents-stack.png) no-repeat;
+    background: url(../../images/documents-stack.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1555,12 +1586,12 @@ div.permissionContainer {
 }
 
 .icon-button.multiinput.disabled {
-    background: url(../images/documents-stack-faded.png) no-repeat;
+    background: url(../../images/documents-stack-faded.png) no-repeat;
     cursor: pointer;
 }
 
 .icon-button.link {
-    background: url(../images/silk/link.png) no-repeat;
+    background: url(../../images/silk/link.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1568,7 +1599,7 @@ div.permissionContainer {
 }
 
 .icon-button.link-broken {
-    background: url(../images/silk/link_break.png) no-repeat;
+    background: url(../../images/silk/link_break.png) no-repeat;
     cursor: pointer;
     float: none;
     display: inline-block;
@@ -1601,10 +1632,14 @@ div.permissionContainer {
 // ==== Tool menu styles
 
 .toolMenuContainer {
-    color: $base-text-color;
-    background: $side-panel-bg;
+    color: $panel-text-color;
+    a {
+        color: $panel-text-color;
+        // text-decoration: none;
+    }
+    background: $panel-bg-color;
     min-height: 100%;
-    padding: 35px 10px;
+    @extend .m-3;
 }
 
 div.toolSectionPad {
@@ -1624,7 +1659,8 @@ div.toolSectionDetailsInner {
 }
 
 div.toolSectionTitle {
-    font-weight: bold;
+    font-weight: 500;
+    font-size: 1rem;
 }
 
 div.toolPanelLabel {
@@ -1638,10 +1674,9 @@ div.toolPanelLabel {
 div.toolTitle {
     padding-top: 5px;
     padding-bottom: 5px;
-    margin-left: 16px;
+    margin-left: 10px;
     margin-right: 10px;
-    display: list-item;
-    list-style: square outside;
+    display: block;
     .labels {
         float: right;
         margin-left: 2px;
@@ -1671,14 +1706,6 @@ div.toolTitleNoSection {
     font-weight: bold;
 }
 
-#tool-search {
-    padding-top: 5px;
-    padding-bottom: 10px;
-    position: fixed;
-    top: 65px;
-    width: 210px;
-}
-
 // Dataset Display Styles
 
 #loading_indicator {
@@ -1688,7 +1715,7 @@ div.toolTitleNoSection {
     height: 32px;
     width: 32px;
     display: none;
-    background: url(largespinner.gif);
+    background: url(../../images/largespinner.gif);
 }
 
 #content_table td {
@@ -1744,14 +1771,14 @@ div.toolTitleNoSection {
 }
 
 .icon-button.general-question {
-    background: url(question-octagon-frame.png) no-repeat;
+    background: url(../../images/question-octagon-frame.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
 }
 
 .icon-button.tag-question {
-    background: url(question-balloon.png) no-repeat;
+    background: url(../../images/question-balloon.png) no-repeat;
     float: right;
     margin-top: 3px;
     margin-right: 4px;
@@ -1957,6 +1984,96 @@ div.toolTitleNoSection {
             border-radius: 3px;
         }
     }
+}
+
+/* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
+ * workflow editor; everything should be moved out of the mako and into its own
+ * file */
+
+#canvas-viewport {
+    background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    overflow: hidden;
+}
+
+.base-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    @extend .mt-1;
+    color: white;
+    position: absolute;
+    z-index: 1500;
+    > icon {
+        @extend .fa;
+        @extend .fa-chevron-circle-right;
+        color: $brand-primary;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+    }
+}
+.input-terminal {
+    @extend .base-terminal;
+    left: -9px;
+}
+.output-terminal {
+    @extend .base-terminal;
+    right: -9px;
+    &:hover > icon {
+        color: $brand-success;
+    }
+}
+.input-terminal-active > icon {
+    color: $brand-success;
+}
+.drag-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    color: $brand-success;
+    position: absolute;
+    z-index: 1500;
+}
+.mark-terminal {
+    cursor: pointer;
+    color: $gray-500;
+    &.mark-terminal-active {
+        color: $brand-success;
+    }
+}
+.delete-terminal {
+    @extend .btn;
+    @extend .btn-sm;
+    @extend .btn-primary;
+    @extend .fa;
+    @extend .fa-minus-circle;
+    @extend .p-1;
+    @extend .mt-1;
+    position: absolute;
+    z-index: 2500;
+    top: 0px;
+    left: -15px;
+}
+.callout-terminal {
+    position: absolute;
+}
+.workflow-overview {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: 0px;
+    bottom: 0px;
+    border-top: solid gray 1px;
+    border-left: solid grey 1px;
+    padding: 7px 0 0 7px;
+    background: $workflow-overview-border no-repeat url("../../images/resizable.png");
+    z-index: 20000;
+    overflow: hidden;
+    max-width: 300px;
+    max-height: 300px;
+    min-width: 50px;
+    min-height: 50px;
 }
 
 /* For Vue */

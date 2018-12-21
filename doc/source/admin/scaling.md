@@ -26,10 +26,10 @@ Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` 
 * **Webless Galaxy application** - The Galaxy application run as a standalone Python application with no web/WSGI server
 * **[Paste][paste]** - Application server written in pure Python that implements the HTTP and Python WSGI protocols
 
-[uwsgi]: http://uwsgi-docs.readthedocs.io/
-[uwsgi-mules]: http://uwsgi-docs.readthedocs.io/en/latest/Mules.html
-[uwsgi-zerg-mode]: http://uwsgi-docs.readthedocs.io/en/latest/Zerg.html
-[paste]: http://paste.readthedocs.io/
+[uwsgi]: https://uwsgi-docs.readthedocs.io/
+[uwsgi-mules]: https://uwsgi-docs.readthedocs.io/en/latest/Mules.html
+[uwsgi-zerg-mode]: https://uwsgi-docs.readthedocs.io/en/latest/Zerg.html
+[paste]: https://paste.readthedocs.io/
 
 ## Application Servers
 
@@ -94,8 +94,20 @@ Under this strategy, job handling is offloaded to dedicated non-web-serving proc
 directly by the master uWSGI process. As a benefit of using mule messaging, only job handlers that are alive will be
 selected to run jobs.
 
-This is the recommended deployment strategy for Galaxy servers that run web servers and job handlers **on the same
-host**.
+This is the recommended deployment strategy.
+
+```eval_rst
+.. important::
+
+   If using **Zerg Mode** or running more than one uWSGI *master* process, do not use **uWSGI + Mules**. Doing so can
+   can cause jobs to be executed by mutiple handlers when recovering unassigned jobs at Galaxy server startup.
+
+   Multiple master processes is a rare configuration and is typically only used in the case of load balancing the web
+   application across multiple hosts. Note that multiple master proceses is not the same thing as the ``processess``
+   uWSGI configuration option, which is perfectly safe to set when using job handler mules.
+
+   For these scenarios, **uWSGI + Webless** is the recommended deployment strategy.
+```
 
 ### uWSGI for web serving and Webless Galaxy applications as job handlers
 
@@ -110,8 +122,8 @@ Like mules, under this strategy, job handling is offloaded to dedicated non-web-
 are [managed by the administrator](#starting-and-stopping). Because the handler is randomly assigned by the web worker
 when the job is submitted via the UI/API, jobs may be assigned to dead handlers.
 
-This is the recommended deployment strategy for Galaxy servers that run web servers and job handlers **on different
-hosts**.
+This is the recommended deployment strategy when **Zerg Mode** is used, and for Galaxy servers that run web servers and
+job handlers **on different hosts**.
 
 ## Legacy Deployment Options
 
@@ -407,6 +419,22 @@ option, `enable-threads` is set implicitly. This option enables the Python GIL a
 by Galaxy itself for various non-web tasks), which Galaxy uses extensively. Setting it explicitly, however, is harmless
 and can prevent strange difficult-to-debug situations if `threads` is accidentally unset.
 
+**Worker/Mule shutdown/reload mercy**
+
+By default, uWSGI will wait up to 60 seconds for web workers and mules to terminate. This is generally safe for
+servicing web requests, but some parts of Galaxy's job preparation/submission and collection/finishing operations can
+take quite a bit of time to complete and are not entirely reentrant: job errors or state inconsistencies can occur if
+interrupted (although every effort has been made to minimize such possibilities).  By default, Galaxy will wait up to 30
+seconds for the threads allocated for these operations to terminate after instructing them to shut down.  You can change
+this behavior by increasing the value of `monitor_thread_join_timeout` in the `galaxy` section of `galaxy.yml`. The
+maximum amount of time that Galaxy will take to shut down job runner workers is `monitor_thread_join_timeout *
+runner_plugin_count` since each plugin is shut down sequentially (`runner_plugin_count` is the number of `<plugin>`s in
+your `job_conf.xml`).
+
+Thus you should set the appropriate uWSGI `*-restart-mercy` option to a value higher than the maximum job runner worker
+shutdown time. If using **uWSGI all-in-one**, set `worker-reload-mercy`, and if using **uWSGI + Mule job handling**, set
+`mule-reload-mercy` (both in the `uwsgi` section of `galaxy.yml`).
+
 **Signals**
 
 The signal handling options (`die-on-term` and `hook-master-start` with `unix_signal` values) are not required but, if
@@ -494,6 +522,7 @@ umask           = 022
 autostart       = true
 autorestart     = true
 startsecs       = 10
+stopwaitsecs    = 65
 user            = galaxy
 numprocs        = 1
 stopsignal      = INT
@@ -505,6 +534,9 @@ process should `autostart` on boot, and `autorestart` if it ever crashes. We spe
 must stay up for this long before we consider it OK. If the process crashes sooner than that (e.g. bad changes you've
 made to your local installation) supervisord will try again a couple of times to restart the process before giving up
 and marking it as failed. This is one of the many ways supervisord is much friendly for managing these sorts of tasks. 
+
+The value of `stopwaitsecs` should be at least as large as the smallest value of uWSGI's `reload-mercy`,
+`worker-reload-mercy`, and `mule-reload-mercy` options, all of which default to `60`.
 
 If using the **uWSGI + Webless** scenario, you'll need to addtionally define job handlers to start. There's no simple
 way to activate a virtualenv when using supervisor, but you can simulate the effects by setting `$PATH` and
@@ -520,6 +552,7 @@ umask           = 022
 autostart       = true
 autorestart     = true
 startsecs       = 15
+stopwaitsecs    = 35
 user            = galaxy
 environment     = VIRTUAL_ENV="/srv/galaxy/venv",PATH="/srv/galaxy/venv/bin:%(ENV_PATH)s"
 ```
@@ -528,6 +561,10 @@ This is similar to the "web" definition above, however, you'll notice that we us
 substitution in the `command` and `process_name` fields. We've set `numprocs = 3`, which says to launch three handler
 processes. Supervisord will loop over `0..numprocs` and launch `handler0`, `handler1`, and `handler2` processes
 automatically for us, templating out the command string so each handler receives a different log file and name.
+
+The value of `stopwaitsecs` should be at least as large as `monitor_thread_join_timeout * runner_plugin_count`, which
+is `30` in the default configuration (`monitor_thread_join_timeout` is a Galaxy configuration option and
+`runner_plugin_count` is the number of `<plugin>`s in your `job_conf.xml`).
 
 Lastly, collect the tasks defined above into a single group. If you are not using webless handlers this is as simple as:
 

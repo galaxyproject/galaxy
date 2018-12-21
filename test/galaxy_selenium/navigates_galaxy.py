@@ -140,7 +140,10 @@ class NavigatesGalaxy(HasDriver):
         return wait_type.default_length * self.timeout_multiplier
 
     def sleep_for(self, wait_type):
-        time.sleep(self.wait_length(wait_type))
+        self.sleep_for_seconds(self.wait_length(wait_type))
+
+    def sleep_for_seconds(self, duration):
+        time.sleep(duration)
 
     def timeout_for(self, **kwds):
         wait_type = kwds.get("wait_type", DEFAULT_WAIT_TYPE)
@@ -996,8 +999,8 @@ class NavigatesGalaxy(HasDriver):
         return tags
 
     def workflow_import_submit_url(self, url):
-        form_button = self.wait_for_selector_visible("#center input[type='button']")
-        url_element = self.wait_for_selector_visible("#center input[type='text']")
+        form_button = self.wait_for_selector_visible("#workflow-import-button")
+        url_element = self.wait_for_selector_visible("#workflow-import-url-input")
         url_element.send_keys(url)
         form_button.click()
 
@@ -1023,10 +1026,12 @@ class NavigatesGalaxy(HasDriver):
             tool_link = self.components.tool_panel.outer_tool_link(tool_id=tool_id)
         else:
             tool_link = self.components.tool_panel.tool_link(tool_id=tool_id)
+        tool_element = tool_link.wait_for_present()
+        self.driver.execute_script("arguments[0].scrollIntoView(true);", tool_element)
         tool_link.wait_for_and_click()
 
     def tool_parameter_div(self, expanded_parameter_id):
-        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_visible()
+        return self.components.tool_form.parameter_div(parameter=expanded_parameter_id).wait_for_clickable()
 
     def tool_parameter_edit_rules(self, expanded_parameter_id="rules"):
         rules_div_element = self.tool_parameter_div("rules")
@@ -1284,7 +1289,8 @@ class NavigatesGalaxy(HasDriver):
             self.run_tour_step(step, i, tour_callback)
 
     def tour_wait_for_clickable_element(self, selector):
-        wait = self.wait()
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        wait = self.wait(timeout=timeout)
         timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become clickable" % selector)
         element = wait.until(
             sizzle.sizzle_selector_clickable(selector),
@@ -1293,7 +1299,8 @@ class NavigatesGalaxy(HasDriver):
         return element
 
     def tour_wait_for_element_present(self, selector):
-        wait = self.wait()
+        timeout = self.timeout_for(wait_type=WAIT_TYPES.JOB_COMPLETION)
+        wait = self.wait(timeout=timeout)
         timeout_message = self._timeout_message("sizzle (jQuery) selector [%s] to become present" % selector)
         element = wait.until(
             sizzle.sizzle_presence_of_selector(selector),
@@ -1366,8 +1373,7 @@ class NavigatesGalaxy(HasDriver):
         preclick = step.get("preclick", [])
         for preclick_selector in preclick:
             print("(Pre)Clicking %s" % preclick_selector)
-            element = self.tour_wait_for_clickable_element(preclick_selector)
-            element.click()
+            self._tour_wait_for_and_click_element(preclick_selector)
 
         element_str = step.get("element", None)
         if element_str is not None:
@@ -1384,8 +1390,12 @@ class NavigatesGalaxy(HasDriver):
         postclick = step.get("postclick", [])
         for postclick_selector in postclick:
             print("(Post)Clicking %s" % postclick_selector)
-            element = self.tour_wait_for_clickable_element(postclick_selector)
-            element.click()
+            self._tour_wait_for_and_click_element(postclick_selector)
+
+    @retry_during_transitions
+    def _tour_wait_for_and_click_element(self, selector):
+        element = self.tour_wait_for_clickable_element(selector)
+        element.click()
 
     @retry_during_transitions
     def wait_for_and_click_selector(self, selector):

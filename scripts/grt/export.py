@@ -20,31 +20,24 @@ import galaxy.app
 import galaxy.config
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util import hash_util
-from galaxy.util.script import app_properties_from_args, config_file_from_args, populate_config_args
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 sample_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml.sample'))
 default_config = os.path.abspath(os.path.join(os.path.dirname(__file__), 'grt.yml'))
 
 
-def _init(args, need_app=False):
+def _init(args):
     properties = app_properties_from_args(args)
     config = galaxy.config.Configuration(**properties)
     object_store = build_object_store_from_config(config)
     if not config.database_connection:
         logging.warning("The database connection is empty. If you are using the default value, please uncomment that in your galaxy.yml")
 
-    if need_app:
-        config_file = config_file_from_args(args)
-        app = galaxy.app.UniverseApplication(global_conf={'__file__': config_file, 'here': os.getcwd()})
-    else:
-        app = None
-
     model = galaxy.config.init_models_from_config(config, object_store=object_store)
     return (
         model,
         object_store,
         config,
-        app
     )
 
 
@@ -55,74 +48,8 @@ def kw_metrics(job):
     }
 
 
-class Sanitization:
-
-    def __init__(self, sanitization_config, model, sa_session):
-        self.sanitization_config = sanitization_config
-        # SA Stuff
-        self.model = model
-        self.sa_session = sa_session
-
-        if 'tool_params' not in self.sanitization_config:
-            self.sanitization_config['tool_params'] = {}
-
-    def blacklisted_tree(self, path):
-        if self.tool_id in self.sanitization_config['tool_params'] and path.lstrip('.') in self.sanitization_config['tool_params'][self.tool_id]:
-            return True
-        return False
-
-    def sanitize_data(self, tool_id, key, value):
-        # If the tool is blacklisted, skip it.
-        if tool_id in self.sanitization_config['tools']:
-            return 'null'
-        # Thus, all tools below here are not blacklisted at the top level.
-
-        # If the key is listed precisely (not a sub-tree), we can also return slightly more quickly.
-        if tool_id in self.sanitization_config['tool_params'] and key in self.sanitization_config['tool_params'][tool_id]:
-            return 'null'
-
-        # If the key isn't a prefix for any of the keys being sanitized, then this is safe.
-        if tool_id in self.sanitization_config['tool_params'] and not any(san_key.startswith(key) for san_key in self.sanitization_config['tool_params'][tool_id]):
-            return value
-
-        # Slow path.
-        if isinstance(value, str):
-            try:
-                unsanitized = {key: json.loads(value)}
-            except ValueError:
-                unsanitized = {key: value}
-        else:
-            unsanitized = {key: value}
-
-        self.tool_id = tool_id
-        return json.dumps(self._sanitize_value(unsanitized))
-
-    def _sanitize_dict(self, unsanitized_dict, path=""):
-        return {
-            k: self._sanitize_value(v, path=path + '.' + k)
-            for (k, v)
-            in unsanitized_dict.items()
-        }
-
-    def _sanitize_list(self, unsanitized_list, path=""):
-        return [
-            self._sanitize_value(v, path=path + '.*')
-            for v in unsanitized_list
-        ]
-
-    def _sanitize_value(self, unsanitized_value, path=""):
-        logging.debug("%sSAN %s" % ('  ' * path.count('.'), unsanitized_value))
-        if self.blacklisted_tree(path):
-            logging.debug("%sSAN ***REDACTED***" % ('  ' * path.count('.')))
-            return None
-
-        if type(unsanitized_value) is dict:
-            return self._sanitize_dict(unsanitized_value, path=path)
-        elif type(unsanitized_value) is list:
-            return self._sanitize_list(unsanitized_value, path=path)
-        else:
-            logging.debug("%s> Sanitizing %s = %s" % ('  ' * path.count('.'), path, unsanitized_value))
-            return unsanitized_value
+def round_to_2sd(number):
+    return str(int(float('%.2g' % number)))
 
 
 def main(argv):
@@ -135,7 +62,7 @@ def main(argv):
                         help="Set the logging level", default='warning')
     parser.add_argument("-b", "--batch-size", type=int, default=1000,
                         help="Batch size for sql queries")
-    parser.add_argument("-m", "--max-records", type=int, default=0,
+    parser.add_argument("-m", "--max-records", type=int, default=5000000,
                         help="Maximum number of records to include in a single report. This option should ONLY be used when reporting historical data. Setting this may require running GRT multiple times to capture all historical logs.")
     populate_config_args(parser)
 
@@ -172,7 +99,7 @@ def main(argv):
         last_job_sent = -1
 
     annotate('galaxy_init', 'Loading Galaxy...')
-    model, object_store, gxconfig, app = _init(args, need_app=config['grt']['share_toolbox'])
+    model, object_store, gxconfig = _init(args)
 
     # Galaxy overrides our logging level.
     logging.getLogger().setLevel(getattr(logging, args.loglevel.upper()))
@@ -184,10 +111,6 @@ def main(argv):
     # Set up our arrays
     active_users = defaultdict(int)
     job_state_data = defaultdict(int)
-
-    annotate('san_init', 'Building Sanitizer')
-    san = Sanitization(config['sanitization'], model, sa_session)
-    annotate('san_end')
 
     if not os.path.exists(REPORT_DIR):
         os.makedirs(REPORT_DIR)
@@ -228,16 +151,20 @@ def main(argv):
             if job[2] in blacklisted_tools:
                 continue
 
-            handle_job.write(str(job[0]))  # id
-            handle_job.write('\t')
-            handle_job.write(job[2])  # tool_id
-            handle_job.write('\t')
-            handle_job.write(job[3])  # tool_version
-            handle_job.write('\t')
-            handle_job.write(job[4])  # state
-            handle_job.write('\t')
-            handle_job.write(str(job[5]))  # create_time
-            handle_job.write('\n')
+            try:
+                handle_job.write(str(job[0]))  # id
+                handle_job.write('\t')
+                handle_job.write(job[2])  # tool_id
+                handle_job.write('\t')
+                handle_job.write(job[3])  # tool_version
+                handle_job.write('\t')
+                handle_job.write(job[4])  # state
+                handle_job.write('\t')
+                handle_job.write(str(job[5]))  # create_time
+                handle_job.write('\n')
+            except Exception:
+                logging.warning("Unable to write out a 'handle_job' row. Ignoring the row.", exc_info=True)
+                continue
             # meta counts
             job_state_data[job[4]] += 1
             active_users[job[1]] += 1
@@ -310,19 +237,22 @@ def main(argv):
             if dataset_id is None:
                 continue
 
-            handle_datasets.write(str(job[0]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(hda_id))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(hdas[hda_id][1]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(datasets[dataset_id][0]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(job[2]))
-            handle_datasets.write('\t')
-            handle_datasets.write(str(filetype))
-            handle_datasets.write('\n')
-
+            try:
+                handle_datasets.write(str(job[0]))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(hda_id))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(hdas[hda_id][1]))
+                handle_datasets.write('\t')
+                handle_datasets.write(round_to_2sd(datasets[dataset_id][0]))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(job[2]))
+                handle_datasets.write('\t')
+                handle_datasets.write(str(filetype))
+                handle_datasets.write('\n')
+            except Exception:
+                logging.warning("Unable to write out a 'handle_datasets' row. Ignoring the row.", exc_info=True)
+                continue
     handle_datasets.close()
     annotate('export_datasets_end')
 
@@ -342,43 +272,20 @@ def main(argv):
             if job_tool_map[metric[0]] in blacklisted_tools:
                 continue
 
-            handle_metric_num.write(str(metric[0]))
-            handle_metric_num.write('\t')
-            handle_metric_num.write(metric[1])
-            handle_metric_num.write('\t')
-            handle_metric_num.write(metric[2])
-            handle_metric_num.write('\t')
-            handle_metric_num.write(str(metric[3]))
-            handle_metric_num.write('\n')
+            try:
+                handle_metric_num.write(str(metric[0]))
+                handle_metric_num.write('\t')
+                handle_metric_num.write(metric[1])
+                handle_metric_num.write('\t')
+                handle_metric_num.write(metric[2])
+                handle_metric_num.write('\t')
+                handle_metric_num.write(str(metric[3]))
+                handle_metric_num.write('\n')
+            except Exception:
+                logging.warning("Unable to write out a 'handle_metric_num' row. Ignoring the row.", exc_info=True)
+                continue
     handle_metric_num.close()
     annotate('export_metric_num_end')
-
-    annotate('export_params_start', 'Export Job Parameters')
-    handle_params = open(REPORT_BASE + '.params.tsv', 'w')
-    handle_params.write('\t'.join(('job_id', 'name', 'value')) + '\n')
-    for offset_start in range(last_job_sent, end_job_id, args.batch_size):
-        logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
-        for param in sa_session.query(model.JobParameter.job_id, model.JobParameter.name, model.JobParameter.value) \
-                .filter(model.JobParameter.job_id > offset_start) \
-                .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
-                .all():
-            # No associated job
-            if param[0] not in job_tool_map:
-                continue
-            # If the tool is blacklisted, exclude everywhere
-            if job_tool_map[param[0]] in blacklisted_tools:
-                continue
-
-            sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
-
-            handle_params.write(str(param[0]))
-            handle_params.write('\t')
-            handle_params.write(param[1])
-            handle_params.write('\t')
-            handle_params.write(json.dumps(sanitized))
-            handle_params.write('\n')
-    handle_params.close()
-    annotate('export_params_end')
 
     # Now on to outputs.
     with tarfile.open(REPORT_BASE + '.tar.gz', 'w:gz') as handle:
@@ -394,16 +301,8 @@ def main(argv):
 
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:
-        if config['grt']['share_toolbox']:
-            toolbox = [
-                (tool.id, tool.name, tool.version, tool.tool_shed, tool.repository_id, tool.repository_name)
-                for tool_id, tool in app.toolbox._tools_by_id.items()
-            ]
-        else:
-            toolbox = None
-
         json.dump({
-            "version": 1,
+            "version": 3,
             "galaxy_version": gxconfig.version_major,
             "generated": REPORT_IDENTIFIER,
             "report_hash": "sha256:" + sha,
@@ -415,7 +314,6 @@ def main(argv):
                 "total": sa_session.query(model.User.id).count(),
             },
             "jobs": job_state_data,
-            "tools": toolbox
         }, handle)
 
     # Write our checkpoint file so we know where to start next time.

@@ -18,7 +18,7 @@ def test_merge_bam():
 
 def test_dataset_content_needs_grooming():
     b = Bam()
-    with get_input_files('1.bam', '2.shuffled.bam') as input_files:
+    with get_input_files('1.bam', '2.shuffled.unsorted.bam') as input_files:
         sorted_bam, shuffled_bam = input_files
         assert b.dataset_content_needs_grooming(sorted_bam) is False
         assert b.dataset_content_needs_grooming(shuffled_bam) is True
@@ -27,12 +27,12 @@ def test_dataset_content_needs_grooming():
 def test_groom_dataset_content():
     b = Bam()
     try:
-        with get_input_files('2.shuffled.bam') as input_files:
+        with get_input_files('2.shuffled.unsorted.bam') as input_files:
             b.groom_dataset_content(input_files[0])
             assert b.dataset_content_needs_grooming(input_files[0]) is False
     except AssertionError as e:
         # Grooming modifies files in-place, so the md5 hash comparison has to fail
-        assert 'Unexpected change' in e.message
+        assert 'Unexpected change' in str(e)
         return
     # should not reach this part of the test
     raise Exception('Bam grooming did not occur in-place')

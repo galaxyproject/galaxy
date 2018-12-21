@@ -1,3 +1,9 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import Data from "layout/data";
 import Masthead from "layout/masthead";
 import Panel from "layout/panel";
 import Modal from "mvc/ui/ui-modal";
@@ -21,8 +27,10 @@ var View = Backbone.View.extend({
         });
 
         // attach global objects, build mastheads
+        let Galaxy = getGalaxyInstance();
         Galaxy.modal = this.modal = new Modal.View();
         Galaxy.router = this.router = options.Router && new options.Router(self, options);
+        Galaxy.data = this.data = new Data(this);
         this.masthead = new Masthead.View(this.config);
         this.center = new Panel.CenterPanel();
 
@@ -86,7 +94,7 @@ var View = Backbone.View.extend({
         // start the router
         if (this.router) {
             Backbone.history.start({
-                root: Galaxy.root,
+                root: getAppRoot(),
                 pushState: true
             });
         }
@@ -128,7 +136,7 @@ var View = Backbone.View.extend({
         if (this.config.show_inactivity_warning) {
             var content = this.config.inactivity_box_content || "";
             var verificationLink = $("<a/>")
-                .attr("href", `${Galaxy.root}user/resend_verification`)
+                .attr("href", `${getAppRoot()}user/resend_verification`)
                 .text("Resend verification");
             this.$el.addClass("has-inactivity-box");
             this.$inactivebox
@@ -166,9 +174,11 @@ var View = Backbone.View.extend({
                 <div id="masthead"/>
                 <div id="messagebox"/>
                 <div id="inactivebox" class="panel-warning-message" />
-                <div id="left" />
-                <div id="center" />
-                <div id="right" />
+                <div id="columns">
+                    <div id="left" class="unified-panel"/>
+                    <div id="center" />
+                    <div id="right" class="unified-panel" />
+                </div>
             </div>
             <div id="dd-helper" />`
         ].join("");
@@ -180,9 +190,10 @@ var View = Backbone.View.extend({
 
     /** Check if the communication server is online and show the icon otherwise hide the icon */
     _checkCommunicationServerOnline: function() {
-        var host = window.Galaxy.config.communication_server_host;
-        var port = window.Galaxy.config.communication_server_port;
-        var preferences = window.Galaxy.user.attributes.preferences;
+        let Galaxy = getGalaxyInstance();
+        var host = Galaxy.config.communication_server_host;
+        var port = Galaxy.config.communication_server_port;
+        var preferences = Galaxy.user.attributes.preferences;
         var $chat_icon_element = $("#show-chat-online");
         /** Check if the user has deactivated the communication in it's personal settings */
         if (preferences && ["1", "true"].indexOf(preferences.communication_server) != -1) {
@@ -192,7 +203,7 @@ var View = Backbone.View.extend({
             })
                 .success(data => {
                     // enable communication only when a user is logged in
-                    if (window.Galaxy.user.id !== null) {
+                    if (Galaxy.user.id !== null) {
                         if ($chat_icon_element.css("visibility") === "hidden") {
                             $chat_icon_element.css("visibility", "visible");
                         }

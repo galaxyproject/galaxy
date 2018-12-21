@@ -323,32 +323,26 @@ var FolderListView = Backbone.View.extend({
 
     makeDarkRow: function($row) {
         $row.removeClass("light").addClass("dark");
-        $row
-            .find("a")
+        $row.find("a")
             .removeClass("light")
             .addClass("dark");
-        $row
-            .find(".fa-file-o")
+        $row.find(".fa-file-o")
             .removeClass("fa-file-o")
             .addClass("fa-file");
-        $row
-            .find(".fa-folder-o")
+        $row.find(".fa-folder-o")
             .removeClass("fa-folder-o")
             .addClass("fa-folder");
     },
 
     makeWhiteRow: function($row) {
         $row.removeClass("dark").addClass("light");
-        $row
-            .find("a")
+        $row.find("a")
             .removeClass("dark")
             .addClass("light");
-        $row
-            .find(".fa-file")
+        $row.find(".fa-file")
             .removeClass("fa-file")
             .addClass("fa-file-o");
-        $row
-            .find(".fa-folder")
+        $row.find(".fa-folder")
             .removeClass("fa-folder")
             .addClass("fa-folder-o");
     },

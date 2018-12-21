@@ -1,7 +1,8 @@
 import $ from "jquery";
-import "bootstrap";
-import * as _ from "underscore";
-import GalaxyApp from "galaxy";
+import _ from "underscore";
+import { setGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
+import decodeUriComponent from "decode-uri-component";
 import Router from "layout/router";
 import ToolPanel from "./panels/tool-panel";
 import HistoryPanel from "./panels/history-panel";
@@ -30,8 +31,6 @@ import Citations from "components/Citations.vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import Vue from "vue";
 
-/* global Galaxy */
-
 /** define the 'Analyze Data'/analysis/main/home page for Galaxy
  *  * has a masthead
  *  * a left tool menu to allow the user to load tools in the center panel
@@ -44,13 +43,16 @@ import Vue from "vue";
  *      * etc.
  */
 window.app = function app(options, bootstrapped) {
-    window.Galaxy = new GalaxyApp.GalaxyApp(options, bootstrapped);
-    Galaxy.debug("analysis app");
+    let Galaxy = setGalaxyInstance(GalaxyApp => {
+        let galaxy = new GalaxyApp(options, bootstrapped);
+        galaxy.debug("analysis app");
+        return galaxy;
+    });
 
     /** Routes */
     var AnalysisRouter = Router.extend({
         routes: {
-            "(/)": "home",
+            "(/)(#)(_=_)": "home",
             "(/)root*": "home",
             "(/)tours(/)(:tour_id)": "show_tours",
             "(/)user(/)": "show_user",
@@ -89,6 +91,13 @@ window.app = function app(options, bootstrapped) {
             return (Galaxy.user && Galaxy.user.id) || this.require_login.indexOf(name) == -1;
         },
 
+        _display_vue_helper: function(component, props) {
+            let instance = Vue.extend(component);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance(props).$mount(vm);
+        },
+
         show_tours: function(tour_id) {
             if (tour_id) {
                 Tours.giveTourById(tour_id);
@@ -109,7 +118,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_visualizations: function(action_id) {
-            var activeTab = action_id == "list_published" ? "shared" : "visualization";
+            var activeTab = action_id == "list_published" ? "shared" : "user";
             this.page.display(
                 new GridShared.View({
                     action_id: action_id,
@@ -144,10 +153,14 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_workflows_published: function() {
+            var userFilter = QueryStringParsing.get("f-username");
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}workflow/list_published`,
-                    active_tab: "shared"
+                    url_base: `${getAppRoot()}workflow/list_published`,
+                    active_tab: "shared",
+                    url_data: {
+                        "f-username": userFilter == null ? "" : userFilter
+                    }
                 })
             );
         },
@@ -200,10 +213,7 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_histories_import: function() {
-            var historyImportInstance = Vue.extend(HistoryImport);
-            var vm = document.createElement("div");
-            this.page.display(vm);
-            new historyImportInstance().$mount(vm);
+            this._display_vue_helper(HistoryImport);
         },
 
         show_histories_permissions: function() {
@@ -218,7 +228,7 @@ window.app = function app(options, bootstrapped) {
         show_openids: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}user/openids_list`,
+                    url_base: `${getAppRoot()}user/openids_list`,
                     active_tab: "user"
                 })
             );
@@ -227,7 +237,7 @@ window.app = function app(options, bootstrapped) {
         show_datasets: function() {
             this.page.display(
                 new GridView({
-                    url_base: `${Galaxy.root}dataset/list`,
+                    url_base: `${getAppRoot()}dataset/list`,
                     active_tab: "user"
                 })
             );
@@ -292,7 +302,7 @@ window.app = function app(options, bootstrapped) {
         show_workflows_create: function() {
             this.page.display(
                 new FormWrapper.View({
-                    url: `workflow/create`,
+                    url: "workflow/create",
                     redirect: "workflow/editor",
                     active_tab: "workflow"
                 })
@@ -357,13 +367,18 @@ window.app = function app(options, bootstrapped) {
         /** load the center panel with a tool form described by the given params obj */
         _loadToolForm: function(params) {
             //TODO: load tool form code async
-            params.id = decodeURIComponent(params.tool_id);
+            if (params.tool_id) {
+                params.id = decodeUriComponent(params.tool_id);
+            }
+            if (params.version) {
+                params.version = decodeUriComponent(params.version);
+            }
             this.page.display(new ToolForm.View(params));
         },
 
         /** load the center panel iframe using the given url */
         _loadCenterIframe: function(url, root) {
-            root = root || Galaxy.root;
+            root = root || getAppRoot();
             url = root + url;
             this.page.$("#galaxy_main").prop("src", url);
         },
@@ -371,7 +386,7 @@ window.app = function app(options, bootstrapped) {
         /** load workflow by its url in run mode */
         _loadWorkflow: function() {
             Utils.get({
-                url: `${Galaxy.root}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
+                url: `${getAppRoot()}api/workflows/${Utils.getQueryString("id")}/download?style=run`,
                 success: response => {
                     this.page.display(new ToolFormComposite.View(_.extend(response, { active_tab: "workflow" })));
                 },

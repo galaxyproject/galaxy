@@ -8,9 +8,8 @@ from json import dumps
 from boltons.iterutils import remap
 
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.json import json_fix
 from galaxy.util.json import safe_loads
-from .basic import DataCollectionToolParameter, DataToolParameter, RuntimeValue, SelectToolParameter
+from .basic import DataCollectionToolParameter, DataToolParameter, is_runtime_value, runtime_to_json, SelectToolParameter
 from .grouping import Conditional, Repeat, Section, UploadDataset
 
 REPLACE_ON_TRUTHY = object()
@@ -180,11 +179,8 @@ def check_param(trans, param, incoming_value, param_values):
     error = None
     try:
         if trans.workflow_building_mode:
-            if isinstance(value, RuntimeValue):
-                return [{'__class__' : 'RuntimeValue'}, None]
-            if isinstance(value, dict):
-                if value.get('__class__') == 'RuntimeValue':
-                    return [value, None]
+            if is_runtime_value(value):
+                return [runtime_to_json(value), None]
         value = param.from_json(value, trans, param_values)
         param.validate(value, trans)
     except ValueError as e:
@@ -204,7 +200,7 @@ def params_to_strings(params, param_values, app, nested=False):
     for key, value in param_values.items():
         if key in params:
             value = params[key].value_to_basic(value, app)
-        rval[key] = value if nested else str(dumps(value))
+        rval[key] = value if nested else str(dumps(value, sort_keys=True))
     return rval
 
 
@@ -218,7 +214,7 @@ def params_from_strings(params, param_values, app, ignore_errors=False):
     rval = dict()
     param_values = param_values or {}
     for key, value in param_values.items():
-        value = json_fix(safe_loads(value))
+        value = safe_loads(value)
         if key in params:
             value = params[key].value_from_basic(value, app, ignore_errors)
         rval[key] = value

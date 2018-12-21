@@ -33,7 +33,7 @@
             -->
             <param id="rules_module">galaxy.jobs.rules</param>
         </plugin>
-        <!-- Pulsar runners (see more at https://pulsar.readthedocs.org) -->
+        <!-- Pulsar runners (see more at https://pulsar.readthedocs.io/) -->
         <plugin id="pulsar_rest" type="runner" load="galaxy.jobs.runners.pulsar:PulsarRESTJobRunner">
           <!-- Allow optimized HTTP calls with libcurl (defaults to urllib) -->
           <!-- <param id="transport">curl</param> -->
@@ -73,7 +73,7 @@
           <!-- The AMQP client can provide an SSL client certificate (e.g. for
                validation), the following options configure that certificate
                (see for reference:
-                 http://kombu.readthedocs.org/en/latest/reference/kombu.connection.html
+                 https://kombu.readthedocs.io/en/latest/reference/kombu.connection.html
                ). If you simply want to use SSL but not use/validate a client
                cert, just use the ?ssl=1 query on the amqp URL instead. -->
           <!-- <param id="amqp_connect_ssl_ca_certs">/path/to/cacert.pem</param> -->
@@ -113,7 +113,7 @@
                information on configuring a Pulsar app see:
 
                https://github.com/galaxyproject/pulsar/blob/master/app.yml.sample
-               http://pulsar.readthedocs.org/en/latest/configure.html
+               https://pulsar.readthedocs.io/en/latest/configure.html
           -->
           <!-- <param id="pulsar_config">path/to/pulsar/app.yml</param> -->
         </plugin>
@@ -332,24 +332,76 @@
              used by Galaxy is no environment variable of the specified name is found.
         -->
     </plugins>
-    <handlers default="handlers">
-        <!-- Additional job handlers - the id should match the name of a
-             [server:<id>] in galaxy.ini.
+    <handlers>
+        <!-- Job handler processes - for a full discussion of job handlers, see the documentation at:
+             https://docs.galaxyproject.org/en/latest/admin/scaling.html
+
+             The <handlers> container tag takes two optional attributes:
+
+               <handlers assign_with="method" default="id_or_tag"/>
+
+               - `assign_with` - How jobs should be assigned to handlers. The value can be a single method or a
+                 comma-separated list that will be tried in order. The default depends on whether any handlers and a job
+                 handler "pool" (such as uWSGI mules in a `job-handlers` farm) are configured. Valid methods are:
+
+                   - `mem-self` - Jobs are assigned to the web worker that received the tool execution request from the
+                     user via an internal in-memory queue. If a tool is configured to use a specific handler, that
+                     configuration is ignored; the process that creates the job *always* handles it. This can be
+                     slightly faster than `db-self` but only makes sense in single process environments without
+                     dedicated job handlers. This option replaces the former `track_jobs_in_database` option in
+                     galaxy.yml.
+
+                   - `db-self` - Like `mem-self` but assignment occurs by setting a new job's 'handler' column in the
+                     database to the process that created the job at the time it is created. Additionally, if a tool is
+                     configured to use a specific handler (ID or tag), that handler is assigned (tags by
+                     `db-preassign`). This is the default if no handlers are defined and no `job-handlers` pool is
+                     present (the default for a completely unconfigured Galaxy).
+
+                   - `db-preassign` - Jobs are assigned a handler by selecting one at random from the configured tag or
+                      default handlers. This occurs by setting a new job's 'handler' column in the database to the
+                      chosen handler ID (hence "preassign"ment). This is the default if handlers are defined and no
+                      `job-handlers` pool is present.
+
+                   - `uwsgi-mule-message` - Jobs are assigned a handler via uWSGI mule messaging (see uWSGI
+                     documentation). A mule in the `job-handlers` (if sent to the default tag) or `job-handlers.<tag>`
+                     farm will recieve the message and assign itself. This the default if a `job-handlers` pool is
+                     present and no handlers are configured.
+
+                 In the event that both a `job-handlers` pool is present and handlers are configured, the default is
+                 `uwsgi-mule-message,db-preassign`. At present, only `uwsgi-mule-message` is capable of deferring
+                 handler assignment to a later method (which would occur in the event that a tool is configured to use
+                 a tag for which there is not a matching pool).
+
+                 In all cases, if a tool is configured to use a specific handler (by ID, not tag), configured assignment
+                 methods are ignored and that handler is directly assigned in the job's 'handler' column at job creation
+                 time.
+
+               - `default` - An ID or tag of the handler(s) that should handle any jobs not assigned to a specific
+                 handler (which is probably most of them). If unset, the default is any untagged handlers plus any
+                 handlers in the `job-handlers` (no tag) pool.
+
+                 Note that in the event such a mixed configuration environment exists (both a `job-handlers` pool (farm)
+                 and untagged handlers are configured), the default value of
+                 `assign_with="uwsgi-mule-message,db-preassign"` would prevent any of the configured handlers from being
+                 assigned since `uwsgi-mule-message` is the preferred assignment method.
+        -->
+        <!-- Explicitly defined job handlers - the id should match the handler process's `server_name`. For webless
+             handlers, this is the value of the `server-name` argument to `galaxy-main`.
          -->
-        <handler id="handler0" tags="handlers"/>
-        <handler id="handler1" tags="handlers"/>
+        <handler id="handler0"/>
+        <handler id="handler1"/>
         <!-- Handlers will load all plugins defined in the <plugins> collection
              above by default, but can be limited to a subset using <plugin>
              tags. This is useful for heterogenous environments where the DRMAA
              plugin would need to be loaded more than once with different
              configs.
-         -->
+        -->
         <handler id="sge_handler">
             <plugin id="sge"/>
         </handler>
+        <!-- Handlers are grouped by defining (comma-separated) tags -->
         <handler id="special_handler0" tags="special_handlers"/>
         <handler id="special_handler1" tags="special_handlers"/>
-        <handler id="trackster_handler"/>
     </handlers>
     <destinations default="local">
         <!-- Destinations define details about remote resources and how jobs
@@ -528,6 +580,34 @@
                the deployer. -->
           <!-- <param id="require_container">true</param> -->
         </destination>
+        <destination id="customized_container" runner="local">
+          <!-- The above Docker and Singularity examples describe how to specify
+               default and override containers but fuller descriptions can be used
+               also to tweak extra options. Like in the above examples, "container_override"
+               will override the tool centric container resolution specified by the container
+               resolvers configuration and "containers" will provide a default if no such
+               container is found during resolution.
+
+               resolve_dependencies defaults to False, but can be set to true to use
+               dependency resolution inside the container (you'll likely want to ensure
+               Galaxy's tool dependency directory and/or Conda prefix is mounted in the
+               container if this is set. shell (defaults to /bin/sh) can be used to tell
+               Galaxy to use bash for instance in the target contanier.
+
+               If using these options, docker_enabled and/or singularity_enabled should
+               also be set to true to enable the desired container technology. If multiple
+               such containers are defined (as in the example below), the first one matching
+               the enabled container types for this destination will be used.
+          -->
+          <!-- <param id="container_override">
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
+          </param> -->
+          <!-- <param id="container">
+              <container type="docker" shell="/bin/sh" resolve_dependencies="false">busybox:ubuntu-14.04</container>
+              <container type="singularity" shell="/bin/sh" resolve_dependencies="false">/path/to/default/container</container>
+          </param> -->
+        </destination>
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
             <!-- Define parameters that are native to the job runner plugin. -->
@@ -624,6 +704,30 @@
             <param id="num_jobs">50</param>
             <!-- <param id="job_states">queued</param> -->
         </destination>
+        <destination id="burst_if_queued" runner="dynamic">
+            <!-- Dynamic destinations can be chained together to create more
+            complex rules. In this example, the built-in burst stock rule
+            determines whether to burst, and if so, directs to burst_if_size,
+            a user-defined dynamic destination. This destination in turn will
+            conditionally route it to a remote pulsar node if the input size
+            is below a certain threshold, or route to local if not. -->
+            <param id="type">burst</param>
+            <param id="from_destination_ids">local</param>
+            <param id="to_destination_id">burst_if_size</param>
+            <param id="num_jobs">2</param>
+            <param id="job_states">queued</param>
+        </destination>
+        <destination id="burst_if_size" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">to_destination_if_size</param>
+            <!-- Also demonstrates a destination level override of the
+            rules_module. This rules_module will take precedence over the
+            plugin level rules module when resolving the dynamic function -->
+            <param id="rules_module">galaxycloudrunner.rules</param>
+            <param id="max_size">1g</param>
+            <param id="to_destination_id">pulsar</param>
+            <param id="fallback_destination_id">local</param>
+        </destination>
         <destination id="docker_dispatch" runner="dynamic">
             <!-- Follow dynamic destination type will send all tool's that
             support docker to static destination defined by
@@ -718,6 +822,14 @@
             <param id="job_time">2:00:00</param>
             <param id="job_ncpus">4</param>
             <param id="job_partition">my_partition</param>
+        </destination>
+
+        <!-- Example CLI LSF Runner: 8 cores and 16 GB ram -->
+        <destination id="local_lsf_8cpu_16GbRam" runner="cli">
+            <param id="shell_plugin">LocalShell</param>
+            <param id="job_plugin">LSF</param>
+            <param id="memory">16000</param>
+            <param id="cores">8</param>
         </destination>
 
         <destination id="condor" runner="condor">

@@ -1,16 +1,19 @@
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
+import { getGalaxyInstance } from "app";
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.page = page;
         this.root = options.root;
         this.config = options.config;
         this.settings = options.settings;
-        this.message = options.message;
-        this.status = options.status;
         this.model = new Backbone.Model({
-            title: _l("Administration")
+            title: `Galaxy version ${Galaxy.config.version_major}`
         });
         this.categories = new Backbone.Collection([
             {
@@ -18,7 +21,8 @@ var AdminPanel = Backbone.View.extend({
                 items: [
                     {
                         title: _l("Data types"),
-                        url: "admin/view_datatypes_registry",
+                        url: "admin/data_types",
+                        target: "__use_router__",
                         id: "admin-link-datatypes"
                     },
                     {
@@ -39,7 +43,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Local data"),
-                        url: "data_manager",
+                        url: "admin/data_manager",
+                        target: "__use_router__",
                         id: "admin-link-local-data"
                     }
                 ]
@@ -76,18 +81,6 @@ var AdminPanel = Backbone.View.extend({
                         title: _l("Forms"),
                         url: "admin/forms",
                         target: "__use_router__"
-                    },
-                    {
-                        title: _l("API keys"),
-                        url: "admin/api_keys",
-                        target: "__use_router__",
-                        id: "admin-link-api-keys"
-                    },
-                    {
-                        title: _l("Impersonate a user"),
-                        url: "admin/impersonate",
-                        enabled: self.config.allow_user_impersonation,
-                        id: "admin-link-impersonate"
                     }
                 ]
             },
@@ -152,7 +145,7 @@ var AdminPanel = Backbone.View.extend({
         this.$el.empty();
         this.categories.each(category => {
             var $section = $(self._templateSection(category.attributes));
-            var $entries = $section.find(".ui-side-section-body");
+            var $entries = $section.find(".toolSectionBody");
             _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
                     var $link = $("<a/>")
@@ -171,29 +164,24 @@ var AdminPanel = Backbone.View.extend({
                     }
                     $entries.append(
                         $("<div/>")
-                            .addClass("ui-side-section-body-title")
+                            .addClass("toolTitle")
                             .append($link)
                     );
                 }
             });
             self.$el.append($section);
         });
-        this.page
-            .$("#galaxy_main")
-            .prop("src", `${this.root}admin/center?message=${this.message}&status=${this.status}`);
     },
 
     _templateSection: function(options) {
-        return [
-            "<div>",
-            `<div class="ui-side-section-title">${_l(options.title)}</div>`,
-            '<div class="ui-side-section-body"/>',
-            "</div>"
-        ].join("");
+        return `<div class="toolSectionWrapper">
+                    <div class="toolSectionTitle">${_l(options.title)}</div>
+                    <div class="toolSectionBody"/>
+                </div>`;
     },
 
     _template: function() {
-        return '<div class="ui-side-panel"/>';
+        return '<div class="toolMenuContainer"/>';
     },
 
     toString: function() {

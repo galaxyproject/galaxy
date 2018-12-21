@@ -1,24 +1,27 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";
+
 var View = Backbone.View.extend({
     el: "#center",
 
     defaults: [{}],
 
     initialize: function(options) {
-        var that = this;
         this.model = new toolshed_model.WorkflowTools();
         this.listenTo(this.model, "sync", this.render);
         this.model.fetch();
-        that.render();
+        this.render();
     },
 
     render: function(options) {
-        var that = this;
-        var workflows_missing_tools = that.templateWorkflows;
-        var workflows = that.model.models;
-        that.$el.html(
+        var workflows_missing_tools = this.templateWorkflows;
+        var workflows = this.model.models;
+        this.$el.html(
             workflows_missing_tools({
                 title: _l("Workflows Missing Tools"),
                 workflows: workflows,
@@ -26,16 +29,15 @@ var View = Backbone.View.extend({
             })
         );
         $("#center").css("overflow", "auto");
-        that.bindEvents();
+        this.bindEvents();
     },
 
     bindEvents: function() {
-        var that = this;
         var repository_id;
-        $(".show_wf_repo").on("click", function() {
-            var tool_ids = $(this).attr("data-toolids");
-            var toolshed = $(this).attr("data-shed");
-            var api_url = `${Galaxy.root}api/tool_shed/repository`;
+        $(".show_wf_repo").on("click", ev => {
+            var tool_ids = $(ev.target).attr("data-toolids");
+            var toolshed = $(ev.target).attr("data-shed");
+            var api_url = `${getAppRoot()}api/tool_shed/repository`;
             var params = { tool_ids: tool_ids };
             $.get(api_url, params, data => {
                 repository_id = data.repository.id;
@@ -48,11 +50,11 @@ var View = Backbone.View.extend({
                 });
             });
         });
-        $(".queue_wf_repo").on("click", function() {
-            var elem = $(this);
+        $(".queue_wf_repo").on("click", ev => {
+            var elem = $(ev.target);
             var tool_ids = elem.attr("data-toolids");
             var toolshed = elem.attr("data-shed");
-            var api_url = `${Galaxy.root}api/tool_shed/repository`;
+            var api_url = `${getAppRoot()}api/tool_shed/repository`;
             var params = { tool_ids: tool_ids };
             $.get(api_url, params, data => {
                 repository_id = data.repository.id;
@@ -70,19 +72,13 @@ var View = Backbone.View.extend({
                 });
             });
         });
-        $("#from_workflow").on("click", that.loadWorkflows);
-    },
-
-    reDraw: function(options) {
-        this.$el.empty();
-        this.initialize(options);
+        $("#from_workflow").on("click", this.loadWorkflows);
     },
 
     templateWorkflows: _.template(
         [
             '<div class="unified-panel-header" id="panel_header" unselectable="on">',
-            '<div class="unified-panel-header-inner"><%= title %></div>',
-            '<div class="unified-panel-header-inner" style="position: absolute; right: 5px; top: 0px;"><a href="#/queue">Repository Queue (<%= queue %>)</a></div>',
+            '<div class="unified-panel-header-inner"><%= title %><a class="ml-auto" href="#/queue">Repository Queue (<%= queue %>)</a></div>',
             "</div>",
             '<style type="text/css">',
             ".workflow_names, .workflow_tools { list-style-type: none; } ul.workflow_tools, ul.workflow_names {  padding-left: 0px; }",

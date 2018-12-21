@@ -48,8 +48,8 @@ command_inject = --sig-proxy=true -e DEBUG=false -e DEFAULT_CONTAINER_RUNTIME=12
 
 # To run containers in Docker Swarm mode on (an existing swarm), set the
 # following option to True *and*:
-# - set docker_connect_port above. For thoba/neo4j_galaxy_ie the port
-#   should most likely be 7474.
+# - set docker_connect_port above. For quay.io/sanbi-sa/neo_ie:3.1.9 the port
+#   should most likely be 80.
 # - If command_inject is uncommented and includes `--sig-proxy`, that option should
 #   be removed.
 #swarm_mode = False

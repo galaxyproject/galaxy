@@ -1,5 +1,14 @@
-"""
-Job control via the Condor DRM.
+"""Job control via the Condor DRM via CLI.
+
+This plugin has been used in production and isn't unstable but shouldn't be taken as an
+example of how to write Galaxy job runners that interface with a DRM using command-line
+invocations. When writing new job runners that leverage command-line calls for submitting
+and checking the status of jobs please check out the CLI runner (cli.py in this directory)
+start by writing a new job plugin in for that (see examples in
+/galaxy/jobs/runners/util/cli/job). That approach will result in less boilerplate and allow
+greater reuse of the DRM specific hooks you'll need to write. Ideally this plugin would
+have been written to target that framework, but we don't have the bandwidth to rewrite
+it at this time.
 """
 import logging
 import os
@@ -205,8 +214,9 @@ class CondorJobRunner(AsynchronousJobRunner):
         # Replace the watch list with the updated version
         self.watched = new_watched
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """Attempts to delete a job from the DRM queue"""
+        job = job_wrapper.get_job()
         external_id = job.job_runner_external_id
         failure_message = condor_stop(external_id)
         if failure_message:

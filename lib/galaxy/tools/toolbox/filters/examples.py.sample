@@ -11,7 +11,7 @@ def restrict_upload_to_admins( context, tool ):
         tool_filters = examples:restrict_upload_to_admins
     """
     if tool.name == "Upload File":
-        return context.trans.user_is_admin()
+        return context.trans.user_is_admin
     return True
 
 
