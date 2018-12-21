@@ -328,6 +328,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
         client = None
         remote_job_config = None
         compute_environment = None
+
+        fail_or_resubmit = False
         try:
             client = self.get_client_from_wrapper(job_wrapper)
             tool = job_wrapper.tool
@@ -378,18 +380,20 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 remote_command_params=remote_command_params,
             )
         except UnsupportedPulsarException as e:
-            job_wrapper.fail(str(e), exception=False)
-            log.exception("failure running job %d", job_wrapper.job_id)
+            log.exception("failure running job, unsupported Pulsar target %d", job_wrapper.job_id)
+            fail_or_resubmit = True
         except PulsarClientTransportError:
+            log.exception("failure running job %d, Pulsar connection failed", job_wrapper.job_id)
+            fail_or_resubmit = True
+        except Exception:
+            log.exception("failure running job %d", job_wrapper.job_id)
+            fail_or_resubmit = True
+
+        # If we were unable to get a command line, there was problem
+        fail_or_resubmit = fail_or_resubmit or not command_line
+        if fail_or_resubmit:
             job_state = self._job_state(job_wrapper.get_job(), job_wrapper)
             self.work_queue.put((self.fail_job, job_state))
-        except Exception:
-            job_wrapper.fail("failure preparing job", exception=True)
-            log.exception("failure running job %d", job_wrapper.job_id)
-
-        # If we were able to get a command line, run the job
-        if not command_line:
-            job_wrapper.finish('', '')
 
         return command_line, client, remote_job_config, compute_environment
 
