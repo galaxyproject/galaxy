@@ -26,7 +26,7 @@
     </div>
 </template>
 <script>
-import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices.js"
+import { getDisplayApplications, reloadDisplayApplications } from "./AdminServices.js";
 
 export default {
     data() {
@@ -34,11 +34,11 @@ export default {
             applications: [],
             applicationsLoaded: false,
             applicationsAttributes: [
-                { key: 'reload' },
-                { key: 'name', sortable: true },
-                { key: 'id', sortable: true },
-                { key: 'version' },
-                { key: 'links' }
+                { key: "reload" },
+                { key: "name", sortable: true },
+                { key: "id", sortable: true },
+                { key: "version" },
+                { key: "links" }
             ],
             messageText: null,
             messageVariant: null

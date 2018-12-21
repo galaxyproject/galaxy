@@ -8,5 +8,5 @@ export function getDisplayApplications() {
 
 export function reloadDisplayApplications(ids) {
     let url = `${getAppRoot()}api/display_applications/reload`;
-    return axios.post(url, {ids: ids});
+    return axios.post(url, { ids: ids });
 }
