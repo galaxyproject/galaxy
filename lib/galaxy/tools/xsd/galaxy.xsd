@@ -1219,7 +1219,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 
-If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
+If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -2067,21 +2067,21 @@ in the tool form.
 ##### Examples
 
 Sometimes you need labels for data or graph axes, chart titles, etc. This can be
-done using a text field. The following will create a text box 30 characters wide
-with the default value of "V1".
+done using a text field. The following will create a text box with the default
+value of "V1".
 
 ```xml
-<param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
+<param name="xlab" type="text" value="V1" label="Label for x axis" />
 ```
 
-The ``size`` parameter can be two dimensional, if it is the textbox will be
-rendered on the tool form as a text area instead of a single line text box.
+The ``area`` boolean attribute can be used to change the ``text`` parameter to a
+two-dimensional text area instead of a single line text box.
 
 ```xml
-<param name="foo" type="text" area="true" size="5x25" />
+<param name="foo" type="text" area="true" />
 ```
 
-As of 17.01, ``text`` parameters can also supply a static list of preset
+Since release 17.01, ``text`` parameters can also supply a static list of preset
 defaults options. The user **may** be presented with the option to select one of
 these but will be allowed to supply an arbitrary text value.
 
@@ -2104,7 +2104,7 @@ These parameters represent whole number and real numbers, respectively.
 ##### Example
 
 ```xml
-<param name="region_size" size="4" type="integer" value="1" label="flanking regions of size" />
+<param name="region_size" type="integer" value="1" label="Size of the flanking regions" />
 ```
 
 $attribute_list:value,min,max:5
@@ -2290,8 +2290,8 @@ periods (e.g. ``.``). Some "reserved" names are ``REDIRECT_URL``,
         <xs:attribute name="area" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Boolean indicating if this should be
-rendered as a one line text box (if ``false``) or a multi-line text area (if
-``true``).</xs:documentation>
+rendered as a one line text box (if ``false``, the default) or a multi-line text
+ area (if ``true``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="argument" type="xs:string">
@@ -2462,13 +2462,11 @@ template if the parameter is ``false`` or not checked by the user. Only valid if
 ``type`` is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="size" type="xs:string">
+        <xs:attribute name="size" type="xs:string" gxdocs:deprecated="true">
           <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>
-            <xs:documentation xml:lang="en">Used only if ``type`` attribute
-value is ``text``. To create a multi-line text box add an ``area="true"``
-attribute to the param tag. This can be one dimensional (e.g. ``size="40"``)
-or two dimensional (e.g. ``size="5x25"``).</xs:documentation>
+            <xs:documentation xml:lang="en">*Deprecated*. Used only if ``type`` attribute
+value is ``text``. Completely ignored since release 16.10.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <!-- metadata_name appears in some wrappers but I think this is a copy
@@ -2699,20 +2697,13 @@ on the topic of ``GALAXY_SLOTS`` for more information and examples.
 
 ### Error detection
 
-The ``detect_errors`` attribute of ``command``, if present, can be one of:
+The ``detect_errors`` attribute of ``command``, if present, loads a preset of error detection checks (for exit codes and content of stdio to indicate fatal tool errors or fatal out of memory errors). It can be one of:
 
-* ``default``: no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
-* ``exit_code``: error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive``: error if tool exit code is not 0 or ``Exception:``, ``Error:``, or
-  various messages related to being out of memory appear in the standard error or output.
-  (The @bgruening recommendation).
+* ``default``: for non-legacy tools with absent stdio block non-zero exit codes are added. For legacy tools or if a stdio block is present nothing is added.
+* ``exit_code``: adds checks for non zero exit codes (The @jmchilton recommendation). The ``oom_exit_code`` parameter can be used to add an additional out of memory indicating exit code.
+* ``aggressive``: adds checks for non zero exit codes, and checks for ``Exception:``, ``Error:`` in the standard error. Additionally checks for messages in the standard error that indicate an out of memory error (``MemoryError``, ``std::bad_alloc``, ``java.lang.OutOfMemoryError``, ``Out of memory``). (The @bgruening recommendation).
 
-For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
-Legacy tools default to ``default`` behavior described above (erroring if the tool
-produces any standard error output).
-
-See [pull request 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
-information and discussion on the ``detect_errors`` attribute.
+Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy tools using ``default``. From release 19.01 checks defined in the stdio tag are prepended to the checks defined by the presets loaded in the command block.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -2905,7 +2896,7 @@ and demonstrates generating options from a dataset directly.
 
 ```xml
 <param name="taxonomy" type="data" format="mothur.seq.taxonomy" label="taxonomy - Taxonomy" help="please make sure your file has no quotation marks in it"/>
-<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+<param name="taxons" type="select" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
     <options from_dataset="taxonomy">
         <column name="name" index="1"/>
         <column name="value" index="1"/>
@@ -3444,7 +3435,7 @@ tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
 <param name="taxonomy" type="data" format="mothur.cons.taxonomy" label="constaxonomy - Constaxonomy file. Provide either a constaxonomy file or a taxonomy file" help="please make sure your file has no quotation marks in it"/>
-<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+<param name="taxons" type="select" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
     <options from_dataset="taxonomy">
         <column name="name" index="2"/>
         <column name="value" index="2"/>

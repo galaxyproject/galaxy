@@ -423,6 +423,7 @@ class BaseJobRunner(object):
     def fail_job(self, job_state, exception=False):
         if getattr(job_state, 'stop_job', True):
             self.stop_job(job_state.job_wrapper)
+        job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state('failure', job_state)
         # Not convinced this is the best way to indicate this state, but
         # something necessary

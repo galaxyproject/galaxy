@@ -528,21 +528,6 @@ class JobContext(object):
 def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
     app = tool.app
     sa_session = tool.sa_session
-    new_primary_datasets = {}
-    try:
-        galaxy_json_path = os.path.join(job_working_directory, "working", tool.provide_metadata_file)
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(galaxy_json_path):
-            # Maybe this is a legacy job, use the job working directory instead
-            galaxy_json_path = os.path.join(job_working_directory, tool.provide_metadata_file)
-        json_file = open(galaxy_json_path, 'r')
-        for line in json_file:
-            line = json.loads(line)
-            if line.get('type') == 'new_primary_dataset':
-                new_primary_datasets[os.path.split(line.get('filename'))[-1]] = line
-    except Exception:
-        # This should not be considered an error or warning condition, this file is optional
-        pass
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
     primary_output_assigned = False
@@ -628,6 +613,7 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
                     for root, dirs, files in os.walk(extra_files_path_joined):
                         extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
+                        extra_dir = os.path.normpath(extra_dir)
                         for f in files:
                             app.object_store.update_from_file(
                                 primary_data.dataset,
@@ -635,7 +621,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                                 alt_name=f,
                                 file_name=os.path.join(root, f),
                                 create=True,
-                                dir_only=True,
                                 preserve_symlinks=True
                             )
             metadata_dict = new_primary_datasets_attributes.get('metadata', None)

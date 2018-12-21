@@ -179,6 +179,14 @@ var View = Backbone.View.extend({
                     onclick: function() {
                         self._submit("datatype", form);
                     }
+                }),
+                submit_datatype_detect: new Ui.Button({
+                    tooltip: _l("Detect the datatype and change it."),
+                    title: _l("Detect datatype"),
+                    icon: "fa-undo",
+                    onclick: function() {
+                        self._submit("datatype_detect", form);
+                    }
                 })
             }
         });

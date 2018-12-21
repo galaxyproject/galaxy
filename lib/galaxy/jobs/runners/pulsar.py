@@ -482,7 +482,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
         try:
             client = self.get_client_from_state(job_state)
             run_results = client.full_status()
-            remote_working_directory = run_results.get("working_directory", None)
             remote_metadata_directory = run_results.get("metadata_directory", None)
             stdout = run_results.get('stdout', '')
             stderr = run_results.get('stderr', '')
@@ -514,7 +513,6 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 stdout,
                 stderr,
                 exit_code,
-                remote_working_directory=remote_working_directory,
                 remote_metadata_directory=remote_metadata_directory,
             )
         except Exception:

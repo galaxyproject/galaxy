@@ -37,7 +37,7 @@ nodeenv = "*"
 pycryptodome = "*"
 uWSGI = "*"
 pysam = "==0.15.1"
-bdbag = "*"
+bdbag = "==1.4.1"  # 1.5.0 requires Python >=2.7.9
 bleach = "*"
 "bz2file" = {version = "*", markers = "python_version < '3.3'"}
 ipaddress = {version = "*", markers = "python_version < '3.3'"}

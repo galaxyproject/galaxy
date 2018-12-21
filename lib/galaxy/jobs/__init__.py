@@ -20,6 +20,7 @@ from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree
 
 import six
+from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
 import galaxy
 from galaxy import model, util
@@ -115,6 +116,8 @@ class JobConfiguration(ConfiguresHandlers):
 
     These features are configured in the job configuration, by default, ``job_conf.xml``
     """
+    DEFAULT_BASE_HANDLER_POOLS = ('job-handlers',)
+
     DEFAULT_NWORKERS = 4
 
     JOB_RESOURCE_CONDITIONAL_XML = """<conditional name="__job_resource">
@@ -135,6 +138,8 @@ class JobConfiguration(ConfiguresHandlers):
         self.handlers = {}
         self.handler_runner_plugins = {}
         self.default_handler_id = None
+        self.handler_assignment_methods = None
+        self.handler_assignment_methods_configured = False
         self.destinations = {}
         self.destination_tags = {}
         self.default_destination_id = None
@@ -150,7 +155,6 @@ class JobConfiguration(ConfiguresHandlers):
                             output_size=None,
                             destination_user_concurrent_jobs={},
                             destination_total_concurrent_jobs={})
-        self._is_handler = None
 
         default_resubmits = []
         default_resubmit_condition = self.app.config.default_job_resubmission_condition
@@ -170,8 +174,7 @@ class JobConfiguration(ConfiguresHandlers):
             tree = load(job_config_file)
             self.__parse_job_conf_xml(tree)
         except IOError:
-            log.warning('Job configuration "%s" does not exist, using default'
-                        ' job configuration (this server will run jobs)',
+            log.warning('Job configuration "%s" does not exist, using default job configuration',
                         self.app.config.job_config_file)
             self.__set_default_job_conf()
         except Exception as e:
@@ -212,23 +215,15 @@ class JobConfiguration(ConfiguresHandlers):
 
         # Parse handlers
         handlers_conf = root.find('handlers')
+        self._init_handler_assignment_methods(handlers_conf)
         self._init_handlers(handlers_conf)
-
-        # Determine the default handler(s)
-        try:
-            self.default_handler_id = self._get_default(self.app.config, handlers_conf, list(self.handlers.keys()))
-        except Exception:
-            pass
-        # For tets, this may not exist
-        try:
-            base_server_name = self.app.config.base_server_name
-        except AttributeError:
-            base_server_name = self.app.config.get('base_server_name', None)
-        if (self.default_handler_id is None
-                or (len(self.handlers) == 1 and base_server_name == next(iter(self.handlers.keys())))):
-            # Shortcut for compatibility with existing job confs that use the default handlers block,
-            # there are no defined handlers, or there's only one handler and it's this server
-            self.__set_default_job_handler()
+        if not self.handler_assignment_methods_configured:
+            self._set_default_handler_assignment_methods()
+        else:
+            self.app.application_stack.init_job_handling(self)
+        log.info("Job handler assignment methods set to: %s", ', '.join(self.handler_assignment_methods))
+        for tag, handlers in [(t, h) for t, h in self.handlers.items() if isinstance(h, list)]:
+            log.info("Tag [%s] handlers: %s", tag, ', '.join(handlers))
 
         # Parse destinations
         destinations = root.find('destinations')
@@ -269,7 +264,8 @@ class JobConfiguration(ConfiguresHandlers):
                     self.destinations[tag].append(job_destination)
 
         # Determine the default destination
-        self.default_destination_id = self._get_default(self.app.config, destinations, list(self.destinations.keys()))
+        self.default_destination_id = self._get_default(
+            self.app.config, destinations, list(self.destinations.keys()), auto=True)
 
         # Parse resources...
         resources = root.find('resources')
@@ -346,31 +342,15 @@ class JobConfiguration(ConfiguresHandlers):
         if self.app.config.use_tasked_jobs:
             self.runner_plugins.append(dict(id='tasks', load='tasks', workers=DEFAULT_LOCAL_WORKERS))
         # Set the handlers
-        self.__set_default_job_handler()
+        self._init_handler_assignment_methods()
+        if not self.handler_assignment_methods_configured:
+            self._set_default_handler_assignment_methods()
+        else:
+            self.app.application_stack.init_job_handling(self)
         # Set the destination
         self.default_destination_id = 'local'
         self.destinations['local'] = [JobDestination(id='local', runner='local')]
         log.debug('Done loading job configuration')
-
-    def __set_default_job_handler(self):
-        # Called when self.default_handler_id is None
-        if self.app.application_stack.has_pool(self.app.application_stack.pools.JOB_HANDLERS):
-            if (self.app.application_stack.in_pool(self.app.application_stack.pools.JOB_HANDLERS)):
-                log.info("Found job handler pool managed by application stack, this server (%s) is a member of pool: "
-                         "%s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
-                self._is_handler = True
-            else:
-                log.info("Found job handler pool managed by application stack, this server (%s) will submit jobs to "
-                         "pool: %s", self.app.config.server_name, self.app.application_stack.pools.JOB_HANDLERS)
-        else:
-            log.info('Did not find job handler pool managed by application stack, this server (%s) will handle jobs '
-                     'submitted to it', self.app.config.server_name)
-            self._is_handler = True
-            self.app.application_stack.register_postfork_function(self.make_self_default_handler)
-
-    def make_self_default_handler(self):
-        self.default_handler_id = self.app.config.server_name
-        self.handlers[self.app.config.server_name] = [self.app.config.server_name]
 
     def get_tool_resource_xml(self, tool_id, tool_type):
         """ Given a tool id, return XML elements describing parameters to
@@ -484,7 +464,7 @@ class JobConfiguration(ConfiguresHandlers):
 
         :returns: JobToolConfiguration -- a representation of a <tool> element that uses the default handler and destination
         """
-        return JobToolConfiguration(id='default', handler=self.default_handler_id, destination=self.default_destination_id)
+        return JobToolConfiguration(id='_default_', handler=self.default_handler_id, destination=self.default_destination_id)
 
     # Called upon instantiation of a Tool object
     def get_job_tool_configurations(self, ids):
@@ -830,6 +810,10 @@ class JobWrapper(HasResourceParameters):
         return param_dict
 
     def get_version_string_path(self):
+        return os.path.abspath(os.path.join(self.working_directory, COMMAND_VERSION_FILENAME))
+
+    # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
+    def get_version_string_path_legacy(self):
         return os.path.abspath(os.path.join(self.app.config.new_file_path, "GALAXY_VERSION_STRING_%s" % self.job_id))
 
     def __prepare_upload_paramfile(self, tool_evaluator):
@@ -1223,7 +1207,6 @@ class JobWrapper(HasResourceParameters):
         stderr,
         tool_exit_code=None,
         check_output_detected_state=None,
-        remote_working_directory=None,
         remote_metadata_directory=None,
     ):
         """
@@ -1231,8 +1214,6 @@ class JobWrapper(HasResourceParameters):
         the output datasets based on stderr and stdout from the command, and
         the contents of the output files.
         """
-        # remote_working_directory not used with updated (7.0+ pulsar and 16.04+
-        # originated Galaxy job - keep for a few releases for older jobs)
         finish_timer = util.ExecutionTimer()
 
         # default post job setup
@@ -1274,6 +1255,9 @@ class JobWrapper(HasResourceParameters):
 
         if self.tool.version_string_cmd:
             version_filename = self.get_version_string_path()
+            # TODO: Remove in Galaxy 20.XX, for running jobs at GX upgrade
+            if not os.path.exists(version_filename):
+                version_filename = self.get_version_string_path_legacy()
             if os.path.exists(version_filename):
                 self.version_string = open(version_filename).read()
                 os.unlink(version_filename)
@@ -1331,9 +1315,6 @@ class JobWrapper(HasResourceParameters):
                 dataset.set_size()
                 if 'uuid' in context:
                     dataset.dataset.uuid = context['uuid']
-                # Update (non-library) job output datasets through the object store
-                if dataset not in job.output_library_datasets:
-                    self.object_store.update_from_file(dataset.dataset, create=True)
                 self.__update_output(job, dataset)
                 if not purged:
                     self._collect_extra_files(dataset.dataset, self.working_directory)
@@ -1382,11 +1363,8 @@ class JobWrapper(HasResourceParameters):
                         def path_rewriter(path):
                             if not path:
                                 return path
-                            normalized_remote_working_directory = remote_working_directory and os.path.normpath(remote_working_directory)
                             normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
                             normalized_path = os.path.normpath(path)
-                            if remote_working_directory and normalized_path.startswith(normalized_remote_working_directory):
-                                return normalized_path.replace(normalized_remote_working_directory, self.working_directory, 1)
                             if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
                                 return normalized_path.replace(normalized_remote_metadata_directory, self.working_directory, 1)
                             return path
@@ -1395,10 +1373,10 @@ class JobWrapper(HasResourceParameters):
                     line_count = context.get('line_count', None)
                     try:
                         # Certain datatype's set_peek methods contain a line_count argument
-                        dataset_assoc.dataset.set_peek(line_count=line_count)
+                        dataset.set_peek(line_count=line_count)
                     except TypeError:
                         # ... and others don't
-                        dataset_assoc.dataset.set_peek()
+                        dataset.set_peek()
                 else:
                     # Handle purged datasets.
                     dataset.blurb = "empty"
@@ -1463,15 +1441,9 @@ class JobWrapper(HasResourceParameters):
         # why not re-use self.param_dict here?
         param_dict = dict([(p.name, p.value) for p in job.parameters])
         param_dict = self.tool.params_from_strings(param_dict, self.app)
-        # Create generated output children and primary datasets and add to param_dict
+        # Create generated output children and primary datasets and dynamic outputs.
         tool_working_directory = self.tool_working_directory
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(tool_working_directory):
-            # Maybe this is a legacy job, use the job working directory instead
-            tool_working_directory = self.working_directory
-        collected_datasets = {
-            'primary': self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
-        }
+        self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
         self.tool.collect_dynamic_outputs(
             out_collections,
             self.get_tool_provided_job_metadata(),
@@ -1480,7 +1452,6 @@ class JobWrapper(HasResourceParameters):
             job=job,
             input_dbkey=input_dbkey,
         )
-        param_dict.update({'__collected_datasets__': collected_datasets})
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)

@@ -185,6 +185,15 @@ class InternalServerError(MessageException):
     err_code = error_codes.INTERNAL_SERVER_ERROR
 
 
+class ToolExecutionError(MessageException):
+    status_code = 500
+    err_code = error_codes.TOOL_EXECUTION_ERROR
+
+    def __init__(self, err_msg, type="error", job=None):
+        super(ToolExecutionError, self).__init__(err_msg, type)
+        self.job = job
+
+
 class NotImplemented(MessageException):
     status_code = 501
     err_code = error_codes.NOT_IMPLEMENTED
@@ -221,3 +230,9 @@ class ContainerRunError(Exception):
         super(ContainerRunError, self).__init__(msg, **kwargs)
         self.image = image
         self.command = command
+
+
+class HandlerAssignmentError(Exception):
+    def __init__(self, msg=None, obj=None, **kwargs):
+        super(HandlerAssignmentError, self).__init__(msg, **kwargs)
+        self.obj = obj

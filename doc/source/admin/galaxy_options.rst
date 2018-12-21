@@ -1319,6 +1319,16 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~
+``helpsite_url``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Help" link in the "Help" menu.
+:Default: ````
+:Type: str
+
+
 ~~~~~~~~~~~~
 ``wiki_url``
 ~~~~~~~~~~~~
@@ -2826,6 +2836,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_workflow_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable import and export of workflows as Galaxy Format 2
+    workflows.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``force_beta_workflow_scheduled_min_steps``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3256,10 +3277,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    In multiprocess configurations, notification between processes
-    about new jobs must be done via the database.  In single process
-    configurations, this can be done in memory, which is a bit
-    quicker.
+    This option is deprecated, use the `mem-self` handler assignment
+    option in the job configuration instead.
 :Default: ``true``
 :Type: bool
 
