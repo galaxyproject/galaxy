@@ -379,8 +379,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 include_work_dir_outputs=False,
                 remote_command_params=remote_command_params,
             )
-        except UnsupportedPulsarException as e:
-            log.exception("failure running job, unsupported Pulsar target %d", job_wrapper.job_id)
+        except UnsupportedPulsarException:
+            log.exception("failure running job %d, unsupported Pulsar target", job_wrapper.job_id)
             fail_or_resubmit = True
         except PulsarClientTransportError:
             log.exception("failure running job %d, Pulsar connection failed", job_wrapper.job_id)
