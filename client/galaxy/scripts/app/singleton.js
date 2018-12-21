@@ -5,21 +5,9 @@
 import addLogging from "utils/add-logging";
 import { GalaxyApp } from "./galaxy";
 import { serverPath } from "utils/serverPath";
-import { getAppRoot } from "onload/loadConfig";
-import { installObjectWatcher } from "utils/installMonitor";
-
-const galaxyStub = {
-    root: getAppRoot(),
-    config: {}
-};
-
-// Causes global Galaxy references to pass through the singleton functions
-installObjectWatcher("Galaxy", getGalaxyInstance, newValue => {
-    return setGalaxyInstance(() => newValue);
-});
 
 export function setGalaxyInstance(factory) {
-    // console.warn("setGalaxyInstance", serverPath());
+    console.warn("setGalaxyInstance", serverPath());
 
     let storage = getStorage();
     let newInstance = factory(GalaxyApp);
@@ -29,6 +17,7 @@ export function setGalaxyInstance(factory) {
     if (newInstance.debug === undefined) {
         addLogging(newInstance, "GalaxyApp");
     }
+    
     storage._galaxyInstance = newInstance;
 
     return storage._galaxyInstance;
@@ -36,12 +25,16 @@ export function setGalaxyInstance(factory) {
 
 export function getGalaxyInstance() {
     let storage = getStorage();
-    if ("_galaxyInstance" in storage) {
-        return storage._galaxyInstance;
-    }
-    return Object.assign({}, galaxyStub);
+    return storage._galaxyInstance;
 }
 
+export function galaxyIsInitialized() {
+    let instance = getGalaxyInstance();
+    return instance !== null;
+}
+
+// Having a CORS issue in the toolshed iframe, store separate versions
+// of galaxy in each window for the short-term
 export function getStorage() {
-    return window.top;
+    return window;
 }
