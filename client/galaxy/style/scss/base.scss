@@ -2080,3 +2080,25 @@ div.toolTitleNoSection {
 [v-cloak] {
     display: none;
 }
+
+/* Toolshed, reports custom styles from mako templates */
+body.toolshed {
+    margin: 0; padding: 0; overflow: hidden;
+    #left {
+        background: #C1C9E5 url(../../images/menu_bg.png) top repeat-x;
+    }
+    .unified-panel-body {
+        overflow: auto;
+    }
+    .toolMenu {
+        margin-left: 10px;
+    }
+}
+
+
+body.reports {
+    margin: 0; padding: 0; overflow: hidden;
+    #left {
+        background: #C1C9E5 url(../../images/menu_bg.png) top repeat-x;
+    }
+}
