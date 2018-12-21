@@ -613,6 +613,7 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
                     for root, dirs, files in os.walk(extra_files_path_joined):
                         extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
+                        extra_dir = os.path.normpath(extra_dir)
                         for f in files:
                             app.object_store.update_from_file(
                                 primary_data.dataset,
@@ -620,7 +621,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                                 alt_name=f,
                                 file_name=os.path.join(root, f),
                                 create=True,
-                                dir_only=True,
                                 preserve_symlinks=True
                             )
             metadata_dict = new_primary_datasets_attributes.get('metadata', None)
@@ -631,8 +631,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             else:
                 primary_data.set_meta()
             primary_data.set_peek()
-            sa_session.add(primary_data)
-            sa_session.flush()
             outdata.history.add_dataset(primary_data)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
@@ -651,7 +649,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             outdata.set_meta()
             outdata.set_peek()
             sa_session.add(outdata)
-            sa_session.flush()
+
+    sa_session.flush()
     return primary_datasets
 
 

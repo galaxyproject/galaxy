@@ -358,7 +358,8 @@ export function setWindowTitle(title) {
  * @returns {integer}
  */
 function hashFnv32a(str) {
-    var i, l,
+    var i,
+        l,
         hval = 0x811c9dc5;
 
     for (i = 0, l = str.length; i < l; i++) {
@@ -380,10 +381,8 @@ function hashFnv32a(str) {
  * Assumes r, g, b are in the set [0, 1]
  */
 function contrastingColor(r, g, b) {
-    var o = ((r * 255 * 299) +
-             (g * 255 * 587) +
-             (b * 255 * 114)) / 1000;
-    return (o > 125) ? 'black' : 'white';
+    var o = (r * 255 * 299 + g * 255 * 587 + b * 255 * 114) / 1000;
+    return o > 125 ? "black" : "white";
 }
 
 /**
@@ -397,26 +396,26 @@ function contrastingColor(r, g, b) {
  * @param   {number}  l       The lightness
  * @return  {Array}           The RGB representation
  */
-function hslToRgb(h, s, l){
+function hslToRgb(h, s, l) {
     var r, g, b;
 
-    if(s == 0){
+    if (s == 0) {
         r = g = b = l; // achromatic
-    }else{
-        var hue2rgb = function hue2rgb(p, q, t){
-            if(t < 0) t += 1;
-            if(t > 1) t -= 1;
-            if(t < 1/6) return p + (q - p) * 6 * t;
-            if(t < 1/2) return q;
-            if(t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+    } else {
+        var hue2rgb = function hue2rgb(p, q, t) {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
             return p;
-        }
+        };
 
         var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
         var p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3);
+        r = hue2rgb(p, q, h + 1 / 3);
         g = hue2rgb(p, q, h);
-        b = hue2rgb(p, q, h - 1/3);
+        b = hue2rgb(p, q, h - 1 / 3);
     }
 
     return [r, g, b];
@@ -431,11 +430,10 @@ export function generateTagStyle(tag) {
     var brColor = `hsl(${hue}, 100%, ${lightness - 40}%)`;
 
     var [r, g, b] = hslToRgb(hue, 1.0, lightness / 100);
-    var fgColor = contrastingColor(r, g, b)
+    var fgColor = contrastingColor(r, g, b);
 
-    return `background-color: ${bgColor}; color: ${fgColor}; border: 1px solid ${brColor}`
+    return `background-color: ${bgColor}; color: ${fgColor}; border: 1px solid ${brColor}`;
 }
-
 
 export default {
     cssLoadFile: cssLoadFile,
