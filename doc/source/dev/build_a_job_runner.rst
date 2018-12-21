@@ -120,7 +120,10 @@ B: Update the dictionary structure in kwargs.
 
 ::
 
-    kwargs['runner_param_specs'].update(runner_param_specs)
+    if 'runner_param_specs' in kwargs:
+        kwargs['runner_param_specs'].update(runner_param_specs)
+    else:
+        kwargs['runner_param_specs'] = runner_param_specs
 
 C: Now call the parent constructor to assign the values.
 
