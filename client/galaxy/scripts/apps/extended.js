@@ -80,3 +80,6 @@ export function multiHistory(options) {
         multipanel.render(0);
     });
 }
+
+// Used in common.mako
+export { default as store } from "store";
