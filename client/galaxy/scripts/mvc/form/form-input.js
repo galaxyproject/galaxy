@@ -13,7 +13,7 @@ export default Backbone.View.extend({
                 text_enable: this.app_options.text_enable || "Enable",
                 text_disable: this.app_options.text_disable || "Disable",
                 text_connected_enable: this.app_options.text_connected_enable || "Add connection to module",
-                text_connected_disable: this.app_options.text_connected_disable || "Remove connection from model",
+                text_connected_disable: this.app_options.text_connected_disable || "Remove connection from module",
                 cls_enable: this.app_options.cls_enable || "fa fa-caret-square-o-down",
                 cls_disable: this.app_options.cls_disable || "fa fa-caret-square-o-up",
                 always_refresh: this.app_options.always_refresh
