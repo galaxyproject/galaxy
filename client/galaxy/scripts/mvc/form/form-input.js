@@ -139,8 +139,10 @@ export default Backbone.View.extend({
                     .removeClass()
                     .addClass("icon ui-form-collapsible-icon")
                     .addClass(this.model.get(`cls_${collapsible_state}`))
+                    .tooltip("dispose")
                     .attr("data-original-title", this.model.get(`text_${collapsible_state}`))
                     .tooltip({ placement: "bottom" })
+                    .tooltip("show")
                     .show();
             } else {
                 this.$collapsible_icon.hide();
@@ -154,8 +156,10 @@ export default Backbone.View.extend({
                     .addClass("icon ui-form-connected-icon")
                     .addClass(connected_icon_style)
                     .addClass(connected_icon_margin)
+                    .tooltip("dispose")
                     .attr("data-original-title", this.model.get(`text_connected_${connected_collapsible_state}`))
                     .tooltip({ placement: "bottom" })
+                    .tooltip("show")
                     .show();
             } else {
                 this.$connected_icon.hide();
