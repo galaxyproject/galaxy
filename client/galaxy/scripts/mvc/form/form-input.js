@@ -124,11 +124,10 @@ export default Backbone.View.extend({
         // render collapsible options
         const connected = this.field.connected;
         const collapsible =
-            !connected &&
             !this.field.collapsible_disabled &&
             !this.model.get("disabled") &&
             this.model.get("collapsible_value") !== undefined;
-        const connectable = this.model.get("connectable");
+        const connectable = collapsible && this.model.get("connectable");
         if (collapsible || connectable) {
             var collapsible_state = this.field.collapsed ? "enable" : "disable";
             this.$title_text.hide();
@@ -142,14 +141,14 @@ export default Backbone.View.extend({
                     .tooltip("dispose")
                     .attr("data-original-title", this.model.get(`text_${collapsible_state}`))
                     .tooltip({ placement: "bottom" })
-                    .tooltip("show")
-                    .show();
+                    .show()
+                    .tooltip("show");
             } else {
                 this.$collapsible_icon.hide();
             }
             if (connectable) {
                 const connected_icon_style = this.field.connected ? "fa fa-times" : "fa fa-arrows-h";
-                const connected_icon_margin = collapsible ? "ml-1" : "";
+                const connected_icon_margin = !connected && collapsible ? "ml-1" : "";
                 const connected_collapsible_state = this.field.connected ? "disable" : "enable";
                 this.$connected_icon
                     .removeClass()
@@ -159,8 +158,8 @@ export default Backbone.View.extend({
                     .tooltip("dispose")
                     .attr("data-original-title", this.model.get(`text_connected_${connected_collapsible_state}`))
                     .tooltip({ placement: "bottom" })
-                    .tooltip("show")
-                    .show();
+                    .show()
+                    .tooltip("show");
             } else {
                 this.$connected_icon.hide();
             }
