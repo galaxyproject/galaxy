@@ -141,8 +141,7 @@ export default Backbone.View.extend({
                     .tooltip("dispose")
                     .attr("data-original-title", this.model.get(`text_${collapsible_state}`))
                     .tooltip({ placement: "bottom" })
-                    .show()
-                    .tooltip("show");
+                    .show();
             } else {
                 this.$collapsible_icon.hide();
             }
@@ -158,8 +157,7 @@ export default Backbone.View.extend({
                     .tooltip("dispose")
                     .attr("data-original-title", this.model.get(`text_connected_${connected_collapsible_state}`))
                     .tooltip({ placement: "bottom" })
-                    .show()
-                    .tooltip("show");
+                    .show();
             } else {
                 this.$connected_icon.hide();
             }
