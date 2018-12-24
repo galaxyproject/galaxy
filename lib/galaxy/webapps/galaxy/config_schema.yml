@@ -725,6 +725,14 @@ mapping:
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
 
+      object_store_store_by:
+        type: str
+        default: id
+        required: false
+        desc: |
+          What Dataset attribute is used to reference files in an ObjectStore implementation,
+          default is 'id' but can also be set to 'uuid' for more de-centralized usage.
+
       smtp_server:
         type: str
         default: ''
