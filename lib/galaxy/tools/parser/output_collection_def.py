@@ -58,7 +58,9 @@ def dataset_collector_descriptions_from_list(discover_datasets_dicts):
 
 
 def dataset_collection_description(**kwargs):
-    if asbool(kwargs.get("from_provided_metadata", False)):
+    from_provided_metadata = asbool(kwargs.get("from_provided_metadata", False))
+    discover_via = kwargs.get("discover_via", "tool_provided_metadata" if from_provided_metadata else "pattern")
+    if discover_via == "tool_provided_metadata":
         for key in ["pattern", "sort_by"]:
             if kwargs.get(key):
                 raise Exception("Cannot specify attribute [%s] if from_provided_metadata is True" % key)
@@ -78,6 +80,17 @@ class DatasetCollectionDescription(object):
         self.assign_primary_output = asbool(kwargs.get('assign_primary_output', False))
         self.directory = kwargs.get("directory", None)
         self.recurse = False
+
+    def to_dict(self):
+        return {
+            'discover_via': self.discover_via,
+            'dbkey': self.default_dbkey,
+            'format': self.default_ext,
+            'visible': self.default_visible,
+            'assign_primary_output': self.assign_primary_output,
+            'directory': self.directory,
+            'recurse': self.recurse,
+        }
 
 
 class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
@@ -115,6 +128,16 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         ]
         self.sort_key = sort_by
         self.sort_comp = sort_comp
+
+    def to_dict(self):
+        as_dict = super(FilePatternDatasetCollectionDescription, self).to_dict()
+        as_dict.update({
+            "sort_key": self.sort_key,
+            "sort_comp": self.sort_comp,
+            "pattern": self.pattern,
+            "recurse": self.recurse,
+        })
+        return as_dict
 
 
 DEFAULT_DATASET_COLLECTOR_DESCRIPTION = FilePatternDatasetCollectionDescription(
