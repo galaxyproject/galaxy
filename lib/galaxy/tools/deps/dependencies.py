@@ -1,5 +1,6 @@
 from galaxy.tools.deps.requirements import ToolRequirements
 from galaxy.util import bunch
+from .mulled.mulled_build import DEFAULT_CHANNELS
 
 
 class AppInfo(object):
@@ -15,6 +16,7 @@ class AppInfo(object):
         containers_resolvers_config_file=None,
         involucro_path=None,
         involucro_auto_init=True,
+        mulled_channels=DEFAULT_CHANNELS,
     ):
         self.galaxy_root_dir = galaxy_root_dir
         self.default_file_path = default_file_path
@@ -26,6 +28,7 @@ class AppInfo(object):
         self.containers_resolvers_config_file = containers_resolvers_config_file
         self.involucro_path = involucro_path
         self.involucro_auto_init = involucro_auto_init
+        self.mulled_channels = mulled_channels
 
 
 class ToolInfo(object):

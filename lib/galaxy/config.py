@@ -24,6 +24,7 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.tools.deps.container_resolvers.mulled import DEFAULT_CHANNELS
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -519,6 +520,11 @@ class Configuration(object):
             involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
+        mulled_channels = kwargs.get('mulled_channels')
+        if mulled_channels:
+            self.mulled_channels = [c.strip() for c in mulled_channels.split(',')]
+        else:
+            self.mulled_channels = DEFAULT_CHANNELS
 
         default_job_resubmission_condition = kwargs.get('default_job_resubmission_condition', '')
         if not default_job_resubmission_condition.strip():
@@ -1059,6 +1065,7 @@ class ConfiguresGalaxyMixin(object):
             containers_resolvers_config_file=self.config.containers_resolvers_config_file,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
+            mulled_channels=self.config.mulled_channels,
         )
         self.container_finder = containers.ContainerFinder(app_info)
         self._set_enabled_container_types()
