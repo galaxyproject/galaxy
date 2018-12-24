@@ -40,8 +40,7 @@ export default Backbone.View.extend({
         // decide wether to expand or collapse fields
         var collapsible_value = this.model.get("collapsible_value");
         var value = JSON.stringify(this.model.get("value"));
-        var connected = value == JSON.stringify({ __class__: "ConnectedValue" });
-        this.field.connected = !!connected;
+        this.field.connected = value == JSON.stringify({ __class__: "ConnectedValue" });
         this.field.collapsed =
             this.field.connected ||
             (collapsible_value !== undefined &&
