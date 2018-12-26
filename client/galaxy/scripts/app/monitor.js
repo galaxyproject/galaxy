@@ -1,26 +1,27 @@
-import { installMonitor } from "utils/installMonitor";
+// Initializes "training wheels" causing legacy references to window.Galaxy to
+// pass through the singleton accessors. All future code should access galaxy
+// through getGalaxyInstance, and rarely with setGalaxyInstance
+
 import { getGalaxyInstance, setGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-
-let proxy;
+import { serverPath } from "utils/serverPath";
 
 const galaxyStub = {
     root: getAppRoot(),
     config: {}
 };
 
-if (!proxy) {
-    // force references to window.galaxy to pass through the set/get instance functions
-    // The monitor is going to store Galaxy at window._monitorStorage["Galaxy"]
-    Object.defineProperty(window._monitorStorage, "Galaxy", {
-        enumerable: true,
-        configurable: false,
-        get: getGalaxyInstance,
-        set: newValue => setGalaxyInstance(() => newValue)
-    });
+Object.defineProperty(window, "Galaxy", {
+    enumerable: true,
+    get: function() {
+        console.warn("accessing (get) window.Galaxy", serverPath());
+        return getGalaxyInstance() || galaxyStub;
+    },
+    set: function(newValue) {
+        console.warn("accessing (set) window.Galaxy", serverPath());
+        setGalaxyInstance(newValue);
+    }
+});
 
-    let existingGalaxy = getGalaxyInstance();
-    proxy = installMonitor("Galaxy", existingGalaxy || galaxyStub);
-}
+export default window.Galaxy;
 
-export default proxy;
