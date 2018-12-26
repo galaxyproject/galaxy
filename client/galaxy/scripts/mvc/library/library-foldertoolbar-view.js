@@ -84,7 +84,8 @@ var FolderToolbarView = Backbone.View.extend({
             id: this.options.id,
             is_admin: false,
             is_anonym: true,
-            multiple_add_dataset_options: false
+            multiple_add_dataset_options: false,
+            Galaxy: Galaxy
         };
         if (Galaxy.user) {
             template_defaults.is_admin = Galaxy.user.isAdmin();
