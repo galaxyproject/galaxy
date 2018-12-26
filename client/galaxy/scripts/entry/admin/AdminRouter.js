@@ -9,6 +9,7 @@ import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
+import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Vue from "vue";
 
 export const getAdminRouter = (Galaxy, options) => {
@@ -20,6 +21,7 @@ export const getAdminRouter = (Galaxy, options) => {
             "(/)admin(/)users": "show_users",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
+            "(/)admin(/)display_applications": "show_display_applications",
             "(/)admin(/)tool_versions": "show_tool_versions",
             "(/)admin(/)quotas": "show_quotas",
             "(/)admin(/)repositories": "show_repositories",
@@ -86,11 +88,17 @@ export const getAdminRouter = (Galaxy, options) => {
             this.page.display(vm);
             new instance(props).$mount(vm);
         },
+
         show_data_tables: function() {
             this._display_vue_helper(DataTables);
         },
+
         show_data_types: function() {
             this._display_vue_helper(DataTypes);
+        },
+
+        show_display_applications: function() {
+            this._display_vue_helper(DisplayApplications);
         },
 
         show_data_manager: function(path) {

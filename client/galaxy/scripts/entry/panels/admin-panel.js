@@ -33,6 +33,7 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: _l("Display applications"),
                         url: "admin/display_applications",
+                        target: "__use_router__",
                         id: "admin-link-display-applications"
                     },
                     {

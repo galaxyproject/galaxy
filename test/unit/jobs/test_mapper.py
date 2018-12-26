@@ -63,7 +63,7 @@ def test_dynamic_mapping_job_conf_params():
 
 
 def test_dynamic_mapping_function_parameters():
-    mapper = __mapper(__dynamic_destination(dict(function="check_rule_params")))
+    mapper = __mapper(__dynamic_destination(dict(function="check_rule_params", param1="referrer_param")))
     assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
     assert mapper.job_config.rule_response == "all_passed"
 
