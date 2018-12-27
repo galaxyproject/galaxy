@@ -24,6 +24,7 @@ from sqlalchemy.orm import clear_mappers
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
 from galaxy.model.custom_types import total_size
 from galaxy.util import stringify_dictionary_keys
+from ._provided_metadata import parse_tool_provided_metadata
 
 # ensure supported version
 assert sys.version_info[:2] >= (2, 7), 'Python version must be at least 2.7, this is: %s' % sys.version
@@ -90,7 +91,7 @@ def set_metadata_portable():
     outputs = metadata_params["outputs"]
 
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
-    existing_job_metadata_dict, new_job_metadata_dict = load_job_metadata(job_metadata)
+    tool_provided_metadata = load_job_metadata(job_metadata)
 
     def set_meta(new_dataset_instance, file_dict):
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
@@ -110,7 +111,7 @@ def set_metadata_portable():
             dataset.dataset.external_filename = dataset_filename_override
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
             dataset.dataset.external_extra_files_path = files_path
-            file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
+            file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id)
             if 'ext' in file_dict:
                 dataset.extension = file_dict['ext']
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
@@ -125,7 +126,7 @@ def set_metadata_portable():
         except Exception as e:
             json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
-    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, existing_job_metadata_dict, new_job_metadata_dict)
+    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 
 def set_metadata_legacy():
@@ -147,7 +148,7 @@ def set_metadata_legacy():
     datatypes_registry = validate_and_load_datatypes_config(datatypes_config)
 
     job_metadata = sys.argv.pop(1)
-    existing_job_metadata_dict, new_job_metadata_dict = load_job_metadata(job_metadata)
+    tool_provided_metadata = load_job_metadata(job_metadata)
 
     def set_meta(new_dataset_instance, file_dict):
         set_meta_with_tool_provided(new_dataset_instance, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
@@ -166,7 +167,7 @@ def set_metadata_legacy():
             dataset.dataset.external_filename = dataset_filename_override
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
             dataset.dataset.external_extra_files_path = files_path
-            file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
+            file_dict = tool_provided_metadata.get_dataset_meta(None, dataset.dataset.id)
             if 'ext' in file_dict:
                 dataset.extension = file_dict['ext']
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
@@ -181,7 +182,7 @@ def set_metadata_legacy():
         except Exception as e:
             json.dump((False, str(e)), open(filename_results_code, 'wt+'))  # setting metadata has failed somehow
 
-    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, existing_job_metadata_dict, new_job_metadata_dict)
+    write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata)
 
 
 def validate_and_load_datatypes_config(datatypes_config):
@@ -198,25 +199,13 @@ def validate_and_load_datatypes_config(datatypes_config):
 
 
 def load_job_metadata(job_metadata):
-    existing_job_metadata_dict = {}
-    new_job_metadata_dict = {}
-    if job_metadata != "None" and os.path.exists(job_metadata):
-        for line in open(job_metadata, 'r'):
-            try:
-                line = stringify_dictionary_keys(json.loads(line))
-                if line['type'] == 'dataset':
-                    existing_job_metadata_dict[int(line['dataset_id'])] = line
-                elif line['type'] == 'new_primary_dataset':
-                    new_job_metadata_dict[line['filename']] = line
-            except Exception:
-                continue
-
-    return existing_job_metadata_dict, new_job_metadata_dict
+    return parse_tool_provided_metadata(job_metadata)
 
 
-def write_job_metadata(tool_job_working_directory, job_metadata, set_meta, existing_job_metadata_dict, new_job_metadata_dict):
-    for i, (filename, file_dict) in enumerate(new_job_metadata_dict.items(), start=1):
-        new_dataset_filename = os.path.join(tool_job_working_directory, "working", file_dict['filename'])
+def write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_provided_metadata):
+    for i, file_dict in enumerate(tool_provided_metadata.get_new_datasets_for_metadata_collection(), start=1):
+        filename = file_dict["filename"]
+        new_dataset_filename = os.path.join(tool_job_working_directory, "working", filename)
         new_dataset = galaxy.model.Dataset(id=-i, external_filename=new_dataset_filename)
         extra_files = file_dict.get('extra_files', None)
         if extra_files is not None:
@@ -225,9 +214,6 @@ def write_job_metadata(tool_job_working_directory, job_metadata, set_meta, exist
         new_dataset_instance = galaxy.model.HistoryDatasetAssociation(id=-i, dataset=new_dataset, extension=file_dict.get('ext', 'data'))
         set_meta(new_dataset_instance, file_dict)
         file_dict['metadata'] = json.loads(new_dataset_instance.metadata.to_JSON_dict())  # storing metadata in external form, need to turn back into dict, then later jsonify
-    if existing_job_metadata_dict or new_job_metadata_dict:
-        with open(job_metadata, 'wt') as job_metadata_fh:
-            for value in list(existing_job_metadata_dict.values()) + list(new_job_metadata_dict.values()):
-                job_metadata_fh.write("%s\n" % (json.dumps(value)))
 
+    tool_provided_metadata.rewrite()
     clear_mappers()
