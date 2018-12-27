@@ -1426,10 +1426,10 @@ class JobWrapper(HasResourceParameters):
         out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
         out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
 
-        param_dict = self.get_param_dict(job)
         self.discover_outputs(job, inp_data, out_data, out_collections)
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
+        param_dict = self.get_param_dict(job)
         self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
         # Call 'exec_after_process' hook
         self.tool.call_hook('exec_after_process', self.app, inp_data=inp_data,
