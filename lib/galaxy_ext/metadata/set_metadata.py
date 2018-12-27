@@ -103,7 +103,7 @@ def set_metadata():
             try:
                 line = stringify_dictionary_keys(json.loads(line))
                 if line['type'] == 'dataset':
-                    existing_job_metadata_dict[line['dataset_id']] = line
+                    existing_job_metadata_dict[int(line['dataset_id'])] = line
                 elif line['type'] == 'new_primary_dataset':
                     new_job_metadata_dict[line['filename']] = line
             except Exception:
