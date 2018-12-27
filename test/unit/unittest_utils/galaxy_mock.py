@@ -113,6 +113,7 @@ class MockAppConfig(Bunch):
         self.jobs_directory = '/tmp'
         self.new_file_path = '/tmp'
         self.tool_data_path = '/tmp'
+        self.metadata_strategy = 'legacy'
 
         self.object_store_config_file = ''
         self.object_store = 'disk'

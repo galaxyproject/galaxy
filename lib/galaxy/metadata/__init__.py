@@ -17,9 +17,15 @@ from galaxy.util import in_directory
 
 log = getLogger(__name__)
 
+SET_METADATA_SCRIPT = 'from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()'
+
 
 def get_metadata_compute_strategy(app, job_id):
-    return JobExternalOutputMetadataWrapper(job_id)
+    metadata_strategy = app.config.metadata_strategy
+    if metadata_strategy == "legacy":
+        return JobExternalOutputMetadataWrapper(job_id)
+    else:
+        return PortableDirectoryMetadataGenerator(job_id)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -52,12 +58,101 @@ class MetadataCollectionStrategy(object):
         """
 
     @abc.abstractmethod
-    def external_metadata_set_successfully(self, dataset, sa_session):
+    def external_metadata_set_successfully(self, dataset, name, sa_session, working_directory):
         """Return boolean indicating if metadata for specified dataset was written properly."""
 
     @abc.abstractmethod
     def load_metadata(self, dataset, name, sa_session, working_directory, remote_metadata_directory=None):
         """Load metadata calculated externally into specified dataset."""
+
+    def _load_metadata_from_path(self, dataset, metadata_output_path, working_directory, remote_metadata_directory):
+
+        def path_rewriter(path):
+            if not path:
+                return path
+            normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
+            normalized_path = os.path.normpath(path)
+            if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
+                return normalized_path.replace(normalized_remote_metadata_directory, working_directory, 1)
+            return path
+
+        dataset.metadata.from_JSON_dict(metadata_output_path, path_rewriter=path_rewriter)
+
+    def _metadata_results_from_file(self, dataset, filename_results_code):
+        with open(filename_results_code, "r") as f:
+            rval, rstring = json.load(f)
+
+        if not rval:
+            log.debug('setting metadata externally failed for %s %s: %s' % (dataset.__class__.__name__, dataset.id, rstring))
+        return rval
+
+
+class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
+
+    def __init__(self, job_id):
+        self.job_id = job_id
+
+    def setup_external_metadata(self, datasets_dict, sa_session, exec_dir=None,
+                                tmp_dir=None, dataset_files_path=None,
+                                output_fnames=None, config_root=None,
+                                config_file=None, datatypes_config=None,
+                                job_metadata=None, compute_tmp_dir=None,
+                                include_command=True, max_metadata_value_size=0,
+                                kwds=None):
+        kwds = kwds or {}
+        tmp_dir = _init_tmp_dir(tmp_dir)
+
+        metadata_dir = os.path.join(tmp_dir, "metadata")
+        os.mkdir(metadata_dir)
+
+        def job_relative_path(path):
+            path_relative = os.path.relpath(path, tmp_dir)
+            return path_relative
+
+        outputs = {}
+
+        for name, dataset in datasets_dict.items():
+            assert name is not None
+            assert name not in outputs
+
+            key = name
+
+            def _metadata_path(what):
+                return os.path.join(metadata_dir, "metadata_%s_%s" % (what, key))
+
+            _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds)
+
+            outputs[name] = {
+                "filename_override": _get_filename_override(output_fnames, dataset.file_name)
+            }
+
+        metadata_params_path = os.path.join(metadata_dir, "params.json")
+        metadata_params = {
+            "job_metadata": job_relative_path(job_metadata),
+            "datatypes_config": datatypes_config,
+            "max_metadata_value_size": max_metadata_value_size,
+            "outputs": outputs,
+        }
+        with open(metadata_params_path, "w") as f:
+            json.dump(metadata_params, f)
+
+        if include_command:
+            # return command required to build
+            script_path = os.path.join(metadata_dir, "set.py")
+            with open(script_path, "w") as f:
+                f.write(SET_METADATA_SCRIPT)
+            return 'pwd; python "metadata/set.py"'
+        else:
+            # return args to galaxy_ext.metadata.set_metadata required to build
+            return ''
+
+    def load_metadata(self, dataset, name, sa_session, working_directory, remote_metadata_directory=None):
+        metadata_output_path = os.path.join(working_directory, "metadata", "metadata_out_%s" % name)
+        self._load_metadata_from_path(dataset, metadata_output_path, working_directory, remote_metadata_directory)
+
+    def external_metadata_set_successfully(self, dataset, name, sa_session, working_directory):
+        metadata_results_path = os.path.join(working_directory, "metadata", "metadata_results_%s" % name)
+        return self._metadata_results_from_file(dataset, metadata_results_path)
 
 
 class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
@@ -112,10 +207,8 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                                 include_command=True, max_metadata_value_size=0,
                                 kwds=None):
         kwds = kwds or {}
-        assert tmp_dir is not None
-
-        if not os.path.exists(tmp_dir):
-            os.makedirs(tmp_dir)
+        tmp_dir = _init_tmp_dir(tmp_dir)
+        _assert_datatypes_config(datatypes_config)
 
         # path is calculated for Galaxy, may be different on compute - rewrite
         # for the compute server.
@@ -128,18 +221,12 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
 
         # fill in metadata_files_dict and return the command with args required to set metadata
         def __metadata_files_list_to_cmd_line(metadata_files):
-            def __get_filename_override():
-                if output_fnames:
-                    for dataset_path in output_fnames:
-                        if dataset_path.real_path == metadata_files.dataset.file_name:
-                            return dataset_path.false_path or dataset_path.real_path
-                return ""
             line = '"%s,%s,%s,%s,%s,%s"' % (
                 metadata_path_on_compute(metadata_files.filename_in),
                 metadata_path_on_compute(metadata_files.filename_kwds),
                 metadata_path_on_compute(metadata_files.filename_out),
                 metadata_path_on_compute(metadata_files.filename_results_code),
-                __get_filename_override(),
+                _get_filename_override(output_fnames, metadata_files.dataset.file_name),
                 metadata_path_on_compute(metadata_files.filename_override_metadata),
             )
             return line
@@ -151,8 +238,6 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
             dataset_files_path = galaxy.model.Dataset.file_path
         if config_root is None:
             config_root = os.path.abspath(os.getcwd())
-        if datatypes_config is None:
-            raise Exception('In setup_external_metadata, the received datatypes_config is None.')
         metadata_files_list = []
         for dataset in datasets:
             key = self._get_dataset_metadata_key(dataset)
@@ -169,42 +254,27 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
                 # we will use pathnames relative to the galaxy root, to accommodate instances where the galaxy root
                 # is located differently, i.e. on a cluster node with a different filesystem structure
 
+                def _metadata_path(what):
+                    return abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_%s_%s_" % (what, key)).name)
+
+                filename_in, filename_out, filename_results_code, filename_kwds, filename_override_metadata = _initialize_metadata_inputs(dataset, _metadata_path, tmp_dir, kwds)
+
                 # file to store existing dataset
-                metadata_files.filename_in = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_in_%s_" % key).name)
+                metadata_files.filename_in = filename_in
 
-                # FIXME: HACK
-                # sqlalchemy introduced 'expire_on_commit' flag for sessionmaker at version 0.5x
-                # This may be causing the dataset attribute of the dataset_association object to no-longer be loaded into memory when needed for pickling.
-                # For now, we'll simply 'touch' dataset_association.dataset to force it back into memory.
-                dataset.dataset  # force dataset_association.dataset to be loaded before pickling
-                # A better fix could be setting 'expire_on_commit=False' on the session, or modifying where commits occur, or ?
-
-                # Touch also deferred column
-                dataset._metadata
-
-                cPickle.dump(dataset, open(metadata_files.filename_in, 'wb+'))
                 # file to store metadata results of set_meta()
-                metadata_files.filename_out = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_out_%s_" % key).name)
-                open(metadata_files.filename_out, 'wt+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+                metadata_files.filename_out = filename_out
+
                 # file to store a 'return code' indicating the results of the set_meta() call
                 # results code is like (True/False - if setting metadata was successful/failed , exception or string of reason of success/failure )
-                metadata_files.filename_results_code = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_results_%s_" % key).name)
-                # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
-                json.dump((False, 'External set_meta() not called'), open(metadata_files.filename_results_code, 'wt+'))
+                metadata_files.filename_results_code = filename_results_code
+
                 # file to store kwds passed to set_meta()
-                metadata_files.filename_kwds = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_kwds_%s_" % key).name)
-                json.dump(kwds, open(metadata_files.filename_kwds, 'wt+'), ensure_ascii=True)
+                metadata_files.filename_kwds = filename_kwds
+
                 # existing metadata file parameters need to be overridden with cluster-writable file locations
-                metadata_files.filename_override_metadata = abspath(tempfile.NamedTemporaryFile(dir=tmp_dir, prefix="metadata_override_%s_" % key).name)
-                open(metadata_files.filename_override_metadata, 'wt+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
-                override_metadata = []
-                for meta_key, spec_value in dataset.metadata.spec.items():
-                    if isinstance(spec_value.param, FileParameter) and dataset.metadata.get(meta_key, None) is not None:
-                        metadata_temp = MetadataTempFile()
-                        metadata_temp.tmp_dir = tmp_dir
-                        shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
-                        override_metadata.append((meta_key, metadata_temp.to_JSON()))
-                json.dump(override_metadata, open(metadata_files.filename_override_metadata, 'wt+'))
+                metadata_files.filename_override_metadata = filename_override_metadata
+
                 # add to session and flush
                 sa_session.add(metadata_files)
                 sa_session.flush()
@@ -217,20 +287,17 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
             # return command required to build
             fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")
             metadata_script_file = abspath(fp)
-            os.fdopen(fd, 'w').write('from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()')
+            os.fdopen(fd, 'w').write(SET_METADATA_SCRIPT)
             return 'python "%s" %s' % (metadata_path_on_compute(metadata_script_file), args)
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return args
 
-    def external_metadata_set_successfully(self, dataset, sa_session):
+    def external_metadata_set_successfully(self, dataset, name, sa_session, working_directory):
         metadata_files = self._get_output_filenames_by_dataset(dataset, sa_session)
         if not metadata_files:
             return False  # this file doesn't exist
-        rval, rstring = json.load(open(metadata_files.filename_results_code))
-        if not rval:
-            log.debug('setting metadata externally failed for %s %s: %s' % (dataset.__class__.__name__, dataset.id, rstring))
-        return rval
+        return self._metadata_results_from_file(dataset, metadata_files.filename_results_code)
 
     def cleanup_external_metadata(self, sa_session):
         log.debug('Cleaning up external metadata files')
@@ -262,14 +329,65 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
         # the metadata that was stored to disk for use via the external process,
         # and the changes made by the user will be lost, without warning or notice
         output_filename = self._get_output_filenames_by_dataset(dataset, sa_session).filename_out
+        self._load_metadata_from_path(dataset, output_filename, working_directory, remote_metadata_directory)
 
-        def path_rewriter(path):
-            if not path:
-                return path
-            normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
-            normalized_path = os.path.normpath(path)
-            if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
-                return normalized_path.replace(normalized_remote_metadata_directory, working_directory, 1)
-            return path
 
-        dataset.metadata.from_JSON_dict(output_filename, path_rewriter=path_rewriter)
+def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds):
+    filename_in = path_for_part("in")
+    filename_out = path_for_part("out")
+    filename_results_code = path_for_part("results")
+    filename_kwds = path_for_part("kwds")
+    filename_override_metadata = path_for_part("override")
+
+    _dump_dataset_instance_to(dataset, filename_in)
+    open(filename_out, 'wt+')  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+    # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+    json.dump((False, 'External set_meta() not called'), open(filename_results_code, 'wt+'))
+    json.dump(kwds, open(filename_kwds, 'wt+'), ensure_ascii=True)
+
+    override_metadata = []
+    for meta_key, spec_value in dataset.metadata.spec.items():
+        if isinstance(spec_value.param, FileParameter) and dataset.metadata.get(meta_key, None) is not None:
+            metadata_temp = MetadataTempFile()
+            metadata_temp.tmp_dir = tmp_dir
+            shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
+            override_metadata.append((meta_key, metadata_temp.to_JSON()))
+    json.dump(override_metadata, open(filename_override_metadata, 'wt+'))
+
+    return filename_in, filename_out, filename_results_code, filename_kwds, filename_override_metadata
+
+
+def _assert_datatypes_config(datatypes_config):
+    if datatypes_config is None:
+        raise Exception('In setup_external_metadata, the received datatypes_config is None.')
+
+
+def _dump_dataset_instance_to(dataset_instance, file_path):
+    # FIXME: HACK
+    # sqlalchemy introduced 'expire_on_commit' flag for sessionmaker at version 0.5x
+    # This may be causing the dataset attribute of the dataset_association object to no-longer be loaded into memory when needed for pickling.
+    # For now, we'll simply 'touch' dataset_association.dataset to force it back into memory.
+    dataset_instance.dataset  # force dataset_association.dataset to be loaded before pickling
+    # A better fix could be setting 'expire_on_commit=False' on the session, or modifying where commits occur, or ?
+
+    # Touch also deferred column
+    dataset_instance._metadata
+
+    cPickle.dump(dataset_instance, open(file_path, 'wb+'))
+
+
+def _get_filename_override(output_fnames, file_name):
+    if output_fnames:
+        for dataset_path in output_fnames:
+            if dataset_path.real_path == file_name:
+                return dataset_path.false_path or dataset_path.real_path
+    return ""
+
+
+def _init_tmp_dir(tmp_dir):
+    assert tmp_dir is not None
+
+    if not os.path.exists(tmp_dir):
+        os.makedirs(tmp_dir)
+
+    return tmp_dir
