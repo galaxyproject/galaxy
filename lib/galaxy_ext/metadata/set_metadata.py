@@ -123,15 +123,15 @@ def set_metadata():
             dataset.dataset.external_filename = dataset_filename_override
             files_path = os.path.abspath(os.path.join(tool_job_working_directory, "dataset_%s_files" % (dataset.dataset.id)))
             dataset.dataset.external_extra_files_path = files_path
-            if dataset.dataset.id in existing_job_metadata_dict:
-                dataset.extension = existing_job_metadata_dict[dataset.dataset.id].get('ext', dataset.extension)
+            file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
+            if 'ext' in file_dict:
+                dataset.extension = file_dict['ext']
             # Metadata FileParameter types may not be writable on a cluster node, and are therefore temporarily substituted with MetadataTempFiles
             override_metadata = json.load(open(override_metadata))
             for metadata_name, metadata_file_override in override_metadata:
                 if galaxy.datatypes.metadata.MetadataTempFile.is_JSONified_value(metadata_file_override):
                     metadata_file_override = galaxy.datatypes.metadata.MetadataTempFile.from_JSON(metadata_file_override)
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
-            file_dict = existing_job_metadata_dict.get(dataset.dataset.id, {})
             set_meta_with_tool_provided(dataset, file_dict, set_meta_kwds, datatypes_registry, max_metadata_value_size)
             dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
             json.dump((True, 'Metadata has been set successfully'), open(filename_results_code, 'wt+'))  # setting metadata has succeeded
