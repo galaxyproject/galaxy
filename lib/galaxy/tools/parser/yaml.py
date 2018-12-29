@@ -93,7 +93,7 @@ class YamlToolSource(ToolSource):
             if output_type == "data":
                 output_defs.append(self._parse_output(tool, name, output_dict))
             elif output_type == "collection":
-                output_collection_defs.append(self._parse_output(tool, name, output_dict))
+                output_collection_defs.append(self._parse_output_collection(tool, name, output_dict))
             else:
                 message = "Unknown output_type [%s] encountered." % output_type
                 raise Exception(message)
