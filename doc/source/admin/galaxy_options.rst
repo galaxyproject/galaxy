@@ -521,7 +521,7 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    involucro is a tool used to build Docker ir Singularity containers
+    involucro is a tool used to build Docker or Singularity containers
     for tools from Conda dependencies referenced in tools as
     `requirement`s. The following path is the location of involucro on
     the Galaxy host. This is ignored if the relevant container

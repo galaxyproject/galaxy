@@ -27,11 +27,11 @@
        -->
 
   <!-- <mulled_singularity /> -->
-  <!-- mulled: only resolves container URI through bioconda to mulled automatic
+  <!-- mulled_singularity: only resolves container URI through bioconda to mulled automatic
        mapping. Should be the method of choice if mulled resolution is required
        but the container execution is handled by a container orchestration
        instead of singularity directly (ie. Galaxy has no access to a singularity client
-       binary). It works of course with direct singluarity tool executions.
+       binary). It works of course with direct singularity tool executions.
        -->
 
   <!-- <build_mulled /> -->
