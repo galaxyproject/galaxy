@@ -2,6 +2,7 @@
 import contextlib
 import json
 import os
+import tarfile
 
 from base import api
 from base import rules_test_data
@@ -13,6 +14,7 @@ from base.populators import (
     skip_without_tool,
     uses_test_history,
 )
+from six import BytesIO
 
 
 class ToolsTestCase(api.ApiTestCase):
@@ -225,6 +227,14 @@ class ToolsTestCase(api.ApiTestCase):
     def test_test_data_download(self):
         test_data_response = self._get("tools/%s/test_data_download?filename=1.bed" % "cat1")
         assert test_data_response.status_code == 200, test_data_response.text.startswith('chr')
+
+    @skip_without_tool("composite_output")
+    def test_test_data_download_composite(self):
+        test_data_response = self._get("tools/%s/test_data_download?filename=velveth_test1" % "composite_output")
+        assert test_data_response.status_code == 200
+        with tarfile.open(fileobj=BytesIO(test_data_response.content)) as tar_contents:
+            namelist = tar_contents.getnames()
+            assert len(namelist) == 4
 
     @uses_test_history(require_new=False)
     def test_upload_composite_as_tar(self, history_id):
