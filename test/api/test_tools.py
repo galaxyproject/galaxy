@@ -221,6 +221,11 @@ class ToolsTestCase(api.ApiTestCase):
         test_data = test_data_response.json()
         assert len(test_data) == 3
 
+    @skip_without_tool("cat1")
+    def test_test_data_download(self):
+        test_data_response = self._get("tools/%s/test_data_download?filename=1.bed" % "cat1")
+        assert test_data_response.status_code == 200, test_data_response.text.startswith('chr')
+
     @uses_test_history(require_new=False)
     def test_upload_composite_as_tar(self, history_id):
         tar_path = self.test_data_resolver.get_filename("testdir.tar")

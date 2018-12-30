@@ -129,6 +129,23 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         else:
             raise exceptions.ObjectNotFound("Specified test data path not found.")
 
+    @expose_api_raw_anonymous_and_sessionless
+    def test_data_download(self, trans, id, **kwd):
+        """
+        GET /api/tools/{tool_id}/test_data_download?tool_version={tool_version}&filename={filename}
+        """
+        tool_version = kwd.get('tool_version', None)
+        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
+        filename = kwd.get("filename")
+        if filename is None:
+            raise exceptions.ObjectNotFound("Test data filename not specified.")
+        path = tool.test_data_path(filename)
+        if path:
+            trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
+            return open(path, mode='rb')
+        else:
+            raise exceptions.ObjectNotFound("Specified test data path not found.")
+
     @expose_api_anonymous_and_sessionless
     def tests_summary(self, trans, **kwd):
         """
