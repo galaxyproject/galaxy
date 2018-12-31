@@ -146,23 +146,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
                 return open(path, mode='rb')
             elif os.path.isdir(path):
-                archive_type_string = 'w|gz'
-                archive_ext = 'tgz'
-                if self.app.config.upstream_gzip:
-                    archive_type_string = 'w|'
-                    archive_ext = 'tar'
-                archive = util.streamball.StreamBall(mode=archive_type_string)
-                for root, directories, files in util.path.safe_walk(path):
-                    for file in files:
-                        p = os.path.join(root, file)
-                        relpath = os.path.relpath(p, os.path.join(path, os.pardir))
-                        archive.add(file=os.path.join(path, p), relpath=relpath)
-                archive_name = "%s.%s" % (path, archive_ext)
-                trans.response.set_content_type("application/x-tar")
-                trans.response.headers["Content-Disposition"] = 'attachment; filename="{}"'.format(archive_name)
-                archive.wsgi_status = trans.response.wsgi_status()
-                archive.wsgi_headeritems = trans.response.wsgi_headeritems()
-                return archive.stream
+                return util.streamball.stream_archive(trans=trans, path=path, upstream_gzip=self.app.config.upstream_gzip)
         raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_anonymous_and_sessionless
