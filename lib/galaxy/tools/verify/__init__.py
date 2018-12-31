@@ -31,6 +31,7 @@ def verify(
     get_filecontent=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
+    mode='file',
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
@@ -73,10 +74,15 @@ def verify(
         attributes = {}
 
     if filename is not None:
-        file_content = get_filecontent(filename)
-        local_name = make_temp_fname(fname=filename)
-        with open(local_name, 'wb') as f:
-            f.write(file_content)
+        if mode == 'directory':
+            # if verifying a file inside a extra_files_path directory
+            # filename already point to a file that exists on disk
+            local_name = filename
+        else:
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)

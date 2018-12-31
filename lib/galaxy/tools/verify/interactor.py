@@ -3,6 +3,7 @@ from __future__ import print_function
 
 import os
 import re
+import shutil
 import sys
 import tarfile
 import tempfile
@@ -263,8 +264,9 @@ class GalaxyInteractorApi(object):
         if mode == 'file':
             return response.content
         elif mode == 'directory':
-            path = tempfile.mkdtemp(prefix=filename)
-            with tarfile.open(BytesIO(response.content)) as tar_contents:
+            prefix = os.path.basename(filename)
+            path = tempfile.mkdtemp(prefix=prefix)
+            with tarfile.open(fileobj=BytesIO(response.content)) as tar_contents:
                 tar_contents.extractall(path=path)
             return path
 
@@ -625,7 +627,7 @@ def verify_hid(filename, hda_id, attributes, test_data_downloader, hid="", datas
     )
 
 
-def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, test_data_downloader=None, keep_outputs_dir=False):
+def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, attributes=None, dataset_fetcher=None, test_data_downloader=None, keep_outputs_dir=False, mode='file'):
     assert dataset_fetcher is not None
 
     data = dataset_fetcher(hda_id, base_name)
@@ -638,6 +640,7 @@ def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, a
             filename=file_name,
             get_filecontent=test_data_downloader,
             keep_outputs_dir=keep_outputs_dir,
+            mode=mode,
         )
     except AssertionError as err:
         errmsg = 'Composite file (%s) of %s different than expected, difference:\n' % (base_name, item_label)
@@ -647,6 +650,7 @@ def _verify_composite_datatype_file_content(file_name, hda_id, base_name=None, a
 
 def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_downloader, keep_outputs_dir):
     files_list = []
+    cleanup_directories = []
     for extra_file_dict in extra_files:
         extra_file_type = extra_file_dict["type"]
         extra_file_name = extra_file_dict["name"]
@@ -654,14 +658,23 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
         extra_file_value = extra_file_dict["value"]
 
         if extra_file_type == 'file':
-            files_list.append((extra_file_name, extra_file_value, extra_file_attributes))
+            files_list.append((extra_file_name, extra_file_value, extra_file_attributes, extra_file_type))
         elif extra_file_type == 'directory':
-            for filename in os.listdir(test_data_downloader(extra_file_value, mode='directory')):
-                files_list.append((filename, os.path.join(extra_file_value, filename), extra_file_attributes))
+            extracted_path = test_data_downloader(extra_file_value, mode='directory')
+            cleanup_directories.append(extracted_path)
+            for root, directories, files in util.path.safe_walk(extracted_path):
+                for filename in files:
+                    filename = os.path.join(root, filename)
+                    filename = os.path.relpath(filename, extracted_path)
+                    files_list.append((filename, os.path.join(extracted_path, filename), extra_file_attributes, extra_file_type))
         else:
             raise ValueError('unknown extra_files type: %s' % extra_file_type)
-    for filename, filepath, attributes in files_list:
-        _verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, test_data_downloader=test_data_downloader, keep_outputs_dir=keep_outputs_dir)
+    try:
+        for filename, filepath, attributes, extra_file_type in files_list:
+            _verify_composite_datatype_file_content(filepath, hda_id, base_name=filename, attributes=attributes, dataset_fetcher=dataset_fetcher, test_data_downloader=test_data_downloader, keep_outputs_dir=keep_outputs_dir, mode=extra_file_type)
+    finally:
+        for path in cleanup_directories:
+            shutil.rmtree(path)
 
 
 def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_job_data=None, test_index=0, tool_version=None, quiet=False):
