@@ -309,6 +309,10 @@ then
     # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
     # locally before testing - you will need to do this also if using this script for Selenium testing.
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
+    echo "Docker version:"
+    docker --version
+    echo "Test singularity inside docker"
+    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS --privileged --entrypoint /usr/bin/singularity mvdbeek/testing-base:19.01.0 exec docker://busybox hostname
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
         --cap-add=SYS_ADMIN \
