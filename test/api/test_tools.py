@@ -229,6 +229,11 @@ class ToolsTestCase(api.ApiTestCase):
         assert test_data_response.status_code == 200, test_data_response.text.startswith('chr')
 
     @skip_without_tool("composite_output")
+    def test_test_data_downloads_security(self):
+        test_data_response = self._get("tools/%s/test_data_download?filename=../CONTRIBUTORS.md" % "composite_output")
+        assert test_data_response.status_code == 404, test_data_response.json()
+
+    @skip_without_tool("composite_output")
     def test_test_data_download_composite(self):
         test_data_response = self._get("tools/%s/test_data_download?filename=velveth_test1" % "composite_output")
         assert test_data_response.status_code == 200
