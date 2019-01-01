@@ -883,11 +883,36 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
         "stdout": "Standard output of the job",
         "stderr": "Standard error of the job",
     }
+    # TODO: Only hack the stdio like this for older profkle, for newer tool profiles
+    # add some syntax for asserting job messages maybe - or just drop this because exit
+    # code and regex on stdio can be tested directly - so this is really testing Galaxy
+    # core handling more than the tool.
+    job_messages = job_stdio.get("job_messages") or []
+    stdout_prefix = ""
+    stderr_prefix = ""
+    for job_message in job_messages:
+        message_type = job_message.get("type")
+        if message_type == "regex" and job_message.get("stream") == "stderr":
+            stderr_prefix += (job_message.get("desc") or '') + "\n"
+        elif message_type == "regex" and job_message.get("stream") == "stdout":
+            stdout_prefix += (job_message.get("desc") or '') + "\n"
+        elif message_type == "exit_code":
+            stderr_prefix += (job_message.get("desc") or '') + "\n"
+        else:
+            raise Exception("Unknown job message type [%s] in [%s]" % (message_type, job_message))
+
     for what, description in other_checks.items():
         if getattr(testdef, what, None) is not None:
             try:
-                data = job_stdio[what]
-                verify_assertions(data, getattr(testdef, what))
+                raw_data = job_stdio[what]
+                assertions = getattr(testdef, what)
+                if what == "stdout":
+                    data = stdout_prefix + raw_data
+                elif what == "stderr":
+                    data = stderr_prefix + raw_data
+                else:
+                    data = raw_data
+                verify_assertions(data, assertions)
             except AssertionError as err:
                 errmsg = '%s different than expected\n' % description
                 errmsg += str(err)
