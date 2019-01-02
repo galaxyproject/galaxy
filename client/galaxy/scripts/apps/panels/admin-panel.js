@@ -133,7 +133,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("View error logs"),
-                        url: "admin/tool_errors"
+                        url: "admin/error_stack",
+                        target: "__use_router__"
                     }
                 ]
             }

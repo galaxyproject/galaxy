@@ -5,6 +5,7 @@ from json import dumps
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
 from galaxy.visualization.genomes import GenomeRegion
@@ -423,6 +424,15 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         }
         create_payload.update(files_payload)
         return self._create(trans, create_payload, **kwd)
+
+    @expose_api
+    @web.require_admin
+    def error_stack(self, trans, **kwd):
+        """
+        GET /api/tools/error_stack
+        Returns global tool error stack
+        """
+        return global_tool_errors.error_stack
 
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):

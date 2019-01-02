@@ -17,7 +17,6 @@ from galaxy import (
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError, MessageException
 from galaxy.model import tool_shed_install as install_model
-from galaxy.tools import global_tool_errors
 from galaxy.util import (
     nice_size,
     sanitize_text,
@@ -902,11 +901,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
                                    migration_stages_dict=migration_stages_dict,
                                    message=message,
                                    status=status)
-
-    @web.expose
-    @web.require_admin
-    def tool_errors(self, trans, **kwd):
-        return trans.fill_template('admin/tool_errors.mako', tool_errors=global_tool_errors.error_stack)
 
     @web.expose
     @web.require_admin
