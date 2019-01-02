@@ -48,7 +48,8 @@ class TestDataResolver(object):
 
     def get_filecontent(self, name):
         filename = self.get_filename(name=name)
-        return open(filename, mode='rb')
+        with open(filename, mode='rb') as f:
+            return f.read()
 
     def get_directory(self, name):
         return self.get_filename(name=name)
