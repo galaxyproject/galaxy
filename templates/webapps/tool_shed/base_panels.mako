@@ -3,6 +3,13 @@
 ## Default title
 <%def name="title()">Tool Shed</%def>
 
+<%def name="init()">
+    ${parent.init()}
+    <%
+        self.body_class = "toolshed"
+    %>
+</%def>
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     <script type="text/javascript">

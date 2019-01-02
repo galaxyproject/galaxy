@@ -8,18 +8,6 @@
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
 
-    <style type="text/css">
-        body { margin: 0; padding: 0; overflow: hidden; }
-        #left {
-            background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
-        }
-        .unified-panel-body {
-            overflow: auto;
-        }
-        .toolMenu {
-            margin-left: 10px;
-        }
-    </style>
 </%def>
 
 <%def name="javascripts()">
@@ -27,6 +15,7 @@
 </%def>
 
 <%def name="init()">
+    ${parent.init()}
     <%
         self.has_left_panel=True
         self.has_right_panel=False
