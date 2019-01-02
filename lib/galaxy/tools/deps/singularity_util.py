@@ -43,7 +43,10 @@ def build_singularity_run_command(
 ):
     command_parts = []
     # http://singularity.lbl.gov/docs-environment-metadata
+    home = None
     for (key, value) in env:
+        if key == 'HOME':
+            home = value
         command_parts.extend(["SINGULARITYENV_%s=%s" % (key, value)])
     command_parts += _singularity_prefix(
         singularity_cmd=singularity_cmd,
@@ -56,6 +59,8 @@ def build_singularity_run_command(
         command_parts.extend(["-B", shlex_quote(str(volume))])
     if working_directory:
         command_parts.extend(["--pwd", shlex_quote(working_directory)])
+    if home is not None:
+        command_parts.extend(["--home", "%s:%s" % (home, home)])
     if run_extra_arguments:
         command_parts.append(run_extra_arguments)
     full_image = image
