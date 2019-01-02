@@ -18,24 +18,21 @@ ENV DEBIAN_FRONTEND=noninteractive \
 # Pre-install a bunch of packages to speed up ansible steps.
 RUN apt-get update -y && apt-get install -y software-properties-common apt-transport-https curl && \
     apt-add-repository -y ppa:ansible/ansible && \
-    curl -s http://neuro.debian.net/lists/xenial.us-ca.full | tee /etc/apt/sources.list.d/neurodebian.sources.list && \
     curl -s https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
     curl -sL https://deb.nodesource.com/setup_8.x | bash -  && \
-    curl -s http://neuro.debian.net/_static/neuro.debian.net.asc|apt-key add - && \
     echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update -y && \
     apt-get install -y libpq-dev postgresql postgresql-client ansible wget \
             slurm-llnl libmunge-dev slurm-drmaa-dev ant cmake curl \
             g++ gcc gfortran git-core libffi-dev liblapack-dev \
             libncurses5-dev libopenblas-dev libpam0g-dev libpq-dev libsparsehash-dev make \
-            mercurial nginx-extras patch postgresql postgresql \
-            postgresql-client python-boto python-dev python3-dev \
+            patch postgresql postgresql \
+            postgresql-client python-dev python3-dev \
             python-prettytable python-psycopg2 python-virtualenv python-pip \
             rsync slurm-drmaa-dev swig sysstat unzip \
             autoconf automake build-essential libatlas-base-dev libblas-dev openssl \
-            singularity-container \
-            bzip2 \
+            bzip2 uuid-dev libssl-dev libgpgme11-dev squashfs-tools libseccomp-dev pkg-config \
             ca-certificates \
             openjdk-8-jre-headless \
             tzdata \
@@ -47,7 +44,9 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
             libnss3 libgconf-2-4 && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN npm install -g grunt grunt-cli
+# Install golang
+RUN export VERSION=1.11 OS=linux ARCH=amd64 && curl -sL https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz \
+    | tar -C /usr/local -xzf -
 
 RUN mkdir -p /tmp/ansible && \
     mkdir -p /opt/galaxy/db && \
@@ -127,9 +126,17 @@ RUN  sudo mkdir -p /opt/selenium \
   && wget --no-verbose https://selenium-release.storage.googleapis.com/3.6/selenium-server-standalone-3.6.0.jar \
     -O /opt/selenium/selenium-server-standalone.jar
 
-USER galaxy
+USER seluser
 
-RUN mkdir /home/galaxy/.singularity
+RUN export GOPATH=${HOME}/go && export PATH=/usr/local/go/bin:${PATH}:${GOPATH}/bin && \
+    mkdir -p $GOPATH/src/github.com/sylabs && \
+    cd $GOPATH/src/github.com/sylabs && \
+    git clone https://github.com/sylabs/singularity.git && \
+    cd singularity && \
+    git checkout v3.0.1 && \
+    ./mconfig && \
+    cd builddir && make && sudo make install && \
+    rm -Rf ${HOME}/go
 
 USER root
 
