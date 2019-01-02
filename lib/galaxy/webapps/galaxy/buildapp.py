@@ -324,6 +324,7 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect('/api/tools/{id:.+?}/reload', action='reload', controller="tools")
     webapp.mapper.connect('/api/tools/tests_summary', action='tests_summary', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/test_data_path', action='test_data_path', controller="tools")
+    webapp.mapper.connect('/api/tools/{id:.+?}/test_data_download', action='test_data_download', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/test_data', action='test_data', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/diagnostics', action='diagnostics', controller="tools")
     webapp.mapper.connect('/api/tools/{id:.+?}/citations', action='citations', controller="tools")
