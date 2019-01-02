@@ -9,7 +9,8 @@ History
 18.9.2.dev0
 ---------------------
 
-    
+* Implement option for uploading local test data.
+* Bring in the latest Galaxy changes, which provide Python 3.7 support.
 
 ---------------------
 18.9.1 (2018-09-15)

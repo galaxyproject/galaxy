@@ -12,7 +12,7 @@
 Overview
 --------
 
-A small subset of the Galaxy_ project for reuse outside the core. This subset has minimal dependencies and should be Python 3 compatible.
+A small subset of the Galaxy_ project for reuse outside the core. This subset has minimal dependencies and is Python 3 compatible.
 
 * Free software: Academic Free License version 3.0
 * Documentation: https://galaxy-lib.readthedocs.org.
