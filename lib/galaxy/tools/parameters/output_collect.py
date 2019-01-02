@@ -76,7 +76,8 @@ def collect_dynamic_outputs(
     output_collections,
 ):
     tool = job_context.tool
-    app = tool.app
+    app = job_context.app
+    sa_session = job_context.sa_session
     collections_service = app.dataset_collections_service
     job_working_directory = job_context.job_working_directory
 
@@ -147,7 +148,6 @@ def collect_dynamic_outputs(
             assert "collection_type" in unnamed_output_dict
             object_id = destination.get("object_id")
             if object_id:
-                sa_session = tool.app.model.context
                 hdca = sa_session.query(galaxy.model.HistoryDatasetCollectionAssociation).get(int(object_id))
             else:
                 name = unnamed_output_dict.get("name", "unnamed collection")
@@ -204,7 +204,6 @@ def collect_dynamic_outputs(
                         hda_id = discovered_file.match.object_id
                         primary_dataset = None
                         if hda_id:
-                            sa_session = tool.app.model.context
                             primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
 
                         sources = fields_match.sources
@@ -533,9 +532,8 @@ class JobContext(object):
 
 def collect_primary_datasets(job_context, output, input_ext):
     tool = job_context.tool
-    app = tool.app
     job_working_directory = job_context.job_working_directory
-    sa_session = tool.sa_session
+    sa_session = job_context.sa_session
 
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
