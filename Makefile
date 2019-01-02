@@ -117,7 +117,7 @@ release-test-artifacts: dist
 	$(IN_VENV) twine upload -r test dist/*
 	open https://testpypi.python.org/pypi/$(PROJECT_NAME) || xdg-open https://testpypi.python.org/pypi/$(PROJECT_NAME)
 
-release-aritfacts: release-test-artifacts
+release-artifacts: release-test-artifacts
 	@while [ -z "$$CONTINUE" ]; do \
 		read -r -p "Have you executed release-test and reviewed results? [y/N]: " CONTINUE; \
 	done ; \
@@ -131,7 +131,7 @@ commit-version:
 new-version:
 	$(IN_VENV) python $(BUILD_SCRIPTS_DIR)/new_version.py $(SOURCE_DIR) $(VERSION) 2
 
-release-local: commit-version release-aritfacts new-version
+release-local: commit-version release-artifacts new-version
 
 push-release:
 	git push $(UPSTREAM) master
