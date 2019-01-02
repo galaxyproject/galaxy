@@ -295,24 +295,12 @@ then
     else
        db_type="sqlite"
     fi
-    if [ "$1" = "--external_tmp" ]; then
-       # If /tmp is a tmpfs there may be better performance by reusing
-       # the parent's temp file system. Also, it seems to decrease the
-       # frequency or errors such as the following:
-       # /bin/sh: 1: /tmp/tmpiWU3kJ/tmp_8zLxx/job_working_directory_mwwDmg/000/274/galaxy_274.sh: Text file busy
-       tmp=$(mktemp -d)
-       chmod 1777 $tmp
-       DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
-       shift
-    fi
     MY_UID=$(id -u)
     # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
     # locally before testing - you will need to do this also if using this script for Selenium testing.
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
     echo "Docker version:"
     docker --version
-    echo "Test singularity inside docker"
-    docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS --privileged --entrypoint /usr/bin/singularity mvdbeek/testing-base:19.01.0 exec docker://busybox hostname
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
         --cap-add=SYS_ADMIN \
