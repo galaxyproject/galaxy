@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-18.9.2.dev0
+18.9.2 (2019-01-02)
 ---------------------
 
 * Implement option for uploading local test data.
