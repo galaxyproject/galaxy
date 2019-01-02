@@ -1426,26 +1426,8 @@ class JobWrapper(HasResourceParameters):
         out_collections = dict([(obj.name, obj.dataset_collection_instance) for obj in job.output_dataset_collection_instances])
         out_collections.update([(obj.name, obj.dataset_collection) for obj in job.output_dataset_collections])
 
-        input_ext = 'data'
-        input_dbkey = '?'
-        for _, data in inp_data.items():
-            # For loop odd, but sort simulating behavior in galaxy.tools.actions
-            if not data:
-                continue
-            input_ext = data.ext
-            input_dbkey = data.dbkey or '?'
         param_dict = self.get_param_dict(job)
-        # Create generated output children and primary datasets and dynamic outputs.
-        tool_working_directory = self.tool_working_directory
-        self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
-        self.tool.collect_dynamic_outputs(
-            out_collections,
-            self.get_tool_provided_job_metadata(),
-            job_working_directory=tool_working_directory,
-            inp_data=inp_data,
-            job=job,
-            input_dbkey=input_dbkey,
-        )
+        self.discover_outputs(job, inp_data, out_data, out_collections)
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).
         self.tool.exec_after_process(self.app, inp_data, out_data, param_dict, job=job)
@@ -1490,6 +1472,29 @@ class JobWrapper(HasResourceParameters):
         cleanup_job = self.cleanup_job
         delete_files = cleanup_job == 'always' or (job.state == job.states.OK and cleanup_job == 'onsuccess')
         self.cleanup(delete_files=delete_files)
+
+    def discover_outputs(self, job, inp_data, out_data, out_collections):
+        input_ext = 'data'
+        input_dbkey = '?'
+        for _, data in inp_data.items():
+            # For loop odd, but sort simulating behavior in galaxy.tools.actions
+            if not data:
+                continue
+            input_ext = data.ext
+            input_dbkey = data.dbkey or '?'
+
+        # Create generated output children and primary datasets.
+        tool_working_directory = self.tool_working_directory
+        tool_provided_job_metadata = self.get_tool_provided_job_metadata()
+        self.tool.collect_primary_datasets(out_data, tool_provided_job_metadata, tool_working_directory, input_ext, input_dbkey)
+        self.tool.collect_dynamic_outputs(
+            out_collections,
+            tool_provided_job_metadata,
+            job_working_directory=tool_working_directory,
+            inp_data=inp_data,
+            job=job,
+            input_dbkey=input_dbkey,
+        )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
         job_id_tag = "<unknown job id>"
