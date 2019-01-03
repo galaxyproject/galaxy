@@ -123,6 +123,12 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
+model.KeycloakAuthRequest.table = Table(
+    "keycloak_auth_request", metadata,
+    Column('nonce', String(255), primary_key=True),
+    Column('state', String(64))
+)
+
 model.CloudAuthz.table = Table(
     "cloudauthz", metadata,
     Column('id', Integer, primary_key=True),

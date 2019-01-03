@@ -5099,6 +5099,13 @@ class UserAuthnzToken(UserMixin, RepresentById):
         return instance
 
 
+class KeycloakAuthRequest(RepresentById):
+
+    def __init__(self, nonce=None, state=None):
+        self.nonce = nonce
+        self.state = state
+
+
 class CloudAuthz(RepresentById):
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
