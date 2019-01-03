@@ -677,7 +677,7 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
             shutil.rmtree(path)
 
 
-def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_job_data=None, test_index=0, tool_version=None, quiet=False):
+def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_job_data=None, test_index=0, tool_version=None, quiet=False, test_history=None):
     if resource_parameters is None:
         resource_parameters = {}
     tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
@@ -686,7 +686,8 @@ def verify_tool(tool_id, galaxy_interactor, resource_parameters=None, register_j
 
     _handle_def_errors(testdef)
 
-    test_history = galaxy_interactor.new_history()
+    if test_history is None:
+        test_history = galaxy_interactor.new_history()
 
     stage_data_in_history(galaxy_interactor, tool_id, testdef.test_data(), test_history)
 
