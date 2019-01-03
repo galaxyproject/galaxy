@@ -64,9 +64,7 @@ class IdentityProvider(object):
             request a refresh token.
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
-        :return boolean:
-            True: if callback is handled successfully.
-            False: if processing callback fails, then Galaxy attempts re-authentication.
+        :return tuple: a tuple of redirect_url and user.
         """
         raise NotImplementedError()
 
