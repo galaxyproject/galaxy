@@ -27,7 +27,10 @@ from ..mulled.util import (
     v1_image_name,
     v2_image_name,
 )
-from ..requirements import ContainerDescription
+from ..requirements import (
+    ContainerDescription,
+    DEFAULT_CONTAINER_SHELL,
+)
 
 log = logging.getLogger(__name__)
 
@@ -180,7 +183,7 @@ def find_best_matching_cached_image(targets, cached_images, hash_func):
     return image
 
 
-def docker_cached_container_description(targets, namespace, hash_func="v2"):
+def docker_cached_container_description(targets, namespace, hash_func="v2", shell=DEFAULT_CONTAINER_SHELL):
     if len(targets) == 0:
         return None
 
@@ -192,12 +195,13 @@ def docker_cached_container_description(targets, namespace, hash_func="v2"):
         container = ContainerDescription(
             image.image_identifier,
             type="docker",
+            shell=shell,
         )
 
     return container
 
 
-def singularity_cached_container_description(targets, cache_directory, hash_func="v2"):
+def singularity_cached_container_description(targets, cache_directory, hash_func="v2", shell=DEFAULT_CONTAINER_SHELL):
     if len(targets) == 0:
         return None
 
@@ -212,6 +216,7 @@ def singularity_cached_container_description(targets, cache_directory, hash_func
         container = ContainerDescription(
             os.path.abspath(os.path.join(cache_directory, image.image_identifier)),
             type="singularity",
+            shell=shell,
         )
 
     return container
@@ -222,6 +227,7 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled"
     container_type = "docker"
+    shell = '/bin/bash'
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2"):
         super(CachedMulledDockerContainerResolver, self).__init__(app_info)
@@ -233,7 +239,7 @@ class CachedMulledDockerContainerResolver(ContainerResolver):
             return None
 
         targets = mulled_targets(tool_info)
-        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func)
+        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func, shell=self.shell)
 
     def __str__(self):
         return "CachedMulledDockerContainerResolver[namespace=%s]" % self.namespace
@@ -244,6 +250,7 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
 
     resolver_type = "cached_mulled_singularity"
     container_type = "singularity"
+    shell = '/bin/bash'
 
     def __init__(self, app_info=None, hash_func="v2", **kwds):
         super(CachedMulledSingularityContainerResolver, self).__init__(app_info)
@@ -255,7 +262,7 @@ class CachedMulledSingularityContainerResolver(ContainerResolver):
             return None
 
         targets = mulled_targets(tool_info)
-        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func)
+        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell)
 
     def __str__(self):
         return "CachedMulledSingularityContainerResolver[cache_directory=%s]" % self.cache_directory
@@ -316,6 +323,7 @@ class MulledDockerContainerResolver(ContainerResolver):
 
     resolver_type = "mulled"
     container_type = "docker"
+    shell = '/bin/bash'
     protocol = None
 
     def __init__(self, app_info=None, namespace="biocontainers", hash_func="v2"):
@@ -346,6 +354,7 @@ class MulledDockerContainerResolver(ContainerResolver):
             container_description = ContainerDescription(
                 container_id,
                 type=self.container_type,
+                shell=self.shell,
             )
             destination_for_container_type = kwds.get('destination_for_container_type')
             if install and destination_for_container_type and not self.cached_container_description(targets,
@@ -396,6 +405,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
 
     resolver_type = "build_mulled"
     container_type = "docker"
+    shell = '/bin/bash'
 
     def __init__(self, app_info=None, namespace="local", hash_func="v2", **kwds):
         super(BuildMulledDockerContainerResolver, self).__init__(app_info)
@@ -425,7 +435,7 @@ class BuildMulledDockerContainerResolver(ContainerResolver):
             involucro_context=self._get_involucro_context(),
             **self._mulled_kwds
         )
-        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func)
+        return docker_cached_container_description(targets, self.namespace, hash_func=self.hash_func, shell=self.shell)
 
     def _get_involucro_context(self):
         involucro_context = InvolucroContext(**self._involucro_context_kwds)
@@ -442,6 +452,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
 
     resolver_type = "build_mulled_singularity"
     container_type = "singularity"
+    shell = '/bin/bash'
 
     def __init__(self, app_info=None, hash_func="v2", **kwds):
         super(BuildMulledSingularityContainerResolver, self).__init__(app_info)
@@ -472,7 +483,7 @@ class BuildMulledSingularityContainerResolver(ContainerResolver):
             involucro_context=self._get_involucro_context(),
             **self._mulled_kwds
         )
-        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func)
+        return singularity_cached_container_description(targets, self.cache_directory, hash_func=self.hash_func, shell=self.shell)
 
     def _get_involucro_context(self):
         involucro_context = InvolucroContext(**self._involucro_context_kwds)
