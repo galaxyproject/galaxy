@@ -17,6 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
+from .keycloak_authnz import KeycloakAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -88,8 +89,11 @@ class AuthnzManager(object):
                     log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
                     continue
                 idp = child.get('name').lower()
+                implementation = child.get('implementation', 'psa').lower()
                 if idp in BACKENDS_NAME:
-                    self.oidc_backends_config[idp] = self._parse_idp_config(child)
+                    self.oidc_backends_config[idp, implementation] = self._parse_idp_config(child)
+                elif implementation == 'keycloak':
+                    self.oidc_backends_config[idp, implementation] = self._parse_keycloak_config(child)
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -106,26 +110,48 @@ class AuthnzManager(object):
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
 
-    def _unify_provider_name(self, provider):
-        if provider.lower() in self.oidc_backends_config:
-            return provider.lower()
+    def _parse_keycloak_config(self, config_xml):
+        rtv = {
+            'client_id': config_xml.find('client_id').text,
+            'client_secret': config_xml.find('client_secret').text,
+            'redirect_uri': config_xml.find('redirect_uri').text,
+            'authorization_endpoint': config_xml.find('authorization_endpoint').text,
+            'token_endpoint': config_xml.find('token_endpoint').text,
+            'userinfo_endpoint': config_xml.find('userinfo_endpoint').text}
+        return rtv
+
+    def _unify_provider_implementation_names(self, provider, implementation):
+        if (provider.lower(), implementation.lower()) in self.oidc_backends_config:
+            return provider.lower(), implementation.lower()
         for k, v in BACKENDS_NAME.iteritems():
             if v == provider:
                 return k.lower()
 
-    def _get_authnz_backend(self, provider):
-        unified_provider_name = self._unify_provider_name(provider)
-        if unified_provider_name in self.oidc_backends_config:
+    def _unify_provider_name(self, provider):
+        return self._unify_provider_implementation_names(provider, 'psa')
+
+    def _get_authnz_backend(self, provider, implementation):
+        unified_provider_name, implementation = self._unify_provider_implementation_names(provider, implementation)
+        if (unified_provider_name, implementation) in self.oidc_backends_config:
             provider = unified_provider_name
+            authnz_backend_class = self._get_authnz_backend_class(implementation)
             try:
-                return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
+                return True, "", authnz_backend_class(provider, self.oidc_config, self.oidc_backends_config[provider, implementation])
             except Exception as e:
-                log.exception('An error occurred when loading PSAAuthnz')
+                log.exception('An error occurred when loading {}'.format(authnz_backend_class.__name__))
                 return False, str(e), None
         else:
             msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
             log.debug(msg)
             return False, msg, None
+
+    def _get_authnz_backend_class(self, implementation):
+        if implementation == 'psa':
+            return PSAAuthnz
+        elif implementation == 'keycloak':
+            return KeycloakAuthnz
+        else:
+            return None
 
     def _extend_cloudauthz_config(self, cloudauthz, request, sa_session, user_id):
         config = copy.deepcopy(cloudauthz.config)
@@ -189,17 +215,19 @@ class AuthnzManager(object):
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
-    def authenticate(self, provider, trans):
+    def authenticate(self, provider, implementation, trans):
         """
         :type provider: string
         :param provider: set the name of the identity provider to be
             used for authentication flow.
+        :param implementation: name of technology used to implement
+            authentication to this identity provider
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
         :return: an identity provider specific authentication redirect URI.
         """
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, implementation)
             if success is False:
                 return False, message, None
             return True, "Redirecting to the `{}` identity provider for authentication".format(provider), backend.authenticate(trans)
@@ -208,9 +236,9 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, None
 
-    def callback(self, provider, state_token, authz_code, trans, login_redirect_url):
+    def callback(self, provider, implementation, state_token, authz_code, trans, login_redirect_url):
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, implementation)
             if success is False:
                 return False, message, (None, None)
             return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
@@ -219,9 +247,9 @@ class AuthnzManager(object):
             log.exception(msg)
             return False, msg, (None, None)
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+    def disconnect(self, provider, implementation, trans, disconnect_redirect_url=None):
         try:
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(provider, implementation)
             if success is False:
                 return False, message, None
             return backend.disconnect(provider, trans, disconnect_redirect_url)

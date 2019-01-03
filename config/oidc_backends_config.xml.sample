@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <OIDC>
-    <provider name="Google">
+    <provider name="Google" implementation="PSA">
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8080/authnz/google/callback</redirect_uri>
