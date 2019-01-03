@@ -15,7 +15,7 @@ class IdentityProvider(object):
     OpenID Connect Identity Provider abstract interface.
     """
 
-    def __init__(self, provider, config):
+    def __init__(self, provider, config, backend_config):
         """
         Initialize the identity provider using the provided configuration,
         and raise a ParseError (or any more related specific exception) in
@@ -29,6 +29,12 @@ class IdentityProvider(object):
             from the configuration file (e.g., oidc_config.xml).
             This element contains the all the provider-specific
             configuration elements.
+
+        :type backend_config: xml.etree.ElementTree.Element
+        :param backend_config: Is the configuration element of the backend of
+            the provider from the configuration file (e.g.,
+            oidc_backends_config.xml). This element contains all the
+            backend-specific configuration elements.
         """
         raise NotImplementedError()
 
