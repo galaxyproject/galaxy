@@ -1,12 +1,14 @@
 
+import hashlib
 import json
 import logging
 from datetime import datetime, timedelta
 
+import jwt
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy.model import KeycloakAccessToken, KeycloakAuthRequest, User
+from galaxy.model import KeycloakAccessToken, User
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
@@ -31,15 +33,14 @@ class KeycloakAuthnz(IdentityProvider):
         oauth2_session = OAuth2Session(
             client_id, scope=('openid', 'email', 'profile'), redirect_uri=redirect_uri)
         nonce = generate_nonce()
-        extra_params = {"nonce": nonce}
+        nonce_hash = hashlib.sha256(nonce).hexdigest()
+        extra_params = {"nonce": nonce_hash}
         if self.config['idp_hint']:
             extra_params['kc_idp_hint'] = self.config['idp_hint']
         authorization_url, state = oauth2_session.authorization_url(
             base_authorize_url, **extra_params)
         trans.set_cookie(value=state, name='keycloakauth-state')
-        # store state and nonce in database
-        trans.sa_session.add(KeycloakAuthRequest(nonce, state))
-        trans.sa_session.flush()
+        trans.set_cookie(value=nonce, name='keycloakauth-nonce')
         return authorization_url
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
@@ -60,18 +61,25 @@ class KeycloakAuthnz(IdentityProvider):
             token_endpoint, client_secret=client_secret,
             authorization_response=trans.request.url)
         log.debug("token={}".format(json.dumps(token, indent=True)))
-        # TODO: get nonce from token['id_token'] and validate
-        # TODO: delete the nonce record once it is validated
-        userinfo = oauth2_session.get(userinfo_endpoint).json()
-        log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
-        username = userinfo["preferred_username"]
-        email = userinfo["email"]
-        user = self._get_user(trans.sa_session, username, email)
         access_token = token['access_token']
         id_token = token['id_token']
         refresh_token = token['refresh_token']
         expiration_time = datetime.now() + timedelta(seconds=token['expires_in'])
         refresh_expiration_time = datetime.now() + timedelta(seconds=token['refresh_expires_in'])
+        # get nonce from token['id_token'] and validate
+        id_token_decoded = jwt.decode(id_token, verify=False)
+        nonce_hash = id_token_decoded['nonce']
+        nonce_cookie = trans.get_cookie(name='keycloakauth-nonce')
+        # Delete the nonce cookie
+        trans.set_cookie('', name='keycloakauth-nonce', age=-1)
+        nonce_cookie_hash = hashlib.sha256(nonce_cookie).hexdigest()
+        if nonce_hash != nonce_cookie_hash:
+            raise Exception("Nonce mismatch!")
+        userinfo = oauth2_session.get(userinfo_endpoint).json()
+        log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
+        username = userinfo["preferred_username"]
+        email = userinfo["email"]
+        user = self._get_user(trans.sa_session, username, email)
         keycloak_access_token = KeycloakAccessToken(user=user,
                                                     access_token=access_token,
                                                     id_token=id_token,
