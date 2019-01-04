@@ -1,11 +1,12 @@
 
 import json
 import logging
+from datetime import datetime, timedelta
 
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy.model import KeycloakAuthRequest, User
+from galaxy.model import KeycloakAccessToken, KeycloakAuthRequest, User
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
@@ -57,15 +58,31 @@ class KeycloakAuthnz(IdentityProvider):
         username = userinfo["preferred_username"]
         email = userinfo["email"]
         user = self._get_user(trans.sa_session, username, email)
+        access_token = token['access_token']
+        id_token = token['id_token']
+        refresh_token = token['refresh_token']
+        expiration_time = datetime.now() + timedelta(seconds=token['expires_in'])
+        refresh_expiration_time = datetime.now() + timedelta(seconds=token['refresh_expires_in'])
+        keycloak_access_token = KeycloakAccessToken(user=user,
+                                                    access_token=access_token,
+                                                    id_token=id_token,
+                                                    refresh_token=refresh_token,
+                                                    expiration_time=expiration_time,
+                                                    refresh_expiration_time=refresh_expiration_time,
+                                                    raw_token=token)
+        trans.sa_session.add(keycloak_access_token)
+        trans.sa_session.flush()
         return login_redirect_url, user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
+        # TODO: implement
         pass
 
     def _get_user(self, sa_session, username, email):
         user = sa_session.query(User).filter_by(username=username).first()
         if not user:
             user = self._create_user(sa_session, username, email)
+        return user
 
     def _create_user(self, sa_session, username, email):
         user = User(email=email, username=username)

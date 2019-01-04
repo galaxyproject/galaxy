@@ -5106,6 +5106,20 @@ class KeycloakAuthRequest(RepresentById):
         self.state = state
 
 
+class KeycloakAccessToken(RepresentById):
+
+    def __init__(self, user, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time, raw_token):
+        self.id = None
+        # 'user' is a backref to model.User
+        self.user = user
+        self.access_token = access_token
+        self.id_token = id_token
+        self.refresh_token = refresh_token
+        self.expiration_time = expiration_time
+        self.refresh_expiration_time = refresh_expiration_time
+        self.raw_token = raw_token
+
+
 class CloudAuthz(RepresentById):
     def __init__(self, user_id, provider, config, authn_id, description=""):
         self.id = None
