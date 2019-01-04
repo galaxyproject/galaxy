@@ -22,6 +22,7 @@ class KeycloakAuthnz(IdentityProvider):
         self.config['authorization_endpoint'] = oidc_backend_config['authorization_endpoint']
         self.config['token_endpoint'] = oidc_backend_config['token_endpoint']
         self.config['userinfo_endpoint'] = oidc_backend_config['userinfo_endpoint']
+        self.config['idp_hint'] = oidc_backend_config.get('idp_hint', None)
 
     def authenticate(self, trans):
         client_id = self.config['client_id']
@@ -30,8 +31,11 @@ class KeycloakAuthnz(IdentityProvider):
         oauth2_session = OAuth2Session(
             client_id, scope=('openid', 'email', 'profile'), redirect_uri=redirect_uri)
         nonce = generate_nonce()
+        extra_params = {"nonce": nonce}
+        if self.config['idp_hint']:
+            extra_params['kc_idp_hint'] = self.config['idp_hint']
         authorization_url, state = oauth2_session.authorization_url(
-            base_authorize_url, nonce=nonce)
+            base_authorize_url, **extra_params)
         # store state and nonce in database
         trans.sa_session.add(KeycloakAuthRequest(nonce, state))
         trans.sa_session.flush()
