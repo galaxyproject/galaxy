@@ -116,6 +116,32 @@ class JobConfXmlParserTestCase(unittest.TestCase):
         assert self.job_config.default_handler_id is None
         assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
 
+    def test_explicit_db_transaction_isolation_handler_assign(self):
+        self.__with_handlers_config(assign_with='db-transaction-isolation')
+        assert self.job_config.handler_assignment_methods == ['db-transaction-isolation']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers == {}
+
+    def test_explicit_db_transaction_isolation_handler_assign_with_uwsgi(self):
+        self.__with_handlers_config(assign_with='db-transaction-isolation', handlers=[{'id': 'handler0'}])
+        self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
+        assert self.job_config.handler_assignment_methods == ['db-transaction-isolation']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+
+    def test_explicit_db_skip_locked_handler_assign(self):
+        self.__with_handlers_config(assign_with='db-skip-locked')
+        assert self.job_config.handler_assignment_methods == ['db-skip-locked']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers == {}
+
+    def test_explicit_db_skip_locked_handler_assign_with_uwsgi(self):
+        self.__with_handlers_config(assign_with='db-skip-locked', handlers=[{'id': 'handler0'}])
+        self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
+        assert self.job_config.handler_assignment_methods == ['db-skip-locked']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+
     def test_uwsgi_farms_as_handler_tags(self):
         self.__with_uwsgi_application_stack(
             mule=['lib/galaxy/main.py'] * 2,
