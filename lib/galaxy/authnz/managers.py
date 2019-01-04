@@ -118,6 +118,8 @@ class AuthnzManager(object):
             'authorization_endpoint': config_xml.find('authorization_endpoint').text,
             'token_endpoint': config_xml.find('token_endpoint').text,
             'userinfo_endpoint': config_xml.find('userinfo_endpoint').text}
+        if config_xml.find('idp_hint') is not None:
+            rtv['idp_hint'] = config_xml.find('idp_hint').text
         return rtv
 
     def _unify_provider_implementation_names(self, provider, implementation):
