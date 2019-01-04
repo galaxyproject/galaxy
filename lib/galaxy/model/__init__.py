@@ -5099,13 +5099,6 @@ class UserAuthnzToken(UserMixin, RepresentById):
         return instance
 
 
-class KeycloakAuthRequest(RepresentById):
-
-    def __init__(self, nonce=None, state=None):
-        self.nonce = nonce
-        self.state = state
-
-
 class KeycloakAccessToken(RepresentById):
 
     def __init__(self, user, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time, raw_token):

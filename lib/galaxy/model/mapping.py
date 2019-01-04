@@ -123,12 +123,6 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-model.KeycloakAuthRequest.table = Table(
-    "keycloak_auth_request", metadata,
-    Column('nonce', String(255), primary_key=True),
-    Column('state', String(64))
-)
-
 model.KeycloakAccessToken.table = Table(
     "keycloak_access_token", metadata,
     Column('id', Integer, primary_key=True),
@@ -1528,8 +1522,6 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
                   primaryjoin=(model.UserAuthnzToken.table.c.user_id == model.User.table.c.id),
                   backref='social_auth')
 ))
-
-mapper(model.KeycloakAuthRequest, model.KeycloakAuthRequest.table, properties=None)
 
 mapper(model.KeycloakAccessToken, model.KeycloakAccessToken.table, properties=dict(
     user=relation(model.User,

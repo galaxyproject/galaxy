@@ -1,23 +1,17 @@
 """
-Migration for adding keycloak_auth_request, keycloak_access_token tables.
+Migration for adding keycloak_access_token table.
 """
 from __future__ import print_function
 
 import logging
 
-from sqlalchemy import (Column, DateTime, ForeignKey, Integer, MetaData,
-                        String, Table, Text)
+from sqlalchemy import (Column, DateTime, ForeignKey, Integer, MetaData, Table,
+                        Text)
 
 from galaxy.model.custom_types import JSONType
 
 log = logging.getLogger(__name__)
 metadata = MetaData()
-
-KeycloakAuthRequest_table = Table(
-    "keycloak_auth_request", metadata,
-    Column('nonce', String(255), primary_key=True),
-    Column('state', String(64))
-)
 
 KeycloakAccessToken_table = Table(
     "keycloak_access_token", metadata,
@@ -38,7 +32,6 @@ def upgrade(migrate_engine):
     metadata.reflect()
 
     try:
-        KeycloakAuthRequest_table.create()
         KeycloakAccessToken_table.create()
     except Exception:
         log.exception("Failed to create Keycloak auth tables")
@@ -49,7 +42,6 @@ def downgrade(migrate_engine):
     metadata.reflect()
 
     try:
-        KeycloakAuthRequest_table.drop()
         KeycloakAccessToken_table.drop()
     except Exception:
         log.exception("Failed to drop Keycloak auth tables")
