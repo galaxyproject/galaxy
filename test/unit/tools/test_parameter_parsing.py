@@ -8,27 +8,38 @@ from galaxy.util import bunch
 from ..tools_support import UsesApp
 
 
-def test_process_key():
-    nested_dict = {}
-    d = {
-        'repeat_0|inner_repeat_0|data_table_column_value': u'bla',
-        'repeat_1|inner_repeat_1|data_table_column_value': u'bla2',
-    }
-    for key, value in d.items():
-        process_key(key, value, nested_dict)
-    assert len(nested_dict) == 1
+class ProcessKeyTestCase(TestCase):
 
+    def test_process_key(self):
+        nested_dict = {}
+        d = {
+            'repeat_0|inner_repeat_0|data_table_column_value': u'bla',
+            'repeat_1|inner_repeat_1|data_table_column_value': u'bla2',
+        }
+        for key, value in d.items():
+            process_key(key, value, nested_dict)
+        expected_dict = {
+            'repeat': [
+                {'inner_repeat': [{'data_table_column_value': u'bla'}]},
+                {'inner_repeat': [{'data_table_column_value': u'bla2'}]}
+            ]
+        }
+        self.assertEqual(nested_dict, expected_dict)
 
-def test_process_key_2():
-    nested_dict = {}
-    d = {
-        'data_tables_0|columns_0|data_table_column_value': 'Amel_HAv3.1',
-        'data_tables': [],
-        'directory_content': [],
-    }
-    for key, value in d.items():
-        process_key(key, value, nested_dict)
-    assert len(nested_dict) == 2
+    def test_process_key_2(self):
+        nested_dict = {}
+        d = {
+            'data_tables_0|columns_0|data_table_column_value': 'Amel_HAv3.1',
+            'data_tables': [],
+            'directory_content': [],
+        }
+        for key, value in d.items():
+            process_key(key, value, nested_dict)
+        expected_dict = {
+            'data_tables': [],
+            'directory_content': []
+        }
+        self.assertEqual(nested_dict, expected_dict)
 
 
 class BaseParameterTestCase(TestCase, UsesApp):
