@@ -239,7 +239,7 @@ class ToolsTestCase(api.ApiTestCase):
         assert test_data_response.status_code == 200
         with tarfile.open(fileobj=BytesIO(test_data_response.content)) as tar_contents:
             namelist = tar_contents.getnames()
-            assert len(namelist) == 4
+            assert len(namelist) == 5
 
     @uses_test_history(require_new=False)
     def test_upload_composite_as_tar(self, history_id):
