@@ -7,19 +7,6 @@
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
-
-    <style type="text/css">
-        body { margin: 0; padding: 0; overflow: hidden; }
-        #left {
-            background: #C1C9E5 url(${h.url_for('/static/style/menu_bg.png')}) top repeat-x;
-        }
-        .unified-panel-body {
-            overflow: auto;
-        }
-        .toolMenu {
-            margin-left: 10px;
-        }
-    </style>
 </%def>
 
 
@@ -28,6 +15,7 @@
 </%def>
 
 <%def name="init()">
+    ${parent.init()}
     %if trans.app.config.require_login and not trans.user:
         <script type="text/javascript">
             if ( window != top ) {

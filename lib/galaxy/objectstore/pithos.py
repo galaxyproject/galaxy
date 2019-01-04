@@ -84,6 +84,7 @@ class PithosObjectStore(ObjectStore):
     Object store that stores objects as items in a Pithos+ container.
     Cache is ignored for the time being.
     """
+    store_type = 'pithos'
 
     def __init__(self, config, config_dict):
         super(PithosObjectStore, self).__init__(config)
@@ -110,6 +111,11 @@ class PithosObjectStore(ObjectStore):
     @classmethod
     def parse_xml(clazz, config_xml):
         return parse_config_xml(config_xml)
+
+    def to_dict(self):
+        as_dict = super(PithosObjectStore, self).to_dict()
+        as_dict.update(self.config_dict)
+        return as_dict
 
     def _authenticate(self):
         auth = self.config_dict['auth']

@@ -17,7 +17,7 @@ export var Manager = Backbone.Model.extend({
             var id = $(this).attr("id");
             var field = self.app.field_list[id];
             if (field) {
-                sum += `${id}:${JSON.stringify(field.value && field.value())}:${field.collapsed};`;
+                sum += `${id}:${JSON.stringify(field.value && field.value())}:${field.collapsed}:${field.connected};`;
             }
         });
         return sum;
@@ -89,7 +89,7 @@ export var Manager = Backbone.Model.extend({
                             if (field && field.value) {
                                 value = field.value();
                                 if (input.ignore === undefined || input.ignore != value) {
-                                    if (field.collapsed && field.connected) {
+                                    if (field.connected) {
                                         value = { __class__: "ConnectedValue" };
                                     } else if (field.collapsed && input.collapsible_value) {
                                         value = input.collapsible_value;

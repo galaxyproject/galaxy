@@ -1,9 +1,11 @@
 import logging
+import os
 from json import dumps
 
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
 from galaxy.visualization.genomes import GenomeRegion
@@ -128,6 +130,25 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             return path
         else:
             raise exceptions.ObjectNotFound("Specified test data path not found.")
+
+    @expose_api_raw_anonymous_and_sessionless
+    def test_data_download(self, trans, id, **kwd):
+        """
+        GET /api/tools/{tool_id}/test_data_download?tool_version={tool_version}&filename={filename}
+        """
+        tool_version = kwd.get('tool_version', None)
+        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
+        filename = kwd.get("filename")
+        if filename is None:
+            raise exceptions.ObjectNotFound("Test data filename not specified.")
+        path = tool.test_data_path(filename)
+        if path:
+            if os.path.isfile(path):
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
+                return open(path, mode='rb')
+            elif os.path.isdir(path):
+                return util.streamball.stream_archive(trans=trans, path=path, upstream_gzip=self.app.config.upstream_gzip)
+        raise exceptions.ObjectNotFound("Specified test data path not found.")
 
     @expose_api_anonymous_and_sessionless
     def tests_summary(self, trans, **kwd):
@@ -403,6 +424,15 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         }
         create_payload.update(files_payload)
         return self._create(trans, create_payload, **kwd)
+
+    @expose_api
+    @web.require_admin
+    def error_stack(self, trans, **kwd):
+        """
+        GET /api/tools/error_stack
+        Returns global tool error stack
+        """
+        return global_tool_errors.error_stack
 
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):

@@ -800,11 +800,11 @@ class JobWrapper(HasResourceParameters):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
 
-    def get_param_dict(self):
+    def get_param_dict(self, _job=None):
         """
         Restore the dictionary of parameters from the database.
         """
-        job = self.get_job()
+        job = _job or self.get_job()
         param_dict = dict([(p.name, p.value) for p in job.parameters])
         param_dict = self.tool.params_from_strings(param_dict, self.app)
         return param_dict
@@ -1438,9 +1438,7 @@ class JobWrapper(HasResourceParameters):
                 continue
             input_ext = data.ext
             input_dbkey = data.dbkey or '?'
-        # why not re-use self.param_dict here?
-        param_dict = dict([(p.name, p.value) for p in job.parameters])
-        param_dict = self.tool.params_from_strings(param_dict, self.app)
+        param_dict = self.get_param_dict(job)
         # Create generated output children and primary datasets and dynamic outputs.
         tool_working_directory = self.tool_working_directory
         self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
@@ -1938,15 +1936,6 @@ class TaskWrapper(JobWrapper):
     def get_id_tag(self):
         # For compatibility with drmaa job runner and TaskWrapper, instead of using job_id directly
         return self.get_task().get_id_tag()
-
-    def get_param_dict(self):
-        """
-        Restore the dictionary of parameters from the database.
-        """
-        job = self.sa_session.query(model.Job).get(self.job_id)
-        param_dict = dict([(p.name, p.value) for p in job.parameters])
-        param_dict = self.tool.params_from_strings(param_dict, self.app)
-        return param_dict
 
     def prepare(self, compute_environment=None):
         """

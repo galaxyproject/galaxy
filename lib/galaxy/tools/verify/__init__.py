@@ -28,16 +28,17 @@ def verify(
     output_content,
     attributes,
     filename=None,
-    get_filename=None,
+    get_filecontent=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
+    mode='file',
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
     Throw an informative assertion error if any of these tests fail.
     """
-    if get_filename is None:
-        get_filename = DEFAULT_TEST_DATA_RESOLVER.get_filename
+    if get_filecontent is None:
+        get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -73,7 +74,15 @@ def verify(
         attributes = {}
 
     if filename is not None:
-        local_name = get_filename(filename)
+        if mode == 'directory':
+            # if verifying a file inside a extra_files_path directory
+            # filename already point to a file that exists on disk
+            local_name = filename
+        else:
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)

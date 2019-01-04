@@ -103,12 +103,39 @@ def parse_config_xml(config_xml):
         raise
 
 
-class S3ObjectStore(ObjectStore):
+class CloudConfigMixin(object):
+
+    def _config_to_dict(self):
+        return {
+            'auth': {
+                'access_key': self.access_key,
+                'secret_key': self.secret_key,
+            },
+            'bucket': {
+                'name': self.bucket,
+                'use_reduced_redundancy': self.use_rr,
+            },
+            'connection': {
+                'host': self.host,
+                'port': self.port,
+                'multipart': self.multipart,
+                'is_secure': self.is_secure,
+                'conn_path': self.conn_path,
+            },
+            'cache': {
+                'size': self.cache_size,
+                'path': self.staging_path,
+            }
+        }
+
+
+class S3ObjectStore(ObjectStore, CloudConfigMixin):
     """
     Object store that stores objects as items in an AWS S3 bucket. A local
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
+    store_type = 's3'
 
     def __init__(self, config, config_dict):
         super(S3ObjectStore, self).__init__(config)
@@ -183,6 +210,11 @@ class S3ObjectStore(ObjectStore):
     @classmethod
     def parse_xml(clazz, config_xml):
         return parse_config_xml(config_xml)
+
+    def to_dict(self):
+        as_dict = super(S3ObjectStore, self).to_dict()
+        as_dict.update(self._config_to_dict())
+        return as_dict
 
     def __cache_monitor(self):
         time.sleep(2)  # Wait for things to load before starting the monitor
@@ -691,6 +723,7 @@ class SwiftObjectStore(S3ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Swift.
     """
+    store_type = 'swift'
 
     def _configure_connection(self):
         log.debug("Configuring Swift Connection")

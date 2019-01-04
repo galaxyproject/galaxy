@@ -195,6 +195,10 @@ def test_hierarchical_store():
                 object_store.create(dataset)
                 assert object_store.get_filename(dataset).find("files1") > 0
 
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["backends", "extra_dirs", "type"])
+            _assert_key_has_value(as_dict, "type", "hierarchical")
+
 
 DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="distributed">
@@ -253,6 +257,13 @@ def test_distributed_store():
             assert backend_1_count > 0
             assert backend_2_count > 0
             assert backend_1_count > backend_2_count
+
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["backends", "extra_dirs", "type"])
+            _assert_key_has_value(as_dict, "type", "distributed")
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
 
 
 # Unit testing the cloud and advanced infrastructure object stores is difficult, but
@@ -314,8 +325,7 @@ def test_config_parse_pithos():
     for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
         with TestConfig(config_str, clazz=UnitializedPithosObjectStore) as (directory, object_store):
             configured_config_dict = object_store.config_dict
-            for key in ["auth", "container", "extra_dirs"]:
-                assert key in configured_config_dict
+            _assert_has_keys(configured_config_dict, ["auth", "container", "extra_dirs"])
 
             auth_dict = configured_config_dict["auth"]
             _assert_key_has_value(auth_dict, "url", "http://example.org/")
@@ -328,6 +338,23 @@ def test_config_parse_pithos():
 
             assert object_store.extra_dirs["job_work"] == "database/working_pithos"
             assert object_store.extra_dirs["temp"] == "database/tmp_pithos"
+
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["auth", "container", "extra_dirs", "type"])
+
+            _assert_key_has_value(as_dict, "type", "pithos")
+
+            auth_dict = as_dict["auth"]
+            _assert_key_has_value(auth_dict, "url", "http://example.org/")
+            _assert_key_has_value(auth_dict, "token", "extoken123")
+
+            container_dict = as_dict["container"]
+
+            _assert_key_has_value(container_dict, "name", "foo")
+            _assert_key_has_value(container_dict, "project", "cow")
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
 
 
 S3_TEST_CONFIG = """<object_store type="s3">
@@ -382,6 +409,33 @@ def test_config_parse_s3():
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_s3"
             assert object_store.extra_dirs["temp"] == "database/tmp_s3"
 
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+
+            _assert_key_has_value(as_dict, "type", "s3")
+
+            auth_dict = as_dict["auth"]
+            bucket_dict = as_dict["bucket"]
+            connection_dict = as_dict["connection"]
+            cache_dict = as_dict["cache"]
+
+            _assert_key_has_value(auth_dict, "access_key", "access_moo")
+            _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+
+            _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
+            _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
+
+            _assert_key_has_value(connection_dict, "host", None)
+            _assert_key_has_value(connection_dict, "port", 6000)
+            _assert_key_has_value(connection_dict, "multipart", True)
+            _assert_key_has_value(connection_dict, "is_secure", True)
+
+            _assert_key_has_value(cache_dict, "size", 1000)
+            _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
+
 
 CLOUD_TEST_CONFIG = """<object_store type="cloud">
      <auth access_key="access_moo" secret_key="secret_cow" />
@@ -435,6 +489,33 @@ def test_config_parse_cloud():
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
+
+            _assert_key_has_value(as_dict, "type", "cloud")
+
+            auth_dict = as_dict["auth"]
+            bucket_dict = as_dict["bucket"]
+            connection_dict = as_dict["connection"]
+            cache_dict = as_dict["cache"]
+
+            _assert_key_has_value(auth_dict, "access_key", "access_moo")
+            _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+
+            _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
+            _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
+
+            _assert_key_has_value(connection_dict, "host", None)
+            _assert_key_has_value(connection_dict, "port", 6000)
+            _assert_key_has_value(connection_dict, "multipart", True)
+            _assert_key_has_value(connection_dict, "is_secure", True)
+
+            _assert_key_has_value(cache_dict, "size", 1000)
+            _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
+
 
 AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
     <auth account_name="azureact" account_key="password123" />
@@ -482,6 +563,27 @@ def test_config_parse_azure():
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_azure"
             assert object_store.extra_dirs["temp"] == "database/tmp_azure"
 
+            as_dict = object_store.to_dict()
+            _assert_has_keys(as_dict, ["auth", "container", "cache", "extra_dirs", "type"])
+
+            _assert_key_has_value(as_dict, "type", "azure_blob")
+
+            auth_dict = as_dict["auth"]
+            container_dict = as_dict["container"]
+            cache_dict = as_dict["cache"]
+
+            _assert_key_has_value(auth_dict, "account_name", "azureact")
+            _assert_key_has_value(auth_dict, "account_key", "password123")
+
+            _assert_key_has_value(container_dict, "name", "unique_container_name")
+            _assert_key_has_value(container_dict, "max_chunk_size", 250)
+
+            _assert_key_has_value(cache_dict, "size", 100)
+            _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
+
+            extra_dirs = as_dict["extra_dirs"]
+            assert len(extra_dirs) == 2
+
 
 class TestConfig(object):
     def __init__(self, config_str, clazz=None):
@@ -522,9 +624,11 @@ class MockConfig(object):
         self.file_path = temp_directory
         self.object_store_config_file = os.path.join(temp_directory, config_file)
         self.object_store_check_old_style = False
+        self.object_store_cache_path = os.path.join(temp_directory, "staging")
         self.jobs_directory = temp_directory
         self.new_file_path = temp_directory
         self.umask = 0000
+        self.gid = 1000
 
 
 class MockDataset(object):
@@ -555,6 +659,11 @@ def __stubbed_persistence():
         setattr(objectstore, PERSIST_METHOD_NAME, real_method)
 
 
+def _assert_has_keys(the_dict, keys):
+    for key in keys:
+        assert key in the_dict, "key [%s] not in [%s]" % (key, the_dict)
+
+
 def _assert_key_has_value(the_dict, key, value):
-    assert key in the_dict, "dict [%s] doesn't container expected key [%s]" % key
+    assert key in the_dict, "dict [%s] doesn't container expected key [%s]" % (key, the_dict)
     assert the_dict[key] == value, "%s != %s" % (the_dict[key], value)

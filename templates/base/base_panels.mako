@@ -154,6 +154,7 @@
         body_class += " has-inactivity-box"
     %>
 
+
     <body scroll="no" class="full-content ${body_class}">
         %if self.require_javascript:
             <noscript>

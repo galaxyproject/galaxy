@@ -4,8 +4,19 @@
 ## Default title
 <%def name="title()">Tool Shed</%def>
 
+<%def name="init()">
+    ${parent.init()}
+    <%
+        self.body_class = "toolshed"
+    %>
+</%def>
+
 <%def name="javascript_app()">
     ${parent.javascript_app()}
+</%def>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
     <script type="text/javascript">
         config.addInitialization(function() {
             console.log("toolshed/base_panels.mako", "hardcoded dropdown init");
