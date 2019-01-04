@@ -36,6 +36,7 @@ class KeycloakAuthnz(IdentityProvider):
             extra_params['kc_idp_hint'] = self.config['idp_hint']
         authorization_url, state = oauth2_session.authorization_url(
             base_authorize_url, **extra_params)
+        trans.set_cookie(value=state, name='keycloakauth-state')
         # store state and nonce in database
         trans.sa_session.add(KeycloakAuthRequest(nonce, state))
         trans.sa_session.flush()
@@ -47,10 +48,14 @@ class KeycloakAuthnz(IdentityProvider):
         redirect_uri = self.config['redirect_uri']
         token_endpoint = self.config['token_endpoint']
         userinfo_endpoint = self.config['userinfo_endpoint']
+        # Take state value to validate from token. OAuth2Session.fetch_token
+        # will validate that the state query parameter value on the URL matches
+        # this value.
+        state_cookie = trans.get_cookie(name='keycloakauth-state')
         oauth2_session = OAuth2Session(client_id,
                                        scope=('openid', 'email', 'profile'),
                                        redirect_uri=redirect_uri,
-                                       state=state_token)
+                                       state=state_cookie)
         token = oauth2_session.fetch_token(
             token_endpoint, client_secret=client_secret,
             authorization_response=trans.request.url)
