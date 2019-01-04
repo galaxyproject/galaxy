@@ -13,15 +13,17 @@ class ProcessKeyTestCase(TestCase):
     def test_process_key(self):
         nested_dict = {}
         d = {
-            'repeat_0|inner_repeat_0|data_table_column_value': u'bla',
-            'repeat_1|inner_repeat_1|data_table_column_value': u'bla2',
+            'repeat_1|inner_repeat_1|data_table_column_value': u'bla4',
+            'repeat_0|inner_repeat_1|data_table_column_value': u'bla2',
+            'repeat_1|inner_repeat_0|data_table_column_value': u'bla3',
+            'repeat_0|inner_repeat_0|data_table_column_value': u'bla1',
         }
         for key, value in d.items():
             process_key(key, value, nested_dict)
         expected_dict = {
             'repeat': [
-                {'inner_repeat': [{'data_table_column_value': u'bla'}]},
-                {'inner_repeat': [{'data_table_column_value': u'bla2'}]}
+                {'inner_repeat': [{'data_table_column_value': u'bla1'}, {'data_table_column_value': u'bla2'}]},
+                {'inner_repeat': [{'data_table_column_value': u'bla3'}, {'data_table_column_value': u'bla4'}]},
             ]
         }
         self.assertEqual(nested_dict, expected_dict)
@@ -36,7 +38,9 @@ class ProcessKeyTestCase(TestCase):
         for key, value in d.items():
             process_key(key, value, nested_dict)
         expected_dict = {
-            'data_tables': [],
+            'data_tables': [
+                {'columns': [{'data_table_column_value': 'Amel_HAv3.1'}]}
+            ],
             'directory_content': []
         }
         self.assertEqual(nested_dict, expected_dict)
