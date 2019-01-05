@@ -107,7 +107,7 @@ class AuthnzManager(object):
         return rtv
 
     def _unify_provider_name(self, provider):
-        if provider in self.oidc_backends_config:
+        if provider.lower() in self.oidc_backends_config:
             return provider.lower()
         for k, v in BACKENDS_NAME.iteritems():
             if v == provider:
