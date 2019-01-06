@@ -77,6 +77,7 @@ def load_galaxy_app(
     config_builder,
     config_env=False,
     log=None,
+    attach_to_pools=None,
     **kwds
 ):
     # Allow specification of log so daemon can reuse properly configured one.
@@ -99,6 +100,7 @@ def load_galaxy_app(
     from galaxy.app import UniverseApplication
     app = UniverseApplication(
         global_conf=config_builder.global_conf(),
+        attach_to_pools=attach_to_pools,
         **kwds
     )
     app.control_worker.bind_and_start()
@@ -131,6 +133,7 @@ def app_loop(args, log):
             config_builder,
             config_env=True,
             log=log,
+            attach_to_pools=args.attach_to_pool,
         )
     except BaseException:
         log.exception("Failed to initialize Galaxy application")
@@ -203,6 +206,7 @@ class GalaxyConfigBuilder(object):
         arg_parser.add_argument("--log-file", default=None, help="Galaxy log file (overrides log configuration in config_file if set)")
         arg_parser.add_argument("--pid-file", default=DEFAULT_PID, help="pid file (default is %s)" % DEFAULT_PID)
         arg_parser.add_argument("--server-name", default=None, help="set a galaxy server name")
+        arg_parser.add_argument("--attach-to-pool", action="append", default=None, help="attach to asynchronous worker pool (specify multiple times for multiple pools)")
 
     @property
     def config_is_ini(self):
