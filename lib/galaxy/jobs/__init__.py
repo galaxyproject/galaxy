@@ -685,6 +685,7 @@ class JobWrapper(HasResourceParameters):
         self.extra_filenames = []
         self.command_line = None
         self.dependencies = []
+        self._dependency_shell_commands = None
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
@@ -727,6 +728,15 @@ class JobWrapper(HasResourceParameters):
     @property
     def dataset_path_rewriter(self):
         return self._job_dataset_path_rewriter
+
+    @property
+    def dependency_shell_commands(self):
+        """Shell fragment to inject dependencies."""
+        if self._dependency_shell_commands is None:
+            self._dependency_shell_commands = self.tool.build_dependency_shell_commands(
+                job_directory=self.working_directory
+            )
+        return self._dependency_shell_commands
 
     @property
     def cleanup_job(self):
@@ -860,8 +870,6 @@ class JobWrapper(HasResourceParameters):
         self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
-        # Shell fragment to inject dependencies
-        self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
         if self.tool.requires_galaxy_python_environment:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
             self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
@@ -1959,8 +1967,7 @@ class TaskWrapper(JobWrapper):
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
-        # Shell fragment to inject dependencies
-        self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         task.command_line = self.command_line
