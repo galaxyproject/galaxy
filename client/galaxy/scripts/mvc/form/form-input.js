@@ -71,13 +71,15 @@ export default Backbone.View.extend({
         }
 
         // add error listener
-        this.field.model && this.field.model.on("error", message => {
-            if (message) {
-                this.error(message);
-            } else {
-                this.reset();
-            }
-        });
+        if (this.field.model) {
+            this.listenTo(this.field.model, "error", message => {
+                if (message) {
+                    this.error(message);
+                } else {
+                    this.reset();
+                }
+            });
+        }
     },
 
     /** Set backdrop for input element */
