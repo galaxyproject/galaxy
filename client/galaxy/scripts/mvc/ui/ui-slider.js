@@ -103,7 +103,9 @@ var View = Backbone.View.extend({
 
     /** Set and return the current value */
     value: function(new_val) {
-        var options = this.model.attributes;
+
+        let options = this.model.attributes;
+        let original_val = new_val;
         if (new_val !== undefined) {
             if (new_val !== null && new_val !== "" && !this._isParameter(new_val)) {
                 if (isNaN(new_val)) {
@@ -122,6 +124,9 @@ var View = Backbone.View.extend({
             this.model.set("value", new_val);
             this.model.trigger("change");
             options.onchange(new_val);
+            let has_changed = parseInt(original_val) !== parseInt(new_val);
+            let message = has_changed ? "Corrected value by range." : null;
+            this.model.trigger("error", message);
         }
         return this.model.get("value");
     },
