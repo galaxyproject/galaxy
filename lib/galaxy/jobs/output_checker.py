@@ -1,5 +1,4 @@
 import re
-import traceback
 from logging import getLogger
 
 from galaxy.tools.parser.error_level import StdioErrorLevel
@@ -153,8 +152,6 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             elif max_error_level >= StdioErrorLevel.FATAL:
                 log.debug("Tool exit code indicates an error, failing job.")
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
-            else:
-                state = DETECTED_JOB_STATE.OK
 
         # When there are no regular expressions and no exit codes to check,
         # default to the previous behavior: when there's anything on stderr
@@ -165,20 +162,13 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             #          + "checking stderr for success" )
             if stderr:
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
-            else:
-                state = DETECTED_JOB_STATE.OK
 
         if DETECTED_JOB_STATE != DETECTED_JOB_STATE.OK and stderr:
             if stderr:
                 peak = stderr[0:ERROR_PEAK]
                 log.debug("job failed, standard error is - [%s]" % peak)
-
-    # On any exception, return True.
     except Exception:
-        tb = traceback.format_exc()
-        log.warning("Tool check encountered unexpected exception; " +
-                    "assuming tool was successful: " + tb)
-        state = DETECTED_JOB_STATE.OK
+        log.exception("Job state check encountered unexpected exception; assuming execution successful")
 
     return state, stdout, stderr, job_messages
 
