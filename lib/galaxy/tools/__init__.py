@@ -2251,7 +2251,7 @@ class SetMetadataTool(Tool):
     requires_setting_metadata = False
 
     def regenerate_imported_metadata_if_needed(self, hda, history, job):
-        if hda.extension == 'bam':
+        if len(hda.metadata_file_types) > 0:
             self.tool_action.execute_via_app(
                 self, self.app, job.session_id,
                 history.id, job.user, incoming={'input1': hda}, overwrite=False
