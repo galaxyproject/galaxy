@@ -183,14 +183,12 @@ var View = Backbone.View.extend({
                         input.is_workflow =
                             (data_ref.step_linked && !self._isDataStep(data_ref.step_linked)) || input.wp_linked;
                     }
-                    if (
-                        is_data_input ||
-                        (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)
-                    ) {
+                    if (is_data_input ||
+                        (input.value && input.value.__class__ == "RuntimeValue" && !input.step_linked)) {
                         step.collapsed = false;
                     }
                     if (is_runtime_value) {
-                        input.value = input.default_value;
+                        input.value = null;
                     }
                     input.flavor = "workflow";
                     if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {
