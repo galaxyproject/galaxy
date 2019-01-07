@@ -124,7 +124,7 @@ var View = Backbone.View.extend({
             this.model.trigger("change");
             options.onchange(new_val);
             let has_changed = parseInt(original_val) !== parseInt(new_val);
-            let message = has_changed ? "Corrected value by range." : null;
+            let message = has_changed ? "This value was invalid or out-of-range. It has been auto-corrected." : null;
             this.model.trigger("error", message);
         }
         return this.model.get("value");
