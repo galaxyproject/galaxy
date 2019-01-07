@@ -187,13 +187,13 @@ var View = Backbone.View.extend({
             field: field
         });
         this.app.element_list[id] = input_element;
-        this._attachWarningHandler(field, input_element);
+        this._attachErrorHandler(field, input_element);
         this._append(input_element.$el, input_def.id);
         return field;
     },
 
-    /** Attach warning listeners to input elements */
-    _attachWarningHandler: function(field, input_element) {
+    /** Attach error listeners to input elements */
+    _attachErrorHandler: function(field, input_element) {
         if (field.model) {
             field.model.on("error", message => {
                 if (message) {
