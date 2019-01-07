@@ -197,7 +197,7 @@ var View = Backbone.View.extend({
         if (field.model) {
             field.model.on("error", message => {
                 if (message) {
-                    input_element.error(message || "Please verify this parameter.");
+                    input_element.error(message);
                 } else {
                     input_element.reset();
                 }
