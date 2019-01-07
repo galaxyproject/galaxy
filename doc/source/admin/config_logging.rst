@@ -68,82 +68,95 @@ To change the log file name or location, use the ``$GALAXY_LOG`` environment var
 Advanced Configuration
 ----------------------------
 
-With the improved uWSGI support added in Galaxy release 18.01, additional fields identifying the uWSGI worker ID and
-mule ID can be added to log messages. These are implemented as the custom Python logging filter
-:class:`galaxy.web.stack.UWSGILogFilter` which provides two new Python :class:`logging.LogRecord` attributes:
-``%(worker_id)s`` and ``%(mule_id)s``. These aid in identifying which log messages are being emitted by which process
-and are used in the default message format when running under uWSGI, but are available to you if you wish to change the
-message format. The default message format under uWSGI can be found in
-:data:`galaxy.web.stack.UWSGIApplicationStack.log_format`.
+For more useful and manageble logging when running Galaxy with forking application stacks (e.g. uWSGI) where multiple
+Galaxy server processes are forked after the Galaxy application is loaded, some extensions to standard Python
+:mod:`logging` are available in Galaxy:
 
-Additionally, because uWSGI can start multiple distinct Galaxy processes (e.g. job handler mules) from a single config
-file, by default it would not be possible to log each process to a separate file, meaning that the combined log file
-could be quite verbose. In order to alleviate this, a ``filename_template`` attribute has been added to
-:class:`logging.FileHandler` (or derivative classes) definitions so that multiple file logging is possible.
+- Two custom fields (aka Python :class:`logging.LogRecord` attributes) identifying the uWSGI worker ID and mule ID can
+  be added to log messages: ``%(worker_id)s`` and ``%(mule_id)s``. These fields aid in associating log messages with the
+  Galaxy server processes that emitted them. They are included in the default log format (found in
+  :data:`galaxy.web.stack.UWSGIApplicationStack.log_format`) when using uWSGI and are available for use in custom log
+  formats.
 
-If you are still using Paste or an INI configuration file, it is still possible to use :func:`logging.config.fileConfig`
-logging, but ``filename_template`` is not available in this scenario.
+- A custom ``filename_template`` config option is available to :class:`logging.FileHandler` (or derivative class) log
+  handler definitions so that multiple file logging is possible. Without this custom option, all forked Galaxy server
+  processes would only be able to log to a single combined log file, which can be very difficult to work with.
 
 YAML
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The full syntax of Python's :func:`logging.config.dictConfig` is available under the ``logging`` key in the ``galaxy``
-section of ``galaxy.yml``. The default as of this release can be found in the
-:data:`galaxy.config.LOGGING_CONFIG_DEFAULT` constant and has been converted to YAML format here:
+Advanced logging configuration is performed under the ``logging`` key in the ``galaxy`` section of ``galaxy.yml``. The
+syntax is a YAML dictionary in the syntax of Python's :func:`logging.config.dictConfig`. This section covers a few of
+the most common configurations as well as Galaxy's customizations. Consult the :func:`logging.config.dictConfig`
+documentation for a complete explanation of the syntax and possibilities.
+
+Default
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The default as of this Galaxy release can be found (in Python syntax) in the
+:data:`galaxy.config.LOGGING_CONFIG_DEFAULT` constant and (in YAML) below:
 
 .. include:: config_logging_default_yaml.rst
 
+Split Logfiles
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 Using ``run.sh --daemon`` causes Galaxy to log to ``galaxy.log``, but this is done using uWSGI's logging functionality
-and does not allow for splitting logging in to multiple files. The following logging definition will cause the creation
-of log files ``galaxy_web_0.log`` (the combined messages of all web workers) and ``galaxy_job-handlers_N.log`` where
-``N`` is the instance ID of the server process in its pool (aka the mule's position in its farm argument):
+and does not allow for splitting logging in to multiple files. The following logging definition uses the
+``filename_template`` custom handler configuration option to split logging in to the files ``galaxy_web_0.log`` (the
+combined messages of all web workers) and ``galaxy_job-handlers_N.log`` where ``N`` is the instance ID of the server
+process in its pool (aka the mule's position in its farm argument). In addition to the split file logging, the combined
+output is also still logged to standard error.
 
 .. code-block:: yaml
 
     galaxy:
-        logging:
+      logging:
+        filters:
+          stack:
+            (): galaxy.web.stack.application_stack_log_filter
+        formatters:
+          stack:
+            (): galaxy.web.stack.application_stack_log_formatter
+        handlers:
+          console:
+            class: logging.StreamHandler
             filters:
-                stack:
-                    (): galaxy.web.stack.application_stack_log_filter
-            formatters:
-                stack:
-                    (): galaxy.web.stack.application_stack_log_formatter
+            - stack
+            formatter: stack
+            level: DEBUG
+            stream: ext://sys.stderr
+          files:
+            class: logging.FileHandler
+            filters:
+            - stack
+            level: DEBUG
+            formatter: stack
+            filename: galaxy_default.log
+            filename_template: galaxy_{pool_name}_{server_id}.log
+        loggers:
+          galaxy:
             handlers:
-                console:
-                    class: logging.StreamHandler
-                    level: DEBUG
-                    formatter: generic
-                    stream: ext://sys.stderr
-                files:
-                    class: logging.FileHandler
-                    level: DEBUG
-                    formatter: generic
-                    filename: galaxy_default.log
-                    filename_template: galaxy_{pool_name}_{server_id}.log
-            loggers:
-                galaxy:
-                    handlers:
-                    - console
-                    - files
-                    level: DEBUG
-                    propagate: 0
-                    qualname: galaxy
-                paste.httpserver.ThreadPool:
-                    level: WARN
-                    qualname: paste.httpserver.ThreadPool
-                routes.middleware:
-                    level: WARN
-                    qualname: routes.middleware
-            root:
-                handlers:
-                - console
-                - files
-                level: INFO
-            version: 1
+            - console
+            - files
+            level: DEBUG
+            propagate: 0
+            qualname: galaxy
+          paste.httpserver.ThreadPool:
+            level: WARN
+            qualname: paste.httpserver.ThreadPool
+          routes.middleware:
+            level: WARN
+            qualname: routes.middleware
+        root:
+          handlers:
+          - console
+          - files
+          level: INFO
+        version: 1
 
-
-The list of available template facts for all Galaxy application server types, and their values under the various
-possible :doc:`server deployment scenarios <scaling>` are given below:
+The list of available template facts for use in ``filename_template`` with all Galaxy application server types, and
+their values under the various possible :doc:`server deployment scenarios <scaling>` are given below:
 
 +-------------------+-----------------------------------------------------------------------------------------------+
 | Fact              | Application server                                                                            |
@@ -154,11 +167,11 @@ possible :doc:`server deployment scenarios <scaling>` are given below:
 |                   | ``[server:<NAME>]`` in        | ``galaxy.yml``                                                |
 |                   | ``galaxy.ini``                |                                                               |
 +-------------------+-------------------------------+-------------------------------+-------------------------------+
-| ``server_id``     | ``None``                      | 1-based worker ID             | 1-based mule ID               |
+| ``server_id``     | ``None``                      | 1-indexed worker ID           | 1-indexed mule ID             |
 +-------------------+-------------------------------+-------------------------------+-------------------------------+
 | ``pool_name``     | ``None``                      | ``web``                       | Mule's farm name              |
 +-------------------+-------------------------------+-------------------------------+-------------------------------+
-| ``instance_id``   | ``None``                      | Same as ``server_id``         | Mule's 1-based position in    |
+| ``instance_id``   | ``None``                      | Same as ``server_id``         | Mule's 1-indexed position in  |
 |                   |                               |                               | its defined farm              |
 +-------------------+-------------------------------+-------------------------------+-------------------------------+
 | ``fqdn``          | Fully-qualified domain name of the host on which Galaxy is running                            |
@@ -166,10 +179,30 @@ possible :doc:`server deployment scenarios <scaling>` are given below:
 | ``hostname``      | "Short" hostname (with domain portion stripped) of the host on which Galaxy is running        |
 +-------------------+-----------------------------------------------------------------------------------------------+
 
+The log message format can be customized by adding a (or modifying the default) formatter as in the following (partial)
+example. Note that in addition to the new format, the value of ``formatter`` in the ``console`` handler has been
+changed:
+
+.. code-block:: yaml
+
+    galaxy:
+      logging:
+        formatters:
+          myformat:
+            (): '%(name)s %(levelname)s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s'
+        handlers:
+          console:
+            class: logging.StreamHandler
+            filters:
+            - stack
+            formatter: myformat
+            level: DEBUG
+            stream: ext://sys.stderr
+
 INI
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-With an INI galaxy configuration, it is possible to use Python's :func:`logging.config.fileConfig` configuration method for
+With an INI Galaxy configuration, it is possible to use Python's :func:`logging.config.fileConfig` configuration method for
 advanced logging configuration. For example:
 
 .. code-block:: ini
@@ -202,8 +235,8 @@ advanced logging configuration. For example:
     [formatter_generic]
     format = %(name)s %(levelname)-5.5s %(asctime)s [p:%(process)s,w:%(worker_id)s,m:%(mule_id)s] [%(threadName)s] %(message)s
 
-
-However, the ``filename_template`` Galaxy extension is not available with this method.
+While Galaxy's custom log format fields can be used (as seen in the example), the ``filename_template`` handler
+configuration extension is only available in the YAML format configuration file.
 
 .. _logging levels: https://docs.python.org/2/library/logging.html#logging-levels
 .. _fileConfig file format: https://docs.python.org/2/library/logging.config.html#configuration-file-format
