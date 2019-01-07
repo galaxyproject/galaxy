@@ -103,10 +103,9 @@ var View = Backbone.View.extend({
 
     /** Set and return the current value */
     value: function(new_val) {
-
-        let options = this.model.attributes;
-        let original_val = new_val;
         if (new_val !== undefined) {
+            let options = this.model.attributes;
+            let original_val = new_val;
             if (new_val !== null && new_val !== "" && !this._isParameter(new_val)) {
                 if (isNaN(new_val)) {
                     new_val = 0;
