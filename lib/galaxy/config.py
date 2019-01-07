@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import collections
 import ipaddress
 import logging
 import logging.config
@@ -23,6 +24,7 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.tools.deps.container_resolvers.mulled import DEFAULT_CHANNELS
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -518,6 +520,11 @@ class Configuration(object):
             involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
+        mulled_channels = kwargs.get('mulled_channels')
+        if mulled_channels:
+            self.mulled_channels = [c.strip() for c in mulled_channels.split(',')]
+        else:
+            self.mulled_channels = DEFAULT_CHANNELS
 
         default_job_resubmission_condition = kwargs.get('default_job_resubmission_condition', '')
         if not default_job_resubmission_condition.strip():
@@ -1035,6 +1042,7 @@ class ConfiguresGalaxyMixin(object):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
+        from galaxy.tools.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
@@ -1047,7 +1055,7 @@ class ConfiguresGalaxyMixin(object):
         self.toolbox = tools.ToolBox(tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
-        app_info = containers.AppInfo(
+        app_info = AppInfo(
             galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
@@ -1057,8 +1065,10 @@ class ConfiguresGalaxyMixin(object):
             containers_resolvers_config_file=self.config.containers_resolvers_config_file,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
+            mulled_channels=self.config.mulled_channels,
         )
         self.container_finder = containers.ContainerFinder(app_info)
+        self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
         self.reindex_tool_search()
@@ -1067,6 +1077,16 @@ class ConfiguresGalaxyMixin(object):
         # Call this when tools are added or removed.
         self.toolbox_search.build_index(tool_cache=self.tool_cache)
         self.tool_cache.reset_status()
+
+    def _set_enabled_container_types(self):
+        container_types_to_destinations = collections.defaultdict(list)
+        for destinations in self.job_config.destinations.values():
+            for destination in destinations:
+                for enabled_container_type in self.container_finder._enabled_container_types(destination.params):
+                    container_types_to_destinations[enabled_container_type].append(destination)
+        self.toolbox.dependency_manager.set_enabled_container_types(container_types_to_destinations)
+        self.toolbox.dependency_manager.resolver_classes.update(self.container_finder.container_registry.resolver_classes)
+        self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.container_registry.container_resolvers)
 
     def _configure_tool_data_tables(self, from_shed_config):
         from galaxy.tools.data import ToolDataTableManager

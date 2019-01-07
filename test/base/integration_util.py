@@ -33,6 +33,10 @@ def skip_unless_docker():
     return skip_unless_executable("docker")
 
 
+def skip_unless_singularity():
+    return skip_unless_executable("singularity")
+
+
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
 

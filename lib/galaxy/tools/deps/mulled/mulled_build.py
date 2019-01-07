@@ -68,7 +68,7 @@ From: bgruening/busybox-bash:0.1
 
 def involucro_link():
     if IS_OS_X:
-        url = "https://github.com/involucro/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
+        url = "https://github.com/mvdbeek/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
     else:
         url = "https://github.com/involucro/involucro/releases/download/v%s/involucro" % INVOLUCRO_VERSION
     return url
@@ -236,7 +236,7 @@ def mull_targets(
         if singularity:
             if not os.path.exists(singularity_image_dir):
                 safe_makedirs(singularity_image_dir)
-            with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
+            with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
         with PrintProgress():
@@ -275,12 +275,16 @@ class InvolucroContext(installable.InstallableContext):
     def exec_command(self, involucro_args):
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
-        os.mkdir('./build')
+        created_build_dir = False
+        if not os.path.exists('build'):
+            created_build_dir = True
+            os.mkdir('./build')
         try:
             res = self.shell_exec(" ".join(cmd))
         finally:
             # delete build directory in any case
-            shutil.rmtree('./build')
+            if created_build_dir:
+                shutil.rmtree('./build')
         return res
 
     def is_installed(self):

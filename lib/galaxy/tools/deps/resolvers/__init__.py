@@ -257,6 +257,33 @@ class Dependency(Dictifiable):
         return "Using dependency %s version %s of type %s" % (self.name, self.version, self.dependency_type)
 
 
+class ContainerDependency(Dependency):
+
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['environment_path']
+
+    def __init__(self, container_description, name, version):
+        self.dependency_type = container_description.type
+        self._name = name
+        self._version = version
+        self.environment_path = container_description.identifier
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def version(self):
+        return self._version
+
+    @property
+    def exact(self):
+        return True
+
+    @property
+    def shell_commands(self):
+        return None
+
+
 class NullDependency(Dependency):
     dependency_type = None
     exact = True

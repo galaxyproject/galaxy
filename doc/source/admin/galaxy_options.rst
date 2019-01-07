@@ -521,12 +521,12 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    involucro is a tool used to build Docker containers for tools from
-    Conda dependencies referenced in tools as `requirement`s. The
-    following path is the location of involucro on the Galaxy host.
-    This is ignored if the relevant container resolver isn't enabled,
-    and will install on demand unless involucro_auto_init is set to
-    False.
+    involucro is a tool used to build Docker or Singularity containers
+    for tools from Conda dependencies referenced in tools as
+    `requirement`s. The following path is the location of involucro on
+    the Galaxy host. This is ignored if the relevant container
+    resolver isn't enabled, and will install on demand unless
+    involucro_auto_init is set to False.
 :Default: ``database/dependencies/involucro``
 :Type: str
 
@@ -536,10 +536,22 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Install involucro as needed to build Docker containers for tools.
-    Ignored if relevant container resolver is not used.
+    Install involucro as needed to build Docker or Singularity
+    containers for tools. Ignored if relevant container resolver is
+    not used.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~
+``mulled_channels``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Conda channels to use when building Docker or Singularity
+    containers using involucro.
+:Default: ``conda-forge,bioconda``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
