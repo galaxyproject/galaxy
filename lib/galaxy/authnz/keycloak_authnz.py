@@ -5,6 +5,7 @@ import logging
 from datetime import datetime, timedelta
 
 import jwt
+import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
@@ -23,9 +24,12 @@ class KeycloakAuthnz(IdentityProvider):
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
-        self.config['authorization_endpoint'] = oidc_backend_config['authorization_endpoint']
-        self.config['token_endpoint'] = oidc_backend_config['token_endpoint']
-        self.config['userinfo_endpoint'] = oidc_backend_config['userinfo_endpoint']
+        self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
+        self._well_known_oidc_config = self._load_well_known_oidc_config(
+            self.config['well_known_oidc_config_uri'])
+        self.config['authorization_endpoint'] = self._well_known_oidc_config['authorization_endpoint']
+        self.config['token_endpoint'] = self._well_known_oidc_config['token_endpoint']
+        self.config['userinfo_endpoint'] = self._well_known_oidc_config['userinfo_endpoint']
         self.config['idp_hint'] = oidc_backend_config.get('idp_hint', None)
 
     def authenticate(self, trans):
@@ -82,6 +86,7 @@ class KeycloakAuthnz(IdentityProvider):
         username = userinfo["preferred_username"]
         email = userinfo["email"]
         user = self._get_user(trans.sa_session, username, email)
+        # TODO: delete existing rows for user so that there is at most one?
         keycloak_access_token = KeycloakAccessToken(user=user,
                                                     access_token=access_token,
                                                     id_token=id_token,
@@ -120,3 +125,6 @@ class KeycloakAuthnz(IdentityProvider):
         nonce_cookie_hash = self._hash_nonce(nonce_cookie)
         if nonce_hash != nonce_cookie_hash:
             raise Exception("Nonce mismatch!")
+
+    def _load_well_known_oidc_config(self, well_known_uri):
+        return requests.get(well_known_uri).json()
