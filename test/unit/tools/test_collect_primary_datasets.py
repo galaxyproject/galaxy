@@ -22,7 +22,6 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         self.app.object_store = object_store
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()
-        self.app.config.collect_outputs_from = "job_working_directory"
 
         self.app.model.Dataset.object_store = object_store
 
@@ -209,14 +208,6 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         self._append_job_json(dict(ext="txt"), output_path=path)
         created_hda = self._collect_default_extra()
         assert created_hda.ext == "txt"
-
-    def test_new_file_path_collection(self):
-        self.app.config.collect_outputs_from = "new_file_path"
-        self.app.config.new_file_path = self.test_directory
-
-        self._setup_extra_file()
-        created_hda = self._collect_default_extra(job_working_directory="/tmp")
-        assert created_hda
 
     def test_job_param(self):
         self._setup_extra_file()
