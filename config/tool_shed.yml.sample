@@ -267,7 +267,8 @@ tool_shed:
   # Show a message box under the masthead.
   #message_box_content: null
 
-  # Show a message box under the masthead.
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Serving static files (needed if running standalone)
