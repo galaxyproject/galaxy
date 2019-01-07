@@ -115,9 +115,7 @@ class AuthnzManager(object):
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
             'redirect_uri': config_xml.find('redirect_uri').text,
-            'authorization_endpoint': config_xml.find('authorization_endpoint').text,
-            'token_endpoint': config_xml.find('token_endpoint').text,
-            'userinfo_endpoint': config_xml.find('userinfo_endpoint').text}
+            'well_known_oidc_config_uri': config_xml.find('well_known_oidc_config_uri').text}
         if config_xml.find('idp_hint') is not None:
             rtv['idp_hint'] = config_xml.find('idp_hint').text
         return rtv

@@ -36,15 +36,13 @@
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
         <redirect_uri>http://localhost:8000/authnz/keycloak-auth/keycloak/callback</redirect_uri>
-        <!-- These endpoint URLs can be obtained from the .well-known
-        configuration URL. For example, if the Keycloak server is on host
-        mykeycloak.org and the realm name is testrealm, then the following
-        URL can be consulted:
+        <!-- The .well-known configuration URL is typically of the form:
+        https://<KEYCLOAK_SERVER_NAME>/auth/realms/<REALM_NAME>/.well-known/openid-configuration
+        For example, if the Keycloak server is on host
+        mykeycloak.org and the realm name is testrealm, then the URL is:
         https://mykeycloak.org/auth/realms/testrealm/.well-known/openid-configuration
         -->
-        <authorization_endpoint>https://.../auth/realms/.../protocol/openid-connect/auth</authorization_endpoint>
-        <token_endpoint>https://.../auth/realms/.../protocol/openid-connect/token</token_endpoint>
-        <userinfo_endpoint>https://.../auth/realms/.../protocol/openid-connect/userinfo</userinfo_endpoint>
+        <well_known_oidc_config_uri>https://.../auth/realms/.../.well-known/openid-configuration</well_known_oidc_config_uri>
         <idp_hint> ... </idp_hint>
         <!-- idp_hint is optional. It can be used to bypass the Keycloak
         login page and skip directly to the login page of the associated
