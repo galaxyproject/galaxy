@@ -1,6 +1,6 @@
 // message box
 #center:only-child {
-    padding: 10px;
+    // padding: 10px; (currently disabled as it interferes with the display of many single-page views.
     .message {
         margin: 10px;
     }
