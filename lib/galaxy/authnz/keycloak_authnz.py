@@ -12,6 +12,8 @@ from galaxy.model import KeycloakAccessToken, User
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
+STATE_COOKIE_NAME = 'keycloakauth-state'
+NONCE_COOKIE_NAME = 'keycloakauth-nonce'
 
 
 class KeycloakAuthnz(IdentityProvider):
@@ -33,14 +35,14 @@ class KeycloakAuthnz(IdentityProvider):
         oauth2_session = OAuth2Session(
             client_id, scope=('openid', 'email', 'profile'), redirect_uri=redirect_uri)
         nonce = generate_nonce()
-        nonce_hash = hashlib.sha256(nonce).hexdigest()
+        nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
         if self.config['idp_hint']:
             extra_params['kc_idp_hint'] = self.config['idp_hint']
         authorization_url, state = oauth2_session.authorization_url(
             base_authorize_url, **extra_params)
-        trans.set_cookie(value=state, name='keycloakauth-state')
-        trans.set_cookie(value=nonce, name='keycloakauth-nonce')
+        trans.set_cookie(value=state, name=STATE_COOKIE_NAME)
+        trans.set_cookie(value=nonce, name=NONCE_COOKIE_NAME)
         return authorization_url
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
@@ -52,7 +54,7 @@ class KeycloakAuthnz(IdentityProvider):
         # Take state value to validate from token. OAuth2Session.fetch_token
         # will validate that the state query parameter value on the URL matches
         # this value.
-        state_cookie = trans.get_cookie(name='keycloakauth-state')
+        state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
         oauth2_session = OAuth2Session(client_id,
                                        scope=('openid', 'email', 'profile'),
                                        redirect_uri=redirect_uri,
@@ -66,15 +68,15 @@ class KeycloakAuthnz(IdentityProvider):
         refresh_token = token['refresh_token']
         expiration_time = datetime.now() + timedelta(seconds=token['expires_in'])
         refresh_expiration_time = datetime.now() + timedelta(seconds=token['refresh_expires_in'])
-        # get nonce from token['id_token'] and validate
+
+        # Get nonce from token['id_token'] and validate. 'nonce' in the
+        # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
+        # cookie.
         id_token_decoded = jwt.decode(id_token, verify=False)
         nonce_hash = id_token_decoded['nonce']
-        nonce_cookie = trans.get_cookie(name='keycloakauth-nonce')
-        # Delete the nonce cookie
-        trans.set_cookie('', name='keycloakauth-nonce', age=-1)
-        nonce_cookie_hash = hashlib.sha256(nonce_cookie).hexdigest()
-        if nonce_hash != nonce_cookie_hash:
-            raise Exception("Nonce mismatch!")
+        self._validate_nonce(trans, nonce_hash)
+
+        # Get userinfo and lookup/create Galaxy user record
         userinfo = oauth2_session.get(userinfo_endpoint).json()
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         username = userinfo["preferred_username"]
@@ -92,7 +94,7 @@ class KeycloakAuthnz(IdentityProvider):
         return login_redirect_url, user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
-        # TODO: implement
+        # TODO: implement?
         pass
 
     def _get_user(self, sa_session, username, email):
@@ -107,3 +109,14 @@ class KeycloakAuthnz(IdentityProvider):
         sa_session.add(user)
         sa_session.flush()
         return user
+
+    def _hash_nonce(self, nonce):
+        return hashlib.sha256(nonce).hexdigest()
+
+    def _validate_nonce(self, trans, nonce_hash):
+        nonce_cookie = trans.get_cookie(name=NONCE_COOKIE_NAME)
+        # Delete the nonce cookie
+        trans.set_cookie('', name=NONCE_COOKIE_NAME, age=-1)
+        nonce_cookie_hash = self._hash_nonce(nonce_cookie)
+        if nonce_hash != nonce_cookie_hash:
+            raise Exception("Nonce mismatch!")
