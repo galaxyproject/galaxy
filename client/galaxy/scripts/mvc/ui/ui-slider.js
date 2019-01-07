@@ -106,7 +106,8 @@ var View = Backbone.View.extend({
         if (new_val !== undefined) {
             let options = this.model.attributes;
             let original_val = new_val;
-            if (new_val !== null && new_val !== "" && !this._isParameter(new_val)) {
+            let is_value = new_val !== null && new_val !== "" && !this._isParameter(new_val);
+            if (is_value) {
                 if (isNaN(new_val)) {
                     new_val = 0;
                 }
@@ -123,7 +124,7 @@ var View = Backbone.View.extend({
             this.model.set("value", new_val);
             this.model.trigger("change");
             options.onchange(new_val);
-            let has_changed = parseInt(original_val) !== parseInt(new_val);
+            let has_changed = is_value && parseInt(original_val) !== parseInt(new_val);
             let message = has_changed ? "This value was invalid or out-of-range. It has been auto-corrected." : null;
             this.model.trigger("error", message);
         }
