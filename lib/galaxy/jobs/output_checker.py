@@ -34,23 +34,6 @@ def check_output_regex(job_id_tag, regex, stream, stream_name, job_messages, max
     return max_error_level
 
 
-def check_output_regex_byline(job_id_tag, regex, stream, stream_append, max_error_level):
-    """
-    check a single regex against a stream line by line, since errors
-    are expected to appear in the end of the stream we start with
-    the last line
-    returns the max of the error_level of the regex and the given max_error_level
-    """
-    for line in reversed(stream.split("\n")):
-        regex_match = re.search(regex.match, line, re.IGNORECASE)
-        if regex_match:
-            rexmsg = __regex_err_msg(regex_match, regex)
-            log.info("Job %s: %s" % (job_id_tag, rexmsg))
-            stream_append.append(rexmsg)
-            return max(max_error_level, regex.error_level)
-    return max_error_level
-
-
 def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code, job_id_tag):
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
