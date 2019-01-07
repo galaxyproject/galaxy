@@ -6,7 +6,6 @@ import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import { getGalaxyInstance } from "app";
 
-
 /**
  * This view represents the top part of the library page.
  * It contains the tool bar with controls.

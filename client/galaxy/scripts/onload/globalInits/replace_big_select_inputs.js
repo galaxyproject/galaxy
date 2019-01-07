@@ -16,7 +16,7 @@ function refresh_select2(element) {
 // Replace select box with a text input box + autocomplete.
 export function replace_big_select_inputs(min_length, max_length, select_elts) {
     console.log("replace_big_select_inputs");
-    
+
     // To do replace, the select2 plugin must be loaded.
     if (!$.fn.select2) {
         console.warn("No select 2");

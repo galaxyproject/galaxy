@@ -17,7 +17,6 @@ import "ui/editable-text";
 import { hide_modal, show_message, show_modal } from "layout/modal";
 import { make_popupmenu } from "ui/popupmenu";
 
-
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 

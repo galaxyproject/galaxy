@@ -102,7 +102,7 @@ export function make_popupmenu(button_element, initial_options) {
  */
 export function make_popup_menus(parent) {
     console.log("make_popup_menus");
-    
+
     // find all popupmenu menu divs (divs that contains anchors to be converted to menu options)
     //  either in the parent or the document if no parent passed
     parent = parent || document;

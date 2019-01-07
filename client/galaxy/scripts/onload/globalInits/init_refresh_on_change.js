@@ -2,7 +2,7 @@ import $ from "jquery";
 
 export function init_refresh_on_change() {
     console.log("init_refresh_on_change");
-    
+
     $("select[refresh_on_change='true']")
         .off("change")
         .change(function() {

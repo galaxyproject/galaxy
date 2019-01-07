@@ -28,7 +28,6 @@ import { defaultConfigs } from "./defaultConfigs";
 // exporting this addInitialization to window.config variable
 export { addInitialization } from "./initQueue";
 
-
 // Config observable
 
 // Process incoming config.set valls
@@ -50,7 +49,6 @@ export const config$ = currentConfig$.asObservable().pipe(
     debounceTime(100)
 );
 
-
 /**
  * Adds config objects into the global configuration.
  * @param  {...objects} fragments Config objects to be merged into the global config
@@ -59,7 +57,6 @@ export function set(...fragments) {
     fragments.forEach(fragment => input.next(fragment));
 }
 
-
 /**
  * Retrieves current value of the configuration, used for legacy code.
  */
@@ -67,13 +64,12 @@ export function get() {
     return currentConfig$.getValue();
 }
 
-
 /**
  * A lot of backbone objects are accessing window.Galaxy purely to get this
  * value which is problematic since they execute as soon as the scripts hit the
  * page.
- * 
- * @param {*} defaultRoot 
+ *
+ * @param {*} defaultRoot
  */
 export function getAppRoot(defaultRoot = "/") {
     let root = defaultRoot;

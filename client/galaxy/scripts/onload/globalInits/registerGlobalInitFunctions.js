@@ -6,7 +6,7 @@
  *
  * Or directly from a python template by using:
  *    config.addInitialiation(function (galaxy, config) { // your init } )
- * 
+ *
  * One day soon, these will all disappear because any functionality they provide
  * will more properly be run inside a lifecycle handler inside of a component.
  */
@@ -29,7 +29,7 @@ export function registerGlobalInitFunctions() {
     prependInitialization(
         monitorInit,
         // addIframeClass,
-        initSentry,
+        initSentry
         // initFormInputAutoFocus,
         // adjustToolTips,
         // adjustIframeLinks,

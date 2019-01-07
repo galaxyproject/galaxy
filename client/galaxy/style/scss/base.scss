@@ -38,8 +38,6 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "charts.scss";
 @import "message.scss";
 
-
-
 // Mixins
 @mixin user-select($select) {
     -webkit-touch-callout: #{$select};
@@ -195,7 +193,6 @@ body {
         right: 0;
     }
 }
-
 
 #right {
     width: $panel-width;
@@ -2094,9 +2091,11 @@ div.toolTitleNoSection {
 
 /* Toolshed, reports custom styles from mako templates */
 body.toolshed {
-    margin: 0; padding: 0; overflow: hidden;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
     #left {
-        background: #C1C9E5 url(../../images/menu_bg.png) top repeat-x;
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
     .unified-panel-body {
         overflow: auto;
@@ -2106,10 +2105,11 @@ body.toolshed {
     }
 }
 
-
 body.reports {
-    margin: 0; padding: 0; overflow: hidden;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
     #left {
-        background: #C1C9E5 url(../../images/menu_bg.png) top repeat-x;
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
 }

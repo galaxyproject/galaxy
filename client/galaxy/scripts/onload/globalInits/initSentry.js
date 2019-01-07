@@ -16,5 +16,4 @@ export const initSentry = (galaxy, config) => {
             Raven.setUser({ email });
         }
     }
-}
-
+};

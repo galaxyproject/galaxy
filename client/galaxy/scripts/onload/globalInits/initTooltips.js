@@ -3,7 +3,7 @@ import $ from "jquery";
 
 export function initTooltips() {
     console.log("initTooltips");
-    
+
     // Tooltips
     if ($.fn.tooltip) {
         // Put tooltips below items in panel header so that they do not overlap masthead.
@@ -13,5 +13,4 @@ export function initTooltips() {
         // and fallback to 'top' if not present
         $("[title]").tooltip();
     }
-
 }

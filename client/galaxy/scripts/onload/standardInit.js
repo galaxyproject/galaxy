@@ -21,7 +21,6 @@ import { globalInits } from "./globalInits";
 import { config$ } from "./loadConfig";
 import { initializations$, clearInitQueue } from "./initQueue";
 
-
 /**
  * This is the standard endpoint initialization chain. Configs are loaded, the
  * app is instantiated, then a bunch of initialization scripts are run and
@@ -33,27 +32,22 @@ import { initializations$, clearInitQueue } from "./initQueue";
  * application instance.
  */
 export function standardInit(label = "Galaxy", appFactory = defaultAppFactory) {
-    
     // register assortment of random javascript inits
     // which were transplanted from python templates
     globalInits();
 
     // waits for configs to stop changing then instantiates Galaxy
-    let galaxy$ = config$.pipe(
-        map(cfg => appFactory(cfg, label))
-    );
+    let galaxy$ = config$.pipe(map(cfg => appFactory(cfg, label)));
 
     // once config, app and initialization observables have a value then run all
     // the initialization functions, this will keep running new initialization
     // functions even if they are registered super-late because combineLatest
     // will not remake a the existing Galaxy or config objects, it'll just run
     // the new batch of freshly registered init functions
-    combineLatest(config$, galaxy$, initializations$)
-        .subscribe(([config, galaxy, inits]) => {
-            console.groupCollapsed(`runInitializations`, label, serverPath());
-            inits.forEach(fn => fn(galaxy, config));
-            clearInitQueue();
-            console.groupEnd();
-        });
+    combineLatest(config$, galaxy$, initializations$).subscribe(([config, galaxy, inits]) => {
+        console.groupCollapsed(`runInitializations`, label, serverPath());
+        inits.forEach(fn => fn(galaxy, config));
+        clearInitQueue();
+        console.groupEnd();
+    });
 }
-

@@ -17,7 +17,7 @@ export function setGalaxyInstance(factory) {
     if (newInstance.debug === undefined) {
         addLogging(newInstance, "GalaxyApp");
     }
-    
+
     storage._galaxyInstance = newInstance;
 
     return storage._galaxyInstance;

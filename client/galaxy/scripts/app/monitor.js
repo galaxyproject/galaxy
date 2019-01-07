@@ -24,4 +24,3 @@ Object.defineProperty(window, "Galaxy", {
 });
 
 export default window.Galaxy;
-

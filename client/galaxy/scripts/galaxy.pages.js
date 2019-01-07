@@ -19,7 +19,6 @@ function setPageConfigs(incoming = {}) {
     return Object.assign(configs, incoming);
 }
 
-
 var WYMeditor = window.WYMeditor;
 
 var CONTROLS = {
