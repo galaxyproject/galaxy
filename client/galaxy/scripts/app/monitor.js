@@ -11,16 +11,20 @@ const galaxyStub = {
     config: {}
 };
 
-Object.defineProperty(window, "Galaxy", {
-    enumerable: true,
-    get: function() {
-        console.warn("accessing (get) window.Galaxy", serverPath());
-        return getGalaxyInstance() || galaxyStub;
-    },
-    set: function(newValue) {
-        console.warn("accessing (set) window.Galaxy", serverPath());
-        setGalaxyInstance(newValue);
-    }
-});
+if (!window.Galaxy) {
+    Object.defineProperty(window, "Galaxy", {
+        enumerable: true,
+        get: function() {
+            console.warn("accessing (get) window.Galaxy", serverPath());
+            return getGalaxyInstance() || galaxyStub;
+        },
+        set: function(newValue) {
+            console.warn("accessing (set) window.Galaxy", serverPath());
+            setGalaxyInstance(newValue);
+        }
+    });
+} else {
+    console.error("Detected redefinition of window.Galaxy -- skipping, but this should be investigated.", serverPath());
+}
 
 export default window.Galaxy;
