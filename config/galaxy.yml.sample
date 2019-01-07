@@ -652,7 +652,8 @@ galaxy:
   # Show a message box under the masthead.
   #message_box_content: ''
 
-  # Show a message box under the masthead.
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
