@@ -100,7 +100,15 @@ def main():
     parser.add_option('-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.')
     (options, args) = parser.parse_args()
     gzip = bool(options.gzip)
-    history_attrs, dataset_attrs, job_attrs, out_file = args
+    if len(args) == 2:
+        # We have a 19.0X directory argument instead of individual arguments.
+        temp_directory, out_file = args
+        history_attrs = os.path.join(temp_directory, 'history_attrs.txt')
+        dataset_attrs = os.path.join(temp_directory, 'datasets_attrs.txt')
+        job_attrs = os.path.join(temp_directory, 'jobs_attrs.txt')
+    else:
+        # This job was created pre 18.0X with old argument style.
+        history_attrs, dataset_attrs, job_attrs, out_file = args
 
     # Create archive.
     create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
