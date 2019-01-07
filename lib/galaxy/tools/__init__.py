@@ -2250,6 +2250,13 @@ class SetMetadataTool(Tool):
     tool_type = 'set_metadata'
     requires_setting_metadata = False
 
+    def regenerate_imported_metadata_if_needed(self, hda, history, job):
+        if hda.extension == 'bam':
+            self.tool_action.execute_via_app(
+                self, self.app, job.session_id,
+                history.id, job.user, incoming={'input1': hda}, overwrite=False
+            )
+
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
         for name, dataset in inp_data.items():
             external_metadata = JobExternalOutputMetadataWrapper(job)
