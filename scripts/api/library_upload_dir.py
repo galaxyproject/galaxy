@@ -4,20 +4,53 @@ from __future__ import print_function
 import argparse
 import os
 import sys
+import textwrap
 
 from bioblend import galaxy
 
 
 class Uploader(object):
 
-    def __init__(self, url, api, library_id, folder_id, should_link,
-                 non_local):
+    def __init__(self, url, api, library_id, library_name, folder_id,
+                 should_link, non_local, root_folder, dbkey, preserve_dirs,
+                 tag_using_filenames):
+        """
+        initialize uploader
+
+        url Galaxy URL
+        api API key to use
+        library_id id of the library
+        library_name name of the library
+        folder_id id of the folder to upload to (None: root_folder)
+        should_link link data sets instead of uploading 
+        non_local set to true iff not running on Galaxy head node
+        root_folder path from which files are to be uploaded
+                    ie uploaded files are given relative to this path
+        dbkey data base key (aka genome build)
+        preserve_dirs preserve directory structure (boolean)
+        tag_using_filenames tag data sets using file name
+        """
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
-        self.library_id = library_id
-        self.folder_id = folder_id
+        libs = self.gi.libraries.get_libraries(library_id=library_id,
+                                        name=library_name)
+        if len(libs) == 0:
+            raise Exception("Unknown library [%s,%s]" % (library_id, library_name))
+        elif len(libs) > 1:
+            raise Exception("Ambiguous library [%s,%s]" % (library_id, library_name))
+        else:
+            libs = libs[0]
+
+        self.library_id = libs['id']
+        if folder_id:
+            self.folder_id = folder_id
+        else:
+            self.folder_id = libs['root_folder_id']
         self.should_link = should_link
         self.non_local = non_local
-
+        self.root_folder = root_folder
+        self.dbkey = dbkey
+        self.preserve_dirs = preserve_dirs
+        self.tag_using_filenames = tag_using_filenames
         self.memo_path = {}
         self.prepopulate_memo()
 
@@ -34,6 +67,7 @@ class Uploader(object):
         contents of the data library, and then filter out things that are
         interesting to us based on a folder prefix.
         """
+
         existing = self.gi.libraries.show_library(self.library_id, contents=True)
 
         uploading_to = [x for x in existing if x['id'] == self.folder_id]
@@ -119,9 +153,9 @@ class Uploader(object):
         all_files = [x.strip() for x in list(sys.stdin.readlines())]
 
         for idx, path in enumerate(all_files):
-            (dirName, fname) = path.rsplit(os.path.sep, 1)
-            if not os.path.exists(os.path.join(dirName, fname)):
+            if not os.path.exists(os.path.join(self.root_folder, path)):
                 continue
+            (dirName, fname) = path.rsplit(os.path.sep, 1)
             # Figure out what the memo key will be early
             basepath = self.rec_split(dirName)
             if len(basepath) == 0:
@@ -137,31 +171,58 @@ class Uploader(object):
             if not already_uploaded:
                 if self.non_local:
                     self.gi.libraries.upload_file_from_local_path(
-                        self.library_id,
-                        os.path.join(dirName, fname),
+                        library_id=self.library_id,
+                        file_local_path=os.path.join(self.root_folder, path),
                         folder_id=fid,
+                        dbkey=self.dbkey
                     )
                 else:
                     self.gi.libraries.upload_from_galaxy_filesystem(
-                        self.library_id,
-                        os.path.join(dirName, fname),
+                        library_id=self.library_id,
+                        filesystem_paths=os.path.join(self.root_folder, path),
                         folder_id=fid,
+                        dbkey=self.dbkey,
                         link_data_only='link_to_files' if self.should_link else 'copy_files',
+                        preserve_dirs=self.preserve_dirs,
+                        tag_using_filenames=self.tag_using_filenames
                     )
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Upload a directory into a data library')
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=textwrap.dedent('''
+        Upload files or directories given on stdin into a data library.
+
+        If PATH/TO/FILE_OR_DIR is given on stdin the contents of
+        ROOT_FOLDER/PATH/TO/FILE_OR_DIR will be uploaded to PATH/TO/FILE_OR_DIR
+        in the specified folder and libary. If ROOT_FOLDER is empty, then
+        the path should be absolute. Data sets and folders will only be
+        created in the library if they are not present yet. If --preserve_dirs
+        is set then the structure in ROOT_FOLDER/PATH/TO/FILE_OR_DIR will be
+        preserved in the libary.'''))
+
     parser.add_argument("-u", "--url", dest="url", required=True, help="Galaxy URL")
     parser.add_argument("-a", "--api", dest="api", required=True, help="API Key")
 
-    parser.add_argument("-l", "--lib", dest="library_id", required=True, help="Library ID")
-    parser.add_argument("-f", "--folder", dest="folder_id", help="Folder ID. If not specified, will go to root of library.")
+    libparser = parser.add_mutually_exclusive_group(required=True)
+    libparser.add_argument("-l", "--lib", dest="library_id", help="Library ID")
+    libparser.add_argument("-L", "--library_name", help="Library name")
+    parser.add_argument("-f", "--folder", dest="folder_id",
+                        help="Folder ID. If not specified upload to root folder of the library.")
+    parser.add_argument("--root_folder", default="/",
+                        help="files are relative to this dir")
 
     parser.add_argument("--nonlocal", dest="non_local", action="store_true", default=False,
                         help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem")
-    parser.add_argument("--link", dest="should_link", action="store_true", default=False,
-                        help="Link datasets only, do not upload to Galaxy. ONLY Avaialble if you run 'locally' relative to your Galaxy head node/filesystem ")
+    localparser = parser.add_argument_group('Options for local upload', 'options that only apply if --nonlocal is not set')
+    localparser.add_argument("--link", dest="should_link", action="store_true", default=False,
+                        help="Link datasets only, do not upload to Galaxy")
+    localparser.add_argument("--preserve_dirs", action="store_true", default=False,
+                        help="Preserve directory structure")
+    localparser.add_argument("--tag_using_filenames", action="store_true", default=False,
+                        help="Tag data sets with file name")
+    parser.add_argument("--dbkey", default="?", help="Genome build")
+
     args = parser.parse_args()
 
     u = Uploader(**vars(args))
