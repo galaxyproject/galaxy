@@ -11,7 +11,7 @@ import optparse
 import os
 import sys
 import tarfile
-from json import dumps, loads
+from json import dump, load
 
 from galaxy.util import FILENAME_VALID_CHARS
 
@@ -34,17 +34,8 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
         history_archive = tarfile.open(out_file, tarfile_mode)
 
         # Read datasets attributes from file.
-        with open(datasets_attrs_file) as datasets_attr_in:
-            datasets_attr_str = ''
-            buffsize = 1048576
-            try:
-                while True:
-                    datasets_attr_str += datasets_attr_in.read(buffsize)
-                    if not datasets_attr_str or len(datasets_attr_str) % buffsize != 0:
-                        break
-            except OverflowError:
-                pass
-        datasets_attrs = loads(datasets_attr_str)
+        with open(datasets_attrs_file, 'r') as datasets_attr_in:
+            datasets_attrs = load(datasets_attr_in)
 
         # Add datasets to archive and update dataset attributes.
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
@@ -78,7 +69,7 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
 
         # Rewrite dataset attributes file.
         with open(datasets_attrs_file, 'w') as datasets_attrs_out:
-            datasets_attrs_out.write(dumps(datasets_attrs))
+            dump(datasets_attrs, datasets_attrs_out)
 
         # Finish archive.
         history_archive.add(history_attrs_file, arcname="history_attrs.txt")
