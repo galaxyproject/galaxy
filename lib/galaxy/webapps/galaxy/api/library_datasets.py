@@ -20,10 +20,10 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
     folders,
+    hdas,
     lddas,
     library_datasets,
-    roles,
-    hdas
+    roles
 )
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
