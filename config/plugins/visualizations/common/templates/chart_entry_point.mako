@@ -22,7 +22,7 @@
            'libs/jquery/jquery-ui',
            'bundled/libs.chunk',
            'bundled/base.chunk',
-           'bundled/extended.bundled')}
+           'bundled/generic.bundled')}
     <%src_path = script_attributes.get("src") %>
     <script type="text/javascript" src="${static_url}${src_path}"></script>
     <script type="text/javascript">
