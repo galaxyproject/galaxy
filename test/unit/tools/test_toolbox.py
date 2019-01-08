@@ -193,7 +193,6 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert tool is not None
         assert len(tool._macro_paths) == 1
         macro_path = tool._macro_paths[0]
-        time.sleep(1.5)
         with open(macro_path, 'w') as macro_out:
             macro_out.write(SIMPLE_MACRO.substitute(tool_version="3.0"))
         time.sleep(1.5)

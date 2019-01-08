@@ -1,3 +1,4 @@
+import logging
 import os
 from threading import (
     local,
@@ -7,6 +8,8 @@ from threading import (
 from sqlalchemy.orm.exc import DetachedInstanceError
 
 from galaxy.util.hash_util import md5_hash_file
+
+log = logging.getLogger(__name__)
 
 
 class ToolCache(object):
@@ -51,10 +54,13 @@ class ToolCache(object):
                     self._removed_tool_ids.add(tool_id)
                     if tool_id in self._new_tool_ids:
                         self._new_tool_ids.remove(tool_id)
-        except Exception:
+        except Exception as e:
+            log.debug("Exception while checking tools to remove from cache: %s" % e)
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
             pass
+        if removed_tool_ids:
+            log.debug("Removed the following tools from cache: %s" % removed_tool_ids)
         return removed_tool_ids
 
     def _should_cleanup(self, config_filename):
