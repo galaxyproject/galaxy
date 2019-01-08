@@ -198,6 +198,11 @@
         });
 
         config.addInitialization(function() {
+            console.log("base/base_panels.mako, panel init");
+            window.bundleEntries.panelManagement(panelConfig);
+        });
+
+        config.addInitialization(function() {
             console.log("base/base_panels.mako, panelConfig init");
             console.log("runs an init function named in python config", panelConfig);
             try {
@@ -211,11 +216,6 @@
                 console.error("Unable to init panels", err);
                 console.trace();
             }
-        });
-
-        config.addInitialization(function() {
-            console.log("base/base_panels.mako, panel init");
-            window.bundleEntries.panelManagement(panelConfig);
         });
 
     </script>
