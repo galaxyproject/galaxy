@@ -1,5 +1,4 @@
 import $ from "jquery";
-import "libs/jquery/jquery.wymeditor";
 import _l from "utils/localization";
 
 import GridView from "mvc/grid/grid-view";
@@ -398,6 +397,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
         dialogType == CONTROLS.DIALOG_EMBED_VISUALIZATION
     ) {
         // Based on item type, set useful vars.
+        let item_info;
         switch (dialogType) {
             case CONTROLS.DIALOG_EMBED_HISTORY:
                 item_info = get_item_info(CONTROLS.ITEM_HISTORY);
@@ -416,7 +416,7 @@ WYMeditor.editor.prototype.dialog = function(dialogType, dialogFeatures, bodyHtm
                 break;
         }
 
-        grid = new GridView({
+        let grid = new GridView({
             url_base: item_info.list_ajax_url,
             embedded: true
         });
@@ -557,7 +557,7 @@ export default function pagesEditorOnload(renderedConfigs = {}) {
             data: {
                 id: configs.page_id,
                 content: editor.xhtml(),
-                annotations: JSON.stringify(new Object()),
+                annotations: JSON.stringify({}),
                 // annotations: JSON.stringify(annotations),
                 _: "true"
             },
