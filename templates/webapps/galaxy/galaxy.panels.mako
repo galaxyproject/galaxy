@@ -192,6 +192,9 @@
     
         var galaxyConfig = ${ h.dumps( self.galaxy_config ) };
 
+        ## TODO: Some visualizations (and more?) currently use this config, should be refactored.
+        window.galaxy_config = galaxyConfig;
+
         var panelConfig = Object.assign(galaxyConfig, {
             rightPanelSelector: '#right',
             leftPanelSelector: '#left'
