@@ -22,7 +22,8 @@ from galaxy.managers import (
     folders,
     lddas,
     library_datasets,
-    roles
+    roles,
+    hdas
 )
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
@@ -45,6 +46,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         self.role_manager = roles.RoleManager(app)
         self.ld_manager = library_datasets.LibraryDatasetsManager(app)
         self.ldda_manager = lddas.LDDAManager(app)
+        self.hda_manager = hdas.HDAManager(app)
 
     @expose_api_anonymous
     def show(self, trans, id, **kwd):
@@ -155,7 +157,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.serialize_dataset_association_roles(library_dataset)
+        return self.hda_manager.serialize_dataset_association_roles(trans, library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
