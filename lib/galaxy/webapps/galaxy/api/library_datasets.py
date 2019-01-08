@@ -20,7 +20,6 @@ from galaxy.exceptions import ObjectNotFound
 from galaxy.managers import (
     base as managers_base,
     folders,
-    hdas,
     lddas,
     library_datasets,
     roles
@@ -46,7 +45,6 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         self.role_manager = roles.RoleManager(app)
         self.ld_manager = library_datasets.LibraryDatasetsManager(app)
         self.ldda_manager = lddas.LDDAManager(app)
-        self.hda_manager = hdas.HDAManager(app)
 
     @expose_api_anonymous
     def show(self, trans, id, **kwd):
@@ -157,7 +155,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.hda_manager.serialize_dataset_association_roles(trans, library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
