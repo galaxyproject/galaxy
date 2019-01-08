@@ -593,6 +593,8 @@
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true"/>
     <datatype extension="dcd" type="galaxy.datatypes.binary:Dcd" display_in_upload="true"/>
     <datatype extension="top" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
+    <datatype extension="itp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
+    <datatype extension="mdp" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="xtc" type="galaxy.datatypes.binary:Xtc" display_in_upload="true"/>
     <datatype extension="cpt" type="galaxy.datatypes.binary:Cpt" display_in_upload="true"/>
     <datatype extension="gro" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
