@@ -1,3 +1,3 @@
 #!/bin/bash
 
-./run_tests.sh --dockerize --db postgres --clean_pyc --integration "$@"
+DOCKER_RUN_EXTRA_ARGS="--privileged" ./run_tests.sh --dockerize --db postgres --clean_pyc --integration "$@"

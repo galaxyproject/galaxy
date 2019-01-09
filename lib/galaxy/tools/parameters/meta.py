@@ -72,26 +72,29 @@ def expand_workflow_inputs(inputs):
     return params, params_keys
 
 
-def process_key(incoming_key, d):
+def process_key(incoming_key, incoming_value, d):
     key_parts = incoming_key.split('|')
     if len(key_parts) == 1:
         # Regular parameter
-        d[incoming_key] = object()
+        if incoming_key in d and not incoming_value:
+            # In case we get an empty repeat after we already filled in a repeat element
+            return
+        d[incoming_key] = incoming_value
     elif key_parts[0].rsplit('_', 1)[-1].isdigit():
         # Repeat
-        input_name_index = key_parts[0].rsplit('_', 1)
-        input_name, index = input_name_index
-        if input_name not in d:
-            d[input_name] = []
-        subdict = {}
-        d[input_name].append(subdict)
-        process_key("|".join(key_parts[1:]), d=subdict)
+        input_name, index = key_parts[0].rsplit('_', 1)
+        index = int(index)
+        d.setdefault(input_name, [])
+        newlist = [{} for _ in range(index + 1)]
+        d[input_name].extend(newlist[len(d[input_name]):])
+        subdict = d[input_name][index]
+        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
     else:
         # Section / Conditional
         input_name = key_parts[0]
         subdict = {}
         d[input_name] = subdict
-        process_key("|".join(key_parts[1:]), d=subdict)
+        process_key("|".join(key_parts[1:]), incoming_value=incoming_value, d=subdict)
 
 
 def expand_meta_parameters(trans, tool, incoming):
@@ -113,9 +116,9 @@ def expand_meta_parameters(trans, tool, incoming):
     # according to tool.inputs (which is ordered).
     incoming_copy = incoming.copy()
     nested_dict = {}
-    for incoming_key in incoming_copy:
+    for incoming_key, incoming_value in incoming_copy.items():
         if not incoming_key.startswith('__'):
-            process_key(incoming_key, d=nested_dict)
+            process_key(incoming_key, incoming_value=incoming_value, d=nested_dict)
 
     reordered_incoming = OrderedDict()
 

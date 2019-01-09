@@ -296,7 +296,7 @@ class DatasetAssociationManager(base.ModelManager,
                 # Are *all* of the job's other output datasets deleted?
                 if job.check_if_output_datasets_deleted():
                     job.mark_deleted(self.app.config.track_jobs_in_database)
-                    self.app.job_manager.job_stop_queue.put(job.id)
+                    self.app.job_manager.stop(job)
                     return True
         return False
 
@@ -470,14 +470,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         Cycle through meta files and return them as a list of dictionaries.
         """
         meta_files = []
-        for meta_type in dataset_assoc.metadata.spec.keys():
-            if isinstance(dataset_assoc.metadata.spec[meta_type].param, galaxy.datatypes.metadata.FileParameter):
-                meta_files.append(
-                    dict(file_type=meta_type,
-                         download_url=self.url_for('history_contents_metadata_file',
-                                                   history_id=self.app.security.encode_id(dataset_assoc.history_id),
-                                                   history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                                                   metadata_file=meta_type)))
+        for meta_type in dataset_assoc.metadata_file_types:
+            meta_files.append(
+                dict(file_type=meta_type,
+                     download_url=self.url_for('history_contents_metadata_file',
+                                               history_id=self.app.security.encode_id(dataset_assoc.history_id),
+                                               history_content_id=self.app.security.encode_id(dataset_assoc.id),
+                                               metadata_file=meta_type)))
         return meta_files
 
     def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):

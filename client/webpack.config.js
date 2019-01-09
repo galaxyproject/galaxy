@@ -13,10 +13,10 @@ const imageBase = path.join(__dirname, "../static/style");
 
 let buildconfig = {
     entry: {
-        login: ["onload", "apps/login"],
-        analysis: ["onload", "apps/analysis"],
-        admin: ["onload", "apps/admin"],
-        extended: ["onload", "apps/extended"]
+        login: ["polyfills", "bundleEntries", "entry/login"],
+        analysis: ["polyfills", "bundleEntries", "entry/analysis"],
+        admin: ["polyfills", "bundleEntries", "entry/admin"],
+        generic: ["polyfills", "bundleEntries", "entry/generic"]
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
@@ -24,6 +24,7 @@ let buildconfig = {
         chunkFilename: "[name].chunk.js"
     },
     resolve: {
+        extensions: ["*", ".js", ".json", ".vue", ".scss"],
         modules: [scriptsBase, "node_modules", styleBase, imageBase],
         alias: {
             jquery$: `${libsBase}/jquery.custom.js`,
@@ -42,7 +43,7 @@ let buildconfig = {
                 },
                 libs: {
                     name: "libs",
-                    test: /(node_modules|galaxy\/scripts\/(?!apps)).*\.(vue|js)$/, // .*\.(vue|js)$
+                    test: /(node_modules|galaxy\/scripts\/(?!entry)).*\.(vue|js)$/, // .*\.(vue|js)$
                     chunks: "all",
                     priority: -10
                 }
@@ -102,15 +103,24 @@ let buildconfig = {
                 }
             },
             // Alternative to setting window.bundleEntries
-            // Just import "extended" in any endpoint that needs
+            // Just import "bundleEntries" in any endpoint that needs
             // access to these globals, or even-better, make
             // more endpoints and skip the global altogether
             {
-                test: /apps\/extended/,
+                test: `${scriptsBase}/bundleEntries`,
                 use: [
                     {
                         loader: "expose-loader",
                         options: "bundleEntries"
+                    }
+                ]
+            },
+            {
+                test: `${scriptsBase}/onload/loadConfig.js`,
+                use: [
+                    {
+                        loader: "expose-loader",
+                        options: "config"
                     }
                 ]
             },
@@ -137,6 +147,10 @@ let buildconfig = {
                         options: { sourceMap: true }
                     }
                 ]
+            },
+            {
+                test: /\.tmpl$/,
+                loader: "raw-loader"
             }
         ]
     },

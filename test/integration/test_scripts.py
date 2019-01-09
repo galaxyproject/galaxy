@@ -67,7 +67,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         assert history_response.json()["purged"] is True, history_response.json()
 
     def test_pgcleanup(self):
-        self._skip_if_not_postgres()
+        self._skip_unless_postgres()
 
         script = "cleanup_datasets/pgcleanup.py"
         self._scripts_check_argparse_help(script)
@@ -164,12 +164,8 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         self._scripts_check_argparse_help("galaxy-main")
 
     def test_runtime_stats(self):
-        self._skip_if_not_postgres()
+        self._skip_unless_postgres()
         self._scripts_check_argparse_help("runtime_stats.py")
-
-    def _skip_if_not_postgres(self):
-        if not self._app.config.database_connection.startswith("post"):
-            raise unittest.SkipTest("Test only valid for postgres")
 
     def _scripts_check_argparse_help(self, script):
         # Test imports and argparse response to --help with 0 exit code.

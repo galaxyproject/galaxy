@@ -204,6 +204,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
 
+        # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
+        # it becomes more commonly needed we could create a prefork function registration method like we do with
+        # postfork functions.
+        self.application_stack.init_late_prefork()
+
         self.containers = {}
         if self.config.enable_beta_containers_interface:
             self.containers = build_container_interfaces(

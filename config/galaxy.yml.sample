@@ -330,16 +330,22 @@ galaxy:
   # by enable_beta_mulled_containers.
   #containers_resolvers_config_file: ''
 
-  # involucro is a tool used to build Docker containers for tools from
-  # Conda dependencies referenced in tools as `requirement`s. The
-  # following path is the location of involucro on the Galaxy host. This
-  # is ignored if the relevant container resolver isn't enabled, and
-  # will install on demand unless involucro_auto_init is set to False.
+  # involucro is a tool used to build Docker or Singularity containers
+  # for tools from Conda dependencies referenced in tools as
+  # `requirement`s. The following path is the location of involucro on
+  # the Galaxy host. This is ignored if the relevant container resolver
+  # isn't enabled, and will install on demand unless involucro_auto_init
+  # is set to False.
   #involucro_path: database/dependencies/involucro
 
-  # Install involucro as needed to build Docker containers for tools.
-  # Ignored if relevant container resolver is not used.
+  # Install involucro as needed to build Docker or Singularity
+  # containers for tools. Ignored if relevant container resolver is not
+  # used.
   #involucro_auto_init: true
+
+  # Conda channels to use when building Docker or Singularity containers
+  # using involucro.
+  #mulled_channels: 'conda-forge,bioconda'
 
   # Enable automatic polling of relative tool sheds to see if any
   # updates are available for installed repositories.  Ideally only one
@@ -518,14 +524,6 @@ galaxy:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
-  # Tools with a number of outputs not known until runtime can write
-  # these outputs to a directory for collection by Galaxy when the job
-  # is done. Previously, this directory was new_file_path, but using one
-  # global directory can cause performance problems, so using
-  # job_working_directory ('.' or cwd when a job is run) is encouraged.
-  # By default, both are checked to avoid breaking existing tools.
-  #collect_outputs_from: 'new_file_path,job_working_directory'
-
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   #object_store_config_file: config/object_store_conf.xml
@@ -652,7 +650,8 @@ galaxy:
   # Show a message box under the masthead.
   #message_box_content: ''
 
-  # Show a message box under the masthead.
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -699,6 +698,9 @@ galaxy:
 
   # The URL linked by the "Galaxy/brand" text.
   #logo_url: /
+
+  # The URL linked by the "Galaxy Help" link in the "Help" menu.
+  #helpsite_url: ''
 
   # The URL linked by the "Wiki" link in the "Help" menu.
   #wiki_url: 'https://galaxyproject.org/'
@@ -1363,6 +1365,9 @@ galaxy:
   # of Galaxy's stable API.
   #enable_beta_workflow_modules: false
 
+  # Enable import and export of workflows as Galaxy Format 2 workflows.
+  #enable_beta_workflow_format: false
+
   # Following options only apply to workflows scheduled using the legacy
   # workflow run API (running workflows via a POST to /api/workflows).
   # Force usage of Galaxy's beta workflow scheduler under certain
@@ -1557,9 +1562,8 @@ galaxy:
   # failing jobs are just failed outright.
   #default_job_resubmission_condition: null
 
-  # In multiprocess configurations, notification between processes about
-  # new jobs must be done via the database.  In single process
-  # configurations, this can be done in memory, which is a bit quicker.
+  # This option is deprecated, use the `mem-self` handler assignment
+  # option in the job configuration instead.
   #track_jobs_in_database: true
 
   # This enables splitting of jobs into tasks, if specified by the

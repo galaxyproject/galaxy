@@ -222,6 +222,13 @@ var Collection = Backbone.Collection.extend({
                 target: "_blank"
             });
         }
+        if (options.helpsite_url) {
+            helpTab.menu.unshift({
+                title: _l("Galaxy Help"),
+                url: options.helpsite_url,
+                target: "_blank"
+            });
+        }
         this.add(helpTab);
 
         //

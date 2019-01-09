@@ -1,4 +1,7 @@
-import * as _ from "libs/underscore";
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+import { make_popupmenu } from "ui/popupmenu";
 /**
  * View for track/group header.
  */
@@ -93,8 +96,6 @@ var TrackHeaderView = Backbone.View.extend({
         this.action_icons.mode_icon.attr("title", `Set display mode (now: ${this.mode})`);
 
         // Setup popup menu for changing modes.
-        var self = this;
-
         var track = this.model;
         var mode_mapping = {};
         for (var i = 0, len = track.display_modes.length; i < len; i++) {

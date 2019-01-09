@@ -1,6 +1,4 @@
 import jQuery from "jquery";
-("use_strict");
-
 var $ = jQuery;
 
 // ============================================================================
@@ -11,7 +9,7 @@ var $ = jQuery;
  * function to perform; or (b) another dict with two required keys, 'url' and 'action' (the
  * function to perform. (b) is useful for exposing the underlying URL of the option.
  */
-function make_popupmenu(button_element, initial_options) {
+export function make_popupmenu(button_element, initial_options) {
     /*  Use the $.data feature to store options with the link element.
         This allows options to be changed at a later time
     */
@@ -102,7 +100,9 @@ function make_popupmenu(button_element, initial_options) {
  *          but (since that selector searches the dom on the page), you can send a parent in
  *  NOTE: make_popup_menus, and make_popupmenu are horrible names
  */
-function make_popup_menus(parent) {
+export function make_popup_menus(parent) {
+    console.log("make_popup_menus");
+
     // find all popupmenu menu divs (divs that contains anchors to be converted to menu options)
     //  either in the parent or the document if no parent passed
     parent = parent || document;
@@ -161,9 +161,3 @@ function make_popup_menus(parent) {
             menu.remove();
         });
 }
-
-// ============================================================================
-export default {
-    make_popupmenu: make_popupmenu,
-    make_popup_menus: make_popup_menus
-};

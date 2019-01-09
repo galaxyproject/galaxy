@@ -414,7 +414,7 @@ mapping:
         default: database/dependencies/involucro
         required: false
         desc: |
-          involucro is a tool used to build Docker containers for tools from Conda
+          involucro is a tool used to build Docker or Singularity containers for tools from Conda
           dependencies referenced in tools as `requirement`s. The following path is
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
@@ -425,8 +425,15 @@ mapping:
         default: true
         required: false
         desc: |
-          Install involucro as needed to build Docker containers for tools. Ignored if
+          Install involucro as needed to build Docker or Singularity containers for tools. Ignored if
           relevant container resolver is not used.
+
+      mulled_channels:
+        type: str
+        default: 'conda-forge,bioconda'
+        required: false
+        desc: |
+          Conda channels to use when building Docker or Singularity containers using involucro.
 
       enable_tool_shed_check:
         type: bool
@@ -705,18 +712,6 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
-      collect_outputs_from:
-        type: str
-        default: new_file_path,job_working_directory
-        required: false
-        desc: |
-          Tools with a number of outputs not known until runtime can write these
-          outputs to a directory for collection by Galaxy when the job is done.
-          Previously, this directory was new_file_path, but using one global directory
-          can cause performance problems, so using job_working_directory ('.' or cwd
-          when a job is run) is encouraged.  By default, both are checked to avoid
-          breaking existing tools.
-
       object_store_config_file:
         type: str
         default: config/object_store_conf.xml
@@ -738,7 +733,7 @@ mapping:
 
       smtp_username:
         type: str
-        default: '' 
+        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -927,7 +922,8 @@ mapping:
         default: info
         required: false
         desc: |
-          Show a message box under the masthead.
+          Class of the message box under the masthead. Possible values are:
+          'info' (the default), 'warning', 'error', 'done'.
 
       brand:
         type: str
@@ -1002,6 +998,13 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Galaxy/brand" text.
+
+      helpsite_url:
+        type: str
+        default: ''
+        required: false
+        desc: |
+          The URL linked by the "Galaxy Help" link in the "Help" menu.
 
       wiki_url:
         type: str
@@ -2410,9 +2413,8 @@ mapping:
         default: true
         required: false
         desc: |
-          In multiprocess configurations, notification between processes about new jobs
-          must be done via the database.  In single process configurations, this can be
-          done in memory, which is a bit quicker.
+          This option is deprecated, use the `mem-self` handler assignment option in the
+          job configuration instead.
 
       use_tasked_jobs:
         type: bool

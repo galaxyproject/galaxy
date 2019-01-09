@@ -1,5 +1,5 @@
-import $ from "jquery";
 import _ from "underscore";
+import jQuery from "jquery";
 import { getGalaxyInstance } from "app";
 import HISTORY_VIEW from "mvc/history/history-view";
 import HDA_MODEL from "mvc/history/hda-model";
@@ -14,6 +14,8 @@ import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";
+
+var $ = jQuery;
 
 /* =============================================================================
 TODO:

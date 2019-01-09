@@ -48,6 +48,40 @@ var Model = Backbone.Model.extend({
                 submit_title: "Save permissions",
                 redirect: "user"
             },
+            make_data_private: {
+                title: _l("Make all data private"),
+                description: _l("Click here to make all data private."),
+                icon: "fa-lock",
+                onclick: function() {
+                    if (
+                        confirm(
+                            _l(
+                                "WARNING: This will make all datasets (excluding library datasets) for which you have " +
+                                    "'management' permissions, in all of your histories " +
+                                    "private, and will set permissions such that all " +
+                                    "of your new data in these histories is created as private.  Any " +
+                                    "datasets within that are currently shared will need " +
+                                    "to be re-shared or published.  Are you sure you " +
+                                    "want to do this?"
+                            )
+                        )
+                    ) {
+                        $.post(`${Galaxy.root}history/make_private`, { all_histories: true }, () => {
+                            Galaxy.modal.show({
+                                title: _l("Datasets are now private"),
+                                body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${
+                                    Galaxy.root
+                                }user/permissions">User Permissions</a> interface.`,
+                                buttons: {
+                                    Close: function() {
+                                        Galaxy.modal.hide();
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            },
             api_key: {
                 title: _l("Manage API key"),
                 description: _l("Access your current API key or create a new one."),
@@ -130,6 +164,7 @@ var View = Backbone.View.extend({
             }
             self._addLink("custom_builds");
             self._addLink("permissions");
+            self._addLink("make_data_private");
             self._addLink("api_key");
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");

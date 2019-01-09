@@ -13,6 +13,8 @@ try:
 except ImportError:
     requests = None
 
+MULLED_TAG_CACHE = collections.defaultdict(dict)
+
 
 def create_repository(namespace, repo_name, oauth_token):
     assert oauth_token
@@ -56,7 +58,19 @@ def mulled_tags_for(namespace, image, tag_prefix=None):
 
     The result will be sorted so newest tags are first.
     """
-    tags = quay_versions(namespace, image)
+    tags_cached = False
+    if namespace in MULLED_TAG_CACHE:
+        if image in MULLED_TAG_CACHE[namespace]:
+            tags, last_checked = MULLED_TAG_CACHE[namespace][image]
+            if not tags and time.time() - last_checked < 300:
+                # it's possible we haven't seen the tags before, we check every 5 minutes
+                tags_cached = False
+            else:
+                tags_cached = True
+    if not tags_cached:
+        tags = quay_versions(namespace, image)
+        last_checked = time.time()
+        MULLED_TAG_CACHE[namespace][image] = (tags, last_checked)
     if tag_prefix is not None:
         tags = [t for t in tags if t.startswith(tag_prefix)]
     tags = version_sorted(tags)

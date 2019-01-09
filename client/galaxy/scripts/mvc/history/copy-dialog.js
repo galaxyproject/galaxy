@@ -1,7 +1,11 @@
-import { getGalaxyInstance } from "app";
 import MODAL from "mvc/ui/ui-modal";
 import ERROR_MODAL from "mvc/ui/error-modal";
 import _l from "utils/localization";
+import _ from "underscore";
+import jQuery from "jquery";
+import { getGalaxyInstance } from "app";
+
+var $ = jQuery;
 
 //==============================================================================
 /**

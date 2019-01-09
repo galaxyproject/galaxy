@@ -1,6 +1,5 @@
 """ Code allowing tools to define extra files associated with an output datset.
 """
-import glob
 import json
 import logging
 import operator
@@ -528,21 +527,6 @@ class JobContext(object):
 def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_directory, input_ext, input_dbkey="?"):
     app = tool.app
     sa_session = tool.sa_session
-    new_primary_datasets = {}
-    try:
-        galaxy_json_path = os.path.join(job_working_directory, "working", tool.provide_metadata_file)
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(galaxy_json_path):
-            # Maybe this is a legacy job, use the job working directory instead
-            galaxy_json_path = os.path.join(job_working_directory, tool.provide_metadata_file)
-        json_file = open(galaxy_json_path, 'r')
-        for line in json_file:
-            line = json.loads(line)
-            if line.get('type') == 'new_primary_dataset':
-                new_primary_datasets[os.path.split(line.get('filename'))[-1]] = line
-    except Exception:
-        # This should not be considered an error or warning condition, this file is optional
-        pass
     # Loop through output file names, looking for generated primary
     # datasets in form specified by discover dataset patterns or in tool provided metadata.
     primary_output_assigned = False
@@ -553,20 +537,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
         if name in tool.outputs:
             dataset_collectors = [dataset_collector(description) for description in tool.outputs[name].dataset_collector_descriptions]
         filenames = odict.odict()
-        if 'new_file_path' in app.config.collect_outputs_from:
-            if DEFAULT_DATASET_COLLECTOR in dataset_collectors:
-                # 'new_file_path' collection should be considered deprecated,
-                # only use old-style matching (glob instead of regex and only
-                # using default collector - if enabled).
-                for filename in glob.glob(os.path.join(app.config.new_file_path, "primary_%i_*" % outdata.id)):
-                    filenames[filename] = DiscoveredFile(
-                        filename,
-                        DEFAULT_DATASET_COLLECTOR,
-                        DEFAULT_DATASET_COLLECTOR.match(outdata, os.path.basename(filename))
-                    )
-        if 'job_working_directory' in app.config.collect_outputs_from:
-            for discovered_file in discover_files(name, tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
-                filenames[discovered_file.path] = discovered_file
+        for discovered_file in discover_files(name, tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
+            filenames[discovered_file.path] = discovered_file
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
             extra_file_collector = discovered_file.collector
             fields_match = discovered_file.match
@@ -628,6 +600,7 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                     extra_files_path_joined = os.path.join(job_working_directory, extra_files_path)
                     for root, dirs, files in os.walk(extra_files_path_joined):
                         extra_dir = os.path.join(primary_data.extra_files_path, root.replace(extra_files_path_joined, '', 1).lstrip(os.path.sep))
+                        extra_dir = os.path.normpath(extra_dir)
                         for f in files:
                             app.object_store.update_from_file(
                                 primary_data.dataset,
@@ -635,7 +608,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
                                 alt_name=f,
                                 file_name=os.path.join(root, f),
                                 create=True,
-                                dir_only=True,
                                 preserve_symlinks=True
                             )
             metadata_dict = new_primary_datasets_attributes.get('metadata', None)
@@ -646,8 +618,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             else:
                 primary_data.set_meta()
             primary_data.set_peek()
-            sa_session.add(primary_data)
-            sa_session.flush()
             outdata.history.add_dataset(primary_data)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
@@ -666,7 +636,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             outdata.set_meta()
             outdata.set_peek()
             sa_session.add(outdata)
-            sa_session.flush()
+
+    sa_session.flush()
     return primary_datasets
 
 

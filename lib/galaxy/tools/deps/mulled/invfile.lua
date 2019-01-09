@@ -48,7 +48,7 @@ end
 
 local singularity_image = VAR.SINGULARITY_IMAGE
 if singularity_image == '' then
-    singularity_image = 'quay.io/biocontainers/singularity:2.3--0'
+    singularity_image = 'quay.io/biocontainers/singularity:2.4.6--0'
 end
 
 local singularity_image_dir = VAR.SINGULARITY_IMAGE_DIR
@@ -103,10 +103,7 @@ if VAR.SINGULARITY ~= '' then
         .using(singularity_image)
         .withHostConfig({binds = {"build:/data",singularity_image_dir .. ":/import"}, privileged = true})
         .withConfig({entrypoint = {'/bin/sh', '-c'}})
-        -- for small containers (less than 7MB), double the size otherwise, add a little bit more as half the conda size
-        .run("size=$(du -sc  /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '10' ]; then echo 20; else  echo $(($size+$size*7/10)); fi")
-        .run("singularity create --size `size=$(du -sc /data/dist/ | tail -n 1 | cut -f 1 | awk '{print int($1/1024)}' ) && if [ $size -lt '10' ]; then echo 20; else  echo $(($size+$size*7/10)); fi` /import/" .. VAR.SINGULARITY_IMAGE_NAME)
-        .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity bootstrap /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity')
+        .run('mkdir -p /usr/local/var/singularity/mnt/container && singularity build /import/' .. VAR.SINGULARITY_IMAGE_NAME .. ' /import/Singularity.def')
         .run('chown ' .. VAR.USER_ID .. ' /import/' .. VAR.SINGULARITY_IMAGE_NAME)
 end
 

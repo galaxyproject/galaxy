@@ -42,12 +42,13 @@
     "pyre-to-regexp": "^0.0.5",
     "raven-js": "^3.27.0",
     "requirejs": "2.3.6",
+    "rxjs": "^6.3.3",
     "underscore": "^1.9.1",
     "vue": "2.5.17",
     "vue-router": "3.0.1"
   },
   "scripts": {
-    "watch": "gulp staging && yarn run save-build-hash && concurrently -r \"yarn run webpack-watch\" \"yarn run gulp watch\"",
+    "watch": "gulp staging && gulp clean && gulp && yarn run save-build-hash && yarn run webpack-watch",
     "build": "NODE_ENV=development gulp staging && concurrently -r \"yarn run webpack\" \"yarn run gulp clean && yarn run gulp\" && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp staging && concurrently -r \"yarn run webpack-production\" \"yarn run gulp clean && yarn run gulp-production\" && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp staging && concurrently -r \"yarn run webpack-production-maps\" \"yarn run gulp clean && yarn run gulp-production-maps\" && yarn run save-build-hash",

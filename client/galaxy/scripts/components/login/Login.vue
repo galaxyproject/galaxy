@@ -26,8 +26,11 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getAppRoot } from "onload";
 
 Vue.use(BootstrapVue);
+
+let rootUrl = getAppRoot();
 
 export default {
     props: {
@@ -59,17 +62,17 @@ export default {
         submit: function(method) {
             let data = {login: this.login, password: this.password};
             axios
-                .post(`${Galaxy.root}user/login`, data)
+                .post(`${rootUrl}user/login`, data)
                 .then(response => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
                     if (response.data.expired_user) {
-                        window.location = `${Galaxy.root}root/login?expired_user=${response.data.expired_user}`;
+                        window.location = `${rootUrl}root/login?expired_user=${response.data.expired_user}`;
                     } else if (response.data.redirect) {
-                        window.location = response.data.redirect;
+                        window.location = encodeURI(response.data.redirect);
                     } else {
-                        window.location = `${Galaxy.root}`;
+                        window.location = `${rootUrl}`;
                     }
                 })
                 .catch(error => {
@@ -81,7 +84,7 @@ export default {
         reset: function(ev) {
             ev.preventDefault();
             axios
-                .post(`${Galaxy.root}user/reset_password`, {email: this.login})
+                .post(`${rootUrl}user/reset_password`, {email: this.login})
                 .then(response => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;

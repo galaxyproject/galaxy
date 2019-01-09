@@ -12,7 +12,7 @@ from galaxy import (
 )
 from galaxy.auth import AuthManager
 from galaxy.datatypes import registry
-from galaxy.jobs import NoopQueue
+from galaxy.jobs.manager import NoopManager
 from galaxy.managers import tags
 from galaxy.model import mapping
 from galaxy.tools.deps.containers import NullContainerFinder
@@ -77,7 +77,7 @@ class MockApp(object):
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
         self.genome_builds = GenomeBuilds(self)
-        self.job_manager = Bunch(job_queue=NoopQueue())
+        self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self)
 

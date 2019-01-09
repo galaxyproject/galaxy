@@ -104,7 +104,7 @@ def downgrade(migrate_engine):
         "FROM workflow_step_connection_predowngrade145 AS wsc JOIN workflow_step_input AS wsi ON wsc.input_step_input_id = wsi.id ORDER BY wsc.id"
     migrate_engine.execute(insert_step_connections_cmd)
 
-    for table in (WorkflowStepInput_table, NewWorkflowStepConnection_table):
+    for table in (NewWorkflowStepConnection_table, WorkflowStepInput_table):
         _drop(table)
 
 

@@ -89,9 +89,9 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
         history_archive.close()
 
         # Status.
-        return 'Created history archive.'
+        print('Created history archive.')
     except Exception as e:
-        return 'Error creating history archive: %s' % str(e), sys.stderr
+        print('Error creating history archive: %s' % str(e), file=sys.stderr)
 
 
 def main():
@@ -103,8 +103,7 @@ def main():
     history_attrs, dataset_attrs, job_attrs, out_file = args
 
     # Create archive.
-    status = create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
-    print(status)
+    create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,3 @@
-import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import baseMVC from "mvc/base-mvc";

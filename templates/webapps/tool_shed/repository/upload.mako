@@ -18,7 +18,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "libs/jquery/jquery.rating", "dynatree_skin/ui.dynatree" )}
+    ${h.css( "dynatree_skin/ui.dynatree" )}
 </%def>
 
 <%def name="javascripts()">
