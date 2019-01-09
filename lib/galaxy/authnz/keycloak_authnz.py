@@ -33,11 +33,8 @@ class KeycloakAuthnz(IdentityProvider):
         self.config['idp_hint'] = oidc_backend_config.get('idp_hint', None)
 
     def authenticate(self, trans):
-        client_id = self.config['client_id']
         base_authorize_url = self.config['authorization_endpoint']
-        redirect_uri = self.config['redirect_uri']
-        oauth2_session = OAuth2Session(
-            client_id, scope=('openid', 'email', 'profile'), redirect_uri=redirect_uri)
+        oauth2_session = self._create_oauth2_session()
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
@@ -50,22 +47,12 @@ class KeycloakAuthnz(IdentityProvider):
         return authorization_url
 
     def callback(self, state_token, authz_code, trans, login_redirect_url):
-        client_id = self.config['client_id']
-        client_secret = self.config['client_secret']
-        redirect_uri = self.config['redirect_uri']
-        token_endpoint = self.config['token_endpoint']
-        userinfo_endpoint = self.config['userinfo_endpoint']
         # Take state value to validate from token. OAuth2Session.fetch_token
         # will validate that the state query parameter value on the URL matches
         # this value.
         state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
-        oauth2_session = OAuth2Session(client_id,
-                                       scope=('openid', 'email', 'profile'),
-                                       redirect_uri=redirect_uri,
-                                       state=state_cookie)
-        token = oauth2_session.fetch_token(
-            token_endpoint, client_secret=client_secret,
-            authorization_response=trans.request.url)
+        oauth2_session = self._create_oauth2_session(state=state_cookie)
+        token = self._fetch_token(oauth2_session, trans)
         log.debug("token={}".format(json.dumps(token, indent=True)))
         access_token = token['access_token']
         id_token = token['id_token']
@@ -81,12 +68,12 @@ class KeycloakAuthnz(IdentityProvider):
         self._validate_nonce(trans, nonce_hash)
 
         # Get userinfo and lookup/create Galaxy user record
-        userinfo = oauth2_session.get(userinfo_endpoint).json()
+        userinfo = self._get_userinfo(oauth2_session)
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         username = userinfo["preferred_username"]
         email = userinfo["email"]
         user = self._get_user(trans.sa_session, username, email)
-        # TODO: delete existing rows for user so that there is at most one?
+        # TODO: delete existing rows for user so that there is at most one? or: create or update existing?
         keycloak_access_token = KeycloakAccessToken(user=user,
                                                     access_token=access_token,
                                                     id_token=id_token,
@@ -101,6 +88,26 @@ class KeycloakAuthnz(IdentityProvider):
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
         # TODO: implement?
         pass
+
+    def _create_oauth2_session(self, state=None):
+        client_id = self.config['client_id']
+        redirect_uri = self.config['redirect_uri']
+        return OAuth2Session(client_id,
+                             scope=('openid', 'email', 'profile'),
+                             redirect_uri=redirect_uri,
+                             state=state)
+
+    def _fetch_token(self, oauth2_session, trans):
+        client_secret = self.config['client_secret']
+        token_endpoint = self.config['token_endpoint']
+        return oauth2_session.fetch_token(
+            token_endpoint,
+            client_secret=client_secret,
+            authorization_response=trans.request.url)
+
+    def _get_userinfo(self, oauth2_session):
+        userinfo_endpoint = self.config['userinfo_endpoint']
+        return oauth2_session.get(userinfo_endpoint).json()
 
     def _get_user(self, sa_session, username, email):
         user = sa_session.query(User).filter_by(username=username).first()
