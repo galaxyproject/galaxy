@@ -391,6 +391,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.add(prt)
             trans.sa_session.flush()
             return reset_user, prt
+        return None, None
 
     def __get_host(self, trans):
         host = trans.request.host.split(':')[0]
