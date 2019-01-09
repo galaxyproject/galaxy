@@ -58,6 +58,8 @@ gulp.task("fonts", function() {
         .pipe(gulp.dest("../static/images/fonts"));
 });
 
+// TODO: Remove script and lib tasks (for 19.05) once we are sure there are no
+// external accessors (via require or explicit inclusion in templates)
 gulp.task("scripts", function() {
     return gulp
         .src(paths.scripts)
