@@ -24,11 +24,9 @@ import { getAppRoot } from "onload";
 
 Vue.use(BootstrapVue);
 
-let Galaxy = getGalaxyInstance();
-let urlRoot = getAppRoot();
-
 export default {
     data() {
+        let Galaxy = getGalaxyInstance();
         return {
             token: Galaxy.params.token,
             user: Galaxy.params.expired_user,
@@ -46,6 +44,7 @@ export default {
     },
     methods: {
         submit: function(ev) {
+            let urlRoot = getAppRoot();
             ev.preventDefault();
             axios
                 .post(`${urlRoot}user/change_password`, {
