@@ -68,7 +68,7 @@ To change the log file name or location, use the ``$GALAXY_LOG`` environment var
 Advanced Configuration
 ----------------------------
 
-For more useful and manageble logging when running Galaxy with forking application stacks (e.g. uWSGI) where multiple
+For more useful and manageable logging when running Galaxy with forking application stacks (e.g. uWSGI) where multiple
 Galaxy server processes are forked after the Galaxy application is loaded, some extensions to standard Python
 :mod:`logging` are available in Galaxy:
 
