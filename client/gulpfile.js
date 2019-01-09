@@ -66,6 +66,7 @@ gulp.task("scripts", function() {
                 plugins: ["transform-es2015-modules-amd"]
             })
         )
+        .pipe(uglify())
         .pipe(gulp.dest("../static/scripts/"));
 });
 
