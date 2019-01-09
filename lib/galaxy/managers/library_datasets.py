@@ -8,13 +8,16 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException
 )
-from galaxy.managers import tags
+from galaxy.managers import (
+    datasets,
+    tags
+)
 from galaxy.util import validation
 
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsManager(object):
+class LibraryDatasetsManager(datasets.DatasetAssociationManager):
     """Interface/service object for interacting with library datasets."""
 
     def __init__(self, app):
