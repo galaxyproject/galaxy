@@ -22,13 +22,6 @@ export function showOrRedirect(Galaxy, { options }) {
 
 export function initLoginView(Galaxy, { options }) {
     console.log("initLoginView");
-
-    /*let pageConfig = Object.assign({}, options, {
-        Right: getLoginPage(options)
-    });
-
-    Galaxy.page = new Page.View(pageConfig);*/
-
     Galaxy.page = new Page.View(options);
     var vm = document.createElement("div");
     Galaxy.display(vm);

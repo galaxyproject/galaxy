@@ -21,6 +21,9 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
+
+let Galaxy = getGalaxyInstance();
 
 Vue.use(BootstrapVue);
 
