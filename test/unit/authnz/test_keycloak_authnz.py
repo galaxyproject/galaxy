@@ -1,6 +1,7 @@
 
 import hashlib
 import unittest
+import uuid
 from datetime import datetime, timedelta
 
 import jwt
@@ -46,6 +47,7 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
         self.test_refresh_token = "test_refresh_token"
         self.test_expires_in = 30
         self.test_refresh_expires_in = 1800
+        self.test_keycloak_user_id = str(uuid.uuid4())
         self.trans.request.url = "https://localhost:8000/authnz/galaxy-auth/keycloak/callback?state={test_state}&code={test_code}".format(test_state=self.test_state, test_code=self.test_code)
 
     @property
@@ -79,7 +81,8 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
             self._get_userinfo_called = True
             return {
                 "preferred_username": self.test_username,
-                "email": self.test_email
+                "email": self.test_email,
+                "sub": self.test_keycloak_user_id
             }
         keycloak_authnz._get_userinfo = get_userinfo
 
@@ -102,22 +105,34 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
         class QueryResult:
             results = []
 
+            def __init__(self, results=None):
+                if results:
+                    self.results = results
+
             def first(self):
                 if len(self.results) > 0:
                     return self.results[0]
                 else:
                     return None
 
-        class Query:
-            username = None
-            user = None
+            def one_or_none(self):
+                if len(self.results) == 1:
+                    return self.results[0]
+                elif len(self.results) == 0:
+                    return None
+                else:
+                    raise Exception("More than one result!")
 
-            def filter_by(self, username=None):
-                self.username = username
-                result = QueryResult()
-                if self.user:
-                    result.results.append(self.user)
-                return result
+        class Query:
+            keycloak_user_id = None
+            keycloak_access_token = None
+
+            def filter_by(self, keycloak_user_id=None):
+                self.keycloak_user_id = keycloak_user_id
+                if self.keycloak_access_token:
+                    return QueryResult([self.keycloak_access_token])
+                else:
+                    return QueryResult()
 
         class Session:
             items = []
@@ -214,11 +229,11 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
         self.assertTrue(self._fetch_token_called)
         self.assertFalse(self._get_userinfo_called)
 
-    def test_callback_galaxy_user_created_when_none_exists(self):
+    def test_callback_galaxy_user_created_when_no_keycloak_access_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
 
-        self.assertIsNone(self.trans.sa_session.query(User).filter_by(username=self.test_username).first())
+        self.assertIsNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_keycloak_user_id).one_or_none())
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.keycloak_authnz.callback(
             state_token="xxx",
@@ -232,40 +247,8 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self.test_username, added_user.username)
         self.assertEqual(self.test_email, added_user.email)
         self.assertIsNotNone(added_user.password)
-        self.assertTrue(self.trans.sa_session.flush_called)
-
-    def test_callback_galaxy_user_not_created_when_exists(self):
-        self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
-        self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
-        self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
-
-        self.assertIsNotNone(self.trans.sa_session.query(User).filter_by(username=self.test_username).first())
-        self.assertEqual(0, len(self.trans.sa_session.items))
-        login_redirect_url, user = self.keycloak_authnz.callback(
-            state_token="xxx",
-            authz_code=self.test_code, trans=self.trans,
-            login_redirect_url="http://localhost:8000/")
-        self.assertTrue(self._fetch_token_called)
-        self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new KeycloakAccessToken")
-        added_keycloak_access_token = self.trans.sa_session.items[0]
-        self.assertIsInstance(added_keycloak_access_token, KeycloakAccessToken)
-        self.assertTrue(self.trans.sa_session.flush_called)
-
-    def test_callback_keycloak_access_token_created(self):
-        self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
-        self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
-        self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
-
-        self.assertEqual(0, len(self.trans.sa_session.items))
-        login_redirect_url, user = self.keycloak_authnz.callback(
-            state_token="xxx",
-            authz_code=self.test_code, trans=self.trans,
-            login_redirect_url="http://localhost:8000/")
-        self.assertTrue(self._fetch_token_called)
-        self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new KeycloakAccessToken")
-        added_keycloak_access_token = self.trans.sa_session.items[0]
+        # Verify keycloak_access_token_record
+        added_keycloak_access_token = self.trans.sa_session.items[1]
         self.assertIsInstance(added_keycloak_access_token, KeycloakAccessToken)
         self.assertIs(user, added_keycloak_access_token.user)
         self.assertEqual(self.test_access_token, added_keycloak_access_token.access_token)
@@ -278,4 +261,57 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
         refresh_expiration_timedelta = expected_refresh_expiration_time - added_keycloak_access_token.refresh_expiration_time
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
         self.assertEqual(self._raw_token, added_keycloak_access_token.raw_token)
+        self.assertTrue(self.trans.sa_session.flush_called)
+
+    def test_callback_galaxy_user_not_created_when_keycloak_access_token_exists(self):
+        self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
+        old_access_token = "old-access-token"
+        old_id_token = "old-id-token"
+        old_refresh_token = "old-refresh-token"
+        old_expiration_time = datetime.now() - timedelta(days=1)
+        old_refresh_expiration_time = datetime.now() - timedelta(hours=3)
+        old_raw_token = "{}"
+        existing_keycloak_access_token = KeycloakAccessToken(
+            user=User(email=self.test_email, username=self.test_username),
+            keycloak_user_id=self.test_keycloak_user_id,
+            access_token=old_access_token,
+            id_token=old_id_token,
+            refresh_token=old_refresh_token,
+            expiration_time=old_expiration_time,
+            refresh_expiration_time=old_refresh_expiration_time,
+            raw_token=old_raw_token,
+        )
+
+        self.trans.sa_session._query.keycloak_access_token = existing_keycloak_access_token
+
+        self.assertIsNotNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_keycloak_user_id).one_or_none())
+        self.assertEqual(0, len(self.trans.sa_session.items))
+        login_redirect_url, user = self.keycloak_authnz.callback(
+            state_token="xxx",
+            authz_code=self.test_code, trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
+        self.assertTrue(self._fetch_token_called)
+        self.assertTrue(self._get_userinfo_called)
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has updated KeycloakAccessToken")
+        session_keycloak_access_token = self.trans.sa_session.items[0]
+        self.assertIsInstance(session_keycloak_access_token, KeycloakAccessToken)
+        self.assertIs(existing_keycloak_access_token, session_keycloak_access_token, "existing KeycloakAccessToken should be updated")
+        # Verify both that existing keycloak_access_token has the correct values and different values than before
+        self.assertEqual(self.test_access_token, session_keycloak_access_token.access_token)
+        self.assertNotEqual(old_access_token, session_keycloak_access_token.access_token)
+        self.assertEqual(self.test_id_token, session_keycloak_access_token.id_token)
+        self.assertNotEqual(old_id_token, session_keycloak_access_token.id_token)
+        self.assertEqual(self.test_refresh_token, session_keycloak_access_token.refresh_token)
+        self.assertNotEqual(old_refresh_token, session_keycloak_access_token.refresh_token)
+        expected_expiration_time = datetime.now() + timedelta(seconds=self.test_expires_in)
+        expiration_timedelta = expected_expiration_time - session_keycloak_access_token.expiration_time
+        self.assertTrue(expiration_timedelta.total_seconds() < 1)
+        self.assertNotEqual(old_expiration_time, session_keycloak_access_token.expiration_time)
+        expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
+        refresh_expiration_timedelta = expected_refresh_expiration_time - session_keycloak_access_token.refresh_expiration_time
+        self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
+        self.assertNotEqual(old_refresh_expiration_time, session_keycloak_access_token.refresh_expiration_time)
+        self.assertEqual(self._raw_token, session_keycloak_access_token.raw_token)
+        self.assertNotEqual(old_raw_token, session_keycloak_access_token.raw_token)
         self.assertTrue(self.trans.sa_session.flush_called)
