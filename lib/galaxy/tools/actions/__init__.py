@@ -743,10 +743,25 @@ class DefaultToolAction(object):
                 <action name="column_names" type="metadata" default="${','.join([input.name for input in $individual_inputs ])}" />
             </actions>
         </data>
+
+        or
+        
+        <actions>
+            <conditional name="format">
+                <when value="something_good">
+                    <action type="metadata" name="column_names" default="one,two,three" />
+                </when>
+            </conditional>
+        </actions>
         """
         if output.actions:
+            action_list = output.actions.actions
             for action in output.actions.actions:
-                if action.tag == "metadata" and action.default:
+                if action.tag == "conditional":
+                    for case in action.cases:
+                        action_list.extend(case.actions)
+            for action in action_list:
+                if action.tag == "metadata" and hasattr(action, "default") and action.default:
                     metadata_new_value = fill_template(action.default, context=params).split(",")
                     dataset.metadata.__setattr__(str(action.name), metadata_new_value)
 
