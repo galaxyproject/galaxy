@@ -57,7 +57,7 @@ uWSGI protocol support is built in to nginx, so (unlike Apache) no extra modules
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
 be incorporated with your existing/default nginx config as is appropriate for your server. Notably, the nginx package
 you installed most likely has a multi-file config layout. If you are not already familiar with that layout and where
-best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layouts.html)
+best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layout.html)
 documentation.
 
 ```nginx
