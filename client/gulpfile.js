@@ -5,6 +5,7 @@ var _ = require("underscore");
 
 var gulp = require("gulp");
 var uglify = require("gulp-uglify");
+var babel = require("gulp-babel");
 
 var paths = {
     node_modules: "./node_modules",
@@ -57,6 +58,20 @@ gulp.task("fonts", function() {
         .pipe(gulp.dest("../static/images/fonts"));
 });
 
+// TODO: Remove script and lib tasks (for 19.05) once we are sure there are no
+// external accessors (via require or explicit inclusion in templates)
+gulp.task("scripts", function() {
+    return gulp
+        .src(paths.scripts)
+        .pipe(
+            babel({
+                plugins: ["transform-es2015-modules-amd"]
+            })
+        )
+        .pipe(uglify())
+        .pipe(gulp.dest("../static/scripts/"));
+});
+
 gulp.task("libs", function() {
     return gulp
         .src(paths.libs)
@@ -75,4 +90,4 @@ gulp.task("clean", function() {
 
 gulp.task("staging", ["stage-libs", "fonts"]);
 
-gulp.task("default", ["libs"]);
+gulp.task("default", ["libs", "scripts"]);
