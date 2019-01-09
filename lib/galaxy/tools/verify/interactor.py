@@ -12,6 +12,7 @@ from collections import OrderedDict
 from json import dumps
 from logging import getLogger
 
+from packaging.version import parse as parse_version, Version
 try:
     from nose.tools import nottest
 except ImportError:
@@ -98,8 +99,19 @@ class GalaxyInteractorApi(object):
         if kwds.get('user_api_key_is_admin_key', False):
             self.master_api_key = self.api_key
         self.keep_outputs_dir = kwds["keep_outputs_dir"]
+        self._target_galaxy_version = None
 
         self.uploads = {}
+
+    @property
+    def target_galaxy_version(self):
+        if self._target_galaxy_version is None:
+            self._target_galaxy_version = parse_version(self._get('version').json()['version_major'])
+        return self._target_galaxy_version
+
+    @property
+    def supports_test_data_download(self):
+        return self.target_galaxy_version >= Version("19.01")
 
     def __get_user_key(self, user_key, admin_key, test_user=None):
         if not test_user:
@@ -259,16 +271,29 @@ class GalaxyInteractorApi(object):
 
     @nottest
     def test_data_download(self, tool_id, filename, mode='file'):
-        response = self._get("tools/%s/test_data_download?filename=%s" % (tool_id, filename), admin=True)
-        assert response.status_code == 200
-        if mode == 'file':
-            return response.content
-        elif mode == 'directory':
-            prefix = os.path.basename(filename)
-            path = tempfile.mkdtemp(prefix=prefix)
-            with tarfile.open(fileobj=BytesIO(response.content)) as tar_contents:
-                tar_contents.extractall(path=path)
-            return path
+        if self.supports_test_data_download:
+            response = self._get("tools/%s/test_data_download?filename=%s" % (tool_id, filename), admin=True)
+            assert response.status_code == 200
+            if mode == 'file':
+                return response.content
+            elif mode == 'directory':
+                prefix = os.path.basename(filename)
+                path = tempfile.mkdtemp(prefix=prefix)
+                with tarfile.open(fileobj=BytesIO(response.content)) as tar_contents:
+                    tar_contents.extractall(path=path)
+                return path
+        else:
+            # We can only use local data
+            response = self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename), admin=True)
+            assert response.status_code == 200
+            file_name = response.json()
+            if mode == 'file':
+                return open(file_name, mode='rb')
+            elif mode == 'directory':
+                # Make a copy, since we are going to clean up the returned path
+                path = tempfile.mkdtemp()
+                shutil.copytree(file_name, path)
+                return path
 
     def __output_id(self, output_data):
         # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
