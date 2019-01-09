@@ -116,7 +116,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
         else:
             self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
-            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+            return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
 
     def _dataset_state(self, trans, dataset, **kwargs):
         """
