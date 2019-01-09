@@ -2102,3 +2102,14 @@ body.reports {
         background: #C1C9E5 url(../../images/menu_bg.png) top repeat-x;
     }
 }
+
+/* Used in Galaxy IE for spinner loading TODO: Remove in IE entrypoint refactoring */
+#ie-loading-spinner {
+    position:absolute;
+    margin:auto;
+    top:0;
+    left:0;
+    right:0;
+    bottom:0;
+    background: url(../../images/largespinner.gif) no-repeat center center fixed;
+}
