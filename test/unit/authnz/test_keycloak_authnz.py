@@ -1,13 +1,14 @@
 
 import hashlib
 import unittest
+from datetime import datetime, timedelta
 
 import jwt
 import requests
 from six.moves.urllib.parse import parse_qs, urlparse
 
 from galaxy.authnz import keycloak_authnz
-from galaxy.model import User
+from galaxy.model import KeycloakAccessToken, User
 
 
 class KeycloakAuthnzTestCase(unittest.TestCase):
@@ -15,6 +16,7 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
     _create_oauth2_session_called = False
     _fetch_token_called = False
     _get_userinfo_called = False
+    _raw_token = None
 
     def setUp(self):
         self.orig_requests_get = requests.get
@@ -31,7 +33,6 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
             'redirect_uri': 'https://test-redirect-uri',
             'well_known_oidc_config_uri': 'https://test-well-known-oidc-config-uri'
         })
-        # self.mock_create_oauth2_session(self.keycloak_authnz)
         self.mock_fetch_token(self.keycloak_authnz)
         self.mock_get_userinfo(self.keycloak_authnz)
         self.trans = self.mockTrans()
@@ -39,7 +40,17 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
         self.test_nonce = "4662892146306485421546981092"
         self.test_nonce_hash = hashlib.sha256(self.test_nonce).hexdigest()
         self.test_code = "test-code"
+        self.test_username = "test-username"
+        self.test_email = "test-email"
+        self.test_access_token = "test_access_token"
+        self.test_refresh_token = "test_refresh_token"
+        self.test_expires_in = 30
+        self.test_refresh_expires_in = 1800
         self.trans.request.url = "https://localhost:8000/authnz/galaxy-auth/keycloak/callback?state={test_state}&code={test_code}".format(test_state=self.test_state, test_code=self.test_code)
+
+    @property
+    def test_id_token(self):
+        return jwt.encode({'nonce': self.test_nonce_hash}, key=None, algorithm=None)
 
     def mock_create_oauth2_session(self, keycloak_authnz):
         orig_create_oauth2_session = keycloak_authnz._create_oauth2_session
@@ -53,21 +64,22 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
     def mock_fetch_token(self, keycloak_authnz):
         def fetch_token(oauth2_session, trans):
             self._fetch_token_called = True
-            return {
-                "access_token": "test_access_token",
-                "id_token": jwt.encode({'nonce': self.test_nonce_hash}, key=None, algorithm=None),
-                "refresh_token": "test_refresh_token",
-                "expires_in": 30,
-                "refresh_expires_in": 1800
+            self._raw_token = {
+                "access_token": self.test_access_token,
+                "id_token": self.test_id_token,
+                "refresh_token": self.test_refresh_token,
+                "expires_in": self.test_expires_in,
+                "refresh_expires_in": self.test_refresh_expires_in
             }
+            return self._raw_token
         keycloak_authnz._fetch_token = fetch_token
 
     def mock_get_userinfo(self, keycloak_authnz):
         def get_userinfo(oauth2_session):
             self._get_userinfo_called = True
             return {
-                "preferred_username": "test-username",
-                "email": "test-email"
+                "preferred_username": self.test_username,
+                "email": self.test_email
             }
         keycloak_authnz._get_userinfo = get_userinfo
 
@@ -169,24 +181,27 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
         """Verify that state from cookie is passed to OAuth2Session constructor."""
         self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
-        self.trans.sa_session._query.user = User(email="test@example.com", username="test-user")
+        self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
 
         # Mock _create_oauth2_session to make sure it is created with cookie state token
         self.mock_create_oauth2_session(self.keycloak_authnz)
 
         # Intentionally passing a bad state_token to make sure that code under
         # test uses the state cookie instead when creating the OAuth2Session
-        self.keycloak_authnz.callback(state_token="xxx",
-                                      authz_code=self.test_code, trans=self.trans,
-                                      login_redirect_url="http://localhost:8000/")
+        login_redirect_url, user = self.keycloak_authnz.callback(
+            state_token="xxx",
+            authz_code=self.test_code, trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
         self.assertTrue(self._create_oauth2_session_called)
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
+        self.assertEqual(login_redirect_url, "http://localhost:8000/")
+        self.assertIsNotNone(user)
 
     def test_callback_nonce_validation_with_bad_nonce(self):
         self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
-        self.trans.sa_session._query.user = User(email="test@example.com", username="test-user")
+        self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
 
         # Intentionally create a bad nonce
         self.test_nonce_hash = self.test_nonce_hash + "Z"
@@ -198,3 +213,69 @@ class KeycloakAuthnzTestCase(unittest.TestCase):
                                         login_redirect_url="http://localhost:8000/")
         self.assertTrue(self._fetch_token_called)
         self.assertFalse(self._get_userinfo_called)
+
+    def test_callback_galaxy_user_created_when_none_exists(self):
+        self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
+
+        self.assertIsNone(self.trans.sa_session.query(User).filter_by(username=self.test_username).first())
+        self.assertEqual(0, len(self.trans.sa_session.items))
+        login_redirect_url, user = self.keycloak_authnz.callback(
+            state_token="xxx",
+            authz_code=self.test_code, trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
+        self.assertTrue(self._fetch_token_called)
+        self.assertTrue(self._get_userinfo_called)
+        self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User and new KeycloakAccessToken")
+        added_user = self.trans.sa_session.items[0]
+        self.assertIsInstance(added_user, User)
+        self.assertEqual(self.test_username, added_user.username)
+        self.assertEqual(self.test_email, added_user.email)
+        self.assertIsNotNone(added_user.password)
+        self.assertTrue(self.trans.sa_session.flush_called)
+
+    def test_callback_galaxy_user_not_created_when_exists(self):
+        self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
+        self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
+
+        self.assertIsNotNone(self.trans.sa_session.query(User).filter_by(username=self.test_username).first())
+        self.assertEqual(0, len(self.trans.sa_session.items))
+        login_redirect_url, user = self.keycloak_authnz.callback(
+            state_token="xxx",
+            authz_code=self.test_code, trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
+        self.assertTrue(self._fetch_token_called)
+        self.assertTrue(self._get_userinfo_called)
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new KeycloakAccessToken")
+        added_keycloak_access_token = self.trans.sa_session.items[0]
+        self.assertIsInstance(added_keycloak_access_token, KeycloakAccessToken)
+        self.assertTrue(self.trans.sa_session.flush_called)
+
+    def test_callback_keycloak_access_token_created(self):
+        self.trans.set_cookie(value=self.test_state, name=keycloak_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=keycloak_authnz.NONCE_COOKIE_NAME)
+        self.trans.sa_session._query.user = User(email=self.test_email, username=self.test_username)
+
+        self.assertEqual(0, len(self.trans.sa_session.items))
+        login_redirect_url, user = self.keycloak_authnz.callback(
+            state_token="xxx",
+            authz_code=self.test_code, trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
+        self.assertTrue(self._fetch_token_called)
+        self.assertTrue(self._get_userinfo_called)
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new KeycloakAccessToken")
+        added_keycloak_access_token = self.trans.sa_session.items[0]
+        self.assertIsInstance(added_keycloak_access_token, KeycloakAccessToken)
+        self.assertIs(user, added_keycloak_access_token.user)
+        self.assertEqual(self.test_access_token, added_keycloak_access_token.access_token)
+        self.assertEqual(self.test_id_token, added_keycloak_access_token.id_token)
+        self.assertEqual(self.test_refresh_token, added_keycloak_access_token.refresh_token)
+        expected_expiration_time = datetime.now() + timedelta(seconds=self.test_expires_in)
+        expiration_timedelta = expected_expiration_time - added_keycloak_access_token.expiration_time
+        self.assertTrue(expiration_timedelta.total_seconds() < 1)
+        expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
+        refresh_expiration_timedelta = expected_refresh_expiration_time - added_keycloak_access_token.refresh_expiration_time
+        self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
+        self.assertEqual(self._raw_token, added_keycloak_access_token.raw_token)
+        self.assertTrue(self.trans.sa_session.flush_called)
