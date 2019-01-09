@@ -126,7 +126,8 @@ model.UserAuthnzToken.table = Table(
 model.KeycloakAccessToken.table = Table(
     "keycloak_access_token", metadata,
     Column('id', Integer, primary_key=True),
-    Column('user_id', Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id"), unique=True, index=True),
+    Column('keycloak_user_id', String(64), unique=True, index=True),
     Column('access_token', Text),
     Column('id_token', Text),
     Column('refresh_token', Text),

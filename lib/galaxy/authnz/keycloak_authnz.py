@@ -72,18 +72,30 @@ class KeycloakAuthnz(IdentityProvider):
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
         username = userinfo["preferred_username"]
         email = userinfo["email"]
-        user = self._get_user(trans.sa_session, username, email)
-        # TODO: delete existing rows for user so that there is at most one? or: create or update existing?
-        keycloak_access_token = KeycloakAccessToken(user=user,
-                                                    access_token=access_token,
-                                                    id_token=id_token,
-                                                    refresh_token=refresh_token,
-                                                    expiration_time=expiration_time,
-                                                    refresh_expiration_time=refresh_expiration_time,
-                                                    raw_token=token)
+        keycloak_user_id = userinfo["sub"]
+
+        # Create or update keycloak_access_token record
+        keycloak_access_token = self._get_keycloak_access_token(trans.sa_session, keycloak_user_id)
+        if keycloak_access_token is None:
+            user = self._create_user(trans.sa_session, username, email)
+            keycloak_access_token = KeycloakAccessToken(user=user,
+                                                        keycloak_user_id=keycloak_user_id,
+                                                        access_token=access_token,
+                                                        id_token=id_token,
+                                                        refresh_token=refresh_token,
+                                                        expiration_time=expiration_time,
+                                                        refresh_expiration_time=refresh_expiration_time,
+                                                        raw_token=token)
+        else:
+            keycloak_access_token.access_token = access_token
+            keycloak_access_token.id_token = id_token
+            keycloak_access_token.refresh_token = refresh_token
+            keycloak_access_token.expiration_time = expiration_time
+            keycloak_access_token.refresh_expiration_time = refresh_expiration_time
+            keycloak_access_token.raw_token = token
         trans.sa_session.add(keycloak_access_token)
         trans.sa_session.flush()
-        return login_redirect_url, user
+        return login_redirect_url, keycloak_access_token.user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
         # TODO: implement?
@@ -109,11 +121,9 @@ class KeycloakAuthnz(IdentityProvider):
         userinfo_endpoint = self.config['userinfo_endpoint']
         return oauth2_session.get(userinfo_endpoint).json()
 
-    def _get_user(self, sa_session, username, email):
-        user = sa_session.query(User).filter_by(username=username).first()
-        if not user:
-            user = self._create_user(sa_session, username, email)
-        return user
+    def _get_keycloak_access_token(self, sa_session, keycloak_user_id):
+        return sa_session.query(KeycloakAccessToken).filter_by(
+            keycloak_user_id=keycloak_user_id).one_or_none()
 
     def _create_user(self, sa_session, username, email):
         user = User(email=email, username=username)
