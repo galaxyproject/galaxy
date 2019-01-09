@@ -36,6 +36,7 @@ $fa-font-path: "../../../node_modules/font-awesome/fonts/";
 @import "tour.scss";
 @import "flex.scss";
 @import "charts.scss";
+@import "message.scss";
 
 // Mixins
 @mixin user-select($select) {
@@ -183,6 +184,13 @@ body {
             width: 100%;
             height: 100%;
         }
+    }
+    // Replaces unnecessary if/then logic in base_panels.mako
+    &:first-child {
+        left: 0;
+    }
+    &:last-child {
+        right: 0;
     }
 }
 
@@ -2083,9 +2091,11 @@ div.toolTitleNoSection {
 
 /* Toolshed, reports custom styles from mako templates */
 body.toolshed {
-    margin: 0; padding: 0; overflow: hidden;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
     #left {
-        background: #C1C9E5 url(../../images/menu_bg.png) top repeat-x;
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
     .unified-panel-body {
         overflow: auto;
@@ -2095,10 +2105,11 @@ body.toolshed {
     }
 }
 
-
 body.reports {
-    margin: 0; padding: 0; overflow: hidden;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
     #left {
-        background: #C1C9E5 url(../../images/menu_bg.png) top repeat-x;
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
     }
 }

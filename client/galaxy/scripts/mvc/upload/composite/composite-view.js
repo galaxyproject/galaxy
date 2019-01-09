@@ -1,11 +1,16 @@
-import _l from "utils/localization";
 /** Renders contents of the composite uploader */
-import Utils from "utils/utils";
+import _l from "utils/localization";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
+// import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadExtension from "mvc/upload/upload-extension";
 import Select from "mvc/ui/ui-select";
 import Ui from "mvc/ui/ui-misc";
+
 export default Backbone.View.extend({
     collection: new UploadModel.Collection(),
     initialize: function(app) {
@@ -155,6 +160,7 @@ export default Backbone.View.extend({
 
     /** Refresh success state */
     _eventSuccess: function(message) {
+        let Galaxy = getGalaxyInstance();
         this.collection.each(it => {
             it.set("status", "success");
         });

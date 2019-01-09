@@ -1,15 +1,10 @@
-import $ from "jquery";
-import _ from "underscore";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 import _l from "utils/localization";
-import { setGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
-import AdminPanel from "./panels/admin-panel";
 import FormWrapper from "mvc/form/form-wrapper";
 import GridView from "mvc/grid/grid-view";
 import QueryStringParsing from "utils/query-string-parsing";
 import Router from "layout/router";
-import Utils from "utils/utils";
-import Page from "layout/page";
 import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
@@ -17,19 +12,11 @@ import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vu
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Vue from "vue";
-import { serverPath } from "utils/serverPath";
 
-window.app = function app(options, bootstrapped) {
-    console.warn("Admin init", serverPath());
+export const getAdminRouter = (Galaxy, options) => {
+    let galaxyRoot = getAppRoot();
 
-    let Galaxy = setGalaxyInstance(GalaxyApp => {
-        let galaxy = new GalaxyApp(options, bootstrapped);
-        galaxy.debug("admin app");
-        return galaxy;
-    });
-
-    /** Routes */
-    var AdminRouter = Router.extend({
+    return Router.extend({
         routes: {
             "(/)admin(/)": "home",
             "(/)admin(/)users": "show_users",
@@ -49,68 +36,49 @@ window.app = function app(options, bootstrapped) {
         },
 
         authenticate: function() {
+            let Galaxy = getGalaxyInstance();
             return Galaxy.user && Galaxy.user.id && Galaxy.user.get("is_admin");
         },
 
         not_found: function() {
-            window.location.href = window.location.href;
+            window.location.reload(); // = window.location.href;
         },
 
         home: function() {
             this.page
                 .$("#galaxy_main")
-                .prop("src", `${getAppRoot()}admin/center?message=${options.message}&status=${options.status}`);
+                .prop("src", `${galaxyRoot}admin/center?message=${options.message}&status=${options.status}`);
         },
 
         show_users: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}admin/users_list`,
-                    url_data: Galaxy.params
-                })
-            );
+            this._show_grid_view("admin/users_list");
         },
 
         show_roles: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}admin/roles_list`,
-                    url_data: Galaxy.params
-                })
-            );
+            this._show_grid_view("admin/roles_list");
         },
 
         show_groups: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}admin/groups_list`,
-                    url_data: Galaxy.params
-                })
-            );
+            this._show_grid_view("admin/groups_list");
         },
 
         show_repositories: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}admin_toolshed/browse_repositories`,
-                    url_data: Galaxy.params
-                })
-            );
+            this._show_grid_view("admin_toolshed/browse_repositories");
         },
 
         show_tool_versions: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}admin/tool_versions_list`,
-                    url_data: Galaxy.params
-                })
-            );
+            this._show_grid_view("admin/tool_versions_list");
         },
 
         show_quotas: function() {
+            this._show_grid_view("admin/quotas_list");
+        },
+
+        _show_grid_view: function(urlSuffix) {
+            let Galaxy = getGalaxyInstance();
             this.page.display(
                 new GridView({
-                    url_base: `${getAppRoot()}admin/quotas_list`,
+                    url_base: `${galaxyRoot}${urlSuffix}`,
                     url_data: Galaxy.params
                 })
             );
@@ -140,22 +108,19 @@ window.app = function app(options, bootstrapped) {
         },
 
         show_data_manager: function(path) {
+            let Galaxy = getGalaxyInstance();
+            console.log("show_data_manager");
             let vueMount = document.createElement("div");
             this.page.display(vueMount);
             // always set the route back to the base, i.e.
-            // `${getAppRoot()}admin/data_manager`
+            // `${galaxyRoot}admin/data_manager`
             Galaxy.debug("show_data_manager: path='" + path + "'");
             DataManagerRouter.replace(path || "/");
             new Vue({ router: DataManagerRouter, render: h => h(DataManagerView) }).$mount(vueMount);
         },
 
         show_forms: function() {
-            this.page.display(
-                new GridView({
-                    url_base: `${getAppRoot()}forms/forms_list`,
-                    url_data: Galaxy.params
-                })
-            );
+            this._show_grid_view("forms/forms_list");
         },
 
         show_form: function(form_id) {
@@ -228,16 +193,5 @@ window.app = function app(options, bootstrapped) {
             };
             this.page.display(new FormWrapper.View(form_defs[form_id]));
         }
-    });
-
-    $(() => {
-        _.extend(options.config, { active_view: "admin" });
-        Utils.setWindowTitle("Administration");
-        Galaxy.page = new Page.View(
-            _.extend(options, {
-                Left: AdminPanel,
-                Router: AdminRouter
-            })
-        );
     });
 };
