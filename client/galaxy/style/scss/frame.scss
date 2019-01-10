@@ -8,7 +8,7 @@ $frame-default-border: $gray-300;
     }
 
     .toggle {
-        color: gold;
+        color: $dropdown-link-active-color;
     }
 
     .frame-background {
@@ -41,7 +41,7 @@ $frame-default-border: $gray-300;
         z-index: $frame-zindex + 5;
         position: absolute;
         cursor: pointer;
-        color: gold;
+        color: $dropdown-link-active-color;
         right: 10px;
     }
 
