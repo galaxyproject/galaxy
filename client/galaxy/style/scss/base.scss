@@ -128,7 +128,7 @@ body {
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
-    border-bottom: solid #999 1px;
+    border-bottom: solid $gray-600 1px;
     font-size: 90%;
     display: none;
 }
@@ -140,7 +140,7 @@ body {
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
-    border-bottom: solid #999 1px;
+    border-bottom: solid $gray-600 1px;
     font-size: 90%;
     display: none;
 }
@@ -428,13 +428,13 @@ div.unified-panel-body-background {
                 cursor: pointer;
                 text-decoration: none;
                 &:hover {
-                    color: gold;
+                    color: $dropdown-link-active-color;
                 }
                 &.nav-icon {
                     font-size: 1.7em;
                 }
                 &.toggle {
-                    color: gold;
+                    color: $dropdown-link-active-color;
                 }
             }
             .nav-note {
@@ -443,7 +443,7 @@ div.unified-panel-body-background {
                 position: relative;
                 right: 5px;
                 top: 10px;
-                color: gold;
+                color: $dropdown-link-active-color;
                 width: 0px;
             }
         }
@@ -456,7 +456,7 @@ div.unified-panel-body-background {
         font-weight: bold;
         font-size: 20px;
         // line-height: 1;
-        color: white;
+        color: $white;
         // Override margin and padding due to shorter navbar height
         padding: 5px 20px 12px;
         margin-left: -15px;
@@ -469,7 +469,7 @@ div.unified-panel-body-background {
             border: none;
         }
         .navbar-brand-title {
-            color: white;
+            color: $white;
         }
     }
 }
@@ -555,11 +555,11 @@ div.metadataFormBody div.metadataFormTitle {
 
 div.metadataFormDisabled div.metadataFormTitle {
     background: #eee;
-    border-color: #999;
+    border-color: $gray-600;
 }
 
 div.metadataFormDisabled {
-    border-color: #999;
+    border-color: $gray-600;
 }
 
 div.metadataHelpBody {
@@ -1582,7 +1582,7 @@ div.permissionContainer {
 
 .editable-text:hover {
     cursor: text;
-    border: dotted #999999 1px;
+    border: dotted $gray-600 1px;
 }
 
 .icon-button.multiinput {
