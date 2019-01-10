@@ -166,7 +166,7 @@ FilterControl.prototype.val = function _val() {
     var op = this.$element.find(".filter-control-op .dropdown-select-selected").text();
 
     var // handle either a dropdown or plain input
-    $value = this.$element.find(".filter-control-value");
+        $value = this.$element.find(".filter-control-value");
 
     var value = $value.hasClass("dropdown-select") ? $value.find(".dropdown-select-selected").text() : $value.val();
 

@@ -1,28 +1,29 @@
 <template>
     <div class="ui-thumbnails">
-        <div v-if="error" class="alert alert-danger">
-            {{ error }}
-        </div>
+        <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <input class="search-query parent-width" name="query" placeholder="search visualizations" autocomplete="off" type="text" v-model="search">
+            <input
+                class="search-query parent-width"
+                name="query"
+                placeholder="search visualizations"
+                autocomplete="off"
+                type="text"
+                v-model="search"
+            />
             <div v-for="plugin in plugins">
                 <table v-if="match(plugin)">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
                         <td>
-                            <img v-if="plugin.logo" class="ui-thumbnails-image" :src="plugin.logo"/>
-                            <div v-else class="ui-thumbnails-icon fa fa-eye"/>
+                            <img v-if="plugin.logo" class="ui-thumbnails-image" :src="plugin.logo" />
+                            <div v-else class="ui-thumbnails-icon fa fa-eye" />
                         </td>
                         <td>
-                            <div class="ui-thumbnails-title font-weight-bold text-dark">
-                                {{ plugin.html }}
-                            </div>
-                            <div class="ui-thumbnails-text text-dark">
-                                {{ plugin.description }}
-                            </div>
+                            <div class="ui-thumbnails-title font-weight-bold text-dark">{{ plugin.html }}</div>
+                            <div class="ui-thumbnails-text text-dark">{{ plugin.description }}</div>
                         </td>
                     </tr>
                     <tr v-if="!fixed">
-                        <td/>
+                        <td />
                         <td v-if="plugin.name == name">
                             <div v-if="hdas && hdas.length > 0">
                                 <div class="font-weight-bold text-dark">Select a dataset to visualize:</div>
@@ -30,15 +31,19 @@
                                     <select class="select" v-model="selected">
                                         <option v-for="file in hdas" :value="file.id">{{ file.name }}</option>
                                     </select>
-                                    <div class="icon-dropdown fa fa-caret-down"/>
+                                    <div class="icon-dropdown fa fa-caret-down" />
                                 </div>
-                                <button type="button" class="ui-button-default float-left mt-3 btn btn-primary" @click="create(plugin)">
-                                    <i class="icon fa fa-check"/>
-                                    <span class="title">Create Visualization</span>
+                                <button
+                                    type="button"
+                                    class="ui-button-default float-left mt-3 btn btn-primary"
+                                    @click="create(plugin)"
+                                >
+                                    <i class="icon fa fa-check" /> <span class="title">Create Visualization</span>
                                 </button>
                             </div>
                             <div v-else class="alert alert-danger">
-                                There is no suitable dataset in your current history which can be visualized with this plugin.
+                                There is no suitable dataset in your current history which can be visualized with this
+                                plugin.
                             </div>
                         </td>
                     </tr>

@@ -70,21 +70,21 @@ function PhyloTreeLayout() {
         .value(null);
 
     var // ! represents both the layout angle and the height of the layout, in px
-    height = 360;
+        height = 360;
 
     var layoutMode = "Linear";
 
     var // height of each individual leaf node
-    leafHeight = 18;
+        leafHeight = 18;
 
     var // separation between nodes of different depth, in px
-    depthSeparation = 200;
+        depthSeparation = 200;
 
     var // change to recurssive call
-    leafIndex = 0;
+        leafIndex = 0;
 
     var // tree defaults to 0.5 dist if no dist is specified
-    defaultDist = 0.5;
+        defaultDist = 0.5;
 
     var maxTextWidth = 50;
 

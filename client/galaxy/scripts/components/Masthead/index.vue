@@ -37,7 +37,6 @@ export default {
 };
 </script>
 
-
 <style lang="scss">
 #masthead:empty {
     display: none;

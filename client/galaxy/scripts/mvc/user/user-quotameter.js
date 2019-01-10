@@ -60,10 +60,10 @@ var UserQuotaMeter = Backbone.View.extend(baseMVC.LoggableMixin).extend(
             var modelJson = this.model.toJSON();
 
             var //prevPercent = this.model.previous( 'quota_percent' ),
-            percent = modelJson.quota_percent;
+                percent = modelJson.quota_percent;
 
             var //meter = $( UserQuotaMeter.templates.quota( modelJson ) );
-            $meter = $(this._templateQuotaMeter(modelJson));
+                $meter = $(this._templateQuotaMeter(modelJson));
 
             var $bar = $meter.find(".progress-bar");
             //this.log( this + '.rendering quota, percent:', percent, 'meter:', meter );

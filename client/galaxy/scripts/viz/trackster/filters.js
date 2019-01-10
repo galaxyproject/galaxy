@@ -639,7 +639,7 @@ _.extend(FiltersManager.prototype, {
         // iteratively application.
         (function run_filter(input_dataset_id, filters) {
             var // Set up filtering info and params.
-            filter_tuple = filters[0];
+                filter_tuple = filters[0];
 
             var tool_id = filter_tuple[0];
             var tool_filters = filter_tuple[1];

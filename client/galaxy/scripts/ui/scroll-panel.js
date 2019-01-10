@@ -24,14 +24,14 @@ $.ui.plugin.add("draggable", "scrollPanel", {
         var nudge = 23;
 
         var // Legal panel range
-        p_min_x = -(panel_w - viewport_w);
+            p_min_x = -(panel_w - viewport_w);
 
         var p_min_y = -(panel_h - viewport_h);
         var p_max_x = 0;
         var p_max_y = 0;
 
         var // Visible
-        min_vis_x = -panel_pos.left;
+            min_vis_x = -panel_pos.left;
 
         var max_vis_x = min_vis_x + viewport_w;
         var min_vis_y = -panel_pos.top;

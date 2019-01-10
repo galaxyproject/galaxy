@@ -57,7 +57,6 @@ export default Backbone.View.extend({
         return this._getValue();
     },
 
-
     /** Get value from dom */
     _getValue: function() {
         var rgb = this.$value.css("background-color");
@@ -128,8 +127,7 @@ export default Backbone.View.extend({
 
     /** Main template */
     _template: function() {
-        return (
-            `
+        return `
             <div class="ui-color-picker">
                 <div class="ui-color-picker-header">
                     <div class="ui-color-picker-value"/>
@@ -139,7 +137,6 @@ export default Backbone.View.extend({
                     <div class="ui-color-picker-panel"/>
                 </div>
             </div>
-            `
-        );
+            `;
     }
 });

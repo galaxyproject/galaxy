@@ -1,12 +1,9 @@
 <template>
     <div>
         <div v-for="error in errorMessages">
-            <div class="alert alert-danger" role="alert">
-                {{ error }}
-            </div>
+            <div class="alert alert-danger" role="alert">{{ error }}</div>
         </div>
-        <div v-html="historyTemplate">
-        </div>
+        <div v-html="historyTemplate"></div>
     </div>
 </template>
 

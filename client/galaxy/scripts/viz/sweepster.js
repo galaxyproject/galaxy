@@ -115,30 +115,30 @@ var ToolParameterTree = Backbone.Model.extend({
         var node_id = 0;
 
         var // Creates tree data recursively.
-        create_tree_data = (params_samples, index) => {
-            var param_samples = params_samples[index],
-                param = param_samples.param,
-                settings = param_samples.samples;
+            create_tree_data = (params_samples, index) => {
+                var param_samples = params_samples[index],
+                    param = param_samples.param,
+                    settings = param_samples.samples;
 
-            // Create leaves when last parameter setting is reached.
-            if (params_samples.length - 1 === index) {
+                // Create leaves when last parameter setting is reached.
+                if (params_samples.length - 1 === index) {
+                    return _.map(settings, setting => ({
+                        id: node_id++,
+                        name: setting,
+                        param: param,
+                        value: setting
+                    }));
+                }
+
+                // Recurse to handle other parameters.
                 return _.map(settings, setting => ({
                     id: node_id++,
                     name: setting,
                     param: param,
-                    value: setting
+                    value: setting,
+                    children: create_tree_data(params_samples, index + 1)
                 }));
-            }
-
-            // Recurse to handle other parameters.
-            return _.map(settings, setting => ({
-                id: node_id++,
-                name: setting,
-                param: param,
-                value: setting,
-                children: create_tree_data(params_samples, index + 1)
-            }));
-        };
+            };
 
         this.set("tree_data", {
             name: "Root",
@@ -671,8 +671,7 @@ var ToolParameterTreeView = Backbone.View.extend({
             .attr("transform", "translate(40, 20)");
 
         // Draw links.
-        vis
-            .selectAll("path.link")
+        vis.selectAll("path.link")
             .data(cluster.links(nodes))
             .enter()
             .append("path")
