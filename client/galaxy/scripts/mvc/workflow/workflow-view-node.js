@@ -1,6 +1,9 @@
+import $ from "jquery";
 import * as _ from "libs/underscore";
+import Backbone from "backbone";
 import TerminalViews from "mvc/workflow/workflow-view-terminals";
 import DataViews from "mvc/workflow/workflow-view-data";
+
 export default Backbone.View.extend({
     initialize: function(options) {
         this.node = options.node;

@@ -1,3 +1,4 @@
+import _ from "underscore";
 import BASE_MVC from "mvc/base-mvc";
 
 var logNamespace = "history";

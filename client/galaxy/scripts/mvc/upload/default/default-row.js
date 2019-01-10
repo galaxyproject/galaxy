@@ -1,5 +1,8 @@
-import _l from "utils/localization";
 /** Renders the default uploader rows */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
 import UploadSettings from "mvc/upload/upload-settings";

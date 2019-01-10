@@ -1,3 +1,5 @@
+import $ from "jquery";
+
 import * as Toastr from "libs/toastr";
 
 function Connector(handle1, handle2) {

@@ -1,4 +1,6 @@
 /** Renders the color picker used e.g. in the tool form **/
+import $ from "jquery";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 export default Backbone.View.extend({
     colors: {

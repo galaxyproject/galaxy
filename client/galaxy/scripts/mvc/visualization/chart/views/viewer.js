@@ -2,6 +2,8 @@
  *  The viewer creates and manages the dom elements used by the visualization plugins to draw the chart.
  *  This is the last class of the charts core classes before handing control over to the visualization plugins.
  */
+import $ from "jquery";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 
 export default Backbone.View.extend({

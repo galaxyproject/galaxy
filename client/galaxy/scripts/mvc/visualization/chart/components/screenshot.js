@@ -1,7 +1,7 @@
 /** This class enables users to export/download a chart as PNG, SVG or PDF. */
 /** PNG export */
 
-/* global $ */
+import $ from "jquery";
 
 function createPNG(options) {
     if (options.$el.find("svg").length > 0) {

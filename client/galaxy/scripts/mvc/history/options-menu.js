@@ -102,6 +102,7 @@ var menu = [
         html: _l("Make Data Private"),
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (
                 Galaxy &&
                 Galaxy.currHistoryPanel &&

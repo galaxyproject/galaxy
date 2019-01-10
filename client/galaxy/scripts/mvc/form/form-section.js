@@ -1,6 +1,9 @@
 /**
     This class creates a form section and populates it with input elements. It also handles repeat blocks and conditionals by recursively creating new sub sections.
 */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Portlet from "mvc/ui/ui-portlet";
@@ -27,7 +30,7 @@ var View = Backbone.View.extend({
 
     /** Add a new input element */
     add: function(input) {
-        var input_def = jQuery.extend({}, input);
+        var input_def = $.extend({}, input);
         input_def.id = Utils.uid();
         this.app.input_list[input_def.id] = input_def;
         switch (input_def.type) {

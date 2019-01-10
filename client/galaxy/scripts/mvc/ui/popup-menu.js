@@ -2,6 +2,9 @@
 /**
  * view for a popup menu
  */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 var PopupMenu = Backbone.View.extend({
     //TODO: maybe better as singleton off the Galaxy obj
     /** Cache the desired button element and options, set up the button click handler
@@ -220,7 +223,7 @@ PopupMenu.make_popupmenu = (button_element, initial_options) => {
             newOption.header = true;
 
             // keys with function values indicate: a menu option
-        } else if (jQuery.type(optionVal) === "function") {
+        } else if ($.type(optionVal) === "function") {
             newOption.func = optionVal;
         }
         //TODO:?? any other special optionVals?

@@ -1,4 +1,7 @@
 /** Contains helpers to limit/lazy load views for backbone views */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 
 export default Backbone.View.extend({
     initialize: function(options) {

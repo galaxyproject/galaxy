@@ -1,4 +1,6 @@
 /** This renders a popover with extension details **/
+import _ from "underscore";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 import Popover from "mvc/ui/ui-popover";
 export default Backbone.View.extend({

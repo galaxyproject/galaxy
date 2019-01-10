@@ -1,3 +1,6 @@
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import Terminals from "mvc/workflow/workflow-terminals";
 import Connector from "mvc/workflow/workflow-connector";
 

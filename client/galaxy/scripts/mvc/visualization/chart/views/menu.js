@@ -1,4 +1,5 @@
 /** This class renders the chart menu options. */
+import Backbone from "backbone";
 import Ui from "mvc/ui/ui-misc";
 import Screenshot from "mvc/visualization/chart/components/screenshot";
 import Utils from "utils/utils";

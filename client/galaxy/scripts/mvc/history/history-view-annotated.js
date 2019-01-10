@@ -1,3 +1,5 @@
+import $ from "jquery";
+import _ from "underscore";
 import HISTORY_VIEW from "mvc/history/history-view";
 import HDA_LI from "mvc/history/hda-li";
 import HDCA_LI from "mvc/history/hdca-li";

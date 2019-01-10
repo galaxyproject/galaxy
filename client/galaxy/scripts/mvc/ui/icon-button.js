@@ -2,6 +2,10 @@
 /**
  * backbone model for icon buttons
  */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+
 var IconButton = Backbone.Model.extend({
     defaults: {
         title: "",

@@ -6,7 +6,6 @@ import STATES from "mvc/dataset/states";
 import BASE_MVC from "mvc/base-mvc";
 import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
-import naturalSort from "utils/natural-sort";
 import _l from "utils/localization";
 import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
 import Vue from "vue";
