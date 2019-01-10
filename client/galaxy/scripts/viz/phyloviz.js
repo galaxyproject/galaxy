@@ -5,6 +5,8 @@ import * as d3 from "libs/d3";
 import visualization_mod from "viz/visualization";
 import { Dataset } from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { show_message, hide_modal } from "layout/modal";
+
 /**
  * Base class of any menus that takes in user interaction. Contains checking methods.
  */
@@ -271,7 +273,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
     toggleAll: function(d) {
         if (d.children && d.children.length !== 0) {
             d.children.forEach(this.toggleAll);
-            toggle(d);
+            this.toggle(d);
         }
     },
 
@@ -361,7 +363,6 @@ var PhylovizLayoutBase = Backbone.View.extend({
      *  AND possibly when the tree is edited.
      */
     updateAndRender: function(source) {
-        var vis = d3.select(".vis");
         var self = this;
         source = source || self.model.root;
 
@@ -375,9 +376,6 @@ var PhylovizLayoutBase = Backbone.View.extend({
      */
     renderLinks: function(source) {
         var self = this;
-        var diagonal = self.diagonal;
-        var duration = self.duration;
-        var layoutMode = self.layoutMode;
         var link = self.vis.selectAll("g.completeLink").data(self.tree.links(self.nodes), d => d.target.id);
 
         var calcalateLinePos = d => {
@@ -409,7 +407,7 @@ var PhylovizLayoutBase = Backbone.View.extend({
             return `M ${d.pos0} L ${d.pos1} L ${d.pos2}`;
         });
 
-        var linkExit = link.exit().remove();
+        link.exit().remove();
     },
 
     // User Interaction methods below
@@ -671,7 +669,7 @@ export var PhylovizView = Backbone.View.extend({
         $("#title").text(`Phylogenetic Tree from ${self.phyloTree.get("title")}:`);
 
         // -- Create Linear view instance --
-        var linearView = new PhylovizLinearView(self.layoutOptions);
+        new PhylovizLinearView(self.layoutOptions);
     },
 
     /**

@@ -15,6 +15,8 @@ import tools from "mvc/tool/tools";
 import { Dataset } from "mvc/dataset/data";
 import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { make_popupmenu } from "ui/popupmenu";
+import { show_modal, hide_modal } from "layout/modal";
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings
@@ -116,7 +118,6 @@ var ToolParameterTree = Backbone.Model.extend({
         create_tree_data = (params_samples, index) => {
             var param_samples = params_samples[index],
                 param = param_samples.param,
-                param_label = param.get("label"),
                 settings = param_samples.samples;
 
             // Create leaves when last parameter setting is reached.
@@ -408,7 +409,7 @@ var SweepsterTrackView = Backbone.View.extend({
         });
         var self = this;
 
-        var run_on_dataset_button = $("<button/>")
+        $("<button/>")
             .appendTo(settings_div)
             .text("Run on complete dataset")
             .click(() => {
@@ -507,7 +508,6 @@ var ToolInputValOrSweepView = Backbone.View.extend({
 
     render: function() {
         var input = this.model;
-        var type = input.get("type");
         var single_input_row = this.$el.find(".form-row-input");
         var sweep_inputs_row = null;
 
@@ -606,7 +606,7 @@ var ToolParameterTreeDesignView = Backbone.View.extend({
             .find(".form-row")
             .not(".form-actions")
             .each(function(i) {
-                var input_view = new ToolInputValOrSweepView({
+                new ToolInputValOrSweepView({
                     model: inputs.at(i),
                     tool_row: $(this)
                 });
@@ -671,7 +671,7 @@ var ToolParameterTreeView = Backbone.View.extend({
             .attr("transform", "translate(40, 20)");
 
         // Draw links.
-        var link = vis
+        vis
             .selectAll("path.link")
             .data(cluster.links(nodes))
             .enter()
