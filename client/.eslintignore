@@ -4,3 +4,4 @@ galaxy/scripts/mocha
 galaxy/scripts/libs
 galaxy/scripts/nls
 galaxy/scripts/legacy
+galaxy/scripts/toolshed
