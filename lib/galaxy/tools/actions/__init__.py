@@ -745,7 +745,7 @@ class DefaultToolAction(object):
         </data>
 
         or
-        
+
         <actions>
             <conditional name="format">
                 <when value="something_good">

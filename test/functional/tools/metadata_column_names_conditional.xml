@@ -1,0 +1,30 @@
+<tool id="metadata_columns_conditional" name="metadata_columns_conditional" version="1.0.0">
+    <description>Tests whether metadata is being set correctly.</description>
+    <command><![CDATA[
+        cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" multiple="false" />
+	<param name="variable" type="integer" value="1" size="1" />
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output">
+            <actions>
+       	        <conditional name="variable">
+		    <when value="1">
+			    <action name="column_names" type="metadata" default="First,${input.name}" />
+		    </when>
+	        </conditional>
+            </actions>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="2.tabular" />
+	    <param name="variable" value="1" />
+            <output name="output">
+                <metadata name="column_names" value="First,2.tabular"/>
+            </output>
+        </test>
+    </tests>
+</tool>
