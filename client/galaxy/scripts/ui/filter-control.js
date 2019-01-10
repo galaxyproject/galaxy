@@ -1,5 +1,5 @@
 import jQuery from "jquery";
-("use_strict");
+import _ from "underscore";
 
 var $ = jQuery;
 //==============================================================================

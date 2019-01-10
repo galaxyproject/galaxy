@@ -247,7 +247,6 @@ $.fn.autocomplete_tagging = function(options) {
             // a tag area is blurred when a user clicks on an element outside the area.
             var handle_document_click = e => {
                 var check_click = function(tag_area, target) {
-                    var tag_area_id = tag_area.attr("id");
                     // Blur the tag area if the element clicked on is not in the tag area.
                     if (target !== tag_area) {
                         tag_area.blur();
@@ -277,13 +276,6 @@ $.fn.autocomplete_tagging = function(options) {
     //
     // Helper functions.
     //
-
-    //
-    // Collapse tag name + value into a single string.
-    //
-    function build_tag_str(tag_name, tag_value) {
-        return tag_name + (tag_value ? `:${tag_value}` : "");
-    }
 
     // Initialize a "delete tag image": when click, delete tag from UI and send delete request to server.
     function init_delete_tag_image(delete_img) {
