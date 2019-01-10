@@ -12,7 +12,7 @@
     </div>
 </template>
 <script>
-import { getErrorStack } from "./AdminServices.js"
+import { getErrorStack } from "./AdminServices.js";
 
 export default {
     data() {
@@ -20,10 +20,10 @@ export default {
             errorStack: [],
             errorStackLoaded: false,
             errorStackAttributes: [
-                { key: 'time', sortable: true },
-                { key: 'phase', sortable: true },
-                { key: 'file', sortable: true },
-                { key: 'error' }
+                { key: "time", sortable: true },
+                { key: "phase", sortable: true },
+                { key: "file", sortable: true },
+                { key: "error" }
             ],
             messageText: null
         };

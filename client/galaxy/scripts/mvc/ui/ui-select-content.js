@@ -1,7 +1,12 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select-default";
+import { getGalaxyInstance } from "app";
+
 /** Batch mode variations */
 var Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
@@ -229,6 +234,7 @@ var View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function(new_value) {
+        let Galaxy = getGalaxyInstance();
         new_value !== undefined && this.model.set("value", new_value);
         var current = this.model.get("current");
         if (this.config[current]) {
@@ -277,6 +283,7 @@ var View = Backbone.View.extend({
 
     /** Change of type */
     _changeType: function() {
+        let Galaxy = getGalaxyInstance();
         var self = this;
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]

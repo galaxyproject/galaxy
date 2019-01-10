@@ -5,7 +5,8 @@
 <%def name="render_user_info()">
 
     <script type="text/javascript">
-        $(document).ready(function() {
+        config.addInitialization(function() {
+            console.log("info.mako, render_user_info");
 
             function validateString(test_string, type) {
                 var mail_re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
@@ -70,8 +71,8 @@
                     e.preventDefault();
                     // reactivate the button if the form wasn't submitted
                     $( '#send' ).removeAttr( 'disabled' );
-                    }
-                });
+                }
+            });
         });
 
     </script>

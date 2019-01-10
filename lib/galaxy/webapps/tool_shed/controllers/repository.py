@@ -2801,6 +2801,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
         avg_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, repository, webapp_model=trans.model)
         changeset_revision = kwd.get('changeset_revision', repository.tip(trans.app))
+        if not hg_util.get_changectx_for_changeset(repo, changeset_revision):
+            message = 'Invalid changeset revision'
+            return trans.response.send_redirect(web.url_for(controller='repository',
+                                                            action='index',
+                                                            repository_id=id,
+                                                            message=message,
+                                                            status='error'))
         repository.share_url = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=changeset_revision)
         repository.clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(trans.user, repository)
         display_reviews = kwd.get('display_reviews', False)

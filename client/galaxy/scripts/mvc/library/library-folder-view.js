@@ -1,6 +1,7 @@
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
@@ -25,6 +26,7 @@ var FolderView = Backbone.View.extend({
     },
 
     fetchFolder: function(options) {
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.FolderAsModel({
             id: this.options.id
@@ -55,6 +57,7 @@ var FolderView = Backbone.View.extend({
     },
 
     showPermissions: function(options) {
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         $(".tooltip").remove();
 

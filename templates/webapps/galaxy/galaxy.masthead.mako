@@ -37,25 +37,11 @@
 
     ## load the frame manager
     <script type="text/javascript">
-
-        // if we're in an iframe, create styles that hide masthead/messagebox, and reset top for panels
-        // note: don't use a link to avoid roundtrip request
-        // note: we can't select here because the page (incl. messgaebox, center, etc.) isn't fully rendered
-        // TODO: remove these when we no longer navigate with iframes
-        var in_iframe = window !== window.top;
-        if( in_iframe ){
-            var styleElement = document.createElement( 'style' );
-            document.head.appendChild( styleElement );
-            [
-                '#masthead, #messagebox { display: none; }',
-                '#center, #right, #left { top: 0 !important; }',
-             ].forEach( function( rule ){
-                styleElement.sheet.insertRule( rule, 0 );
-            });
-        }
-        // TODO: ?? move above to base_panels.mako?
-        $( function() {
-            window.bundleEntries.masthead(${h.dumps(masthead_config)});
+        config.addInitialization(function(galaxy, config) {
+            console.log("galaxy.masthead.mako", "initialize masthead");
+            let options = ${h.dumps(masthead_config)};
+            let container = document.getElementById("masthead");
+            window.bundleEntries.initMasthead(options, container);
         });
     </script>
 </%def>

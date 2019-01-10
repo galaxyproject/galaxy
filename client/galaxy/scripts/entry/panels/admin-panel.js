@@ -1,19 +1,18 @@
+import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import _ from "underscore";
 import _l from "utils/localization";
 import { getGalaxyInstance } from "app";
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
-        let Galaxy = getGalaxyInstance();
         var self = this;
         this.page = page;
         this.root = options.root;
         this.config = options.config;
         this.settings = options.settings;
         this.model = new Backbone.Model({
-            title: `Galaxy version ${Galaxy.config.version_major}`
+            title: `Galaxy version ${getGalaxyInstance().config.version_major}`
         });
         this.categories = new Backbone.Collection([
             {

@@ -182,12 +182,9 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
                             self.sa_session.flush()
                         """
 
-                    # Although metadata is set above, need to set metadata to recover BAI for BAMs.
-                    if hda.extension == 'bam':
-                        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_app(
-                            self.app.datatypes_registry.set_external_metadata_tool, self.app, jiha.job.session_id,
-                            new_history.id, jiha.job.user, incoming={'input1': hda}, overwrite=False
-                        )
+                    self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                        hda, new_history, jiha.job
+                    )
 
                 #
                 # Create jobs.
