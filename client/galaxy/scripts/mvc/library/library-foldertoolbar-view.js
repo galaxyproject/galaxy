@@ -1410,7 +1410,6 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     templateToolBar: function() {
-        let Galaxy = getGalaxyInstance();
         return _.template(
             [
                 '<div class="library_style_container">', // container start
