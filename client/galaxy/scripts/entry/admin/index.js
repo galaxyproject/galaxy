@@ -1,4 +1,3 @@
-import _ from "underscore";
 import { standardInit, addInitialization } from "onload";
 import { getAdminRouter } from "./AdminRouter";
 import AdminPanel from "../panels/admin-panel";
