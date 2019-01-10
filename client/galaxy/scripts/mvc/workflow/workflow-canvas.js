@@ -1,4 +1,4 @@
-/* global $ */
+import $ from "jquery";
 
 // FIXME: merge scroll panel into CanvasManager, clean up hardcoded stuff.
 class ScrollPanel {

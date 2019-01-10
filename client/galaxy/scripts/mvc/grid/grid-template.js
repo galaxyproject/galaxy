@@ -1,8 +1,6 @@
-// dependencies
+import $ from "jquery";
 import Utils from "utils/utils";
 import * as _ from "underscore";
-
-/* global $ */
 
 // grid view templates
 export default {

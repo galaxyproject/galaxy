@@ -1,9 +1,9 @@
 /**
  *  Renders tabs e.g. used in the charts editor, behaves similar to repeat and section rendering
  */
+import $ from "jquery";
 import * as Backbone from "backbone";
 
-/* global $ */
 export var View = Backbone.View.extend({
     initialize: function(options) {
         this.collection = new Backbone.Collection();

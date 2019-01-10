@@ -1,6 +1,5 @@
-/* global Backbone */
-/* global $ */
-
+import $ from "jquery";
+import Backbone from "backbone";
 import _l from "utils/localization";
 import * as d3 from "libs/d3";
 import visualization_mod from "viz/visualization";

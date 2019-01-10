@@ -1,8 +1,7 @@
 /** This module contains all button views. */
+import $ from "jquery";
 import Utils from "utils/utils";
 import * as Backbone from "backbone";
-
-/* global $ */
 
 /** This renders the default button which is used e.g. at the bottom of the upload modal. */
 var Button = Backbone.View.extend({

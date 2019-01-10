@@ -1,9 +1,8 @@
+import $ from "jquery";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
-
-/* global $ */
 
 var logNamespace = "user";
 //==============================================================================

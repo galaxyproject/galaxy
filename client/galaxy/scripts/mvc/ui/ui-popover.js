@@ -1,11 +1,11 @@
 /**
  * Popover wrapper
  */
+import $ from "jquery";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 import Utils from "utils/utils";
 
-/* global $ */
 export default Backbone.View.extend({
     initialize: function(options) {
         this.options = _.defaults(options || {}, {

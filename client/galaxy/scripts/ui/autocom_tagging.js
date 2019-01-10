@@ -1,4 +1,5 @@
-/* global jQuery, $ */
+import $ from "jquery";
+import _ from "underscore";
 
 // ============================================================================
 /**
@@ -22,7 +23,7 @@ export function init_tag_click_function(tag_elt, click_func) {
         });
 }
 
-jQuery.fn.autocomplete_tagging = function(options) {
+$.fn.autocomplete_tagging = function(options) {
     var defaults = {
         get_toggle_link_text_fn: function(tags) {
             var text = "";
@@ -50,7 +51,7 @@ jQuery.fn.autocomplete_tagging = function(options) {
         ajax_add_tag_url: ""
     };
 
-    var settings = jQuery.extend(defaults, options);
+    var settings = $.extend(defaults, options);
 
     //
     // Initalize object's elements.

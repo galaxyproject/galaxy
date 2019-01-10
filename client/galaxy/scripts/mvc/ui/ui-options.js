@@ -1,10 +1,9 @@
 /** Base class for options based ui elements **/
+import $ from "jquery";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 import Utils from "utils/utils";
 import Buttons from "mvc/ui/ui-buttons";
-
-/* global $ */
 
 var Base = Backbone.View.extend({
     initialize: function(options) {

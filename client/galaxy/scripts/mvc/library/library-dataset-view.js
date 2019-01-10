@@ -1,4 +1,4 @@
-/* global $, jQuery */
+import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
@@ -259,7 +259,7 @@ var LibraryDatasetView = Backbone.View.extend({
         historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
+        $.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         // save the dataset into selected history
         historyItem.save(
             { content: this.id, source: "library" },

@@ -1,9 +1,8 @@
+import $ from "jquery";
 import * as _ from "underscore";
 import HDCA_LI from "mvc/history/hdca-li";
 import DC_VIEW_EDIT from "mvc/collection/collection-view-edit";
 import _l from "utils/localization";
-
-/* global $ */
 
 //==============================================================================
 var _super = HDCA_LI.HDCAListItemView;

@@ -1,4 +1,4 @@
-/* global $, jQuery */
+import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
@@ -319,7 +319,7 @@ var FolderToolbarView = Backbone.View.extend({
         });
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
+        $.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         this.chainCallImportingIntoHistory(items_to_import, history_name);
     },
 
