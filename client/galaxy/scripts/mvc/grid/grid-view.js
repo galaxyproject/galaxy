@@ -93,7 +93,7 @@ export default Backbone.View.extend({
 
         // strip protocol and domain
         var url = this.grid.get("url_base");
-        url = url.replace(/^.*\/\/[^\/]+/, "");
+        url = url.replace(/^.*\/\/[^/]+/, "");
         this.grid.set("url_base", url);
 
         // append main template

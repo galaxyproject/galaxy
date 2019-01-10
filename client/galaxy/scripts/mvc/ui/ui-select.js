@@ -157,7 +157,7 @@ var View = Backbone.View.extend({
                     if (value.text && value.text.length > mx) {
                         let pos = value.text.indexOf(`(${value.id})`);
                         pos = pos != -1 && pos < mx ? pos : mx;
-                        let sub = value.text.substring(0, pos).replace(/[\ \.]*$/, "");
+                        let sub = value.text.substring(0, pos).replace(/[ .]*$/, "");
                         value.text = `${sub}...(${value.id})`;
                     }
                 });
