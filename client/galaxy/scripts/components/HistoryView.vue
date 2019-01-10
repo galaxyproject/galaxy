@@ -27,12 +27,14 @@
 </template>
 
 <script>
+import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Vue from "vue";
 import DisplayStructure from "components/DisplayStructured.vue";
 import QueryStringParsing from "utils/query-string-parsing";
 import HistoryView from "mvc/history/history-view";
+import { getGalaxyInstance } from "app";
 
 export default {
     props: {
@@ -95,6 +97,7 @@ export default {
             });
         },
         showStructure: function() {
+            let Galaxy = getGalaxyInstance();
             let displayStructureInstance = Vue.extend(DisplayStructure),
                 mountView = document.createElement("div");
             Galaxy.page.center.display(mountView);

@@ -27,6 +27,7 @@
     </b-card>
 </template>
 <script>
+import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import * as bibtexParse from "libs/bibtexParse";

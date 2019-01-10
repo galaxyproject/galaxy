@@ -48,6 +48,7 @@
     </div>
 </template>
 <script>
+import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";

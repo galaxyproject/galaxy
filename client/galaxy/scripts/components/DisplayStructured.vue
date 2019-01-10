@@ -11,6 +11,8 @@
 </template>
 
 <script>
+import $ from "jquery";
+import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import HDAModel from "mvc/history/hda-model";
@@ -62,6 +64,7 @@ export default {
         },
         makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
+                let Galaxy = getGalaxyInstance();
                 return new HDAListItemEdit.HDAListItemEdit({
                     model: new HDAModel.HistoryDatasetAssociation(hda),
                     el: $("#hda-" + hda.id),

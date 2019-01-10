@@ -17,7 +17,6 @@
 </template>
 <script>
 import RuleDefs from "mvc/rules/rule-definitions";
-import _l from "utils/localization";
 
 // read-only variants of the components for displaying these rules and mappings in builder widget.
 const RuleDisplayPreview = {

@@ -412,13 +412,14 @@
     </state-div>
 </template>
 <script>
+import $ from "jquery";
+import _ from "underscore";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
 import HotTable from "@handsontable/vue";
-import Popover from "mvc/ui/ui-popover";
 import UploadUtils from "mvc/upload/upload-utils";
 import JobStatesModel from "mvc/history/job-states-model";
 import RuleDefs from "mvc/rules/rule-definitions";
