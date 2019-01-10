@@ -166,7 +166,7 @@ var ButtonCheck = Backbone.View.extend({
     },
 
     render: function(options) {
-        var options = this.model.attributes;
+        options = this.model.attributes;
         this.$el
             .addClass("ui-button-check")
             .css("display", options.visible ? "inline-block" : "none")

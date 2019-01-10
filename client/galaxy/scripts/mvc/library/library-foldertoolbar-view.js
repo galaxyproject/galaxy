@@ -296,8 +296,8 @@ var FolderToolbarView = Backbone.View.extend({
         var items_to_import = [];
         // prepare the dataset objects to be imported
         for (let i = checked_items.dataset_ids.length - 1; i >= 0; i--) {
-            var library_dataset_id = checked_items.dataset_ids[i];
-            var historyItem = new mod_library_model.HistoryItem();
+            let library_dataset_id = checked_items.dataset_ids[i];
+            let historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_dataset_id;
             historyItem.source = "library";
@@ -305,8 +305,8 @@ var FolderToolbarView = Backbone.View.extend({
         }
         // prepare the folder objects to be imported
         for (let i = checked_items.folder_ids.length - 1; i >= 0; i--) {
-            var library_folder_id = checked_items.folder_ids[i];
-            var historyItem = new mod_library_model.HistoryItem();
+            let library_folder_id = checked_items.folder_ids[i];
+            let historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_folder_id;
             historyItem.source = "library_folder";
@@ -719,7 +719,7 @@ var FolderToolbarView = Backbone.View.extend({
                 action: "adding_datasets"
             });
             if (selection_type === "folder") {
-                var full_source = `${options.source}_folder`;
+                let full_source = `${options.source}_folder`;
                 this.chainCallImportingFolders({
                     paths: paths,
                     preserve_dirs: preserve_dirs,
@@ -732,7 +732,7 @@ var FolderToolbarView = Backbone.View.extend({
                     tag_using_filenames: tag_using_filenames
                 });
             } else if (selection_type === "file") {
-                var full_source = `${options.source}_file`;
+                let full_source = `${options.source}_file`;
                 this.chainCallImportingUserdirFiles({
                     paths: paths,
                     file_type: file_type,

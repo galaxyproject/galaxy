@@ -107,16 +107,16 @@ $.extend(Connector.prototype, {
         var end_offsets = null;
         var num_offsets = 1;
         if (startRibbon) {
-            var start_offsets = [-6, -3, 0, 3, 6];
+            start_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {
-            var start_offsets = [0];
+            start_offsets = [0];
         }
         if (endRibbon) {
-            var end_offsets = [-6, -3, 0, 3, 6];
+            end_offsets = [-6, -3, 0, 3, 6];
             num_offsets = 5;
         } else {
-            var end_offsets = [0];
+            end_offsets = [0];
         }
         var connector = this;
         for (var i = 0; i < num_offsets; i++) {
@@ -151,9 +151,9 @@ $.extend(Connector.prototype, {
         offset_start,
         offset_end
     ) {
-        var offset_start = offset_start || 0;
-        var offset_end = offset_end || 0;
         var c = this.canvas.getContext("2d");
+        offset_start = offset_start || 0;
+        offset_end = offset_end || 0;
         c.lineCap = "round";
         c.strokeStyle = this.outer_color;
         c.lineWidth = outer_width;

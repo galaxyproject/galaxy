@@ -862,7 +862,7 @@ const colHeadersFor = function(data, columns) {
 };
 
 const applyRules = function(data, sources, columns, rules, colHeadersPerRule) {
-    var colHeadersPerRule = colHeadersPerRule || [];
+    colHeadersPerRule = colHeadersPerRule || [];
     let hasRuleError = false;
     for (var ruleIndex in rules) {
         const ruleHeaders = colHeadersFor(data, columns);
