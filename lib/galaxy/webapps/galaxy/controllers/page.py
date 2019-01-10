@@ -993,7 +993,8 @@ def _placeholderRenderForSave(trans, item_class, item_id, encode=False):
         item_name = history.name
     elif item_class == 'HistoryDatasetAssociation':
         hda = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(decoded_item_id)
-        hda = managers.base.security_check(trans, hda , False, True)
+        hda_manager = managers.hdas.HDAManager(trans.app)
+        hda = hda_manager.get_accessible(decoded_item_id, trans.user)
         item_name = hda.name
     elif item_class == 'StoredWorkflow':
         wf = trans.sa_session.query(trans.model.StoredWorkflow).get(decoded_item_id)
