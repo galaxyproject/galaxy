@@ -2931,7 +2931,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                     if message:
                                         status = 'error'
                                 else:
-                                    tool, message, sample_files = \
+                                    tool, valid, message, sample_files = \
                                         tv.handle_sample_files_and_load_tool_from_tmp_config(repo,
                                                                                              repository_id,
                                                                                              changeset_revision,
