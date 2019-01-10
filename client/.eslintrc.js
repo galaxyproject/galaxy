@@ -7,12 +7,13 @@ module.exports = {
     plugins: ["html"],
     rules: {
         "no-console": "off",
-        "no-unused-vars": ["error", {args: "none"}]
-        // "camelcase": [
-        //   "error",
-        //   {
-        //     "properties": "never"
-        //   }
+        "no-unused-vars": ["error", { args: "none" }],
+        // I'd love to turn on camelcase, but it's a big shift with tons of current errors.
+        // camelcase: [
+        //     "error",
+        //     {
+        //         properties: "always"
+        //     }
         // ]
     }
 };

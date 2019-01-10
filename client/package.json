@@ -72,7 +72,7 @@
     "test-qunit": "GALAXY_TEST_AS_SINGLE_PACK=true karma start karma/karma.config.qunit.js",
     "test-mocha": "GALAXY_TEST_AS_SINGLE_PACK=true karma start karma/karma.config.mocha.js",
     "jshint": "jshint --exclude='galaxy/scripts/libs/**' galaxy/scripts/**/*.js",
-    "eslint": "eslint -c .eslintrc.js galaxy/scripts/mvc"
+    "eslint": "eslint -c .eslintrc.js --ignore-path .eslintignore galaxy/scripts --ext .js,.vue"
   },
   "devDependencies": {
     "babel-loader": "^8.0.4",
