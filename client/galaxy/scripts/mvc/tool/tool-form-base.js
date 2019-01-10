@@ -114,6 +114,7 @@ export default FormBase.extend({
     _operations: function() {
         var self = this;
         var options = this.model.attributes;
+        let Galaxy = getGalaxyInstance();
 
         // Buttons for adding and removing favorite.
         let favorites = JSON.parse(Galaxy.user.get('preferences').favorites);
@@ -123,7 +124,7 @@ export default FormBase.extend({
         } else{
             in_favorites = false;
         }
-        var favorite_button = new Ui.ButtonIcon({
+        var favorite_button = new Ui.Button({
             icon: "fa-star-o",
             title: "Favorite",
             tooltip: "Add to favorites",
@@ -139,7 +140,7 @@ export default FormBase.extend({
             }
         });
 
-        var remove_favorite_button = new Ui.ButtonIcon({
+        var remove_favorite_button = new Ui.Button({
             icon: "fa-star",
             title: "Added",
             tooltip: "Remove from favorites",
@@ -218,7 +219,6 @@ export default FormBase.extend({
         });
 
         // add admin operations
-        let Galaxy = getGalaxyInstance();
         if (Galaxy.user && Galaxy.user.get("is_admin")) {
             menu_button.addMenu({
                 icon: "fa-download",
