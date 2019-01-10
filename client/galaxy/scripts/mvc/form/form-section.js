@@ -5,7 +5,6 @@ import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import Utils from "utils/utils";
-import Ui from "mvc/ui/ui-misc";
 import Portlet from "mvc/ui/ui-portlet";
 import Repeat from "mvc/form/form-repeat";
 import InputElement from "mvc/form/form-input";

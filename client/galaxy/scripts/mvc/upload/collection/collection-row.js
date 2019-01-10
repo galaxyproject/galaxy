@@ -4,10 +4,8 @@ import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import Utils from "utils/utils";
-import UploadModel from "mvc/upload/upload-model";
 import UploadSettings from "mvc/upload/upload-settings";
 import Popover from "mvc/ui/ui-popover";
-import Select from "mvc/ui/ui-select";
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */
     status_classes: {
@@ -42,8 +40,9 @@ export default Backbone.View.extend({
         });
 
         // identify default genome and extension values
-        var default_genome = this.app.select_genome.value();
-        var default_extension = this.app.select_extension.value();
+        // TODO: These appear unused.
+        //var default_genome = this.app.select_genome.value();
+        //var default_extension = this.app.select_extension.value();
 
         // handle click event
         this.$symbol.on("click", () => {

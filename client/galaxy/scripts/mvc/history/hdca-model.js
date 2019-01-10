@@ -1,7 +1,6 @@
 import _ from "underscore";
 import DC_MODEL from "mvc/collection/collection-model";
 import HISTORY_CONTENT from "mvc/history/history-content-model";
-import _l from "utils/localization";
 
 /*==============================================================================
 

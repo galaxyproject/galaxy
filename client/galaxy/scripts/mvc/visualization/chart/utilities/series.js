@@ -1,10 +1,6 @@
 import * as _ from "underscore";
 import * as d3 from "d3";
 
-// TODO: This d3 must(?) just be global because various charts use different
-// versions, and we want to use whichever one that is.  I think.  I hope.
-/* global d3 */
-
 /** Get domain boundaries value */
 function getDomains(groups, keys) {
     function _apply(operator, key) {

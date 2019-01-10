@@ -118,13 +118,6 @@ var DatasetCollectionElementView = Backbone.View.extend(BASE_MVC.LoggableMixin).
         ev.stopPropagation();
         ev.preventDefault();
 
-        var promptString = [
-            _l("Enter a new name for the element"),
-            ":\n(",
-            _l("Note that changing the name here will not rename the dataset"),
-            ")"
-        ].join("");
-
         var response = prompt(`${_l("Enter a new name for the element")}:`, this.element.name);
 
         if (response) {
@@ -267,7 +260,6 @@ var ListCollectionCreator = Backbone.View.extend(BASE_MVC.LoggableMixin)
         /** separate working list into valid and invalid elements for this collection */
         _validateElements: function() {
             var creator = this;
-            var existingNames = {};
             creator.invalidElements = [];
 
             this.workingElements = this.workingElements.filter(element => {
@@ -1084,7 +1076,7 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
     options = _.defaults(options || {}, {
         title: title
     });
-    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options);
+    const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
     var ruleCollectionBuilderInstance = Vue.extend(RuleCollectionBuilder);
     var vm = document.createElement("div");
     showEl(vm);

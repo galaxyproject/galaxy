@@ -4,7 +4,6 @@ import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 var View = Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.options = options;
         this.name = options.name || "element";
         this.multiple = options.multiple || false;

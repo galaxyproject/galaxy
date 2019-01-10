@@ -2,7 +2,6 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import Utils from "utils/utils";
 export default Backbone.View.extend({
     options: {
         class_check: "fa-check-square-o",
@@ -20,7 +19,6 @@ export default Backbone.View.extend({
     },
 
     initialize: function(options) {
-        var self = this;
         this.model = options.model;
         this.setElement($("<div/>").addClass("upload-settings"));
         this.$el.append($("<div/>").addClass("upload-settings-cover"));

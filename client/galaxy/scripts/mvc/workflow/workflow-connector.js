@@ -101,8 +101,6 @@ $.extend(Connector.prototype, {
 
         // Draw the line
 
-        var c = this.canvas.getContext("2d");
-
         var start_offsets = null;
         var end_offsets = null;
         var num_offsets = 1;

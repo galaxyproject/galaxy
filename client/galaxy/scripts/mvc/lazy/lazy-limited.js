@@ -5,7 +5,6 @@ import Backbone from "backbone";
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.$container = options.$container;
         this.collection = options.collection;
         this.new_content = options.new_content;
@@ -53,7 +52,8 @@ export default Backbone.View.extend({
         if (!this._done()) {
             for (var i in this.collection.models) {
                 var model = this.collection.models[i];
-                var view = this.content_list[model.id];
+                // TODO: View is unused here.
+                //var view = this.content_list[model.id];
                 if (!this.content_list[model.id]) {
                     var content = this.new_content(model);
                     this.content_list[model.id] = content;

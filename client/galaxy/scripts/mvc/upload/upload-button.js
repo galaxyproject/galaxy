@@ -25,7 +25,6 @@ var View = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .off("click")
