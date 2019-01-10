@@ -178,7 +178,7 @@ var DatasetDCE = DATASET_MODEL.DatasetAssociation.extend(
             /** String representation. */
             toString: function() {
                 var objStr = this.get("element_identifier");
-                return `DatasetDCE({objStr})`;
+                return `DatasetDCE(${objStr})`;
             }
         }
     )
