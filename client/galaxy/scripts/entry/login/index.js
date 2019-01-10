@@ -6,20 +6,6 @@ import Login from "components/login/Login.vue";
 import Password from "components/login/Password.vue";
 import Vue from "vue";
 
-export function showOrRedirect(Galaxy, { options }) {
-    console.log("showOrRedirect");
-
-    if (!options.show_welcome_with_login) {
-        let appRoot = getAppRoot();
-        let destination = options.redirect ? options.redirect : appRoot;
-        let params = $.param({
-            use_panels: "True",
-            redirect: encodeURI(destination)
-        });
-        window.location.href = `${appRoot}user/login?${params}`;
-    }
-}
-
 export function initLoginView(Galaxy, { options }) {
     console.log("initLoginView");
     Galaxy.page = new Page.View(options);
@@ -30,6 +16,6 @@ export function initLoginView(Galaxy, { options }) {
     new loginInstance({propsData: options}).$mount(vm);
 }
 
-addInitialization(showOrRedirect, initLoginView);
+addInitialization(initLoginView);
 
 window.addEventListener("load", () => standardInit("login"));
