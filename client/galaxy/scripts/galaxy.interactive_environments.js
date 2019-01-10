@@ -1,3 +1,6 @@
+/* global $ */
+/* global toastr */
+// TODO: this file is transpiled and used directly without bundling; fix imports when that is no longer the case.
 /**
  * Internal function to remove content from the main area and add the notebook.
  * Not idempotent
