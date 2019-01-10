@@ -1,5 +1,5 @@
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
+import _ from "libs/underscore";
 var extend = _.extend;
 
 /**

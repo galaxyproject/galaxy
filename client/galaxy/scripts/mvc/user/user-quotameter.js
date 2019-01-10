@@ -1,6 +1,6 @@
 import $ from "jquery";
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import Backbone from "backbone";
+import _ from "underscore";
 import baseMVC from "mvc/base-mvc";
 import _l from "utils/localization";
 

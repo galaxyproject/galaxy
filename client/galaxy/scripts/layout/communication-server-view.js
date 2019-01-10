@@ -1,7 +1,7 @@
 /** Real-time Communication feature **/
 import $ from "jquery";
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
 import Modal from "mvc/ui/ui-modal";
 import { getGalaxyInstance } from "app";

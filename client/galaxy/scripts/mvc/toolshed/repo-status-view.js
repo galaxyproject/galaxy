@@ -1,6 +1,6 @@
 import $ from "jquery";
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
 import toolshed_model from "mvc/toolshed/toolshed-model";
 import toolshed_util from "mvc/toolshed/util";

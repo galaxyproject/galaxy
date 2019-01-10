@@ -1,6 +1,6 @@
 import $ from "jquery";
 import Utils from "utils/utils";
-import * as _ from "underscore";
+import _ from "underscore";
 
 // grid view templates
 export default {

@@ -1,4 +1,4 @@
-import * as _ from "libs/underscore";
+import _ from "libs/underscore";
 // Constants specific to feature tracks moved here (HACKING, these should
 // basically all be configuration options)
 const BEFORE = 1001;

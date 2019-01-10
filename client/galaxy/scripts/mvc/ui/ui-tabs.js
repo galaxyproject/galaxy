@@ -2,7 +2,7 @@
  *  Renders tabs e.g. used in the charts editor, behaves similar to repeat and section rendering
  */
 import $ from "jquery";
-import * as Backbone from "backbone";
+import Backbone from "backbone";
 
 export var View = Backbone.View.extend({
     initialize: function(options) {

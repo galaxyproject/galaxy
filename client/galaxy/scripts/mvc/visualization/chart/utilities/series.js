@@ -1,4 +1,4 @@
-import * as _ from "underscore";
+import _ from "underscore";
 import * as d3 from "d3";
 
 /** Get domain boundaries value */
