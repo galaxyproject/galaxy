@@ -12,11 +12,11 @@
                 If the workflow is in a file on your computer, choose it and then click Import.
             </b-form-group>
             <b-button id="workflow-import-button" type="submit">Import workflow</b-button>
-            <p class="mt-4">
+            <div class="mt-4">
                 <h4>Import a Workflow from myExperiment</h4>
                 <a :href=myexperiment_target_url>Visit myExperiment</a>
                 <div class="form-text">Click the link above to visit myExperiment and search for Galaxy workflows.</div>
-            </p>
+            </div>
         </b-card>
     </b-form>
 </template>
