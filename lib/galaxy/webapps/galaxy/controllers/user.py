@@ -428,11 +428,11 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return message
 
     def __get_redirect_url(self, redirect):
+        if not redirect or redirect == "None":
+            return None
         root_url = url_for('/', qualified=True)
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
         # or to enter a logout/login loop
-        if not redirect or redirect == "None":
-            redirect = root_url
         if not util.compare_urls(root_url, redirect, compare_path=False) or util.compare_urls(url_for(controller='user', action='logout', qualified=True), redirect):
             log.warning('Redirect URL is outside of Galaxy, will redirect to Galaxy root instead: %s', redirect)
             redirect = root_url
