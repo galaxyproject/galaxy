@@ -135,6 +135,5 @@ export default Backbone.View.extend({
             '<div class="ui-color-picker-panel"/>' +
             "</div>"
         );
-        ("</div>");
     }
 });
