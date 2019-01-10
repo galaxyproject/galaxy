@@ -1,3 +1,4 @@
+*.test.js
 galaxy/scripts/qunit
 galaxy/scripts/mocha
 galaxy/scripts/libs
