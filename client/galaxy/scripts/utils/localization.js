@@ -1,11 +1,11 @@
-define(["i18n!nls/locale"], function(localeStrings) {
+define(["i18n!nls/locale"], function(localeStrings) { // eslint-disable-line no-undef
     // =============================================================================
     /** Simple string replacement localization. Language data from galaxy/scripts/nls */
 
     if (localeStrings.hasOwnProperty("__root")) {
         //console.debug( 'amdi18n+webpack localization for ' + locale + ' loaded' );
 
-        locale = sessionStorage.getItem("currentLocale");
+        let locale = sessionStorage.getItem("currentLocale");
 
         if (locale) {
             localeStrings =
