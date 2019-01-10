@@ -1,1 +1,5 @@
+galaxy/scripts/qunit
+galaxy/scripts/mocha
 galaxy/scripts/libs
+galaxy/scripts/nls
+galaxy/scripts/legacy
