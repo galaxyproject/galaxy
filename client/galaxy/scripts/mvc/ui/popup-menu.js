@@ -133,13 +133,17 @@ var PopupMenu = Backbone.View.extend({
             if (window && window.parent !== window) {
                 try {
                     $(window.parent.document).off("click.close_popup");
-                } catch (err) {}
+                } catch (err) {
+                    console.debug(err);
+                }
             } else {
                 try {
                     $("iframe#galaxy_main")
                         .contents()
                         .off("click.close_popup");
-                } catch (err) {}
+                } catch (err) {
+                    console.debug(err);
+                }
             }
             menu.remove();
         }
@@ -150,13 +154,17 @@ var PopupMenu = Backbone.View.extend({
                 $(window.parent.document)
                     .find("html")
                     .one("click.close_popup", closePopup);
-            } catch (err) {}
+            } catch (err) {
+                console.debug(err);
+            }
         } else {
             try {
                 $("iframe#galaxy_main")
                     .contents()
                     .one("click.close_popup", closePopup);
-            } catch (err) {}
+            } catch (err) {
+                console.debug(err);
+            }
         }
     },
 
