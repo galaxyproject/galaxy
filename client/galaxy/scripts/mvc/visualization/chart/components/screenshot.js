@@ -188,7 +188,9 @@ function _inline($target) {
                     $target.find(rules[idx].selectorText).each(function(i, elem) {
                         elem.style.cssText += rules[idx].style.cssText;
                     });
-                } catch (err) {}
+                } catch (err) {
+                    console.error(err);
+                }
             }
         }
     }
