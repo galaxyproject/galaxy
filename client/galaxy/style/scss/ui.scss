@@ -105,7 +105,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
             height: 86px;
             font-size: 4em;
             padding: 20px 26px;
-            color: lighten(#25537b, 10%);
+            color: lighten($brand-primary, 10%);
         }
         .ui-thumbnails-text {
             word-wrap: break-word;
