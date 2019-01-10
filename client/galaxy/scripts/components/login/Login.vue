@@ -26,11 +26,10 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 
 Vue.use(BootstrapVue);
-
-let rootUrl = getAppRoot();
 
 export default {
     props: {
@@ -44,13 +43,15 @@ export default {
         }
     },
     data() {
+        let Galaxy = getGalaxyInstance();
         return {
             login: null,
             password: null,
             url: null,
             provider: null,
             messageText: null,
-            messageVariant: null
+            messageVariant: null,
+            redirect: Galaxy.params.redirect
         };
     },
     computed: {
@@ -60,7 +61,8 @@ export default {
     },
     methods: {
         submit: function(method) {
-            let data = {login: this.login, password: this.password};
+            let rootUrl = getAppRoot();
+            let data = {login: this.login, password: this.password, redirect: this.redirect};
             axios
                 .post(`${rootUrl}user/login`, data)
                 .then(response => {
@@ -82,6 +84,7 @@ export default {
                 });
         },
         reset: function(ev) {
+            let rootUrl = getAppRoot();
             ev.preventDefault();
             axios
                 .post(`${rootUrl}user/reset_password`, {email: this.login})

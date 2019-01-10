@@ -120,6 +120,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         '''Handle Galaxy Log in'''
         login = kwd.get("login", payload.get("login"))
         password = kwd.get("password", payload.get("password"))
+        redirect = kwd.get("redirect", payload.get("redirect"))
         status = None
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
@@ -166,7 +167,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
                 return {"message": "Your password will expire in %s day(s)." % expiredate.days, "status": "warning"}
-        return {"message": "Success."}
+        return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
     def resend_verification(self, trans):
