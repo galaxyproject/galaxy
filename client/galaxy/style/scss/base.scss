@@ -277,9 +277,9 @@ body {
     z-index: 1000; // Above #dd-helper
     border-top: $layout-border;
     background: $navbar-default-bg;
-    color: #555;
+    color: $panel-header-text-color;
     a {
-        color: #555;
+        color: $panel-header-text-color;
     }
     .drag {
         position: absolute;
