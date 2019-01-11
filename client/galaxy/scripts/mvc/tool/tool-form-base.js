@@ -117,8 +117,6 @@ export default FormBase.extend({
         let Galaxy = getGalaxyInstance();
 
         // Buttons for adding and removing favorite.
-        console.log("Galaxy.user.get('preferences')")
-        console.log(Galaxy.user.get('preferences'))
         let favorites = JSON.parse(Galaxy.user.get('preferences').favorites);
         let in_favorites;
         if (favorites.tools){
