@@ -30,7 +30,7 @@ $frame-default-border: $gray-300;
         top: 0px;
         left: 0px;
         opacity: 0.5;
-        background: darken($base-color, 25%);
+        background: $base-color;
         border: 1px solid $frame-default-border;
     }
 
@@ -98,7 +98,7 @@ $frame-default-border: $gray-300;
             margin: 2px;
             cursor: pointer;
             border: 1px solid $black;
-            background: $base-color-1;
+            background: $base-color;
             color: $white;
             .f-icon-left {
                 cursor: pointer;
@@ -146,7 +146,7 @@ $frame-default-border: $gray-300;
             background: $white;
             width: 16px;
             height: 16px;
-            color: $base-color-1;
+            color: $base-color;
             right: 0px;
             bottom: 0px;
             text-align: center;
