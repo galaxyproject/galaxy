@@ -1,6 +1,6 @@
 import logging
 import os
-from json import dumps
+from json import dumps, loads
 
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
@@ -58,7 +58,14 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Find whether to search.
         if q:
-            hits = self._search(q)
+            if q == 'favs':
+                if 'favorites' in trans.user.preferences:
+                    favorites = loads(trans.user.preferences['favorites'])
+                    hits = favorites['tools']
+                else:
+                    hits = None
+            else:
+                hits = self._search(q)
             results = []
             if hits:
                 for hit in hits:
