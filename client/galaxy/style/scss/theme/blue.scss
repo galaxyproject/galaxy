@@ -56,7 +56,6 @@ $alert-color-level: 8 !default;
 
 // These are not Bootstrap styles but are used extensively in Galaxy. This
 // duplicated the way that Bootstrap 4 alerts are derived.
-
 $state-warning-text: theme-color-level("warning", $alert-color-level);
 $state-warning-bg: theme-color-level("warning", $alert-bg-level);
 $state-warning-border: theme-color-level("warning", $alert-border-level);
@@ -106,6 +105,7 @@ $panel-bg-color: $gray-100; // #dfe5f9;
 $panel-text-color: $gray-900;
 $panel-header-bg-color: $gray-100;
 $panel-header-text-color: $gray-800;
+$panel-footer-bg-color: $gray-100;
 $panel-message-height: 2.5rem; //1.875rem;
 $panel-width: 18rem;
 $panel_header_height: 2.5rem;
@@ -142,16 +142,11 @@ $state-paused-bg: lighten($brand-info, 50%);
 $state-running-bg: lighten($brand-warning, 30%);
 $state-running-border: $border-default-color;
 
-// Navbar
-$navbar-height: 36px; // 2.062500rem;
-$navbar-default-bg: $gray-100; // JT #f8f8f8;
-$navbar-default-border: darken($navbar-default-bg, 20%);
-
 // Workflow editor
 $workflow-editor-bg: $brand-white;
-$workflow-overview-border: $gray-200;
+$workflow-overview-bg: $gray-200;
 
 // Margins
-$spacer: 1rem; // Not sure why this is not coming from Bootstrap
+$spacer: 1rem;
 $margin-v: $spacer * 1.5;
 $margin-h: $spacer;

@@ -122,9 +122,6 @@ body {
 }
 
 #messagebox {
-    // position: absolute;
-    // top: $navbar-height + $layout_top_padding + 1;
-    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -134,9 +131,6 @@ body {
 }
 
 #inactivebox {
-    // position: absolute;
-    // top: $navbar-height + $layout_top_padding + 1;
-    // left: 0;
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
@@ -276,7 +270,7 @@ body {
     width: 100%;
     z-index: 1000; // Above #dd-helper
     border-top: $layout-border;
-    background: $navbar-default-bg;
+    background: $panel-footer-bg-color;
     color: $panel-header-text-color;
     a {
         color: $panel-header-text-color;
@@ -328,7 +322,7 @@ body {
     background: none;
     border-right: $layout-border;
     border-top: $layout-border;
-    background: $navbar-default-bg;
+    background: $panel-footer-bg-color;
     &.right {
         left: inherit;
         right: 0;
@@ -1966,7 +1960,7 @@ div.toolTitleNoSection {
     border-top: solid gray 1px;
     border-left: solid grey 1px;
     padding: 7px 0 0 7px;
-    background: $workflow-overview-border no-repeat url("../../images/resizable.png");
+    background: $workflow-overview-bg no-repeat url("../../images/resizable.png");
     z-index: 20000;
     overflow: hidden;
     max-width: 300px;
