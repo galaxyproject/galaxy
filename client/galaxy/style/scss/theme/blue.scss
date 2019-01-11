@@ -1,6 +1,18 @@
 // Everything is derived from $base-color
 // Caveat: currently only works for light colored backgrounds, scss provides functions (contrast) that could be used to improve this
 
+// Brand colors
+$brand-primary: #25537b;
+$brand-secondary: $gray-300;
+$brand-success: #66cc66;
+$brand-info: #2077b3;
+$brand-warning: #fe7f02;
+$brand-danger: #e31a1e;
+$brand-light: $gray-100;
+$brand-dark: $gray-800;
+$brand-white: white;
+$brand-muted: $gray-600;
+
 // Base color -- Based on the Galaxy masthead color
 $base-color-1: #2c3143;
 $base-color-2: lighten($base-color-1, 25%);
@@ -23,26 +35,21 @@ $gray-800: #343a40 !default;
 $gray-900: #212529 !default;
 $black: #000 !default;
 
-// Brand colors
-$brand-primary: #25537b;
-$brand-success: #66cc66;
-$brand-info: #2077b3;
-$brand-warning: #fe7f02;
-$brand-danger: #e31a1e;
-
 // These variables don't actually determine the colors in Bootstrap 4, instead
 // they use a map called $theme-colors, so here we override that
 $theme-colors: ();
 $theme-colors: map-merge(
     (
         "primary": $brand-primary,
-        "secondary": $gray-300,
+        "secondary": $brand-secondary,
         "success": $brand-success,
-        "info": $brand-info,
-        "warning": $brand-warning,
         "danger": $brand-danger,
-        "light": $gray-100,
-        "dark": $gray-800
+        "warning": $brand-warning,
+        "info": $brand-info,
+        "light": $brand-light,
+        "dark": $brand-dark,
+        "muted": $brand-muted,
+        "white": $brand-white
     ),
     $theme-colors
 );
