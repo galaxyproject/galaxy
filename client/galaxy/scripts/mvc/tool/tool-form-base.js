@@ -117,6 +117,8 @@ export default FormBase.extend({
         let Galaxy = getGalaxyInstance();
 
         // Buttons for adding and removing favorite.
+        console.log("Galaxy.user.get('preferences')")
+        console.log(Galaxy.user.get('preferences'))
         let favorites = JSON.parse(Galaxy.user.get('preferences').favorites);
         let in_favorites;
         if (favorites.tools){
@@ -135,7 +137,7 @@ export default FormBase.extend({
                     .then(response => {
                         favorite_button.hide();
                         remove_favorite_button.show();
-                        Galaxy.user.get('preferences').favorites = response.data;
+                        Galaxy.user.get('preferences').favorites = JSON.stringify(response.data);
                     });
             }
         });
@@ -151,7 +153,7 @@ export default FormBase.extend({
                     .then(response => {
                         remove_favorite_button.hide();
                         favorite_button.show();
-                        Galaxy.user.get('preferences').favorites = response.data;
+                        Galaxy.user.get('preferences').favorites = JSON.stringify(response.data);
                     });
             }
         });
