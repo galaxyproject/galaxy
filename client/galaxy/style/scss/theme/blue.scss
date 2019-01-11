@@ -132,7 +132,7 @@ $form-border: darken($form-heading-bg, 20%);
 
 // Table
 $table-heading-bg: $panel-bg-color;
-$table-bg-accent: lighten($panel-bg-color, 10%); // for striping
+$table-bg-accent: darken($panel-bg-color, 5%);
 $table-border-color: darken($table-heading-bg, 20%);
 
 // Additional state colors
