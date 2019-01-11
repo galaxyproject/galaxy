@@ -238,7 +238,7 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
         try {
             data = JSON.parse(data);
         } catch (err) {
-            console.debug(err);
+            // data isn't JSON, skip.
         }
 
         self.lastAjax = {
