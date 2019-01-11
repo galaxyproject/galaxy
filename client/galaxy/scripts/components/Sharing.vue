@@ -4,7 +4,7 @@
         <b-alert :show="show_danger" variant="danger" dismissible>
             {{ err_msg }}
         </b-alert>
-        </br>
+        <br>
         <div v-if="!has_username">
             <div>To make a {{model_class_lc}} accessible via link or publish it, you must create a public username:</div>
             <form class="form-group" @submit.prevent="setUsername()">

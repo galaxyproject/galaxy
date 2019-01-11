@@ -345,7 +345,7 @@
                         {{ l("Type") }}:
                     </label>
                     <select2 name="extension" class="extension-select" v-model="extension" >
-                        <option v-for="(col, index) in extensions" :value="col['id']"">{{ col["text"] }}</option>
+                        <option v-for="(col, index) in extensions" :value="col['id']">{{ col["text"] }}</option>
                     </select2>
                 </div>
                 <div class="rule-footer-genome-group" v-if="genome && showGenomeSelector">
@@ -353,7 +353,7 @@
                         {{ l("Genome") }}:
                     </label>
                     <select2 class="genome-select" v-model="genome">
-                        <option v-for="(col, index) in genomes" :value="col['id']"">{{ col["text"] }}</option>
+                        <option v-for="(col, index) in genomes" :value="col['id']">{{ col["text"] }}</option>
                     </select2>
                 </div>
                 <label v-if="showAddNameTag">
