@@ -739,8 +739,6 @@ input[type="text"],
 input[type="password"] {
     font-size: $font-size-base;
     line-height: $line-height-base;
-    border: 1px solid $border-default-color;
-    padding: 3px;
 }
 
 // Always style buttons and submits as bootstrap buttons
@@ -748,7 +746,6 @@ input[type="submit"],
 button {
     @extend .btn;
     @extend .btn-secondary;
-    // The above overrides the button variants (primary, danger, etc) because it occurs later, redefine btn-primary (bit of a hack)
     &.btn-primary {
         @extend .btn-primary;
     }
