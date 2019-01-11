@@ -1,5 +1,5 @@
+// eslint-disable-next-line no-undef
 define(["i18n!nls/locale"], function(localeStrings) {
-    // eslint-disable-line no-undef
     // =============================================================================
     /** Simple string replacement localization. Language data from galaxy/scripts/nls */
 
