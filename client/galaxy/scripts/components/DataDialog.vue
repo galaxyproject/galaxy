@@ -1,7 +1,6 @@
 <template>
     <b-modal class="data-dialog-modal" v-model="modalShow" :ok-only="true" ok-title="Close">
         <template slot="modal-header">
-            <h5 class="modal-title">{{ modalTitle }}</h5>
             <b-input-group v-if="optionsShow">
                 <b-input v-model="filter" placeholder="Type to Search" />
                 <b-input-group-append>
@@ -53,15 +52,6 @@ export default {
         callback: {
             type: Function,
             required: true
-        }
-    },
-    computed: {
-        modalTitle() {
-            if (this.errorMessage) {
-                return "Failed to load datasets";
-            } else if (!this.optionsShow) {
-                return "Loading datasets";
-            }
         }
     },
     data() {
