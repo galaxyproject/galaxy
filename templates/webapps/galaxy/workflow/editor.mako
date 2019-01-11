@@ -84,9 +84,9 @@
             </div>
         %else:
             %if section:
-                <div class="toolTitleDisabled">
+                <div class="toolTitle text-muted">
             %else:
-                <div class="toolTitleNoSectionDisabled">
+                <div class="toolTitleNoSection text-muted">
             %endif
                 %if "[[" in tool.description and "]]" in tool.description:
                     ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}

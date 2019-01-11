@@ -595,24 +595,6 @@ div.toolHelpBody {
     width: 100%;
 }
 
-// In workflow
-div.toolTitleDisabled {
-    padding-top: 5px;
-    padding-bottom: 5px;
-    margin-left: 16px;
-    margin-right: 10px;
-    display: list-item;
-    list-style: square outside;
-    font-style: italic;
-    color: gray;
-}
-
-div.toolTitleNoSectionDisabled {
-    padding-bottom: 0px;
-    font-style: italic;
-    color: gray;
-}
-
 div.toolFormRow {
     position: relative;
 }
