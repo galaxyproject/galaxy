@@ -22,6 +22,8 @@ log = logging.getLogger(__name__)
 # Do not allow these tools to be called directly - they (it) enforces extra security and
 # provides access via a different API endpoint.
 PROTECTED_TOOLS = ["__DATA_FETCH__"]
+# Tool search bypasses the fulltext for the following list of terms
+SEARCH_RESERVED_TERMS_FAVORITES = ['favs', 'favorites', 'favourites']
 
 
 class ToolsController(BaseAPIController, UsesVisualizationMixin):
@@ -58,7 +60,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Find whether to search.
         if q:
-            if q == 'favs':
+            if q in SEARCH_RESERVED_TERMS_FAVORITES:
                 if 'favorites' in trans.user.preferences:
                     favorites = loads(trans.user.preferences['favorites'])
                     hits = favorites['tools']
