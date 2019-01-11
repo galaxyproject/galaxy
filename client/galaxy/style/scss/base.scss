@@ -629,12 +629,13 @@ div.toolFormRow {
 }
 
 .toolForm.toolFormInCanvas.tool-node-error {
-    border-color: #aa6666;
+    border-color: $state-danger-border;
     .toolFormTitle {
-        background: #ffcccc;
-        border-color: #aa6666;
+        background: $state-danger-bg;
+        border-color: $state-danger-border;
     }
 }
+
 div.form,
 div.toolForm {
     border: solid $form-border 1px;
@@ -692,22 +693,6 @@ div.form-row-input {
 div.form-row-input label {
     font-weight: normal;
     display: inline;
-}
-
-div.form-row-error-message {
-    width: 300px;
-    float: left;
-    color: red;
-    font-weight: bold;
-    padding: 3px 0;
-}
-
-.form-row .help,
-.toolParamHelp {
-    color: #666;
-    a {
-        color: #666;
-    }
 }
 
 .form-row.form-actions {
@@ -864,13 +849,6 @@ button {
 .infomessagelarge {
     @extend .alert-info;
     background-image: url(../../images/info_large.png);
-}
-
-.screencastBox {
-    padding-left: 10px;
-    border-color: #aaaa66;
-    background-color: #ffffcc;
-    background-image: none;
 }
 
 .errormessage,
@@ -1256,38 +1234,6 @@ ul.manage-table-actions li {
     background: $state-default-bg;
 }
 
-.state-fg-new {
-    color: #ffb030;
-}
-
-.state-fg-upload {
-    color: #d090d0;
-}
-
-.state-fg-waiting {
-    color: #e8c060;
-}
-
-.state-fg-queued {
-    color: #888888;
-}
-
-.state-fg-running {
-    color: #aaaa66;
-}
-
-.state-fg-ok {
-    color: #66aa66;
-}
-
-.state-fg-error {
-    color: #aa6666;
-}
-
-.state-fg-deleted {
-    color: #3399ff;
-}
-
 // Button styles
 
 button {
@@ -1322,19 +1268,11 @@ a.action-button {
     @extend .btn-secondary;
 }
 
-//.action-button > * {
-//    vertical-align: middle;
-//}
-
 .action-button:hover {
     @extend .btn:hover;
-    //color: black;
-    //background: #dddddd;
 }
 .action-button:active {
     @extend .btn.active;
-    //color: white;
-    //background: #aaaaaa;
 }
 
 // A menu button is a button that has an attached popup menu
@@ -1354,14 +1292,6 @@ a.action-button {
     cursor: pointer;
     position: relative;
     @extend .unselectable;
-
-    // border: solid transparent 1px;
-    // -moz-border-radius: 0.25em;
-    // -webkit-border-radius: 0.25em;
-    // border-radius: 0.25em;
-
-    // padding: 1px 0.25em;
-    // margin: -1px -0.25em;
 
     a {
         text-decoration: none;
@@ -1416,24 +1346,6 @@ a.action-button {
 }
 
 // Popup menu styles
-
-/*
-.overlay-border {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 100%;
-    padding: 1em;
-    margin: -1em;
-    background-color: rgba(0,0,0,0.5);
-    -moz-border-radius: 1em;
-    -webkit-border-radius: 1em;
-    z-index: -1;
-}
-*/
-
-// Galaxy popup menus
 div.popmenu-wrapper {
     position: absolute;
     top: 100%;
