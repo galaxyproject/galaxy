@@ -2003,7 +2003,7 @@ class Dataset(StorableObject, RepresentById):
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr(self, "external_extra_files_path", None):
-            return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id)
+            return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
         else:
             return os.path.abspath(self.external_extra_files_path)
 
@@ -2015,7 +2015,12 @@ class Dataset(StorableObject, RepresentById):
     extra_files_path = property(get_extra_files_path, set_extra_files_path)
 
     def extra_files_path_exists(self):
-        return self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        return self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True)
+
+    @property
+    def _extra_files_rel_path(self):
+        store_by = getattr(self.object_store, "store_by", "id")
+        return self._extra_files_path or "dataset_%s_files" % getattr(self, store_by)
 
     def _calculate_size(self):
         if self.external_filename:
@@ -2064,7 +2069,7 @@ class Dataset(StorableObject, RepresentById):
         if self.file_size is None:
             self.set_size()
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
             for root, dirs, files in os.walk(self.extra_files_path):
                 self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
 
@@ -2090,8 +2095,8 @@ class Dataset(StorableObject, RepresentById):
         """Remove the file and extra files, marks deleted and purged"""
         # os.unlink( self.file_name )
         self.object_store.delete(self)
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
-            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
+            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_rel_path, dir_only=True)
         # if os.path.exists( self.extra_files_path ):
         #     shutil.rmtree( self.extra_files_path )
         # TODO: purge metadata files

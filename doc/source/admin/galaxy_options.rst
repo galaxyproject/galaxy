@@ -945,6 +945,18 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_store_by``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    What Dataset attribute is used to reference files in an
+    ObjectStore implementation, default is 'id' but can also be set to
+    'uuid' for more de-centralized usage.
+:Default: ``id``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~
 ``smtp_server``
 ~~~~~~~~~~~~~~~

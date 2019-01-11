@@ -3,6 +3,7 @@ from contextlib import contextmanager
 from shutil import rmtree
 from string import Template
 from tempfile import mkdtemp
+from uuid import uuid4
 from xml.etree import ElementTree
 
 import yaml
@@ -14,6 +15,7 @@ from galaxy.objectstore.azure_blob import AzureBlobObjectStore
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
+from galaxy.util import directory_hash_id
 
 
 DISK_TEST_CONFIG = """<?xml version="1.0"?>
@@ -87,6 +89,75 @@ def test_disk_store():
             # Test delete
             to_delete_dataset = MockDataset(5)
             to_delete_real_path = directory.write("content to be deleted!", "files1/000/dataset_5.dat")
+            assert object_store.exists(to_delete_dataset)
+            assert object_store.delete(to_delete_dataset)
+            assert not object_store.exists(to_delete_dataset)
+            assert not os.path.exists(to_delete_real_path)
+
+
+DISK_TEST_CONFIG_BY_UUID_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+store_by: uuid
+extra_dirs:
+  - type: temp
+    path: "${temp_directory}/tmp1"
+  - type: job_work
+    path: "${temp_directory}/job_working_directory1"
+"""
+
+
+def test_disk_store_by_uuid():
+    for config_str in [DISK_TEST_CONFIG_BY_UUID_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            # Test no dataset with id 1 exists.
+            absent_dataset = MockDataset(1)
+            assert not object_store.exists(absent_dataset)
+
+            # Write empty dataset 2 in second backend, ensure it is empty and
+            # exists.
+            empty_dataset = MockDataset(2)
+            directory.write("", "files1/%s/dataset_%s.dat" % (empty_dataset.rel_path_for_uuid_test(), empty_dataset.uuid))
+            assert object_store.exists(empty_dataset)
+            assert object_store.empty(empty_dataset)
+
+            # Write non-empty dataset in backend 1, test it is not emtpy & exists.
+            hello_world_dataset = MockDataset(3)
+            directory.write("Hello World!", "files1/%s/dataset_%s.dat" % (hello_world_dataset.rel_path_for_uuid_test(), hello_world_dataset.uuid))
+            assert object_store.exists(hello_world_dataset)
+            assert not object_store.empty(hello_world_dataset)
+
+            # Test get_data
+            data = object_store.get_data(hello_world_dataset)
+            assert data == "Hello World!"
+
+            data = object_store.get_data(hello_world_dataset, start=1, count=6)
+            assert data == "ello W"
+
+            # Test Size
+
+            # Test absent and empty datasets yield size of 0.
+            assert object_store.size(absent_dataset) == 0
+            assert object_store.size(empty_dataset) == 0
+            # Elsewise
+            assert object_store.size(hello_world_dataset) > 0  # Should this always be the number of bytes?
+
+            # Test percent used (to some degree)
+            percent_store_used = object_store.get_store_usage_percent()
+            assert percent_store_used > 0.0
+            assert percent_store_used < 100.0
+
+            # Test update_from_file test
+            output_dataset = MockDataset(4)
+            output_real_path = os.path.join(directory.temp_directory, "files1", output_dataset.rel_path_for_uuid_test(), "dataset_%s.dat" % output_dataset.uuid)
+            assert not os.path.exists(output_real_path)
+            output_working_path = directory.write("NEW CONTENTS", "job_working_directory1/example_output")
+            object_store.update_from_file(output_dataset, file_name=output_working_path, create=True)
+            assert os.path.exists(output_real_path)
+
+            # Test delete
+            to_delete_dataset = MockDataset(5)
+            to_delete_real_path = directory.write("content to be deleted!", "files1/%s/dataset_%s.dat" % (to_delete_dataset.rel_path_for_uuid_test(), to_delete_dataset.uuid))
             assert object_store.exists(to_delete_dataset)
             assert object_store.delete(to_delete_dataset)
             assert not object_store.exists(to_delete_dataset)
@@ -636,7 +707,12 @@ class MockDataset(object):
     def __init__(self, id):
         self.id = id
         self.object_store_id = None
+        self.uuid = uuid4()
         self.tags = []
+
+    def rel_path_for_uuid_test(self):
+        rel_path = os.path.join(*directory_hash_id(self.uuid))
+        return rel_path
 
 
 # Poor man's mocking. Need to get a real mocking library as real Galaxy development

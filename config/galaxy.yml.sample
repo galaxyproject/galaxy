@@ -528,6 +528,11 @@ galaxy:
   # it overrides any other objectstore settings.
   #object_store_config_file: config/object_store_conf.xml
 
+  # What Dataset attribute is used to reference files in an ObjectStore
+  # implementation, default is 'id' but can also be set to 'uuid' for
+  # more de-centralized usage.
+  #object_store_store_by: id
+
   # Galaxy sends mail for various things: subscribing users to the
   # mailing list if they request it, password resets, reporting dataset
   # errors, and sending activation emails. To do this, it needs to send

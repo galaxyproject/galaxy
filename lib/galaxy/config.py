@@ -543,6 +543,8 @@ class Configuration(object):
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = resolve_path(kwargs.get("object_store_cache_path", "database/object_store_cache"), self.root)
+        self.object_store_store_by = kwargs.get("object_store_store_by", "id")
+
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key', None) is not None:
             self.os_access_key = kwargs.get('aws_access_key', None)
