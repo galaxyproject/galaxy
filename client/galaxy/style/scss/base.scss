@@ -422,7 +422,7 @@ div.unified-panel-body-background {
             display: flex;
             align-items: center;
             &.active {
-                background: black;
+                background: darken($base-color, 10%);
             }
             .nav-link {
                 cursor: pointer;

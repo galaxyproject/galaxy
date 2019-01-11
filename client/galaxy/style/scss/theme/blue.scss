@@ -1,6 +1,3 @@
-// Everything is derived from $base-color
-// Caveat: currently only works for light colored backgrounds, scss provides functions (contrast) that could be used to improve this
-
 // Base colors
 $base-color: #2c3143;
 
@@ -20,7 +17,7 @@ $brand-toggle: gold;
 // Grays from Bootstrap 4 _variables.scss
 $white: $brand-white;
 $gray-100: $brand-light;
-$gray-200: darken($brand-light, 10%);
+$gray-200: darken($gray-100, 10%);
 $gray-300: darken($gray-200, 10%);
 $gray-400: darken($gray-300, 10%);
 $gray-500: darken($gray-400, 10%);
