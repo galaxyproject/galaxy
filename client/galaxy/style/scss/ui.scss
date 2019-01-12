@@ -199,7 +199,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     .portlet-header:first-child {
         @extend .card-header;
         @extend .rounded;
-        background: $gray-200;
+        background: $portlet-bg-color;
         .portlet-title {
             .portlet-title-text.collapsible {
                 cursor: pointer;
@@ -239,10 +239,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .ui-portlet;
     @extend .mb-2;
     border: none;
-    border-left: solid 3px $gray-200;
+    border-left: solid 3px $portlet-bg-color;
     border-radius: $border-radius-large;
     .portlet-header:first-child {
-        background: $gray-200;
+        background: $portlet-bg-color;
         @extend .rounded-0;
         border-top-right-radius: $border-radius-large !important;
         padding: 5px;

@@ -16,14 +16,14 @@ $brand-toggle: gold;
 // Grays from Bootstrap 4 _variables.scss
 $white: $brand-white;
 $gray-100: $brand-light;
-$gray-200: darken($gray-100, 10%);
-$gray-300: darken($gray-200, 10%);
-$gray-400: darken($gray-300, 10%);
-$gray-500: darken($gray-400, 10%);
-$gray-600: darken($gray-500, 10%);
-$gray-700: darken($gray-600, 10%);
-$gray-800: darken($gray-700, 10%);
-$gray-900: darken($gray-800, 10%);
+$gray-200: darken($gray-100, 5%);  // welcome background
+$gray-300: darken($gray-100, 10%);
+$gray-400: darken($gray-100, 20%); // input borders
+$gray-500: darken($gray-100, 40%);
+$gray-600: darken($gray-100, 60%); // text-muted
+$gray-700: darken($gray-100, 70%);
+$gray-800: darken($gray-100, 80%);
+$gray-900: darken($gray-100, 90%); // text-regular
 $black: $brand-dark;
 
 // These variables don't actually determine the colors in Bootstrap 4, instead
@@ -98,15 +98,18 @@ $text-color: $gray-900;
 $masthead-height: 3rem;
 
 // Side panels
-$panel-bg-color: $gray-100; // #dfe5f9;
+$panel-bg-color: $gray-100;
 $panel-text-color: $gray-900;
 $panel-header-bg-color: $gray-100;
 $panel-header-text-color: $gray-800;
 $panel-footer-bg-color: $gray-100;
-$panel-message-height: 2.5rem; //1.875rem;
+$panel-message-height: 2.5rem;
 $panel-width: 18rem;
 $panel_header_height: 2.5rem;
 $panel_footer_height: 25px;
+
+// Portlets
+$portlet-bg-color: $gray-200;
 
 // Layout
 $layout_top_padding: 0px;
@@ -116,11 +119,11 @@ $layout-border: none;
 // Borders
 $border-radius-base: 0.1875rem;
 $border-radius-large: 0.3125rem;
-$border-default-color: $gray-300;
+$border-default-color: $gray-400;
 
 // Buttons
 $btn-default-color: $text-color;
-$btn-default-bg: darken($white, 5%);
+$btn-default-bg: $gray-200;
 $btn-default-border: $border-default-color;
 
 // Forms
