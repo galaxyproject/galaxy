@@ -40,7 +40,7 @@ def float_wdefault(s, d, c):
 
 def stop_err(msg):
     sys.stderr.write(msg)
-    sys.exit()
+    sys.exit(1)
 
 
 def mode(data):
