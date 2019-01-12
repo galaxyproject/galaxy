@@ -1,6 +1,7 @@
 """
-Kind of fail save job control via the DRMAA API.
-Tested for UNIVA grid engine
+Kind of fail save job control via the DRMAA API / qstat and qacct.
+
+Known to work on the UNIVA grid engine. 
 
 known bugs/problems:
 - if a job runs longer than the time limits of the queue two things happen
@@ -62,14 +63,6 @@ class UnivaJobRunner(DRMAAJobRunner):
 
     def _complete_terminal_job(self, ajs, drmaa_state, **kwargs):
         extinfo = dict()
-        log.error("AJS %s %s" % (str(type(ajs)), str(dir(ajs))))
-        log.error("JOB_WRAPPER %s %s" % (str(type(ajs.job_wrapper)), str(ajs.job_wrapper)))
-        log.error("JOB STATE %s", ajs.job_wrapper.get_state())
-        if ajs.job_wrapper.get_state() in [Job.states.DELETED, Job.states.DELETED_NEW]:
-            log.error("JOB DELETED %s" % str(ajs.job_id))
-        else:
-            log.error("JOB NOT DELETED %s" % str(ajs.job_id))
-
         # get state with job_info/qstat + wait/qacct
         state = self._get_drmaa_state(ajs.job_id, self.ds, True, extinfo)
         # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) -> state {state} info {info}".format(jobid=ajs.job_id, state=self.drmaa_job_state_strings[state], info=extinfo))
@@ -86,7 +79,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             mem_wasted = extinfo["memory_wasted"]
             slots = extinfo["slots"]
 
-            # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
+                # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
 
             # check job for run time or memory violation
             if "deleted" in extinfo and extinfo["deleted"]:
@@ -94,13 +87,13 @@ class UnivaJobRunner(DRMAAJobRunner):
                 ajs.fail_message = "This job failed because it was cancelled."
                 drmaa_state = self.drmaa.JobState.FAILED
             elif ("signal" in extinfo and extinfo["signal"] == "SIGKILL") and time_wasted > time_granted:
-                log.info('({tag}/{jobid}) Job hit walltime'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id))
+                log.error('({tag}/{jobid}) Job hit walltime'.format(tag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id))
                 ajs.fail_message = "This job was terminated because it ran longer than the maximum allowed job run time."
                 ajs.runner_state = ajs.runner_states.WALLTIME_REACHED
                 drmaa_state = self.drmaa.JobState.FAILED
             # test wasted>granted memory only if failed != 0 and exit_status != 0, ie if marked as failed
             elif state == self.drmaa.JobState.FAILED and mem_wasted > mem_granted * slots:
-                log.info('({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted))
+                log.error('({idtag}/{jobid}) Job hit memory limit ({used}>{limit})'.format(idtag=ajs.job_wrapper.get_id_tag(), jobid=ajs.job_id, used=mem_wasted, limit=mem_granted))
                 ajs.fail_message = "This job was terminated because it used more than the maximum allowed memory."
                 ajs.runner_state = ajs.runner_states.MEMORY_LIMIT_REACHED
                 drmaa_state = self.drmaa_job_states.FAILED
@@ -258,7 +251,7 @@ class UnivaJobRunner(DRMAAJobRunner):
         # "NONE". If qdel was called multiple times, every invocation is recorded in a comma
         # separated list.
         if "deleted_by" in qacct and qacct["deleted_by"] != "NONE":
-            log.error("DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]))
+            log.info("DRMAAUniva: job {job_id} was aborted by {culprit}".format(job_id=job_id, culprit=qacct["deleted_by"]))
             extinfo["deleted"] = True
             return self.drmaa.JobState.FAILED
 
