@@ -1081,11 +1081,8 @@ div.debug {
     margin-left: 2px;
 }
 .search-box-input {
-    border: 0;
+    @extend .ui-input;
     float: left;
-    outline: medium none;
-    font-style: italic;
-    font-size: inherit;
 }
 .search-box {
     vertical-align: bottom;
