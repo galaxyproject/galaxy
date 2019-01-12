@@ -277,7 +277,7 @@ $ui-margin-horizontal-large: $margin-v * 2;
     &[readonly],
     fieldset[disabled] & {
         cursor: not-allowed;
-        background-color: $gray-200;
+        background-color: $brand-light;
     }
 }
 

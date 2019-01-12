@@ -125,7 +125,7 @@ body {
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
-    border-bottom: solid $gray-600 1px;
+    border-bottom: solid $border-default-color 1px;
     font-size: 90%;
     display: none;
 }
@@ -134,7 +134,7 @@ body {
     width: 100%;
     height: $panel-message-height !important;
     overflow: hidden;
-    border-bottom: solid $gray-600 1px;
+    border-bottom: solid $border-default-color 1px;
     font-size: 90%;
     display: none;
 }
@@ -549,11 +549,11 @@ div.metadataFormBody div.metadataFormTitle {
 
 div.metadataFormDisabled div.metadataFormTitle {
     background: #eee;
-    border-color: $gray-600;
+    border-color: $border-default-color;
 }
 
 div.metadataFormDisabled {
-    border-color: $gray-600;
+    border-color: $border-default-color;
 }
 
 div.metadataHelpBody {
@@ -756,7 +756,7 @@ button {
     padding: 4px;
     font-size: $font-size-base;
     line-height: $line-height-base;
-    color: $gray-700;
+    color: $text-color;
     border: 1px solid $border-default-color;
     padding-left: 14px !important;
     padding-right: 14px;
@@ -1358,15 +1358,13 @@ ul.dropdown-menu {
         font-size: 11px;
         font-weight: bold;
         line-height: $line-height-base;
-        color: $gray-500;
+        color: $text-color;
         text-transform: uppercase;
     }
-
     li.head > a:hover {
         background: inherit;
         border-color: transparent;
     }
-
     li > a {
         @extend .dropdown-item;
     }
@@ -1464,7 +1462,7 @@ div.permissionContainer {
 
 .editable-text:hover {
     cursor: text;
-    border: dotted $gray-600 1px;
+    border: dotted $border-default-color 1px;
 }
 
 .icon-button.multiinput {
@@ -1927,7 +1925,7 @@ div.toolTitleNoSection {
 }
 .mark-terminal {
     cursor: pointer;
-    color: $gray-500;
+    color: darken($border-default-color, 20%);
     &.mark-terminal-active {
         color: $brand-success;
     }

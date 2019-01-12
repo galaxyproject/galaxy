@@ -86,8 +86,7 @@ $dropdown-link-hover-color: $brand-light;
 $dropdown-link-hover-bg: $brand-primary;
 $dropdown-link-active-color: $brand-toggle;
 
-// Additional variables that are not used by bootstrap but are used
-// in Galaxy stylesheets
+// Galaxy Variables (not used by bootstrap)
 $body-bg: $white;
 $text-color: $gray-900;
 
@@ -96,10 +95,9 @@ $masthead-height: 3rem;
 
 // Side panels
 $panel-bg-color: $gray-100;
-$panel-text-color: $gray-900;
-$panel-header-bg-color: $gray-100;
-$panel-header-text-color: $gray-800;
-$panel-footer-bg-color: $gray-100;
+$panel-text-color: $text-color;
+$panel-header-text-color: $text-color;
+$panel-footer-bg-color: $panel-bg-color;
 $panel-message-height: 2.5rem;
 $panel-width: 18rem;
 $panel_header_height: 2.5rem;
