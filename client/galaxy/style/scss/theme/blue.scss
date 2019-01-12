@@ -134,7 +134,7 @@ $table-border-color: darken($table-heading-bg, 20%);
 $state-default-bg: $gray-200;
 $state-default-border: $border-default-color;
 $state-paused-bg: lighten($brand-info, 50%);
-$state-running-bg: lighten($brand-warning, 30%);
+$state-running-bg: lighten($brand-warning, 40%);
 $state-running-border: $border-default-color;
 
 // Workflow editor
