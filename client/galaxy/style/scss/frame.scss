@@ -18,8 +18,8 @@ $frame-default-border: $gray-300;
         left: 0px;
         height: 100%;
         width: 100%;
-        opacity: 0.6;
-        background: $black;
+        opacity: 0.5;
+        background: $brand-dark;
         overflow: auto;
     }
 
@@ -30,7 +30,7 @@ $frame-default-border: $gray-300;
         top: 0px;
         left: 0px;
         opacity: 0.5;
-        background: $base-color;
+        background: $brand-dark;
         border: 1px solid $frame-default-border;
     }
 
@@ -98,7 +98,7 @@ $frame-default-border: $gray-300;
             margin: 2px;
             cursor: pointer;
             border: 1px solid $black;
-            background: $base-color;
+            background: $brand-dark;
             color: $white;
             .f-icon-left {
                 cursor: pointer;
@@ -146,7 +146,7 @@ $frame-default-border: $gray-300;
             background: $white;
             width: 16px;
             height: 16px;
-            color: $base-color;
+            color: $brand-dark;
             right: 0px;
             bottom: 0px;
             text-align: center;

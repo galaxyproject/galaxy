@@ -405,7 +405,7 @@ div.unified-panel-body-background {
 #masthead {
     padding: 0;
     margin-bottom: 0px;
-    background-color: $base-color;
+    background-color: $brand-dark;
     height: $masthead-height;
     .navbar-nav {
         min-height: 100%;
@@ -416,7 +416,7 @@ div.unified-panel-body-background {
             display: flex;
             align-items: center;
             &.active {
-                background: darken($base-color, 10%);
+                background: darken($brand-dark, 10%);
             }
             .nav-link {
                 cursor: pointer;
