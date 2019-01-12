@@ -130,8 +130,6 @@ class UsersApiTestCase(api.ApiTestCase):
         assert "cat1" in fav_response.json()["tools"]
         url = self._api_url("tools", params=dict(q="favs", key=user_key))
         search_response = requests.get(url).json()
-        # test_response = requests.get(self._api_url("configuration", use_key=True)).json()
-        # assert "gg" != test_response['is_admin_user']
         assert "cat1" in search_response
 
     def test_communication(self):
