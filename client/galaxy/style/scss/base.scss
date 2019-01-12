@@ -172,6 +172,7 @@ body {
             height: 100%;
             padding: $margin-h $margin-v;
             overflow: auto;
+            background: $brand-white;
         }
         .center-frame {
             position: absolute;
@@ -763,6 +764,7 @@ button {
     margin-bottom: 0;
     @include border-radius(14px);
     max-width: auto;
+    background: $brand-white;
 }
 .search-query:focus {
     border-color: darken(rgba(82, 168, 236, 0.8), 15%);
