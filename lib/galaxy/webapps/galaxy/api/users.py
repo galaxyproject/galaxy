@@ -520,6 +520,11 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
         if object_type == 'tools':
             tool_id = payload.get('object_id')
+            tool = self.app.toolbox.get_tool(tool_id)
+            if not tool:
+                raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % tool_id)
+            if not tool.allow_user_access(user):
+                raise exceptions.AuthenticationFailed("Access denied for tool with id '%s'." % tool_id)
             if 'tools' in favorites:
                 favorite_tools = favorites['tools']
             else:
@@ -554,6 +559,8 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     favorites['tools'] = favorite_tools
                     user.preferences['favorites'] = json.dumps(favorites)
                     trans.sa_session.flush()
+                else:
+                    raise exceptions.ObjectNotFound('Given object is not in the list of favorites')
         return favorites
 
     def _validate_email(self, email):

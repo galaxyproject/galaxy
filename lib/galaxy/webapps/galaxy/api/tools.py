@@ -60,7 +60,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Find whether to search.
         if q:
-            if q in SEARCH_RESERVED_TERMS_FAVORITES:
+            if trans.user and q in SEARCH_RESERVED_TERMS_FAVORITES:
                 if 'favorites' in trans.user.preferences:
                     favorites = loads(trans.user.preferences['favorites'])
                     hits = favorites['tools']
