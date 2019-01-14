@@ -254,6 +254,10 @@ class BaseDatasetPopulator(object):
     def cancel_job(self, job_id):
         return self._delete("jobs/%s" % job_id)
 
+    def delete_dataset(self, history_id, content_id):
+        delete_response = self._delete("histories/%s/contents/%s" % (history_id, content_id))
+        return delete_response
+
     def _summarize_history(self, history_id):
         pass
 
