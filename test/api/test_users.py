@@ -1,10 +1,9 @@
 import json
-import requests
 
 from requests import (
+    delete,
     get,
-    put,
-    delete
+    put
 )
 
 from base import api  # noqa: I100,I202

@@ -28,7 +28,8 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             total_disk_usage: 0,
             nice_total_disk_usage: "",
             quota_percent: null,
-            is_admin: false
+            is_admin: false,
+            preferences: ""
         },
 
         /** Set up and bind events
@@ -51,6 +52,32 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
 
         isAdmin: function() {
             return this.get("is_admin");
+        },
+
+        getPreferences: function(){
+            let preferences =  this.preferences ? JSON.parse(this.preferences) : {};
+            return preferences;
+        },
+
+        updatePreferences: function(name, new_value) {
+            let preferences = this.getPreferences()
+            preferences[name] = new_value;
+            this.preferences = JSON.stringify(preferences);
+        },
+
+        getFavorites: function(){
+            let preferences = this.getPreferences();
+            if (preferences && preferences.favorites){
+                return preferences.favorites;
+            } else {
+                return {};
+            }
+        },
+
+        updateFavorites: function(object_type, favorites_new){
+            let favorites = this.getFavorites();
+            favorites.tools = favorites_new;
+            this.updatePreferences("favorites", favorites)
         },
 
         /** Load a user with the API using an id.
