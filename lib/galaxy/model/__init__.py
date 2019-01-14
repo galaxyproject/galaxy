@@ -891,6 +891,7 @@ class Job(JobLike, UsesCreateAndUpdateTime, Dictifiable, RepresentById):
     def to_dict(self, view='collection', system_details=False):
         rval = super(Job, self).to_dict(view=view)
         rval['tool_id'] = self.tool_id
+        rval['history_id'] = self.history_id
         if system_details:
             # System level details that only admins should have.
             rval['external_id'] = self.job_runner_external_id
