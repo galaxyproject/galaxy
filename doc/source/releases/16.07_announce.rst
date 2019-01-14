@@ -12,7 +12,7 @@ Highlights
   Galaxy admins obtained the ability to install Galaxy tool's
   dependencies using the Conda package manager. This is a Beta feature
   and we encourage interested deployers to opt-in by modifying configuration.
-  Documentation that explains this switch and answers FAQ is `available <https://docs.galaxyproject.org/en/master/admin/conda_faq.html>`__.
+  Documentation that explains this switch and answers FAQ is :doc:`available <../admin/conda_faq>`.
 
 **Dynamic tool destinations**
   Our friends from Canada National Microbiology Laboratory enhanced
@@ -24,7 +24,7 @@ Highlights
 **Galaxy chat**
   Admins can now plug in the included communication server to enable
   users of their instance to use real-time chat within the Galaxy interface.
-  Please see the `documentation <https://docs.galaxyproject.org/en/master/admin/chat.html>`__
+  Please see the :doc:`documentation <../admin/special_topics/chat>`
   to learn how to activate and use this feature.
   Implemented in `PR #2515 <https://github.com/galaxyproject/galaxy/pull/2515>`__
 
