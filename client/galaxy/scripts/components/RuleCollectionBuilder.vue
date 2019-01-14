@@ -76,6 +76,7 @@
                             <label>
                                 {{ l("For") }}
                                 <select v-model="addColumnMetadataValue">
+                                    <!-- eslint-disable-next-line vue/require-v-for-key -->
                                     <option v-for="(col, index) in metadataOptions" :value="index">{{ col }}</option>
                                 </select>
                             </label>
@@ -474,13 +475,13 @@
                 <div class="rule-footer-extension-group" v-if="extension && showFileTypeSelector">
                     <label> {{ l("Type") }}: </label>
                     <select2 name="extension" class="extension-select" v-model="extension">
-                        <option v-for="(col, index) in extensions" :value="col['id']">{{ col["text"] }}</option>
+                        <option v-for="col in extensions" :value="col['id']" :key="col.id">{{ col["text"] }}</option>
                     </select2>
                 </div>
                 <div class="rule-footer-genome-group" v-if="genome && showGenomeSelector">
                     <label> {{ l("Genome") }}: </label>
                     <select2 class="genome-select" v-model="genome">
-                        <option v-for="(col, index) in genomes" :value="col['id']">{{ col["text"] }}</option>
+                        <option v-for="col in genomes" :value="col['id']" :key="col.id">{{ col["text"] }}</option>
                     </select2>
                 </div>
                 <label v-if="showAddNameTag"> {{ l("Add nametag for name") }}: </label>
@@ -1285,9 +1286,7 @@ export default {
                 sources = data.map(el => null);
                 columns = [];
                 if (this.initialElements) {
-                    for (var columnIndex in this.initialElements[0]) {
-                        columns.push("new");
-                    }
+                    this.initialElements[0].forEach(() => columns.push("new"));
                 }
             }
 
@@ -1838,7 +1837,6 @@ export default {
             const datasets = [];
 
             for (let dataIndex in data) {
-                const rowData = data[dataIndex];
                 const res = this._datasetFor(dataIndex, data, mappingAsDict);
                 datasets.push(res);
             }

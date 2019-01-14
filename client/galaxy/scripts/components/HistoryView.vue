@@ -21,7 +21,7 @@
                 <button id="toggle-hidden" class="btn btn-secondary">Include hidden</button>
             </div>
         </div>
-         <!-- eslint-disable-next-line vue/require-v-for-key -->
+        <!-- eslint-disable-next-line vue/require-v-for-key -->
         <div v-for="error in errorMessages">
             <div class="alert alert-danger" role="alert">{{ error }}</div>
         </div>

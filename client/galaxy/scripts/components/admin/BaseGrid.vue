@@ -10,7 +10,7 @@
                 </slot>
                 <slot name="rows">
                     <template v-for="(row, index) in rows">
-                         <!-- eslint-disable-next-line vue/require-v-for-key -->
+                        <!-- eslint-disable-next-line vue/require-v-for-key -->
                         <tr :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
                             <td v-for="column in columns" :key="column.dataIndex">{{ row[column.dataIndex] }}</td>
                         </tr>

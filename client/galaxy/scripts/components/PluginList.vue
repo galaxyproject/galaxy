@@ -29,7 +29,9 @@
                                 <div class="font-weight-bold text-dark">Select a dataset to visualize:</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
-                                        <option v-for="file in hdas" :key="file.id" :value="file.id">{{ file.name }}</option>
+                                        <option v-for="file in hdas" :key="file.id" :value="file.id">{{
+                                            file.name
+                                        }}</option>
                                     </select>
                                     <div class="icon-dropdown fa fa-caret-down" />
                                 </div>
