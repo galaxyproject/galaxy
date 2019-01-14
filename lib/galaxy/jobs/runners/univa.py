@@ -1,7 +1,7 @@
 """
-Kind of fail save job control via the DRMAA API / qstat and qacct.
+Job control via the DRMAA API / qstat and qacct.
 
-Known to work on the UNIVA grid engine. 
+Known to work on the UNIVA grid engine.
 
 known bugs/problems:
 - if a job runs longer than the time limits of the queue two things happen
@@ -9,8 +9,9 @@ known bugs/problems:
   2. at the hard limit (h_rt) SIGKILL is sent to the job
   The second case is covered by the runner -- it's the same mechanism that
   kills a job when the job time limit is reached. The first case is currently
-  not covered. The good thing is that most programs ignore SIGUSR1. For the
-  others it seems that jobs are marked as failed (killed by the DRM) at random.
+  not covered. The good thing is that most programs ignore SIGUSR1.
+  For the second case it seems that jobs are marked as failed (killed by the DRM)
+  at random.
 
   Possible solutions:
   - configure the job destinations such that the queue limits are never reached.
@@ -31,7 +32,6 @@ import time
 
 from galaxy import util
 from galaxy.jobs.runners.drmaa import DRMAAJobRunner
-from galaxy.model import Job
 log = logging.getLogger(__name__)
 
 __all__ = ('UnivaJobRunner',)
@@ -79,7 +79,7 @@ class UnivaJobRunner(DRMAAJobRunner):
             mem_wasted = extinfo["memory_wasted"]
             slots = extinfo["slots"]
 
-                # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
+            # log.debug("UnivaJobRunner:_complete_terminal_job ({jobid}) memviolation {mv}".format(jobid=ajs.job_id, mv=memviolation))
 
             # check job for run time or memory violation
             if "deleted" in extinfo and extinfo["deleted"]:
@@ -533,56 +533,6 @@ class UnivaJobRunner(DRMAAJobRunner):
         else:
             log.error("DRMAAUniva: job {job_id} unknown state from qstat: {state}".format(job_id=job_id, state=state))
             return self.drmaa.JobState.UNDETERMINED
-
-
-# def _check_memory_limit(efile_path):
-#     """
-#     A very poor implementation of tail, but it doesn't need to be fancy
-#     since we are only searching the last 2K
-#     checks for an error message that indicates an memory constraint violation
-#     returns True if such an indicator is found and False otherwise
-#     """
-#     # list of error output from different programming languages in case
-#     # of memory allocation errors for bash, Python, C++, JAVA, Perl
-#     memerrors = set(["xrealloc: cannot allocate",
-#                      "MemoryError",
-#                      "std::bad_alloc",
-#                      "java.lang.OutOfMemoryError: Java heap space",
-#                      "Out of memory!"])
-#
-#     try:
-#         log.debug('Checking %s for exceeded memory messages from programs', efile_path)
-#         with open(efile_path) as f:
-#             if os.path.getsize(efile_path) > MEMORY_LIMIT_SCAN_SIZE:
-#                 f.seek(-MEMORY_LIMIT_SCAN_SIZE, os.SEEK_END)
-#                 f.readline()
-#             for line in f.readlines():
-#                 stripped_line = line.strip()
-#                 for err in memerrors:
-#                     if err in stripped_line:
-#                         return True
-#     except:
-#         log.exception('Error reading end of %s:', efile_path)
-#
-#     return False
-
-
-# def _parse_mem(mstring):
-#     mem = None
-#     m = re.search("([0-9.]+)([KGM]?)", mstring)
-#     if m is not None:
-#         mem = float(m.group(1))
-#         if m.group(2) == 'K':
-#             mem *= 1024
-#         elif m.group(2) == 'M':
-#             mem *= 1024 * 1024
-#         elif m.group(2) == 'G':
-#             mem *= 1024 * 1024 * 1024
-#         elif m.group(2) == '':
-#             pass
-#         else:
-#             log.error("DRMAAUniva: unparsable memory spec {spec}".format(spec=mstring))
-#     return mem
 
 
 def _parse_time(tstring):
