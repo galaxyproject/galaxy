@@ -14,11 +14,13 @@
                 </th>
             </tr>
             <tr>
+                <!-- eslint-disable-next-line vue/require-v-for-key -->
                 <th v-for="column in dataManagerColumns">{{ column }}</th>
             </tr>
         </thead>
-        <tbody v-for="item in dataManagerItems">
+        <tbody v-for="item in dataManagerItems" :key="item.value">
             <tr>
+                <!-- eslint-disable-next-line vue/require-v-for-key -->
                 <td v-for="column in dataManagerColumns">{{ item[column] }}</td>
             </tr>
         </tbody>

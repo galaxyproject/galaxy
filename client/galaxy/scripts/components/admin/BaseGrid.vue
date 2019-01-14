@@ -6,12 +6,13 @@
         <div class="card-body">
             <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
                 <slot name="columns">
-                    <th v-for="column in columns" bgcolor="#D8D8D8">{{ column.text }}</th>
+                    <th v-for="column in columns" bgcolor="#D8D8D8" :key="column.dataIndex">{{ column.text }}</th>
                 </slot>
                 <slot name="rows">
                     <template v-for="(row, index) in rows">
+                         <!-- eslint-disable-next-line vue/require-v-for-key -->
                         <tr :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
-                            <td v-for="column in columns">{{ row[column.dataIndex] }}</td>
+                            <td v-for="column in columns" :key="column.dataIndex">{{ row[column.dataIndex] }}</td>
                         </tr>
                     </template>
                 </slot>

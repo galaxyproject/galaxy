@@ -32,7 +32,7 @@
                 </b-button>
             </template>
             <template slot="links" slot-scope="data">
-                <li v-for="link in data.item.links">{{ link.name }}</li>
+                <li v-for="link in data.item.links" :key="link.name">{{ link.name }}</li>
             </template>
         </b-table>
     </div>

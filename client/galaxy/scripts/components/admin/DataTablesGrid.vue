@@ -4,7 +4,7 @@
             Current data table registry contains {{ rows.length }} data tables
         </template>
         <template slot="rows" v-for="(row, index) in rows">
-            <tr :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
+            <tr :key="row.id" :class="[index % 2 === 0 ? 'tr' : 'odd_row']">
                 <td>
                     <a href="javascript:void(0)" @click="handleTableNameClick">{{ row.name }}</a>
                 </td>
