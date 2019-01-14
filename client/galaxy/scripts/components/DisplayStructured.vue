@@ -1,6 +1,7 @@
 <template>
     <div>
-        <div v-for="error in errorMessages" :key="error">
+         <!-- eslint-disable-next-line vue/require-v-for-key -->
+        <div v-for="error in errorMessages">
             <div class="alert alert-danger" role="alert">{{ error }}</div>
         </div>
         <div v-html="historyTemplate"></div>
