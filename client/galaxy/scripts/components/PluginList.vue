@@ -10,7 +10,7 @@
                 type="text"
                 v-model="search"
             />
-            <div v-for="plugin in plugins">
+            <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
                     <tr class="ui-thumbnails-item" @click="select(plugin)">
                         <td>
@@ -29,7 +29,7 @@
                                 <div class="font-weight-bold text-dark">Select a dataset to visualize:</div>
                                 <div class="ui-select">
                                     <select class="select" v-model="selected">
-                                        <option v-for="file in hdas" :value="file.id">{{ file.name }}</option>
+                                        <option v-for="file in hdas" :key="file.id" :value="file.id">{{ file.name }}</option>
                                     </select>
                                     <div class="icon-dropdown fa fa-caret-down" />
                                 </div>
