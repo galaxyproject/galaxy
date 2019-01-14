@@ -19,7 +19,7 @@ import sphinx_rtd_theme
 # Library to make .md to slideshow
 from recommonmark.transform import AutoStructify
 
-# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source and release information and
+# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source information and
 # just build primary documentation. (Quicker to debug issues in most frequently updated
 # docs).
 SKIP_SOURCE = os.environ.get("GALAXY_DOCS_SKIP_SOURCE", False) == "1"
@@ -105,7 +105,7 @@ release = VERSION
 # directories to ignore when looking for source files.
 exclude_patterns = ['**/_*.rst']
 if SKIP_SOURCE:
-    exclude_patterns.extend(['lib', 'releases'])
+    exclude_patterns.extend(['lib'])
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None
