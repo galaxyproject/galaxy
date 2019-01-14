@@ -679,10 +679,7 @@ class JobExternalOutputMetadataWrapper(object):
                                 include_command=True, max_metadata_value_size=0,
                                 kwds=None):
         kwds = kwds or {}
-        if tmp_dir is None:
-            tmp_dir = MetadataTempFile.tmp_dir
-        else:
-            MetadataTempFile.tmp_dir = tmp_dir
+        assert tmp_dir is not None
 
         if not os.path.exists(tmp_dir):
             os.makedirs(tmp_dir)
@@ -771,6 +768,7 @@ class JobExternalOutputMetadataWrapper(object):
                 for meta_key, spec_value in dataset.metadata.spec.items():
                     if isinstance(spec_value.param, FileParameter) and dataset.metadata.get(meta_key, None) is not None:
                         metadata_temp = MetadataTempFile()
+                        metadata_temp.tmp_dir = tmp_dir
                         shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
                         override_metadata.append((meta_key, metadata_temp.to_JSON()))
                 json.dump(override_metadata, open(metadata_files.filename_override_metadata, 'wt+'))
