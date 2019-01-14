@@ -623,7 +623,7 @@ var FolderToolbarView = Backbone.View.extend({
             for (let i = paths.length - 1; i >= 0; i--) {
                 var trimmed = paths[i].trim();
                 if (trimmed.length !== 0) {
-                    valid_paths.push(trimmed);
+                    valid_paths.push(encodeURIComponent(trimmed));
                 }
             }
             this.initChainCallControl({
