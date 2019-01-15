@@ -182,19 +182,19 @@ class HistoriesApiTestCase(api.ApiTestCase):
         history_name = "for_export_default"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        # deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-        # self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
-        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=1)
+        deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
+        imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
         def upload_job_check(job):
             assert job["tool_id"] == "upload1"
 
-        # def check_discarded(hda):
-        #    assert hda["state"] == "discarded", hda
-        #    assert hda["purged"] is True
+        def check_discarded(hda):
+            assert hda["state"] == "discarded", hda
+            assert hda["purged"] is True
 
         self._check_imported_dataset(history_id=imported_history_id, hid=1, job_checker=upload_job_check)
-        # self._check_imported_dataset(history_id=imported_history_id, hid=2, has_job=False, hda_checker=check_discarded, job_checker=upload_job_check)
+        self._check_imported_dataset(history_id=imported_history_id, hid=2, has_job=False, hda_checker=check_discarded, job_checker=upload_job_check)
 
         imported_content = self.dataset_populator.get_history_dataset_content(
             history_id=imported_history_id,
@@ -208,8 +208,6 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self._import_history_and_wait(import_data, "API Test History", wait_on_history_length=2)
 
     def test_import_export_include_deleted(self):
-        from nose.plugins.skip import SkipTest
-        raise SkipTest("Import/export of deleted dataset logic is currently broken fixed in #7367")
         history_name = "for_export_include_deleted"
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
