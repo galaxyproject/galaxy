@@ -4,8 +4,9 @@
 
 :Description:
     If running behind a proxy server and Galaxy is served from a
-    subdirectory, enable the proxy-prefix filter and set the prefix in
-    the [filter:proxy-prefix] section above.
+    subdirectory, enable the proxy-prefix filter, uncomment the
+    'mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()' line
+    and enable `manage-script-name` in the uwsgi config section.
 :Default: ``proxy-prefix``
 :Type: str
 

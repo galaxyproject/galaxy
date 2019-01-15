@@ -48,6 +48,14 @@ uwsgi:
   # Reports, etc.) that you are loading.
   module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
 
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
+  # points. Set this to true if a prefix is used.
+  manage-script-name: false
+
   # It is usually a good idea to set this to ``true`` if processes is
   # greater than 1.
   thunder-lock: false
