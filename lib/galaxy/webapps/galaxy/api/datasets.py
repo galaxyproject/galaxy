@@ -351,23 +351,23 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
                 else:
                     file_path = hda.file_name
                 rval = open(file_path, 'rb')
-
             else:
                 display_kwd = kwd.copy()
                 if 'key' in display_kwd:
                     del display_kwd["key"]
                 rval = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **display_kwd)
-
-        except Exception as exception:
-            log.error("Error getting display data for dataset (%s) from history (%s): %s",
-                      history_content_id, history_id, str(exception), exc_info=True)
+        except Exception as e:
+            log.exception("Error getting display data for dataset (%s) from history (%s)",
+                          history_content_id, history_id)
             trans.response.status = 500
-            rval = ("Could not get display data for dataset: " + str(exception))
-
+            rval = "Could not get display data for dataset: %s" % e
         return rval
 
     @web.expose_api_raw_anonymous
     def get_metadata_file(self, trans, history_content_id, history_id, metadata_file=None, **kwd):
+        """
+        GET /api/histories/{history_id}/contents/{history_content_id}/metadata_file
+        """
         decoded_content_id = self.decode_id(history_content_id)
         rval = ''
         try:
@@ -376,12 +376,12 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (hda.hid, fname, file_ext)
-            return open(hda.metadata.get(metadata_file).file_name)
-        except Exception as exception:
-            log.error("Error getting metadata_file (%s) for dataset (%s) from history (%s): %s",
-                      metadata_file, history_content_id, history_id, str(exception), exc_info=True)
+            return open(hda.metadata.get(metadata_file).file_name, 'rb')
+        except Exception as e:
+            log.exception("Error getting metadata_file (%s) for dataset (%s) from history (%s)",
+                          metadata_file, history_content_id, history_id)
             trans.response.status = 500
-            rval = ("Could not get display data for dataset: " + str(exception))
+            rval = "Could not get metadata for dataset: %s" % e
         return rval
 
     @web._future_expose_api_anonymous

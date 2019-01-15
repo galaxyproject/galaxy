@@ -18,7 +18,7 @@ Highlighted Enhancements
 * Implement a collection operation tool for merging collections
   (thanks to `@Takadonet <https://github.com/Takadonet>`__).
   `Pull Request 2771`_
-* Replace `reference documentation <https://docs.galaxyproject.org/en/master/dev/schema.html>`__
+* Replace :doc:`reference documentation <../dev/schema>`
   for tool XML files with automatically generated
   documentation from a now official Galaxy XSD documentation (with help from many).
   `Pull Request 2923`_, `Pull Request 2936`_, `Pull Request 3086`_,
