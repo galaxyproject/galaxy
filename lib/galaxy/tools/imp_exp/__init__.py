@@ -111,6 +111,7 @@ class JobImportHistoryArchiveWrapper:
                                                           peek=dataset_attrs['peek'],
                                                           designation=dataset_attrs['designation'],
                                                           visible=dataset_attrs['visible'],
+                                                          deleted=dataset_attrs.get('deleted', False),
                                                           dbkey=metadata['dbkey'],
                                                           metadata=metadata,
                                                           history=new_history,
@@ -269,7 +270,6 @@ class JobExportHistoryArchiveWrapper:
                  .join("dataset")
                  .options(eagerload_all("dataset.actions"))
                  .order_by(trans.model.HistoryDatasetAssociation.hid)
-                 .filter(trans.model.HistoryDatasetAssociation.deleted == expression.false())
                  .filter(trans.model.Dataset.purged == expression.false()))
         return query.all()
 
