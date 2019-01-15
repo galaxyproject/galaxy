@@ -141,20 +141,16 @@ QUnit.test("input", function(assert) {
     assert.ok(input.$field.css("display") == "none", "Input field hidden");
     input.model.set("disabled", false);
     assert.ok(input.$field.css("display") == "block", "Input field shown, again");
+    var colorElement = input.$field.children().first();
+    var oldColor = colorElement.css("color");
     input.model.set("color", "red");
     assert.ok(
-        input.$field
-            .children()
-            .first()
-            .css("color") == "rgb(255, 0, 0)",
+        colorElement.css("color") == "rgb(255, 0, 0)",
         "Shows correct new color"
     );
     input.model.set("color", null);
     assert.ok(
-        input.$field
-            .children()
-            .first()
-            .css("color") == "rgb(73, 80, 87)",
+        colorElement.css("color") == oldColor,
         "Shows correct old color"
     );
     input.model.set("collapsible_value", "_collapsible_value");
