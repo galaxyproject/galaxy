@@ -880,8 +880,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
             repository, tool, valid, message = tv.load_tool_from_changeset_revision(repository_id,
-                                                                             changeset_revision,
-                                                                             tool_config)
+                                                                                    changeset_revision,
+                                                                                    tool_config)
         if message or not valid:
             status = 'error'
         tool_state = tool_util.new_state(trans, tool, invalid=not valid)
@@ -1772,8 +1772,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         with ValidationContext.from_app(trans.app) as validation_context:
             tv = tool_validator.ToolValidator(validation_context)
             repository, tool, valid, error_message = tv.load_tool_from_changeset_revision(repository_id,
-                                                                                   changeset_revision,
-                                                                                   tool_config)
+                                                                                          changeset_revision,
+                                                                                          tool_config)
             tool_state = tool_util.new_state(trans, tool, invalid=True)
             invalid_file_tups = []
             if tool:
@@ -2931,7 +2931,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                                     if message:
                                         status = 'error'
                                 else:
-                                    tool, message, sample_files = \
+                                    tool, valid, message, sample_files = \
                                         tv.handle_sample_files_and_load_tool_from_tmp_config(repo,
                                                                                              repository_id,
                                                                                              changeset_revision,
