@@ -1,7 +1,7 @@
 # These dependencies are only required when certain config options are set
 psycopg2-binary==2.7.4
 WebError==0.10.3
-Pygments==2.2.0
+pygments==2.3.1
 python-openid
 MySQL-python
 fluent-logger
