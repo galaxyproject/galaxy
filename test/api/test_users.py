@@ -128,7 +128,7 @@ class UsersApiTestCase(api.ApiTestCase):
         self._assert_status_code_is_ok(fav_response)
         assert "cat1" in fav_response.json()["tools"]
         url = self._api_url("tools", params=dict(q="favs", key=user_key))
-        search_response = requests.get(url).json()
+        search_response = get(url).json()
         assert "cat1" in search_response
 
     def test_communication(self):
