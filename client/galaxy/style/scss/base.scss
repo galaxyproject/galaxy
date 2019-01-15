@@ -233,28 +233,14 @@ body {
     .panel-header-buttons {
         order: 9999;
         float: right;
-    }
-    .panel-header-button {
-        text-decoration: none;
-        display: inline-block;
-        cursor: pointer;
-        width: 1.2rem;
-        text-align: center;
-        padding: 0px;
-        &:not(:last-child) {
-            margin-right: 2px;
-        }
-        &:hover {
-            color: $brand-info;
-        }
-        // Bootstrap style span caret needs positioning
-        .caret {
-            margin-top: 7px;
-        }
-        // Another way to get a caret
-        &.popup {
-            padding-right: 1.75em;
-            background: url(../../images/dropdownarrow.png) no-repeat right 7px;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
         }
     }
 }

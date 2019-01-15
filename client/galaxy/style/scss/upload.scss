@@ -1,10 +1,17 @@
 .upload-button {
-    position: relative;
-    width: 31px;
-    height: 21px;
+    @extend .ml-2;
+    float: right;
+    width: 32px;
+    height: 24px;
+    font-size: inherit;
     cursor: pointer;
     -moz-border-radius: $border-radius-base;
     border-radius: $border-radius-base;
+    .upload-button-link {
+        @extend .panel-header-button;
+        position: absolute;
+        width: inherit;
+    }
     .progress {
         height: 21px;
         margin: 0px;
@@ -26,13 +33,6 @@
         -ms-transition: none;
         -o-transition: none;
         transition: none;
-    }
-    .panel-header-button {
-        position: absolute;
-        width: 31px !important;
-        text-align: center;
-        font-size: 1.2em;
-        padding: 0px;
     }
 }
 
