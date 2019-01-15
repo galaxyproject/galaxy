@@ -168,6 +168,9 @@ _client-test-qunit:  ## Run qunit tests via karma
 
 client-test: client _client-test-mocha _client-test-qunit ## Run JS unit tests via Karma
 
+client-eslint: node-deps ## Run client linting
+	cd client && yarn run eslint
+
 client-test-watch: client ## Watch and run qunit tests on changes via Karma
 	cd client && yarn run test-watch
 
