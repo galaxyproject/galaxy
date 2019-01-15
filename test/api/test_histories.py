@@ -192,7 +192,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
     def test_import_metadata_regeneration(self):
         history_name = "for_import_metadata_regeneration"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_dataset(history_id, content=open(self.test_data_resolver.get_filename("1.bam")), file_type='bam')
+        self.dataset_populator.new_dataset(history_id, content=open(self.test_data_resolver.get_filename("1.bam"), 'rb'), file_type='bam')
         imported_history_id = self._reimport_history(history_id, history_name)
         self._assert_history_length(imported_history_id, 1)
         import_bam_metadata = self.dataset_populator.get_history_dataset_details(
@@ -203,7 +203,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         assert bai_metadata["file_type"] == "bam_index"
         api_url = bai_metadata["download_url"].split("api/", 1)[1]
         bai_response = self._get(api_url)
-        assert bai_response.status_code == 200
+        self._assert_status_code_is(bai_response, 200)
         assert len(bai_response.content) > 4
 
     def test_import_export_collection(self):
