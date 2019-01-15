@@ -6,6 +6,7 @@ import _l from "utils/localization";
 import _ from "libs/underscore";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import iconButton from "mvc/ui/icon-button";
 
 var ToolPanel = Backbone.View.extend({
     initialize: function(page, options) {
@@ -42,13 +43,25 @@ var ToolPanel = Backbone.View.extend({
             default_extension: config.default_extension
         });
 
+        this.favorite_button = new iconButton.IconButtonView({
+            model: new iconButton.IconButton({
+                title: _l("Show favorites"),
+                icon_class: "fa fa-star-o",
+                href: "javascript:void(0)",
+                on_click: e => {
+                    $("#tool-search-query").val("favorites").trigger("change");
+                },
+            })
+        });
+        this.favorite_button.render();
+
         // add uploader button to Galaxy object
         Galaxy.upload = this.upload_button;
 
         // components for panel definition
         this.model = new Backbone.Model({
             title: _l("Tools"),
-            buttons: [this.upload_button]
+            buttons: [this.upload_button, this.favorite_button]
         });
 
         // build body template
