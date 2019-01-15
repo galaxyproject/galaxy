@@ -1021,8 +1021,8 @@ galaxy:
   #use_printdebug: true
 
   # Enable live debugging in your browser.  This should NEVER be enabled
-  # on a public site.  Enabled in the sample config for development.
-  #use_interactive: true
+  # on a public site.
+  #use_interactive: false
 
   # When stopping Galaxy cleanly, how much time to give various
   # monitoring/polling threads to finish before giving up on joining
