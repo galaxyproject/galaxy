@@ -117,13 +117,7 @@ export default FormBase.extend({
         let Galaxy = getGalaxyInstance();
 
         // Buttons for adding and removing favorite.
-        let favorites = Galaxy.user.getFavorites();
-        let in_favorites;
-        if (favorites.tools){
-            in_favorites = favorites.tools.indexOf(options.id) >= 0;
-        } else{
-            in_favorites = false;
-        }
+        let in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
         var favorite_button = new Ui.Button({
             icon: "fa-star-o",
             title: "Favorite",

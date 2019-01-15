@@ -29,7 +29,7 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             nice_total_disk_usage: "",
             quota_percent: null,
             is_admin: false,
-            preferences: ""
+            preferences: {}
         },
 
         /** Set up and bind events
@@ -54,29 +54,26 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             return this.get("is_admin");
         },
 
-        getPreferences: function(){
-            let preferences =  this.preferences ? JSON.parse(this.preferences) : {};
-            return preferences;
-        },
-
         updatePreferences: function(name, new_value) {
-            let preferences = this.getPreferences()
-            preferences[name] = new_value;
-            this.preferences = JSON.stringify(preferences);
+            let preferences = this.get("preferences");
+            preferences[name] = JSON.stringify(new_value);
+            this.preferences = preferences;
         },
 
         getFavorites: function(){
-            let preferences = this.getPreferences();
+            let preferences = this.get("preferences");
             if (preferences && preferences.favorites){
-                return preferences.favorites;
+                return JSON.parse(preferences.favorites);
             } else {
-                return {};
+                return {
+                    "tools": []
+                };
             }
         },
 
-        updateFavorites: function(object_type, favorites_new){
+        updateFavorites: function(object_type, new_favorites){
             let favorites = this.getFavorites();
-            favorites.tools = favorites_new;
+            favorites[object_type] = new_favorites[object_type];
             this.updatePreferences("favorites", favorites)
         },
 
