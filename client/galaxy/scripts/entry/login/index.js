@@ -1,5 +1,3 @@
-import $ from "jquery";
-import { getAppRoot } from "onload";
 import { standardInit, addInitialization } from "onload";
 import Page from "layout/page";
 import Login from "components/login/Login.vue";
