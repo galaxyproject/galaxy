@@ -34,7 +34,7 @@ matrix:
       # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
       language: generic
       env: TOX_ENV=py27-first_startup
-    - name: js
+    - name: js-unit
       language: node_js
       node_js:
           - 10
@@ -45,7 +45,7 @@ matrix:
         - yarn run build
       script:
         - yarn run test
-    - name: js
+    - name: js-lint
       language: node_js
       node_js:
           - 10
