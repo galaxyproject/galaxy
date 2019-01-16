@@ -53,17 +53,17 @@
             <div v-else>
                 <p>This {{model_class_lc}} is currently restricted so that only you and the users listed below can access it. You can:</p>
                 <b-button @click="setSharing('make_accessible_via_link')">Make {{model_class}} Accessible via Link</b-button>
-                <span v-if="has_possible_members" class="chkk">
+                <p v-if="has_possible_members" class="mt-2">
                 Also make all objects within the {{model_class}} accessible.
                 <input type="checkbox" v-model="make_members_public" id="chk_make_members_public">
-                </span>
+                </p>
                 <div class="toolParamHelp">Generates a web link that you can share with other people so that they can view and import the {{model_class_lc}}.</div>
                 <br/>
                 <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')">Make {{model_class}} Accessible and Publish</b-button>
-                <span v-if="has_possible_members" class="chkk">
+                <p v-if="has_possible_members" class="mt-2">
                 Also make all objects within the {{model_class}} accessible.
                 <input type="checkbox" v-model="make_members_public" id="chk_make_members_public">
-                </span>
+                </p>
                 <div class="toolParamHelp">Makes the {{model_class_lc}} accessible via link (see above) and publishes the {{model_class_lc}} to Galaxy's <a :href="published_url" target="_top">Published {{plural_name}}</a> section, where it is publicly listed and searchable.</div>
             </div>
             <br/><br/>
@@ -259,8 +259,3 @@ export default {
     }
 };
 </script>
-<style>
-.chkk {
-    display: inline-block;
-}
-</style>
