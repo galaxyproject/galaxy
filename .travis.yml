@@ -39,6 +39,9 @@ matrix:
       language: generic
       env: TOX_ENV=py27-first_startup
     - env: TOX_ENV=eslint
+      language: node_js
+      node_js:
+          - 10
 
 before_install:
   # Workaround for https://github.com/travis-ci/travis-ci/issues/7940
