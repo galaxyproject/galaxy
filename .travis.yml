@@ -8,6 +8,7 @@ env:
   - TOX_ENV=py27-unit
   - TOX_ENV=py27-first_startup
   - TOX_ENV=py27-lint_docstring_include_list
+  - js
 
 matrix:
   include:
@@ -34,7 +35,8 @@ matrix:
       # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
       language: generic
       env: TOX_ENV=py27-first_startup
-    - language: node_js
+    - env: js
+      language: node_js
       node_js:
           - 10
       before_install:
@@ -43,7 +45,8 @@ matrix:
         - yarn
       script:
         - yarn run test
-    - language: node_js
+    - env: js
+      language: node_js
       node_js:
           - 10
       before_install:
