@@ -251,7 +251,7 @@ mapping:
       
       use_interactive:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           NEVER enable this on a public site (even test or QA)

@@ -2103,9 +2103,8 @@
 
 :Description:
     Enable live debugging in your browser.  This should NEVER be
-    enabled on a public site.  Enabled in the sample config for
-    development.
-:Default: ``true``
+    enabled on a public site.
+:Default: ``false``
 :Type: bool
 
 

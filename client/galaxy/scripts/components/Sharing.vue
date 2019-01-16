@@ -82,10 +82,10 @@
                 <b-button @click="setSharing('make_accessible_via_link')"
                     >Make {{ model_class }} Accessible via Link</b-button
                 >
-                <span v-if="has_possible_members" class="chkk">
+                <p v-if="has_possible_members" class="mt-2">
                     Also make all objects within the {{ model_class }} accessible.
                     <input type="checkbox" v-model="make_members_public" id="chk_make_members_public" />
-                </span>
+                </p>
                 <div class="toolParamHelp">
                     Generates a web link that you can share with other people so that they can view and import the
                     {{ model_class_lc }}.
@@ -94,10 +94,10 @@
                 <b-button id="make_accessible_and_publish" @click="setSharing('make_accessible_and_publish')"
                     >Make {{ model_class }} Accessible and Publish</b-button
                 >
-                <span v-if="has_possible_members" class="chkk">
+                <p v-if="has_possible_members" class="mt-2">
                     Also make all objects within the {{ model_class }} accessible.
                     <input type="checkbox" v-model="make_members_public" id="chk_make_members_public" />
-                </span>
+                </p>
                 <div class="toolParamHelp">
                     Makes the {{ model_class_lc }} accessible via link (see above) and publishes the
                     {{ model_class_lc }} to Galaxy's
@@ -305,8 +305,3 @@ export default {
     }
 };
 </script>
-<style>
-.chkk {
-    display: inline-block;
-}
-</style>

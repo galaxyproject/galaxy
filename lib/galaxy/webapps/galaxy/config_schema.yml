@@ -1566,11 +1566,11 @@ mapping:
 
       use_interactive:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable live debugging in your browser.  This should NEVER be enabled on a
-          public site.  Enabled in the sample config for development.
+          public site.
 
       monitor_thread_join_timeout:
         type: int

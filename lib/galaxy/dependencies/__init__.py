@@ -114,10 +114,6 @@ class ConditionalDependencies(object):
         return (asbool(self.config["debug"]) and
                 asbool(self.config["use_interactive"]))
 
-    def check_pygments(self):
-        # pygments is a dependency of weberror and only weberror
-        return self.check_weberror()
-
     def check_python_ldap(self):
         return ('ldap' in self.authenticators or
                 'activedirectory' in self.authenticators)
