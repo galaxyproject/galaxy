@@ -42,6 +42,7 @@ matrix:
         - cd client
       install:
         - yarn
+        - yarn run build
       script:
         - yarn run test
     - env: js
