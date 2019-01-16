@@ -6,38 +6,43 @@ env:
   - TOX_ENV=py34-lint
   - TOX_ENV=py27-lint
   - TOX_ENV=py27-unit
-  - TOX_ENV=qunit
   - TOX_ENV=py27-first_startup
   - TOX_ENV=py27-lint_docstring_include_list
 
 matrix:
   include:
-      #- env: TOX_ENV=qunit
-      #  addons:
-      #    chrome: stable
-      #- env: TOX_ENV=py34-first_startup
-      #  addons:
-      #    &py3_addons
-      #    apt:
-      #      packages:
-      #        # For psutil, pyyaml, uwsgi...
-      #        - libpython3.4-dev
-      #- env: TOX_ENV=validate_test_tools
-      #  addons:
-      #    apt:
-      #      packages:
-      #        - libxml2-utils
-      #- env: TOX_ENV=check_py3_compatibility
-      #  addons:
-      #    apt:
-      #      packages:
-      #        - ack-grep
-      #- env: TOX_ENV=py34-unit
-      #  addons: *py3_addons
-      #- os: osx
-      #  # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
-      #  language: generic
-      #  env: TOX_ENV=py27-first_startup
+    - env: TOX_ENV=py34-first_startup
+      addons:
+        &py3_addons
+        apt:
+          packages:
+            # For psutil, pyyaml, uwsgi...
+            - libpython3.4-dev
+    - env: TOX_ENV=validate_test_tools
+      addons:
+        apt:
+          packages:
+            - libxml2-utils
+    - env: TOX_ENV=check_py3_compatibility
+      addons:
+        apt:
+          packages:
+            - ack-grep
+    - env: TOX_ENV=py34-unit
+      addons: *py3_addons
+    - os: osx
+      # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
+      language: generic
+      env: TOX_ENV=py27-first_startup
+    - language: node_js
+      node_js:
+          - 10
+      before_install:
+        - cd client
+      install:
+        - yarn
+      script:
+        - yarn run test
     - language: node_js
       node_js:
           - 10
