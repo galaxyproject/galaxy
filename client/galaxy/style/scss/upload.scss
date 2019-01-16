@@ -246,13 +246,13 @@
 .upload-ftp {
     @extend .upload-ftp-base;
     height: 250px;
-    width: 500px;
+    width: 550px;
     overflow-y: auto;
     overflow-x: hidden;
     .upload-ftp-row {
         cursor: pointer;
         .ftp-name {
-            width: 240px;
+            width: 290px;
         }
         .ftp-size {
             width: 60px;

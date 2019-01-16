@@ -28,6 +28,10 @@ pre {
     border: 1px solid $border-default-color;
 }
 
+.popover .popover-body {
+    font-size: $font-size-base;
+}
+
 .dropdown-menu {
     max-width: auto;
     .dropdown-item {
