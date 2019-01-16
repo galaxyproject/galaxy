@@ -656,6 +656,8 @@ _.extend(FiltersManager.prototype, {
             filters = filters.slice(1);
 
             // DBTODO: This will never work, run_tool_url doesn't exist?
+            // https://github.com/galaxyproject/galaxy/issues/7224
+            // eslint-disable-next-line no-undef
             $.getJSON(run_tool_url, url_params, response => {
                 let Galaxy = getGalaxyInstance();
                 if (response.error) {
