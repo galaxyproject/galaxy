@@ -11,7 +11,7 @@ export function initLoginView(Galaxy, { options }) {
     Galaxy.display(vm);
     var component = Galaxy.params.token || Galaxy.params.expired_user ? Password : Login;
     var loginInstance = Vue.extend(component);
-    new loginInstance({propsData: options}).$mount(vm);
+    new loginInstance({ propsData: options }).$mount(vm);
 }
 
 addInitialization(initLoginView);
