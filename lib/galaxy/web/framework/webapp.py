@@ -517,10 +517,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
                 url_for(controller='user', action='logout'),
                 url_for(controller='user', action='reset_password'),
                 url_for(controller='user', action='change_password'),
-                # required to log in w/ openid
-                url_for(controller='user', action='openid_auth'),
-                url_for(controller='user', action='openid_process'),
-                url_for(controller='user', action='openid_associate'),
                 # TODO: do any of these still need to bypass require login?
                 url_for(controller='user', action='api_keys'),
                 url_for(controller='user', action='create'),
