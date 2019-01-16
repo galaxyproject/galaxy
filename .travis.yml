@@ -8,7 +8,6 @@ env:
   - TOX_ENV=py27-unit
   - TOX_ENV=py27-first_startup
   - TOX_ENV=py27-lint_docstring_include_list
-  - js
 
 matrix:
   include:
