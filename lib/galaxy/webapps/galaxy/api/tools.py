@@ -23,7 +23,7 @@ log = logging.getLogger(__name__)
 # provides access via a different API endpoint.
 PROTECTED_TOOLS = ["__DATA_FETCH__"]
 # Tool search bypasses the fulltext for the following list of terms
-SEARCH_RESERVED_TERMS_FAVORITES = ['favs', 'favorites', 'favourites']
+SEARCH_RESERVED_TERMS_FAVORITES = ['#favs', '#favorites', '#favourites']
 
 
 class ToolsController(BaseAPIController, UsesVisualizationMixin):

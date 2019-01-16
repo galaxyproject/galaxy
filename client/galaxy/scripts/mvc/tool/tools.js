@@ -344,7 +344,7 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * query.
  */
 var ToolSearch = Backbone.Model.extend({
-    SEARCH_RESERVED_TERMS_FAVORITES: ['favs', 'favorites', 'favourites'],
+    SEARCH_RESERVED_TERMS_FAVORITES: ['#favs', '#favorites', '#favourites'],
 
     defaults: {
         search_hint_string: "search tools",
