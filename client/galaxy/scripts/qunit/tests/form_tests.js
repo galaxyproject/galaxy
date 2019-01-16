@@ -144,15 +144,9 @@ QUnit.test("input", function(assert) {
     var colorElement = input.$field.children().first();
     var oldColor = colorElement.css("color");
     input.model.set("color", "red");
-    assert.ok(
-        colorElement.css("color") == "rgb(255, 0, 0)",
-        "Shows correct new color"
-    );
+    assert.ok(colorElement.css("color") == "rgb(255, 0, 0)", "Shows correct new color");
     input.model.set("color", null);
-    assert.ok(
-        colorElement.css("color") == oldColor,
-        "Shows correct old color"
-    );
+    assert.ok(colorElement.css("color") == oldColor, "Shows correct old color");
     input.model.set("collapsible_value", "_collapsible_value");
     assert.ok(input.$collapsible.css("display") == "block", "Collapsible field");
     assert.ok(input.$collapsible_text.html() == "_label", "Title content available");

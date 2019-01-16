@@ -1,3 +1,4 @@
+import _ from "underscore";
 import Utils from "utils/utils";
 
 function _templateNametag(tag) {

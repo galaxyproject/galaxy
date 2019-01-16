@@ -1,3 +1,4 @@
+import _ from "underscore";
 import LIST_ITEM from "mvc/list/list-item";
 import DATASET_LIST from "mvc/dataset/dataset-list";
 import BASE_MVC from "mvc/base-mvc";
@@ -123,6 +124,8 @@ var JobListItemView = _super.extend(
 JobListItemView.prototype.templates = (() => {
     //TODO: move to require text! plugin
 
+    // TODO: Is this actually used?
+    // eslint-disable-next-line no-unused-vars
     var elTemplate = BASE_MVC.wrapTemplate([
         '<div class="list-element">',
         '<div class="id"><%- model.id %></div>',
