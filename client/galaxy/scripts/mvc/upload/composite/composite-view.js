@@ -177,35 +177,35 @@ export default Backbone.View.extend({
     /** Load html template */
     _template: function() {
         return (
-            '<div class="upload-view-composite">' +
-            '<div class="upload-top">' +
-            '<h6 class="upload-top-info"/>' +
-            "</div>" +
-            '<div class="upload-box">' +
-            '<table class="upload-table ui-table-striped" style="display: none;">' +
-            "<thead>" +
-            "<tr>" +
-            "<th/>" +
-            "<th/>" +
-            "<th>Description</th>" +
-            "<th>Name</th>" +
-            "<th>Size</th>" +
-            "<th>Settings</th>" +
-            "<th>Status</th>" +
-            "</tr>" +
-            "</thead>" +
-            "<tbody/>" +
-            "</table>" +
-            "</div>" +
-            '<div class="upload-footer">' +
-            '<span class="upload-footer-title">Composite Type:</span>' +
-            '<span class="upload-footer-extension"/>' +
-            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
-            '<span class="upload-footer-title">Genome/Build:</span>' +
-            '<span class="upload-footer-genome"/>' +
-            "</div>" +
-            '<div class="upload-buttons"/>' +
-            "</div>"
+            `<div class="upload-view-composite">
+                <div class="upload-top">
+                    <h6 class="upload-top-info"/>
+                </div>
+                <div class="upload-box">
+                    <table class="upload-table ui-table-striped" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th/>
+                                <th/>
+                                <th>Description</th>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Settings</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody/>
+                    </table>
+                </div>
+                <div class="upload-footer">
+                    <span class="upload-footer-title">Composite Type:</span>
+                    <span class="upload-footer-extension"/>
+                    <span class="upload-footer-extension-info upload-icon-button fa fa-search"/>
+                    <span class="upload-footer-title">Genome/Build:</span>
+                    <span class="upload-footer-genome"/>
+                </div>
+                <div class="upload-buttons"/>
+            </div>`
         );
     }
 });
