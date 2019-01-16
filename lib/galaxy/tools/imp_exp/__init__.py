@@ -47,6 +47,8 @@ class JobImportHistoryArchiveWrapper:
         # Import history.
         #
 
+        new_history = None
+
         jiha = self.sa_session.query(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).first()
         if jiha:
             try:
@@ -245,6 +247,8 @@ class JobImportHistoryArchiveWrapper:
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
                 self.sa_session.flush()
                 raise
+
+        return new_history
 
 
 class JobExportHistoryArchiveWrapper:
