@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import tarfile
@@ -24,22 +25,26 @@ class MockSetExternalTool(object):
         pass
 
 
-def _run_jihaw_cleanup(history_archive, msg):
+def _run_jihaw_cleanup(archive_dir):
     app = MockApp()
     app.datatypes_registry.set_external_metadata_tool = MockSetExternalTool()
 
     job = model.Job()
     job.tool_stderr = ''
-    jiha = model.JobImportHistoryArchive(job=job, archive_dir=history_archive.arc_directory)
+    jiha = model.JobImportHistoryArchive(job=job, archive_dir=archive_dir)
     app.model.context.current.add_all([job, jiha])
     app.model.context.flush()
     jihaw = JobImportHistoryArchiveWrapper(app, 1)  # yeehaw!
+    return app, jihaw.cleanup_after_job()
+
+
+def _run_jihaw_cleanup_check_secure(history_archive, msg):
+    malformed = False
     try:
-        jihaw.cleanup_after_job()
-        data = app.object_store.get_data(model.Dataset(1))
-        assert data != 'insecure', msg
+        app, _ = _run_jihaw_cleanup(history_archive.arc_directory)
     except MalformedContents:
-        pass
+        malformed = True
+    assert malformed
 
 
 def test_create_archive():
@@ -72,7 +77,7 @@ def test_history_import_symlink():
         history_archive.write_metafiles()
         history_archive.write_link('datasets/Pasted_Entry_1.txt', '../target.txt')
         history_archive.write_file('target.txt', 'insecure')
-        _run_jihaw_cleanup(history_archive, 'Symlink dataset in import archive allowed')
+        _run_jihaw_cleanup_check_secure(history_archive, 'Symlink dataset in import archive allowed')
 
 
 def test_history_import_relpath_in_metadata():
@@ -82,7 +87,7 @@ def test_history_import_relpath_in_metadata():
         history_archive.write_metafiles(dataset_file_name='../outside.txt')
         history_archive.write_file('datasets/Pasted_Entry_1.txt', 'foo')
         history_archive.write_outside()
-        _run_jihaw_cleanup(history_archive, 'Relative parent path in datasets_attrs.txt allowed')
+        _run_jihaw_cleanup_check_secure(history_archive, 'Relative parent path in datasets_attrs.txt allowed')
 
 
 def test_history_import_abspath_in_metadata():
@@ -93,7 +98,54 @@ def test_history_import_abspath_in_metadata():
             dataset_file_name=os.path.join(history_archive.temp_directory, 'outside.txt'))
         history_archive.write_file('datasets/Pasted_Entry_1.txt', 'foo')
         history_archive.write_outside()
-        _run_jihaw_cleanup(history_archive, 'Absolute path in datasets_attrs.txt allowed')
+        _run_jihaw_cleanup_check_secure(history_archive, 'Absolute path in datasets_attrs.txt allowed')
+
+
+def test_import_1901_default():
+    app, new_history = import_archive('test-data/exports/1901_two_datasets.tgz')
+    assert new_history
+
+    datasets = new_history.datasets
+    assert len(datasets) == 2
+    dataset0 = datasets[0]
+    dataset1 = datasets[1]
+
+    assert dataset0.hid == 1
+    # There was a deleted dataset so skip to 3
+    assert dataset1.hid == 3, dataset1.hid
+
+    jobs = app.model.context.query(model.Job) \
+        .filter_by(history_id=new_history.id).order_by(model.Job.table.c.id).all()
+    assert len(jobs) == 2
+    assert jobs[0].tool_id == 'upload1'
+    assert jobs[1].tool_id == 'cat'
+
+    cat_job = jobs[1]
+    assert len(cat_job.input_datasets) == 2
+    assert len(cat_job.output_datasets) == 1
+
+    assert cat_job.input_datasets[0].dataset == dataset0
+    assert cat_job.input_datasets[1].dataset == dataset0
+    assert cat_job.output_datasets[0].dataset == dataset1
+
+    param_dict = cat_job.raw_param_dict()
+    assert json.loads(param_dict['input1']) == dataset0.id, param_dict['input1']
+    assert json.loads(param_dict['queries'])[0]['input2'] == dataset0.id
+
+
+def import_archive(archive_path):
+    dest_parent = mkdtemp()
+    dest_dir = os.path.join(dest_parent, 'dest')
+
+    options = Dummy()
+    options.is_url = False
+    options.is_file = True
+    options.is_b64encoded = False
+
+    args = (archive_path, dest_dir)
+    unpack_tar_gz_archive.main(options, args)
+    app, new_history = _run_jihaw_cleanup(dest_dir)
+    return app, new_history
 
 
 def _run_unpack(history_archive, dest_parent, msg):

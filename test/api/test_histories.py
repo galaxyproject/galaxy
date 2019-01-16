@@ -2,7 +2,6 @@
 import time
 
 from requests import (
-    get,
     post,
     put
 )
@@ -203,6 +202,11 @@ class HistoriesApiTestCase(api.ApiTestCase):
         )
         assert imported_content == "1 2 3\n"
 
+    def test_import_1901_histories(self):
+        f = open(self.test_data_resolver.get_filename("exports/1901_two_datasets.tgz"), 'rb')
+        import_data = dict(archive_source='', archive_file=f)
+        self._import_history_and_wait(import_data, "API Test History", wait_on_history_length=2)
+
     def test_import_export_include_deleted(self):
         from nose.plugins.skip import SkipTest
         raise SkipTest("Import/export of deleted dataset logic is currently broken fixed in #7367")
@@ -287,12 +291,16 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
         # Export the history.
-        download_path = self._export(history_id, **export_kwds)
+        download_path = self.dataset_populator.export_url(history_id, export_kwds, check_download=True)
 
         # Create download for history
         full_download_url = "%s%s?key=%s" % (self.url, download_path, self.galaxy_interactor.api_key)
-        download_response = get(full_download_url)
-        self._assert_status_code_is(download_response, 200)
+
+        import_data = dict(archive_source=full_download_url, archive_type="url")
+
+        return self._import_history_and_wait(import_data, history_name, wait_on_history_length=wait_on_history_length)
+
+    def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
 
         def history_names():
             history_index = self._get("histories")
@@ -301,8 +309,11 @@ class HistoriesApiTestCase(api.ApiTestCase):
         import_name = "imported from archive: %s" % history_name
         assert import_name not in history_names()
 
-        import_data = dict(archive_source=full_download_url, archive_type="url")
-        import_response = self._post("histories", data=import_data)
+        files = {}
+        archive_file = import_data.pop("archive_file", None)
+        if archive_file:
+            files["archive_file"] = archive_file
+        import_response = self._post("histories", data=import_data, files=files)
 
         self._assert_status_code_is(import_response, 200)
 
@@ -379,24 +390,6 @@ class HistoriesApiTestCase(api.ApiTestCase):
         tag_url = "histories/%s/tags/awesometagname" % history_id
         tag_create_response = self._post(tag_url, data=tag_data)
         self._assert_status_code_is(tag_create_response, 200)
-
-    def _export(self, history_id, **kwd):
-        export_url = self._api_url("histories/%s/exports" % history_id, use_key=True)
-        put_response = put(export_url, data=kwd)
-        self._assert_status_code_is(put_response, 202)
-
-        def export_ready_response():
-            put_response = put(export_url)
-            if put_response.status_code == 202:
-                return None
-            return put_response
-
-        put_response = wait_on(export_ready_response, desc="export ready")
-        self._assert_status_code_is(put_response, 200)
-        response = put_response.json()
-        self._assert_has_keys(response, "download_url")
-        download_path = response["download_url"]
-        return download_path
 
     def _show(self, history_id):
         return self._get("histories/%s" % history_id).json()
