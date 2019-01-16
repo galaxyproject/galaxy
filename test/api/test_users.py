@@ -127,7 +127,7 @@ class UsersApiTestCase(api.ApiTestCase):
         fav_response = put(url, data=json.dumps({"object_id" : "cat1"}))
         self._assert_status_code_is_ok(fav_response)
         assert "cat1" in fav_response.json()["tools"]
-        url = self._api_url("tools", params=dict(q="favs", key=user_key))
+        url = self._api_url("tools", params=dict(q="#favs", key=user_key))
         search_response = get(url).json()
         assert "cat1" in search_response
 
