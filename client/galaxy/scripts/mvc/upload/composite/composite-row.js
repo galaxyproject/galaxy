@@ -284,39 +284,41 @@ export default Backbone.View.extend({
     /** Template */
     _template: function() {
         return (
-            '<tr class="upload-row">' +
-            "<td>" +
-            '<div class="upload-source"/>' +
-            '<div class="upload-text-column">' +
-            '<div class="upload-text">' +
-            '<div class="upload-text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>' +
-            '<textarea class="upload-text-content form-control"/>' +
-            "</div>" +
-            "</div>" +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-status"/>' +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-file-desc upload-title"/>' +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-file-name upload-title"/>' +
-            "</td>" +
-            "<td>" +
-            '<div class="upload-file-size upload-size"/>' +
-            "</td>" +
-            '<td><div class="upload-settings upload-icon-button fa fa-gear"/></td>' +
-            "<td>" +
-            '<div class="upload-info">' +
-            '<div class="upload-info-text"/>' +
-            '<div class="upload-info-progress progress">' +
-            '<div class="upload-progress-bar progress-bar progress-bar-success"/>' +
-            '<div class="upload-percentage">0%</div>' +
-            "</div>" +
-            "</div>" +
-            "</td>" +
-            "</tr>"
+            `<tr class="upload-row">
+                <td>
+                    <div class="upload-source"/>
+                    <div class="upload-text-column">
+                        <div class="upload-text">
+                            <div class="upload-text-info">You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.</div>
+                            <textarea class="upload-text-content form-control"/>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <div class="upload-status"/>
+                </td>
+                <td>
+                    <div class="upload-file-desc upload-title"/>
+                </td>
+                <td>
+                    <div class="upload-file-name upload-title"/>
+                </td>
+                <td>
+                    <div class="upload-file-size upload-size"/>
+                </td>
+                <td>
+                    <div class="upload-settings upload-icon-button fa fa-gear"/>
+                </td>
+                <td>
+                    <div class="upload-info">
+                        <div class="upload-info-text"/>
+                        <div class="upload-info-progress progress">
+                            <div class="upload-progress-bar progress-bar progress-bar-success"/>
+                            <div class="upload-percentage">0%</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>`
         );
     }
 });
