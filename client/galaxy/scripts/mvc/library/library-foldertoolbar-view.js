@@ -1453,9 +1453,9 @@ var FolderToolbarView = Backbone.View.extend({
                                     <span class="fa fa-file"/> Add Datasets
                                 </a>
                             <% } %>
-                            <div data-toggle="tooltip" title="Import to history" class="dropdown mr-1">
+                            <div class="dropdown mr-1">
                                 <button type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">
-                                    <span class="fa fa-book"></span> To History <span class="caret"/>
+                                    <span class="fa fa-book"></span> Export to History <span class="caret"/>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
                                     <a href="#" class="toolbtn-bulk-import add-to-history-datasets dropdown-item">as Datasets</a>
