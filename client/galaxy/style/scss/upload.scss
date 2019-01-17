@@ -35,6 +35,7 @@
         padding: 0px;
     }
 }
+
 .upload-input {
     font-size: $font-size-base;
     height: 20px;
@@ -112,9 +113,8 @@
             input.upload-title {
                 @extend .upload-input;
             }
-            /* Add back in length of extension, genome, and settings. */
             .upload-title-extended {
-                width: 380px;
+                width: 580px;
                 word-wrap: break-word;
             }
             .upload-size {
@@ -123,11 +123,9 @@
             }
             .upload-extension {
                 width: 100px;
-                min-width: 100px;
             }
             .upload-genome {
                 width: 150px;
-                min-width: 150px;
             }
             .upload-mode {
                 @extend .upload-icon;
@@ -155,13 +153,11 @@
             }
             .upload-info {
                 width: 130px;
-                line-height: 1.2em;
+                line-height: $font-size-base;
                 .progress {
                     @extend .upload-input;
                     width: 100%;
                     position: relative;
-                    padding: 0px;
-                    margin: 0px;
                     line-height: 1.6em;
                     .progress-bar {
                         border-radius: inherit;
