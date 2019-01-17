@@ -376,7 +376,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (hda.hid, fname, file_ext)
-            return open(hda.metadata.get(metadata_file).file_name)
+            return open(hda.metadata.get(metadata_file).file_name, 'rb')
         except Exception as exception:
             log.error("Error getting metadata_file (%s) for dataset (%s) from history (%s): %s",
                       metadata_file, history_content_id, history_id, str(exception), exc_info=True)
