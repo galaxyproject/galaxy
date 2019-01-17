@@ -83,7 +83,6 @@ class OIDC(BaseUIController):
                                    refresh_frames='refresh_frames',
                                    message="You are now logged in as `{}.`".format(user.username),
                                    status='done',
-                                   openid_providers=trans.app.openid_providers,
                                    form_input_auto_focus=True,
                                    active_view="user")
 

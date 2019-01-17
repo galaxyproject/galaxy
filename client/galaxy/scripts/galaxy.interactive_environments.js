@@ -1,3 +1,6 @@
+/* global $ */
+/* global toastr */
+// TODO: this file is transpiled and used directly without bundling; fix imports when that is no longer the case.
 /**
  * Internal function to remove content from the main area and add the notebook.
  * Not idempotent
@@ -18,9 +21,7 @@ export function clear_main_area() {
 }
 
 export function display_spinner() {
-    $("#main").append(
-        `<div id="ie-loading-spinner"></div>`
-    );
+    $("#main").append(`<div id="ie-loading-spinner"></div>`);
 }
 
 /* Create a spin_state object used by spin() and spin_again() */
@@ -120,7 +121,7 @@ export function spin(url, bool_response, success_callback, timeout_callback, err
 }
 
 /*
- * Spin on a URL forever until there is an acceptable response. 
+ * Spin on a URL forever until there is an acceptable response.
  * @param {String} url: URL to test response of. Must return a 200 (302->200 is OK).
  * @param {Boolean} bool_response: If set to `true`, do not stop spinning until the response is `true`. Otherwise, stop
  *     as soon as a successful response is received.

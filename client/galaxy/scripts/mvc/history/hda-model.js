@@ -1,7 +1,7 @@
+import _ from "underscore";
 import DATASET from "mvc/dataset/dataset-model";
 import HISTORY_CONTENT from "mvc/history/history-content-model";
 import BASE_MVC from "mvc/base-mvc";
-import _l from "utils/localization";
 
 //==============================================================================
 var _super = DATASET.DatasetAssociation;

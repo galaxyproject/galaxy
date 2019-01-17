@@ -235,7 +235,7 @@ var View = Backbone.View.extend({
                 // Show Webhook if job is running
                 if (response.jobs && response.jobs.length > 0) {
                     self.$el.append($("<div/>", { id: "webhook-view" }));
-                    var WebhookApp = new Webhooks.WebhookView({
+                    new Webhooks.WebhookView({
                         type: "tool",
                         toolId: job_def.tool_id
                     });

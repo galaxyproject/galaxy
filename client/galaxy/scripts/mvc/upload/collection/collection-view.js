@@ -5,7 +5,6 @@ import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
-import Utils from "utils/utils";
 import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/collection/collection-row";
 import UploadFtp from "mvc/upload/upload-ftp";
@@ -13,7 +12,6 @@ import UploadExtension from "mvc/upload/upload-extension";
 import Popover from "mvc/ui/ui-popover";
 import Select from "mvc/ui/ui-select";
 import Ui from "mvc/ui/ui-misc";
-import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
 import "utils/uploadbox";
 
 export default Backbone.View.extend({
@@ -401,7 +399,6 @@ export default Backbone.View.extend({
 
     /** Update collection type */
     updateCollectionType: function(collectionType) {
-        var self = this;
         this.collectionType = collectionType;
     },
 

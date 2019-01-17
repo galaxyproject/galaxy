@@ -1,3 +1,4 @@
+import $ from "jquery";
 import _ from "libs/underscore";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";

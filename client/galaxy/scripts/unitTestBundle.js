@@ -8,6 +8,6 @@
  *
  * https://webpack.js.org/guides/dependency-management/
  */
-
+// eslint-disable-next-line no-undef
 let testContext = require.context("./", true, /\.test\.js$/);
 testContext.keys().forEach(testContext);

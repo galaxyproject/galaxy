@@ -102,6 +102,7 @@ var menu = [
         html: _l("Make Data Private"),
         anon: true,
         func: function() {
+            let Galaxy = getGalaxyInstance();
             if (
                 Galaxy &&
                 Galaxy.currHistoryPanel &&
@@ -259,9 +260,8 @@ function buildMenu(isAnon, purgeAllowed, urlRoot) {
 
         if (menuOption.confirm) {
             menuOption.func = () => {
-                if (confirm(menuOption.confirm)) {
-                    /* galaxy_main is a global here: TODO: Fix it! */
-                    galaxy_main.location = menuOption.href;
+                if (confirm(menuOption.confirm) && window.parent.frames && window.parent.frames.galaxy_main) {
+                    window.parent.frames.galaxy_main = menuOption.href;
                 }
             };
         }

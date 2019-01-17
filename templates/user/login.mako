@@ -59,11 +59,6 @@ def inherit(context):
             ${render_oidc_form()}
         %endif
 
-        %if trans.app.config.enable_openid:
-            <br/>
-            ${render_openid_form( redirect, False, openid_providers )}
-        %endif
-
         %if trans.app.config.get( 'terms_url', None ) is not None:
             <br/>
             <p>
@@ -126,30 +121,6 @@ def inherit(context):
         <form name="oidc" id="oidc" action="${form_action}" method="post" >
             <div class="form-row">
                 <input type="submit" value="Login with Google"/>
-            </div>
-        </form>
-    </div>
-
-</%def>
-
-<%def name="render_openid_form( redirect, auto_associate, openid_providers )">
-    <div class="card">
-        <div class="card-header">OpenID Login</div>
-        <form name="openid" id="openid" action="${h.url_for( controller='user', action='openid_auth' )}" method="post" target="_parent" >
-            <div class="form-row">
-                <label>OpenID URL:</label>
-                <input type="text" name="openid_url" size="60" style="background-image:url('${h.url_for( '/static/images/openid-16x16.gif' )}' ); background-repeat: no-repeat; padding-right: 20px; background-position: 99% 50%;"/>
-                <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
-            </div>
-            <div class="form-row">
-                Or, authenticate with your <select name="openid_provider">
-                %for provider in openid_providers:
-                    <option value="${provider.id}">${provider.name}</option>
-                %endfor
-                </select> account.
-            </div>
-            <div class="form-row">
-                <input type="submit" name="login_button" value="Login"/>
             </div>
         </form>
     </div>

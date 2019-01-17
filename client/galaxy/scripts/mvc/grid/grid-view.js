@@ -93,7 +93,7 @@ export default Backbone.View.extend({
 
         // strip protocol and domain
         var url = this.grid.get("url_base");
-        url = url.replace(/^.*\/\/[^\/]+/, "");
+        url = url.replace(/^.*\/\/[^/]+/, "");
         this.grid.set("url_base", url);
 
         // append main template
@@ -413,7 +413,7 @@ export default Backbone.View.extend({
             var id = $(this).attr("id");
 
             var // Id has form 'page-link-<page_num>
-            page_num = parseInt(id.split("-")[2], 10);
+                page_num = parseInt(id.split("-")[2], 10);
 
             var cur_page = self.grid.get("cur_page");
             var text;

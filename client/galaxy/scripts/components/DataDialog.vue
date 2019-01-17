@@ -1,29 +1,28 @@
 <template>
     <b-modal class="data-dialog-modal" v-model="modalShow" :ok-only="true" ok-title="Close">
         <template slot="modal-header">
-            <h5 class="modal-title">{{modalTitle}}</h5>
             <b-input-group v-if="optionsShow">
-                <b-input v-model="filter" placeholder="Type to Search"/>
+                <b-input v-model="filter" placeholder="Type to Search" />
                 <b-input-group-append>
                     <b-btn :disabled="!filter" @click="filter = ''">Clear</b-btn>
                 </b-input-group-append>
             </b-input-group>
         </template>
-        <b-alert v-if="errorMessage" variant="danger" :show="errorShow">
-            {{ errorMessage }}
-        </b-alert>
+        <b-alert v-if="errorMessage" variant="danger" :show="errorShow"> {{ errorMessage }} </b-alert>
         <div v-else>
             <div v-if="optionsShow">
-                <b-table small hover
+                <b-table
+                    small
+                    hover
                     :items="items"
                     :fields="fields"
                     :filter="filter"
                     @row-clicked="clicked"
-                    @filtered="filtered">
+                    @filtered="filtered"
+                >
                     <template slot="name" slot-scope="data">
-                        <i v-if="data.item.history_content_type == 'dataset'" class="fa fa-file-o"/>
-                        <i v-else class="fa fa-copy"/>
-                        {{ data.item.hid }}: {{ data.value }}
+                        <i v-if="data.item.history_content_type == 'dataset'" class="fa fa-file-o" />
+                        <i v-else class="fa fa-copy" /> {{ data.item.hid }}: {{ data.value }}
                     </template>
                     <template slot="extension" slot-scope="data">
                         {{ data.value ? data.value : "-" }}
@@ -32,14 +31,9 @@
                         {{ data.value ? data.value.substring(0, 16).replace("T", " ") : "-" }}
                     </template>
                 </b-table>
-                <div v-if="nItems == 0">
-                    No search results found for: {{ this.filter }}.
-                </div>
+                <div v-if="nItems == 0">No search results found for: {{ this.filter }}.</div>
             </div>
-            <div v-else>
-                <span class="fa fa-spinner fa-spin"/>
-                <span>Please wait...</span>
-            </div>
+            <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
         </div>
     </b-modal>
 </template>
@@ -49,6 +43,7 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
 
 Vue.use(BootstrapVue);
 
@@ -57,15 +52,6 @@ export default {
         callback: {
             type: Function,
             required: true
-        }
-    },
-    computed: {
-        modalTitle() {
-            if (this.errorMessage) {
-                return "Failed to load datasets";
-            } else if (!this.optionsShow) {
-                return "Loading datasets";
-            }
         }
     },
     data() {
@@ -106,6 +92,7 @@ export default {
             this.modalShow = false;
         },
         load: function() {
+            let Galaxy = getGalaxyInstance();
             this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             if (this.historyId) {
                 axios

@@ -1,11 +1,13 @@
-import _l from "utils/localization";
 /** Renders the composite upload row view */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+import _l from "utils/localization";
 import Utils from "utils/utils";
 import UploadSettings from "mvc/upload/upload-settings";
 import UploadFtp from "mvc/upload/upload-ftp";
 import Popover from "mvc/ui/ui-popover";
 import Ui from "mvc/ui/ui-misc";
-import Select from "mvc/ui/ui-select";
 import "utils/uploadbox";
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */

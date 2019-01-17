@@ -1,6 +1,8 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
+import $ from "jquery";
+import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";

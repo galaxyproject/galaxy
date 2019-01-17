@@ -1,7 +1,9 @@
 /**
     This class creates a form input element wrapper
 */
-
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 export default Backbone.View.extend({
     initialize: function(app, options) {
         this.app = app;
@@ -67,6 +69,17 @@ export default Backbone.View.extend({
         if (this.field.model && !this.model.get("always_refresh")) {
             this.listenTo(this.field.model, "change:value", () => {
                 self.reset();
+            });
+        }
+
+        // add error listener
+        if (this.field.model) {
+            this.listenTo(this.field.model, "error", message => {
+                if (message) {
+                    this.error(message);
+                } else {
+                    this.reset();
+                }
             });
         }
     },
