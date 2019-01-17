@@ -103,6 +103,11 @@ class ToolMissingException(MessageException):
     status_code = 400
     err_code = error_codes.USER_TOOL_MISSING_PROBLEM
 
+    @property
+    def tool_id(self):
+        if 'tool_id' in self.extra_error_info:
+            return self.extra_error_info['tool_id']
+
 
 class RequestParameterInvalidException(MessageException):
     status_code = 400
