@@ -1,3 +1,4 @@
+import $ from "jquery";
 import DataDialog from "components/DataDialog.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";

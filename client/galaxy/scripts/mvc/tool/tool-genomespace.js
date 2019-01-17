@@ -22,6 +22,6 @@ export default {
 
         newWin.focus();
 
-        if (options["errorCallback"] != null) newWin.setCallbackOnGSUploadError = config["errorCallback"];
+        if (options["errorCallback"] != null) newWin.setCallbackOnGSUploadError = Galaxy.config["errorCallback"];
     }
 };

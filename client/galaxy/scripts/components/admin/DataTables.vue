@@ -1,14 +1,15 @@
 <template>
-  <div>
-    <message :message="message" :status="status"></message>
-    <component
-      :is="currentView"
-      v-if="status !== 'error'"
-      v-bind="currentProps"
-      @changeview="showDataManager"
-      @reloaddatamanager="reloadDataManager">
-    </component>
-  </div>
+    <div>
+        <message :message="message" :status="status"></message>
+        <component
+            :is="currentView"
+            v-if="status !== 'error'"
+            v-bind="currentProps"
+            @changeview="showDataManager"
+            @reloaddatamanager="reloadDataManager"
+        >
+        </component>
+    </div>
 </template>
 
 <script>

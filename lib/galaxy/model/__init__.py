@@ -4856,13 +4856,6 @@ class UserAddress(RepresentById):
                 'phone'        : sanitize_html(self.phone)}
 
 
-class UserOpenID(RepresentById):
-    def __init__(self, user=None, session=None, openid=None):
-        self.user = user
-        self.session = session
-        self.openid = openid
-
-
 class PSAAssociation(AssociationMixin, RepresentById):
 
     # This static property is set at: galaxy.authnz.psa_authnz.PSAAuthnz

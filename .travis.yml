@@ -6,15 +6,11 @@ env:
   - TOX_ENV=py34-lint
   - TOX_ENV=py27-lint
   - TOX_ENV=py27-unit
-  - TOX_ENV=qunit
   - TOX_ENV=py27-first_startup
   - TOX_ENV=py27-lint_docstring_include_list
 
 matrix:
   include:
-    - env: TOX_ENV=qunit
-      addons:
-        chrome: stable
     - env: TOX_ENV=py34-first_startup
       addons:
         &py3_addons
@@ -38,6 +34,27 @@ matrix:
       # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
       language: generic
       env: TOX_ENV=py27-first_startup
+    - name: js-unit
+      language: node_js
+      node_js:
+          - 10
+      before_install:
+        - cd client
+      install:
+        - yarn
+        - yarn run build
+      script:
+        - yarn run test
+    - name: js-lint
+      language: node_js
+      node_js:
+          - 10
+      before_install:
+        - cd client
+      install:
+        - yarn
+      script:
+        - yarn run eslint
 
 before_install:
   # Workaround for https://github.com/travis-ci/travis-ci/issues/7940

@@ -1,6 +1,7 @@
 /* For presentation-related functionality shared across collection creators.
    Particularily overlapping functionality related to name processing and help.
 */
+import _ from "underscore";
 var CollectionCreatorMixin = {
     /** add (or clear if clear is truthy) a validation warning to the DOM element described in what */
     _validationWarning: function(what, clear) {

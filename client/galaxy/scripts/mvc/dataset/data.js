@@ -354,6 +354,11 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
     }
 });
 
+function search(str, array) {
+    for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
+    return -1;
+}
+
 /** Button for trackster visualization */
 var TabularButtonTracksterView = Backbone.View.extend({
     // gene region columns
@@ -424,10 +429,6 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // check for vcf-file format
         if (this.file_ext == "vcf") {
             // search array
-            function search(str, array) {
-                for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
-                return -1;
-            }
 
             // load
             this.col.chrom = search("Chrom", metadata.get("column_names"));

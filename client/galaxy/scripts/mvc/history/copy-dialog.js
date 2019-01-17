@@ -94,14 +94,14 @@ var CopyDialog = {
         var deferred = jQuery.Deferred();
 
         var // TODO: getting a little byzantine here
-        defaultCopyNameFn = options.nameFn || this.defaultName;
+            defaultCopyNameFn = options.nameFn || this.defaultName;
 
         var defaultCopyName = defaultCopyNameFn({
             name: history.get("name")
         });
 
         var // TODO: these two might be simpler as one 3 state option (all,active,no-choice)
-        defaultCopyWhat = options.allDatasets ? "copy-all" : "copy-non-deleted";
+            defaultCopyWhat = options.allDatasets ? "copy-all" : "copy-non-deleted";
 
         var allowAll = !_.isUndefined(options.allowAll) ? options.allowAll : true;
 
