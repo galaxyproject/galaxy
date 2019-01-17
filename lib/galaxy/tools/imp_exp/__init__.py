@@ -258,23 +258,24 @@ class JobExportHistoryArchiveWrapper:
     archive.
     """
 
-    def __init__(self, job_id):
+    def __init__(self, app, job_id):
+        self.app = app
         self.job_id = job_id
+        self.sa_session = self.app.model.context
 
-    def get_history_datasets(self, trans, history):
+    def get_history_datasets(self, history):
         """
         Returns history's datasets.
         """
-        query = (trans.sa_session.query(trans.model.HistoryDatasetAssociation)
-                 .filter(trans.model.HistoryDatasetAssociation.history == history)
+        query = (self.sa_session.query(model.HistoryDatasetAssociation)
+                 .filter(model.HistoryDatasetAssociation.history == history)
                  .join("dataset")
                  .options(eagerload_all("dataset.actions"))
-                 .order_by(trans.model.HistoryDatasetAssociation.hid)
-                 .filter(trans.model.Dataset.purged == expression.false()))
+                 .order_by(model.HistoryDatasetAssociation.hid)
+                 .filter(model.Dataset.purged == expression.false()))
         return query.all()
 
-    # TODO: should use db_session rather than trans in this method.
-    def setup_job(self, trans, jeha, include_hidden=False, include_deleted=False):
+    def setup_job(self, jeha, include_hidden=False, include_deleted=False):
         """ Perform setup for job to export a history into an archive. Method generates
             attribute files for export, sets the corresponding attributes in the jeha
             object, and returns a command line for running the job. The command line
@@ -290,7 +291,7 @@ class JobExportHistoryArchiveWrapper:
             for name, value in list(metadata.items()):
                 # Metadata files are not needed for export because they can be
                 # regenerated.
-                if isinstance(value, trans.app.model.MetadataFile):
+                if isinstance(value, model.MetadataFile):
                     del metadata[name]
             return metadata
 
@@ -299,7 +300,7 @@ class JobExportHistoryArchiveWrapper:
 
             def default(self, obj):
                 """ Encode an HDA, default encoding for everything else. """
-                if isinstance(obj, trans.app.model.HistoryDatasetAssociation):
+                if isinstance(obj, model.HistoryDatasetAssociation):
                     rval = {
                         "__HistoryDatasetAssociation__": True,
                         "create_time": obj.create_time.__str__(),
@@ -354,7 +355,7 @@ class JobExportHistoryArchiveWrapper:
             "name": unicodify(history.name),
             "hid_counter": history.hid_counter,
             "genome_build": history.genome_build,
-            "annotation": unicodify(get_item_annotation_str(trans.sa_session, history.user, history)),
+            "annotation": unicodify(get_item_annotation_str(self.sa_session, history.user, history)),
             "tags": history.make_tag_string_list()
         }
         history_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_HISTORY)
@@ -364,12 +365,13 @@ class JobExportHistoryArchiveWrapper:
         jeha.history_attrs_filename = history_attrs_filename
 
         # Write datasets' attributes to file.
-        datasets = self.get_history_datasets(trans, history)
+        datasets = self.get_history_datasets(history)
         included_datasets = []
         datasets_attrs = []
         provenance_attrs = []
+
         for dataset in datasets:
-            dataset.annotation = get_item_annotation_str(trans.sa_session, history.user, dataset)
+            dataset.annotation = get_item_annotation_str(self.sa_session, history.user, dataset)
             if (not dataset.visible and not include_hidden) or (dataset.deleted and not include_deleted):
                 provenance_attrs.append(dataset)
             else:
@@ -430,7 +432,7 @@ class JobExportHistoryArchiveWrapper:
 
             # Get the job's parameters
             try:
-                params_objects = job.get_param_values(trans.app)
+                params_objects = job.get_param_values(self.app)
             except Exception:
                 # Could not get job params.
                 continue
@@ -466,10 +468,10 @@ class JobExportHistoryArchiveWrapper:
             options += " -G"
         return "%s %s" % (options, temp_output_dir)
 
-    def cleanup_after_job(self, db_session):
+    def cleanup_after_job(self):
         """ Remove temporary directory and attribute files generated during setup for this job. """
         # Get jeha for job.
-        jeha = db_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
+        jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job_id=self.job_id).first()
         if jeha:
             temp_dir = jeha.temp_directory
             try:
