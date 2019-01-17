@@ -238,7 +238,7 @@ class Interval(Tabular):
                 for elems in util.file_iter(dataset.file_name):
                     tmp = [elems[c], elems[s], elems[e]]
                     fh.write('%s\n' % '\t'.join(tmp))
-            return open(fh.name)
+            return open(fh.name, 'rb')
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -371,7 +371,7 @@ class BedGraph(Interval):
             Returns file contents as is with no modifications.
             TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
         """
-        return open(dataset.file_name)
+        return open(dataset.file_name, 'rb')
 
     def get_estimated_display_viewport(self, dataset, chrom_col=0, start_col=1, end_col=2):
         """
@@ -459,7 +459,7 @@ class Bed(Interval):
             break
 
         try:
-            return open(dataset.file_name)
+            return open(dataset.file_name, 'rb')
         except Exception:
             return "This item contains no content"
 

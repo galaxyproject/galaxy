@@ -394,10 +394,10 @@ class Tabular(TabularData):
         dataset.metadata.delimiter = '\t'
 
     def as_gbrowse_display_file(self, dataset, **kwd):
-        return open(dataset.file_name)
+        return open(dataset.file_name, 'rb')
 
     def as_ucsc_display_file(self, dataset, **kwd):
-        return open(dataset.file_name)
+        return open(dataset.file_name, 'rb')
 
 
 class Taxonomy(Tabular):
