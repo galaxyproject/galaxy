@@ -26,7 +26,7 @@ class ConditionalDependencies(object):
         self.object_stores = []
         self.conditional_reqs = []
         self.container_interface_types = []
-        self.dynamic_destination_plugins = []
+        self.job_rule_modules = []
         self.parse_configs()
         self.get_conditional_requirements()
 
@@ -43,7 +43,7 @@ class ConditionalDependencies(object):
             pass
         try:
             for plugin in ElementTree.parse(job_conf_xml).findall('.//destination/param[@id="rules_module"]'):
-                self.dynamic_destination_plugins.append(plugin.text)
+                self.job_rule_modules.append(plugin.text)
         except (OSError, IOError):
             pass
         object_store_conf_xml = self.config.get(
@@ -99,7 +99,7 @@ class ConditionalDependencies(object):
                 "galaxy.jobs.runners.drmaauniva:DRMAAUnivaJobRunner" in self.job_runners)
 
     def check_galaxycloudrunner(self):
-        return ("galaxycloudrunner.rules" in self.dynamic_destination_plugins)
+        return ("galaxycloudrunner.rules" in self.job_rule_modules)
 
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
