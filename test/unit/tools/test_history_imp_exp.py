@@ -18,8 +18,16 @@ HISTORY_ATTRS = '''{"hid_counter": 2, "update_time": "2016-02-08 18:38:38.705058
 JOBS_ATTRS = '''[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08T18:39:23.356482", "stdout": "", "input_mapping": {}, "tool_version": "1.1.4", "traceback": null, "command_line": "python /galaxy/tools/data_source/upload.py /galaxy /scratch/tmppwU9rD /scratch/tmpP4_45Y 1:/scratch/jobs/000/dataset_1_files:/data/000/dataset_1.dat", "exit_code": 0, "output_datasets": [1], "state": "ok", "create_time": "2016-02-08T18:38:39.153873", "params": {"files": [{"to_posix_lines": "Yes", "NAME": "None", "file_data": null, "space_to_tab": null, "url_paste": "/scratch/strio_url_paste_o6nrv8", "__index__": 0, "ftp_files": "", "uuid": "None"}], "paramfile": "/scratch/tmpP4_45Y", "file_type": "auto", "files_metadata": {"file_type": "auto", "__current_case__": 41}, "async_datasets": "None", "dbkey": "?"}, "stderr": ""}]'''
 
 
+class MockSetExternalTool(object):
+
+    def regenerate_imported_metadata_if_needed(self, *args, **kwds):
+        pass
+
+
 def _run_jihaw_cleanup(history_archive, msg):
     app = MockApp()
+    app.datatypes_registry.set_external_metadata_tool = MockSetExternalTool()
+
     job = model.Job()
     job.tool_stderr = ''
     jiha = model.JobImportHistoryArchive(job=job, archive_dir=history_archive.arc_directory)
