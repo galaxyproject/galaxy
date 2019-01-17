@@ -32,21 +32,10 @@ class JobImportHistoryArchiveWrapper:
     def cleanup_after_job(self):
         """ Set history, datasets, and jobs' attributes and clean up archive directory. """
 
-        #
-        # Helper methods.
-        #
-
         def file_in_dir(file_path, a_dir):
             """ Returns true if file is in directory. """
             abs_file_path = os.path.abspath(file_path)
             return os.path.split(abs_file_path)[0] == a_dir
-
-        def get_tag_str(tag, value):
-            """ Builds a tag string for a tag, value pair. """
-            if not value:
-                return tag
-            else:
-                return tag + ":" + value
 
         #
         # Import history.
@@ -131,9 +120,6 @@ class JobImportHistoryArchiveWrapper:
                     self.sa_session.flush()
                     new_history.add_dataset(hda, genome_build=None)
                     hda.hid = dataset_attrs['hid']  # Overwrite default hid set when HDA added to history.
-                    # TODO: Is there a way to recover permissions? Is this needed?
-                    # permissions = trans.app.security_agent.history_get_default_permissions( new_history )
-                    # trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
                     self.sa_session.flush()
                     if dataset_attrs.get('exported', True) is True:
                         # Do security check and move/copy dataset data.
@@ -159,15 +145,9 @@ class JobImportHistoryArchiveWrapper:
                                         create=True)
                         hda.dataset.set_total_size()  # update the filesize record in the database
 
-                    # Set tags, annotations.
                     if user:
                         add_item_annotation(self.sa_session, user, hda, dataset_attrs['annotation'])
                         # TODO: Set tags.
-                        """
-                        for tag, value in dataset_attrs[ 'tags' ].items():
-                            trans.app.tag_handler.apply_item_tags( trans, trans.user, hda, get_tag_str( tag, value ) )
-                            self.sa_session.flush()
-                        """
 
                     self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
                         hda, new_history, jiha.job
@@ -222,12 +202,6 @@ class JobImportHistoryArchiveWrapper:
                                 return obj.id
                             return json.JSONEncoder.default(self, obj)
 
-                    # Set parameters. May be useful to look at metadata.py for creating parameters.
-                    # TODO: there may be a better way to set parameters, e.g.:
-                    #   for name, value in tool.params_to_strings( incoming, trans.app ).items():
-                    #       job.add_parameter( name, value )
-                    # to make this work, we'd need to flesh out the HDA objects. The code below is
-                    # relatively similar.
                     for name, value in job_attrs['params'].items():
                         # Transform parameter values when necessary.
                         if isinstance(value, model.HistoryDatasetAssociation):
@@ -236,8 +210,6 @@ class JobImportHistoryArchiveWrapper:
                                             .filter_by(history=new_history, hid=value.hid).first()
                             value = input_hda.id
                         imported_job.add_parameter(name, dumps(value, cls=HistoryDatasetAssociationIDEncoder))
-
-                    # TODO: Connect jobs to input datasets.
 
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs['output_datasets']:
