@@ -157,7 +157,6 @@ export default Backbone.View.extend({
 
         // select extension
         this.select_extension = new Select.View({
-            css: "upload-footer-selection-compressed",
             container: this.$(".upload-footer-extension"),
             data: _.filter(this.list_extensions, ext => !ext.composite_files),
             value: this.options.default_extension,
@@ -168,7 +167,6 @@ export default Backbone.View.extend({
 
         this.collectionType = "list";
         this.select_collection = new Select.View({
-            css: "upload-footer-selection-compressed",
             container: this.$(".upload-footer-collection-type"),
             data: [
                 { id: "list", text: "List" },
@@ -491,12 +489,12 @@ export default Backbone.View.extend({
                     </table>
                 </div>
                 <div class="upload-footer">
-                    <span class="upload-footer-title-compressed">Collection Type:</span>
+                    <span class="upload-footer-title">Collection Type:</span>
                     <span class="upload-footer-collection-type"/>
-                    <span class="upload-footer-title-compressed">File Type:</span>
+                    <span class="upload-footer-title">File Type:</span>
                     <span class="upload-footer-extension"/>
                     <span class="upload-footer-extension-info upload-icon-button fa fa-search"/>
-                    <span class="upload-footer-title-compressed">Genome (set all):</span>
+                    <span class="upload-footer-title">Genome (set all):</span>
                     <span class="upload-footer-genome"/>
                 </div>
                 <div class="upload-buttons"/>
