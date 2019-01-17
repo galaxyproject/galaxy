@@ -8,7 +8,6 @@ var jQuery = require("jqueryVendor");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.autocomplete");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.event.hover");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.event.drag");
-require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.event.drop");
 require("imports-loader?jQuery=jqueryVendor,define=>false!jquery-mousewheel");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.form");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.rating");

@@ -1,6 +1,6 @@
 /** Workflow view */
-import _ from "underscore";
 import $ from "jquery";
+import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
