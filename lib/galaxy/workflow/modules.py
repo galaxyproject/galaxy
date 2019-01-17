@@ -332,7 +332,10 @@ class SubWorkflowModule(WorkflowModule):
 
     def get_errors(self, **kwargs):
         errors = (module.get_errors(include_tool_id=True) for module in self.get_modules())
-        return [e for e in errors if e]
+        errors = [e for e in errors if e]
+        if any(errors):
+            return errors
+        return None
 
     def get_data_outputs(self):
         outputs = []
