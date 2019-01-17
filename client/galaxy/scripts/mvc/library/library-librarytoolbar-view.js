@@ -209,21 +209,17 @@ var LibraryToolbarView = Backbone.View.extend({
         return _.template(
             `<div class="library_style_container">
                 <div class="d-flex align-items-center mb-2">
-                    <a class="mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page">
-                        <button class="btn btn-secondary" type="button">
-                            <span class="fa fa-home"/>
-                        </button>
+                    <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="#">
+                        <span class="fa fa-home"/>
+                    </a>
+                    <a class="library-help-button btn btn-secondary mr-1" data-toggle="tooltip" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">
+                        <span class="fa fa-question"/>
                     </a>
                     <% if(admin_user === true) { %>
                         <button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="mr-1 btn btn-secondary" type="button">
                             <span class="fa fa-plus"/>
                         </button>
                     <% } %>
-                    <a class="library-help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">
-                        <button class="mr-1 btn btn-secondary" type="button">
-                            <span class="fa fa-question"/>
-                        </button>
-                    </a>
                     <div class="d-flex align-items-center library-paginator mr-1" />
                         <form class="form-inline mr-1">
                             <input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">
