@@ -94,6 +94,9 @@ class JobImportHistoryArchiveWrapper:
                     provenance_attrs = load(open(provenance_file_name))
                     datasets_attrs += provenance_attrs
 
+                object_key = 'hid'
+                hdas_by_key = {}
+
                 # Create datasets.
                 for dataset_attrs in datasets_attrs:
                     metadata = dataset_attrs['metadata']
@@ -170,6 +173,8 @@ class JobImportHistoryArchiveWrapper:
                         hda, new_history, jiha.job
                     )
 
+                    hdas_by_key[dataset_attrs[object_key]] = hda
+
                 #
                 # Create jobs.
                 #
@@ -179,8 +184,8 @@ class JobImportHistoryArchiveWrapper:
                     """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by
                         the encoded object. This only works because HDAs are created above. """
                     if obj_dct.get('__HistoryDatasetAssociation__', False):
-                        return self.sa_session.query(model.HistoryDatasetAssociation) \
-                            .filter_by(history=new_history, hid=obj_dct['hid']).first()
+                        return hdas_by_key[obj_dct[object_key]]
+
                     return obj_dct
                 jobs_attr_file_name = os.path.join(archive_dir, ATTRS_FILENAME_JOBS)
                 jobs_attrs = load(open(jobs_attr_file_name), object_hook=as_hda)
@@ -221,25 +226,18 @@ class JobImportHistoryArchiveWrapper:
 
                     for name, value in job_attrs['params'].items():
                         # Transform parameter values when necessary.
-                        if isinstance(value, model.HistoryDatasetAssociation):
-                            # HDA input: use hid to find input.
-                            input_hda = self.sa_session.query(model.HistoryDatasetAssociation) \
-                                            .filter_by(history=new_history, hid=value.hid).first()
-                            value = input_hda.id
                         imported_job.add_parameter(name, dumps(value, cls=HistoryDatasetAssociationIDEncoder))
 
                     # Connect jobs to output datasets.
-                    for output_hid in job_attrs['output_datasets']:
-                        output_hda = self.sa_session.query(model.HistoryDatasetAssociation) \
-                            .filter_by(history=new_history, hid=output_hid).first()
+                    for output_key in job_attrs['output_datasets']:
+                        output_hda = hdas_by_key[output_key]
                         if output_hda:
                             imported_job.add_output_dataset(output_hda.name, output_hda)
 
                     # Connect jobs to input datasets.
                     if 'input_mapping' in job_attrs:
-                        for input_name, input_hid in job_attrs['input_mapping'].items():
-                            input_hda = self.sa_session.query(model.HistoryDatasetAssociation) \
-                                            .filter_by(history=new_history, hid=input_hid).first()
+                        for input_name, input_key in job_attrs['input_mapping'].items():
+                            input_hda = hdas_by_key[input_key]
                             if input_hda:
                                 imported_job.add_input_dataset(input_name, input_hda)
 
