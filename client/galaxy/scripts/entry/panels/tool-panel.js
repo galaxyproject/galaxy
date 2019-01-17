@@ -1,4 +1,5 @@
 import Backbone from "backbone";
+import $ from "jquery";
 import Tools from "mvc/tool/tools";
 import Upload from "mvc/upload/upload-view";
 import _l from "utils/localization";
