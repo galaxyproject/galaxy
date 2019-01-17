@@ -280,7 +280,7 @@ export default Backbone.View.extend({
                             <input class="upload-title ml-2 border rounded"/>
                             <div class="upload-text">
                                 <div class="upload-text-info">
-                                    You can tell Galaxy to download data from web by entering URL in this box (one per line). You can also directly paste the contents of a file.
+                                    Download data from the web by entering a URL (one per line) or directly paste content.
                                 </div>
                                 <textarea class="upload-text-content form-control"/>
                             </div>

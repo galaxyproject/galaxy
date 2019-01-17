@@ -179,7 +179,7 @@ export default Backbone.View.extend({
         return (
             `<div class="upload-view-composite">
                 <div class="upload-top">
-                    <h6 class="upload-top-info"/>
+                    <div class="upload-top-info"/>
                 </div>
                 <div class="upload-box">
                     <table class="upload-table ui-table-striped" style="display: none;">

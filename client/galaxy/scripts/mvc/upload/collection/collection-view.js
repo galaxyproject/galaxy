@@ -467,7 +467,7 @@ export default Backbone.View.extend({
         return (
             `<div class="upload-view-default">
                 <div class="upload-top">
-                    <h6 class="upload-top-info"/>
+                    <div class="upload-top-info"/>
                 </div>
                 <div class="upload-box">
                     <div class="upload-helper">
