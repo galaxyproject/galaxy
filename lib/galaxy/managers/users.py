@@ -78,12 +78,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 return None, message
         user = self.create(email=email, username=username, password=password)
         if self.app.config.user_activation_on:
-            is_activation_sent = self.send_activation_email(trans, email, username)
-            if not is_activation_sent:
-                message = "Unable to send activation email, please contact your local Galaxy administrator."
-                if self.app.config.error_email_to is not None:
-                    message += " Contact: %s" % self.app.config.error_email_to
-                return None, message
+            self.send_activation_email(trans, email, username)
         return user, None
 
     def create(self, email=None, username=None, password=None, **kwargs):
