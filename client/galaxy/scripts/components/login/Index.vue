@@ -4,7 +4,6 @@
             <b-tab title="Login" active>
                 <login
                     :show_welcome_with_login="show_welcome_with_login"
-                    :openid_providers="openid_providers"
                     :welcome_url="welcome_url"
                 />
             </b-tab>
@@ -39,10 +38,6 @@ export default {
         },
         welcome_url: {
             type: String,
-            required: false
-        },
-        openid_providers: {
-            type: Array,
             required: false
         },
         registration_warning_message: {
