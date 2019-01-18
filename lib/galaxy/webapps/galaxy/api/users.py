@@ -515,7 +515,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param object_id: the id of an object that users wants to favorite
         :type  object_id: str
         """
-        self._validate_object_type(object_type)
+        self._validate_favorite_object_type(object_type)
         user = self._get_user(trans, id)
         favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
         if object_type == 'tools':
@@ -548,7 +548,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         :param object_id: the id of an object that users wants to remove from favorites
         :type  object_id: str
         """
-        self._validate_object_type(object_type)
+        self._validate_favorite_object_type(object_type)
         user = self._get_user(trans, id)
         favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
         if object_type == 'tools':
@@ -562,6 +562,12 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                 else:
                     raise exceptions.ObjectNotFound('Given object is not in the list of favorites')
         return favorites
+
+    def _validate_favorite_object_type(self, object_type):
+        if object_type in ['tools']:
+            pass
+        else:
+            raise exceptions.ObjectAttributeInvalidException("This type is not supported. Given object_type: %s" % object_type)
 
     def _validate_email(self, email):
         ''' Validate email and username using regex '''
