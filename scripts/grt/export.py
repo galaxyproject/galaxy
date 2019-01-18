@@ -48,74 +48,8 @@ def kw_metrics(job):
     }
 
 
-class Sanitization(object):
-
-    def __init__(self, sanitization_config, model, sa_session):
-        self.sanitization_config = sanitization_config
-        # SA Stuff
-        self.model = model
-        self.sa_session = sa_session
-
-        if 'tool_params' not in self.sanitization_config:
-            self.sanitization_config['tool_params'] = {}
-
-    def blacklisted_tree(self, path):
-        if self.tool_id in self.sanitization_config['tool_params'] and path.lstrip('.') in self.sanitization_config['tool_params'][self.tool_id]:
-            return True
-        return False
-
-    def sanitize_data(self, tool_id, key, value):
-        # If the tool is blacklisted, skip it.
-        if tool_id in self.sanitization_config['tools']:
-            return 'null'
-        # Thus, all tools below here are not blacklisted at the top level.
-
-        # If the key is listed precisely (not a sub-tree), we can also return slightly more quickly.
-        if tool_id in self.sanitization_config['tool_params'] and key in self.sanitization_config['tool_params'][tool_id]:
-            return 'null'
-
-        # If the key isn't a prefix for any of the keys being sanitized, then this is safe.
-        if tool_id in self.sanitization_config['tool_params'] and not any(san_key.startswith(key) for san_key in self.sanitization_config['tool_params'][tool_id]):
-            return value
-
-        # Slow path.
-        if isinstance(value, str):
-            try:
-                unsanitized = {key: json.loads(value)}
-            except ValueError:
-                unsanitized = {key: value}
-        else:
-            unsanitized = {key: value}
-
-        self.tool_id = tool_id
-        return json.dumps(self._sanitize_value(unsanitized))
-
-    def _sanitize_dict(self, unsanitized_dict, path=""):
-        return {
-            k: self._sanitize_value(v, path=path + '.' + k)
-            for (k, v)
-            in unsanitized_dict.items()
-        }
-
-    def _sanitize_list(self, unsanitized_list, path=""):
-        return [
-            self._sanitize_value(v, path=path + '.*')
-            for v in unsanitized_list
-        ]
-
-    def _sanitize_value(self, unsanitized_value, path=""):
-        logging.debug("%sSAN %s" % ('  ' * path.count('.'), unsanitized_value))
-        if self.blacklisted_tree(path):
-            logging.debug("%sSAN ***REDACTED***" % ('  ' * path.count('.')))
-            return None
-
-        if type(unsanitized_value) is dict:
-            return self._sanitize_dict(unsanitized_value, path=path)
-        elif type(unsanitized_value) is list:
-            return self._sanitize_list(unsanitized_value, path=path)
-        else:
-            logging.debug("%s> Sanitizing %s = %s" % ('  ' * path.count('.'), path, unsanitized_value))
-            return unsanitized_value
+def round_to_2sd(number):
+    return str(int(float('%.2g' % number)))
 
 
 def main(argv):
@@ -177,10 +111,6 @@ def main(argv):
     # Set up our arrays
     active_users = defaultdict(int)
     job_state_data = defaultdict(int)
-
-    annotate('san_init', 'Building Sanitizer')
-    san = Sanitization(config['sanitization'], model, sa_session)
-    annotate('san_end')
 
     if not os.path.exists(REPORT_DIR):
         os.makedirs(REPORT_DIR)
@@ -314,7 +244,7 @@ def main(argv):
                 handle_datasets.write('\t')
                 handle_datasets.write(str(hdas[hda_id][1]))
                 handle_datasets.write('\t')
-                handle_datasets.write(str(datasets[dataset_id][0]))
+                handle_datasets.write(round_to_2sd(datasets[dataset_id][0]))
                 handle_datasets.write('\t')
                 handle_datasets.write(str(job[2]))
                 handle_datasets.write('\t')
@@ -357,37 +287,6 @@ def main(argv):
     handle_metric_num.close()
     annotate('export_metric_num_end')
 
-    annotate('export_params_start', 'Export Job Parameters')
-    handle_params = open(REPORT_BASE + '.params.tsv', 'w')
-    handle_params.write('\t'.join(('job_id', 'name', 'value')) + '\n')
-    for offset_start in range(last_job_sent, end_job_id, args.batch_size):
-        logging.debug("Processing %s:%s", offset_start, min(end_job_id, offset_start + args.batch_size))
-        for param in sa_session.query(model.JobParameter.job_id, model.JobParameter.name, model.JobParameter.value) \
-                .filter(model.JobParameter.job_id > offset_start) \
-                .filter(model.JobParameter.job_id <= min(end_job_id, offset_start + args.batch_size)) \
-                .all():
-            # No associated job
-            if param[0] not in job_tool_map:
-                continue
-            # If the tool is blacklisted, exclude everywhere
-            if job_tool_map[param[0]] in blacklisted_tools:
-                continue
-
-            try:
-                sanitized = san.sanitize_data(job_tool_map[param[0]], param[1], param[2])
-
-                handle_params.write(str(param[0]))
-                handle_params.write('\t')
-                handle_params.write(param[1])
-                handle_params.write('\t')
-                handle_params.write(json.dumps(sanitized))
-                handle_params.write('\n')
-            except Exception:
-                logging.warning("Unable to write out a 'handle_params' row. Ignoring the row.", exc_info=True)
-                continue
-    handle_params.close()
-    annotate('export_params_end')
-
     # Now on to outputs.
     with tarfile.open(REPORT_BASE + '.tar.gz', 'w:gz') as handle:
         for name in ('jobs', 'metric_num', 'params', 'datasets'):
@@ -403,7 +302,7 @@ def main(argv):
     # Now serialize the individual report data.
     with open(REPORT_BASE + '.json', 'w') as handle:
         json.dump({
-            "version": 2,
+            "version": 3,
             "galaxy_version": gxconfig.version_major,
             "generated": REPORT_IDENTIFIER,
             "report_hash": "sha256:" + sha,

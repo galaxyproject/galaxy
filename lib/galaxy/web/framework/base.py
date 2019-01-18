@@ -499,12 +499,12 @@ def send_file(start_response, trans, body):
     return body
 
 
-def iterate_file(file):
+def iterate_file(fh):
     """
     Progressively return chunks from `file`.
     """
     while 1:
-        chunk = file.read(CHUNK_SIZE)
+        chunk = fh.read(CHUNK_SIZE)
         if not chunk:
             break
         yield chunk

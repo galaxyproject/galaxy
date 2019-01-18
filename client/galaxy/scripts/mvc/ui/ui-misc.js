@@ -1,6 +1,9 @@
 /**
  *  This class contains backbone wrappers for basic ui elements such as Images, Labels, Buttons, Input fields etc.
  */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import Select from "mvc/ui/ui-select-default";
 import Slider from "mvc/ui/ui-slider";
 import Options from "mvc/ui/ui-options";

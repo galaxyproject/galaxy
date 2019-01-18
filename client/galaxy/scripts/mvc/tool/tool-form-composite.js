@@ -190,7 +190,7 @@ var View = Backbone.View.extend({
                         step.collapsed = false;
                     }
                     if (is_runtime_value) {
-                        input.value = input.default_value;
+                        input.value = null;
                     }
                     input.flavor = "workflow";
                     if (!is_runtime_value && !is_data_input && input.type !== "hidden" && !input.wp_linked) {

@@ -4,8 +4,8 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="style/base.css" type="text/css" />
     </head>
-    <body style="margin: 0">
-        <div class="jumbotron">
+    <body class="m-0">
+        <div class="jumbotron rounded-0">
             <div class="container">
                 <h2>Hello, <strong>Galaxy</strong> is running!</h2>
                 To customize this page edit <code>static/welcome.html</code>

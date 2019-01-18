@@ -1,26 +1,30 @@
-import { installMonitor } from "utils/installMonitor";
+// Initializes "training wheels" causing legacy references to window.Galaxy to
+// pass through the singleton accessors. All future code should access galaxy
+// through getGalaxyInstance, and rarely with setGalaxyInstance
+
 import { getGalaxyInstance, setGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-
-let proxy;
+import { serverPath } from "utils/serverPath";
 
 const galaxyStub = {
     root: getAppRoot(),
     config: {}
 };
 
-if (!proxy) {
-    // force references to window.galaxy to pass through the set/get instance functions
-    // The monitor is going to store Galaxy at window._monitorStorage["Galaxy"]
-    Object.defineProperty(window._monitorStorage, "Galaxy", {
+if (!window.Galaxy) {
+    Object.defineProperty(window, "Galaxy", {
         enumerable: true,
-        configurable: false,
-        get: getGalaxyInstance,
-        set: newValue => setGalaxyInstance(() => newValue)
+        get: function() {
+            console.warn("accessing (get) window.Galaxy", serverPath());
+            return getGalaxyInstance() || galaxyStub;
+        },
+        set: function(newValue) {
+            console.warn("accessing (set) window.Galaxy", serverPath());
+            setGalaxyInstance(newValue);
+        }
     });
-
-    let existingGalaxy = getGalaxyInstance();
-    proxy = installMonitor("Galaxy", existingGalaxy || galaxyStub);
+} else {
+    console.error("Detected redefinition of window.Galaxy -- skipping, but this should be investigated.", serverPath());
 }
 
-export default proxy;
+export default window.Galaxy;

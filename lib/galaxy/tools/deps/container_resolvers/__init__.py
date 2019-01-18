@@ -16,7 +16,8 @@ class ContainerResolver(Dictifiable):
     """Description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type']
+    dict_collection_visible_keys = ['resolver_type', 'can_uninstall_dependencies']
+    can_uninstall_dependencies = False
 
     def __init__(self, app_info=None, **kwds):
         """Default initializer for ``ContainerResolver`` subclasses."""
@@ -33,7 +34,7 @@ class ContainerResolver(Dictifiable):
             return default
 
     @abstractmethod
-    def resolve(self, tool_info):
+    def resolve(self, enabled_container_types, tool_info, **kwds):
         """Find a container matching all supplied requirements for tool.
 
         The supplied argument is a :class:`galaxy.tools.deps.containers.ToolInfo` description

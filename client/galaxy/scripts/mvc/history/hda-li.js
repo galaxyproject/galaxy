@@ -1,3 +1,4 @@
+import _ from "underscore";
 import DATASET_LI from "mvc/dataset/dataset-li";
 import BASE_MVC from "mvc/base-mvc";
 import HISTORY_ITEM_LI from "mvc/history/history-item-li";

@@ -2,22 +2,25 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
-                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText"/>
+                <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="login" @submit.prevent="submit()">
                     <b-card header="Welcome to Galaxy, please log in">
                         <b-form-group label="Username or Email Address">
-                            <b-form-input name="login" type="text" v-model="login"/>
+                            <b-form-input name="login" type="text" v-model="login" />
                         </b-form-group>
                         <b-form-group label="Password">
-                            <b-form-input name="password" type="password" v-model="password"/>
-                            <b-form-text>Forgot password? Click here to <a @click="reset" href="#">reset</a> your password.</b-form-text>
+                            <b-form-input name="password" type="password" v-model="password" />
+                            <b-form-text
+                                >Forgot password? Click here to <a @click="reset" href="#">reset</a> your
+                                password.</b-form-text
+                            >
                         </b-form-group>
                         <b-button name="login" type="submit">Login</b-button>
                     </b-card>
                 </b-form>
             </div>
             <div v-if="show_welcome_with_login" class="col">
-                <b-embed type="iframe" :src="welcome_url" aspect="1by1"/>
+                <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -26,6 +29,8 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload";
 
 Vue.use(BootstrapVue);
 
@@ -41,13 +46,15 @@ export default {
         }
     },
     data() {
+        let Galaxy = getGalaxyInstance();
         return {
             login: null,
             password: null,
             url: null,
             provider: null,
             messageText: null,
-            messageVariant: null
+            messageVariant: null,
+            redirect: Galaxy.params.redirect
         };
     },
     computed: {
@@ -57,19 +64,20 @@ export default {
     },
     methods: {
         submit: function(method) {
-            let data = {login: this.login, password: this.password};
+            let rootUrl = getAppRoot();
+            let data = { login: this.login, password: this.password, redirect: this.redirect };
             axios
-                .post(`${Galaxy.root}user/login`, data)
+                .post(`${rootUrl}user/login`, data)
                 .then(response => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
                     if (response.data.expired_user) {
-                        window.location = `${Galaxy.root}root/login?expired_user=${response.data.expired_user}`;
+                        window.location = `${rootUrl}root/login?expired_user=${response.data.expired_user}`;
                     } else if (response.data.redirect) {
-                        window.location = response.data.redirect;
+                        window.location = encodeURI(response.data.redirect);
                     } else {
-                        window.location = `${Galaxy.root}`;
+                        window.location = `${rootUrl}`;
                     }
                 })
                 .catch(error => {
@@ -79,9 +87,10 @@ export default {
                 });
         },
         reset: function(ev) {
+            let rootUrl = getAppRoot();
             ev.preventDefault();
             axios
-                .post(`${Galaxy.root}user/reset_password`, {email: this.login})
+                .post(`${rootUrl}user/reset_password`, { email: this.login })
                 .then(response => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;

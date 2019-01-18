@@ -10,7 +10,7 @@ single configuration file, ``config/error_report.yml.sample``.
 
 Let's look at that briefly:
 
-.. code-block:: yml
+.. code-block:: yaml
 
     - type: email
       verbose: true

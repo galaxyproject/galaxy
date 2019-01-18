@@ -417,6 +417,19 @@ steps:
       inner_input: outer_input
 """
 
+WORKFLOW_ONE_STEP_DEFAULT = """
+class: GalaxyWorkflow
+inputs:
+  input: data
+steps:
+  randomlines:
+    tool_id: random_lines1
+    in:
+      input: input
+      num_lines:
+        default: 6
+"""
+
 WORKFLOW_WITH_OUTPUTS = """
 class: GalaxyWorkflow
 inputs:

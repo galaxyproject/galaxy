@@ -521,12 +521,12 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    involucro is a tool used to build Docker containers for tools from
-    Conda dependencies referenced in tools as `requirement`s. The
-    following path is the location of involucro on the Galaxy host.
-    This is ignored if the relevant container resolver isn't enabled,
-    and will install on demand unless involucro_auto_init is set to
-    False.
+    involucro is a tool used to build Docker or Singularity containers
+    for tools from Conda dependencies referenced in tools as
+    `requirement`s. The following path is the location of involucro on
+    the Galaxy host. This is ignored if the relevant container
+    resolver isn't enabled, and will install on demand unless
+    involucro_auto_init is set to False.
 :Default: ``database/dependencies/involucro``
 :Type: str
 
@@ -536,10 +536,22 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Install involucro as needed to build Docker containers for tools.
-    Ignored if relevant container resolver is not used.
+    Install involucro as needed to build Docker or Singularity
+    containers for tools. Ignored if relevant container resolver is
+    not used.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~
+``mulled_channels``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Conda channels to use when building Docker or Singularity
+    containers using involucro.
+:Default: ``conda-forge,bioconda``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -922,22 +934,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~
-``collect_outputs_from``
-~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tools with a number of outputs not known until runtime can write
-    these outputs to a directory for collection by Galaxy when the job
-    is done. Previously, this directory was new_file_path, but using
-    one global directory can cause performance problems, so using
-    job_working_directory ('.' or cwd when a job is run) is
-    encouraged.  By default, both are checked to avoid breaking
-    existing tools.
-:Default: ``new_file_path,job_working_directory``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -946,6 +942,18 @@
     Configuration file for the object store If this is set and exists,
     it overrides any other objectstore settings.
 :Default: ``config/object_store_conf.xml``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_store_by``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    What Dataset attribute is used to reference files in an
+    ObjectStore implementation, default is 'id' but can also be set to
+    'uuid' for more de-centralized usage.
+:Default: ``id``
 :Type: str
 
 
@@ -1218,7 +1226,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Show a message box under the masthead.
+    Class of the message box under the masthead. Possible values are:
+    'info' (the default), 'warning', 'error', 'done'.
 :Default: ``info``
 :Type: str
 
@@ -1316,6 +1325,16 @@
 :Description:
     The URL linked by the "Galaxy/brand" text.
 :Default: ``/``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~
+``helpsite_url``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Help" link in the "Help" menu.
+:Default: ````
 :Type: str
 
 
@@ -2084,9 +2103,8 @@
 
 :Description:
     Enable live debugging in your browser.  This should NEVER be
-    enabled on a public site.  Enabled in the sample config for
-    development.
-:Default: ``true``
+    enabled on a public site.
+:Default: ``false``
 :Type: bool
 
 
@@ -2826,6 +2844,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_workflow_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable import and export of workflows as Galaxy Format 2
+    workflows.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``force_beta_workflow_scheduled_min_steps``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3256,10 +3285,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    In multiprocess configurations, notification between processes
-    about new jobs must be done via the database.  In single process
-    configurations, this can be done in memory, which is a bit
-    quicker.
+    This option is deprecated, use the `mem-self` handler assignment
+    option in the job configuration instead.
 :Default: ``true``
 :Type: bool
 

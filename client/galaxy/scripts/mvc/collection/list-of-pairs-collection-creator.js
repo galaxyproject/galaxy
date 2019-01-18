@@ -1,5 +1,5 @@
 import _ from "underscore";
-import jQuery from "jquery";
+import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
@@ -646,13 +646,12 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             };
             //this.debug( JSON.stringify( ajaxData ) );
             self.blocking = true;
-            return jQuery
-                .ajax(url, {
-                    type: "POST",
-                    contentType: "application/json",
-                    dataType: "json",
-                    data: JSON.stringify(ajaxData)
-                })
+            return $.ajax(url, {
+                type: "POST",
+                contentType: "application/json",
+                dataType: "json",
+                data: JSON.stringify(ajaxData)
+            })
                 .always(() => {
                     self.blocking = false;
                 })
@@ -1797,7 +1796,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datasets, options) {
     var Galaxy = getGalaxyInstance();
-    var deferred = jQuery.Deferred();
+    var deferred = $.Deferred();
     var creator;
 
     options = _.defaults(options || {}, {

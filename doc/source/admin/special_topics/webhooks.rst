@@ -45,23 +45,26 @@ For each type there is an example provided:
 - Additional functionality can be added to the top menu. Two dummy buttons are implemented to show the idea:
 
   - A button that links to biostars
-   .. image:: images_webhooks/masthead.png
-      :scale: 50 %
+
+    .. image:: images_webhooks/masthead.png
+       :scale: 50 %
 
   - A button that shows a pop-up with information about an user.
-   .. image:: images_webhooks/masthead_trans_object.png
-      :scale: 50 %
+
+    .. image:: images_webhooks/masthead_trans_object.png
+       :scale: 50 %
 
 - The history menu can be extended. In this case we use two dummy entries 'History Menu Webhook Item 1' and  'History Menu Webhook Item 2'.
- .. image:: images_webhooks/history-menu.png
-    :scale: 25 %
+
+  .. image:: images_webhooks/history-menu.png
+     :scale: 25 %
 
 Plugin structure
 ----------------
 
 Each plugin has the following folder structure:
 
-.. code-block::
+.. code-block:: yaml
 
    - plugin_name
       - config.yml (mandatory)

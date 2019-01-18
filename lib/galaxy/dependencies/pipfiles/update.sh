@@ -42,7 +42,8 @@ for env in $ENVS; do
     pipenv lock -r | sed -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' > pinned-requirements.txt
     pipenv lock -r --dev | sed -e 's/--hash[^[:space:]]*//g' -e 's/[[:space:]]*$//' > pinned-dev-requirements.txt
     # Fix oscillating environment markers
-    sed -i.orig -e "s/^cffi==\([^ ;]\{1,\}\).*$/cffi==\1/" \
+    sed -i.orig -e "s/^azure-storage-nspkg==\([^ ;]\{1,\}\).*$/azure-storage-nspkg==\1/" \
+                -e "s/^cffi==\([^ ;]\{1,\}\).*$/cffi==\1/" \
                 -e "s/^cmd2==\([^ ;]\{1,\}\).*$/cmd2==\1/" \
                 -e "s/^enum34==\([^ ;]\{1,\}\).*$/enum34==\1 ; python_version < '3.4'/" \
                 -e "s/^funcsigs==\([^ ;]\{1,\}\).*$/funcsigs==\1 ; python_version < '3.3'/" \

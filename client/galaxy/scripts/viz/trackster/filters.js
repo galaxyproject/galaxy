@@ -1,6 +1,7 @@
+import $ from "jquery";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
-var extend = _.extend;
+import _ from "libs/underscore";
+import { getGalaxyInstance } from "app";
 
 /**
  * Filters that enable users to show/hide data points dynamically.
@@ -15,7 +16,7 @@ var Filter = function(obj_dict) {
     this.tool_exp_name = obj_dict.tool_exp_name;
 };
 
-extend(Filter.prototype, {
+_.extend(Filter.prototype, {
     /**
      * Convert filter to dictionary.
      */
@@ -259,13 +260,14 @@ var NumberFilter = function(obj_dict) {
     // Add to clear floating layout.
     $("<div style='clear: both;'/>").appendTo(filter.parent_div);
 };
-extend(NumberFilter.prototype, {
+
+_.extend(NumberFilter.prototype, {
     /**
      * Convert filter to dictionary.
      */
     to_dict: function() {
         var obj_dict = Filter.prototype.to_dict.call(this);
-        return extend(obj_dict, {
+        return _.extend(obj_dict, {
             type: "number",
             min: this.min,
             max: this.max,
@@ -503,7 +505,7 @@ var FiltersManager = function(track, obj_dict) {
     }
 };
 
-extend(FiltersManager.prototype, {
+_.extend(FiltersManager.prototype, {
     // HTML manipulation and inspection.
     show: function() {
         this.parent_div.show();
@@ -637,7 +639,7 @@ extend(FiltersManager.prototype, {
         // iteratively application.
         (function run_filter(input_dataset_id, filters) {
             var // Set up filtering info and params.
-            filter_tuple = filters[0];
+                filter_tuple = filters[0];
 
             var tool_id = filter_tuple[0];
             var tool_filters = filter_tuple[1];
@@ -654,7 +656,10 @@ extend(FiltersManager.prototype, {
             filters = filters.slice(1);
 
             // DBTODO: This will never work, run_tool_url doesn't exist?
+            // https://github.com/galaxyproject/galaxy/issues/7224
+            // eslint-disable-next-line no-undef
             $.getJSON(run_tool_url, url_params, response => {
+                let Galaxy = getGalaxyInstance();
                 if (response.error) {
                     // General error.
                     Galaxy.modal.show({

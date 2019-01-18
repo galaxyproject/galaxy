@@ -251,7 +251,7 @@ mapping:
       
       use_interactive:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           NEVER enable this on a public site (even test or QA)
@@ -379,7 +379,8 @@ mapping:
         default: info
         required: false
         desc: |
-          Show a message box under the masthead.
+          Class of the message box under the masthead. Possible values are:
+          'info' (the default), 'warning', 'error', 'done'.
       
       static_enabled:
         type: bool

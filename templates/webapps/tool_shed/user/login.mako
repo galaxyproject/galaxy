@@ -28,9 +28,14 @@ def inherit(context):
 
 <%def name="body()">
 
+    <!-- login.mako -->
+
     %if redirect_url:
-        <script type="text/javascript">  
-            top.location.href = '${redirect_url | h}';
+        <script type="text/javascript"> 
+            // redirect!
+            let redirectTo = '${redirect_url | h}';
+            console.log("redirect requestted", redirectTo);
+            top.location.href = redirectTo;
         </script>
     %endif
 

@@ -28,7 +28,7 @@ PASSWORD_RESET_TEMPLATE = """
 To reset your Galaxy password for the instance at %s use the following link,
 which will expire %s.
 
-%s
+%s%s
 
 If you did not make this request, no action is necessary on your part, though
 you may want to notify an administrator.
@@ -370,6 +370,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             util.send_mail(frm, to, subject, body, self.app.config)
             return True
         except Exception:
+            log.debug(body)
             log.exception('Unable to send the activation email.')
             return False
 
@@ -401,9 +402,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             if prt:
                 host = self.__get_host(trans)
                 reset_url = url_for(controller='root', action='login', token=prt.token)
-                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(self.app.config.pretty_datetime_format),
-                                                  reset_url)
-                frm = self.app.config.email_from or 'galaxy-no-reply@' + host
+                body = PASSWORD_RESET_TEMPLATE % (host, prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
+                                                  trans.request.host, reset_url)
+                frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
                 subject = 'Galaxy Password Reset'
                 try:
                     util.send_mail(frm, email, subject, body, self.app.config)
@@ -426,6 +427,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.add(prt)
             trans.sa_session.flush()
             return reset_user, prt
+        return None, None
 
     def __get_host(self, trans):
         host = trans.request.host.split(':')[0]

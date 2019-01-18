@@ -25,9 +25,9 @@ from galaxy import (
     exceptions,
     model
 )
-from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.tags import GalaxyTagManager
+from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
@@ -561,16 +561,18 @@ class Tool(Dictifiable):
         assert rval is not None, 'Could not get a job tool configuration for Tool %s with job_params %s, this is a bug' % (self.id, job_params)
         return rval
 
-    def get_job_handler(self, job_params=None):
-        """Get a suitable job handler for this `Tool` given the provided `job_params`.  If multiple handlers are valid for combination of `Tool` and `job_params` (e.g. the defined handler is a handler tag), one will be selected at random.
+    def get_configured_job_handler(self, job_params=None):
+        """Get the configured job handler for this `Tool` given the provided `job_params`.
+
+        Unlike the former ``get_job_handler()`` method, this does not perform "preassignment" (random selection of
+        a configured handler ID from a tag).
 
         :param job_params: Any params specific to this job (e.g. the job source)
         :type job_params: dict or None
 
-        :returns: str -- The id of a job handler for a job run of this `Tool`
+        :returns: str or None -- The configured handler for a job run of this `Tool`
         """
-        # convert tag to ID if necessary
-        return self.app.job_config.get_handler(self.__get_job_tool_configuration(job_params=job_params).handler)
+        return self.__get_job_tool_configuration(job_params=job_params).handler
 
     def get_job_destination(self, job_params=None):
         """
@@ -895,11 +897,6 @@ class Tool(Dictifiable):
 
     def tool_provided_metadata(self, job_wrapper):
         meta_file = os.path.join(job_wrapper.tool_working_directory, self.provided_metadata_file)
-        # LEGACY: Remove in 17.XX
-        if not os.path.exists(meta_file):
-            # Maybe this is a legacy job, use the job working directory instead
-            meta_file = os.path.join(job_wrapper.working_directory, self.provided_metadata_file)
-
         if not os.path.exists(meta_file):
             return output_collect.NullToolProvidedMetadata()
         if self.provided_metadata_style == "legacy":
@@ -1516,7 +1513,16 @@ class Tool(Dictifiable):
         `self.tool_action`. In general this will create a `Job` that
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
-        return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
+        try:
+            return self.tool_action.execute(self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs)
+        except exceptions.ToolExecutionError as exc:
+            job = exc.job
+            job_id = 'unknown'
+            if job is not None:
+                job.mark_failed(info=exc.err_msg, blurb=exc.err_code.default_error_message)
+                job_id = job.id
+            log.error("Tool execution failed for job: %s", job_id)
+            raise
 
     def params_to_strings(self, params, app, nested=False):
         return params_to_strings(self.inputs, params, app, nested)
@@ -2244,11 +2250,22 @@ class SetMetadataTool(Tool):
     tool_type = 'set_metadata'
     requires_setting_metadata = False
 
+    def regenerate_imported_metadata_if_needed(self, hda, history, job):
+        if len(hda.metadata_file_types) > 0:
+            self.tool_action.execute_via_app(
+                self, self.app, job.session_id,
+                history.id, job.user, incoming={'input1': hda}, overwrite=False
+            )
+
     def exec_after_process(self, app, inp_data, out_data, param_dict, job=None):
+        working_directory = app.object_store.get_filename(
+            job, base_dir='job_work', dir_only=True, obj_dir=True
+        )
         for name, dataset in inp_data.items():
-            external_metadata = JobExternalOutputMetadataWrapper(job)
-            if external_metadata.external_metadata_set_successfully(dataset, app.model.context):
-                dataset.metadata.from_JSON_dict(external_metadata.get_output_filenames_by_dataset(dataset, app.model.context).filename_out)
+            external_metadata = get_metadata_compute_strategy(app, job.id)
+            sa_session = app.model.context
+            if external_metadata.external_metadata_set_successfully(dataset, sa_session):
+                external_metadata.load_metadata(dataset, name, sa_session, working_directory=working_directory)
             else:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add(dataset)

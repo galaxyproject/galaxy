@@ -146,7 +146,6 @@ var FolderRowView = Backbone.View.extend({
     undeleteFolder: function(event) {
         let Galaxy = getGalaxyInstance();
         $(".tooltip").hide();
-        var that = this;
         var folder_id = $(event.target)
             .closest("tr")
             .data("id");

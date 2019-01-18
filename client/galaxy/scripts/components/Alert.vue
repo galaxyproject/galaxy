@@ -1,8 +1,6 @@
 <template>
     <b-alert :variant="galaxyKwdToBootstrap" :show="showP" v-bind="$props">
-        <slot>
-            {{ message }}
-        </slot>
+        <slot> {{ message }} </slot>
     </b-alert>
 </template>
 

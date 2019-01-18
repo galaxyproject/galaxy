@@ -1,3 +1,7 @@
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
+
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
 

@@ -1,4 +1,4 @@
-/* global $, jQuery */
+import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
@@ -84,7 +84,8 @@ var FolderToolbarView = Backbone.View.extend({
             id: this.options.id,
             is_admin: false,
             is_anonym: true,
-            multiple_add_dataset_options: false
+            multiple_add_dataset_options: false,
+            Galaxy: Galaxy
         };
         if (Galaxy.user) {
             template_defaults.is_admin = Galaxy.user.isAdmin();
@@ -295,8 +296,8 @@ var FolderToolbarView = Backbone.View.extend({
         var items_to_import = [];
         // prepare the dataset objects to be imported
         for (let i = checked_items.dataset_ids.length - 1; i >= 0; i--) {
-            var library_dataset_id = checked_items.dataset_ids[i];
-            var historyItem = new mod_library_model.HistoryItem();
+            let library_dataset_id = checked_items.dataset_ids[i];
+            let historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_dataset_id;
             historyItem.source = "library";
@@ -304,8 +305,8 @@ var FolderToolbarView = Backbone.View.extend({
         }
         // prepare the folder objects to be imported
         for (let i = checked_items.folder_ids.length - 1; i >= 0; i--) {
-            var library_folder_id = checked_items.folder_ids[i];
-            var historyItem = new mod_library_model.HistoryItem();
+            let library_folder_id = checked_items.folder_ids[i];
+            let historyItem = new mod_library_model.HistoryItem();
             historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
             historyItem.content = library_folder_id;
             historyItem.source = "library_folder";
@@ -318,7 +319,7 @@ var FolderToolbarView = Backbone.View.extend({
         });
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
+        $.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         this.chainCallImportingIntoHistory(items_to_import, history_name);
     },
 
@@ -718,7 +719,7 @@ var FolderToolbarView = Backbone.View.extend({
                 action: "adding_datasets"
             });
             if (selection_type === "folder") {
-                var full_source = `${options.source}_folder`;
+                let full_source = `${options.source}_folder`;
                 this.chainCallImportingFolders({
                     paths: paths,
                     preserve_dirs: preserve_dirs,
@@ -731,7 +732,7 @@ var FolderToolbarView = Backbone.View.extend({
                     tag_using_filenames: tag_using_filenames
                 });
             } else if (selection_type === "file") {
-                var full_source = `${options.source}_file`;
+                let full_source = `${options.source}_file`;
                 this.chainCallImportingUserdirFiles({
                     paths: paths,
                     file_type: file_type,
@@ -1409,7 +1410,6 @@ var FolderToolbarView = Backbone.View.extend({
     },
 
     templateToolBar: function() {
-        let Galaxy = getGalaxyInstance();
         return _.template(
             [
                 '<div class="library_style_container">', // container start

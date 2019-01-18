@@ -23,15 +23,6 @@ def inherit(context):
 %>
 </%def>
 
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    <style>
-        div#center {
-            padding: 10px;
-        }
-    </style>
-</%def>
-
 <%def name="title()">Logout</%def>
 
 <%def name="center_panel()">
@@ -39,15 +30,19 @@ def inherit(context):
 </%def>
 
 <%def name="body()">
-    <script type="text/javascript">
-        $(function(){
-            //HACK: should happen before we get to this page - _before_ logged out of session
-            if( top.Galaxy && top.Galaxy.user ){
-                top.Galaxy.user.clearSessionStorage();
-            }
-        });
-    </script>
     %if message:
         ${render_msg( message, status )}
     %endif
+</%def>
+
+<%def name="javascript_app()">
+    ${ parent.javascript_app() }
+    <script type="text/javascript">
+        //HACK: should happen before we get to this page - _before_ logged out of session
+        config.addInitialization(function(galaxy, config) {
+            if (galaxy.user) {
+                galaxy.user.clearSessionStorage();
+            }
+        });
+    </script>
 </%def>

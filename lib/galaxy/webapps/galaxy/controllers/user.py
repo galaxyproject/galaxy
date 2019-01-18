@@ -118,6 +118,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         '''Handle Galaxy Log in'''
         login = kwd.get("login", payload.get("login"))
         password = kwd.get("password", payload.get("password"))
+        redirect = kwd.get("redirect", payload.get("redirect"))
         status = None
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
@@ -164,7 +165,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
                 # If password is about to expire, modify message to state that.
                 expiredate = datetime.today() - user.last_password_change + pw_expires
                 return {"message": "Your password will expire in %s day(s)." % expiredate.days, "status": "warning"}
-        return {"message": "Success."}
+        return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
     def resend_verification(self, trans):
@@ -327,11 +328,11 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         return message
 
     def __get_redirect_url(self, redirect):
+        if not redirect or redirect == "None":
+            return None
         root_url = url_for('/', qualified=True)
         # compare urls, to prevent a redirect from pointing (directly) outside of galaxy
         # or to enter a logout/login loop
-        if not redirect or redirect == "None":
-            redirect = root_url
         if not util.compare_urls(root_url, redirect, compare_path=False) or util.compare_urls(url_for(controller='user', action='logout', qualified=True), redirect):
             log.warning('Redirect URL is outside of Galaxy, will redirect to Galaxy root instead: %s', redirect)
             redirect = root_url

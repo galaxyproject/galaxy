@@ -9,7 +9,7 @@
         height: 21px;
         margin: 0px;
         font-size: 0.75rem;
-        background-color: #f5f5f5;
+        background-color: $panel-bg-color;
     }
     .progress-bar-danger {
         background: $state-danger-bg;
@@ -36,36 +36,63 @@
     }
 }
 
+.upload-input {
+    font-size: $font-size-base;
+    height: 20px;
+    line-height: 18px;
+}
+
+.upload-select2 {
+    .select2-arrow b {
+        position: absolute;
+        top: -3px;
+    }
+    .select2-choice {
+        @extend .upload-input;
+        background: transparent;
+    }
+    .select2-container-disabled {
+        .select2-arrow {
+            background: transparent;
+        }
+    }
+    .select2-choice {
+        background: transparent;
+        text-align: center;
+        font-weight: normal;
+    }
+}
+
 .upload-view-default {
-    .highlight {
-        border-color: $table-border-color !important;
-        border-width: 2px !important;
-        padding: 9px !important;
+    .upload-box.highlight {
+        border-color: $table-border-color;
+        border-width: 2px;
+        padding: 7px !important;
         .upload-helper {
-            color: $table-border-color !important;
+            color: $table-border-color;
         }
     }
     .upload-icon {
-        font-size: 1.2em;
-        width: 1.2em;
         position: relative;
-        top: 1px;
         cursor: default;
+        font-size: $font-size-base;
+        width: $font-size-base;
     }
     .upload-icon-button {
         @extend .upload-icon;
         cursor: pointer;
     }
     .upload-box {
+        @extend .mt-2;
+        @extend .p-2;
         width: 100%;
-        height: 310px;
+        height: 300px;
         text-align: center;
         overflow: scroll;
         font-size: $font-size-base;
         -moz-border-radius: $border-radius-large;
         border-radius: $border-radius-large;
         border: 1px dashed $btn-default-border;
-        padding: 10px;
         overflow-x: hidden;
         -ms-overflow-style: none;
         .upload-helper {
@@ -73,37 +100,23 @@
             padding: 120px;
             color: $btn-default-border;
             i {
-                margin-right: 10px;
+                @extend .mr-2;
                 font-size: inherit;
             }
         }
         .upload-row {
-            .select2-arrow b {
-                background-position: 0 -3px;
-            }
-            .select2-choice {
-                max-height: 20px;
-                line-height: 18px;
-                background: transparent;
-            }
-            .select2-container-disabled {
-                .select2-arrow {
-                    background: transparent;
-                }
-            }
+            @extend .upload-select2;
             .upload-title {
                 width: 130px;
                 word-wrap: break-word;
-                font-size: $font-size-sm;
-                float: left;
                 background: inherit;
             }
-            /* Add back in lenght of extension, genome, and settings. */
+            input.upload-title {
+                @extend .upload-input;
+            }
             .upload-title-extended {
-                width: 380px;
+                width: 580px;
                 word-wrap: break-word;
-                font-size: $font-size-sm;
-                float: left;
             }
             .upload-size {
                 width: 60px;
@@ -111,17 +124,14 @@
             }
             .upload-extension {
                 width: 100px;
-                min-width: 100px;
-                font-size: $font-size-sm;
             }
             .upload-genome {
                 width: 150px;
-                min-width: 150px;
-                font-size: $font-size-sm;
             }
             .upload-mode {
                 @extend .upload-icon;
-                @extend .float-left;
+                @extend .m-1;
+                float: left;
             }
             .upload-text-column {
                 position: relative;
@@ -129,31 +139,26 @@
                     position: absolute;
                     display: none;
                     .upload-text-content {
-                        font-size: $font-size-sm;
                         width: 100%;
                         height: 80px;
                         resize: none;
                         background: inherit;
-                        color: $black;
+                        color: $text-color;
                         white-space: pre;
                         overflow: auto;
                     }
                     .upload-text-info {
                         @extend .text-primary;
-                        font-size: $font-size-sm;
                     }
                 }
             }
             .upload-info {
                 width: 130px;
-                font-size: $font-size-sm;
-                line-height: 1.2em;
+                line-height: $font-size-base;
                 .progress {
-                    top: 1px;
-                    position: relative;
+                    @extend .upload-input;
                     width: 100%;
-                    padding: 0px;
-                    margin: 0px;
+                    position: relative;
                     line-height: 1.6em;
                     .progress-bar {
                         border-radius: inherit;
@@ -182,7 +187,7 @@
     .upload-buttons {
         padding-top: 30px;
         button {
-            margin-left: 5px;
+            @extend .ml-1;
         }
     }
 }
@@ -204,10 +209,26 @@
     }
 }
 
-.upload-ftp-base {
+.upload-ftp {
+    height: 250px;
+    width: 550px;
     position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    .upload-ftp-row {
+        cursor: pointer;
+        .ftp-name {
+            width: 290px;
+        }
+        .ftp-size {
+            width: 60px;
+        }
+        .ftp-time {
+            width: 165px;
+        }
+    }
     .upload-ftp-wait {
-        font-size: 1.2em;
+        font-size: $font-size-base;
         position: absolute;
         bottom: 10px;
         right: 10px;
@@ -243,41 +264,14 @@
     }
 }
 
-.upload-ftp {
-    @extend .upload-ftp-base;
-    height: 250px;
-    width: 500px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    .upload-ftp-row {
-        cursor: pointer;
-        .ftp-name {
-            width: 240px;
-        }
-        .ftp-size {
-            width: 60px;
-        }
-        .ftp-time {
-            width: 165px;
-        }
-    }
-}
-
-.upload-ftp-full {
-    @extend .upload-ftp-base;
-    .upload-ftp-content {
-        line-height: 2em !important;
-    }
-    th {
-        text-align: center !important;
-    }
-}
-
 .upload-table {
     @extend .table;
     @extend .table-striped;
     td {
         padding: 0.5rem;
+    }
+    .alert-success {
+        background: $brand-success !important;
     }
 }
 
@@ -302,51 +296,23 @@
 }
 
 .upload-footer {
+    @extend .mt-2;
     height: 20px;
-    text-align: left;
-    max-height: 20px;
-    line-height: 18px;
-    margin-top: 10px;
+    text-align: center;
     .upload-footer-title {
+        @extend .ml-2;
         font-weight: bold;
-        padding-left: 60px;
-        padding-right: 20px;
     }
-    .upload-footer-title-compressed {
-        font-weight: bold;
-        padding-left: 20px;
-        padding-right: 10px;
-    }
-    .upload-footer-selection {
-        width: 200px;
-        min-width: 200px;
-        font-size: 11px;
-        padding-right: 10px;
-    }
-    .upload-footer-selection-compressed {
-        width: 120px;
-        min-width: 120px;
-        font-size: 11px;
-        padding-right: 10px;
-    }
+    @extend .upload-select2;
     .select2-choice {
-        .select2-arrow b {
-            background-position: 0 -3px;
-        }
-        max-height: 20px;
-        line-height: 18px;
-        background: transparent;
-        text-align: center;
-        font-weight: normal;
+        width: 150px;
     }
 }
 
 .upload-top {
-    height: 20px;
     text-align: center;
     .upload-top-info {
-        margin-top: 0px;
-        font-weight: normal;
+        font-weight: $font-size-base;
         text-align: center;
     }
 }
