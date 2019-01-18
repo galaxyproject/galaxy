@@ -79,7 +79,7 @@ input[type="radio"] {
 // Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
 
 .nav-tabs {
-    margin-bottom: 15px;
+    @extend .mb-2;
 }
 
 // Don't make blockquotes very large since they're often used in the toolform
