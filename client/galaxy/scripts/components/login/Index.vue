@@ -51,11 +51,6 @@ export default {
             type: String,
             required: false
         }
-    },
-    data() {
-        return {};
-    },
-    computed: {},
-    methods: {}
+    }
 };
 </script>

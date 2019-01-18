@@ -31,6 +31,7 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getAppRoot } from "onload";
 
 Vue.use(BootstrapVue);
 
@@ -71,13 +72,14 @@ export default {
     },
     methods: {
         submit: function(method) {
+            let rootUrl = getAppRoot();
             axios
-                .post(`${Galaxy.root}user/create`, this.$data)
+                .post(`${rootUrl}user/create`, this.$data)
                 .then(response => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    window.location = this.redirect || `${Galaxy.root}`;
+                    window.location = this.redirect || rootUrl;
                 })
                 .catch(error => {
                     this.messageVariant = "danger";
