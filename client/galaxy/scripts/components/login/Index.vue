@@ -18,7 +18,6 @@
     </div>
 </template>
 <script>
-import axios from "axios";
 import Login from "components/login/Login.vue";
 import Register from "components/login/Register.vue";
 import Vue from "vue";
