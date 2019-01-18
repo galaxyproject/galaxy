@@ -103,6 +103,10 @@ class ToolMissingException(MessageException):
     status_code = 400
     err_code = error_codes.USER_TOOL_MISSING_PROBLEM
 
+    def __init__(self, err_msg=None, type="info", tool_id=None, **extra_error_info):
+        super(ToolMissingException, self).__init__(err_msg, type, **extra_error_info)
+        self.tool_id = tool_id
+
 
 class RequestParameterInvalidException(MessageException):
     status_code = 400
