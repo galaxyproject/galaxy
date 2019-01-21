@@ -601,7 +601,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             session.flush()
 
             try:
-                workflow, errors = workflow_contents_manager.update_workflow_from_dict(
+                workflow, errors = workflow_contents_manager.build_workflow_from_raw_description(
                     trans,
                     stored_workflow,
                     workflow_data,
