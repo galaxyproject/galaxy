@@ -886,21 +886,16 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         migration_stages_dict = odict()
         migration_modules = []
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
-        migration_scripts_dir_contents = os.listdir(migration_scripts_dir)
-        for item in migration_scripts_dir_contents:
-            if os.path.isfile(os.path.join(migration_scripts_dir, item)) and item.endswith('.py'):
-                module = item.replace('.py', '')
-                migration_modules.append(module)
-        if migration_modules:
-            migration_modules.sort()
-            # Remove the 0001_tools.py script since it is the seed.
-            migration_modules = migration_modules[1:]
-            # Reverse the list so viewing will be newest to oldest.
-            migration_modules.reverse()
-        for migration_module in migration_modules:
-            migration_stage = int(migration_module.replace('_tools', ''))
+        modules = os.listdir(migration_scripts_dir)
+        modules.sort()
+        modules.reverse()
+        for item in modules:
+            if item.endswith('.pyc') or item.startswith('0001_tools'):
+                continue
+            module = item.replace('.py', '')
+            migration_stage = int(module.replace('_tools', ''))
             repo_name_dependency_tups = self.check_for_tool_dependencies(trans, migration_stage)
-            open_file_obj, file_name, description = imp.find_module(migration_module, [migration_scripts_dir])
+            open_file_obj, file_name, description = imp.find_module(module, [migration_scripts_dir])
             imported_module = imp.load_module('upgrade', open_file_obj, file_name, description)
             migration_info = imported_module.__doc__
             open_file_obj.close()
