@@ -884,7 +884,6 @@ class AdminGalaxy(controller.JSAppLauncher, AdminActions, UsesQuotaMixin, QuotaP
         message = escape(util.restore_text(kwd.get('message', '')))
         status = util.restore_text(kwd.get('status', 'done'))
         migration_stages_dict = odict()
-        migration_modules = []
         migration_scripts_dir = os.path.abspath(os.path.join(trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions'))
         modules = os.listdir(migration_scripts_dir)
         modules.sort()
