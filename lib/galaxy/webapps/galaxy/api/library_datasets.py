@@ -706,7 +706,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:
-                    return open(dataset.file_name)
+                    return open(dataset.file_name, 'rb')
                 except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:
