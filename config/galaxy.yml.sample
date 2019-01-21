@@ -599,8 +599,7 @@ galaxy:
 
   # Activation grace period (in hours).  Activation is not forced (login
   # is not disabled) until grace period has passed.  Users under grace
-  # period can't run jobs. Enter 0 to disable grace period. Users with
-  # OpenID logins have grace period forever.
+  # period can't run jobs. Enter 0 to disable grace period.
   #activation_grace_period: 3
 
   # Shown in warning box to users that were not activated yet. In use
@@ -1427,18 +1426,6 @@ galaxy:
   # Force serial scheduling of workflows within the context of a
   # particular history
   #history_local_serial_workflow_scheduling: false
-
-  # Enable authentication via OpenID.  Allows users to log in to their
-  # Galaxy account by authenticating with an OpenID provider.
-  #enable_openid: false
-
-  # If OpenID is enabled, this configuration file specifies providers to
-  # use. Falls back to the .sample variant in config if default does not
-  # exist.
-  #openid_config_file: config/openid_conf.xml
-
-  # If OpenID is enabled, consumer cache directory to use.
-  #openid_consumer_cache_path: database/openid_consumer_cache
 
   # Enables and disables OpenID Connect (OIDC) support.
   #enable_oidc: false
