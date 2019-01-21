@@ -72,8 +72,12 @@
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
     </datatype>
-    <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true"/>
-    <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true"/>
+    <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true">
+      <converter file="csv_to_tabular.xml" target_datatype="tabular"/>
+    </datatype>
+    <datatype extension="tsv" type="galaxy.datatypes.tabular:TSV" display_in_upload="true">
+      <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+    </datatype>
     <datatype extension="intermine_tabular" type="galaxy.datatypes.tabular:TSV" subclass="true" display_in_upload="true">
       <display file="intermine/intermine_simple.xml"/>
     </datatype>
@@ -96,7 +100,7 @@
       <converter file="fasta_to_fai.xml" target_datatype="fai"/>
       <display file="igv/genome_fasta.xml" inherit="true"/>
     </datatype>
-    <datatype extension="fastg" type="galaxy.datatypes.sequence:Fastg" display_in_upload="true" description="fastg format faithfully represents genome assemblies in the face of allelic polymorphism and assembly uncertainty" description_url="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf"/> 
+    <datatype extension="fastg" type="galaxy.datatypes.sequence:Fastg" display_in_upload="true" description="fastg format faithfully represents genome assemblies in the face of allelic polymorphism and assembly uncertainty" description_url="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf"/>
     <datatype extension="fastq" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
@@ -304,7 +308,9 @@
     <datatype extension="sra" type="galaxy.datatypes.binary:Sra" mimetype="application/octet-stream" display_in_upload="true" description="A binary file archive format from the NCBI Sequence Read Archive with a '.sra' file extension." description_url="http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure"/>
     <datatype extension="svg" type="galaxy.datatypes.xml:GenericXml" mimetype="image/svg+xml" subclass="true"/>
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
-    <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" description="Any data in tab delimited format (tabular)." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Tabular_.28tab_delimited.29"/>
+    <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true" description="Any data in tab delimited format (tabular)." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Tabular_.28tab_delimited.29">
+      <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+    </datatype>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sqlite" type="galaxy.datatypes.binary:SQlite" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="gemini.sqlite" type="galaxy.datatypes.binary:GeminiSQLite" mimetype="application/octet-stream" display_in_upload="true"/>

@@ -1,0 +1,12 @@
+<tool id="tabular_to_csv" name="Convert tabular to CSV" version="1.0.0">
+    <description></description>
+    <command>python '$__tool_directory__/tabular_csv.py' --from-tabular -i '$tabular' -o '$csv'</command>
+    <inputs>
+        <param format="tsv,tabular" name="tabular" type="data" label="Choose file with tab-separated values"/>
+    </inputs>
+    <outputs>
+        <data format="csv" name="csv"/>
+    </outputs>
+    <help>
+    </help>
+</tool>
