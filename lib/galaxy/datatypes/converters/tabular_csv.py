@@ -6,8 +6,6 @@ usage: %prog [--from-tabular] -i in_file -o out_file
 """
 
 import argparse
-import os.path
-
 import csv
 
 
@@ -25,12 +23,14 @@ def main():
     else:
         convert_to_tsv(input_fname, output_fname)
 
+
 def convert_to_tsv(input_fname, output_fname):
     with open(input_fname, 'rb') as csvfile:
         with open(output_fname, 'wb') as ofh:
             reader = csv.reader(csvfile)
             for line in reader:
                 ofh.write('\t'.join(line) + '\n')
+
 
 def convert_to_csv(input_fname, output_fname):
     with open(input_fname, 'rb') as tabfile:
