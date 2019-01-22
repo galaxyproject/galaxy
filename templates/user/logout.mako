@@ -38,11 +38,8 @@ def inherit(context):
 <%def name="javascript_app()">
     ${ parent.javascript_app() }
     <script type="text/javascript">
-        //HACK: should happen before we get to this page - _before_ logged out of session
-        config.addInitialization(function(galaxy, config) {
-            if (galaxy.user) {
-                galaxy.user.clearSessionStorage();
-            }
+        config.addInitialization(function(galaxy) {
+            window.location.href = galaxy.root;
         });
     </script>
 </%def>
