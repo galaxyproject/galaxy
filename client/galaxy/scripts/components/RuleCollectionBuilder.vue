@@ -1257,7 +1257,7 @@ export default {
             return targets;
         },
         colHeaders() {
-            let hotData = this.hotData();
+            const hotData = this.hotData();
             const data = hotData["data"];
             const columns = hotData["columns"];
             return RuleDefs.colHeadersFor(data, columns);
@@ -1685,7 +1685,7 @@ export default {
             return identifierColumns;
         },
         buildRequestElements(createDatasetDescription, createSubcollectionDescription, subElementProp) {
-            let hotData = this.hotData();
+            const hotData = this.hotData();
             const data = hotData["data"];
             const identifierColumns = this.identifierColumns();
             if (identifierColumns.length < 1) {
@@ -1793,7 +1793,7 @@ export default {
             return elementsByName;
         },
         creationElementsFromDatasets() {
-            let hotData = this.hotData();
+            const hotData = this.hotData();
             const sources = hotData["sources"];
             const data = hotData["data"];
             const mappingAsDict = this.mappingAsDict;
@@ -1814,7 +1814,7 @@ export default {
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
-            let hotData = this.hotData();
+            const hotData = this.hotData();
             const data = hotData["data"];
             const mappingAsDict = this.mappingAsDict;
 
@@ -1834,7 +1834,7 @@ export default {
         },
         creationDatasetsForFetch() {
             // fetch elements for HDAs if not collection information specified.
-            let hotData = this.hotData();
+            const hotData = this.hotData();
             const data = hotData["data"];
             const mappingAsDict = this.mappingAsDict;
 
