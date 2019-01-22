@@ -1256,6 +1256,43 @@ export default {
             }
             return targets;
         },
+        hotData() {
+            let data, sources, columns;
+            if (
+                this.elementsType == "datasets" ||
+                this.elementsType == "library_datasets" ||
+                this.elementsType == "ftp"
+            ) {
+                data = this.initialElements.map(el => []);
+                sources = this.initialElements.slice();
+                columns = [];
+            } else if (this.elementsType == "collection_contents") {
+                const collection = this.initialElements;
+                if (collection) {
+                    const obj = this.populateElementsFromCollectionDescription(
+                        collection.elements,
+                        collection.collection_type
+                    );
+                    data = obj.data;
+                    sources = obj.sources;
+                    columns = [];
+                } else {
+                    data = [];
+                    sources = [];
+                    columns = [];
+                }
+            } else {
+                data = this.initialElements.slice();
+                sources = data.map(el => null);
+                columns = [];
+                if (this.initialElements) {
+                    this.initialElements[0].forEach(() => columns.push("new"));
+                }
+            }
+
+            this.colHeadersPerRule = [];
+            return RuleDefs.applyRules(data, sources, columns, this.rules, this.colHeadersPerRule);
+        },
         colHeaders() {
             const data = this.hotData["data"];
             const columns = this.hotData["columns"];
@@ -1411,42 +1448,6 @@ export default {
                 RULES[ruleType].save(this, rule);
                 this.rules.push(rule);
             }
-        },
-        hotData() {
-            let data, sources, columns;
-            if (
-                this.elementsType == "datasets" ||
-                this.elementsType == "library_datasets" ||
-                this.elementsType == "ftp"
-            ) {
-                data = this.initialElements.map(el => []);
-                sources = this.initialElements.slice();
-                columns = [];
-            } else if (this.elementsType == "collection_contents") {
-                const collection = this.initialElements;
-                if (collection) {
-                    const obj = this.populateElementsFromCollectionDescription(
-                        collection.elements,
-                        collection.collection_type
-                    );
-                    data = obj.data;
-                    sources = obj.sources;
-                    columns = [];
-                } else {
-                    data = [];
-                    sources = [];
-                    columns = [];
-                }
-            } else {
-                data = this.initialElements.slice();
-                sources = data.map(el => null);
-                columns = [];
-                if (this.initialElements) {
-                    this.initialElements[0].forEach(() => columns.push("new"));
-                }
-            }
-            this.colHeadersPerRule = [];
-            return RuleDefs.applyRules(data, sources, columns, this.rules, this.colHeadersPerRule);
         },
         viewSource() {
             this.resetSource();
