@@ -187,7 +187,7 @@ class Workflow {
                 id: node.id,
                 type: node.type,
                 content_id: node.content_id,
-                tool_version: node.config_form.version,
+                tool_version: node.config_form ? node.config_form.version : null,
                 tool_state: node.tool_state,
                 errors: node.errors,
                 input_connections: input_connections,

@@ -276,7 +276,7 @@ class AdminToolshed(AdminGalaxy):
                         mimetype = trans.app.datatypes_registry.get_mimetype_by_extension(extension)
                         if mimetype:
                             trans.response.set_content_type(mimetype)
-                    return open(path_to_file, 'r')
+                    return open(path_to_file, 'rb')
         return None
 
     @web.expose

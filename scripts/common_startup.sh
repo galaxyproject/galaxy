@@ -18,6 +18,7 @@ CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
+NODE_VERSION="10.13.0"
 
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
@@ -228,9 +229,9 @@ fi
 if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     # Ensure dependencies are installed
     if [ -n "$VIRTUAL_ENV" ]; then
-        if ! in_venv "$(command -v node)"; then
+        if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v$NODE_VERSION" ]; then
             echo "Installing node into $VIRTUAL_ENV with nodeenv."
-            nodeenv -n 10.13.0 -p
+            nodeenv -n $NODE_VERSION -p
         fi
         if ! in_venv "$(command -v yarn)"; then
             echo "Installing yarn into $VIRTUAL_ENV with npm."
@@ -244,7 +245,6 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     else
         echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."
     fi
-
     # Build client
     cd client
     if yarn install --network-timeout 120000 --check-files; then

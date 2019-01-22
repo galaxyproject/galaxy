@@ -199,27 +199,19 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
 
 
 def iter_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):
+    idx = 0
     if isinstance(fname_or_file_prefix, FilePrefix):
-        idx = 0
-        for line in fname_or_file_prefix.line_iterator():
-            line = line.rstrip('\n\r')
-            if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
-                continue
-            yield line.split(sep)
-            idx += 1
-            if idx == count:
-                break
+        file_iterator = fname_or_file_prefix.line_iterator()
     else:
-        with compression_utils.get_fileobj(fname_or_file_prefix) as in_file:
-            idx = 0
-            for line in in_file:
-                line = line.rstrip('\n\r')
-                if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
-                    continue
-                yield line.split(sep)
-                idx += 1
-                if idx == count:
-                    break
+        file_iterator = compression_utils.get_fileobj(fname_or_file_prefix)
+    for line in file_iterator:
+        line = line.rstrip('\n\r')
+        if comment_designator is not None and comment_designator != '' and line.startswith(comment_designator):
+            continue
+        yield line.split(sep)
+        idx += 1
+        if idx == count:
+            break
 
 
 def get_headers(fname_or_file_prefix, sep, count=60, comment_designator=None):

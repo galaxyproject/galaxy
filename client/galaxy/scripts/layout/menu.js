@@ -245,8 +245,8 @@ var Collection = Backbone.Collection.extend({
                     menu: [
                         {
                             title: _l("Login"),
-                            url: "user/login",
-                            target: "galaxy_main",
+                            url: "login",
+                            target: "_top",
                             noscratchbook: true
                         },
                         {
@@ -476,7 +476,7 @@ var Tab = Backbone.View.extend({
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content: `Please ${this.buildLink("login", "user/login?use_panels=True")} or ${this.buildLink(
+                    content: `Please ${this.buildLink("login", "login")} or ${this.buildLink(
                         "register",
                         "user/create?use_panels=True"
                     )} to use this feature.`
