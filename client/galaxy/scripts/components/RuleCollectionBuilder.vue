@@ -1257,8 +1257,9 @@ export default {
             return targets;
         },
         colHeaders() {
-            const data = this.hotData["data"];
-            const columns = this.hotData["columns"];
+            let hotData = this.hotData();
+            const data = hotData["data"];
+            const columns = hotData["columns"];
             return RuleDefs.colHeadersFor(data, columns);
         },
         colHeadersDisplay() {
@@ -1684,7 +1685,8 @@ export default {
             return identifierColumns;
         },
         buildRequestElements(createDatasetDescription, createSubcollectionDescription, subElementProp) {
-            const data = this.hotData["data"];
+            let hotData = this.hotData();
+            const data = hotData["data"];
             const identifierColumns = this.identifierColumns();
             if (identifierColumns.length < 1) {
                 console.log("Error but this shouldn't have happened, create button should have been disabled.");
@@ -1791,8 +1793,9 @@ export default {
             return elementsByName;
         },
         creationElementsFromDatasets() {
-            const sources = this.hotData["sources"];
-            const data = this.hotData["data"];
+            let hotData = this.hotData();
+            const sources = hotData["sources"];
+            const data = hotData["data"];
             const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
@@ -1811,7 +1814,8 @@ export default {
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
-            const data = this.hotData["data"];
+            let hotData = this.hotData();
+            const data = hotData["data"];
             const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
@@ -1830,7 +1834,8 @@ export default {
         },
         creationDatasetsForFetch() {
             // fetch elements for HDAs if not collection information specified.
-            const data = this.hotData["data"];
+            let hotData = this.hotData();
+            const data = hotData["data"];
             const mappingAsDict = this.mappingAsDict;
 
             const datasets = [];
