@@ -68,7 +68,7 @@ class GenomeGraphs(Tabular):
         """
         Returns file
         """
-        return open(dataset.file_name, 'r')
+        return open(dataset.file_name, 'rb')
 
     def ucsc_links(self, dataset, type, app, base_url):
         """

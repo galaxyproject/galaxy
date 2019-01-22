@@ -216,7 +216,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-%s-[%s]%s"' % (data.hid, fname, toext)
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
-                    return open(data.file_name)
+                    return open(data.file_name, 'rb')
                 except Exception:
                     return "This dataset contains no content"
             else:

@@ -505,9 +505,10 @@ class WorkflowContentsManager(UsesAnnotations):
         for step in workflow.steps:
             try:
                 module_injector.inject(step, steps=workflow.steps, exact_tools=False)
-            except exceptions.ToolMissingException:
-                if step.tool_id not in missing_tools:
-                    missing_tools.append(step.tool_id)
+            except exceptions.ToolMissingException as e:
+                # FIXME: if a subworkflow lacks multiple tools we report only the first missing tool
+                if e.tool_id not in missing_tools:
+                    missing_tools.append(e.tool_id)
                 continue
             if step.upgrade_messages:
                 has_upgrade_messages = True

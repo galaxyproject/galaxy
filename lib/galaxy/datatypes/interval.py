@@ -100,42 +100,38 @@ class Interval(Tabular):
                     else:
                         # Header lines in Interval files are optional. For example, BED is Interval but has no header.
                         # We'll make a best guess at the location of the metadata columns.
-                        metadata_is_set = False
                         elems = line.split('\t')
                         if len(elems) > 2:
-                            for str in data.col1_startswith:
-                                if line.lower().startswith(str):
-                                    if overwrite or not dataset.metadata.element_is_set('chromCol'):
-                                        dataset.metadata.chromCol = 1
-                                    try:
-                                        int(elems[1])
-                                        if overwrite or not dataset.metadata.element_is_set('startCol'):
-                                            dataset.metadata.startCol = 2
-                                    except Exception:
-                                        pass  # Metadata default will be used
-                                    try:
-                                        int(elems[2])
-                                        if overwrite or not dataset.metadata.element_is_set('endCol'):
-                                            dataset.metadata.endCol = 3
-                                    except Exception:
-                                        pass  # Metadata default will be used
-                                    # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
-                                    # we will still guess at the strand, as we can make a more educated guess
-                                    # if len( elems ) > 3:
-                                    #    try:
-                                    #        int( elems[3] )
-                                    #    except Exception:
-                                    #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
-                                    #            dataset.metadata.nameCol = 4
-                                    if len(elems) < 6 or elems[5] not in data.valid_strand:
-                                        if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                            dataset.metadata.strandCol = 0
-                                    else:
-                                        if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                            dataset.metadata.strandCol = 6
-                                    metadata_is_set = True
-                                    break
-                        if metadata_is_set or (i - empty_line_count) > num_check_lines:
+                            if overwrite or not dataset.metadata.element_is_set('chromCol'):
+                                dataset.metadata.chromCol = 1
+                            try:
+                                int(elems[1])
+                                if overwrite or not dataset.metadata.element_is_set('startCol'):
+                                    dataset.metadata.startCol = 2
+                            except Exception:
+                                pass  # Metadata default will be used
+                            try:
+                                int(elems[2])
+                                if overwrite or not dataset.metadata.element_is_set('endCol'):
+                                    dataset.metadata.endCol = 3
+                            except Exception:
+                                pass  # Metadata default will be used
+                            # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
+                            # we will still guess at the strand, as we can make a more educated guess
+                            # if len( elems ) > 3:
+                            #    try:
+                            #        int( elems[3] )
+                            #    except Exception:
+                            #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
+                            #            dataset.metadata.nameCol = 4
+                            if len(elems) < 6 or elems[5] not in data.valid_strand:
+                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    dataset.metadata.strandCol = 0
+                            else:
+                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    dataset.metadata.strandCol = 6
+                            break
+                        if (i - empty_line_count) > num_check_lines:
                             break  # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
                 else:
                     empty_line_count += 1
@@ -238,7 +234,7 @@ class Interval(Tabular):
                 for elems in util.file_iter(dataset.file_name):
                     tmp = [elems[c], elems[s], elems[e]]
                     fh.write('%s\n' % '\t'.join(tmp))
-            return open(fh.name)
+            return open(fh.name, 'rb')
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -371,7 +367,7 @@ class BedGraph(Interval):
             Returns file contents as is with no modifications.
             TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
         """
-        return open(dataset.file_name)
+        return open(dataset.file_name, 'rb')
 
     def get_estimated_display_viewport(self, dataset, chrom_col=0, start_col=1, end_col=2):
         """
@@ -403,26 +399,20 @@ class Bed(Interval):
         i = 0
         if dataset.has_data():
             for i, line in enumerate(open(dataset.file_name)):
-                metadata_set = False
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
                     if len(elems) > 2:
-                        for startswith in data.col1_startswith:
-                            if line.lower().startswith(startswith):
-                                if len(elems) > 3:
-                                    if overwrite or not dataset.metadata.element_is_set('nameCol'):
-                                        dataset.metadata.nameCol = 4
-                                if len(elems) < 6:
-                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                        dataset.metadata.strandCol = 0
-                                else:
-                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                        dataset.metadata.strandCol = 6
-                                metadata_set = True
-                                break
-                if metadata_set:
-                    break
+                        if len(elems) > 3:
+                            if overwrite or not dataset.metadata.element_is_set('nameCol'):
+                                dataset.metadata.nameCol = 4
+                        if len(elems) < 6:
+                            if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                dataset.metadata.strandCol = 0
+                        else:
+                            if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                dataset.metadata.strandCol = 6
+                        break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def as_ucsc_display_file(self, dataset, **kwd):
@@ -459,7 +449,7 @@ class Bed(Interval):
             break
 
         try:
-            return open(dataset.file_name)
+            return open(dataset.file_name, 'rb')
         except Exception:
             return "This item contains no content"
 
@@ -494,75 +484,67 @@ class Bed(Interval):
             for hdr in headers:
                 if hdr[0] == '':
                     continue
-                valid_col1 = False
                 if len(hdr) < 3 or len(hdr) > 12:
                     return False
-                for str in data.col1_startswith:
-                    if hdr[0].lower().startswith(str):
-                        valid_col1 = True
-                        break
-                if valid_col1:
+                try:
+                    int(hdr[1])
+                    int(hdr[2])
+                except Exception:
+                    return False
+                if len(hdr) > 4:
+                    # hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
+                    # hdr[4] is an int, 'score', a score between 0 and 1000.
                     try:
-                        int(hdr[1])
-                        int(hdr[2])
+                        if int(hdr[4]) < 0 or int(hdr[4]) > 1000:
+                            return False
                     except Exception:
                         return False
-                    if len(hdr) > 4:
-                        # hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
-                        # hdr[4] is an int, 'score', a score between 0 and 1000.
+                if len(hdr) > 5:
+                    # hdr[5] is strand
+                    if hdr[5] not in data.valid_strand:
+                        return False
+                if len(hdr) > 6:
+                    # hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
+                    try:
+                        int(hdr[6])
+                    except Exception:
+                        return False
+                if len(hdr) > 7:
+                    # hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
+                    try:
+                        int(hdr[7])
+                    except Exception:
+                        return False
+                if len(hdr) > 8:
+                    # hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
+                    try:
+                        int(hdr[8])
+                    except Exception:
                         try:
-                            if int(hdr[4]) < 0 or int(hdr[4]) > 1000:
-                                return False
+                            hdr[8].split(',')
                         except Exception:
                             return False
-                    if len(hdr) > 5:
-                        # hdr[5] is strand
-                        if hdr[5] not in data.valid_strand:
-                            return False
-                    if len(hdr) > 6:
-                        # hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
-                        try:
-                            int(hdr[6])
-                        except Exception:
-                            return False
-                    if len(hdr) > 7:
-                        # hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
-                        try:
-                            int(hdr[7])
-                        except Exception:
-                            return False
-                    if len(hdr) > 8:
-                        # hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
-                        try:
-                            int(hdr[8])
-                        except Exception:
-                            try:
-                                hdr[8].split(',')
-                            except Exception:
-                                return False
-                    if len(hdr) > 9:
-                        # hdr[9] is blockCount, the number of blocks (exons) in the BED line.
-                        try:
-                            block_count = int(hdr[9])
-                        except Exception:
-                            return False
-                    if len(hdr) > 10:
-                        # hdr[10] is blockSizes - A comma-separated list of the block sizes.
-                        # Sometimes the blosck_sizes and block_starts lists end in extra commas
-                        try:
-                            block_sizes = hdr[10].rstrip(',').split(',')
-                        except Exception:
-                            return False
-                    if len(hdr) > 11:
-                        # hdr[11] is blockStarts - A comma-separated list of block starts.
-                        try:
-                            block_starts = hdr[11].rstrip(',').split(',')
-                        except Exception:
-                            return False
-                        if len(block_sizes) != block_count or len(block_starts) != block_count:
-                            return False
-                else:
-                    return False
+                if len(hdr) > 9:
+                    # hdr[9] is blockCount, the number of blocks (exons) in the BED line.
+                    try:
+                        block_count = int(hdr[9])
+                    except Exception:
+                        return False
+                if len(hdr) > 10:
+                    # hdr[10] is blockSizes - A comma-separated list of the block sizes.
+                    # Sometimes the blosck_sizes and block_starts lists end in extra commas
+                    try:
+                        block_sizes = hdr[10].rstrip(',').split(',')
+                    except Exception:
+                        return False
+                if len(hdr) > 11:
+                    # hdr[11] is blockStarts - A comma-separated list of block starts.
+                    try:
+                        block_starts = hdr[11].rstrip(',').split(',')
+                    except Exception:
+                        return False
+                    if len(block_sizes) != block_count or len(block_starts) != block_count:
+                        return False
             return True
         except Exception:
             return False
@@ -1201,16 +1183,14 @@ class Wiggle(Tabular, _RemoteCallMixin):
             if line and not line.startswith('#'):
                 elems = line.split('\t')
                 try:
-                    float(elems[0])  # "Wiggle track data values can be integer or real, positive or negative values"
+                    # variableStep format is nucleotide position\tvalue\n,
+                    # fixedStep is value\n
+                    # "Wiggle track data values can be integer or real, positive or negative values"
+                    float(elems[0])
                     break
                 except Exception:
-                    do_break = False
-                    for col_startswith in data.col1_startswith:
-                        if elems[0].lower().startswith(col_startswith):
-                            do_break = True
-                            break
-                    if do_break:
-                        break
+                    # We are either in the track definition line or in a declaration line
+                    pass
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             # we'll arbitrarily only use the first 100 data lines in this wig file to calculate tabular attributes (column types)
             # this should be sufficient, except when we have mixed wig track types (bed, variable, fixed),
