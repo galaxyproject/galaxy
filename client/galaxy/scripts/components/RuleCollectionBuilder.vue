@@ -1029,7 +1029,6 @@ export default {
         }
         return {
             rules: rules,
-            // colHeadersPerRule: [],
             mapping: mapping,
             state: "build", // 'build', 'error', 'wait',
             ruleView: "normal", // 'normal' or 'source'
