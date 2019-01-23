@@ -1385,7 +1385,7 @@ export default {
                 data = sources.map(el => []);
                 columns = [];
             } else if (this.elementsType == "collection_contents") {
-                const collection = this.initialElements.slice();
+                const collection = this.initialElements;
                 if (collection) {
                     const obj = this.populateElementsFromCollectionDescription(
                         collection.elements,
