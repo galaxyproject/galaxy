@@ -575,7 +575,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         return self._resource_mapper_function(trans=trans, stored_workflow=stored, workflow=workflow)
 
-    def _workflow_to_dict_editor(self, trans, stored, workflow, tooltip=True):
+    def _workflow_to_dict_editor(self, trans, stored, workflow, tooltip=True, is_subworkflow=False):
         # Pack workflow data into a dictionary and return
         data = {}
         data['name'] = workflow.name
@@ -678,7 +678,8 @@ class WorkflowContentsManager(UsesAnnotations):
             step_dict['position'] = step.position
             # Add to return value
             data['steps'][step.order_index] = step_dict
-        data['steps'] = self._resolve_collection_type(data['steps'])
+        if is_subworkflow:
+            data['steps'] = self._resolve_collection_type(data['steps'])
         return data
 
     @staticmethod

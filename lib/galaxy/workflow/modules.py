@@ -422,7 +422,8 @@ class SubWorkflowModule(WorkflowModule):
             subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(trans=self.trans,
                                                                                   stored=self.subworkflow.stored_workflow,
                                                                                   workflow=self.subworkflow,
-                                                                                  tooltip=False)
+                                                                                  tooltip=False,
+                                                                                  is_subworkflow=True)
             for order_index in sorted(subworkflow_dict['steps']):
                 step = subworkflow_dict['steps'][order_index]
                 data_outputs = subworkflow_dict['steps'][order_index]['outputs']

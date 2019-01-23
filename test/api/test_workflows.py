@@ -507,7 +507,9 @@ steps:
         downloaded_workflow = self._download_workflow(workflow_id, style="editor")
         steps = downloaded_workflow['steps']
         assert len(steps) == 2
-        assert steps['1']['outputs'][0]['collection_type'] == 'list:paired'
+        # Non-subworkflow collection_type_source tools will be handled by the client,
+        # so collection_type should be None here.
+        assert steps['1']['outputs'][0]['collection_type'] is None
 
     @skip_without_tool('collection_type_source')
     def test_export_editor_subworkflow_collection_type_source(self):
