@@ -448,7 +448,7 @@
                     <hot-table
                         id="hot-table"
                         ref="hotTable"
-                        :data="hotData['data']"
+                        :data="hotData.data"
                         :colHeaders="colHeadersDisplay"
                         :readOnly="true"
                         stretchH="all"
@@ -1029,7 +1029,7 @@ export default {
         }
         return {
             rules: rules,
-            colHeadersPerRule: [],
+            // colHeadersPerRule: [],
             mapping: mapping,
             state: "build", // 'build', 'error', 'wait',
             ruleView: "normal", // 'normal' or 'source'
@@ -1257,9 +1257,7 @@ export default {
             return targets;
         },
         colHeaders() {
-            const hotData = this.hotData();
-            const data = hotData["data"];
-            const columns = hotData["columns"];
+            let { data, columns } = this.hotData;
             return RuleDefs.colHeadersFor(data, columns);
         },
         colHeadersDisplay() {
@@ -1375,6 +1373,44 @@ export default {
                 valid = false;
             }
             return valid;
+        },
+        hotData() {
+            let data, sources, columns;
+            if (
+                this.elementsType == "datasets" ||
+                this.elementsType == "library_datasets" ||
+                this.elementsType == "ftp"
+            ) {
+                sources = this.initialElements.slice();
+                data = sources.map(el => []);
+                columns = [];
+            } else if (this.elementsType == "collection_contents") {
+                const collection = this.initialElements.slice();
+                if (collection) {
+                    const obj = this.populateElementsFromCollectionDescription(
+                        collection.elements,
+                        collection.collection_type
+                    );
+                    data = obj.data;
+                    sources = obj.sources;
+                    columns = [];
+                } else {
+                    data = [];
+                    sources = [];
+                    columns = [];
+                }
+            } else {
+                data = this.initialElements.slice();
+                sources = data.map(el => null);
+                columns = [];
+                if (this.initialElements) {
+                    this.initialElements[0].forEach(() => columns.push("new"));
+                }
+            }
+            return RuleDefs.applyRules(data, sources, columns, this.rules);
+        },
+        colHeadersPerRule() {
+            return this.hotData.colHeadersPerRule;
         }
     },
     methods: {
@@ -1412,42 +1448,6 @@ export default {
                 RULES[ruleType].save(this, rule);
                 this.rules.push(rule);
             }
-        },
-        hotData() {
-            let data, sources, columns;
-            if (
-                this.elementsType == "datasets" ||
-                this.elementsType == "library_datasets" ||
-                this.elementsType == "ftp"
-            ) {
-                data = this.initialElements.map(el => []);
-                sources = this.initialElements.slice();
-                columns = [];
-            } else if (this.elementsType == "collection_contents") {
-                const collection = this.initialElements;
-                if (collection) {
-                    const obj = this.populateElementsFromCollectionDescription(
-                        collection.elements,
-                        collection.collection_type
-                    );
-                    data = obj.data;
-                    sources = obj.sources;
-                    columns = [];
-                } else {
-                    data = [];
-                    sources = [];
-                    columns = [];
-                }
-            } else {
-                data = this.initialElements.slice();
-                sources = data.map(el => null);
-                columns = [];
-                if (this.initialElements) {
-                    this.initialElements[0].forEach(() => columns.push("new"));
-                }
-            }
-            this.colHeadersPerRule = [];
-            return RuleDefs.applyRules(data, sources, columns, this.rules, this.colHeadersPerRule);
         },
         viewSource() {
             this.resetSource();
@@ -1685,8 +1685,7 @@ export default {
             return identifierColumns;
         },
         buildRequestElements(createDatasetDescription, createSubcollectionDescription, subElementProp) {
-            const hotData = this.hotData();
-            const data = hotData["data"];
+            const data = this.hotData.data;
             const identifierColumns = this.identifierColumns();
             if (identifierColumns.length < 1) {
                 console.log("Error but this shouldn't have happened, create button should have been disabled.");
@@ -1793,9 +1792,7 @@ export default {
             return elementsByName;
         },
         creationElementsFromDatasets() {
-            const hotData = this.hotData();
-            const sources = hotData["sources"];
-            const data = hotData["data"];
+            const { sources, data } = this.hotData;
             const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
@@ -1814,8 +1811,7 @@ export default {
         },
         creationElementsForFetch() {
             // fetch elements for HDCA
-            const hotData = this.hotData();
-            const data = hotData["data"];
+            const data = this.hotData.data;
             const mappingAsDict = this.mappingAsDict;
 
             const elementsByCollectionName = this.buildRequestElements(
@@ -1834,8 +1830,7 @@ export default {
         },
         creationDatasetsForFetch() {
             // fetch elements for HDAs if not collection information specified.
-            const hotData = this.hotData();
-            const data = hotData["data"];
+            const data = this.hotData.data;
             const mappingAsDict = this.mappingAsDict;
 
             const datasets = [];
