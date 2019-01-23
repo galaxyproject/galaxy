@@ -753,7 +753,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         for order_index in sorted(steps):
             step = steps[order_index]
-            if step['type'] == 'tool':
+            if step['type'] == 'tool' and not step.get('errors'):
                 map_over = self.get_step_map_over(step, steps)
                 for step_data_output in step['outputs']:
                     if step_data_output.get('collection_type_source') and step_data_output['collection_type'] is None:
