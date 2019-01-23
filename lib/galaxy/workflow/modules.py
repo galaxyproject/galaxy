@@ -354,7 +354,7 @@ class SubWorkflowModule(WorkflowModule):
                     if not label:
                         label = "%s:%s" % (order_index, workflow_output['output_name'])
                     for data_output in data_outputs:
-                        if data_output['name'] == workflow_output['output_name'] or data_output['uuid'] == workflow_output['uuid']:
+                        if data_output['name'] == workflow_output['output_name'] or data_output.get('uuid', object()) == workflow_output.get('uuid', object()):
                             data_output['label'] = label
                             data_output['name'] = label
                             # That's the right data_output
