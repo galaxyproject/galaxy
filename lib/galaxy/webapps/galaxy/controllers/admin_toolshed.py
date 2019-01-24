@@ -587,6 +587,11 @@ class AdminToolshed(AdminGalaxy):
         repository_id = kwd.get('id', None)
         if repository_id is None:
             return trans.show_error_message('Missing required encoded repository id.')
+        if repository_id and isinstance(repository_id, list):
+            # FIXME: This is a hack that avoids unhandled and duplicate url parameters leaking in.
+            # This should be handled somewhere in the grids system, but given the legacy status
+            # this should be OK.
+            repository_id = [r for r in repository_id if '=' not in r][0]  # This method only work for a single repo id
         operation = kwd.get('operation', None)
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         if repository is None:
