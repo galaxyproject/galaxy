@@ -222,6 +222,11 @@ def parse_xml(fname):
     tree = ElementTree.ElementTree()
     try:
         root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
+        for elem in root.iter('*'):
+            if elem.text is not None:
+                elem.text = elem.text.strip()
+            if elem.tail is not None:
+                elem.tail = elem.tail.strip()
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
@@ -231,11 +236,18 @@ def parse_xml(fname):
 
 def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
+    for elem in tree.iter('*'):
+        if elem.text is not None:
+            elem.text = elem.text.strip()
+        if elem.tail is not None:
+            elem.tail = elem.tail.strip()
     return tree
 
 
 def xml_to_string(elem, pretty=False):
-    """Returns a string from an xml tree"""
+    """
+    Returns a string from an xml tree.
+    """
     try:
         if elem is not None:
             if PY2:
