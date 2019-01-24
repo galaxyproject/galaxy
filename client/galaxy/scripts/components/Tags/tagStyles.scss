@@ -1,0 +1,74 @@
+// TODO: use general color definition file
+@import "theme/blue.scss";
+@import "scss/mixins.scss";
+
+// Puts a little graphic in place of the text-input 
+// when the input is not in focus
+@mixin newTagHoverButton() {
+    .vue-tags-input .ti-tags .ti-new-tag-input-wrapper {
+        input {
+            background-color: transparent;
+        }
+        input:not(:focus) {
+            background: url("/static/images/fugue/tag--plus.png");
+            background-repeat: no-repeat;
+            color: transparent;
+            &::placeholder {
+                color: transparent;
+            }
+        }
+    }
+}
+
+// hides tag container
+@mixin hideTagContainer() {
+    .vue-tags-input {
+        background-color: transparent;
+        .ti-input {
+            border: none;
+        }
+    }
+}
+
+// general style butchering 
+@mixin matchBootstrapStyling() {
+    .vue-tags-input {
+        @include fill();
+        .ti-tag {
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 400;
+        }
+    }
+}
+
+// Version of the tags that only allow clicking
+// existing tags instead of the full editing UI
+@mixin forDisplayOnly() {
+    .vue-tags-input {
+        .ti-actions,
+        .ti-new-tag-input-wrapper {
+            display: none;
+        }
+    }
+}
+
+.galaxy-tags {
+ 
+    // adds in a graphic in place of the text input
+    @include newTagHoverButton();
+
+    // match bootstrap tag styles/colors
+    @include matchBootstrapStyling();
+
+    // display-only tags
+    &.disabled {
+        @include forDisplayOnly();
+    }
+}
+
+// Hide the border around the tag editing container 
+// when inside a grid row
+.grid .galaxy-tags {
+    @include hideTagContainer();
+}

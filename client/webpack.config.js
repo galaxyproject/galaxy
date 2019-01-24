@@ -29,7 +29,8 @@ let buildconfig = {
         alias: {
             jquery$: `${libsBase}/jquery.custom.js`,
             jqueryVendor$: `${libsBase}/jquery/jquery.js`,
-            store$: "store/dist/store.modern.js"
+            store$: "store/dist/store.modern.js",
+            vue$: "vue/dist/vue.esm.js"
         }
     },
     optimization: {
@@ -64,7 +65,22 @@ let buildconfig = {
                     libsBase
                 ],
                 loader: "babel-loader",
-                options: { babelrc: true }
+                options: {
+                    cacheDirectory: true,
+                    cacheCompression: false,
+                    presets: [
+                        ["@babel/preset-env", { modules: false }]
+                    ],
+                    plugins: [
+                        "transform-vue-template",
+                        "@babel/plugin-syntax-dynamic-import"
+                    ],
+                    ignore: [
+                        "i18n.js",
+                        "utils/localization.js",
+                        "nls/*"
+                    ]
+                }
             },
             {
                 test: `${libsBase}/jquery.custom.js`,
@@ -144,12 +160,15 @@ let buildconfig = {
                     },
                     {
                         loader: "sass-loader",
-                        options: { sourceMap: true }
+                        options: { 
+                            sourceMap: true,
+                            includePaths: ["galaxy/style/scss"]
+                        }
                     }
                 ]
             },
             {
-                test: /\.tmpl$/,
+                test: /\.(txt|tmpl)$/,
                 loader: "raw-loader"
             }
         ]
