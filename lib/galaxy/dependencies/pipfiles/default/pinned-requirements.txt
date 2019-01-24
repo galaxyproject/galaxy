@@ -140,7 +140,7 @@ s3transfer==0.1.13
 simplejson==3.16.0
 six==1.11.0
 social-auth-core[openidconnect]==1.5.0
-sqlalchemy-migrate==0.11.0
+sqlalchemy-migrate==0.12.0
 sqlalchemy-utils==0.33.9
 sqlalchemy==1.2.14
 sqlparse==0.2.4
