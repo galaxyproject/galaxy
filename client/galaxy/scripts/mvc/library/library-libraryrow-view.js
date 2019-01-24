@@ -162,7 +162,7 @@ var LibraryRowView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured while attempting to update the library.");
+                        mod_toastr.error("An error occurred while attempting to update the library.");
                     }
                 }
             });
@@ -197,7 +197,7 @@ var LibraryRowView = Backbone.View.extend({
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occured during deleting the library.");
+                    mod_toastr.error("An error occurred during deleting the library.");
                 }
             }
         });
@@ -224,7 +224,7 @@ var LibraryRowView = Backbone.View.extend({
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(response.responseJSON.err_msg);
                 } else {
-                    mod_toastr.error("An error occured while undeleting the library.");
+                    mod_toastr.error("An error occurred while undeleting the library.");
                 }
             }
         });
