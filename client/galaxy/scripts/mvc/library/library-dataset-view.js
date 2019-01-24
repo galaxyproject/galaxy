@@ -276,7 +276,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(`Dataset not imported. ${response.responseJSON.err_msg}`);
                     } else {
-                        mod_toastr.error("An error occured. Dataset not imported. Please try again.");
+                        mod_toastr.error("An error occurred. Dataset not imported. Please try again.");
                     }
                 }
             }
@@ -446,7 +446,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured while attempting to update the library dataset.");
+                        mod_toastr.error("An error occurred while attempting to update the library dataset.");
                     }
                 }
             });
