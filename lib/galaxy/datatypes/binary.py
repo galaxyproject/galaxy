@@ -841,7 +841,7 @@ class Anndata(H5):
         if super(Anndata, self).sniff(filename):
             try:
                 with h5py.File(filename) as f:
-                    return all( attr in f for attr in ['X', 'obs', 'var', 'uns'] )
+                    return all(attr in f for attr in ['X', 'obs', 'var', 'uns'])
             except Exception:
                 return False
         return False
