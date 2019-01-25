@@ -235,7 +235,7 @@ export function keepAlive(notebookAccessURL){
                 console.log("Request " + request_count);
                 if(request_count > 30){
                     window.clearInterval(interval);
-                    IES.clear_main_area();
+                    clear_main_area();
                     toastr.error(
                         "Could not connect to IE, contact your administrator",
                         "Error",
