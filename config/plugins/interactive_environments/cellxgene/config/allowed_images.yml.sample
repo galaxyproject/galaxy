@@ -1,0 +1,5 @@
+---
+-
+    image: cellxgene-galaxy-ie
+    description: |
+        An interactive data explorer for single-cell transcriptomics datasets

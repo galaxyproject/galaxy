@@ -830,6 +830,11 @@ class Loom(H5):
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
+class Anndata(H5):
+    """
+    Class describing an anndata file: http://anndata.rtfd.io
+    """
+    file_ext = 'h5ad'
 
 class GmxBinary(Binary):
     """
