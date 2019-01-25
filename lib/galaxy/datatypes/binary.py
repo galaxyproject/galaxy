@@ -830,14 +830,23 @@ class Loom(H5):
         except Exception as e:
             log.warning('%s, set_meta Exception: %s', self, e)
 
-            
+
 class Anndata(H5):
     """
     Class describing an anndata file: http://anndata.rtfd.io
     """
     file_ext = 'h5ad'
 
-    
+    def sniff(self, filename):
+        if super(Anndata, self).sniff(filename):
+            try:
+                with h5py.File(filename) as anndata_file:
+                    return all( attr in f for attr in ['X', 'obs', 'var', 'uns'] )
+            except Exception:
+                return False
+        return False
+
+
 class GmxBinary(Binary):
     """
     Base class for GROMACS binary files - xtc, trr, cpt
