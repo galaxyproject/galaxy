@@ -736,6 +736,7 @@
     <sniffer type="galaxy.datatypes.binary:SQlite"/>
     <sniffer type="galaxy.datatypes.binary:Cool"/>
     <sniffer type="galaxy.datatypes.binary:Loom"/>
+    <sniffer type="galaxy.datatypes.binary:Anndata"/>
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
