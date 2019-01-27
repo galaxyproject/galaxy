@@ -429,15 +429,15 @@ class JobExportHistoryArchiveWrapper:
             job_attrs['update_time'] = job.update_time.isoformat()
 
             # Get the job's parameters
+            params_dict = {}
             try:
                 params_objects = job.get_param_values(self.app)
+                for name, value in params_objects.items():
+                    params_dict[name] = value
             except Exception:
                 # Could not get job params.
-                continue
+                pass
 
-            params_dict = {}
-            for name, value in params_objects.items():
-                params_dict[name] = value
             job_attrs['params'] = params_dict
 
             # -- Get input, output datasets. --
