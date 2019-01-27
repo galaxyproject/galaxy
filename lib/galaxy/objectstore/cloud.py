@@ -116,23 +116,50 @@ class Cloud(ObjectStore, CloudConfigMixin):
 
         # Read any provider-specific configuration.
         auth_element = config_xml.findall("auth")[0]
+        missing_config = []
         if provider == "aws":
+            akey = auth_element.get("access_key")
+            if akey is None:
+                missing_config.append("access_key")
+            skey = auth_element.get("secret_key")
+            if skey is None:
+                missing_config.append("secret_key")
+
             config["auth"] = {
-                "aws_access_key": auth_element.get("access_key"),
-                "aws_secret_key": auth_element.get("secret_key")}
+                "aws_access_key": akey,
+                "aws_secret_key": skey}
         elif provider == "azure":
+            sid = auth_element.get("subscription_id")
+            if sid is None:
+                missing_config.append("subscription_id")
+            cid = auth_element.get("client_id")
+            if cid is None:
+                missing_config.append("client_id")
+            sec = auth_element.get("secret")
+            if sec is None:
+                missing_config.append("secret")
+            ten = auth_element.get("tenant")
+            if ten is None:
+                missing_config.append("tenant")
             config["auth"] = {
-                "AZURE_SUBSCRIPTION_ID": auth_element.get("subscription_id"),
-                "AZURE_CLIENT_ID": auth_element.get("client_id"),
-                "AZURE_SECRET": auth_element.get("secret"),
-                "AZURE_TENANT": auth_element.get("tenant")}
+                "azure_subscription_id": sid,
+                "azure_client_id": cid,
+                "azure_secret": sec,
+                "azure_tenant": ten}
         elif provider == "google":
+            cre = auth_element.get("credentials_file")
+            if cre is None:
+                missing_config.append("credentials_file")
             config["auth"] = {
-                "GCE_SERVICE_CREDS_FILE": auth_element.get("credentials_file")}
+                "gce_service_creds_file": cre}
         else:
             raise Exception("Unsupported provider `{}`.".format(provider))
 
-        return config
+        if len(missing_config) > 0:
+            raise Exception("The following configuration required for {} cloud backend "
+                            "are missing: {}".format(provider, missing_config))
+        else:
+            return config
 
     def to_dict(self):
         as_dict = super(Cloud, self).to_dict()
@@ -205,6 +232,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
 
     def _get_bucket(self, bucket_name):
         try:
+            print '\n\n\n------------------bucket_name:\t', bucket_name
             bucket = self.conn.storage.buckets.get(bucket_name)
             if bucket is None:
                 log.debug("Bucket not found, creating a bucket with handle '%s'", bucket_name)
