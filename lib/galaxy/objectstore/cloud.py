@@ -100,7 +100,37 @@ class Cloud(ObjectStore, CloudConfigMixin):
 
     @classmethod
     def parse_xml(clazz, config_xml):
-        return parse_config_xml(config_xml)
+        # The following reads common cloud-based storage configuration
+        # as implemented for the S3 backend. Hence, it also attempts to
+        # parse S3-specific configuration (e.g., credentials); however,
+        # such provider-specific configuration is overwritten in the
+        # following.
+        config = parse_config_xml(config_xml)
+
+
+        provider = config_xml.attrib.get("provider").lower()
+        if provider is None:
+            raise Exception("Missing `provider` attribute from the Cloud backend of the ObjectStore.")
+
+        # Read any provider-specific configuration.
+        auth_element = config_xml.findall("auth")[0]
+        if provider == "aws":
+            config["auth"] = {
+                "access_key": auth_element.get("access_key"),
+                "secret_key": auth_element.get("secret_key")}
+        elif provider == "azure":
+            config["auth"] = {
+                "subscription_id": auth_element.get("subscription_id"),
+                "client_id": auth_element.get("client_id"),
+                "secret": auth_element.get("secret"),
+                "tenant": auth_element.get("tenant")}
+        elif provider == "google":
+            config["auth"] = {
+                "credentials_file": auth_element.get("credentials_file")}
+        else:
+            raise Exception("Unsupported provider `{}`.".format(provider))
+
+        return config
 
     def to_dict(self):
         as_dict = super(Cloud, self).to_dict()
