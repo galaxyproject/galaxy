@@ -47,13 +47,9 @@ class Cloud(ObjectStore, CloudConfigMixin):
         super(Cloud, self).__init__(config, config_dict)
         self.transfer_progress = 0
 
-        auth_dict = config_dict['auth']
         bucket_dict = config_dict['bucket']
         connection_dict = config_dict.get('connection', {})
         cache_dict = config_dict['cache']
-
-        self.access_key = auth_dict.get('access_key')
-        self.secret_key = auth_dict.get('secret_key')
 
         self.bucket = bucket_dict.get('name')
         self.use_rr = bucket_dict.get('use_reduced_redundancy', False)
@@ -68,13 +64,13 @@ class Cloud(ObjectStore, CloudConfigMixin):
         self.cache_size = cache_dict.get('size', -1)
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
 
-        self._initialize()
+        self._initialize(config_dict["provider"], config_dict["auth"])
 
-    def _initialize(self):
+    def _initialize(self, provider, credentials):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        self._configure_connection()
+        self.conn = self._get_connection(provider, credentials)
         self.bucket = self._get_bucket(self.bucket)
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
@@ -92,11 +88,17 @@ class Cloud(ObjectStore, CloudConfigMixin):
         except OSError:
             self.use_axel = False
 
-    def _configure_connection(self):
-        log.debug("Configuring AWS-S3 Connection")
-        aws_config = {'aws_access_key': self.access_key,
-                      'aws_secret_key': self.secret_key}
-        self.conn = CloudProviderFactory().create_provider(ProviderList.AWS, aws_config)
+    @staticmethod
+    def _get_connection(provider, credentials):
+        log.debug("Configuring `{}` Connection".format(provider))
+        if provider == "aws":
+            return CloudProviderFactory().create_provider(ProviderList.AWS, credentials)
+        elif provider == "azure":
+            return CloudProviderFactory().create_provider(ProviderList.AZURE, credentials)
+        elif provider == "google":
+            return CloudProviderFactory().create_provider(ProviderList.GCE, credentials)
+        else:
+            raise Exception("Unsupported provider `{}`.".format(provider))
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -107,26 +109,26 @@ class Cloud(ObjectStore, CloudConfigMixin):
         # following.
         config = parse_config_xml(config_xml)
 
-
         provider = config_xml.attrib.get("provider").lower()
         if provider is None:
             raise Exception("Missing `provider` attribute from the Cloud backend of the ObjectStore.")
+        config["provider"] = provider
 
         # Read any provider-specific configuration.
         auth_element = config_xml.findall("auth")[0]
         if provider == "aws":
             config["auth"] = {
-                "access_key": auth_element.get("access_key"),
-                "secret_key": auth_element.get("secret_key")}
+                "aws_access_key": auth_element.get("access_key"),
+                "aws_secret_key": auth_element.get("secret_key")}
         elif provider == "azure":
             config["auth"] = {
-                "subscription_id": auth_element.get("subscription_id"),
-                "client_id": auth_element.get("client_id"),
-                "secret": auth_element.get("secret"),
-                "tenant": auth_element.get("tenant")}
+                "AZURE_SUBSCRIPTION_ID": auth_element.get("subscription_id"),
+                "AZURE_CLIENT_ID": auth_element.get("client_id"),
+                "AZURE_SECRET": auth_element.get("secret"),
+                "AZURE_TENANT": auth_element.get("tenant")}
         elif provider == "google":
             config["auth"] = {
-                "credentials_file": auth_element.get("credentials_file")}
+                "GCE_SERVICE_CREDS_FILE": auth_element.get("credentials_file")}
         else:
             raise Exception("Unsupported provider `{}`.".format(provider))
 
