@@ -232,7 +232,6 @@ class Cloud(ObjectStore, CloudConfigMixin):
 
     def _get_bucket(self, bucket_name):
         try:
-            print '\n\n\n------------------bucket_name:\t', bucket_name
             bucket = self.conn.storage.buckets.get(bucket_name)
             if bucket is None:
                 log.debug("Bucket not found, creating a bucket with handle '%s'", bucket_name)
