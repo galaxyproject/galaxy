@@ -90,16 +90,18 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
 
         # Status.
         print('Created history archive.')
+        return 0
     except Exception as e:
         print('Error creating history archive: %s' % str(e), file=sys.stderr)
+        return 1
 
 
-def main():
+def main(argv=None):
     # Parse command line.
     parser = optparse.OptionParser()
     parser.add_option('-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.')
     parser.add_option('--galaxy-version', dest='galaxy_version', help='Galaxy version that initiated the command.', default=None)
-    (options, args) = parser.parse_args()
+    (options, args) = parser.parse_args(argv)
     galaxy_version = options.galaxy_version
     if galaxy_version is None:
         galaxy_version = "19.01" if len(args) == 4 else "19.05"
@@ -118,7 +120,7 @@ def main():
         job_attrs = os.path.join(temp_directory, 'jobs_attrs.txt')
 
     # Create archive.
-    create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
+    return create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
 
 
 if __name__ == "__main__":
