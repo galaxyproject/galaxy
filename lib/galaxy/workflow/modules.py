@@ -411,6 +411,8 @@ class SubWorkflowModule(WorkflowModule):
                     extensions=["data"],
                     input_type=step_to_input_type[step_type],
                 )
+                if step.type == 'data_collection_input':
+                    input['collection_type'] = step.tool_inputs['collection_type']
                 inputs.append(input)
         return inputs
 
