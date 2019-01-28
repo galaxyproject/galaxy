@@ -123,6 +123,9 @@ def yaml_to_model(has_dict, id_offset=100):
                 value = inputs
             if key == "workflow_outputs":
                 value = [partial(_dict_to_workflow_output, workflow_step)(_) for _ in value]
+            if key == 'collection_type':
+                key = 'tool_inputs'
+                value = {'collection_type': value}
             setattr(workflow_step, key, value)
         workflow.steps.append(workflow_step)
 

@@ -195,6 +195,20 @@ steps:
     -   output_name: "out_file1"
 """
 
+COLLECTION_TYPE_WORKLFOW_YAML = """
+steps:
+  - type: "data_collection_input"
+    label: "input1"
+    collection_type: "list:list"
+  - type: "tool"
+    tool_id: "cat1"
+    inputs:
+      input1:
+        connections:
+        - "@output_step": 0
+          output_name: "output"
+"""
+
 
 def test_subworkflow_new_inputs():
     subworkflow_module = __new_subworkflow_module()
@@ -205,6 +219,12 @@ def test_subworkflow_new_inputs():
     assert input1["name"] == "input1"
     assert input2["input_type"] == "dataset_collection"
     assert input2["name"] == "input2", input2["name"]
+
+
+def test_subworkflow_new_inputs_collection_type():
+    subworkflow_module = __new_subworkflow_module(COLLECTION_TYPE_WORKLFOW_YAML)
+    inputs = subworkflow_module.get_data_inputs()
+    assert inputs[0]['collection_type'] == 'list:list'
 
 
 def test_subworkflow_new_outputs():
@@ -363,11 +383,11 @@ def test_subworkflow_map_over_type(test_case):
     )
 
 
-def __new_subworkflow_module():
+def __new_subworkflow_module(workflow=TEST_WORKFLOW_YAML):
     trans = MockTrans()
     mock_tool = __mock_tool(id="cat1", version="1.0")
     trans.app.toolbox.tools["cat1"] = mock_tool
-    workflow = yaml_to_model(TEST_WORKFLOW_YAML)
+    workflow = yaml_to_model(workflow)
     stored_workflow = trans.save_workflow(workflow)
     workflow_id = trans.app.security.encode_id(stored_workflow.id)
     subworkflow_module = modules.module_factory.from_dict(trans, {"type": "subworkflow", "content_id": workflow_id})
