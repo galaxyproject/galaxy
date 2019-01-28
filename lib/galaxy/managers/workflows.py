@@ -581,6 +581,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data['name'] = workflow.name
         data['steps'] = {}
         data['upgrade_messages'] = {}
+        input_step_types = set(workflow.input_step_types)
         # For each step, rebuild the form and encode the state
         for step in workflow.steps:
             # Load from database representation
@@ -650,12 +651,13 @@ class WorkflowContentsManager(UsesAnnotations):
             # workflow outputs
             outputs = []
             for output in step.unique_workflow_outputs:
-                output_label = output.label
-                output_name = output.output_name
-                output_uuid = str(output.uuid) if output.uuid else None
-                outputs.append({"output_name": output_name,
-                                "uuid": output_uuid,
-                                "label": output_label})
+                if output.workflow_step.type not in input_step_types:
+                    output_label = output.label
+                    output_name = output.output_name
+                    output_uuid = str(output.uuid) if output.uuid else None
+                    outputs.append({"output_name": output_name,
+                                    "uuid": output_uuid,
+                                    "label": output_label})
             step_dict['workflow_outputs'] = outputs
 
             # Encode input connections as dictionary
