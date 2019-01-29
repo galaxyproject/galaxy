@@ -240,7 +240,7 @@ class Configuration(object):
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
-        self.check_migrate_tools = string_as_bool(kwargs.get('check_migrate_tools', True))
+        self.check_migrate_tools = string_as_bool(kwargs.get('check_migrate_tools', False))
         self.shed_tool_data_path = kwargs.get("shed_tool_data_path", None)
         self.x_frame_options = kwargs.get("x_frame_options", "SAMEORIGIN")
         if self.shed_tool_data_path:
