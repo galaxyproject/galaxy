@@ -285,20 +285,31 @@ then
     DOCKER_EXTRA_ARGS=${DOCKER_ARGS:-""}
     DOCKER_RUN_EXTRA_ARGS=${DOCKER_RUN_EXTRA_ARGS:-""}
     DOCKER_IMAGE=${DOCKER_IMAGE:-${DOCKER_DEFAULT_IMAGE}}
-    if [ "$1" = "--python3" ]; then
-        DOCKER_RUN_EXTRA_ARGS="-e GALAXY_VIRTUAL_ENV=/galaxy_venv3 $DOCKER_RUN_EXTRA_ARGS"
-        shift 1
-    fi
-    if [ "$1" = "--db" ]; then
-       db_type=$2
-       shift 2
-    else
-       db_type="sqlite"
-    fi
+    db_type="sqlite"
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --python3)
+                DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_VIRTUAL_ENV=/galaxy_venv3"
+                shift 1
+                ;;
+            --db)
+                db_type=$2
+                shift 2
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+    # Skip client build process in the Docker container for all tests except Selenium
+    GALAXY_SKIP_CLIENT_BUILD=1
+    case "$*" in
+        *-selenium*)
+            GALAXY_SKIP_CLIENT_BUILD=0
+            ;;
+    esac
     MY_UID=$(id -u)
-    # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
-    # locally before testing - you will need to do this also if using this script for Selenium testing.
-    DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
+    DOCKER_RUN_EXTRA_ARGS="${DOCKER_RUN_EXTRA_ARGS} -e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD}"
     echo "Docker version:"
     docker --version
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
