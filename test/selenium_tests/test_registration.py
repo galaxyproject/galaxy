@@ -74,7 +74,7 @@ class RegistrationTestCase(SeleniumTestCase):
         bad_confirms = ['1234', '12345678', '123456 7']
         for bad_confirm in bad_confirms:
             self.register(confirm=bad_confirm, assert_valid=False)
-            self.assert_error_message(contains='Passwords don\'t match')
+            self.assert_error_message(contains='Passwords do not match')
 
     @selenium_test
     def test_bad_usernames(self):
