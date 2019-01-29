@@ -130,9 +130,6 @@ class ConditionalDependencies(object):
     def check_azure_storage(self):
         return 'azure_blob' in self.object_stores
 
-    def check_cloudbridge(self):
-        return 'cloud' in self.object_stores
-
     def check_kamaki(self):
         return 'pithos' in self.object_stores
 

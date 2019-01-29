@@ -117,6 +117,7 @@ test/unit/**.log
 
 # Project files
 *.kpf
+.idea
 .vscode
 client/**/jsconfig.json
 
@@ -152,5 +153,3 @@ client/webpack-stats.json
 .DS_Store
 *.rej
 *~
-.idea
-.vscode

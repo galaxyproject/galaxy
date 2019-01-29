@@ -75,8 +75,6 @@ Additional configuration files and their purposes are:
   used by users to control runtime parameters such as memory allocations, cluster selection, and so forth.
 - ``object_store_conf.xml``: Configures more advanced storage paradigms for Galaxy datasets, including layout across
   multiple filesystems, or in object storage systems such as Swift or Amazon S3.
-- ``openid_conf.xml``: Controls which OpenID (if enabled) providers should be presented as options to the user on the
-  login form.
 - ``swarm_manager_conf.yml``: Configures the experimental Docker Swarm manager.
 - ``tool_destinations.yml``: Configures dynamic tool destinations, which allow for mapping tools to job destinations
   based on certain runtime job properties, such as the user submitting it, input sizes, and so forth.
