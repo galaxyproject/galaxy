@@ -2,7 +2,7 @@
 
 # Enable retries on tests to reduce chances of transient failures.
 : ${GALAXY_TEST_SELENIUM_RETRIES:=1}
-: ${GALAXY_TEST_CLIENT_BUILD_IMAGE:='node:9.4.0'}
+: ${GALAXY_TEST_CLIENT_BUILD_IMAGE:='node:11'}
 
 # If in Jenkins environment, use it for artifacts.
 if [ -n "$BUILD_NUMBER" ];
