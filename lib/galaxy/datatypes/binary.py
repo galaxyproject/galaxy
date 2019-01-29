@@ -833,7 +833,12 @@ class Loom(H5):
 
 class Anndata(H5):
     """
-    Class describing an anndata file: http://anndata.rtfd.io
+    Class describing an HDF5 anndata files: http://anndata.rtfd.io
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> Anndata().sniff(get_test_fname('pbmc3k_tiny.h5ad'))
+    True
+    >>> Anndata().sniff(get_test_fname('test.mz5'))
+    False
     """
     file_ext = 'h5ad'
 
@@ -841,7 +846,7 @@ class Anndata(H5):
         if super(Anndata, self).sniff(filename):
             try:
                 with h5py.File(filename) as f:
-                    return all(attr in f for attr in ['X', 'obs', 'var', 'uns'])
+                    return all(attr in f for attr in ['X', 'obs', 'var'])
             except Exception:
                 return False
         return False
