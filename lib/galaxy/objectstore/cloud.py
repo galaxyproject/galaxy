@@ -5,6 +5,7 @@ Object Store plugin for Cloud storage.
 import logging
 import multiprocessing
 import os
+import os.path
 import shutil
 import subprocess
 import threading
@@ -177,6 +178,8 @@ class Cloud(ObjectStore, CloudConfigMixin):
                 "azure_tenant": ten}
         elif provider == "google":
             cre = auth_element.get("credentials_file")
+            if not os.path.isfile(cre):
+                raise IOError("The following file specified for GCE credentials not found: {}".format(cre))
             if cre is None:
                 missing_config.append("credentials_file")
             config["auth"] = {
