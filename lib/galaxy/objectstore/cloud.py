@@ -65,9 +65,9 @@ class Cloud(ObjectStore, CloudConfigMixin):
         self.cache_size = cache_dict.get('size', -1)
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
 
-        self._initialize(config_dict["provider"], config_dict["auth"])
+        self._setup(config_dict["provider"], config_dict["auth"])
 
-    def _initialize(self, provider, credentials):
+    def _setup(self, provider, credentials):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
@@ -138,60 +138,72 @@ class Cloud(ObjectStore, CloudConfigMixin):
         # following.
         config = parse_config_xml(config_xml)
 
-        provider = config_xml.attrib.get("provider")
-        if provider is None:
-            raise Exception("Missing `provider` attribute from the Cloud backend of the ObjectStore.")
-        provider = provider.lower()
-        config["provider"] = provider
+        try:
+            provider = config_xml.attrib.get("provider")
+            if provider is None:
+                msg = "Missing `provider` attribute from the Cloud backend of the ObjectStore."
+                log.error(msg)
+                raise Exception(msg)
+            provider = provider.lower()
+            config["provider"] = provider
 
-        # Read any provider-specific configuration.
-        auth_element = config_xml.findall("auth")[0]
-        missing_config = []
-        if provider == "aws":
-            akey = auth_element.get("access_key")
-            if akey is None:
-                missing_config.append("access_key")
-            skey = auth_element.get("secret_key")
-            if skey is None:
-                missing_config.append("secret_key")
+            # Read any provider-specific configuration.
+            auth_element = config_xml.findall("auth")[0]
+            missing_config = []
+            if provider == "aws":
+                akey = auth_element.get("access_key")
+                if akey is None:
+                    missing_config.append("access_key")
+                skey = auth_element.get("secret_key")
+                if skey is None:
+                    missing_config.append("secret_key")
 
-            config["auth"] = {
-                "aws_access_key": akey,
-                "aws_secret_key": skey}
-        elif provider == "azure":
-            sid = auth_element.get("subscription_id")
-            if sid is None:
-                missing_config.append("subscription_id")
-            cid = auth_element.get("client_id")
-            if cid is None:
-                missing_config.append("client_id")
-            sec = auth_element.get("secret")
-            if sec is None:
-                missing_config.append("secret")
-            ten = auth_element.get("tenant")
-            if ten is None:
-                missing_config.append("tenant")
-            config["auth"] = {
-                "azure_subscription_id": sid,
-                "azure_client_id": cid,
-                "azure_secret": sec,
-                "azure_tenant": ten}
-        elif provider == "google":
-            cre = auth_element.get("credentials_file")
-            if not os.path.isfile(cre):
-                raise IOError("The following file specified for GCE credentials not found: {}".format(cre))
-            if cre is None:
-                missing_config.append("credentials_file")
-            config["auth"] = {
-                "gce_service_creds_file": cre}
-        else:
-            raise Exception("Unsupported provider `{}`.".format(provider))
+                config["auth"] = {
+                    "aws_access_key": akey,
+                    "aws_secret_key": skey}
+            elif provider == "azure":
+                sid = auth_element.get("subscription_id")
+                if sid is None:
+                    missing_config.append("subscription_id")
+                cid = auth_element.get("client_id")
+                if cid is None:
+                    missing_config.append("client_id")
+                sec = auth_element.get("secret")
+                if sec is None:
+                    missing_config.append("secret")
+                ten = auth_element.get("tenant")
+                if ten is None:
+                    missing_config.append("tenant")
+                config["auth"] = {
+                    "azure_subscription_id": sid,
+                    "azure_client_id": cid,
+                    "azure_secret": sec,
+                    "azure_tenant": ten}
+            elif provider == "google":
+                cre = auth_element.get("credentials_file")
+                if not os.path.isfile(cre):
+                    msg = "The following file specified for GCE credentials not found: {}".format(cre)
+                    log.error(msg)
+                    raise IOError(msg)
+                if cre is None:
+                    missing_config.append("credentials_file")
+                config["auth"] = {
+                    "gce_service_creds_file": cre}
+            else:
+                msg = "Unsupported provider `{}`.".format(provider)
+                log.error(msg)
+                raise Exception(msg)
 
-        if len(missing_config) > 0:
-            raise Exception("The following configuration required for {} cloud backend "
-                            "are missing: {}".format(provider, missing_config))
-        else:
-            return config
+            if len(missing_config) > 0:
+                msg = "The following configuration required for {} cloud backend " \
+                      "are missing: {}".format(provider, missing_config)
+                log.error(msg)
+                raise Exception(msg)
+            else:
+                return config
+        except Exception:
+            log.exception("TMalformed ObjectStore Configuration XML -- unable to continue")
+            raise
 
     def to_dict(self):
         as_dict = super(Cloud, self).to_dict()
