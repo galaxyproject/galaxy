@@ -179,18 +179,12 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>&status=error
         strings_displayed = ['/repository', 'view_repository', 'id=' + encoded_repository_id]
         strings_displayed.extend(['The+change+log', 'does+not+include+revision', invalid_changeset_hash, 'status=error'])
-        strings_displayed_in_iframe = ['user1', 'filtering_0420', 'Galaxy filtering tool for test 0420']
-        strings_displayed_in_iframe.append('Link to this repository revision:')
-        strings_displayed_in_iframe.append('%s/view/user1/filtering_0420/%s' % (self.url, invalid_changeset_hash))
-        strings_not_displayed_in_iframe = []
         self.load_citable_url(username='user1',
                               repository_name='filtering_0420',
                               changeset_revision=invalid_changeset_hash,
                               encoded_user_id=encoded_user_id,
                               encoded_repository_id=encoded_repository_id,
-                              strings_displayed=strings_displayed,
-                              strings_displayed_in_iframe=strings_displayed_in_iframe,
-                              strings_not_displayed_in_iframe=strings_not_displayed_in_iframe)
+                              strings_displayed=strings_displayed)
 
     def test_0035_load_sharable_url_with_invalid_repository_name(self):
         '''Load a citable url with an invalid changeset revision specified.'''

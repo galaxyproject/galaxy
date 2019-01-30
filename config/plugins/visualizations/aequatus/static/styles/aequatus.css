@@ -1,0 +1,158 @@
+.circleBase {
+    border-radius: 50%;
+}
+
+.type2 {
+    width: 20px;
+    height: 20px;
+    background: #ccc;
+    border: 1px solid #4682b4;
+}
+
+#info_div{
+    display: none; 
+    background: none repeat scroll 0% 0% peru; 
+    padding: 10px; 
+    height: 248px; 
+    text-align: center; 
+    font-size: 20px;
+}
+
+#search_div{
+    display: none; 
+    background: none repeat scroll 0% 0% green; 
+    padding: 10px; 
+    height: 248px; 
+    text-align: center; 
+    font-size: 20px;
+}
+
+#settings_div{
+    padding: 10px; 
+    height: 248px; 
+    background: none repeat scroll 0% 0% darkcyan; 
+    font-size: larger;
+}
+
+#control_panel{
+    top: 100px;
+    position: fixed; 
+    height: auto; 
+    left: -300px; 
+    z-index: 2999
+}
+
+#control_panel_handle{
+    padding: 5px; 
+    text-align: center; 
+    cursor: move; 
+    background: none repeat scroll 0% 0% slategrey; 
+    color: white;
+}
+
+#settings_div_handle{
+    padding: 5px; 
+    text-align: center; 
+    background: none repeat scroll 0% 0% darkcyan;
+}
+
+#info_panel_handle{
+    padding: 5px; 
+    text-align: center; 
+    background: none repeat scroll 0% 0% peru;
+}
+
+#filter_handle{
+    padding: 5px; 
+    text-align: center; 
+    background: none repeat scroll 0% 0% orange;
+}
+
+#openclose_handle{
+    padding: 5px; 
+    text-align: center;  
+    background: none repeat scroll 0% 0% gray;
+}
+
+#search_div_handle{
+    padding: 5px; 
+    text-align: center;  
+    background: none repeat scroll 0% 0% green;
+}
+
+#gene_tree{
+    overflow: visible;   
+    position: relative; 
+    top: 50px; 
+    left: 50px;
+    width: 100%;
+}
+
+#popup{
+    width:200px; 
+    height:130px;
+    display: none;
+}
+
+#stable_id_header{
+    color: white; 
+    padding: 2px; 
+    width: 100%;
+}
+
+#makemetop_button{
+    float: right
+}
+
+#popup_header{
+    overflow: hidden; 
+    left: 0px; 
+    top: 0px; 
+    position: relative;
+    background: darkcyan none repeat scroll 0% 0%; 
+    padding: 2px;
+}
+
+#popup_body{
+    position: relative; 
+    padding: 5px;
+}
+
+#ruler {
+    font-family: Courier;
+    font-size: 13px;
+    visibility: hidden;
+    white-space: nowrap;
+    width: auto;
+}
+
+.bubbleright {
+     background-color: white;
+     border: 1px solid #888888;
+     box-shadow: 10px 10px 35px #888888;
+     color: #333333;
+     display: inline-block;
+     position: absolute;
+     text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.5);
+     width: 100%;
+     z-index: 999;
+}
+
+.bubbleright::after {
+     border-bottom: 25px solid transparent;
+     border-right: 25px solid white;
+     bottom: -25px;
+     content: "";
+     left: 176px;
+     margin-left: -10px;
+     position: absolute;
+     z-index: 999;
+}
+
+.bubbleright::before {
+     border-left: 25px solid rgba(0, 0, 0, 0.1);
+     bottom: -28px;
+     left: 22px;
+     margin-left: -10px;
+     z-index: 999;
+}

@@ -36,7 +36,7 @@ var View = Backbone.View.extend({
                     error: response => {
                         var error_response = {
                             status: "error",
-                            message: "Error occured while loading the job.",
+                            message: "Error occurred while loading the job.",
                             persistent: true,
                             cls: "errormessage"
                         };
@@ -47,7 +47,7 @@ var View = Backbone.View.extend({
             error: response => {
                 var error_response = {
                     status: "error",
-                    message: "Error occured while loading the dataset.",
+                    message: "Error occurred while loading the dataset.",
                     persistent: true,
                     cls: "errormessage"
                 };
@@ -61,7 +61,7 @@ var View = Backbone.View.extend({
         this.$el.empty().append(`
             ${this._templateHeader()}
             <h2>Dataset Error</h2>
-            <p>An error occured while running the tool <b>${job.tool_id}</b>.</p>
+            <p>An error occurred while running the tool <b>${job.tool_id}</b>.</p>
             <p>Tool execution generated the following messages:</p>
             <pre class="code">${_.escape(job.stderr)}</pre>
 
@@ -194,7 +194,7 @@ var View = Backbone.View.extend({
             error: response => {
                 var error_response = {
                     status: "error",
-                    message: "Error occured while saving. Please fill all the required fields and try again.",
+                    message: "Error occurred while saving. Please fill all the required fields and try again.",
                     persistent: true,
                     cls: "errormessage"
                 };

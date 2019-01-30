@@ -205,7 +205,10 @@ histories:
 
 login:
   selectors:
-     form: 'form#login'
+    form: 'form#login'
+    submit:
+      type: xpath
+      selector: "//button[@type='submit']"
 
 registration:
   selectors:

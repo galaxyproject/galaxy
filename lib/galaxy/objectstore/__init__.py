@@ -81,7 +81,7 @@ class ObjectStore(object):
         000/obj.id)
     """
 
-    def __init__(self, config, **kwargs):
+    def __init__(self, config, config_dict={}, **kwargs):
         """
         :type config: object
         :param config: An object, most likely populated from
@@ -95,11 +95,16 @@ class ObjectStore(object):
             * new_file_path -- Used to set the 'temp' extra_dir.
         """
         self.running = True
-        self.extra_dirs = {}
         self.config = config
         self.check_old_style = config.object_store_check_old_style
-        self.extra_dirs['job_work'] = config.jobs_directory
-        self.extra_dirs['temp'] = config.new_file_path
+        self.store_by = config_dict.get("store_by", None) or getattr(config, "object_store_store_by", "id")
+        assert self.store_by in ["id", "uuid"]
+        extra_dirs = {}
+        extra_dirs['job_work'] = config.jobs_directory
+        extra_dirs['temp'] = config.new_file_path
+        extra_dirs.update(dict(
+            (e['type'], e['path']) for e in config_dict.get('extra_dirs', [])))
+        self.extra_dirs = extra_dirs
 
     def shutdown(self):
         """Close any connections for this ObjectStore."""
@@ -220,6 +225,20 @@ class ObjectStore(object):
         config_dict = clazz.parse_xml(config_xml)
         return clazz(config, config_dict, **kwd)
 
+    def to_dict(self):
+        extra_dirs = []
+        for extra_dir_type, extra_dir_path in self.extra_dirs.items():
+            extra_dirs.append({"type": extra_dir_type, "path": extra_dir_path})
+        return {
+            'config': config_to_dict(self.config),
+            'extra_dirs': extra_dirs,
+            'store_by': self.store_by,
+            'type': self.store_type,
+        }
+
+    def _get_object_id(self, obj):
+        return getattr(obj, self.store_by)
+
 
 class DiskObjectStore(ObjectStore):
     """
@@ -237,6 +256,7 @@ class DiskObjectStore(ObjectStore):
     True
     >>> assert s.get_filename(obj) == file_path + '/000/dataset_1.dat'
     """
+    store_type = 'disk'
 
     def __init__(self, config, config_dict):
         """
@@ -254,29 +274,27 @@ class DiskObjectStore(ObjectStore):
         :type extra_dirs: dict
         :param extra_dirs: Keys are string, values are directory paths.
         """
-        super(DiskObjectStore, self).__init__(config)
+        super(DiskObjectStore, self).__init__(config, config_dict)
         self.file_path = config_dict.get("files_dir") or config.file_path
-        extra_dirs = dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
-        self.extra_dirs.update(extra_dirs)
 
     @classmethod
     def parse_xml(clazz, config_xml):
         extra_dirs = []
-        file_path = None
-
+        config_dict = {}
         if config_xml is not None:
             for e in config_xml:
                 if e.tag == 'files_dir':
-                    file_path = e.get('path')
+                    config_dict["files_dir"] = e.get('path')
                 else:
                     extra_dirs.append({"type": e.get('type'), "path": e.get('path')})
 
-        config_dict = {
-            "files_dir": file_path,
-            "extra_dirs": extra_dirs,
-        }
+        config_dict["extra_dirs"] = extra_dirs
         return config_dict
+
+    def to_dict(self):
+        as_dict = super(DiskObjectStore, self).to_dict()
+        as_dict["files_dir"] = self.file_path
+        return as_dict
 
     def _get_filename(self, obj, base_dir=None, dir_only=False, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False):
         """
@@ -343,10 +361,11 @@ class DiskObjectStore(ObjectStore):
                 path = base
         else:
             # Construct hashed path
-            rel_path = os.path.join(*directory_hash_id(obj.id))
+            obj_id = self._get_object_id(obj)
+            rel_path = os.path.join(*directory_hash_id(obj_id))
             # Create a subdirectory for the object ID
             if obj_dir:
-                rel_path = os.path.join(rel_path, str(obj.id))
+                rel_path = os.path.join(rel_path, str(obj_id))
             # Optionally append extra_dir
             if extra_dir is not None:
                 if extra_dir_at_root:
@@ -355,7 +374,7 @@ class DiskObjectStore(ObjectStore):
                     rel_path = os.path.join(rel_path, extra_dir)
             path = os.path.join(base, rel_path)
         if not dir_only:
-            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj.id)
+            path = os.path.join(path, alt_name if alt_name else "dataset_%s.dat" % obj_id)
         return os.path.abspath(path)
 
     def exists(self, obj, **kwargs):
@@ -543,7 +562,8 @@ class NestedObjectStore(ObjectStore):
     def _repr_object_for_exception(self, obj):
         try:
             # there are a few objects in python that don't have __class__
-            return '{}(id={})'.format(obj.__class__.__name__, obj.id)
+            obj_id = self._get_object_id(obj)
+            return '{}({}={})'.format(obj.__class__.__name__, self.store_by, obj_id)
         except AttributeError:
             return str(obj)
 
@@ -569,6 +589,7 @@ class DistributedObjectStore(NestedObjectStore):
     When creating objects they are created in a store selected randomly, but
     with weighting.
     """
+    store_type = 'distributed'
 
     def __init__(self, config, config_dict, fsmon=False):
         """
@@ -585,7 +606,7 @@ class DistributedObjectStore(NestedObjectStore):
         :param fsmon: If True, monitor the file system for free space,
             removing backends when they get too full.
         """
-        super(DistributedObjectStore, self).__init__(config)
+        super(DistributedObjectStore, self).__init__(config, config_dict)
 
         self.backends = {}
         self.weighted_backend_ids = []
@@ -681,6 +702,19 @@ class DistributedObjectStore(NestedObjectStore):
         config_dict = clazz.parse_xml(config_xml, legacy=legacy)
         return clazz(config, config_dict, fsmon=fsmon)
 
+    def to_dict(self):
+        as_dict = super(DistributedObjectStore, self).to_dict()
+        as_dict["global_max_percent_full"] = self.global_max_percent_full
+        backends = []
+        for backend_id, backend in self.backends.items():
+            backend_as_dict = backend.to_dict()
+            backend_as_dict["id"] = backend_id
+            backend_as_dict["max_percent_full"] = self.max_percent_full[backend_id]
+            backend_as_dict["weight"] = len([i for i in self.original_weighted_backend_ids if i == backend_id])
+            backends.append(backend_as_dict)
+        as_dict["backends"] = backends
+        return as_dict
+
     def shutdown(self):
         """Shut down. Kill the free space monitor if there is one."""
         super(DistributedObjectStore, self).shutdown()
@@ -754,10 +788,11 @@ class HierarchicalObjectStore(NestedObjectStore):
     When getting objects the first store where the object exists is used.
     When creating objects only the first store is used.
     """
+    store_type = 'hierarchical'
 
     def __init__(self, config, config_dict, fsmon=False):
         """The default contructor. Extends `NestedObjectStore`."""
-        super(HierarchicalObjectStore, self).__init__(config)
+        super(HierarchicalObjectStore, self).__init__(config, config_dict)
 
         backends = odict()
         for order, backend_def in enumerate(config_dict["backends"]):
@@ -776,6 +811,15 @@ class HierarchicalObjectStore(NestedObjectStore):
             backends_list.append(backend_config_dict)
 
         return {"backends": backends_list}
+
+    def to_dict(self):
+        as_dict = super(HierarchicalObjectStore, self).to_dict()
+        backends = []
+        for backend_id, backend in self.backends.items():
+            backend_as_dict = backend.to_dict()
+            backends.append(backend_as_dict)
+        as_dict["backends"] = backends
+        return as_dict
 
     def exists(self, obj, **kwargs):
         """Check all child object stores."""
@@ -908,6 +952,20 @@ def convert_bytes(bytes):
     else:
         size = '%.2fb' % bytes
     return size
+
+
+def config_to_dict(config):
+    """Dict-ify the portion of a config object consumed by the ObjectStore class and its subclasses.
+    """
+    return {
+        'object_store_check_old_style': config.object_store_check_old_style,
+        'file_path': config.file_path,
+        'umask': config.umask,
+        'jobs_directory': config.jobs_directory,
+        'new_file_path': config.new_file_path,
+        'object_store_cache_path': config.object_store_cache_path,
+        'gid': config.gid,
+    }
 
 
 def _create_object_in_session(obj):

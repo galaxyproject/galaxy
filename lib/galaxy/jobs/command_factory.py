@@ -158,9 +158,8 @@ def __handle_task_splitting(commands_builder, job_wrapper):
 
 def __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params):
     local_dependency_resolution = remote_command_params.get("dependency_resolution", "local") == "local"
-
     # Prepend dependency injection
-    if job_wrapper.dependency_shell_commands and local_dependency_resolution:
+    if local_dependency_resolution and job_wrapper.dependency_shell_commands:
         commands_builder.prepend_commands(job_wrapper.dependency_shell_commands)
 
 

@@ -181,12 +181,11 @@ galaxy:
 
   # Enable / disable checking if any tools defined in the above non-shed
   # tool_config_files (i.e., tool_conf.xml) have been migrated from the
-  # Galaxy code distribution to the Tool Shed.  This setting should
-  # generally be set to False only for development Galaxy environments
-  # that are often rebuilt from scratch where migrated tools do not need
-  # to be available in the Galaxy tool panel.  If the following setting
-  # remains commented, the default setting will be True.
-  #check_migrate_tools: true
+  # Galaxy code distribution to the Tool Shed. This functionality is
+  # largely untested in modern Galaxy releases and has serious issues
+  # such as #7273 and the possibility of slowing down Galaxy startup, so
+  # the default and recommended value is False.
+  #check_migrate_tools: false
 
   # Tool config maintained by tool migration scripts.  If you use the
   # migration scripts to install tools that have been migrated to the
@@ -330,16 +329,22 @@ galaxy:
   # by enable_beta_mulled_containers.
   #containers_resolvers_config_file: ''
 
-  # involucro is a tool used to build Docker containers for tools from
-  # Conda dependencies referenced in tools as `requirement`s. The
-  # following path is the location of involucro on the Galaxy host. This
-  # is ignored if the relevant container resolver isn't enabled, and
-  # will install on demand unless involucro_auto_init is set to False.
+  # involucro is a tool used to build Docker or Singularity containers
+  # for tools from Conda dependencies referenced in tools as
+  # `requirement`s. The following path is the location of involucro on
+  # the Galaxy host. This is ignored if the relevant container resolver
+  # isn't enabled, and will install on demand unless involucro_auto_init
+  # is set to False.
   #involucro_path: database/dependencies/involucro
 
-  # Install involucro as needed to build Docker containers for tools.
-  # Ignored if relevant container resolver is not used.
+  # Install involucro as needed to build Docker or Singularity
+  # containers for tools. Ignored if relevant container resolver is not
+  # used.
   #involucro_auto_init: true
+
+  # Conda channels to use when building Docker or Singularity containers
+  # using involucro.
+  #mulled_channels: 'conda-forge,bioconda'
 
   # Enable automatic polling of relative tool sheds to see if any
   # updates are available for installed repositories.  Ideally only one
@@ -518,17 +523,14 @@ galaxy:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
-  # Tools with a number of outputs not known until runtime can write
-  # these outputs to a directory for collection by Galaxy when the job
-  # is done. Previously, this directory was new_file_path, but using one
-  # global directory can cause performance problems, so using
-  # job_working_directory ('.' or cwd when a job is run) is encouraged.
-  # By default, both are checked to avoid breaking existing tools.
-  #collect_outputs_from: 'new_file_path,job_working_directory'
-
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   #object_store_config_file: config/object_store_conf.xml
+
+  # What Dataset attribute is used to reference files in an ObjectStore
+  # implementation, default is 'id' but can also be set to 'uuid' for
+  # more de-centralized usage.
+  #object_store_store_by: id
 
   # Galaxy sends mail for various things: subscribing users to the
   # mailing list if they request it, password resets, reporting dataset
@@ -596,8 +598,7 @@ galaxy:
 
   # Activation grace period (in hours).  Activation is not forced (login
   # is not disabled) until grace period has passed.  Users under grace
-  # period can't run jobs. Enter 0 to disable grace period. Users with
-  # OpenID logins have grace period forever.
+  # period can't run jobs. Enter 0 to disable grace period.
   #activation_grace_period: 3
 
   # Shown in warning box to users that were not activated yet. In use
@@ -652,7 +653,8 @@ galaxy:
   # Show a message box under the masthead.
   #message_box_content: ''
 
-  # Show a message box under the masthead.
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Append "/{brand}" to the "Galaxy" text in the masthead.
@@ -1017,8 +1019,8 @@ galaxy:
   #use_printdebug: true
 
   # Enable live debugging in your browser.  This should NEVER be enabled
-  # on a public site.  Enabled in the sample config for development.
-  #use_interactive: true
+  # on a public site.
+  #use_interactive: false
 
   # When stopping Galaxy cleanly, how much time to give various
   # monitoring/polling threads to finish before giving up on joining
@@ -1423,18 +1425,6 @@ galaxy:
   # Force serial scheduling of workflows within the context of a
   # particular history
   #history_local_serial_workflow_scheduling: false
-
-  # Enable authentication via OpenID.  Allows users to log in to their
-  # Galaxy account by authenticating with an OpenID provider.
-  #enable_openid: false
-
-  # If OpenID is enabled, this configuration file specifies providers to
-  # use. Falls back to the .sample variant in config if default does not
-  # exist.
-  #openid_config_file: config/openid_conf.xml
-
-  # If OpenID is enabled, consumer cache directory to use.
-  #openid_consumer_cache_path: database/openid_consumer_cache
 
   # Enables and disables OpenID Connect (OIDC) support.
   #enable_oidc: false

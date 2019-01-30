@@ -4,6 +4,7 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 from __future__ import absolute_import
 
+import collections
 import ipaddress
 import logging
 import logging.config
@@ -23,6 +24,7 @@ from six.moves import configparser
 
 from galaxy.containers import parse_containers_config
 from galaxy.exceptions import ConfigurationError
+from galaxy.tools.deps.container_resolvers.mulled import DEFAULT_CHANNELS
 from galaxy.util import ExecutionTimer
 from galaxy.util import listify
 from galaxy.util import string_as_bool
@@ -50,7 +52,6 @@ PATH_DEFAULTS = dict(
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
     migrated_tools_config=['migrated_tools_conf.xml', 'config/migrated_tools_conf.xml'],
     object_store_config_file=['config/object_store_conf.xml', 'object_store_conf.xml'],
-    openid_config_file=['config/openid_conf.xml', 'openid_conf.xml', 'config/openid_conf.xml.sample'],
     shed_data_manager_config_file=['shed_data_manager_conf.xml', 'config/shed_data_manager_conf.xml'],
     shed_tool_data_table_config=['shed_tool_data_table_conf.xml', 'config/shed_tool_data_table_conf.xml'],
     tool_sheds_config_file=['config/tool_sheds_conf.xml', 'tool_sheds_conf.xml', 'config/tool_sheds_conf.xml.sample'],
@@ -198,10 +199,7 @@ class Configuration(object):
         if override_tempdir:
             tempfile.tempdir = self.new_file_path
         self.shared_home_dir = kwargs.get("shared_home_dir", None)
-        self.openid_consumer_cache_path = resolve_path(kwargs.get("openid_consumer_cache_path", "database/openid_consumer_cache"), self.root)
         self.cookie_path = kwargs.get("cookie_path", "/")
-        # Galaxy OpenID settings
-        self.enable_openid = string_as_bool(kwargs.get('enable_openid', False))
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', False))
         self.enable_unique_workflow_defaults = string_as_bool(kwargs.get('enable_unique_workflow_defaults', False))
         self.tool_path = resolve_path(kwargs.get("tool_path", "tools"), self.root)
@@ -240,7 +238,7 @@ class Configuration(object):
 
         # Check for tools defined in the above non-shed tool configs (i.e., tool_conf.xml) tht have
         # been migrated from the Galaxy code distribution to the Tool Shed.
-        self.check_migrate_tools = string_as_bool(kwargs.get('check_migrate_tools', True))
+        self.check_migrate_tools = string_as_bool(kwargs.get('check_migrate_tools', False))
         self.shed_tool_data_path = kwargs.get("shed_tool_data_path", None)
         self.x_frame_options = kwargs.get("x_frame_options", "SAMEORIGIN")
         if self.shed_tool_data_path:
@@ -297,7 +295,6 @@ class Configuration(object):
         self.allow_user_impersonation = string_as_bool(kwargs.get("allow_user_impersonation", "False"))
         self.show_user_prepopulate_form = string_as_bool(kwargs.get("show_user_prepopulate_form", "False"))
         self.new_user_dataset_access_role_default_private = string_as_bool(kwargs.get("new_user_dataset_access_role_default_private", "False"))
-        self.collect_outputs_from = [x.strip() for x in kwargs.get('collect_outputs_from', 'new_file_path,job_working_directory').lower().split(',')]
         self.template_path = resolve_path(kwargs.get("template_path", "templates"), self.root)
         self.template_cache = resolve_path(kwargs.get("template_cache_path", "database/compiled_templates"), self.root)
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
@@ -361,7 +358,6 @@ class Configuration(object):
         self.communication_server_host = kwargs.get('communication_server_host', 'http://localhost')
         self.communication_server_port = int(kwargs.get('communication_server_port', '7070'))
         self.persistent_communication_rooms = listify(kwargs.get("persistent_communication_rooms", []), do_strip=True)
-        self.enable_openid = string_as_bool(kwargs.get('enable_openid', 'False'))
         self.enable_quotas = string_as_bool(kwargs.get('enable_quotas', 'False'))
         # Tasked job runner.
         self.use_tasked_jobs = string_as_bool(kwargs.get('use_tasked_jobs', False))
@@ -518,6 +514,11 @@ class Configuration(object):
             involucro_path = os.path.join(tool_dependency_dir or "database", "involucro")
         self.involucro_path = resolve_path(involucro_path, self.root)
         self.involucro_auto_init = string_as_bool(kwargs.get('involucro_auto_init', True))
+        mulled_channels = kwargs.get('mulled_channels')
+        if mulled_channels:
+            self.mulled_channels = [c.strip() for c in mulled_channels.split(',')]
+        else:
+            self.mulled_channels = DEFAULT_CHANNELS
 
         default_job_resubmission_condition = kwargs.get('default_job_resubmission_condition', '')
         if not default_job_resubmission_condition.strip():
@@ -537,6 +538,8 @@ class Configuration(object):
         self.object_store = kwargs.get('object_store', 'disk')
         self.object_store_check_old_style = string_as_bool(kwargs.get('object_store_check_old_style', False))
         self.object_store_cache_path = resolve_path(kwargs.get("object_store_cache_path", "database/object_store_cache"), self.root)
+        self.object_store_store_by = kwargs.get("object_store_store_by", "id")
+
         # Handle AWS-specific config options for backward compatibility
         if kwargs.get('aws_access_key', None) is not None:
             self.os_access_key = kwargs.get('aws_access_key', None)
@@ -610,6 +613,11 @@ class Configuration(object):
             })
         self.galaxy_infrastructure_url = galaxy_infrastructure_url
         self.galaxy_infrastructure_url_set = galaxy_infrastructure_url_set
+
+        # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
+        # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
+        # have to be explicitly defined as such in the job configuration.
+        self.attach_to_pools = kwargs.get('attach_to_pools', []) or []
 
         # Store advanced job management config
         self.job_handlers = [x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',')]
@@ -1030,6 +1038,7 @@ class ConfiguresGalaxyMixin(object):
         from galaxy import tools
         from galaxy.managers.citations import CitationsManager
         from galaxy.tools.deps import containers
+        from galaxy.tools.deps.dependencies import AppInfo
         import galaxy.tools.search
 
         self.citations_manager = CitationsManager(self)
@@ -1042,7 +1051,7 @@ class ConfiguresGalaxyMixin(object):
         self.toolbox = tools.ToolBox(tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(getattr(self.config, "file_path"))
-        app_info = containers.AppInfo(
+        app_info = AppInfo(
             galaxy_root_dir=galaxy_root_dir,
             default_file_path=file_path,
             outputs_to_working_directory=self.config.outputs_to_working_directory,
@@ -1052,8 +1061,10 @@ class ConfiguresGalaxyMixin(object):
             containers_resolvers_config_file=self.config.containers_resolvers_config_file,
             involucro_path=self.config.involucro_path,
             involucro_auto_init=self.config.involucro_auto_init,
+            mulled_channels=self.config.mulled_channels,
         )
         self.container_finder = containers.ContainerFinder(app_info)
+        self._set_enabled_container_types()
         index_help = getattr(self.config, "index_tool_help", True)
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch(self.toolbox, index_help)
         self.reindex_tool_search()
@@ -1062,6 +1073,16 @@ class ConfiguresGalaxyMixin(object):
         # Call this when tools are added or removed.
         self.toolbox_search.build_index(tool_cache=self.tool_cache)
         self.tool_cache.reset_status()
+
+    def _set_enabled_container_types(self):
+        container_types_to_destinations = collections.defaultdict(list)
+        for destinations in self.job_config.destinations.values():
+            for destination in destinations:
+                for enabled_container_type in self.container_finder._enabled_container_types(destination.params):
+                    container_types_to_destinations[enabled_container_type].append(destination)
+        self.toolbox.dependency_manager.set_enabled_container_types(container_types_to_destinations)
+        self.toolbox.dependency_manager.resolver_classes.update(self.container_finder.container_registry.resolver_classes)
+        self.toolbox.dependency_manager.dependency_resolvers.extend(self.container_finder.container_registry.container_resolvers)
 
     def _configure_tool_data_tables(self, from_shed_config):
         from galaxy.tools.data import ToolDataTableManager

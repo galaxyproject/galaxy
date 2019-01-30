@@ -1,13 +1,14 @@
 import Backbone from "backbone";
 import _ from "underscore";
+import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import GridModel from "mvc/grid/grid-model";
 import Templates from "mvc/grid/grid-template";
 import PopupMenu from "mvc/ui/popup-menu";
 import LoadingIndicator from "ui/loading-indicator";
+import { init_refresh_on_change } from "onload/globalInits/init_refresh_on_change";
 
-/* global $ */
 // This is necessary so that, when nested arrays are used in ajax/post/get methods, square brackets ('[]') are
 // not appended to the identifier of a nested array.
 $.ajaxSettings.traditional = true;
@@ -23,6 +24,8 @@ export default Backbone.View.extend({
         this.title = grid_config.title;
         this.active_tab = grid_config.active_tab;
         var self = this;
+
+        // Why is this a global?
         window.add_tag_to_grid_filter = (tag_name, tag_value) => {
             // Put tag name and value together.
             var tag = tag_name + (tag_value !== undefined && tag_value !== "" ? `:${tag_value}` : "");
@@ -90,7 +93,7 @@ export default Backbone.View.extend({
 
         // strip protocol and domain
         var url = this.grid.get("url_base");
-        url = url.replace(/^.*\/\/[^\/]+/, "");
+        url = url.replace(/^.*\/\/[^/]+/, "");
         this.grid.set("url_base", url);
 
         // append main template
@@ -118,9 +121,7 @@ export default Backbone.View.extend({
 
         // attach global event handler
         // TODO: redundant (the onload/standard page handlers do this) - but needed because these are constructed after page ready
-        if (window.init_refresh_on_change) {
-            window.init_refresh_on_change();
-        }
+        init_refresh_on_change();
     },
 
     // Initialize grid controls
@@ -412,7 +413,7 @@ export default Backbone.View.extend({
             var id = $(this).attr("id");
 
             var // Id has form 'page-link-<page_num>
-            page_num = parseInt(id.split("-")[2], 10);
+                page_num = parseInt(id.split("-")[2], 10);
 
             var cur_page = self.grid.get("cur_page");
             var text;

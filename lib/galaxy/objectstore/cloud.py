@@ -18,7 +18,7 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.sleeper import Sleeper
-from .s3 import parse_config_xml
+from .s3 import CloudConfigMixin, parse_config_xml
 from ..objectstore import convert_bytes, ObjectStore
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
@@ -35,14 +35,16 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
 )
 
 
-class Cloud(ObjectStore):
+class Cloud(ObjectStore, CloudConfigMixin):
     """
     Object store that stores objects as items in an cloud storage. A local
     cache exists that is used as an intermediate location for files between
     Galaxy and the cloud storage.
     """
+    store_type = 'cloud'
+
     def __init__(self, config, config_dict):
-        super(Cloud, self).__init__(config)
+        super(Cloud, self).__init__(config, config_dict)
         self.transfer_progress = 0
 
         auth_dict = config_dict['auth']
@@ -65,10 +67,6 @@ class Cloud(ObjectStore):
 
         self.cache_size = cache_dict.get('size', -1)
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
-
-        extra_dirs = dict(
-            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
-        self.extra_dirs.update(extra_dirs)
 
         self._initialize()
 
@@ -103,6 +101,11 @@ class Cloud(ObjectStore):
     @classmethod
     def parse_xml(clazz, config_xml):
         return parse_config_xml(config_xml)
+
+    def to_dict(self):
+        as_dict = super(Cloud, self).to_dict()
+        as_dict.update(self._config_to_dict())
+        return as_dict
 
     def __cache_monitor(self):
         time.sleep(2)  # Wait for things to load before starting the monitor

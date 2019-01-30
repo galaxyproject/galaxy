@@ -75,7 +75,7 @@ error_report_template_html = """
 
 <h3>User Provided Information</h3>
 
-The user <a href="mailto:${email_str}"><span style="font-family: monospace;">${email_str}</span></a> provided the following information:
+The user <span style="font-family: monospace;">${email_str}</span> provided the following information:
 
 <pre style="white-space: pre-wrap;background: #eeeeee;border:1px solid black;padding:1em;">
 ${message}
@@ -165,15 +165,14 @@ class ErrorReporter(object):
         # Build the email message
         if redact_user_details_in_bugreport:
             # This is sub-optimal but it is hard to solve fully. This affects
-            # the github posting method more than the traditional email plugin.
+            # the GitHub posting method more than the traditional email plugin.
             # There is no way around CCing the person with the traditional
             # email bug report plugin, however with the GitHub plugin we can
-            # submit to GH without putting the email in the bug report.
+            # submit to GitHub without putting the email in the bug report.
             #
-            # A secondary system with access to the github issue and access to
-            # the galaxy database can shuttle email back and forth between
-            # github comments and user-emails.
-            #
+            # A secondary system with access to the GitHub issue and access to
+            # the Galaxy database can shuttle email back and forth between
+            # GitHub comments and user-emails.
             # Thus preventing issue helpers from every knowing the identity of
             # the bug reporter (and preventing information about the bug
             # reporter from leaving the EU until it hits email directly to the
@@ -182,10 +181,12 @@ class ErrorReporter(object):
             if user:
                 email_str += ' (user: %s)' % user.id
         else:
-            if user and user.email != email:
-                email_str = "'%s' (providing preferred contact email '%s')" % (user.email, email)
+            if user:
+                email_str = "'%s'" % user.email
+                if email and user.email != email:
+                    email_str += " (providing preferred contact email '%s')" % email
             else:
-                email_str = "'%s'" % (email or 'anonymously')
+                email_str = "'%s'" % (email or 'anonymous')
 
         report_variables = dict(
             host=host,
@@ -234,9 +235,9 @@ class ErrorReporter(object):
 class EmailErrorReporter(ErrorReporter):
     def _send_report(self, user, email=None, message=None, **kwd):
         smtp_server = self.app.config.smtp_server
-        assert smtp_server, ValueError("Mail is not configured for this galaxy instance")
+        assert smtp_server, ValueError("Mail is not configured for this Galaxy instance")
         to_address = self.app.config.error_email_to
-        assert to_address, ValueError("Error reporting has been disabled for this galaxy instance")
+        assert to_address, ValueError("Error reporting has been disabled for this Galaxy instance")
 
         frm = to_address
         # Check email a bit

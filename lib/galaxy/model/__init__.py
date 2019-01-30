@@ -2003,7 +2003,7 @@ class Dataset(StorableObject, RepresentById):
         # actual database column so if SA instantiates this object - the
         # attribute won't exist yet.
         if not getattr(self, "external_extra_files_path", None):
-            return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id)
+            return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
         else:
             return os.path.abspath(self.external_extra_files_path)
 
@@ -2015,7 +2015,12 @@ class Dataset(StorableObject, RepresentById):
     extra_files_path = property(get_extra_files_path, set_extra_files_path)
 
     def extra_files_path_exists(self):
-        return self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        return self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True)
+
+    @property
+    def _extra_files_rel_path(self):
+        store_by = getattr(self.object_store, "store_by", "id")
+        return self._extra_files_path or "dataset_%s_files" % getattr(self, store_by)
 
     def _calculate_size(self):
         if self.external_filename:
@@ -2064,7 +2069,7 @@ class Dataset(StorableObject, RepresentById):
         if self.file_size is None:
             self.set_size()
         self.total_size = self.file_size or 0
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
+        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
             for root, dirs, files in os.walk(self.extra_files_path):
                 self.total_size += sum([os.path.getsize(os.path.join(root, file)) for file in files if os.path.exists(os.path.join(root, file))])
 
@@ -2090,8 +2095,8 @@ class Dataset(StorableObject, RepresentById):
         """Remove the file and extra files, marks deleted and purged"""
         # os.unlink( self.file_name )
         self.object_store.delete(self)
-        if self.object_store.exists(self, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True):
-            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id, dir_only=True)
+        if self.object_store.exists(self, extra_dir=self._extra_files_rel_path, dir_only=True):
+            self.object_store.delete(self, entire_dir=True, extra_dir=self._extra_files_rel_path, dir_only=True)
         # if os.path.exists( self.extra_files_path ):
         #     shutil.rmtree( self.extra_files_path )
         # TODO: purge metadata files
@@ -2236,6 +2241,15 @@ class DatasetInstance(object):
         # Needs to accept a MetadataCollection, a bunch, or a dict
         self._metadata = self.metadata.make_dict_copy(bunch)
     metadata = property(get_metadata, set_metadata)
+
+    @property
+    def metadata_file_types(self):
+        meta_types = []
+        for meta_type in self.metadata.spec.keys():
+            if isinstance(self.metadata.spec[meta_type].param, galaxy.model.metadata.FileParameter):
+                meta_types.append(meta_type)
+        return meta_types
+
     # This provide backwards compatibility with using the old dbkey
     # field in the database.  That field now maps to "old_dbkey" (see mapping.py).
 
@@ -4035,7 +4049,7 @@ class Workflow(Dictifiable, RepresentById):
         top_level_workflow = self
         if self.stored_workflow is None:
             # TODO: enforce this at creation...
-            assert len(self.parent_workflow_steps) == 1
+            assert len(set(w.uuid for w in self.parent_workflow_steps)) == 1
             return self.parent_workflow_steps[0].workflow.top_level_workflow
         return top_level_workflow
 
@@ -4840,13 +4854,6 @@ class UserAddress(RepresentById):
                 'postal_code'  : sanitize_html(self.postal_code),
                 'country'      : sanitize_html(self.country),
                 'phone'        : sanitize_html(self.phone)}
-
-
-class UserOpenID(RepresentById):
-    def __init__(self, user=None, session=None, openid=None):
-        self.user = user
-        self.session = session
-        self.openid = openid
 
 
 class PSAAssociation(AssociationMixin, RepresentById):

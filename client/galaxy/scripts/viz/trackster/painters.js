@@ -1,4 +1,4 @@
-import * as _ from "libs/underscore";
+import _ from "libs/underscore";
 // Constants specific to feature tracks moved here (HACKING, these should
 // basically all be configuration options)
 const BEFORE = 1001;
@@ -241,7 +241,7 @@ class LinePainter extends Painter {
         var painter_color = this.prefs.block_color || this.prefs.color;
 
         var // Extract RGB from preference color.
-        pref_color = parseInt(painter_color.slice(1), 16);
+            pref_color = parseInt(painter_color.slice(1), 16);
         var pref_r = (pref_color & 0xff0000) >> 16;
         var pref_g = (pref_color & 0x00ff00) >> 8;
         var pref_b = pref_color & 0x0000ff;
@@ -286,7 +286,7 @@ class LinePainter extends Painter {
                 var saturation = (y - min_value) / vertical_range;
 
                 var // Range is [pref_color, 255] where saturation = 0 --> 255 and saturation = 1 --> pref color
-                new_r = Math.round(pref_r + (255 - pref_r) * (1 - saturation));
+                    new_r = Math.round(pref_r + (255 - pref_r) * (1 - saturation));
 
                 var new_g = Math.round(pref_g + (255 - pref_g) * (1 - saturation));
                 var new_b = Math.round(pref_b + (255 - pref_b) * (1 - saturation));
@@ -577,7 +577,7 @@ class LinkedFeaturePainter extends FeaturePainter {
             var feature_blocks = feature[7];
 
             var // Whether we are drawing full height or squished features
-            full_height = true;
+                full_height = true;
 
             if (feature_ts && feature_te) {
                 thick_start = Math.floor(Math.max(0, (feature_ts - tile_low) * w_scale));
@@ -666,7 +666,7 @@ class LinkedFeaturePainter extends FeaturePainter {
                     var block = feature_blocks[k];
 
                     var // -0.5 to offset block between bases.
-                    block_start = Math.floor(Math.max(0, (block[0] - tile_low - 0.5) * w_scale));
+                        block_start = Math.floor(Math.max(0, (block[0] - tile_low - 0.5) * w_scale));
 
                     var block_end = Math.ceil(Math.min(width, Math.max((block[1] - tile_low - 0.5) * w_scale)));
 
@@ -737,7 +737,7 @@ class LinkedFeaturePainter extends FeaturePainter {
                     var hscale_factor = this.height_scaler.gen_val(feature);
 
                     var // Ceil ensures that min height is >= 1.
-                    new_height = Math.ceil(thick_height * hscale_factor);
+                        new_height = Math.ceil(thick_height * hscale_factor);
 
                     var ws_height = Math.round((thick_height - new_height) / 2);
                     if (hscale_factor !== 1) {
@@ -815,28 +815,28 @@ class ReadPainter extends FeaturePainter {
         var base_pos = 0;
 
         var // Parse cigar operations out and update/create blocks as needed.
-        parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), op => {
-            // Get operation length, character.
-            var op_len = parseInt(op.slice(0, -1), 10),
-                op_char = op.slice(-1);
+            parsed_cigar = _.map(cigar_str.match(/[0-9]+[MIDNSHP=X]/g), op => {
+                // Get operation length, character.
+                var op_len = parseInt(op.slice(0, -1), 10),
+                    op_char = op.slice(-1);
 
-            // Update drawing block.
-            if (op_char === "N") {
-                // At skip, so need to start new block if current block represents
-                // drawing area.
-                if (cur_block[1] !== 0) {
-                    cur_block = [base_pos + op_len, base_pos + op_len];
-                    blocks.push(cur_block);
+                // Update drawing block.
+                if (op_char === "N") {
+                    // At skip, so need to start new block if current block represents
+                    // drawing area.
+                    if (cur_block[1] !== 0) {
+                        cur_block = [base_pos + op_len, base_pos + op_len];
+                        blocks.push(cur_block);
+                    }
+                } else if ("ISHP".indexOf(op_char) === -1) {
+                    // Operation is M,D,=,X.
+                    cur_block[1] += op_len;
+                    base_pos += op_len;
                 }
-            } else if ("ISHP".indexOf(op_char) === -1) {
-                // Operation is M,D,=,X.
-                cur_block[1] += op_len;
-                base_pos += op_len;
-            }
 
-            // Return parsed cigar.
-            return [cigar_ops.indexOf(op_char), op_len];
-        });
+                // Return parsed cigar.
+                return [cigar_ops.indexOf(op_char), op_len];
+            });
 
         return {
             blocks: blocks,
@@ -864,9 +864,9 @@ class ReadPainter extends FeaturePainter {
         };
 
         var // Gets drawing coordinate for a sequence coordinate. Assumes closure variables w_scale and tile_low.
-        get_draw_coord = (
-            sequence_coord // -0.5 to offset sequence between bases.
-        ) => Math.floor(Math.max(0, (sequence_coord - tile_low - 0.5) * w_scale));
+            get_draw_coord = (
+                sequence_coord // -0.5 to offset sequence between bases.
+            ) => Math.floor(Math.max(0, (sequence_coord - tile_low - 0.5) * w_scale));
 
         ctx.textAlign = "center";
         var tile_region = [tile_low, tile_high];
@@ -1126,7 +1126,7 @@ class ReadPainter extends FeaturePainter {
         var feature_name = feature[3];
 
         var // -0.5 to put element between bases.
-        f_start = Math.floor(Math.max(-0.5 * w_scale, (feature_start - tile_low - 0.5) * w_scale));
+            f_start = Math.floor(Math.max(-0.5 * w_scale, (feature_start - tile_low - 0.5) * w_scale));
 
         var f_end = Math.ceil(Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)));
 
@@ -1571,34 +1571,34 @@ class VariantPainter extends Painter {
         ctx.save();
 
         var /**
-         * Returns dictionary of information about an indel; returns empty if there no indel. Assumes indel is left-aligned.
-         * Dict attributes:
-         *    -type: 'insertion' or 'deletion'
-         *    -start: where the deletion starts relative to reference start
-         *    -len: how long the deletion is
-         */
-        get_indel_info = (ref, alt) => {
-            var ref_len = ref.length;
-            var alt_len = alt.length;
-            var start = 0;
-            var len = 1;
-            var type = null;
-            if (alt === "-") {
-                type = "deletion";
-                len = ref.length;
-            } else if (ref.indexOf(alt) === 0 && ref_len > alt_len) {
-                type = "deletion";
-                len = ref_len - alt_len;
-                start = alt_len;
-            } else if (alt.indexOf(ref) === 0 && ref_len < alt_len) {
-                // Insertion.
-                type = "insertion";
-                len = alt_len - ref_len;
-                start = alt_len;
-            }
+             * Returns dictionary of information about an indel; returns empty if there no indel. Assumes indel is left-aligned.
+             * Dict attributes:
+             *    -type: 'insertion' or 'deletion'
+             *    -start: where the deletion starts relative to reference start
+             *    -len: how long the deletion is
+             */
+            get_indel_info = (ref, alt) => {
+                var ref_len = ref.length;
+                var alt_len = alt.length;
+                var start = 0;
+                var len = 1;
+                var type = null;
+                if (alt === "-") {
+                    type = "deletion";
+                    len = ref.length;
+                } else if (ref.indexOf(alt) === 0 && ref_len > alt_len) {
+                    type = "deletion";
+                    len = ref_len - alt_len;
+                    start = alt_len;
+                } else if (alt.indexOf(ref) === 0 && ref_len < alt_len) {
+                    // Insertion.
+                    type = "insertion";
+                    len = alt_len - ref_len;
+                    start = alt_len;
+                }
 
-            return type !== null ? { type: type, start: start, len: len } : {};
-        };
+                return type !== null ? { type: type, start: start, len: len } : {};
+            };
 
         // Draw.
         var locus_data;
@@ -1614,17 +1614,17 @@ class VariantPainter extends Painter {
         var genotype;
 
         var // Always draw variants at least 1 pixel wide.
-        base_px = Math.max(1, Math.floor(w_scale));
+            base_px = Math.max(1, Math.floor(w_scale));
 
         var // Determine number of samples.
-        num_samples = this.data.length ? this.data[0][7].split(",").length : 0;
+            num_samples = this.data.length ? this.data[0][7].split(",").length : 0;
 
         var row_height = this.mode === "Squish" ? SQUISH_TRACK_HEIGHT : PACK_TRACK_HEIGHT;
 
         var // If zoomed out, fill the whole row with feature to make it easier to read;
-        // when zoomed in, use feature height so that there are gaps in sample rows.
-        feature_height =
-            w_scale < 0.1 ? row_height : this.mode === "Squish" ? SQUISH_FEATURE_HEIGHT : PACK_FEATURE_HEIGHT;
+            // when zoomed in, use feature height so that there are gaps in sample rows.
+            feature_height =
+                w_scale < 0.1 ? row_height : this.mode === "Squish" ? SQUISH_FEATURE_HEIGHT : PACK_FEATURE_HEIGHT;
 
         var draw_summary = true;
 

@@ -1,8 +1,6 @@
-// dependencies
+import $ from "jquery";
 import Utils from "utils/utils";
-import * as _ from "underscore";
-
-/* global $ */
+import _ from "underscore";
 
 // grid view templates
 export default {
@@ -414,7 +412,7 @@ export default {
         //
         // advanced search
         //
-        tmpl += `<div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px; border: 1px solid #ccc;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
+        tmpl += `<div id="advanced-search" style="display: ${advanced_search_display}; margin-top: 5px;"><table><tr><td style="text-align: left" colspan="100"><a href="" class="advanced-search-toggle">Close Advanced Search</a></td></tr>`;
 
         // add advanced filters
         for (let column of options.columns) {

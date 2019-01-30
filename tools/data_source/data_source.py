@@ -89,7 +89,7 @@ def __main__():
             if not URL_method or URL_method == 'get':
                 page = urlopen(cur_URL)
             elif URL_method == 'post':
-                page = urlopen(cur_URL, urlencode(params))
+                page = urlopen(cur_URL, urlencode(params).encode("utf-8"))
         except Exception as e:
             stop_err('The remote data source application may be off line, please try again later. Error: %s' % str(e))
         if max_file_size:

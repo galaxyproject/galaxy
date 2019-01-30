@@ -182,16 +182,14 @@ mapping:
 
       check_migrate_tools:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable / disable checking if any tools defined in the above non-shed
           tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
-          code distribution to the Tool Shed.  This setting should generally be set to
-          False only for development Galaxy environments that are often rebuilt from
-          scratch where migrated tools do not need to be available in the Galaxy tool
-          panel.  If the following setting remains commented, the default setting will
-          be True.
+          code distribution to the Tool Shed. This functionality is largely untested
+          in modern Galaxy releases and has serious issues such as #7273 and the possibility
+          of slowing down Galaxy startup, so the default and recommended value is False.
 
       migrated_tools_config:
         type: str
@@ -414,7 +412,7 @@ mapping:
         default: database/dependencies/involucro
         required: false
         desc: |
-          involucro is a tool used to build Docker containers for tools from Conda
+          involucro is a tool used to build Docker or Singularity containers for tools from Conda
           dependencies referenced in tools as `requirement`s. The following path is
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
@@ -425,8 +423,15 @@ mapping:
         default: true
         required: false
         desc: |
-          Install involucro as needed to build Docker containers for tools. Ignored if
+          Install involucro as needed to build Docker or Singularity containers for tools. Ignored if
           relevant container resolver is not used.
+
+      mulled_channels:
+        type: str
+        default: 'conda-forge,bioconda'
+        required: false
+        desc: |
+          Conda channels to use when building Docker or Singularity containers using involucro.
 
       enable_tool_shed_check:
         type: bool
@@ -705,18 +710,6 @@ mapping:
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
 
-      collect_outputs_from:
-        type: str
-        default: new_file_path,job_working_directory
-        required: false
-        desc: |
-          Tools with a number of outputs not known until runtime can write these
-          outputs to a directory for collection by Galaxy when the job is done.
-          Previously, this directory was new_file_path, but using one global directory
-          can cause performance problems, so using job_working_directory ('.' or cwd
-          when a job is run) is encouraged.  By default, both are checked to avoid
-          breaking existing tools.
-
       object_store_config_file:
         type: str
         default: config/object_store_conf.xml
@@ -724,6 +717,14 @@ mapping:
         desc: |
           Configuration file for the object store
           If this is set and exists, it overrides any other objectstore settings.
+
+      object_store_store_by:
+        type: str
+        default: id
+        required: false
+        desc: |
+          What Dataset attribute is used to reference files in an ObjectStore implementation,
+          default is 'id' but can also be set to 'uuid' for more de-centralized usage.
 
       smtp_server:
         type: str
@@ -835,7 +836,6 @@ mapping:
           Activation grace period (in hours).  Activation is not forced (login is not
           disabled) until grace period has passed.  Users under grace period can't run
           jobs. Enter 0 to disable grace period.
-          Users with OpenID logins have grace period forever.
 
       inactivity_box_content:
         type: str
@@ -928,7 +928,8 @@ mapping:
         default: info
         required: false
         desc: |
-          Show a message box under the masthead.
+          Class of the message box under the masthead. Possible values are:
+          'info' (the default), 'warning', 'error', 'done'.
 
       brand:
         type: str
@@ -1562,11 +1563,11 @@ mapping:
 
       use_interactive:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable live debugging in your browser.  This should NEVER be enabled on a
-          public site.  Enabled in the sample config for development.
+          public site.
 
       monitor_thread_join_timeout:
         type: int
@@ -2198,29 +2199,6 @@ mapping:
         required: false
         desc: |
           Force serial scheduling of workflows within the context of a particular history
-
-      enable_openid:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable authentication via OpenID.  Allows users to log in to their Galaxy
-          account by authenticating with an OpenID provider.
-
-      openid_config_file:
-        type: str
-        default: config/openid_conf.xml
-        required: false
-        desc: |
-          If OpenID is enabled, this configuration file specifies providers to use.
-          Falls back to the .sample variant in config if default does not exist.
-
-      openid_consumer_cache_path:
-        type: str
-        default: database/openid_consumer_cache
-        required: false
-        desc: |
-          If OpenID is enabled, consumer cache directory to use.
 
       enable_oidc:
         type: bool

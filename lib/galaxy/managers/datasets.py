@@ -355,7 +355,7 @@ class DatasetAssociationManager(base.ModelManager,
         if action == 'remove_restrictions':
             trans.app.security_agent.make_dataset_public(dataset)
             if not trans.app.security_agent.dataset_is_public(dataset):
-                raise exceptions.InternalServerError('An error occured while making dataset public.')
+                raise exceptions.InternalServerError('An error occurred while making dataset public.')
         elif action == 'make_private':
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
@@ -364,7 +364,7 @@ class DatasetAssociationManager(base.ModelManager,
                 trans.sa_session.flush()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
-                raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
+                raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
         elif action == 'set_permissions':
 
             def to_role_id(encoded_role_id):
@@ -470,14 +470,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer,
         Cycle through meta files and return them as a list of dictionaries.
         """
         meta_files = []
-        for meta_type in dataset_assoc.metadata.spec.keys():
-            if isinstance(dataset_assoc.metadata.spec[meta_type].param, galaxy.datatypes.metadata.FileParameter):
-                meta_files.append(
-                    dict(file_type=meta_type,
-                         download_url=self.url_for('history_contents_metadata_file',
-                                                   history_id=self.app.security.encode_id(dataset_assoc.history_id),
-                                                   history_content_id=self.app.security.encode_id(dataset_assoc.id),
-                                                   metadata_file=meta_type)))
+        for meta_type in dataset_assoc.metadata_file_types:
+            meta_files.append(
+                dict(file_type=meta_type,
+                     download_url=self.url_for('history_contents_metadata_file',
+                                               history_id=self.app.security.encode_id(dataset_assoc.history_id),
+                                               history_content_id=self.app.security.encode_id(dataset_assoc.id),
+                                               metadata_file=meta_type)))
         return meta_files
 
     def serialize_metadata(self, dataset_assoc, key, excluded=None, **context):

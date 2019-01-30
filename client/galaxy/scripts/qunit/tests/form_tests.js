@@ -24,10 +24,6 @@ QUnit.module("Form test", {
 });
 
 QUnit.test("tool-form", function(assert) {
-    // // Huh? The following seems to be needed by tool-form.js - once the global usage
-    // // is cleaned up in that module this can be deleted I assume.
-    // window.parent.Galaxy = window.Galaxy;
-
     var toolform = new ToolForm.View({ id: "test" });
     $("body").prepend(toolform.$el);
     window.fakeserver.respond();
@@ -145,22 +141,12 @@ QUnit.test("input", function(assert) {
     assert.ok(input.$field.css("display") == "none", "Input field hidden");
     input.model.set("disabled", false);
     assert.ok(input.$field.css("display") == "block", "Input field shown, again");
+    var colorElement = input.$field.children().first();
+    var oldColor = colorElement.css("color");
     input.model.set("color", "red");
-    assert.ok(
-        input.$field
-            .children()
-            .first()
-            .css("color") == "rgb(255, 0, 0)",
-        "Shows correct new color"
-    );
+    assert.ok(colorElement.css("color") == "rgb(255, 0, 0)", "Shows correct new color");
     input.model.set("color", null);
-    assert.ok(
-        input.$field
-            .children()
-            .first()
-            .css("color") == "rgb(73, 80, 87)",
-        "Shows correct old color"
-    );
+    assert.ok(colorElement.css("color") == oldColor, "Shows correct old color");
     input.model.set("collapsible_value", "_collapsible_value");
     assert.ok(input.$collapsible.css("display") == "block", "Collapsible field");
     assert.ok(input.$collapsible_text.html() == "_label", "Title content available");

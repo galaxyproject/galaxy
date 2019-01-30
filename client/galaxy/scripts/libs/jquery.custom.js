@@ -17,7 +17,10 @@ require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery-ui");
 require("imports-loader?jQuery=jqueryVendor!libs/farbtastic");
 require("imports-loader?jQuery=jqueryVendor,$=jqueryVendor,define=>false!jquery.cookie");
 require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.dynatree");
+require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.wymeditor");
 require("imports-loader?jQuery=jqueryVendor!jquery.complexify");
 require("imports-loader?jQuery=jqueryVendor!jquery-migrate");
+
+// require("imports-loader?jQuery=jqueryVendor!../ui/autocom_tagging");
 
 module.exports = jQuery;

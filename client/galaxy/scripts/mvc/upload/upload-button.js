@@ -1,5 +1,7 @@
-import _l from "utils/localization";
 /** View for upload/progress bar button */
+import $ from "jquery";
+import Backbone from "backbone";
+import _l from "utils/localization";
 
 var View = Backbone.View.extend({
     initialize: function(options) {
@@ -23,7 +25,6 @@ var View = Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         this.$el
             .off("click")

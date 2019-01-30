@@ -1,27 +1,3 @@
-/* ============================================================================
-TODO:
-
-============================================================================ */
-//TODO: go ahead and move to underscore...
-/** call fn on each key/value in d */
-function each(d, fn) {
-    for (var k in d) {
-        if (d.hasOwnProperty(k)) {
-            fn(d[k], k, d);
-        }
-    }
-}
-
-/** copy key/values from d2 to d overwriting if present */
-function extend(d, d2) {
-    for (var k in d2) {
-        if (d2.hasOwnProperty(k)) {
-            d[k] = d2[k];
-        }
-    }
-    return d;
-}
-
 /** deep equal of two dictionaries */
 function matches(d, d2) {
     for (var k in d2) {

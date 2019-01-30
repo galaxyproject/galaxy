@@ -24,11 +24,12 @@ from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
 import galaxy
 from galaxy import model, util
-from galaxy.datatypes import metadata, sniff
+from galaxy.datatypes import sniff
 from galaxy.exceptions import ObjectInvalid, ObjectNotFound
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner, JobState
+from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
@@ -140,6 +141,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.default_handler_id = None
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
+        self.handler_max_grab = 1
         self.destinations = {}
         self.destination_tags = {}
         self.default_destination_id = None
@@ -684,6 +686,7 @@ class JobWrapper(HasResourceParameters):
         self.extra_filenames = []
         self.command_line = None
         self.dependencies = []
+        self._dependency_shell_commands = None
         # Tool versioning variables
         self.write_version_cmd = None
         self.version_string = ""
@@ -700,7 +703,7 @@ class JobWrapper(HasResourceParameters):
         self.output_hdas_and_paths = None
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
-        self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper(job)
+        self.external_output_metadata = get_metadata_compute_strategy(self.app, job.id)
         self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:
@@ -726,6 +729,15 @@ class JobWrapper(HasResourceParameters):
     @property
     def dataset_path_rewriter(self):
         return self._job_dataset_path_rewriter
+
+    @property
+    def dependency_shell_commands(self):
+        """Shell fragment to inject dependencies."""
+        if self._dependency_shell_commands is None:
+            self._dependency_shell_commands = self.tool.build_dependency_shell_commands(
+                job_directory=self.working_directory
+            )
+        return self._dependency_shell_commands
 
     @property
     def cleanup_job(self):
@@ -800,11 +812,11 @@ class JobWrapper(HasResourceParameters):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
         return self.get_job().get_id_tag()
 
-    def get_param_dict(self):
+    def get_param_dict(self, _job=None):
         """
         Restore the dictionary of parameters from the database.
         """
-        job = self.get_job()
+        job = _job or self.get_job()
         param_dict = dict([(p.name, p.value) for p in job.parameters])
         param_dict = self.tool.params_from_strings(param_dict, self.app)
         return param_dict
@@ -859,8 +871,6 @@ class JobWrapper(HasResourceParameters):
         self.command_line, self.extra_filenames, self.environment_variables = tool_evaluator.build()
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
-        # Shell fragment to inject dependencies
-        self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
         if self.tool.requires_galaxy_python_environment:
             # These tools (upload, metadata, data_source) may need access to the datatypes registry.
             self.app.datatypes_registry.to_xml_file(os.path.join(self.working_directory, 'registry.xml'))
@@ -1353,23 +1363,7 @@ class JobWrapper(HasResourceParameters):
                             not self.external_output_metadata.external_metadata_set_successfully(dataset, self.sa_session)):
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
-                        # load metadata from file
-                        # we need to no longer allow metadata to be edited while the job is still running,
-                        # since if it is edited, the metadata changed on the running output will no longer match
-                        # the metadata that was stored to disk for use via the external process,
-                        # and the changes made by the user will be lost, without warning or notice
-                        output_filename = self.external_output_metadata.get_output_filenames_by_dataset(dataset, self.sa_session).filename_out
-
-                        def path_rewriter(path):
-                            if not path:
-                                return path
-                            normalized_remote_metadata_directory = remote_metadata_directory and os.path.normpath(remote_metadata_directory)
-                            normalized_path = os.path.normpath(path)
-                            if remote_metadata_directory and normalized_path.startswith(normalized_remote_metadata_directory):
-                                return normalized_path.replace(normalized_remote_metadata_directory, self.working_directory, 1)
-                            return path
-
-                        dataset.metadata.from_JSON_dict(output_filename, path_rewriter=path_rewriter)
+                        self.external_output_metadata.load_metadata(dataset, dataset_assoc.name, self.sa_session, working_directory=self.working_directory, remote_metadata_directory=remote_metadata_directory)
                     line_count = context.get('line_count', None)
                     try:
                         # Certain datatype's set_peek methods contain a line_count argument
@@ -1438,9 +1432,7 @@ class JobWrapper(HasResourceParameters):
                 continue
             input_ext = data.ext
             input_dbkey = data.dbkey or '?'
-        # why not re-use self.param_dict here?
-        param_dict = dict([(p.name, p.value) for p in job.parameters])
-        param_dict = self.tool.params_from_strings(param_dict, self.app)
+        param_dict = self.get_param_dict(job)
         # Create generated output children and primary datasets and dynamic outputs.
         tool_working_directory = self.tool_working_directory
         self.tool.collect_primary_datasets(out_data, self.get_tool_provided_job_metadata(), tool_working_directory, input_ext, input_dbkey)
@@ -1760,9 +1752,14 @@ class JobWrapper(HasResourceParameters):
         if datatypes_config is None:
             datatypes_config = os.path.join(self.working_directory, 'registry.xml')
             self.app.datatypes_registry.to_xml_file(path=datatypes_config)
-        command = self.external_output_metadata.setup_external_metadata([output_dataset_assoc.dataset for
-                                                                         output_dataset_assoc in
-                                                                         job.output_datasets + job.output_library_datasets],
+
+        output_datasets = {}
+        for output_dataset_assoc in job.output_datasets + job.output_library_datasets:
+            output_name = output_dataset_assoc.name
+            assert output_name not in output_datasets
+            output_datasets[output_dataset_assoc.name] = output_dataset_assoc.dataset
+
+        command = self.external_output_metadata.setup_external_metadata(output_datasets,
                                                                         self.sa_session,
                                                                         exec_dir=exec_dir,
                                                                         tmp_dir=tmp_dir,
@@ -1939,15 +1936,6 @@ class TaskWrapper(JobWrapper):
         # For compatibility with drmaa job runner and TaskWrapper, instead of using job_id directly
         return self.get_task().get_id_tag()
 
-    def get_param_dict(self):
-        """
-        Restore the dictionary of parameters from the database.
-        """
-        job = self.sa_session.query(model.Job).get(self.job_id)
-        param_dict = dict([(p.name, p.value) for p in job.parameters])
-        param_dict = self.tool.params_from_strings(param_dict, self.app)
-        return param_dict
-
     def prepare(self, compute_environment=None):
         """
         Prepare the job to run by creating the working directory and the
@@ -1969,8 +1957,7 @@ class TaskWrapper(JobWrapper):
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
-        # Shell fragment to inject dependencies
-        self.dependency_shell_commands = self.tool.build_dependency_shell_commands(job_directory=self.working_directory)
+
         # We need command_line persisted to the db in order for Galaxy to re-queue the job
         # if the server was stopped and restarted before the job finished
         task.command_line = self.command_line

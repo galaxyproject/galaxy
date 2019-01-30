@@ -2,7 +2,6 @@ import * as Toastr from "toastr";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 
-/* global Galaxy */
 /* global $ */
 
 window.TourGenerator = Backbone.View.extend({
@@ -24,6 +23,7 @@ window.TourGenerator = Backbone.View.extend({
             function(obj) {
                 if (obj.success) {
                     if (obj.data.useDatasets) {
+                        var Galaxy = window.bundleEntries.getGalaxyInstance();
                         Galaxy.currHistoryPanel.refreshContents(); // Refresh history panel
 
                         // Add a delay because of the history panel refreshing
@@ -68,6 +68,7 @@ window.TourGenerator = Backbone.View.extend({
     },
 
     _generateTour: function(data) {
+        var Galaxy = window.bundleEntries.getGalaxyInstance();
         var tour = Galaxy.giveTourWithData(data);
         // Force ending the tour when pressing the Execute button
         $("#execute").on("mousedown", function() {

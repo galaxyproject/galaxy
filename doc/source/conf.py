@@ -17,14 +17,9 @@ import sys
 
 import sphinx_rtd_theme
 # Library to make .md to slideshow
-from recommonmark.parser import CommonMarkParser
 from recommonmark.transform import AutoStructify
 
-source_parsers = {
-    '.md': CommonMarkParser,
-}
-
-# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source and release information and
+# Set GALAXY_DOCS_SKIP_SOURCE=1 to skip building source information and
 # just build primary documentation. (Quicker to debug issues in most frequently updated
 # docs).
 SKIP_SOURCE = os.environ.get("GALAXY_DOCS_SKIP_SOURCE", False) == "1"
@@ -45,7 +40,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
+extensions = ['recommonmark', 'sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
 if not SKIP_SOURCE:
     extensions += ['sphinx.ext.doctest', 'sphinx.ext.todo', 'sphinx.ext.coverage', 'sphinx.ext.viewcode']
 
@@ -108,10 +103,9 @@ release = VERSION
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
+exclude_patterns = ['**/_*.rst']
 if SKIP_SOURCE:
-    exclude_patterns = ['lib', 'releases']
-else:
-    exclude_patterns = []
+    exclude_patterns.extend(['lib'])
 
 # The reST default role (used for this markup: `text`) to use for all documents.
 #default_role = None

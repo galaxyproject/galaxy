@@ -25,7 +25,6 @@ Subpackages
     galaxy.managers
     galaxy.model
     galaxy.objectstore
-    galaxy.openid
     galaxy.quota
     galaxy.security
     galaxy.tools

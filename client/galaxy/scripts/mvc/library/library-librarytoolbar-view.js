@@ -1,4 +1,5 @@
 import _ from "underscore";
+import $ from "jquery";
 import Backbone from "backbone";
 import _l from "utils/localization";
 import mod_toastr from "libs/toastr";
@@ -111,7 +112,7 @@ var LibraryToolbarView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured.");
+                        mod_toastr.error("An error occurred.");
                     }
                 }
             });

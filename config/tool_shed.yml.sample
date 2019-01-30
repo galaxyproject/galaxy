@@ -207,7 +207,7 @@ tool_shed:
   #use_printdebug: true
 
   # NEVER enable this on a public site (even test or QA)
-  #use_interactive: true
+  #use_interactive: false
 
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
@@ -267,7 +267,8 @@ tool_shed:
   # Show a message box under the masthead.
   #message_box_content: null
 
-  # Show a message box under the masthead.
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Serving static files (needed if running standalone)
@@ -349,10 +350,6 @@ tool_shed:
   # "path" attribute set in the cookie so the cookies from each instance
   # will not clobber each other.
   #cookie_path: null
-
-  # Enable authentication via OpenID.  Allows users to log in to their
-  # Galaxy account by authenticating with an OpenID provider.
-  #enable_openid: false
 
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used

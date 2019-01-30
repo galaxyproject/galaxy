@@ -5,7 +5,7 @@ order to test something that cannot be tested with the default functional/api
 tessting configuration.
 """
 import os
-from unittest import skip, TestCase
+from unittest import skip, SkipTest, TestCase
 
 from galaxy.tools.deps.commands import which
 from galaxy.tools.verify.test_data import TestDataResolver
@@ -31,6 +31,10 @@ def skip_unless_executable(executable):
 
 def skip_unless_docker():
     return skip_unless_executable("docker")
+
+
+def skip_unless_singularity():
+    return skip_unless_executable("singularity")
 
 
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
@@ -92,6 +96,10 @@ class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
 
         ```self._app``` can be used to access Galaxy core app.
         """
+
+    def _skip_unless_postgres(self):
+        if not self._app.config.database_connection.startswith("post"):
+            raise SkipTest("Test only valid for postgres")
 
     @classmethod
     def handle_galaxy_config_kwds(cls, galaxy_config_kwds):

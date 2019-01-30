@@ -1,6 +1,5 @@
 """ Code allowing tools to define extra files associated with an output datset.
 """
-import glob
 import json
 import logging
 import operator
@@ -538,20 +537,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
         if name in tool.outputs:
             dataset_collectors = [dataset_collector(description) for description in tool.outputs[name].dataset_collector_descriptions]
         filenames = odict.odict()
-        if 'new_file_path' in app.config.collect_outputs_from:
-            if DEFAULT_DATASET_COLLECTOR in dataset_collectors:
-                # 'new_file_path' collection should be considered deprecated,
-                # only use old-style matching (glob instead of regex and only
-                # using default collector - if enabled).
-                for filename in glob.glob(os.path.join(app.config.new_file_path, "primary_%i_*" % outdata.id)):
-                    filenames[filename] = DiscoveredFile(
-                        filename,
-                        DEFAULT_DATASET_COLLECTOR,
-                        DEFAULT_DATASET_COLLECTOR.match(outdata, os.path.basename(filename))
-                    )
-        if 'job_working_directory' in app.config.collect_outputs_from:
-            for discovered_file in discover_files(name, tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
-                filenames[discovered_file.path] = discovered_file
+        for discovered_file in discover_files(name, tool_provided_metadata, dataset_collectors, job_working_directory, outdata):
+            filenames[discovered_file.path] = discovered_file
         for filename_index, (filename, discovered_file) in enumerate(filenames.items()):
             extra_file_collector = discovered_file.collector
             fields_match = discovered_file.match
@@ -631,8 +618,6 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             else:
                 primary_data.set_meta()
             primary_data.set_peek()
-            sa_session.add(primary_data)
-            sa_session.flush()
             outdata.history.add_dataset(primary_data)
             # Add dataset to return dict
             primary_datasets[name][designation] = primary_data
@@ -651,7 +636,8 @@ def collect_primary_datasets(tool, output, tool_provided_metadata, job_working_d
             outdata.set_meta()
             outdata.set_peek()
             sa_session.add(outdata)
-            sa_session.flush()
+
+    sa_session.flush()
     return primary_datasets
 
 

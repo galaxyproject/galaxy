@@ -18,28 +18,6 @@ export function setGalaxyInstance(factory) {
         addLogging(newInstance, "GalaxyApp");
     }
 
-    // Debugging frame property
-    // storage._galaxyInstance = new Proxy(newInstance, {
-    //     get(galaxy, prop) {
-    //         if (prop == "frame") {
-    //             console.groupCollapsed("Frame Get", serverPath());
-    //             console.trace();
-    //             console.groupEnd();
-    //         }
-    //         return galaxy[prop];
-    //     },
-    //     set(galaxy, prop, val) {
-    //         galaxy[prop] = val;
-    //         if (prop == "frame") {
-    //             console.groupCollapsed("Frame Set", serverPath());
-    //             console.log(val);
-    //             console.trace();
-    //             console.groupEnd();
-    //         }
-    //         return true;
-    //     }
-    // });
-
     storage._galaxyInstance = newInstance;
 
     return storage._galaxyInstance;

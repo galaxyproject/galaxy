@@ -1,4 +1,4 @@
-/* global $, jQuery */
+import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
@@ -259,7 +259,7 @@ var LibraryDatasetView = Backbone.View.extend({
         historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
+        $.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         // save the dataset into selected history
         historyItem.save(
             { content: this.id, source: "library" },
@@ -276,7 +276,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(`Dataset not imported. ${response.responseJSON.err_msg}`);
                     } else {
-                        mod_toastr.error("An error occured. Dataset not imported. Please try again.");
+                        mod_toastr.error("An error occurred. Dataset not imported. Please try again.");
                     }
                 }
             }
@@ -446,7 +446,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured while attempting to update the library dataset.");
+                        mod_toastr.error("An error occurred while attempting to update the library dataset.");
                     }
                 }
             });

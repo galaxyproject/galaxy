@@ -1,7 +1,6 @@
+import $ from "jquery";
+import _ from "underscore";
 import HISTORY_VIEW from "mvc/history/history-view";
-import HDA_LI from "mvc/history/hda-li";
-import HDCA_LI from "mvc/history/hdca-li";
-import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 
 /* =============================================================================
@@ -47,7 +46,7 @@ var AnnotatedHistoryView = _super.extend(
             var $controls = $whereTo.find("> .controls");
             $controls.find(".contents-container.headers").remove();
 
-            var $headers = $('<div class="contents-container headers"/>')
+            $('<div class="contents-container headers"/>')
                 .append([
                     $('<div class="history-content header"/>').text(_l("Dataset")),
                     $('<div class="additional-info header"/>').text(_l("Annotation"))

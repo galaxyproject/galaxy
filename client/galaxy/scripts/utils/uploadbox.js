@@ -256,18 +256,19 @@ import { getAppRoot } from "onload/loadConfig";
         );
 
         // drag/drop events
-        el.on("drop", e => {
+        let element = el.get(0);
+        element.addEventListener("drop", e => {
             opts.ondragleave(e);
             if (e.dataTransfer) {
                 opts.onchange(e.dataTransfer.files);
                 e.preventDefault();
             }
         });
-        el.on("dragover", e => {
+        element.addEventListener("dragover", e => {
             e.preventDefault();
             opts.ondragover(e);
         });
-        el.on("dragleave", e => {
+        element.addEventListener("dragleave", e => {
             e.stopPropagation();
             opts.ondragleave(e);
         });
