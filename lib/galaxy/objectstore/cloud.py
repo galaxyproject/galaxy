@@ -137,9 +137,10 @@ class Cloud(ObjectStore, CloudConfigMixin):
         # following.
         config = parse_config_xml(config_xml)
 
-        provider = config_xml.attrib.get("provider").lower()
+        provider = config_xml.attrib.get("provider")
         if provider is None:
             raise Exception("Missing `provider` attribute from the Cloud backend of the ObjectStore.")
+        provider = provider.lower()
         config["provider"] = provider
 
         # Read any provider-specific configuration.
