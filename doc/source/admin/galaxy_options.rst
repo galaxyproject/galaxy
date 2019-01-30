@@ -208,13 +208,12 @@
 :Description:
     Enable / disable checking if any tools defined in the above non-
     shed tool_config_files (i.e., tool_conf.xml) have been migrated
-    from the Galaxy code distribution to the Tool Shed.  This setting
-    should generally be set to False only for development Galaxy
-    environments that are often rebuilt from scratch where migrated
-    tools do not need to be available in the Galaxy tool panel.  If
-    the following setting remains commented, the default setting will
-    be True.
-:Default: ``true``
+    from the Galaxy code distribution to the Tool Shed. This
+    functionality is largely untested in modern Galaxy releases and
+    has serious issues such as #7273 and the possibility of slowing
+    down Galaxy startup, so the default and recommended value is
+    False.
+:Default: ``false``
 :Type: bool
 
 
@@ -1107,7 +1106,7 @@
     Activation grace period (in hours).  Activation is not forced
     (login is not disabled) until grace period has passed.  Users
     under grace period can't run jobs. Enter 0 to disable grace
-    period. Users with OpenID logins have grace period forever.
+    period.
 :Default: ``3``
 :Type: int
 
@@ -2950,39 +2949,6 @@
     particular history
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~
-``enable_openid``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable authentication via OpenID.  Allows users to log in to their
-    Galaxy account by authenticating with an OpenID provider.
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~
-``openid_config_file``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, this configuration file specifies providers
-    to use. Falls back to the .sample variant in config if default
-    does not exist.
-:Default: ``config/openid_conf.xml``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``openid_consumer_cache_path``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If OpenID is enabled, consumer cache directory to use.
-:Default: ``database/openid_consumer_cache``
-:Type: str
 
 
 ~~~~~~~~~~~~~~~

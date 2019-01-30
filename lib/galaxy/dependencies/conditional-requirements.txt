@@ -1,7 +1,6 @@
 # These dependencies are only required when certain config options are set
 psycopg2-binary==2.7.4
 weberror==0.10.3
-python-openid
 mysql-python
 fluent-logger
 raven
@@ -13,7 +12,6 @@ azure-storage==0.32.0
 # PyRods not in PyPI
 python-ldap==2.4.44
 python-pam
-cloudbridge==1.0.1
 galaxycloudrunner
 
 # Chronos client

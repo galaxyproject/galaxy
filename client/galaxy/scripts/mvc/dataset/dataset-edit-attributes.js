@@ -48,7 +48,7 @@ var View = Backbone.View.extend({
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message: err_msg || "Error occured while loading the dataset."
+                    message: err_msg || "Error occurred while loading the dataset."
                 });
             }
         });
@@ -73,7 +73,7 @@ var View = Backbone.View.extend({
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message: err_msg || "Error occured while editing the dataset attributes."
+                    message: err_msg || "Error occurred while editing the dataset attributes."
                 });
             }
         });
