@@ -52,7 +52,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
         connection_dict = config_dict.get('connection', {})
         cache_dict = config_dict['cache']
 
-        self.bucket = bucket_dict.get('name')
+        self.bucket_name = bucket_dict.get('name')
         self.use_rr = bucket_dict.get('use_reduced_redundancy', False)
         self.max_chunk_size = bucket_dict.get('max_chunk_size', 250)
 
@@ -72,7 +72,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
         self.conn = self._get_connection(provider, credentials)
-        self.bucket = self._get_bucket(self.bucket)
+        self.bucket = self._get_bucket(self.bucket_name)
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
             # Convert GBs to bytes for comparison
