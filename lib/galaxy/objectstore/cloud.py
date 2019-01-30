@@ -92,13 +92,41 @@ class Cloud(ObjectStore, CloudConfigMixin):
     def _get_connection(provider, credentials):
         log.debug("Configuring `{}` Connection".format(provider))
         if provider == "aws":
-            return CloudProviderFactory().create_provider(ProviderList.AWS, credentials)
+            connection = CloudProviderFactory().create_provider(ProviderList.AWS, credentials)
         elif provider == "azure":
-            return CloudProviderFactory().create_provider(ProviderList.AZURE, credentials)
+            connection = CloudProviderFactory().create_provider(ProviderList.AZURE, credentials)
         elif provider == "google":
-            return CloudProviderFactory().create_provider(ProviderList.GCE, credentials)
+            connection = CloudProviderFactory().create_provider(ProviderList.GCE, credentials)
         else:
             raise Exception("Unsupported provider `{}`.".format(provider))
+
+        # Ideally it would be better to assert if the connection is
+        # authorized to perform operations required by ObjectStore
+        # before returning it (and initializing ObjectStore); hence
+        # any related issues can be handled properly here, and ObjectStore
+        # can "trust" the connection is established.
+        #
+        # However, the mechanism implemented in Cloudbridge to assert if
+        # a user/service is authorized to perform an operation, assumes
+        # the user/service is granted with an elevated privileges, such
+        # as admin/owner-level access to all resources. For a detailed
+        # discussion see:
+        #
+        # https://github.com/CloudVE/cloudbridge/issues/135
+        #
+        # Hence, if a resource owner wants to only authorize Galaxy to r/w
+        # a bucket/container on the provider, but does not allow it to access
+        # other resources, Cloudbridge may fail asserting credentials.
+        # For instance, to r/w an Amazon S3 bucket, the resource owner
+        # also needs to authorize full access to Amazon EC2, because Cloudbridge
+        # leverages EC2-specific functions to assert the credentials.
+        #
+        # Therefore, to adhere with principle of least privilege, we do not
+        # assert credentials; instead, we handle exceptions raised as a
+        # result of signing API calls to cloud provider (e.g., GCE) using
+        # incorrect, invalid, or unauthorized credentials.
+
+        return connection
 
     @classmethod
     def parse_xml(clazz, config_xml):
