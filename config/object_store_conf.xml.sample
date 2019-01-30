@@ -52,8 +52,9 @@
         </object_store>
         -->
 
-        <!-- Sample Cloud Object Store
-        <object_store type="cloud">
+        <!-- Cloud ObjectStore: Amazon Simple Storage Service (S3) -->
+        <!--
+        <object_store type="cloud" provider="aws" order="0">
             <auth access_key="..." secret_key="..." />
             <bucket name="..." use_reduced_redundancy="False" />
             <cache path="database/object_store_cache" size="1000" />
@@ -62,6 +63,27 @@
         </object_store>
         -->
 
+        <!-- Cloud ObjectStore: Microsoft Azure Blob Storage -->
+        <!--
+        <object_store type="cloud" provider="azure" order="0">
+            <auth subscription_id="..." client_id="..." secret="..." tenant="..." />
+            <bucket name="..." use_reduced_redundancy="False" />
+            <cache path="database/object_store_cache" size="1000" />
+            <extra_dir type="job_work" path="database/job_working_directory_azure"/>
+            <extra_dir type="temp" path="database/tmp_azure"/>
+        </object_store>
+        -->
+
+        <!-- Cloud ObjectStore: Google Compute Engine (GCE) -->
+        <!--
+        <object_store type="cloud" provider="google" order="0">
+            <auth credentials_file="..." />
+            <bucket name="..." use_reduced_redundancy="False" />
+            <cache path="database/object_store_cache" size="1000" />
+            <extra_dir type="job_work" path="database/job_working_directory_gce"/>
+            <extra_dir type="temp" path="database/tmp_gce"/>
+        </object_store>
+        -->
 
     </backends>
 </object_store>
