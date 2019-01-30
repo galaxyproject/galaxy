@@ -2,7 +2,6 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import _l from "utils/localization";
-// import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Vue from "vue";
 import ListCollectionCreator from "mvc/collection/list-collection-creator";
@@ -12,14 +11,12 @@ import RulesDisplay from "components/RulesDisplay.vue";
  * Bridge rule based builder and the tool form.
  */
 var View = Backbone.View.extend({
-    // initialize
     initialize: function(options) {
-        // link this
         this.model = new Backbone.Model();
         this.target = options.target;
         const view = this;
 
-        // create insert new list element button
+        // create insert edit button
         this.browse_button = new Ui.Button({
             title: _l("Edit"),
             icon: "fa fa-edit",
@@ -104,9 +101,8 @@ var View = Backbone.View.extend({
         `;
     },
 
-    /** Return/Set currently selected genomespace filename */
+    /** Return/Set current value */
     value: function(new_value) {
-        // check if new_value is defined
         if (new_value !== undefined) {
             this._setValue(new_value);
         } else {
@@ -114,17 +110,17 @@ var View = Backbone.View.extend({
         }
     },
 
-    // update
+    /** Update input element options */
     update: function(input_def) {
         this.target = input_def.target;
     },
 
-    // get value
+    /** Returns current value */
     _getValue: function() {
         return this._value;
     },
 
-    // set value
+    /** Sets current value */
     _setValue: function(new_value) {
         if (new_value) {
             if (typeof new_value == "string") {
@@ -137,6 +133,7 @@ var View = Backbone.View.extend({
         }
     },
 
+    /** Validate input element value */
     validate: function() {
         const value = this._value;
         let message = null;
