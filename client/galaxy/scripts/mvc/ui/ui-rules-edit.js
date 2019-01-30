@@ -15,7 +15,7 @@ var View = Backbone.View.extend({
     // initialize
     initialize: function(options) {
         // link this
-        this.options = options;
+        this.model = new Backbone.Model();
         this.target = options.target;
         const view = this;
 
@@ -131,6 +131,7 @@ var View = Backbone.View.extend({
                 new_value = JSON.parse(new_value);
             }
             this._value = new_value;
+            this.model.trigger("error", null);
             this.trigger("change");
             this.instance.inputRules = new_value;
         }
