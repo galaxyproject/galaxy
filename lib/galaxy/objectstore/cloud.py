@@ -19,7 +19,7 @@ from galaxy.util import (
     umask_fix_perms,
 )
 from galaxy.util.sleeper import Sleeper
-from .s3 import CloudConfigMixin, parse_config_xml
+from .s3 import parse_config_xml
 from ..objectstore import convert_bytes, ObjectStore
 try:
     from cloudbridge.cloud.factory import CloudProviderFactory, ProviderList
@@ -35,6 +35,28 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
+class CloudConfigMixin(object):
+
+    def _config_to_dict(self):
+        return {
+            "provider": self.provider,
+            "auth": self.credentials,
+            "bucket": {
+                "name": self.bucket_name,
+                "use_reduced_redundancy": self.use_rr,
+            },
+            "connection": {
+                "host": self.host,
+                "port": self.port,
+                "multipart": self.multipart,
+                "is_secure": self.is_secure,
+                "conn_path": self.conn_path,
+            },
+            "cache": {
+                "size": self.cache_size,
+                "path": self.staging_path,
+            }
+        }
 
 class Cloud(ObjectStore, CloudConfigMixin):
     """
@@ -52,6 +74,8 @@ class Cloud(ObjectStore, CloudConfigMixin):
         connection_dict = config_dict.get('connection', {})
         cache_dict = config_dict['cache']
 
+        self.provider = config_dict["provider"]
+        self.credentials = config_dict["auth"]
         self.bucket_name = bucket_dict.get('name')
         self.use_rr = bucket_dict.get('use_reduced_redundancy', False)
         self.max_chunk_size = bucket_dict.get('max_chunk_size', 250)
@@ -65,13 +89,13 @@ class Cloud(ObjectStore, CloudConfigMixin):
         self.cache_size = cache_dict.get('size', -1)
         self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
 
-        self._setup(config_dict["provider"], config_dict["auth"])
+        self._initialize()
 
-    def _setup(self, provider, credentials):
+    def _initialize(self):
         if CloudProviderFactory is None:
             raise Exception(NO_CLOUDBRIDGE_ERROR_MESSAGE)
 
-        self.conn = self._get_connection(provider, credentials)
+        self.conn = self._get_connection(self.provider, self.credentials)
         self.bucket = self._get_bucket(self.bucket_name)
         # Clean cache only if value is set in galaxy.ini
         if self.cache_size != -1:
@@ -93,11 +117,18 @@ class Cloud(ObjectStore, CloudConfigMixin):
     def _get_connection(provider, credentials):
         log.debug("Configuring `{}` Connection".format(provider))
         if provider == "aws":
-            connection = CloudProviderFactory().create_provider(ProviderList.AWS, credentials)
+            config = {"aws_access_key": credentials["access_key"],
+                      "aws_secret_key": credentials["secret_key"]}
+            connection = CloudProviderFactory().create_provider(ProviderList.AWS, config)
         elif provider == "azure":
-            connection = CloudProviderFactory().create_provider(ProviderList.AZURE, credentials)
+            config = {"azure_subscription_id": credentials["subscription_id"],
+                      "azure_client_id": credentials["client_id"],
+                      "azure_secret": credentials["secret"],
+                      "azure_tenant": credentials["tenant"]}
+            connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         elif provider == "google":
-            connection = CloudProviderFactory().create_provider(ProviderList.GCE, credentials)
+            config = {"gce_service_creds_file": credentials["service_creds_file"]}
+            connection = CloudProviderFactory().create_provider(ProviderList.GCE, config)
         else:
             raise Exception("Unsupported provider `{}`.".format(provider))
 
@@ -159,8 +190,8 @@ class Cloud(ObjectStore, CloudConfigMixin):
                     missing_config.append("secret_key")
 
                 config["auth"] = {
-                    "aws_access_key": akey,
-                    "aws_secret_key": skey}
+                    "access_key": akey,
+                    "secret_key": skey}
             elif provider == "azure":
                 sid = auth_element.get("subscription_id")
                 if sid is None:
@@ -175,10 +206,10 @@ class Cloud(ObjectStore, CloudConfigMixin):
                 if ten is None:
                     missing_config.append("tenant")
                 config["auth"] = {
-                    "azure_subscription_id": sid,
-                    "azure_client_id": cid,
-                    "azure_secret": sec,
-                    "azure_tenant": ten}
+                    "subscription_id": sid,
+                    "client_id": cid,
+                    "secret": sec,
+                    "tenant": ten}
             elif provider == "google":
                 cre = auth_element.get("credentials_file")
                 if not os.path.isfile(cre):
@@ -188,7 +219,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
                 if cre is None:
                     missing_config.append("credentials_file")
                 config["auth"] = {
-                    "gce_service_creds_file": cre}
+                    "service_creds_file": cre}
             else:
                 msg = "Unsupported provider `{}`.".format(provider)
                 log.error(msg)
