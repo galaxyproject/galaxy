@@ -542,7 +542,8 @@ extra_dirs:
 
 
 CLOUD_AZURE_TEST_CONFIG = """<object_store type="cloud" provider="azure">
-     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key" tenant="and_some_tenant_info" />
+     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key" 
+     tenant="and_some_tenant_info" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
      <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
@@ -607,7 +608,9 @@ extra_dirs:
 
 
 def test_config_parse_cloud():
-    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML, CLOUD_AZURE_TEST_CONFIG, CLOUD_AZURE_TEST_CONFIG_YAML, CLOUD_GOOGLE_TEST_CONFIG, CLOUD_GOOGLE_TEST_CONFIG_YAML]:
+    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML,
+                       CLOUD_AZURE_TEST_CONFIG, CLOUD_AZURE_TEST_CONFIG_YAML,
+                       CLOUD_GOOGLE_TEST_CONFIG, CLOUD_GOOGLE_TEST_CONFIG_YAML]:
         if "google" in config_str:
             tmpdir = mkdtemp()
             if not os.path.exists(tmpdir):
