@@ -127,7 +127,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
                       "azure_tenant": credentials["tenant"]}
             connection = CloudProviderFactory().create_provider(ProviderList.AZURE, config)
         elif provider == "google":
-            config = {"gce_service_creds_file": credentials["service_creds_file"]}
+            config = {"gce_service_creds_file": credentials["credentials_file"]}
             connection = CloudProviderFactory().create_provider(ProviderList.GCE, config)
         else:
             raise Exception("Unsupported provider `{}`.".format(provider))
@@ -219,7 +219,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
                 if cre is None:
                     missing_config.append("credentials_file")
                 config["auth"] = {
-                    "service_creds_file": cre}
+                    "credentials_file": cre}
             else:
                 msg = "Unsupported provider `{}`.".format(provider)
                 log.error(msg)
