@@ -448,6 +448,62 @@ class MetadataInDataTableColumnValidator(Validator):
         raise ValueError(self.message)
 
 
+class MetadataInRangeValidator(Validator):
+    """
+    Validator that ensures a metadata is in a specific range
+    """
+    requires_dataset_metadata = True
+    
+    @classmethod
+    def from_element(cls, param, elem):
+        metadata_name = elem.get('metadata_name', None)
+        if metadata_name:
+            metadata_name = metadata_name.strip()
+        return cls(elem.get('message', None), elem.get('min'),
+                   elem.get('max'), metadata_name, elem.get('exclude_min', 'false'),
+                   elem.get('exclude_max', 'false'))
+
+    def __init__(self, message, range_min, range_max, metadata_name, exclude_min=False, exclude_max=False):
+        self.metadata_name = metadata_name
+        self.min = float(range_min if range_min is not None else '-inf')
+        self.exclude_min = util.asbool(exclude_min)
+        self.max = float(range_max if range_max is not None else 'inf')
+        self.exclude_max = util.asbool(exclude_max)
+        assert self.min <= self.max, 'min must be less than or equal to max'
+        # Remove unneeded 0s and decimal from floats to make message pretty.
+        self_min_str = str(self.min).rstrip('0').rstrip('.')
+        self_max_str = str(self.max).rstrip('0').rstrip('.')
+        op1 = '>='
+        op2 = '<='
+        if self.exclude_min:
+            op1 = '>'
+        if self.exclude_max:
+            op2 = '<'
+        self.message = message or "{} must be {} {} and {} {}".format(metadata_name, op1, self_min_str, op2, self_max_str)
+
+    def validate(self, value, trans=None):
+        if value:
+            if not isinstance(value, model.DatasetInstance):
+                raise ValueError('A non-dataset value was provided.')
+            value_to_check = int(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)))
+            try:
+                float(value_to_check)
+            except ValueError:
+                raise ValueError('{} must be a float or an integer'.format(self.metadata_name))
+            if self.exclude_min:
+                if not self.min < float(value_to_check):
+                    raise ValueError(self.message)
+            else:
+                if not self.min <= float(value_to_check):
+                    raise ValueError(self.message)
+            if self.exclude_max:
+                if not float(value_to_check) < self.max:
+                    raise ValueError(self.message)
+            else:
+                if not float(value_to_check) <= self.max:
+                    raise ValueError(self.message)
+
+
 validator_types = dict(expression=ExpressionValidator,
                        regex=RegexValidator,
                        in_range=InRangeValidator,
@@ -460,7 +516,8 @@ validator_types = dict(expression=ExpressionValidator,
                        empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
                        dataset_metadata_in_file=MetadataInFileColumnValidator,
                        dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-                       dataset_ok_validator=DatasetOkValidator,)
+                       dataset_ok_validator=DatasetOkValidator,
+		       dataset_metadata_in_range=MetadataInRangeValidator,)
 
 
 def get_suite():
