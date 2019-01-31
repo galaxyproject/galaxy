@@ -192,9 +192,17 @@ class ExecutionTracker(object):
             for key, value in input_dict.items():
                 if key == input_name:
                     return value
+                if isinstance(value, list):
+                    prefix, rest_input_name = input_name.split("|", 1)
+                    if '_' in prefix:
+                        prefix, index = prefix.split('_')
+                        index = int(index)
+                        value = value[index]
                 if isinstance(value, dict):
                     if "|" in input_name:
                         prefix, rest_input_name = input_name.split("|", 1)
+                        if '_' in prefix:
+                            prefix = prefix.split('_')[0]
                         if key == prefix:
                             return find_collection(value, rest_input_name)
                     elif unqualified_recurse:
