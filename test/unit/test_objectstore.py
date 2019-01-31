@@ -575,8 +575,46 @@ extra_dirs:
 """
 
 
+CLOUD_GOOGLE_TEST_CONFIG = """<object_store type="cloud" provider="google">
+     <auth credentials_file="gce.config" />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <cache path="database/object_store_cache" size="1000" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+CLOUD_GOOGLE_TEST_CONFIG_YAML = """
+type: cloud
+provider: google
+auth:
+  credentials_file: gce.config
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud
+"""
+
+
 def test_config_parse_cloud():
-    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML, CLOUD_AZURE_TEST_CONFIG, CLOUD_AZURE_TEST_CONFIG_YAML]:
+    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML, CLOUD_AZURE_TEST_CONFIG, CLOUD_AZURE_TEST_CONFIG_YAML, CLOUD_GOOGLE_TEST_CONFIG, CLOUD_GOOGLE_TEST_CONFIG_YAML]:
+        if "google" in config_str:
+            tmpdir = mkdtemp()
+            if not os.path.exists(tmpdir):
+                os.makedirs(tmpdir)
+            path = os.path.join(tmpdir, "gce.config")
+            open(path, "w").write("some_gce_config")
+            config_str = config_str.replace("gce.config", path)
         with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
 
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
@@ -612,6 +650,8 @@ def test_config_parse_cloud():
                 _assert_key_has_value(auth_dict, "client_id", "and_a_client_id")
                 _assert_key_has_value(auth_dict, "secret", "and_a_secret_key")
                 _assert_key_has_value(auth_dict, "tenant", "and_some_tenant_info")
+            elif provider == "google":
+                _assert_key_has_value(auth_dict, "credentials_file", path)
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
