@@ -541,8 +541,42 @@ extra_dirs:
 """
 
 
+CLOUD_AZURE_TEST_CONFIG = """<object_store type="cloud" provider="azure">
+     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key" tenant="and_some_tenant_info" />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <cache path="database/object_store_cache" size="1000" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+CLOUD_AZURE_TEST_CONFIG_YAML = """
+type: cloud
+provider: azure
+auth:
+  subscription_id: a_sub_id
+  client_id: and_a_client_id
+  secret: and_a_secret_key
+  tenant: and_some_tenant_info
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+cache:
+  path: database/object_store_cache
+  size: 1000
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_cloud
+- type: temp
+  path: database/tmp_cloud
+"""
+
+
 def test_config_parse_cloud():
-    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML]:
+    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML, CLOUD_AZURE_TEST_CONFIG, CLOUD_AZURE_TEST_CONFIG_YAML]:
         with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
 
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
@@ -569,8 +603,15 @@ def test_config_parse_cloud():
             connection_dict = as_dict["connection"]
             cache_dict = as_dict["cache"]
 
-            _assert_key_has_value(auth_dict, "access_key", "access_moo")
-            _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+            provider = as_dict["provider"]
+            if provider == "aws":
+                _assert_key_has_value(auth_dict, "access_key", "access_moo")
+                _assert_key_has_value(auth_dict, "secret_key", "secret_cow")
+            elif provider == "azure":
+                _assert_key_has_value(auth_dict, "subscription_id", "a_sub_id")
+                _assert_key_has_value(auth_dict, "client_id", "and_a_client_id")
+                _assert_key_has_value(auth_dict, "secret", "and_a_secret_key")
+                _assert_key_has_value(auth_dict, "tenant", "and_some_tenant_info")
 
             _assert_key_has_value(bucket_dict, "name", "unique_bucket_name_all_lowercase")
             _assert_key_has_value(bucket_dict, "use_reduced_redundancy", False)
