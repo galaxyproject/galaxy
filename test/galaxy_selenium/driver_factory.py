@@ -6,6 +6,7 @@ except ImportError:
     Display = None
 
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
@@ -32,7 +33,12 @@ def get_local_driver(browser=DEFAULT_BROWSER):
         "PHANTOMJS": webdriver.PhantomJS,
     }
     driver_class = driver_to_class[browser]
-    return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS})
+    if browser == 'CHROME':
+        options = ChromeOptions()
+        options.add_argument('--headless')
+        return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS}, chrome_options=options)
+    else:
+        return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS})
 
 
 def get_remote_driver(
