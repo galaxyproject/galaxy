@@ -508,7 +508,7 @@ def test_config_parse_s3():
             assert len(extra_dirs) == 2
 
 
-CLOUD_TEST_CONFIG = """<object_store type="cloud" provider="aws">
+CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
      <auth access_key="access_moo" secret_key="secret_cow" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
@@ -518,7 +518,7 @@ CLOUD_TEST_CONFIG = """<object_store type="cloud" provider="aws">
 """
 
 
-CLOUD_TEST_CONFIG_YAML = """
+CLOUD_AWS_TEST_CONFIG_YAML = """
 type: cloud
 provider: aws
 auth:
@@ -542,7 +542,7 @@ extra_dirs:
 
 
 def test_config_parse_cloud():
-    for config_str in [CLOUD_TEST_CONFIG, CLOUD_TEST_CONFIG_YAML]:
+    for config_str in [CLOUD_AWS_TEST_CONFIG, CLOUD_AWS_TEST_CONFIG_YAML]:
         with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
 
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
