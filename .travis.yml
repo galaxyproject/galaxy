@@ -3,7 +3,6 @@ python: 2.7
 os:
   - linux
 env:
-  - TOX_ENV=py34-lint
   - TOX_ENV=py27-lint
   - TOX_ENV=py27-unit
   - TOX_ENV=py27-first_startup
@@ -11,13 +10,19 @@ env:
 
 matrix:
   include:
-    - env: TOX_ENV=py34-first_startup
+    - env: TOX_ENV=py35-lint
+      addons:
+        apt:
+          packages:
+            - python3.5
+    - env: TOX_ENV=py35-first_startup
       addons:
         &py3_addons
         apt:
           packages:
+            - python3.5
             # For psutil, pyyaml, uwsgi...
-            - libpython3.4-dev
+            - libpython3.5-dev
     - env: TOX_ENV=validate_test_tools
       addons:
         apt:
@@ -28,7 +33,7 @@ matrix:
         apt:
           packages:
             - ack-grep
-    - env: TOX_ENV=py34-unit
+    - env: TOX_ENV=py35-unit
       addons: *py3_addons
     - os: osx
       # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
