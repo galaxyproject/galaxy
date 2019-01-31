@@ -604,7 +604,7 @@ class FTPFileToolParameter(ToolParameter):
         return True
 
     def to_param_dict_string(self, value, other_values={}):
-        if value is '':
+        if value == '':
             return 'None'
         lst = ['%s%s' % (self.user_ftp_dir, dataset) for dataset in value]
         if self.multiple:

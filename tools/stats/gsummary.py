@@ -22,7 +22,7 @@ def S3_METHODS(all="key"):
         "acosh", "asinh", "atanh", "lgamma", "gamma", "gammaCody", "digamma", "trigamma",
         "cumsum", "cumprod", "cummax", "cummin", "c"]
     Group_Ops = ["+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">", "(", ")", "~", ","]
-    if all is "key":
+    if all == "key":
         return {'Math': Group_Math, 'Ops': Group_Ops}
 
 
