@@ -542,7 +542,7 @@ extra_dirs:
 
 
 CLOUD_AZURE_TEST_CONFIG = """<object_store type="cloud" provider="azure">
-     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key" 
+     <auth subscription_id="a_sub_id" client_id="and_a_client_id" secret="and_a_secret_key"
      tenant="and_some_tenant_info" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />

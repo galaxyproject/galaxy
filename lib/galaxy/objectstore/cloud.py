@@ -35,6 +35,7 @@ NO_CLOUDBRIDGE_ERROR_MESSAGE = (
     "Please install CloudBridge or modify ObjectStore configuration."
 )
 
+
 class CloudConfigMixin(object):
 
     def _config_to_dict(self):
@@ -57,6 +58,7 @@ class CloudConfigMixin(object):
                 "path": self.staging_path,
             }
         }
+
 
 class Cloud(ObjectStore, CloudConfigMixin):
     """
