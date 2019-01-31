@@ -11,6 +11,7 @@ from sqlalchemy.sql import expression
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
+from galaxy.exceptions import ObjectNotFound
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.web.framework.helpers import to_unicode
 
@@ -358,12 +359,21 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
                         "designation": obj.designation,
                         "deleted": obj.deleted,
                         "visible": obj.visible,
-                        "file_name": obj.file_name,
                         "uuid": (lambda uuid: str(uuid) if uuid else None)(obj.dataset.uuid),
                         "annotation": to_unicode(getattr(obj, 'annotation', '')),
-                        "tags": get_item_tag_dict(obj),
-                        "extra_files_path": obj.extra_files_path
+                        "tags": get_item_tag_dict(obj)
                     }
+
+                    try:
+                        rval['file_name'] = obj.file_name
+                    except ObjectNotFound:
+                        rval['file_name'] = None
+
+                    if obj.extra_files_path_exists():
+                        rval['extra_files_path'] = obj.extra_files_path
+                    else:
+                        rval['extra_files_path'] = None
+
                     if not obj.visible and not include_hidden:
                         rval['exported'] = False
                     elif obj.deleted and not include_deleted:
