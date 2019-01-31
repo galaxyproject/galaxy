@@ -161,6 +161,20 @@ class AuthnzManager(object):
             raise exceptions.ItemAccessibilityException(msg)
 
     @staticmethod
+    def can_user_assume_authz(trans, authz_id):
+        qres = trans.sa_session.query(model.CloudAuthz).get(authz_id)
+        if qres is None:
+            msg = "Authorization record with the given `authz_id` (`{}`) not found.".format(
+                trans.security.encode_id(authz_id))
+            log.debug(msg)
+            raise exceptions.ObjectNotFound(msg)
+        if qres.user_id != trans.user.id:
+            msg = "The request authorization with ID `{}` is not accessible to user with ID " \
+                  "`{}`.".format(trans.security.encode_id(authz_id), trans.security.encode_id(trans.user.id))
+            log.warn(msg)
+            raise exceptions.ItemAccessibilityException(msg)
+
+    @staticmethod
     def try_get_authz_config(sa_session, user_id, authz_id):
         """
         It returns a cloudauthz config (see model.CloudAuthz) with the
