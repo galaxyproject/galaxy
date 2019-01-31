@@ -233,7 +233,7 @@ class Cloud(ObjectStore, CloudConfigMixin):
             else:
                 return config
         except Exception:
-            log.exception("TMalformed ObjectStore Configuration XML -- unable to continue")
+            log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
             raise
 
     def to_dict(self):
