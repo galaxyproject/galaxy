@@ -10,7 +10,7 @@ module.exports = function (config) {
         files: [
             "../../node_modules/@babel/polyfill/dist/polyfill.js",
             { pattern: "**/*.test.js", watched: true },
-            // { pattern: "**/mocha/tests/*_tests.js" }
+            { pattern: "**/mocha/tests/*_tests.js" }
         ],
         preprocessors: {
             "**/*.js": ["webpack"]
