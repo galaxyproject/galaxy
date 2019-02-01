@@ -2013,6 +2013,70 @@ class SearchGuiArchive(CompressedArchive):
             return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or 'unknown')
 
 
+class WiffArchive(CompressedArchive):
+    """Class describing a AB SCIEX archive of wiff format files"""
+    MetadataElement(name="wiff_file", default=None, param=MetadataParameter, desc="Wiff File Path",
+                    readonly=True, visible=True, no_value=None)
+    MetadataElement(name="wiff_files", default=[], param=MetadataParameter, desc="Wiff Files",
+                    readonly=True, visible=False, no_value=None)
+    file_ext = "wiff_archive"
+
+    def set_meta(self, dataset, overwrite=True, **kwd):
+        super(WiffArchive, self).set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and zipfile.is_zipfile(dataset.file_name):
+                with zipfile.ZipFile(dataset.file_name) as tempzip:
+                    wiff_files = []
+                    for name in tempzip.namelist():
+                        if name.lower().endswith('.wiff'):
+                            dataset.metadata.wiff_file = name
+                            wiff_files.append(name)
+                        elif name.lower().find('.wiff.') > 0:
+                            wiff_files.append(name)
+                    dataset.metadata.wiff_files = sorted(wiff_files)
+        except Exception as e:
+            log.warning('%s, set_meta Exception: %s', self, e)
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a WiffArchive.
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('wiff.zip')
+        >>> WiffArchive().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('drugbank_drugs.mz5')
+        >>> WiffArchive().sniff(fname)
+        False
+        """
+        try:
+            if filename and zipfile.is_zipfile(filename):
+                with zipfile.ZipFile(filename, 'r') as tempzip:
+                    for name in tempzip.namelist():
+                        if name.lower().endswith('.wiff'):
+                            return True
+                return False
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = "%s" % (' '.join(dataset.metadata.wiff_files) if dataset.metadata.wiff_files else 'No .wiff scan file')
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "%s" % (dataset.metadata.wiff_files or 'No .wiff scan file')
+
+
+
 class NetCDF(Binary):
     """Binary data in netCDF format"""
     file_ext = "netcdf"
