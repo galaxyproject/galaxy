@@ -1,3 +1,6 @@
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import * as mod_toastr from "libs/toastr";
 import mod_group_model from "toolshed/groups/group-model";
 
@@ -95,7 +98,7 @@ const GroupDetailView = Backbone.View.extend({
                 '<% _.each(group.get("repositories"), function(repo) { %>',
                 "<tr>",
                 "<td>",
-                '<a data-toggle="tooltip" data-placement="top" title="Details of <%= _.escape(repo.name) %>" href="/view/<%= _.escape(repo.owner) %>/<%= _escape(repo.name) %>" id="<%= repo.id %>"><%= _.escape(repo.name) %></a>',
+                '<a data-toggle="tooltip" data-placement="top" title="Details of <%= _.escape(repo.name) %>" href="/view/<%= _.escape(repo.owner) %>/<%= _.escape(repo.name) %>" id="<%= repo.id %>"><%= _.escape(repo.name) %></a>',
                 "</td>",
                 "<td>",
                 "<%= _.escape(repo.description) %>",

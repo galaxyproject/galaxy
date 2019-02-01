@@ -1,11 +1,12 @@
-/* global Backbone */
-/* global $ */
-
+import $ from "jquery";
+import Backbone from "backbone";
 import _l from "utils/localization";
 import * as d3 from "libs/d3";
 import visualization_mod from "viz/visualization";
 import { Dataset } from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { show_message, hide_modal } from "layout/modal";
+
 /**
  * Base class of any menus that takes in user interaction. Contains checking methods.
  */
@@ -69,21 +70,21 @@ function PhyloTreeLayout() {
         .value(null);
 
     var // ! represents both the layout angle and the height of the layout, in px
-    height = 360;
+        height = 360;
 
     var layoutMode = "Linear";
 
     var // height of each individual leaf node
-    leafHeight = 18;
+        leafHeight = 18;
 
     var // separation between nodes of different depth, in px
-    depthSeparation = 200;
+        depthSeparation = 200;
 
     var // change to recurssive call
-    leafIndex = 0;
+        leafIndex = 0;
 
     var // tree defaults to 0.5 dist if no dist is specified
-    defaultDist = 0.5;
+        defaultDist = 0.5;
 
     var maxTextWidth = 50;
 
@@ -272,7 +273,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
     toggleAll: function(d) {
         if (d.children && d.children.length !== 0) {
             d.children.forEach(this.toggleAll);
-            toggle(d);
+            this.toggle(d);
         }
     },
 
@@ -362,7 +363,6 @@ var PhylovizLayoutBase = Backbone.View.extend({
      *  AND possibly when the tree is edited.
      */
     updateAndRender: function(source) {
-        var vis = d3.select(".vis");
         var self = this;
         source = source || self.model.root;
 
@@ -376,9 +376,6 @@ var PhylovizLayoutBase = Backbone.View.extend({
      */
     renderLinks: function(source) {
         var self = this;
-        var diagonal = self.diagonal;
-        var duration = self.duration;
-        var layoutMode = self.layoutMode;
         var link = self.vis.selectAll("g.completeLink").data(self.tree.links(self.nodes), d => d.target.id);
 
         var calcalateLinePos = d => {
@@ -410,7 +407,7 @@ var PhylovizLayoutBase = Backbone.View.extend({
             return `M ${d.pos0} L ${d.pos1} L ${d.pos2}`;
         });
 
-        var linkExit = link.exit().remove();
+        link.exit().remove();
     },
 
     // User Interaction methods below
@@ -672,7 +669,7 @@ export var PhylovizView = Backbone.View.extend({
         $("#title").text(`Phylogenetic Tree from ${self.phyloTree.get("title")}:`);
 
         // -- Create Linear view instance --
-        var linearView = new PhylovizLinearView(self.layoutOptions);
+        new PhylovizLinearView(self.layoutOptions);
     },
 
     /**

@@ -108,7 +108,7 @@
 
 :Description:
     NEVER enable this on a public site (even test or QA)
-:Default: ``true``
+:Default: ``false``
 :Type: bool
 
 

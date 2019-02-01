@@ -1,7 +1,12 @@
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Form from "mvc/form/form-view";
 import ToolFormBase from "mvc/tool/tool-form-base";
+
 /** Default form wrapper for non-tool modules in the workflow editor. */
 var Default = Backbone.View.extend({
     initialize: function(options) {
@@ -12,7 +17,7 @@ var Default = Backbone.View.extend({
                 onchange: function() {
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/workflows/build_module`,
+                        url: `${getAppRoot()}api/workflows/build_module`,
                         data: {
                             id: node.id,
                             type: node.type,
@@ -51,6 +56,7 @@ var Tool = Backbone.View.extend({
                     form.model.get("postchange")(process, form);
                 },
                 postchange: function(process, form) {
+                    let Galaxy = getGalaxyInstance();
                     var options = form.model.attributes;
                     var current_state = {
                         tool_id: options.id,
@@ -61,7 +67,7 @@ var Tool = Backbone.View.extend({
                     Galaxy.emit.debug("tool-form-workflow::postchange()", "Sending current state.", current_state);
                     Utils.request({
                         type: "POST",
-                        url: `${Galaxy.root}api/workflows/build_module`,
+                        url: `${getAppRoot()}api/workflows/build_module`,
                         data: current_state,
                         success: function(data) {
                             form.model.set(data.config_form);
@@ -90,6 +96,7 @@ var Tool = Backbone.View.extend({
         var options = form.model.attributes;
         Utils.deepeach(options.inputs, input => {
             if (input.type) {
+                input.connectable = true;
                 if (["data", "data_collection"].indexOf(input.type) != -1) {
                     input.type = "hidden";
                     input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
@@ -105,6 +112,7 @@ var Tool = Backbone.View.extend({
         });
         Utils.deepeach(options.inputs, input => {
             if (input.type === "conditional") {
+                input.connectable = false;
                 input.test_param.collapsible_value = undefined;
             }
         });
@@ -216,10 +224,10 @@ function _makeSection(output_id, label, options) {
     var node = options.node;
     var workflow = options.workflow;
 
-    for (var key in datatypes) {
+    for (let key in datatypes) {
         extensions.push({ 0: datatypes[key], 1: datatypes[key] });
     }
-    for (var key in node.input_terminals) {
+    for (let key in node.input_terminals) {
         name_label_map.push({ name: node.input_terminals[key].name, label: node.input_terminals[key].label });
     }
     var rename_help = _makeRenameHelp(name_label_map);

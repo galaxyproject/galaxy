@@ -1,4 +1,7 @@
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import LIST_VIEW from "mvc/list/list-view";
 import { History } from "mvc/history/history-model";
@@ -12,9 +15,6 @@ import HistoryViewEdit from "mvc/history/history-view-edit";
 import HistoryCopyDialog from "mvc/history/copy-dialog";
 import "ui/search-input";
 import "ui/mode-button";
-
-/* global $ */
-/* global Galaxy */
 
 /* =============================================================================
 TODO:
@@ -635,10 +635,8 @@ export function historyEntry(options) {
     $("#switch").click(function() {
         //##HACK:ity hack hack
         //##TODO: remove when out of iframe
-        var hview =
-            Galaxy.currHistoryPanel || (window.top.Galaxy && window.top.Galaxy.currHistoryPanel)
-                ? window.top.Galaxy.currHistoryPanel
-                : null;
+        let Galaxy = getGalaxyInstance();
+        var hview = Galaxy.currHistoryPanel ? Galaxy.currHistoryPanel : null;
         if (hview) {
             hview.switchToHistory("${ history[ 'id' ] }");
         } else {
@@ -656,13 +654,14 @@ export function historyEntry(options) {
 
     // attach the copy dialog to the import button now that we have a history
     $("#import").click(function() {
+        let Galaxy = getGalaxyInstance();
         HistoryCopyDialog(history, {
             useImport: true,
             // use default datasets option to match the toggle-deleted button
             allDatasets: $("#toggle-deleted").modeButton("getMode").mode === "showing_deleted"
         }).done(function() {
             if (window === window.parent) {
-                window.location = Galaxy.root;
+                window.location = getAppRoot();
             } else if (Galaxy.currHistoryPanel) {
                 Galaxy.currHistoryPanel.loadCurrentHistory();
             }

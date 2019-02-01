@@ -1,8 +1,6 @@
+import $ from "jquery";
 import Connector from "mvc/workflow/workflow-connector";
 import * as Toastr from "libs/toastr";
-
-/* global $ */
-/* global Galaxy */
 
 class Workflow {
     constructor(app, canvas_container) {
@@ -189,7 +187,7 @@ class Workflow {
                 id: node.id,
                 type: node.type,
                 content_id: node.content_id,
-                tool_version: node.config_form.version,
+                tool_version: node.config_form ? node.config_form.version : null,
                 tool_state: node.tool_state,
                 errors: node.errors,
                 input_connections: input_connections,
@@ -278,8 +276,8 @@ class Workflow {
                 $.each(node.output_terminals, (ot_id, ot) => {
                     if (node.post_job_actions[`HideDatasetAction${ot.name}`] === undefined) {
                         node.addWorkflowOutput(ot.name);
-                        var callout = $(node.element).find(`.callout.${ot.name.replace(/(?=[()])/g, "\\")}`);
-                        callout.find("img").attr("src", `${Galaxy.root}static/images/fugue/asterisk-small.png`);
+                        var callout = $(node.element).find(`.callout-terminal.${ot.name.replace(/(?=[()])/g, "\\")}`);
+                        callout.find("icon").addClass("mark-terminal-active");
                         wf.has_changes = true;
                     }
                 });

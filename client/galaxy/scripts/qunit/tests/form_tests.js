@@ -1,10 +1,16 @@
-/* global define */
+/**
+ * mvc/tool/tool-form is unused.
+ */
+
+/* global QUnit */
+import $ from "jquery";
 import testApp from "qunit/test-app";
 import InputElement from "mvc/form/form-input";
 import Ui from "mvc/ui/ui-misc";
 import FormData from "mvc/form/form-data";
 import ToolForm from "mvc/tool/tool-form";
 import Utils from "utils/utils";
+import { getAppRoot } from "onload/loadConfig";
 
 QUnit.module("Form test", {
     beforeEach: function() {
@@ -18,14 +24,11 @@ QUnit.module("Form test", {
 });
 
 QUnit.test("tool-form", function(assert) {
-    // Huh? The following seems to be needed by tool-form.js - once the global usage
-    // is cleaned up in that module this can be deleted I assume.
-    window.parent.Galaxy = window.Galaxy;
-
     var toolform = new ToolForm.View({ id: "test" });
-    var form = toolform.form;
     $("body").prepend(toolform.$el);
     window.fakeserver.respond();
+
+    var form = toolform.form;
     var output = "";
     for (var property in assert) {
         output += property + ": ; ";
@@ -91,7 +94,7 @@ QUnit.test("tool-form", function(assert) {
 QUnit.test("data", function(assert) {
     var visits = [];
     Utils.get({
-        url: Galaxy.root + "api/tools/test/build",
+        url: getAppRoot() + "api/tools/test/build",
         success: function(response) {
             FormData.visitInputs(response.inputs, function(node, name, context) {
                 visits.push({ name: name, node: node });
@@ -138,22 +141,12 @@ QUnit.test("input", function(assert) {
     assert.ok(input.$field.css("display") == "none", "Input field hidden");
     input.model.set("disabled", false);
     assert.ok(input.$field.css("display") == "block", "Input field shown, again");
+    var colorElement = input.$field.children().first();
+    var oldColor = colorElement.css("color");
     input.model.set("color", "red");
-    assert.ok(
-        input.$field
-            .children()
-            .first()
-            .css("color") == "rgb(255, 0, 0)",
-        "Shows correct new color"
-    );
+    assert.ok(colorElement.css("color") == "rgb(255, 0, 0)", "Shows correct new color");
     input.model.set("color", null);
-    assert.ok(
-        input.$field
-            .children()
-            .first()
-            .css("color") == "rgb(73, 80, 87)",
-        "Shows correct old color"
-    );
+    assert.ok(colorElement.css("color") == oldColor, "Shows correct old color");
     input.model.set("collapsible_value", "_collapsible_value");
     assert.ok(input.$collapsible.css("display") == "block", "Collapsible field");
     assert.ok(input.$collapsible_text.html() == "_label", "Title content available");

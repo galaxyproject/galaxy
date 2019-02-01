@@ -1,3 +1,8 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
+
 /* This class maps the form dom to an api compatible javascript dictionary. */
 export var Manager = Backbone.Model.extend({
     initialize: function(app) {
@@ -12,7 +17,7 @@ export var Manager = Backbone.Model.extend({
             var id = $(this).attr("id");
             var field = self.app.field_list[id];
             if (field) {
-                sum += `${id}:${JSON.stringify(field.value && field.value())}:${field.collapsed};`;
+                sum += `${id}:${JSON.stringify(field.value && field.value())}:${field.collapsed}:${field.connected};`;
             }
         });
         return sum;
@@ -84,7 +89,9 @@ export var Manager = Backbone.Model.extend({
                             if (field && field.value) {
                                 value = field.value();
                                 if (input.ignore === undefined || input.ignore != value) {
-                                    if (field.collapsed && input.collapsible_value) {
+                                    if (field.connected) {
+                                        value = { __class__: "ConnectedValue" };
+                                    } else if (field.collapsed && input.collapsible_value) {
                                         value = input.collapsible_value;
                                     }
                                     add(flat_id, input.id, value);
@@ -207,6 +214,7 @@ export var visitInputs = (inputs, callback, prefix, context) => {
         }
     });
     for (var key in inputs) {
+        let Galaxy = getGalaxyInstance();
         var node = inputs[key];
         node.name = node.name || key;
         var name = prefix ? `${prefix}|${node.name}` : node.name;

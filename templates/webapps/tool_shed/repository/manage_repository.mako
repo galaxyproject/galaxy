@@ -99,12 +99,11 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','library','jquery.rating')}
+    ${h.css('base','library')}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ## ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 

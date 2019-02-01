@@ -251,7 +251,7 @@ mapping:
       
       use_interactive:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           NEVER enable this on a public site (even test or QA)
@@ -379,7 +379,8 @@ mapping:
         default: info
         required: false
         desc: |
-          Show a message box under the masthead.
+          Class of the message box under the masthead. Possible values are:
+          'info' (the default), 'warning', 'error', 'done'.
       
       static_enabled:
         type: bool
@@ -525,14 +526,6 @@ mapping:
           behind one hostname, you will want to set this to the same path as the prefix
           in the filter above.  This value becomes the "path" attribute set in the
           cookie so the cookies from each instance will not clobber each other.
-
-      enable_openid:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Enable authentication via OpenID.  Allows users to log in to their Galaxy
-          account by authenticating with an OpenID provider.
 
       log_actions:
         type: bool

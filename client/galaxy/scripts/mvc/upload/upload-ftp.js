@@ -1,19 +1,21 @@
 /** This renders the content of the ftp popup **/
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
 
 export default Backbone.View.extend({
     initialize: function(options) {
-        var self = this;
         this.model = new Backbone.Model({
             cls: "upload-ftp",
             class_add: "upload-icon-button fa fa-square-o",
             class_remove: "upload-icon-button fa fa-check-square-o",
             class_partial: "upload-icon-button fa fa-minus-square-o",
             help_enabled: true,
-            oidc_text: `<br/>If you are signed-in to Galaxy using a third-party identity and you <strong>don't have a Galaxy password</strong> please go to <a href="${
-                Galaxy.root
-            }user/reset_password" target="_blank">this</a> page and request a password for your Galaxy account.`,
+            oidc_text: `<br/>If you are signed-in to Galaxy using a third-party identity and you <strong>don't have a Galaxy password</strong> please go to <a href="${getAppRoot()}user/reset_password" target="_blank">this</a> page and request a password for your Galaxy account.`,
             help_text: `This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at <strong>${
                 options.ftp_upload_site
             }</strong> using your Galaxy credentials.
@@ -25,6 +27,7 @@ export default Backbone.View.extend({
         }).set(options);
 
         this.collection = this.model.get("collection");
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.config.enable_oidc) {
             this.model.set("help_text", this.model.get("help_text") + this.model.get("oidc_text"));
         }

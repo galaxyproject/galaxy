@@ -117,8 +117,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         return self.template(trans, 'login',
                              redirect=redirect,
-                             # TODO: move into config
-                             openid_providers=[p.name for p in trans.app.openid_providers],
                              # an installation may have it's own welcome_url - show it here if they've set that
                              welcome_url=web.url_for(controller='root', action='welcome'),
                              show_welcome_with_login=trans.app.config.show_welcome_with_login)
@@ -218,7 +216,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-%s-[%s]%s"' % (data.hid, fname, toext)
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
-                    return open(data.file_name)
+                    return open(data.file_name, 'rb')
                 except Exception:
                     return "This dataset contains no content"
             else:

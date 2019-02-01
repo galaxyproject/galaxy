@@ -1,4 +1,4 @@
-/* global $ */
+import $ from "jquery";
 import * as d3 from "../libs/d3";
 import { event as currentEvent } from "../libs/d3";
 

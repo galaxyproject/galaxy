@@ -1,13 +1,13 @@
 import _ from "underscore";
+import jQuery from "jquery";
 import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
 import { HistoryContents } from "mvc/history/history-contents";
 import CONTROLLED_FETCH_COLLECTION from "mvc/base/controlled-fetch-collection";
 import UTILS from "utils/utils";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-
-/* global jQuery */
-/* global Galaxy */
 
 //==============================================================================
 /** @class Model for a Galaxy history resource - both a record of user
@@ -57,7 +57,7 @@ export var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
                 this.logger = options.logger || null;
                 this.log(`${this}.initialize:`, historyJSON, options);
 
-                this.urlRoot = `${Galaxy.root}api/histories`;
+                this.urlRoot = `${getAppRoot()}api/histories`;
                 /** HistoryContents collection of the HDAs contained in this history. */
                 this.contents = new this.contentsClass([], {
                     history: this,
@@ -138,6 +138,7 @@ export var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
              *      Note: that this will return false for an anon user even if the history is theirs.
              */
             ownedByCurrUser: function() {
+                let Galaxy = getGalaxyInstance();
                 // no currUser
                 if (!Galaxy || !Galaxy.user) {
                     return false;
@@ -353,7 +354,7 @@ export var History = Backbone.Model.extend(BASE_MVC.LoggableMixin).extend(
             setAsCurrent: function() {
                 var history = this;
 
-                var xhr = jQuery.getJSON(`${Galaxy.root}history/set_as_current?id=${this.id}`);
+                var xhr = jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${this.id}`);
 
                 xhr.done(() => {
                     history.trigger("set-as-current", history);
@@ -389,7 +390,7 @@ export var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).e
     initialize: function(models, options) {
         options = options || {};
         this.log("HistoryCollection.initialize", models, options);
-        this.urlRoot = `${Galaxy.root}api/histories`;
+        this.urlRoot = `${getAppRoot()}api/histories`;
         _collectionSuper.prototype.initialize.call(this, models, options);
 
         /** @type {boolean} should deleted histories be included */
@@ -510,7 +511,7 @@ export var HistoryCollection = _collectionSuper.extend(BASE_MVC.LoggableMixin).e
         //TODO: .create is actually a collection function that's overridden here
         var collection = this;
 
-        var xhr = jQuery.getJSON(`${Galaxy.root}history/create_new_current`);
+        var xhr = jQuery.getJSON(`${getAppRoot()}history/create_new_current`);
         return xhr.done(newData => {
             collection.setCurrent(new History(newData, [], historyOptions || {}));
         });

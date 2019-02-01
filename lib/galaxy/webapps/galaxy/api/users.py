@@ -3,16 +3,12 @@ API operations on User objects.
 """
 import json
 import logging
-import random
 import re
-import socket
-from datetime import datetime
 
 import six
 import yaml
 from markupsafe import escape
 from sqlalchemy import (
-    and_,
     false,
     or_,
     true
@@ -36,20 +32,17 @@ from galaxy.security.validate_user_input import (
 from galaxy.tools.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
-    hash_util,
     listify
 )
 from galaxy.util.odict import odict
 from galaxy.web import (
     _future_expose_api as expose_api,
-    _future_expose_api_anonymous as expose_api_anonymous,
-    url_for
+    _future_expose_api_anonymous as expose_api_anonymous
 )
 from galaxy.web.base.controller import (
     BaseAPIController,
     BaseUIController,
     CreatesApiKeysMixin,
-    CreatesUsersMixin,
     UsesFormDefinitionsMixin,
     UsesTagsMixin
 )
@@ -59,7 +52,7 @@ from galaxy.web.form_builder import AddressField
 log = logging.getLogger(__name__)
 
 
-class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
+class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, BaseUIController, UsesFormDefinitionsMixin):
 
     def __init__(self, app):
         super(UserAPIController, self).__init__(app)
@@ -203,7 +196,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
             else:
-                user = self.create_user(trans=trans, email=email, username=username, password=password)
+                user = self.user_manager.create(email=email, username=username, password=password)
         else:
             raise exceptions.NotImplemented()
         item = user.to_dict(view='element', value_mapper={'id': trans.security.encode_id,
@@ -428,7 +421,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
                 if trans.app.config.user_activation_on:
                     # Deactivate the user if email was changed and activation is on.
                     user.active = False
-                    if self.send_verification_email(trans, user.email, user.username):
+                    if self.user_manager.send_activation_email(trans, user.email, user.username):
                         message = 'The login information has been updated with the changes.<br>Verification email has been sent to your new email address. Please verify it by clicking the activation link in the email.<br>Please check your spam/trash folder in case you cannot find the message.'
                     else:
                         message = 'Unable to send activation email, please contact your local Galaxy administrator.'
@@ -510,60 +503,6 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         trans.log_event('User information added')
         return {'message': 'User information has been saved.'}
 
-    def send_verification_email(self, trans, email, username):
-        """
-        Send the verification email containing the activation link to the user's email.
-        """
-        if username is None:
-            username = trans.user.username
-        activation_link = self.prepare_activation_link(trans, escape(email))
-
-        host = trans.request.host.split(':')[0]
-        if host in ['localhost', '127.0.0.1', '0.0.0.0']:
-            host = socket.getfqdn()
-        body = ("Hello %s,\n\n"
-                "In order to complete the activation process for %s begun on %s at %s, please click on the following link to verify your account:\n\n"
-                "%s \n\n"
-                "By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (%s). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.\n\n"
-                "Please contact us if you need help with your account at: %s. You can also browse resources available at: %s. \n\n"
-                "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-                "Your Galaxy Team" % (escape(username), escape(email),
-                                      datetime.utcnow().strftime("%D"),
-                                      trans.request.host, activation_link,
-                                      trans.app.config.terms_url,
-                                      trans.app.config.error_email_to,
-                                      trans.app.config.instance_resource_url))
-        to = email
-        frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
-        subject = 'Galaxy Account Activation'
-        try:
-            util.send_mail(frm, to, subject, body, trans.app.config)
-            return True
-        except Exception:
-            log.exception('Unable to send the activation email.')
-            return False
-
-    def prepare_activation_link(self, trans, email):
-        """
-        Prepare the account activation link for the user.
-        """
-        activation_token = self.get_activation_token(trans, email)
-        activation_link = url_for(controller='user', action='activate', activation_token=activation_token, email=email, qualified=True)
-        return activation_link
-
-    def get_activation_token(self, trans, email):
-        """
-        Check for the activation token. Create new activation token and store it in the database if no token found.
-        """
-        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-        activation_token = user.activation_token
-        if activation_token is None:
-            activation_token = hash_util.new_secure_hash(str(random.getrandbits(256)))
-            user.activation_token = activation_token
-            trans.sa_session.add(user)
-            trans.sa_session.flush()
-        return activation_token
-
     def _validate_email(self, email):
         ''' Validate email and username using regex '''
         if email == '' or not isinstance(email, six.string_types):
@@ -584,56 +523,17 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesUsersMixin, Cre
         """
         return {'inputs': [{'name': 'current', 'type': 'password', 'label': 'Current password'},
                            {'name': 'password', 'type': 'password', 'label': 'New password'},
-                           {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'},
-                           {'name': 'token', 'type': 'hidden', 'hidden': True, 'ignore': None}]}
+                           {'name': 'confirm', 'type': 'password', 'label': 'Confirm password'}]}
 
     @expose_api
     def set_password(self, trans, id, payload={}, **kwd):
         """
-        Allows to change a user password.
+        Allows to the logged-in user to change own password.
         """
-        password = payload.get('password')
-        confirm = payload.get('confirm')
-        current = payload.get('current')
-        token = payload.get('token')
-        token_result = None
-        if token:
-            # If a token was supplied, validate and set user
-            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
-            if not token_result or not token_result.expiration_time > datetime.utcnow():
-                raise MessageException('Invalid or expired password reset token, please request a new one.')
-            user = token_result.user
-        else:
-            # The user is changing their own password, validate their current password
-            user = self._get_user(trans, id)
-            (ok, message) = trans.app.auth_manager.check_change_password(user, current)
-            if not ok:
-                raise MessageException(message)
-        if user:
-            # Validate the new password
-            message = validate_password(trans, password, confirm)
-            if message:
-                raise MessageException(message)
-            else:
-                # Save new password
-                user.set_password_cleartext(password)
-                # if we used a token, invalidate it and log the user in.
-                if token_result:
-                    trans.handle_user_login(token_result.user)
-                    token_result.expiration_time = datetime.utcnow()
-                    trans.sa_session.add(token_result)
-                # Invalidate all other sessions
-                for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
-                                                 .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                              trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                              trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
-                    other_galaxy_session.is_valid = False
-                    trans.sa_session.add(other_galaxy_session)
-                trans.sa_session.add(user)
-                trans.sa_session.flush()
-                trans.log_event('User change password')
-                return {'message': 'Password has been saved.'}
-        raise MessageException('Failed to determine user, access denied.')
+        user, message = self.user_manager.change_password(trans, id=id, **payload)
+        if user is None:
+            raise MessageException(message)
+        return {"message": "Password has been changed."}
 
     @expose_api
     def get_permissions(self, trans, id, payload={}, **kwd):

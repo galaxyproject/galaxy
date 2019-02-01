@@ -28,16 +28,17 @@ def verify(
     output_content,
     attributes,
     filename=None,
-    get_filename=None,
+    get_filecontent=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
+    mode='file',
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
     Throw an informative assertion error if any of these tests fail.
     """
-    if get_filename is None:
-        get_filename = DEFAULT_TEST_DATA_RESOLVER.get_filename
+    if get_filecontent is None:
+        get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -69,8 +70,19 @@ def verify(
             errmsg += str(err)
             raise AssertionError(errmsg)
 
+    if attributes is None:
+        attributes = {}
+
     if filename is not None:
-        local_name = get_filename(filename)
+        if mode == 'directory':
+            # if verifying a file inside a extra_files_path directory
+            # filename already point to a file that exists on disk
+            local_name = filename
+        else:
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
@@ -88,8 +100,6 @@ def verify(
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
         try:
-            if attributes is None:
-                attributes = {}
             compare = attributes.get('compare', 'diff')
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
                 local_fh, temp_name = _bam_to_sam(local_name, temp_name)
@@ -110,10 +120,6 @@ def verify(
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
                 raise Exception('Unimplemented Compare type: %s' % compare)
-            if verify_extra_files:
-                extra_files = attributes.get('extra_files', None)
-                if extra_files:
-                    verify_extra_files(extra_files)
         except AssertionError as err:
             errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
             errmsg += "( %s v. %s )\n" % (local_name, temp_name)
@@ -122,6 +128,11 @@ def verify(
         finally:
             if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
                 os.remove(temp_name)
+
+    if verify_extra_files:
+        extra_files = attributes.get('extra_files', None)
+        if extra_files:
+            verify_extra_files(extra_files)
 
 
 def make_temp_fname(fname=None):
@@ -229,13 +240,13 @@ def files_diff(file1, file2, attributes=None):
                                 break
                         if not valid_diff:
                             invalid_diff_lines += 1
-                log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d" % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
                 if invalid_diff_lines > allowed_diff_count:
                     # Print out diff_slice so we can see what failed
                     log.info("###### diff_slice ######")
                     raise AssertionError("".join(diff_slice))
             else:
-                log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1, file2, allowed_diff_count, diff_lines))
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d" % (file1, file2, allowed_diff_count, diff_lines))
                 raise AssertionError("".join(diff_slice))
 
 
@@ -243,7 +254,7 @@ def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
     local_file = open(file1, 'U').readlines()  # regex file
     history_data = open(file2, 'U').readlines()
-    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%s != %s)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
+    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):

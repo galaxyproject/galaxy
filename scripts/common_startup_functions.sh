@@ -5,6 +5,8 @@ __CONDA_INFO=
 parse_common_args() {
     INITIALIZE_TOOL_DEPENDENCIES=1
     # Pop args meant for common_startup.sh
+    add_pid_arg=0
+    add_log_arg=0
     while :
     do
         case "$1" in
@@ -24,14 +26,15 @@ parse_common_args() {
             --stop-daemon|stop)
                 common_startup_args="$common_startup_args --stop-daemon"
                 paster_args="$paster_args --stop-daemon"
-                pid_log_paster_args="--pid-file \"$PID_FILE\""
+                add_pid_arg=1
                 uwsgi_args="$uwsgi_args --stop \"$PID_FILE\""
                 stop_daemon_arg_set=1
                 shift
                 ;;
             --restart|restart)
                 paster_args="$paster_args restart"
-                pid_log_paster_args="--pid-file \"$PID_FILE\" --log-file \"$LOG_FILE\""
+                add_pid_arg=1
+                add_log_arg=1
                 uwsgi_args="$uwsgi_args --reload \"$PID_FILE\""
                 restart_arg_set=1
                 daemon_or_restart_arg_set=1
@@ -39,7 +42,9 @@ parse_common_args() {
                 ;;
             --daemon|start)
                 paster_args="$paster_args --daemon"
-                pid_log_paster_args="--pid-file \"$PID_FILE\" --log-file \"$LOG_FILE\""
+                gunicorn_args="$gunicorn_args --daemon"
+                add_pid_arg=1
+                add_log_arg=1
                 # --daemonize2 waits until after the application has loaded
                 # to daemonize, thus it stops if any errors are found
                 uwsgi_args="--master --daemonize2 \"$LOG_FILE\" --pidfile2 \"$PID_FILE\" $uwsgi_args"
@@ -48,7 +53,7 @@ parse_common_args() {
                 ;;
             --status|status)
                 paster_args="$paster_args $1"
-                pid_log_paster_args="--pid-file \"$PID_FILE\""
+                add_pid_arg=1
                 shift
                 ;;
             --wait)
@@ -72,7 +77,7 @@ run_common_start_up() {
 }
 
 conda_activate() {
-    : ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}
+    : ${GALAXY_CONDA_ENV:="_galaxy_"}
     echo "Activating Conda environment: $GALAXY_CONDA_ENV"
     # Dash is actually supported by 4.4, but not with `. /path/to/activate`, only `conda activate`, which we
     # can't load unless we know the path to <conda_root>/etc/profile.d/conda.sh
@@ -101,7 +106,7 @@ setup_python() {
     elif [ -z "$skip_venv" ]; then
         set_conda_exe
         if [ -n "$CONDA_EXE" ] && \
-                check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_$(get_galaxy_major_version)"}; then
+                check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_"}; then
             # You almost surely have pip >= 8.1 and running `conda install ... pip>=8.1` every time is slow
             REPLACE_PIP=0
             [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
@@ -137,8 +142,7 @@ find_server() {
     esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}
-    if [ "$APP_WEBSERVER" = "uwsgi" ];
-    then
+    if [ "$APP_WEBSERVER" = "uwsgi" ]; then
         # Look for uwsgi
         if [ -z "$skip_venv" -a -x $GALAXY_VIRTUAL_ENV/bin/uwsgi ]; then
             UWSGI=$GALAXY_VIRTUAL_ENV/bin/uwsgi
@@ -156,19 +160,25 @@ find_server() {
             server_args="$(eval python ./scripts/get_uwsgi_args.py $arg_getter_args)"
         fi
         server_args="$server_args $uwsgi_args"
-        pid_log_paster_args=""
-    elif [ "$APP_WEBSERVER" = "gunicorn" ];
-    then
+    elif [ "$APP_WEBSERVER" = "gunicorn" ]; then
         export GUNICORN_CMD_ARGS="${GUNICORN_CMD_ARGS:-\"--bind=localhost:8080\"}"
-        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\""
+        server_args="$APP_WEBSERVER --pythonpath lib --paste \"$server_config\" $gunicorn_args"
+        if [ "$add_pid_arg" -eq 1 ]; then
+            server_args="$server_args --pid \"$PID_FILE\""
+        fi
+        if [ "$add_log_arg" -eq 1 ]; then
+            server_args="$server_args --log-file \"$LOG_FILE\""
+        fi
     else
         run_server="python"
         server_args="./scripts/paster.py serve \"$server_config\" $paster_args"
+        if [ "$add_pid_arg" -eq 1 ]; then
+            server_args="$server_args --pid-file \"$PID_FILE\""
+        fi
+        if [ "$add_log_arg" -eq 1 ]; then
+            server_args="$server_args --log-file \"$LOG_FILE\""
+        fi
     fi
-}
-
-get_galaxy_major_version() {
-    PYTHONPATH='lib' python -c 'from galaxy.version import VERSION_MAJOR; print(VERSION_MAJOR)'
 }
 
 # Prior to Conda 4.4, the setup method was to add <conda_root>/bin to $PATH. Beginning with 4.4, that method is still
@@ -221,11 +231,11 @@ check_conda_env() {
     # envs listed in ~/.conda/environments.txt show up in envs.txt but can't be activated by name. =/
     set_conda_info
     printf "%s" "$__CONDA_INFO" \
-        | python -c "import json, os.path, sys; info=json.load(sys.stdin); sys.exit(0 if '$1' in [os.path.basename(p) for p in info['envs'] if os.path.dirname(p) in info['envs_dirs']] else 1)"
+        | python -c "import json, os.path, sys; info = json.load(sys.stdin); sys.exit(0 if '$1' in [os.path.basename(p) for p in info['envs'] if os.path.dirname(p) in info['envs_dirs']] else 1)"
 }
 
 get_conda_env_path() {
     set_conda_info
     printf "%s" "$__CONDA_INFO" \
-        | python -c "import json, os.path, sys; info=json.load(sys.stdin); print([p for p in info['envs'] if os.path.basename(p) == '$1' and os.path.dirname(p) in info['envs_dirs']][0])"
+        | python -c "import json, os.path, sys; info = json.load(sys.stdin); print([p for p in info['envs'] if os.path.basename(p) == '$1' and os.path.dirname(p) in info['envs_dirs']][0])"
 }

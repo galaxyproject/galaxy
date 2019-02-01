@@ -1,9 +1,7 @@
+import { getGalaxyInstance } from "app";
 import DC_VIEW from "mvc/collection/collection-view";
-import DC_MODEL from "mvc/collection/collection-model";
 import DC_EDIT from "mvc/collection/collection-li-edit";
-import BASE_MVC from "mvc/base-mvc";
 import TAGS from "mvc/tag";
-import faIconButton from "ui/fa-icon-button";
 import _l from "utils/localization";
 import "ui/editable-text";
 
@@ -50,6 +48,7 @@ var CollectionViewEdit = _super.extend(
             }
 
             // anon users shouldn't have access to any of the following
+            let Galaxy = getGalaxyInstance();
             if (!Galaxy.user || Galaxy.user.isAnonymous()) {
                 return;
             }

@@ -1,13 +1,13 @@
 /**
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
-/* global Backbone */
-/* global d3 */
-/* global $ */
 /* global ga */
-/* global Galaxy */
-
-import * as _ from "libs/underscore";
+import _ from "underscore";
+import $ from "jquery";
+import d3 from "d3";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import util from "viz/trackster/util";
 import { DatasetCollection } from "mvc/dataset/data";
 
@@ -128,7 +128,7 @@ var Tool = Backbone.Model.extend({
         outputs: []
     },
 
-    urlRoot: `${Galaxy.root}api/tools`,
+    urlRoot: `${getAppRoot()}api/tools`,
 
     initialize: function(options) {
         // Set parameters.
@@ -355,7 +355,7 @@ var ToolSearch = Backbone.Model.extend({
         clear_key: 27
     },
 
-    urlRoot: `${Galaxy.root}api/tools`,
+    urlRoot: `${getAppRoot()}api/tools`,
 
     initialize: function() {
         this.on("change:query", this.do_search);
@@ -386,7 +386,7 @@ var ToolSearch = Backbone.Model.extend({
         this.timer = setTimeout(() => {
             // log the search to analytics if present
             if (typeof ga !== "undefined") {
-                ga("send", "pageview", `${Galaxy.root}?q=${q}`);
+                ga("send", "pageview", `${getAppRoot()}?q=${q}`);
             }
             $.get(
                 self.urlRoot,
@@ -427,21 +427,21 @@ var ToolPanel = Backbone.Model.extend({
         var self = this;
 
         var // Helper to recursively parse tool panel.
-        parse_elt = elt_dict => {
-            var type = elt_dict.model_class;
-            // There are many types of tools; for now, anything that ends in 'Tool'
-            // is treated as a generic tool.
-            if (type.indexOf("Tool") === type.length - 4) {
-                return self.attributes.tools.get(elt_dict.id);
-            } else if (type === "ToolSection") {
-                // Parse elements.
-                var elems = _.map(elt_dict.elems, parse_elt);
-                elt_dict.elems = elems;
-                return new ToolSection(elt_dict);
-            } else if (type === "ToolSectionLabel") {
-                return new ToolSectionLabel(elt_dict);
-            }
-        };
+            parse_elt = elt_dict => {
+                var type = elt_dict.model_class;
+                // There are many types of tools; for now, anything that ends in 'Tool'
+                // is treated as a generic tool.
+                if (type.indexOf("Tool") === type.length - 4) {
+                    return self.attributes.tools.get(elt_dict.id);
+                } else if (type === "ToolSection") {
+                    // Parse elements.
+                    var elems = _.map(elt_dict.elems, parse_elt);
+                    elt_dict.elems = elems;
+                    return new ToolSection(elt_dict);
+                } else if (type === "ToolSectionLabel") {
+                    return new ToolSectionLabel(elt_dict);
+                }
+            };
 
         return _.map(response, parse_elt);
     },
@@ -521,6 +521,7 @@ var ToolLinkView = BaseView.extend({
         if (this.model.id === "upload1") {
             $link.find("a").on("click", e => {
                 e.preventDefault();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.upload.show();
             });
         } else if (formStyle === "regular") {
@@ -528,6 +529,7 @@ var ToolLinkView = BaseView.extend({
             var self = this;
             $link.find("a").on("click", e => {
                 e.preventDefault();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.router.push("/", {
                     tool_id: self.model.id,
                     version: self.model.get("version")

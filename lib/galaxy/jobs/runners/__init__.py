@@ -25,6 +25,10 @@ from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script
 )
+from galaxy.tools.deps.dependencies import (
+    JobInfo,
+    ToolInfo
+)
 from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
     ExecutionTimer,
@@ -233,7 +237,7 @@ class BaseJobRunner(object):
     def queue_job(self, job_wrapper):
         raise NotImplementedError()
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         raise NotImplementedError()
 
     def recover(self, job, job_wrapper):
@@ -394,9 +398,8 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
-        job_info = containers.JobInfo(
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
+        job_info = JobInfo(
             compute_working_directory,
             compute_tool_directory,
             compute_job_directory,
@@ -422,7 +425,8 @@ class BaseJobRunner(object):
 
     def fail_job(self, job_state, exception=False):
         if getattr(job_state, 'stop_job', True):
-            self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+            self.stop_job(job_state.job_wrapper)
+        job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state('failure', job_state)
         # Not convinced this is the best way to indicate this state, but
         # something necessary

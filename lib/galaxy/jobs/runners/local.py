@@ -154,8 +154,9 @@ class LocalJobRunner(BaseJobRunner):
             log.exception("Job wrapper finish method failed")
             self._fail_job_local(job_wrapper, "Unable to finish job")
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        job = job_wrapper.get_job()
         job_ext_output_metadata = job.get_external_output_metadata()
         try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
@@ -164,24 +165,24 @@ class LocalJobRunner(BaseJobRunner):
             # metadata internal or job not complete yet
             pid = job.get_job_runner_external_id()
         if pid in [None, '']:
-            log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.get_id())
+            log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
             return
         pid = int(pid)
         if not self._check_pid(pid):
-            log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.get_id(), pid))
+            log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
             return
         for sig in [15, 9]:
             try:
                 os.killpg(pid, sig)
             except OSError as e:
-                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job.get_id(), errno.errorcode[e.errno], sig, pid, e.strerror))
+                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror))
                 return  # give up
             sleep(2)
             if not self._check_pid(pid):
-                log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.get_id(), pid, sig))
+                log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
                 return
         else:
-            log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.get_id(), pid))
+            log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
 
     def recover(self, job, job_wrapper):
         # local jobs can't be recovered

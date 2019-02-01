@@ -2,7 +2,7 @@
     <requirements>
       <container type="docker">busybox:ubuntu-14.04</container>
     </requirements>
-    <command><![CDATA[
+    <command detect_errors="exit_code"><![CDATA[
       echo `id -u` > '$user_id';
       echo `id -g` > '$group_id';
       echo `pwd` > '$pwd';

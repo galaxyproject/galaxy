@@ -1,10 +1,15 @@
 /**
     This is the main class of the form plugin. It is referenced as 'app' in lower level modules.
 */
+import $ from "jquery";
+import _ from "underscore";
+import Backbone from "backbone";
 import Portlet from "mvc/ui/ui-portlet";
 import Ui from "mvc/ui/ui-misc";
 import FormSection from "mvc/form/form-section";
 import FormData from "mvc/form/form-data";
+import { getGalaxyInstance } from "app";
+
 export default Backbone.View.extend({
     initialize: function(options) {
         this.model = new Backbone.Model({
@@ -28,6 +33,7 @@ export default Backbone.View.extend({
             if (field.update) {
                 field.update(node);
                 field.trigger("change");
+                let Galaxy = getGalaxyInstance();
                 Galaxy.emit.debug("form-view::update()", `Updating input: ${input_id}`);
             }
         });
@@ -151,6 +157,7 @@ export default Backbone.View.extend({
                 message: options.message
             });
         }
+        let Galaxy = getGalaxyInstance();
         Galaxy.emit.debug("form-view::initialize()", "Completed");
     }
 });

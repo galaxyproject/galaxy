@@ -302,8 +302,7 @@ def extract_components_from_tuple(repository_components_tuple):
 def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None):
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = web.url_for('/', qualified=True).rstrip('/')
-    protocol, base = base_url.split('://')
-    sharable_url = '%s://%s/view/%s/%s' % (protocol, base, repository.user.username, repository.name)
+    sharable_url = '%s/view/%s/%s' % (base_url, repository.user.username, repository.name)
     if changeset_revision:
         sharable_url += '/%s' % changeset_revision
     return sharable_url

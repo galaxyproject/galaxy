@@ -23,7 +23,11 @@
                     <b-col md="6">
                         <b-form-group description="Search for strings or regular expressions">
                             <b-input-group>
-                                <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
+                                <b-form-input
+                                    v-model="filter"
+                                    placeholder="Type to Search"
+                                    @keyup.esc.native="filter = ''"
+                                />
                                 <b-input-group-append>
                                     <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
                                 </b-input-group-append>
@@ -37,13 +41,24 @@
                     <b-list-group flush>
                         <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
                             <b-button-group vertical>
-                                <b-button :href="dataManager['toolUrl']" target="_blank" variant="primary" :id="kebabCase(dataManager['name'])">
-                                    <div>{{ dataManager['name'] }}</div>
+                                <b-button
+                                    :href="dataManager['toolUrl']"
+                                    target="_blank"
+                                    variant="primary"
+                                    :id="kebabCase(dataManager['name'])"
+                                >
+                                    <div>{{ dataManager["name"] }}</div>
                                     <div v-if="dataManager['description']">
-                                        <i>{{ dataManager['description'] }}</i>
+                                        <i>{{ dataManager["description"] }}</i>
                                     </div>
                                 </b-button>
-                                <b-button :to="{name: 'DataManagerJobs', params: { id: encodeURIComponent(dataManager['id']) }}" :id="kebabCase(dataManager['name']) + '-jobs'">
+                                <b-button
+                                    :to="{
+                                        name: 'DataManagerJobs',
+                                        params: { id: encodeURIComponent(dataManager['id']) }
+                                    }"
+                                    :id="kebabCase(dataManager['name']) + '-jobs'"
+                                >
                                     Jobs
                                 </b-button>
                             </b-button-group>
@@ -52,9 +67,17 @@
                 </b-card>
                 <b-card no-body header="<h4>Tool Data Tables</h4>">
                     <b-list-group flush>
-                        <b-list-group-item v-for="(dataTable, index) in dataTablesFiltered" :key="index" :to="{name: 'DataManagerTable', params: { name: dataTable['name'] }}" :id="kebabCase(dataTable['name']) + '-table'" :variant="dataTable['managed'] === true ? 'primary' : 'link'">
-                            {{ dataTable['name'] }}
-                            <b-badge v-if="dataTable['managed'] === true" variant="primary" pill><span class="fa fa-exchange" /></b-badge>
+                        <b-list-group-item
+                            v-for="(dataTable, index) in dataTablesFiltered"
+                            :key="index"
+                            :to="{ name: 'DataManagerTable', params: { name: dataTable['name'] } }"
+                            :id="kebabCase(dataTable['name']) + '-table'"
+                            :variant="dataTable['managed'] === true ? 'primary' : 'link'"
+                        >
+                            {{ dataTable["name"] }}
+                            <b-badge v-if="dataTable['managed'] === true" variant="primary" pill
+                                ><span class="fa fa-exchange"
+                            /></b-badge>
                         </b-list-group-item>
                     </b-list-group>
                 </b-card>
@@ -64,6 +87,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
@@ -107,7 +131,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/data_managers_list`)
+            .get(`${getAppRoot()}data_manager/data_managers_list`)
             .then(response => {
                 this.dataManagers = response.data.dataManagers;
                 this.dataTables = response.data.dataTables;

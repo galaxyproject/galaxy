@@ -17,6 +17,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -25,6 +26,7 @@ from galaxy.util import (
     sanitize_text,
     smart_str
 )
+from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
@@ -184,7 +186,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, file_ext)
-        return open(data.metadata.get(metadata_name).file_name)
+        return open(data.metadata.get(metadata_name).file_name, 'rb')
 
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
@@ -459,6 +461,24 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     message = 'Changed the type to %s.' % datatype
             else:
                 return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
+        elif operation == 'datatype_detect':
+            # The user clicked the 'Detect datatype' button on the 'Change data type' form
+            if data.datatype.allow_datatype_change:
+                # prevent modifying datatype when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata(data.id):
+                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
+                else:
+                    path = data.dataset.file_name
+                    is_binary = check_binary(path)
+                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                    trans.app.datatypes_registry.change_datatype(data, datatype)
+                    trans.sa_session.flush()
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                        trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                        overwrite=False)  # overwrite is False as per existing behavior
+                    message = 'Detection was finished and changed the datatype to %s.' % datatype
+            else:
+                return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             # prevent modifying metadata when dataset is queued or running as input/output
@@ -657,7 +677,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.text.Html):
                 trans.response.set_content_type(dataset.get_mime())
-                return open(dataset.file_name)
+                return open(dataset.file_name, 'rb')
             else:
                 # Get rating data.
                 user_item_rating = 0

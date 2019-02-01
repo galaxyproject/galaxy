@@ -1,5 +1,12 @@
 /** Renders the color picker used e.g. in the tool form **/
+import $ from "jquery";
+import Backbone from "backbone";
 import Utils from "utils/utils";
+
+function hex(x) {
+    return `0${parseInt(x).toString(16)}`.slice(-2);
+}
+
 export default Backbone.View.extend({
     colors: {
         standard: ["c00000", "ff0000", "ffc000", "ffff00", "92d050", "00b050", "00b0f0", "0070c0", "002060", "7030a0"],
@@ -55,9 +62,6 @@ export default Backbone.View.extend({
         var rgb = this.$value.css("background-color");
         rgb = rgb.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
         if (rgb) {
-            function hex(x) {
-                return `0${parseInt(x).toString(16)}`.slice(-2);
-            }
             return `#${hex(rgb[1])}${hex(rgb[2])}${hex(rgb[3])}`;
         } else {
             return null;
@@ -123,16 +127,16 @@ export default Backbone.View.extend({
 
     /** Main template */
     _template: function() {
-        return (
-            '<div class="ui-color-picker">' +
-            '<div class="ui-color-picker-header">' +
-            '<div class="ui-color-picker-value"/>' +
-            '<div class="ui-color-picker-label">Select a color</div>' +
-            "</div>" +
-            '<div class="ui-color-picker-view ui-input">' +
-            '<div class="ui-color-picker-panel"/>' +
-            "</div>"
-        );
-        ("</div>");
+        return `
+            <div class="ui-color-picker">
+                <div class="ui-color-picker-header">
+                    <div class="ui-color-picker-value"/>
+                    <div class="ui-color-picker-label">Select a color</div>
+                </div>
+                <div class="ui-color-picker-view ui-input">
+                    <div class="ui-color-picker-panel"/>
+                </div>
+            </div>
+            `;
     }
 });

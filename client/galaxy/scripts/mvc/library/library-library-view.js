@@ -1,6 +1,12 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_select from "mvc/ui/ui-select";
+
 var LibraryView = Backbone.View.extend({
     el: "#center",
 
@@ -32,6 +38,7 @@ var LibraryView = Backbone.View.extend({
                 }
             },
             error: function(model, response) {
+                let Galaxy = getGalaxyInstance();
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`${response.responseJSON.err_msg} Click this to go back.`, "", {
                         onclick: function() {
@@ -61,6 +68,7 @@ var LibraryView = Backbone.View.extend({
             }
         }
         var is_admin = false;
+        let Galaxy = getGalaxyInstance();
         if (Galaxy.user) {
             is_admin = Galaxy.user.isAdmin();
         }
@@ -68,7 +76,7 @@ var LibraryView = Backbone.View.extend({
         this.$el.html(template({ library: this.model, is_admin: is_admin }));
 
         var self = this;
-        $.get(`${Galaxy.root}api/libraries/${self.id}/permissions?scope=current`)
+        $.get(`${getAppRoot()}api/libraries/${self.id}/permissions?scope=current`)
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions
@@ -124,7 +132,7 @@ var LibraryView = Backbone.View.extend({
             placeholder: "Click to select a role",
             container: self.$el.find(`#${id}`),
             ajax: {
-                url: `${Galaxy.root}api/libraries/${
+                url: `${getAppRoot()}api/libraries/${
                     self.id
                 }/permissions?scope=available&is_library_access=${is_library_access}`,
                 dataType: "json",
@@ -174,7 +182,7 @@ var LibraryView = Backbone.View.extend({
 
     makeDatasetPrivate: function() {
         var self = this;
-        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=make_private`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
                 self.showPermissions({
@@ -189,7 +197,7 @@ var LibraryView = Backbone.View.extend({
 
     removeDatasetRestrictions: function() {
         var self = this;
-        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
                 self.showPermissions({
@@ -217,7 +225,7 @@ var LibraryView = Backbone.View.extend({
         var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
         var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
 
-        $.post(`${Galaxy.root}api/libraries/${self.id}/permissions?action=set_permissions`, {
+        $.post(`${getAppRoot()}api/libraries/${self.id}/permissions?action=set_permissions`, {
             "access_ids[]": access_ids,
             "add_ids[]": add_ids,
             "manage_ids[]": manage_ids,

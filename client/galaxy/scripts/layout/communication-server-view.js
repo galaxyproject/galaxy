@@ -1,9 +1,10 @@
 /** Real-time Communication feature **/
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
 import Modal from "mvc/ui/ui-modal";
-/* global $ */
+import { getGalaxyInstance } from "app";
 
 export var CommunicationServerView = Backbone.View.extend({
     initialize: function() {
@@ -12,13 +13,14 @@ export var CommunicationServerView = Backbone.View.extend({
 
     /** makes bootstrap modal and iframe inside it */
     makeModalIframe: function(e) {
+        let Galaxy = getGalaxyInstance();
         // make modal
-        var host = window.Galaxy.config.communication_server_host;
+        var host = Galaxy.config.communication_server_host;
 
-        var port = window.Galaxy.config.communication_server_port;
-        var username = _.escape(window.Galaxy.user.attributes.username);
+        var port = Galaxy.config.communication_server_port;
+        var username = _.escape(Galaxy.user.attributes.username);
 
-        var persistent_communication_rooms = _.escape(window.Galaxy.config.persistent_communication_rooms);
+        var persistent_communication_rooms = _.escape(Galaxy.config.persistent_communication_rooms);
 
         var query_string = `?username=${username}&persistent_communication_rooms=${persistent_communication_rooms}`;
 

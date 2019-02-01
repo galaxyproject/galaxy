@@ -6,6 +6,6 @@
 # appropriate `apt-get/pip install` statements.
 ---
 -
-    image: quay.io/sanbi-sa/neo_ie:3.1
+    image: quay.io/sanbi-sa/neo_ie:3.1.9
     description: |
         Neo4j is a highly scalable, robust native graph database.

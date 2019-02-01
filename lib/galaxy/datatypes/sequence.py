@@ -551,7 +551,7 @@ class Fastg(Sequence):
     edam_format = "format_3823"
     file_ext = "fastg"
 
-    MetadataElement(name="version", default='1.0', desc="FASTG formaat version", readonly=True, visible=True, no_value='1.0')
+    MetadataElement(name="version", default='1.0', desc="FASTG format version", readonly=True, visible=True, no_value='1.0')
     MetadataElement(name="properties", default={}, param=DictParameter, desc="FASTG properites", readonly=True, visible=True, no_value={})
 
     def sniff_prefix(self, file_prefix):
@@ -582,7 +582,6 @@ class Fastg(Sequence):
         False
         >>> fname = get_test_fname( 'sequence.fastg' )
         >>> Fastg().sniff( fname )
-        >>> csFasta().sniff( fname )
         True
         """
         fh = file_prefix.string_io()
@@ -595,11 +594,10 @@ class Fastg(Sequence):
                     break
             elif line and not line.startswith('#'):  # first non-empty non-comment line
                 if line.startswith('>'):
+                    # The next line.strip() must not be '', nor startwith '>'
                     line = fh.readline().strip()
                     if line == '' or line.startswith('>'):
                         break
-                    elif len(line) > 1 and not re.search(r'^[\d.]+$', line[1:]):
-                        return False
                     return True
                 else:
                     break  # we found a non-empty line, but it's not a header
@@ -618,7 +616,7 @@ class Fastg(Sequence):
                     props = {x.split('=')[0][1:]: x.split('=')[1] for x in re.findall(':[a-zA-Z0-9_]+=[a-zA-Z0-9_().,\" ]+', line)}
                     dataset.metadata.properties.update(props)
                     if 'version' in props:
-                        dataset.metadata.verion = props['version']
+                        dataset.metadata.version = props['version']
                 if line and line.startswith('>'):
                     break
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
@@ -635,7 +633,7 @@ class Fastg(Sequence):
             else:
                 dataset.blurb = nice_size(dataset.get_size())
             dataset.blurb += '\nversion=%s' % dataset.metadata.version
-            for k, v in dataset.metadata.properies.iteritems():
+            for k, v in dataset.metadata.properties.items():
                 if k != 'version':
                     dataset.blurb += '\n%s=%s' % (k, v)
         else:

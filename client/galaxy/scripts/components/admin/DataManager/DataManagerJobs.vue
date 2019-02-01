@@ -1,64 +1,85 @@
 <template>
-  <div>
-    <b-breadcrumb v-if="dataManager && !loading" :items="breadcrumbItems" id="breadcrumb" />
-    <Alert :message="message" :variant="status" />
-    <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-    <Alert v-else-if="loading" message="Waiting for data" variant="info" />
-    <Alert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
-    <div v-else-if="jobs">
-      <b-container fluid class="mb-3">
-        <b-row>
-          <b-col md="6">
-            <b-form-group description="Search for strings or regular expressions">
-              <b-input-group>
-                <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
-                <b-input-group-append>
-                  <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                </b-input-group-append>
-              </b-input-group>
-            </b-form-group>
-          </b-col>
-        </b-row>
-        <b-row>
-          <b-col>
-            <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
-              {{ showCommandLine ? 'Hide' : 'Show'}} Command Line
-            </b-button>
-          </b-col>
-        </b-row>
-      </b-container>
-      <b-table :fields="tableFields" :items="tableItems" :filter="filter" hover responsive striped id="jobs-table">
-        <!-- Enable cell formatting for the command line column -->
-        <span slot="html" slot-scope="data" v-html="data.value">
-        </span>
-        <template slot="actions" slot-scope="row">
-          <b-button-group>
-            <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
-              <span class="fa fa-refresh" />
-            </b-button>
-            <b-button v-b-tooltip.hover title="View Info" :to="{name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] }}" :id="'job-' + jobs[row.index]['encId']">
-              <span class="fa fa-info-circle" />
-            </b-button>
-            <b-button v-if="!showCommandLine" @click.stop="row.toggleDetails()" :pressed.sync="row.detailsShowing">
-              {{ row.detailsShowing ? 'Hide' : 'Show'}} Command Line
-            </b-button>
-          </b-button-group>
-        </template>
-        <template slot="row-details" slot-scope="row">
-          <b-card>
-            <h5>Command Line</h5>
-            <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
-            <template slot="footer">
-              <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
-            </template>
-          </b-card>
-        </template>
-      </b-table>
+    <div>
+        <b-breadcrumb v-if="dataManager && !loading" :items="breadcrumbItems" id="breadcrumb" />
+        <Alert :message="message" :variant="status" />
+        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <Alert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
+        <div v-else-if="jobs">
+            <b-container fluid class="mb-3">
+                <b-row>
+                    <b-col md="6">
+                        <b-form-group description="Search for strings or regular expressions">
+                            <b-input-group>
+                                <b-form-input
+                                    v-model="filter"
+                                    placeholder="Type to Search"
+                                    @keyup.esc.native="filter = ''"
+                                />
+                                <b-input-group-append>
+                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
+                                </b-input-group-append>
+                            </b-input-group>
+                        </b-form-group>
+                    </b-col>
+                </b-row>
+                <b-row>
+                    <b-col>
+                        <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
+                            {{ showCommandLine ? "Hide" : "Show" }} Command Line
+                        </b-button>
+                    </b-col>
+                </b-row>
+            </b-container>
+            <b-table
+                :fields="tableFields"
+                :items="tableItems"
+                :filter="filter"
+                hover
+                responsive
+                striped
+                id="jobs-table"
+            >
+                <!-- Enable cell formatting for the command line column -->
+                <span slot="html" slot-scope="data" v-html="data.value"> </span>
+                <template slot="actions" slot-scope="row">
+                    <b-button-group>
+                        <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
+                            <span class="fa fa-refresh" />
+                        </b-button>
+                        <b-button
+                            v-b-tooltip.hover
+                            title="View Info"
+                            :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }"
+                            :id="'job-' + jobs[row.index]['encId']"
+                        >
+                            <span class="fa fa-info-circle" />
+                        </b-button>
+                        <b-button
+                            v-if="!showCommandLine"
+                            @click.stop="row.toggleDetails()"
+                            :pressed.sync="row.detailsShowing"
+                        >
+                            {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
+                        </b-button>
+                    </b-button-group>
+                </template>
+                <template slot="row-details" slot-scope="row">
+                    <b-card>
+                        <h5>Command Line</h5>
+                        <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
+                        <template slot="footer">
+                            <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
+                        </template>
+                    </b-card>
+                </template>
+            </b-table>
+        </div>
     </div>
-  </div>
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
@@ -156,7 +177,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/jobs_list?id=${decodeURIComponent(this.id)}`)
+            .get(`${getAppRoot()}data_manager/jobs_list?id=${decodeURIComponent(this.id)}`)
             .then(response => {
                 this.dataManager = response.data.dataManager;
                 this.jobs = response.data.jobs;

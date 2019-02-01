@@ -1,6 +1,9 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
@@ -9,6 +12,7 @@ import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectGenomeSpace from "mvc/ui/ui-select-genomespace";
 import RulesEdit from "mvc/ui/ui-rules-edit";
 import ColorPicker from "mvc/ui/ui-color-picker";
+
 // create form view
 export default Backbone.Model.extend({
     /** Available parameter types */
@@ -37,6 +41,7 @@ export default Backbone.Model.extend({
 
     /** Returns an input field for a given field type */
     create: function(input_def) {
+        let Galaxy = getGalaxyInstance();
         var fieldClass = this.types[input_def.type];
         var field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!field) {

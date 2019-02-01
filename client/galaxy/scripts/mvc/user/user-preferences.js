@@ -1,11 +1,18 @@
-import _l from "utils/localization";
 /** User Preferences view */
-import Form from "mvc/form/form-view";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Form from "mvc/form/form-view";
 import Ui from "mvc/ui/ui-misc";
 import QueryStringParsing from "utils/query-string-parsing";
+
 /** Contains descriptive dictionaries describing user forms */
 var Model = Backbone.Model.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         options = options || {};
         options.user_id = options.user_id || Galaxy.user.id;
         this.set({
@@ -41,6 +48,40 @@ var Model = Backbone.Model.extend({
                 submit_title: "Save permissions",
                 redirect: "user"
             },
+            make_data_private: {
+                title: _l("Make all data private"),
+                description: _l("Click here to make all data private."),
+                icon: "fa-lock",
+                onclick: function() {
+                    if (
+                        confirm(
+                            _l(
+                                "WARNING: This will make all datasets (excluding library datasets) for which you have " +
+                                    "'management' permissions, in all of your histories " +
+                                    "private, and will set permissions such that all " +
+                                    "of your new data in these histories is created as private.  Any " +
+                                    "datasets within that are currently shared will need " +
+                                    "to be re-shared or published.  Are you sure you " +
+                                    "want to do this?"
+                            )
+                        )
+                    ) {
+                        $.post(`${Galaxy.root}history/make_private`, { all_histories: true }, () => {
+                            Galaxy.modal.show({
+                                title: _l("Datasets are now private"),
+                                body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${
+                                    Galaxy.root
+                                }user/permissions">User Permissions</a> interface.`,
+                                buttons: {
+                                    Close: function() {
+                                        Galaxy.modal.hide();
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+            },
             api_key: {
                 title: _l("Manage API key"),
                 description: _l("Access your current API key or create a new one."),
@@ -57,20 +98,12 @@ var Model = Backbone.Model.extend({
                 submit_title: "Save filters",
                 redirect: "user"
             },
-            openids: {
-                title: _l("Manage OpenIDs"),
-                description: _l("Associate OpenIDs with your account."),
-                icon: "fa-openid",
-                onclick: function() {
-                    Galaxy.page.router.push(`${Galaxy.root}openids/list`);
-                }
-            },
             custom_builds: {
                 title: _l("Manage custom builds"),
                 description: _l("Add or remove custom builds using history datasets."),
                 icon: "fa-cubes",
                 onclick: function() {
-                    Galaxy.page.router.push(`${Galaxy.root}custom_builds`);
+                    Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
                 }
             },
             logout: {
@@ -86,7 +119,7 @@ var Model = Backbone.Model.extend({
                                 Galaxy.modal.hide();
                             },
                             "Sign out": function() {
-                                window.location.href = `${Galaxy.root}user/logout?session_csrf_token=${
+                                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
                                     Galaxy.session_csrf_token
                                 }`;
                             }
@@ -110,8 +143,9 @@ var View = Backbone.View.extend({
 
     render: function() {
         var self = this;
+        let Galaxy = getGalaxyInstance();
         var config = Galaxy.config;
-        $.getJSON(`${Galaxy.root}api/users/${Galaxy.user.id}`, data => {
+        $.getJSON(`${getAppRoot()}api/users/${Galaxy.user.id}`, data => {
             self.$preferences = $("<div/>")
                 .append($("<h2/>").append("User preferences"))
                 .append($("<p/>").append(`You are logged in as <strong>${_.escape(data.email)}</strong>.`))
@@ -130,12 +164,10 @@ var View = Backbone.View.extend({
             }
             self._addLink("custom_builds");
             self._addLink("permissions");
+            self._addLink("make_data_private");
             self._addLink("api_key");
             if (config.has_user_tool_filters) {
                 self._addLink("toolbox_filters");
-            }
-            if (config.enable_openid && !config.use_remote_user) {
-                self._addLink("openids");
             }
             if (Galaxy.session_csrf_token) {
                 self._addLink("logout");
@@ -154,7 +186,7 @@ var View = Backbone.View.extend({
                 options.onclick();
             });
         } else {
-            $a.attr("href", `${Galaxy.root}user/${action}`);
+            $a.attr("href", `${getAppRoot()}user/${action}`);
         }
         this.$table.append($row);
     },
@@ -172,6 +204,7 @@ var View = Backbone.View.extend({
     },
 
     _templateFooter: function(options) {
+        let Galaxy = getGalaxyInstance();
         return `<p class="mt-2">You are using <strong>${
             options.nice_total_disk_usage
         }</strong> of disk space in this Galaxy instance. ${

@@ -348,15 +348,6 @@ $separator-color: #888;
 
 // Styles for tools and filters.
 input {
-    font: 10px verdana;
-
-    // Override Galaxy defaults to make a smaller button.
-    &[type="submit"] {
-        padding: 0px;
-        margin-right: 20px;
-        font-size: inherit;
-    }
-
     &.color-input {
         float: left;
     }

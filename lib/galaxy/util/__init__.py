@@ -222,6 +222,11 @@ def parse_xml(fname):
     tree = ElementTree.ElementTree()
     try:
         root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
+        for elem in root.iter('*'):
+            if elem.text is not None:
+                elem.text = elem.text.strip()
+            if elem.tail is not None:
+                elem.tail = elem.tail.strip()
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
@@ -231,11 +236,18 @@ def parse_xml(fname):
 
 def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
+    for elem in tree.iter('*'):
+        if elem.text is not None:
+            elem.text = elem.text.strip()
+        if elem.tail is not None:
+            elem.tail = elem.tail.strip()
     return tree
 
 
 def xml_to_string(elem, pretty=False):
-    """Returns a string from an xml tree"""
+    """
+    Returns a string from an xml tree.
+    """
     try:
         if elem is not None:
             if PY2:
@@ -1347,42 +1359,48 @@ def nice_size(size):
 
 def size_to_bytes(size):
     """
-    Returns a number of bytes if given a reasonably formatted string with the size
+    Returns a number of bytes (as integer) if given a reasonably formatted string with the size
 
     >>> size_to_bytes('1024')
     1024
+    >>> size_to_bytes('1.0')
+    1
     >>> size_to_bytes('10 bytes')
     10
     >>> size_to_bytes('4k')
     4096
     >>> size_to_bytes('2.2 TB')
     2418925581107
+    >>> size_to_bytes('.01 TB')
+    10995116277
+    >>> size_to_bytes('1.b')
+    1
+    >>> size_to_bytes('1.2E2k')
+    122880
     """
-    # Assume input in bytes if we can convert directly to an int
-    try:
-        return int(size)
-    except ValueError:
-        pass
-    # Otherwise it must have non-numeric characters
-    size_re = re.compile(r'([\d\.]+)\s*([eptgmk]b?|b|bytes?)$')
+    # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
+    size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
     size_match = size_re.match(size.lower())
-    assert size_match is not None
-    size = float(size_match.group(1))
-    multiple = size_match.group(2)
-    if multiple.startswith('b'):
-        return int(size)
+    if size_match is None:
+        raise ValueError("Could not parse string '%s'" % size)
+    number = float(size_match.group("number"))
+    multiple = size_match.group("multiple")
+    if multiple == "" or multiple.startswith('b'):
+        return int(number)
     elif multiple.startswith('k'):
-        return int(size * 1024)
+        return int(number * 1024)
     elif multiple.startswith('m'):
-        return int(size * 1024 ** 2)
+        return int(number * 1024 ** 2)
     elif multiple.startswith('g'):
-        return int(size * 1024 ** 3)
+        return int(number * 1024 ** 3)
     elif multiple.startswith('t'):
-        return int(size * 1024 ** 4)
+        return int(number * 1024 ** 4)
     elif multiple.startswith('p'):
-        return int(size * 1024 ** 5)
+        return int(number * 1024 ** 5)
     elif multiple.startswith('e'):
-        return int(size * 1024 ** 6)
+        return int(number * 1024 ** 6)
+    else:
+        raise ValueError("Unknown multiplier '%s' in '%s'" % (multiple, size))
 
 
 def send_mail(frm, to, subject, body, config, html=None):

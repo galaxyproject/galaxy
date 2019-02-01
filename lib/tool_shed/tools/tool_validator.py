@@ -225,7 +225,7 @@ class ToolValidator(object):
                 # Load entries into the tool_data_tables if the tool requires them.
                 tool_data_table_config = os.path.join(work_dir, 'tool_data_table_conf.xml')
                 error, message = self.stdtm.handle_sample_tool_data_table_conf_file(tool_data_table_config,
-                                                                                   persist=False)
+                                                                                    persist=False)
         manifest_ctx, ctx_file = hg_util.get_ctx_file_path_from_manifest(tool_config_filename, repo, changeset_revision)
         if manifest_ctx and ctx_file:
             tool, valid, message2 = self.load_tool_from_tmp_config(repo, repository_id, manifest_ctx, ctx_file, work_dir)

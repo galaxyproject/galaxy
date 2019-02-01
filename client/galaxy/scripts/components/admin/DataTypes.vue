@@ -1,23 +1,24 @@
 <template>
-  <div>
-    <Message :message="message" :status="status" />
-    <BaseGrid v-if="status !== 'error'"
-              :columns="columns"
-              :rows="dataTypes"
-              :isLoaded="isDataLoaded"
-              id="data-types-grid">
-      <template slot="title">
-        <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
-        <input type="checkbox"
-               id="showAllColumns"
-               v-model="showAllColumns">
-        <label for="showAllColumns">Show all columns</label>
-      </template>
-    </BaseGrid>
-  </div>
+    <div>
+        <Message :message="message" :status="status" />
+        <BaseGrid
+            v-if="status !== 'error'"
+            :columns="columns"
+            :rows="dataTypes"
+            :isLoaded="isDataLoaded"
+            id="data-types-grid"
+        >
+            <template slot="title">
+                <p>Current data types registry contains {{ dataTypes.length }} data types.</p>
+                <input type="checkbox" id="showAllColumns" v-model="showAllColumns" />
+                <label for="showAllColumns">Show all columns</label>
+            </template>
+        </BaseGrid>
+    </div>
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Message from "../Message.vue";
 import BaseGrid from "./BaseGrid.vue";
@@ -87,7 +88,7 @@ export default {
 
     created() {
         axios
-            .get(`${Galaxy.root}admin/data_types_list`)
+            .get(`${getAppRoot()}admin/data_types_list`)
             .then(response => {
                 this.keys = response.data.keys;
                 this.dataTypes = response.data.data;

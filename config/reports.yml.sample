@@ -113,7 +113,7 @@ reports:
   #use_lint: false
 
   # NEVER enable this on a public site (even test or QA)
-  #use_interactive: true
+  #use_interactive: false
 
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk space rapidly!)

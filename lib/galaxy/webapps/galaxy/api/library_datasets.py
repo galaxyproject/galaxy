@@ -155,7 +155,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.serialize_dataset_association_roles(library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -230,7 +230,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if action == 'remove_restrictions':
             trans.app.security_agent.make_dataset_public(dataset)
             if not trans.app.security_agent.dataset_is_public(dataset):
-                raise exceptions.InternalServerError('An error occured while making dataset public.')
+                raise exceptions.InternalServerError('An error occurred while making dataset public.')
         elif action == 'make_private':
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 private_role = trans.app.security_agent.get_private_user_role(trans.user)
@@ -239,7 +239,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 trans.sa_session.flush()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
-                raise exceptions.InternalServerError('An error occured and the dataset is NOT private.')
+                raise exceptions.InternalServerError('An error occurred and the dataset is NOT private.')
         elif action == 'set_permissions':
             # ACCESS DATASET ROLES
             valid_access_roles = []
@@ -706,7 +706,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:
-                    return open(dataset.file_name)
+                    return open(dataset.file_name, 'rb')
                 except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:

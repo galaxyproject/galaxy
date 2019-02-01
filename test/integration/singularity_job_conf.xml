@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins>
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
+    </plugins>
+
+    <handlers>
+        <handler id="main"/>
+    </handlers>
+
+    <destinations default="local_singularity">
+        <destination id="local_singularity" runner="local">
+            <param id="singularity_enabled">true</param>
+        </destination>
+
+        <destination id="local_upload" runner="local">
+        </destination>
+
+    </destinations>
+
+    <tools>
+        <tool id="upload1" destination="local_upload" />
+    </tools>
+
+</job_conf>

@@ -1,7 +1,12 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select-default";
+import { getGalaxyInstance } from "app";
+
 /** Batch mode variations */
 var Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
@@ -169,20 +174,20 @@ var View = Backbone.View.extend({
         };
 
         // add drag-drop event handlers
-        this.$el
-            .on("dragenter", function(e) {
-                this.lastenter = e.target;
-                self.$el.addClass("ui-dragover");
-            })
-            .on("dragover", e => {
-                e.preventDefault();
-            })
-            .on("dragleave", function(e) {
-                this.lastenter === e.target && self.$el.removeClass("ui-dragover");
-            })
-            .on("drop", e => {
-                self._handleDrop(e);
-            });
+        let element = this.$el.get(0);
+        element.addEventListener("dragenter", e => {
+            this.lastenter = e.target;
+            self.$el.addClass("ui-dragover");
+        });
+        element.addEventListener("dragover", e => {
+            e.preventDefault();
+        });
+        element.addEventListener("dragleave", e => {
+            this.lastenter === e.target && self.$el.removeClass("ui-dragover");
+        });
+        element.addEventListener("drop", e => {
+            self._handleDrop(e);
+        });
 
         // track current history elements
         this.history = {};
@@ -229,6 +234,7 @@ var View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function(new_value) {
+        let Galaxy = getGalaxyInstance();
         new_value !== undefined && this.model.set("value", new_value);
         var current = this.model.get("current");
         if (this.config[current]) {
@@ -277,6 +283,7 @@ var View = Backbone.View.extend({
 
     /** Change of type */
     _changeType: function() {
+        let Galaxy = getGalaxyInstance();
         var self = this;
 
         // identify selector type identifier i.e. [ flavor ]_[ type ]_[ multiple ]
@@ -412,7 +419,7 @@ var View = Backbone.View.extend({
             var current = this.model.get("current");
             var config = this.config[current];
             var field = this.fields[current];
-            var drop_data = JSON.parse(ev.originalEvent.dataTransfer.getData("text"))[0];
+            var drop_data = JSON.parse(ev.dataTransfer.getData("text"))[0];
             var new_id = drop_data.id;
             var new_src = drop_data.history_content_type == "dataset_collection" ? "hdca" : "hda";
             var new_value = { id: new_id, src: new_src };

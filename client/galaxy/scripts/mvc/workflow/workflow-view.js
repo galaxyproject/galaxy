@@ -1,5 +1,8 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import Utils from "utils/utils";
 import Workflow from "mvc/workflow/workflow-manager";
@@ -11,13 +14,8 @@ import Ui from "mvc/ui/ui-misc";
 import async_save_text from "utils/async-save-text";
 import "ui/editable-text";
 
-/* global $ */
-/* global Galaxy */
-// TODO: make show_message and the other utility functions importable/used
-// everywhere, instead of this global model
-/* global show_message */
-/* global hide_modal */
-/* global make_popupmenu */
+import { hide_modal, show_message, show_modal } from "layout/modal";
+import { make_popupmenu } from "ui/popupmenu";
 
 // TODO; tie into Galaxy state?
 window.workflow_globals = window.workflow_globals || {};
@@ -77,7 +75,7 @@ export default Backbone.View.extend({
                     window.onbeforeunload = undefined;
                     window.document.location = self.urls.workflow_index;
                 };
-                window.show_modal(
+                show_modal(
                     "Close workflow editor",
                     "There are unsaved changes to your workflow which will be lost.",
                     {
@@ -107,7 +105,7 @@ export default Backbone.View.extend({
             }
             self.workflow.rectify_workflow_outputs();
             Utils.request({
-                url: `${Galaxy.root}api/workflows/${self.options.id}`,
+                url: `${getAppRoot()}api/workflows/${self.options.id}`,
                 type: "PUT",
                 data: { workflow: self.workflow.to_simple() },
                 success: function(data) {
@@ -131,7 +129,7 @@ export default Backbone.View.extend({
                     self.showWorkflowParameters();
                     self.build_version_select();
                     if (data.errors) {
-                        window.show_modal("Saving workflow", body, {
+                        show_modal("Saving workflow", body, {
                             Ok: hide_modal
                         });
                     } else {
@@ -142,7 +140,7 @@ export default Backbone.View.extend({
                     }
                 },
                 error: function(response) {
-                    window.show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
+                    show_modal("Saving workflow failed.", response.err_msg, { Ok: hide_modal });
                 }
             });
         };
@@ -256,7 +254,7 @@ export default Backbone.View.extend({
         // get available datatypes for post job action options
         this.datatypes = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes`,
+                url: `${getAppRoot()}api/datatypes`,
                 async: false
             }).responseText
         );
@@ -264,7 +262,7 @@ export default Backbone.View.extend({
         // get datatype mapping options
         this.datatypes_mapping = JSON.parse(
             $.ajax({
-                url: `${Galaxy.root}api/datatypes/mapping`,
+                url: `${getAppRoot()}api/datatypes/mapping`,
                 async: false
             }).responseText
         );
@@ -277,7 +275,7 @@ export default Backbone.View.extend({
             let _workflow_version_dropdown = {};
             let workflow_versions = JSON.parse(
                 $.ajax({
-                    url: `${Galaxy.root}api/workflows/${self.options.id}/versions`,
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/versions`,
                     async: false
                 }).responseText
             );
@@ -334,7 +332,6 @@ export default Backbone.View.extend({
                     self.workflow.fit_canvas_to_nodes();
                     self.scroll_to_nodes();
                     self.canvas_manager.draw_overview();
-                    // make_popupmenu($("#workflow-versions-switch"), self.get_workflow_versions());
                     self.build_version_select();
 
                     // Determine if any parameters were 'upgraded' and provide message
@@ -354,7 +351,7 @@ export default Backbone.View.extend({
                         }
                     });
                     if (upgrade_message) {
-                        window.show_modal(
+                        show_modal(
                             "Issues loading this workflow",
                             `Please review the following issues, possibly resulting from tool upgrades or changes.<p><ul>${upgrade_message}</ul></p>`,
                             { Continue: hide_modal }
@@ -365,7 +362,7 @@ export default Backbone.View.extend({
                     self.showWorkflowParameters();
                 },
                 error: function(response) {
-                    window.show_modal("Loading workflow failed.", response.err_msg, {
+                    show_modal("Loading workflow failed.", response.err_msg, {
                         Ok: function(response) {
                             window.onbeforeunload = undefined;
                             window.document.location = workflow_index;
@@ -380,19 +377,19 @@ export default Backbone.View.extend({
 
         // Load workflow definition
         this.load_workflow(self.options.id, self.options.version);
-        if (window.make_popupmenu) {
+        if (make_popupmenu) {
             make_popupmenu($("#workflow-options-button"), {
                 Save: save_current_workflow,
                 "Save As": workflow_save_as,
                 Run: function() {
-                    window.location = `${Galaxy.root}workflows/run?id=${self.options.id}`;
+                    window.location = `${getAppRoot()}workflows/run?id=${self.options.id}`;
                 },
                 "Edit Attributes": function() {
                     self.workflow.clear_active_node();
                 },
                 "Auto Re-layout": layout_editor,
                 Download: {
-                    url: `${Galaxy.root}api/workflows/${self.options.id}/download?format=json-download`,
+                    url: `${getAppRoot()}api/workflows/${self.options.id}/download?format=json-download`,
                     action: function() {}
                 },
                 Close: close_editor
@@ -405,7 +402,7 @@ export default Backbone.View.extend({
                 '<form><label style="display:inline-block; width: 100%;">Save as name: </label><input type="text" id="workflow_rename" style="width: 80%;" autofocus/>' +
                     '<br><label style="display:inline-block; width: 100%;">Annotation: </label><input type="text" id="wf_annotation" style="width: 80%;" /></form>'
             );
-            window.show_modal("Save As a New Workflow", body, {
+            show_modal("Save As a New Workflow", body, {
                 OK: function() {
                     var rename_name =
                         $("#workflow_rename").val().length > 0
@@ -425,7 +422,7 @@ export default Backbone.View.extend({
                     })
                         .done(id => {
                             window.onbeforeunload = undefined;
-                            window.location = `${Galaxy.root}workflow/editor?id=${id}`;
+                            window.location = `${getAppRoot()}workflow/editor?id=${id}`;
                             hide_modal();
                         })
                         .fail(() => {
@@ -445,48 +442,20 @@ export default Backbone.View.extend({
         }
 
         // On load, set the size to the pref stored in local storage if it exists
-        var overview_size = $.jStorage.get("overview-size");
+        var overview_size = localStorage.getItem("overview-size");
         if (overview_size !== undefined) {
-            $("#overview-border").css({
+            $(".workflow-overview").css({
                 width: overview_size,
                 height: overview_size
             });
         }
 
-        // Show viewport on load unless pref says it's off
-        if ($.jStorage.get("overview-off")) {
-            hide_overview();
-        } else {
-            show_overview();
-        }
-
         // Stores the size of the overview into local storage when it's resized
-        $("#overview-border").bind("dragend", function(e, d) {
+        $(".workflow-overview").bind("dragend", function(e, d) {
             var op = $(this).offsetParent();
             var opo = op.offset();
             var new_size = Math.max(op.width() - (d.offsetX - opo.left), op.height() - (d.offsetY - opo.top));
-            $.jStorage.set("overview-size", `${new_size}px`);
-        });
-
-        function show_overview() {
-            $.jStorage.set("overview-off", false);
-            $("#overview-border").css("right", "0px");
-            $("#close-viewport").css("background-position", "0px 0px");
-        }
-
-        function hide_overview() {
-            $.jStorage.set("overview-off", true);
-            $("#overview-border").css("right", "20000px");
-            $("#close-viewport").css("background-position", "12px 0px");
-        }
-
-        // Lets the overview be toggled visible and invisible, adjusting the arrows accordingly
-        $("#close-viewport").click(() => {
-            if ($("#overview-border").css("right") === "0px") {
-                hide_overview();
-            } else {
-                show_overview();
-            }
+            localStorage.setItem("overview-size", `${new_size}px`);
         });
 
         // Unload handler
@@ -559,6 +528,7 @@ export default Backbone.View.extend({
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Copy and insert individual steps"),
                     onclick: function() {
+                        let Galaxy = getGalaxyInstance();
                         if (workflow.step_count < 2) {
                             self.copy_into_workflow(workflow.id, workflow.name);
                         } else {
@@ -599,7 +569,7 @@ export default Backbone.View.extend({
     copy_into_workflow: function(workflowId) {
         // Load workflow definition
         var self = this;
-        this._workflowLoadAjax(workflowId, None, {
+        this._workflowLoadAjax(workflowId, null, {
             success: function(data) {
                 self.workflow.from_simple(data, false);
                 // Determine if any parameters were 'upgraded' and provide message
@@ -612,7 +582,7 @@ export default Backbone.View.extend({
                     upgrade_message += "</ul></li>";
                 });
                 if (upgrade_message) {
-                    window.show_modal(
+                    show_modal(
                         "Subworkflow embedded with changes",
                         `Problems were encountered loading this workflow (possibly a result of tool upgrades). Please review the following parameters and then save.<ul>${upgrade_message}</ul>`,
                         { Continue: hide_modal }
@@ -668,7 +638,7 @@ export default Backbone.View.extend({
         var self = this;
         Utils.request({
             type: "POST",
-            url: `${Galaxy.root}api/workflows/build_module`,
+            url: `${getAppRoot()}api/workflows/build_module`,
             data: request_data,
             success: function(data) {
                 node.init_field_data(data);
@@ -773,6 +743,7 @@ export default Backbone.View.extend({
         const cls = "right-content";
         var id = `${cls}-${node.id}`;
         var $container = $(`#${cls}`);
+        let Galaxy = getGalaxyInstance();
         if (content && $container.find(`#${id}`).length === 0) {
             var $el = $(`<div id="${id}" class="${cls}"/>`);
             content.node = node;
@@ -812,9 +783,7 @@ export default Backbone.View.extend({
         var node = new Node(this, { element: $f });
         node.type = type;
         node.content_id = content_id;
-        var tmp = `<div><img height='16' align='middle' src='${
-            Galaxy.root
-        }static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
+        var tmp = `<div><img height='16' align='middle' src='${getAppRoot()}static/images/loading_small_white_bg.gif'/> loading tool info...</div>`;
         $f.find(".toolFormBody").append(tmp);
         // Fix width to computed width
         // Now add floats

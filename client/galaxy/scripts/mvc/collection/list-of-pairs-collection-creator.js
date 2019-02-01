@@ -1,3 +1,8 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import levenshteinDistance from "utils/levenshtein";
 import naturalSort from "utils/natural-sort";
 import baseCreator from "mvc/collection/base-creator";
@@ -629,7 +634,7 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
         createList: function(name) {
             var self = this;
 
-            var url = `${Galaxy.root}api/histories/${this.historyId}/contents/dataset_collections`;
+            var url = `${getAppRoot()}api/histories/${this.historyId}/contents/dataset_collections`;
 
             var ajaxData = {
                 type: "dataset_collection",
@@ -641,13 +646,12 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
             };
             //this.debug( JSON.stringify( ajaxData ) );
             self.blocking = true;
-            return jQuery
-                .ajax(url, {
-                    type: "POST",
-                    contentType: "application/json",
-                    dataType: "json",
-                    data: JSON.stringify(ajaxData)
-                })
+            return $.ajax(url, {
+                type: "POST",
+                contentType: "application/json",
+                dataType: "json",
+                data: JSON.stringify(ajaxData)
+            })
                 .always(() => {
                     self.blocking = false;
                 })
@@ -1791,7 +1795,8 @@ var PairedCollectionCreator = Backbone.View.extend(baseMVC.LoggableMixin)
 //=============================================================================
 /** a modal version of the paired collection creator */
 var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datasets, options) {
-    var deferred = jQuery.Deferred();
+    var Galaxy = getGalaxyInstance();
+    var deferred = $.Deferred();
     var creator;
 
     options = _.defaults(options || {}, {
@@ -1807,7 +1812,7 @@ var pairedCollectionCreatorModal = function _pairedCollectionCreatorModal(datase
         title: _l("Create a collection of paired datasets")
     });
 
-    if (!window.Galaxy || !Galaxy.modal) {
+    if (!Galaxy || !Galaxy.modal) {
         throw new Error("Galaxy or Galaxy.modal not found");
     }
 

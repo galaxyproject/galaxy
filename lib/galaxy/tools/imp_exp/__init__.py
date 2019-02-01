@@ -101,16 +101,6 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
                     provenance_attrs = load(open(provenance_file_name))
                     datasets_attrs += provenance_attrs
 
-                # Get counts of how often each dataset file is used; a file can
-                # be linked to multiple dataset objects (HDAs).
-                datasets_usage_counts = {}
-                for dataset_attrs in datasets_attrs:
-                    temp_dataset_file_name = \
-                        os.path.realpath(os.path.join(archive_dir, dataset_attrs['file_name']))
-                    if (temp_dataset_file_name not in datasets_usage_counts):
-                        datasets_usage_counts[temp_dataset_file_name] = 0
-                    datasets_usage_counts[temp_dataset_file_name] += 1
-
                 # Create datasets.
                 for dataset_attrs in datasets_attrs:
                     metadata = dataset_attrs['metadata']
@@ -150,26 +140,22 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
                             os.path.realpath(os.path.abspath(os.path.join(archive_dir, dataset_attrs['file_name'])))
                         if not file_in_dir(temp_dataset_file_name, os.path.join(archive_dir, "datasets")):
                             raise MalformedContents("Invalid dataset path: %s" % temp_dataset_file_name)
-                        if datasets_usage_counts[temp_dataset_file_name] == 1:
-                            self.app.object_store.update_from_file(hda.dataset, file_name=temp_dataset_file_name, create=True)
+                        self.app.object_store.update_from_file(hda.dataset, file_name=temp_dataset_file_name, create=True)
 
-                            # Import additional files if present. Histories exported previously might not have this attribute set.
-                            dataset_extra_files_path = dataset_attrs.get('extra_files_path', None)
-                            if dataset_extra_files_path:
-                                try:
-                                    file_list = os.listdir(os.path.join(archive_dir, dataset_extra_files_path))
-                                except OSError:
-                                    file_list = []
+                        # Import additional files if present. Histories exported previously might not have this attribute set.
+                        dataset_extra_files_path = dataset_attrs.get('extra_files_path', None)
+                        if dataset_extra_files_path:
+                            try:
+                                file_list = os.listdir(os.path.join(archive_dir, dataset_extra_files_path))
+                            except OSError:
+                                file_list = []
 
-                                if file_list:
-                                    for extra_file in file_list:
-                                        self.app.object_store.update_from_file(
-                                            hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id,
-                                            alt_name=extra_file, file_name=os.path.join(archive_dir, dataset_extra_files_path, extra_file),
-                                            create=True)
-                        else:
-                            datasets_usage_counts[temp_dataset_file_name] -= 1
-                            shutil.copyfile(temp_dataset_file_name, hda.file_name)
+                            if file_list:
+                                for extra_file in file_list:
+                                    self.app.object_store.update_from_file(
+                                        hda.dataset, extra_dir='dataset_%s_files' % hda.dataset.id,
+                                        alt_name=extra_file, file_name=os.path.join(archive_dir, dataset_extra_files_path, extra_file),
+                                        create=True)
                         hda.dataset.set_total_size()  # update the filesize record in the database
 
                     # Set tags, annotations.
@@ -182,12 +168,9 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
                             self.sa_session.flush()
                         """
 
-                    # Although metadata is set above, need to set metadata to recover BAI for BAMs.
-                    if hda.extension == 'bam':
-                        self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_app(
-                            self.app.datatypes_registry.set_external_metadata_tool, self.app, jiha.job.session_id,
-                            new_history.id, jiha.job.user, incoming={'input1': hda}, overwrite=False
-                        )
+                    self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                        hda, new_history, jiha.job
+                    )
 
                 #
                 # Create jobs.

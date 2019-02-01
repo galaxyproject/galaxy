@@ -8,118 +8,134 @@
  */
 
 import { mock } from "utils/mock";
-const fakeLogger = mock(console);
 
 // stores values that are returned when somebody asks for window.Something
 window._monitorStorage = window._monitorStorage || {};
 
-export function installMonitor(globalProp, fallbackValue = null) {
+export function installMonitor(globalProp) {
+    // Need to handle the special case of window.Galaxy because
+    // we already install an Object.defineProperty on window.Galaxy
+    // to make the singleton available to legacy scripts
+    if (globalProp == "Galaxy") {
+        // handled in singleton
+        return;
+    }
+
+    // watch window.globalProp as a whole with a Object.defineProperty
+    installObjectWatcher(globalProp);
+}
+
+export function installObjectWatcher(globalProp, getter = null, setter = null) {
     let label = `window.${globalProp}`;
     let debug = isPropMonitored(globalProp);
-    let logger = debug ? console : fakeLogger;
-
-    // initialize storage with existing value
-    let existingValue = window[globalProp] || fallbackValue;
-    window._monitorStorage[globalProp] = existingValue;
-    logger.log(label, "Populating storage with initial value", existingValue);
+    let logger = debug ? console : mock(console);
 
     // Replaces window.Thing with an object definition that forwards
     // gets and set values to window._monitorStorage
-    try {
-        Object.defineProperty(window, globalProp, {
-            enumerable: true,
-            configurable: false,
-            get() {
-                try {
-                    let val = window._monitorStorage[globalProp];
-                    logger.groupCollapsed(`${label} read`);
-                    logger.log(val);
-                    logger.trace();
-                    logger.groupEnd();
-                    return val;
-                } catch (err) {
-                    logger.warn("Unable to retrieve", globalProp, err);
+
+    Object.defineProperty(window, globalProp, {
+        enumerable: true,
+        configurable: false,
+        get() {
+            let val = undefined;
+            logger.groupCollapsed(`${label} read`);
+            logger.trace();
+            try {
+                if (getter) {
+                    val = getter();
+                } else {
+                    val = window._monitorStorage[globalProp];
                 }
-                return null;
-            },
-            set(newValue) {
-                logger.groupCollapsed(`${label} write...`, newValue);
-                logger.trace();
-                logger.groupEnd();
-                window._monitorStorage[globalProp] = newValue;
+                logger.log(val);
+            } catch (err) {
+                logger.warn("Unable to retrieve");
+                logger.warn(err);
             }
-        });
-    } catch (err) {
-        logger.warn("Unable to install facade", err);
-    }
-
-    // Proxies the above object definition so we can watch changes to
-    // that object's properties (i.e. window.Thing.prop = "abc")
-
-    return new Proxy(
-        {},
-        {
-            get(o, prop) {
-                logger.groupCollapsed(`${label}.${prop} read`);
-                let target = window[globalProp];
-                logger.log("o?", o);
-                logger.log("target?", target);
-                logger.trace();
-                logger.groupEnd();
-                let val = target[prop];
-                return val;
-            },
-            set(o, prop, val) {
-                let target = window[globalProp];
-                logger.groupCollapsed(`${label}.${prop} write`, val);
-                logger.log("o?", o);
-                logger.log("target?", target);
-                logger.trace();
-                logger.groupEnd();
-                target[prop] = val;
-                return true;
+            logger.groupEnd();
+            return val;
+        },
+        set(newValue) {
+            logger.groupCollapsed(`${label} write...`, String(newValue));
+            logger.trace();
+            try {
+                if (setter) {
+                    setter(newValue);
+                } else {
+                    window._monitorStorage[globalProp] = newValue;
+                }
+            } catch (err) {
+                logger.log("Unable to set value on window facade");
+                logger.warn(err);
             }
+            logger.groupEnd();
         }
-    );
-}
-
-// Shows which properties are actually being monitored
-export function showMonitoredProperties() {
-    return Object.keys(window._monitorStorage);
+    });
 }
 
 // sets a flag in sessionStorage to install a monitor for the
 // indicated prop on the next page refresh
-
-export function toggleGlobalMonitor(prop, bShow = false) {
-    let toggleList = getSessionToggles();
-    toggleList[prop] = Boolean(bShow);
-    setSessionToggles(toggleList);
+export function toggleGlobalMonitor(prop, bShow = true) {
+    let toggleList = getToggles();
+    if (bShow) {
+        toggleList[prop] = true;
+    } else {
+        if (prop in toggleList) {
+            delete toggleList[prop];
+        }
+    }
+    setToggles(toggleList);
     return toggleList;
 }
 
 // determines whether specified prop is toggled on or off by the user
 export function isPropMonitored(prop) {
-    let toggleList = getSessionToggles();
+    let toggleList = getToggles();
     return toggleList[prop] == true;
 }
 
-function getSessionToggles() {
+// show list of monitor toggles
+export function showMonitorToggles() {
+    let toggleList = getToggles();
+    console.log(toggleList);
+}
+
+// retrieve toggle list from the session storage
+function getToggles() {
     let json = sessionStorage.getItem("global_monitors");
     let existinglist = json ? JSON.parse(json) : {};
     return existinglist;
 }
 
-function setSessionToggles(toggleList) {
+// put the toggle list back in session storage
+function setToggles(toggleList) {
     sessionStorage.setItem("global_monitors", JSON.stringify(toggleList));
 }
 
-// Console utilities
+// Display properties available for monitoring at time of page reload
+// (you can add more during a page-session with installMonitor)
+export function monitorInit() {
+    let monitoredProps = Object.keys(getToggles());
 
-// Type showMonitoredProperties in developer console to list which
-// global variables have actually been proxied
-window.showMonitoredProperties = showMonitoredProperties;
+    console.groupCollapsed("monitor init");
+    console.log(
+        "The following global properties are monitored because they were setup in the javascript source manually:",
+        monitoredProps
+    );
+    console.log("To toggle messages on/off, type toggleGlobalMonitor('Galaxy', true|false) into the console");
+    console.log("You can set up any other variable by typing installMonitor('a window variable name')");
+    console.groupEnd();
 
-// Type toggleGlobalMonitor("variableName", true|false) in
-// the developer console to enable/disable
-window.toggleGlobalMonitor = toggleGlobalMonitor;
+    // installs monitors from stored list
+    monitoredProps.forEach(installMonitor);
+
+    // makes monitor installation available at console
+    window.installMonitor = installMonitor;
+
+    // Type showMonitoredProperties in developer console to list which
+    // global variables have actually been proxied
+    window.showMonitorToggles = showMonitorToggles;
+
+    // Type toggleGlobalMonitor("variableName", true|false) in
+    // the developer console to enable/disable
+    window.toggleGlobalMonitor = toggleGlobalMonitor;
+}

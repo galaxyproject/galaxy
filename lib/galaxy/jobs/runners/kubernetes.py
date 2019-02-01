@@ -521,7 +521,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             log.exception(e)
 
         if getattr(job_state, 'stop_job', True):
-            self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+            self.stop_job(job_state.job_wrapper)
         self._handle_runner_state('failure', job_state)
         # Not convinced this is the best way to indicate this state, but
         # something necessary
@@ -558,8 +558,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         return logs_file_path
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """Attempts to delete a dispatched job to the k8s cluster"""
+        job = job_wrapper.get_job()
         try:
             jobs = Job.objects(self._pykube_api).filter(selector="app=" +
                                                                  self.__produce_unique_k8s_job_name(job.get_id_tag()))

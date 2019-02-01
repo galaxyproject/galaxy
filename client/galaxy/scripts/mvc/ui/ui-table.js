@@ -1,4 +1,6 @@
 /** This class creates a ui table element. */
+import $ from "jquery";
+import Backbone from "backbone";
 import Utils from "utils/utils";
 var View = Backbone.View.extend({
     initialize: function(options) {

@@ -1,16 +1,17 @@
 <template>
     <div>
+        <!-- eslint-disable-next-line vue/require-v-for-key -->
         <div v-for="error in errorMessages">
-            <div class="alert alert-danger" role="alert">
-                {{ error }}
-            </div>
+            <div class="alert alert-danger" role="alert">{{ error }}</div>
         </div>
-        <div v-html="historyTemplate">
-        </div>
+        <div v-html="historyTemplate"></div>
     </div>
 </template>
 
 <script>
+import $ from "jquery";
+import { getGalaxyInstance } from "app";
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import HDAModel from "mvc/history/hda-model";
 import HDAListItemEdit from "mvc/history/hda-li-edit";
@@ -34,9 +35,9 @@ export default {
         let historyId = this.id,
             url = "";
         if (historyId !== undefined && historyId !== "" && historyId !== null) {
-            url = Galaxy.root + "history/display_structured?id=" + historyId;
+            url = getAppRoot() + "history/display_structured?id=" + historyId;
         } else {
-            url = Galaxy.root + "history/display_structured";
+            url = getAppRoot() + "history/display_structured";
         }
         this.ajaxCall(url);
     },
@@ -61,6 +62,7 @@ export default {
         },
         makeHistoryView: function(historyDict) {
             window.hdas = historyDict.map(hda => {
+                let Galaxy = getGalaxyInstance();
                 return new HDAListItemEdit.HDAListItemEdit({
                     model: new HDAModel.HistoryDatasetAssociation(hda),
                     el: $("#hda-" + hda.id),

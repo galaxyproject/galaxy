@@ -5,6 +5,12 @@
     ${h.css( "reports" )}
 </%def>
 
+<%def name="init()">
+    ${parent.init()}
+    <%
+        self.body_class = "reports"
+    %>
+</%def>
 
 ## Default title
 <%def name="title()">Reports</%def>

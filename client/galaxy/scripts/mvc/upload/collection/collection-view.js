@@ -1,6 +1,10 @@
-import _l from "utils/localization";
 /** Renders contents of the collection uploader */
-import Utils from "utils/utils";
+
+import _l from "utils/localization";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 import UploadModel from "mvc/upload/upload-model";
 import UploadRow from "mvc/upload/collection/collection-row";
 import UploadFtp from "mvc/upload/upload-ftp";
@@ -8,8 +12,8 @@ import UploadExtension from "mvc/upload/upload-extension";
 import Popover from "mvc/ui/ui-popover";
 import Select from "mvc/ui/ui-select";
 import Ui from "mvc/ui/ui-misc";
-import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
 import "utils/uploadbox";
+
 export default Backbone.View.extend({
     // current upload size in bytes
     upload_size: 0,
@@ -151,7 +155,6 @@ export default Backbone.View.extend({
 
         // select extension
         this.select_extension = new Select.View({
-            css: "upload-footer-selection-compressed",
             container: this.$(".upload-footer-extension"),
             data: _.filter(this.list_extensions, ext => !ext.composite_files),
             value: this.options.default_extension,
@@ -162,7 +165,6 @@ export default Backbone.View.extend({
 
         this.collectionType = "list";
         this.select_collection = new Select.View({
-            css: "upload-footer-selection-compressed",
             container: this.$(".upload-footer-collection-type"),
             data: [
                 { id: "list", text: "List" },
@@ -246,6 +248,7 @@ export default Backbone.View.extend({
         this.counter.announce--;
         this.counter.success++;
         this._updateScreen();
+        let Galaxy = getGalaxyInstance();
         Galaxy.currHistoryPanel.refreshContents();
     },
 
@@ -273,6 +276,7 @@ export default Backbone.View.extend({
     },
 
     _eventBuild: function() {
+        let Galaxy = getGalaxyInstance();
         var allHids = [];
         _.forEach(this.collection.models, upload => {
             allHids.push.apply(allHids, upload.get("hids"));
@@ -393,7 +397,6 @@ export default Backbone.View.extend({
 
     /** Update collection type */
     updateCollectionType: function(collectionType) {
-        var self = this;
         this.collectionType = collectionType;
     },
 
@@ -462,35 +465,37 @@ export default Backbone.View.extend({
     /** Template */
     _template: function() {
         return (
-            '<div class="upload-view-default">' +
-            '<div class="upload-top">' +
-            '<h6 class="upload-top-info"/>' +
-            "</div>" +
-            '<div class="upload-box">' +
-            '<div class="upload-helper"><i class="fa fa-files-o"/>Drop files here</div>' +
-            '<table class="upload-table ui-table-striped" style="display: none;">' +
-            "<thead>" +
-            "<tr>" +
-            "<th>Name</th>" +
-            "<th>Size</th>" +
-            "<th>Status</th>" +
-            "<th/>" +
-            "</tr>" +
-            "</thead>" +
-            "<tbody/>" +
-            "</table>" +
-            "</div>" +
-            '<div class="upload-footer">' +
-            '<span class="upload-footer-title-compressed">Collection Type:</span>' +
-            '<span class="upload-footer-collection-type"/>' +
-            '<span class="upload-footer-title-compressed">File Type:</span>' +
-            '<span class="upload-footer-extension"/>' +
-            '<span class="upload-footer-extension-info upload-icon-button fa fa-search"/> ' +
-            '<span class="upload-footer-title-compressed">Genome (set all):</span>' +
-            '<span class="upload-footer-genome"/>' +
-            "</div>" +
-            '<div class="upload-buttons"/>' +
-            "</div>"
+            `<div class="upload-view-default">
+                <div class="upload-top">
+                    <div class="upload-top-info"/>
+                </div>
+                <div class="upload-box">
+                    <div class="upload-helper">
+                        <i class="fa fa-files-o"/>Drop files here
+                    </div>
+                    <table class="upload-table ui-table-striped" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>Status</th>
+                                <th/>
+                            </tr>
+                        </thead>
+                        <tbody/>
+                    </table>
+                </div>
+                <div class="upload-footer">
+                    <span class="upload-footer-title">Collection Type:</span>
+                    <span class="upload-footer-collection-type"/>
+                    <span class="upload-footer-title">File Type:</span>
+                    <span class="upload-footer-extension"/>
+                    <span class="upload-footer-extension-info upload-icon-button fa fa-search"/>
+                    <span class="upload-footer-title">Genome (set all):</span>
+                    <span class="upload-footer-genome"/>
+                </div>
+                <div class="upload-buttons"/>
+            </div>`
         );
     }
 });

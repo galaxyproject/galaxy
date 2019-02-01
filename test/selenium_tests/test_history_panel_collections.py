@@ -65,7 +65,7 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
 
             self.home()
 
-            self.history_panel_wait_for_hid_state(running_hid, "running")
+            self.history_panel_wait_for_hid_state(running_hid, "running", 1)
             self.screenshot("history_panel_collections_state_mapping_running")
         finally:
             for job in running_response.json()["jobs"]:

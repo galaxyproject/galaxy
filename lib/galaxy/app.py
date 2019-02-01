@@ -17,7 +17,6 @@ from galaxy.managers.folders import FolderManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tags import GalaxyTagManager
-from galaxy.openid.providers import OpenIDProviders
 from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
     ToolCache,
@@ -164,13 +163,6 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
             self.quota_agent = galaxy.quota.NoQuotaAgent(self.model)
         # Heartbeat for thread profiling
         self.heartbeat = None
-        # Container for OpenID authentication routines
-        if self.config.enable_openid:
-            from galaxy.web.framework import openid_manager
-            self.openid_manager = openid_manager.OpenIDManager(self.config.openid_consumer_cache_path)
-            self.openid_providers = OpenIDProviders.from_file(self.config.openid_config_file)
-        else:
-            self.openid_providers = OpenIDProviders()
         from galaxy import auth
         self.auth_manager = auth.AuthManager(self)
         # Start the heartbeat process if configured and available (wait until
@@ -211,6 +203,11 @@ class UniverseApplication(config.ConfiguresGalaxyMixin):
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+
+        # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
+        # it becomes more commonly needed we could create a prefork function registration method like we do with
+        # postfork functions.
+        self.application_stack.init_late_prefork()
 
         self.containers = {}
         if self.config.enable_beta_containers_interface:

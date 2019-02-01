@@ -1,3 +1,4 @@
+import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
 import addLogging from "utils/add-logging";
@@ -302,7 +303,7 @@ var HiddenUntilActivatedViewMixin = /** @lends hiddenUntilActivatedMixin# */ {
         //TODO: flesh out options - show them all here
         this.HUAVOptions = {
             $elementShown: this.$el,
-            showFn: jQuery.prototype.toggle,
+            showFn: $.prototype.toggle,
             showSpeed: "fast"
         };
         _.extend(this.HUAVOptions, options || {});

@@ -1,7 +1,6 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
 
 <%def name="title()">
-
     Workflow Editor
 </%def>
 
@@ -33,22 +32,26 @@
 %>
 </%def>
 
-<%def name="javascripts()">
+<%def name="javascript_app()">
 
-    ${parent.javascripts()}
+    ${parent.javascript_app()}
 
-    <script type='text/javascript'>
-        $( function() {
-            window.bundleEntries.workflow(${h.dumps(self.editor_config)});
+    <script type="text/javascript">
+        config.addInitialization(function(galaxy, config) {
+            var editorConfig = ${h.dumps(self.editor_config)};
+            console.log("workflow/editor.mako, editorConfig", editorConfig);
+            window.bundleEntries.workflow(editorConfig);
         });
     </script>
 
 </%def>
 
+
+
 <%def name="stylesheets()">
 
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging", "jquery-ui/smoothness/jquery-ui" )}
+    ${h.css("jquery-ui/smoothness/jquery-ui" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
@@ -81,9 +84,9 @@
             </div>
         %else:
             %if section:
-                <div class="toolTitleDisabled">
+                <div class="toolTitle text-muted">
             %else:
-                <div class="toolTitleNoSectionDisabled">
+                <div class="toolTitleNoSection text-muted">
             %endif
                 %if "[[" in tool.description and "]]" in tool.description:
                     ${tool.description.replace( '[[', '' % tool.id ).replace( "]]", "" )}
@@ -222,11 +225,11 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="panel-header-buttons" style="float: right">
+        <div class="panel-header-buttons">
             <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa fa-cog"></span></a>
         </div>
-        <div class="unified-panel-header-inner" id="workflow-canvas-title">
-            Workflow Canvas | ${h.to_unicode( stored.name ) | h}
+        <div class="unified-panel-header-inner">
+            ${h.to_unicode( stored.name ) | h}
         </div>
     </div>
     <div class="unified-panel-body" id="workflow-canvas-body">
@@ -240,7 +243,7 @@
             <div id="workflow-parameters-container">
             </div>
         </div>
-        <div id="overview-border">
+        <div class="workflow-overview">
             <div style="position: relative; overflow: hidden; width: 100%; height: 100%; border-top: solid gray 1px; border-left: solid grey 1px;">
                 <div id="overview" style="position: absolute;">
                     <canvas width="0" height="0" style="background: white; width: 100%; height: 100%;" id="overview-canvas"></canvas>
@@ -248,7 +251,6 @@
                 </div>
             </div>
         </div>
-        <div id="close-viewport"></div>
     </div>
 
 </%def>
@@ -280,11 +282,6 @@
                     Tags:
                 </label>
                     <div style="float: left; width: 225px; margin-right: 10px; border-style: inset; border-width: 1px; margin-left: 2px">
-                        <style>
-                            .tag-area {
-                                border: none;
-                            }
-                        </style>
                         ${render_individual_tagging_element(user=trans.get_user(), tagged_item=stored, elt_context="edit_attributes.mako", use_toggle_link=False, input_size="20")}
                     </div>
                     <div class="toolParamHelp">Apply tags to make it easy to search for and find items with the same tag.</div>

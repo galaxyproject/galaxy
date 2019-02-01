@@ -40,36 +40,38 @@ class CloudController(BaseAPIController):
         return 'Not Implemented'
 
     @expose_api
-    def upload(self, trans, payload, **kwargs):
+    def get(self, trans, payload, **kwargs):
         """
-        * POST /api/cloud/storage/upload
-            Uploads given objects from a given cloud-based bucket to a Galaxy history.
+        * POST /api/cloud/storage/get
+            gets given objects from a given cloud-based bucket to a Galaxy history.
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
         :param trans: Galaxy web transaction
 
         :type  payload: dict
         :param payload: A dictionary structure containing the following keys:
-            *   history_id:    the (encoded) id of history to which the object should be uploaded to.
-            *   bucket:        the name of a bucket from which data should be uploaded from (e.g., a bucket name on AWS S3).
-            *   objects:       a list of the names of objects to be uploaded.
-            *   credentials:   a dictionary containing all the credentials required to authenticated to the
-            specified provider (e.g., {"secret_key": YOUR_AWS_SECRET_TOKEN, "access_key": YOUR_AWS_ACCESS_TOKEN}).
+            *   history_id:    the (encoded) id of history to which the object should be received to.
+            *   bucket:        the name of a bucket from which data should be fetched from (e.g., a bucket name on AWS S3).
+            *   objects:       a list of the names of objects to be fetched.
+            *   authz_id:      the encoded ID of CloudAuthz to be used for authorizing access to the resource
+                               provider. You may get a list of the defined authorizations via
+                               `/api/cloud/authz`. Also, you can use `/api/cloud/authz/create` to define a
+                               new authorization.
             *   input_args     [Optional; default value is an empty dict] a dictionary containing the following keys:
 
                                 **   `dbkey`:           [Optional; default value: is `?`]
                                                         Sets the genome (e.g., `hg19`) of the objects being
-                                                        uploaded to Galaxy.
+                                                        fetched to Galaxy.
 
                                 **   `file_type`:       [Optional; default value is `auto`]
                                                         Sets the Galaxy datatype (e.g., `bam`) for the
-                                                        objects being uploaded to Galaxy. See the following
+                                                        objects being fetched to Galaxy. See the following
                                                         link for a complete list of Galaxy data types:
                                                         https://galaxyproject.org/learn/datatypes/
 
                                 **   `space_to_tab`:    [Optional; default value is `False`]
                                                         A boolean value ("true" or "false") that sets if spaces
                                                         should be converted to tab in the objects being
-                                                        uploaded to Galaxy. Applicable only if `to_posix_lines`
+                                                        fetched to Galaxy. Applicable only if `to_posix_lines`
                                                         is True
 
                                 **   `to_posix_lines`:  [Optional; default value is `Yes`]
@@ -121,12 +123,12 @@ class CloudController(BaseAPIController):
             raise ActionInputError('The `objects` should be a list, but received an object of type {} instead.'.format(
                 type(objects)))
 
-        datasets = self.cloud_manager.upload(trans=trans,
-                                             history_id=history_id,
-                                             bucket_name=bucket,
-                                             objects=objects,
-                                             authz_id=authz_id,
-                                             input_args=payload.get("input_args", None))
+        datasets = self.cloud_manager.get(trans=trans,
+                                          history_id=history_id,
+                                          bucket_name=bucket,
+                                          objects=objects,
+                                          authz_id=authz_id,
+                                          input_args=payload.get("input_args", None))
         rtv = []
         for dataset in datasets:
             rtv.append(self.datasets_serializer.serialize_to_view(dataset, view='summary'))

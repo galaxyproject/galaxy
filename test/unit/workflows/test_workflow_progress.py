@@ -12,22 +12,25 @@ steps:
     tool_inputs: {"name": "input2"}
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "output"
+    inputs:
+      "input1":
+        connections:
+        - "@output_step": 0
+          output_name: "output"
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "output"
+    inputs:
+      input1:
+        connections:
+        - "@output_step": 0
+          output_name: "output"
   - type: "tool"
     tool_id: "cat1"
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 2
-       output_name: "out_file1"
+    inputs:
+      "input1":
+        connections:
+        - "@output_step": 2
+          output_name: "out_file1"
 """
 
 TEST_SUBWORKFLOW_YAML = """
@@ -41,15 +44,17 @@ steps:
             tool_inputs: {"name": "inner_input"}
           - type: "tool"
             tool_id: "cat1"
-            input_connections:
-            -  input_name: "input1"
-               "@output_step": 0
-               output_name: "output"
-    input_connections:
-    -  input_name: "inner_input"
-       "@output_step": 0
-       output_name: "output"
-       "@input_subworkflow_step": 0
+            inputs:
+              "input1":
+                  connections:
+                  - "@output_step": 0
+                    output_name: "output"
+    inputs:
+      inner_input:
+        connections:
+        - "@output_step": 0
+          output_name: "output"
+          "@input_subworkflow_step": 0
 """
 
 UNSCHEDULED_STEP = object()

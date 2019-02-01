@@ -82,16 +82,6 @@ model.UserAddress.table = Table(
     Column("deleted", Boolean, index=True, default=False),
     Column("purged", Boolean, index=True, default=False))
 
-model.UserOpenID.table = Table(
-    "galaxy_user_openid", metadata,
-    Column("id", Integer, primary_key=True),
-    Column("create_time", DateTime, default=now),
-    Column("update_time", DateTime, index=True, default=now, onupdate=now),
-    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True),
-    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
-    Column("openid", TEXT, index=True, unique=True),
-    Column("provider", TrimmedString(255)))
-
 model.PSAAssociation.table = Table(
     "psa_association", metadata,
     Column('id', Integer, primary_key=True),
@@ -874,6 +864,7 @@ model.StoredWorkflow.table = Table(
     Column("deleted", Boolean, default=False),
     Column("importable", Boolean, default=False),
     Column("slug", TEXT, index=True),
+    Column("from_path", TEXT, index=True),
     Column("published", Boolean, index=True, default=False))
 
 model.Workflow.table = Table(
@@ -907,6 +898,23 @@ model.WorkflowStep.table = Table(
     Column("uuid", UUIDType),
     # Column( "input_connections", JSONType ),
     Column("label", Unicode(255)))
+
+
+model.WorkflowStepInput.table = Table(
+    "workflow_step_input", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("workflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("name", TEXT),
+    Column("merge_type", TEXT),
+    Column("scatter_type", TEXT),
+    Column("value_from", JSONType),
+    Column("value_from_type", TEXT),
+    Column("default_value", JSONType),
+    Column("default_value_set", Boolean, default=False),
+    Column("runtime_value", Boolean, default=False),
+    UniqueConstraint("workflow_step_id", "name"),
+)
+
 
 model.WorkflowRequestStepState.table = Table(
     "workflow_request_step_states", metadata,
@@ -953,9 +961,8 @@ model.WorkflowStepConnection.table = Table(
     "workflow_step_connection", metadata,
     Column("id", Integer, primary_key=True),
     Column("output_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
-    Column("input_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
+    Column("input_step_input_id", Integer, ForeignKey("workflow_step_input.id"), index=True),
     Column("output_name", TEXT),
-    Column("input_name", TEXT),
     Column("input_subworkflow_step_id", Integer, ForeignKey("workflow_step.id"), index=True),
 )
 
@@ -1458,17 +1465,6 @@ mapper(model.UserAddress, model.UserAddress.table, properties=dict(
         primaryjoin=(model.UserAddress.table.c.user_id == model.User.table.c.id),
         backref='addresses',
         order_by=desc(model.UserAddress.table.c.update_time)),
-))
-
-mapper(model.UserOpenID, model.UserOpenID.table, properties=dict(
-    session=relation(model.GalaxySession,
-        primaryjoin=(model.UserOpenID.table.c.session_id == model.GalaxySession.table.c.id),
-        backref='openids',
-        order_by=desc(model.UserOpenID.table.c.update_time)),
-    user=relation(model.User,
-        primaryjoin=(model.UserOpenID.table.c.user_id == model.User.table.c.id),
-        backref='openids',
-        order_by=desc(model.UserOpenID.table.c.update_time))
 ))
 
 mapper(model.PSAAssociation, model.PSAAssociation.table, properties=None)
@@ -2218,6 +2214,13 @@ mapper(model.WorkflowStep, model.WorkflowStep.table, properties=dict(
         backref="workflow_steps")
 ))
 
+mapper(model.WorkflowStepInput, model.WorkflowStepInput.table, properties=dict(
+    workflow_step=relation(model.WorkflowStep,
+        backref=backref("inputs", uselist=True),
+        cascade="all",
+        primaryjoin=(model.WorkflowStepInput.table.c.workflow_step_id == model.WorkflowStep.table.c.id))
+))
+
 mapper(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
     workflow_step=relation(model.WorkflowStep,
         backref='workflow_outputs',
@@ -2225,10 +2228,10 @@ mapper(model.WorkflowOutput, model.WorkflowOutput.table, properties=dict(
 ))
 
 mapper(model.WorkflowStepConnection, model.WorkflowStepConnection.table, properties=dict(
-    input_step=relation(model.WorkflowStep,
-        backref="input_connections",
+    input_step_input=relation(model.WorkflowStepInput,
+        backref="connections",
         cascade="all",
-        primaryjoin=(model.WorkflowStepConnection.table.c.input_step_id == model.WorkflowStep.table.c.id)),
+        primaryjoin=(model.WorkflowStepConnection.table.c.input_step_input_id == model.WorkflowStepInput.table.c.id)),
     input_subworkflow_step=relation(model.WorkflowStep,
         backref=backref("parent_workflow_input_connections", uselist=True),
         primaryjoin=(model.WorkflowStepConnection.table.c.input_subworkflow_step_id == model.WorkflowStep.table.c.id),
@@ -2560,16 +2563,15 @@ def db_next_hid(self, n=1):
     :returns:   the next history id
     """
     session = object_session(self)
-    conn = session.connection()
     table = self.table
-    trans = conn.begin()
+    trans = session.begin()
     try:
         if "postgres" not in session.bind.dialect.name:
             next_hid = select([table.c.hid_counter], table.c.id == model.cached_id(self), for_update=True).scalar()
             table.update(table.c.id == self.id).execute(hid_counter=(next_hid + n))
         else:
             stmt = table.update().where(table.c.id == model.cached_id(self)).values(hid_counter=(table.c.hid_counter + n)).returning(table.c.hid_counter)
-            next_hid = conn.execute(stmt).scalar() - n
+            next_hid = session.execute(stmt).scalar() - n
         trans.commit()
         return next_hid
     except Exception:
@@ -2581,11 +2583,11 @@ model.History._next_hid = db_next_hid
 
 
 def _workflow_invocation_update(self):
-    conn = object_session(self).connection()
+    session = object_session(self)
     table = self.table
     now_val = now()
     stmt = table.update().values(update_time=now_val).where(and_(table.c.id == self.id, table.c.update_time < now_val))
-    conn.execute(stmt)
+    session.execute(stmt)
 
 
 model.WorkflowInvocation.update = _workflow_invocation_update

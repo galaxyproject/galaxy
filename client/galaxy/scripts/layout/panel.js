@@ -1,6 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
+import { getGalaxyInstance } from "app";
 
 var MIN_PANEL_WIDTH = 160;
 var MAX_PANEL_WIDTH = 800;
@@ -45,7 +46,7 @@ var SidePanel = Backbone.View.extend({
     _templateHeader: function(data) {
         return `<div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
-                        <div class="panel-header-buttons" style="float: right"/>
+                        <div class="panel-header-buttons"/>
                         <div class="panel-header-text"/>
                     </div>
                 </div>
@@ -202,22 +203,29 @@ var CenterPanel = Backbone.View.extend({
         this.setElement($(this.template()));
         this.$frame = this.$(".center-frame");
         this.$panel = this.$(".center-panel");
-        this.$frame.on("load", _.bind(this._iframeChangeHandler, this));
+        this.$frame.on("load", this._iframeChangeHandler.bind(this));
     },
 
     /** Display iframe if its target url changes, hide center panel */
     _iframeChangeHandler: function(ev) {
         var iframe = ev.currentTarget;
         var location = iframe.contentWindow && iframe.contentWindow.location;
-        if (location && location.host) {
-            $(iframe).show();
-            this.$panel.empty().hide();
-            Galaxy.trigger("center-frame:load", {
-                fullpath: location.pathname + location.search + location.hash,
-                pathname: location.pathname,
-                search: location.search,
-                hash: location.hash
-            });
+        var Galaxy = getGalaxyInstance();
+        // Adding try/catch to manage a CORS error in toolshed. Accessing
+        // location.host is a CORS no-no
+        try {
+            if (location && location.host) {
+                $(iframe).show();
+                this.$panel.empty().hide();
+                Galaxy.trigger("center-frame:load", {
+                    fullpath: location.pathname + location.search + location.hash,
+                    pathname: location.pathname,
+                    search: location.search,
+                    hash: location.hash
+                });
+            }
+        } catch (err) {
+            console.warn("_iframeChangeHandler error", ev, location, Galaxy);
         }
     },
 
@@ -225,6 +233,7 @@ var CenterPanel = Backbone.View.extend({
     display: function(view) {
         var contentWindow = this.$frame[0].contentWindow || {};
         var message = contentWindow.onbeforeunload && contentWindow.onbeforeunload();
+        var Galaxy = getGalaxyInstance();
         if (!message || confirm(message)) {
             contentWindow.onbeforeunload = undefined;
             this.$frame.attr("src", "about:blank").hide();

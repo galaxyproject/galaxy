@@ -2,12 +2,12 @@
  * Visualization and components for Sweepster, a visualization for exploring a tool's parameter space via
  * genomic visualization.
  */
-/* global Backbone */
-/* global Galaxy */
-/* global $ */
 
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
 import * as d3 from "libs/d3";
 import visualization from "viz/visualization";
 import tracks from "viz/trackster/tracks";
@@ -15,6 +15,9 @@ import tools from "mvc/tool/tools";
 import { Dataset } from "mvc/dataset/data";
 import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { make_popupmenu } from "ui/popupmenu";
+import { show_modal, hide_modal } from "layout/modal";
+
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings
  * for future use without changing the input's value and for preserving inputs order.
@@ -112,31 +115,30 @@ var ToolParameterTree = Backbone.Model.extend({
         var node_id = 0;
 
         var // Creates tree data recursively.
-        create_tree_data = (params_samples, index) => {
-            var param_samples = params_samples[index],
-                param = param_samples.param,
-                param_label = param.get("label"),
-                settings = param_samples.samples;
+            create_tree_data = (params_samples, index) => {
+                var param_samples = params_samples[index],
+                    param = param_samples.param,
+                    settings = param_samples.samples;
 
-            // Create leaves when last parameter setting is reached.
-            if (params_samples.length - 1 === index) {
+                // Create leaves when last parameter setting is reached.
+                if (params_samples.length - 1 === index) {
+                    return _.map(settings, setting => ({
+                        id: node_id++,
+                        name: setting,
+                        param: param,
+                        value: setting
+                    }));
+                }
+
+                // Recurse to handle other parameters.
                 return _.map(settings, setting => ({
                     id: node_id++,
                     name: setting,
                     param: param,
-                    value: setting
+                    value: setting,
+                    children: create_tree_data(params_samples, index + 1)
                 }));
-            }
-
-            // Recurse to handle other parameters.
-            return _.map(settings, setting => ({
-                id: node_id++,
-                name: setting,
-                param: param,
-                value: setting,
-                children: create_tree_data(params_samples, index + 1)
-            }));
-        };
+            };
 
         this.set("tree_data", {
             name: "Root",
@@ -279,8 +281,8 @@ var SweepsterTrack = Backbone.Model.extend({
             // FIXME: find a better way to deal with needed URLs:
             var track_config = _.extend(
                 {
-                    data_url: `${Galaxy.root}dummy1`,
-                    converted_datasets_state_url: `${Galaxy.root}dummy2`
+                    data_url: `${getAppRoot()}dummy1`,
+                    converted_datasets_state_url: `${getAppRoot()}dummy2`
                 },
                 options.track
             );
@@ -407,7 +409,7 @@ var SweepsterTrackView = Backbone.View.extend({
         });
         var self = this;
 
-        var run_on_dataset_button = $("<button/>")
+        $("<button/>")
             .appendTo(settings_div)
             .text("Run on complete dataset")
             .click(() => {
@@ -440,7 +442,7 @@ var SweepsterTrackView = Backbone.View.extend({
             self.$el.append(
                 $("<td/>")
                     .addClass("tile")
-                    .html($("<img/>").attr("src", `${Galaxy.root}images/loading_large_white_bg.gif`))
+                    .html($("<img/>").attr("src", `${getAppRoot()}images/loading_large_white_bg.gif`))
             );
         });
 
@@ -506,7 +508,6 @@ var ToolInputValOrSweepView = Backbone.View.extend({
 
     render: function() {
         var input = this.model;
-        var type = input.get("type");
         var single_input_row = this.$el.find(".form-row-input");
         var sweep_inputs_row = null;
 
@@ -605,7 +606,7 @@ var ToolParameterTreeDesignView = Backbone.View.extend({
             .find(".form-row")
             .not(".form-actions")
             .each(function(i) {
-                var input_view = new ToolInputValOrSweepView({
+                new ToolInputValOrSweepView({
                     model: inputs.at(i),
                     tool_row: $(this)
                 });
@@ -670,8 +671,7 @@ var ToolParameterTreeView = Backbone.View.extend({
             .attr("transform", "translate(40, 20)");
 
         // Draw links.
-        var link = vis
-            .selectAll("path.link")
+        vis.selectAll("path.link")
             .data(cluster.links(nodes))
             .enter()
             .append("path")
@@ -874,7 +874,7 @@ export var SweepsterVisualizationView = Backbone.View.extend({
                     icon_class: "cross-circle",
                     title: _l("Close"),
                     on_click: function() {
-                        window.top.location = `${Galaxy.root}visualizations/list`;
+                        window.top.location = `${getAppRoot()}visualizations/list`;
                     }
                 }
             ],

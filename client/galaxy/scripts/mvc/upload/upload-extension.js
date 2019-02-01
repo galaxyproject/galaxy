@@ -1,5 +1,6 @@
 /** This renders a popover with extension details **/
-import Utils from "utils/utils";
+import _ from "underscore";
+import Backbone from "backbone";
 import Popover from "mvc/ui/ui-popover";
 export default Backbone.View.extend({
     initialize: function(options) {
@@ -9,7 +10,6 @@ export default Backbone.View.extend({
     },
 
     render: function() {
-        var self = this;
         var options = this.model.attributes;
         var description = _.findWhere(options.list, {
             id: options.extension

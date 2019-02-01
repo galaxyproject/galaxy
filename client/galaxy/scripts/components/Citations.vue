@@ -2,23 +2,24 @@
     <b-card>
         <h4 slot="header" class="mb-0">
             Citations
-            <b-button v-if="viewRender" @click="toggleViewRender" title="Show all in BibTeX format." class="citations-to-bibtex">
-                <i class="fa fa-pencil-square-o"></i>
-                Show BibTeX
+            <b-button
+                v-if="viewRender"
+                @click="toggleViewRender"
+                title="Show all in BibTeX format."
+                class="citations-to-bibtex"
+            >
+                <i class="fa fa-pencil-square-o"></i> Show BibTeX
             </b-button>
             <b-button v-else @click="toggleViewRender" title="Return to formatted citation list.">
-                <i class="fa fa-times"></i>
-                Hide BibTeX
+                <i class="fa fa-times"></i> Hide BibTeX
             </b-button>
         </h4>
         <div v-if="source === 'histories'" class="infomessage">
-            When writing up your analysis, remember to include all references that should be cited in order
-            to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+            When writing up your analysis, remember to include all references that should be cited in order to
+            completely describe your work. Also, please remember to
+            <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
         </div>
-        <span v-if="viewRender" class="citations-formatted">
-            <p v-html="formattedReferences">
-            </p>
-        </span>
+        <span v-if="viewRender" class="citations-formatted"> <p v-html="formattedReferences"></p> </span>
         <pre v-else>
             <code class="citations-bibtex">
                 {{ content }}
@@ -27,6 +28,8 @@
     </b-card>
 </template>
 <script>
+import _ from "underscore";
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import * as bibtexParse from "libs/bibtexParse";
 import { convertLaTeX } from "latex-to-unicode-converter";
@@ -65,7 +68,7 @@ export default {
     },
     created: function() {
         axios
-            .get(`${Galaxy.root}api/${this.source}/${this.id}/citations`)
+            .get(`${getAppRoot()}api/${this.source}/${this.id}/citations`)
             .then(response => {
                 this.content = "";
                 for (var rawCitation of response.data) {

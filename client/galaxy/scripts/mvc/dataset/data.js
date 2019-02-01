@@ -1,9 +1,10 @@
-/* global Backbone */
-/* global Galaxy */
-/* global _ */
-/* global $ */
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { getGalaxyInstance } from "app";
 
 /**
  * Dataset metedata.
@@ -62,7 +63,7 @@ export var Dataset = Backbone.Model.extend({
         return this.attributes.metadata.get(attribute);
     },
 
-    urlRoot: `${Galaxy.root}api/datasets`
+    urlRoot: `${getAppRoot()}api/datasets`
 });
 
 /**
@@ -83,8 +84,8 @@ export var TabularDataset = Dataset.extend({
         if (this.attributes.first_data_chunk) {
             this.attributes.offset = this.attributes.first_data_chunk.offset;
         }
-        this.attributes.chunk_url = `${Galaxy.root}dataset/display?dataset_id=${this.id}`;
-        this.attributes.url_viz = `${Galaxy.root}visualization`;
+        this.attributes.chunk_url = `${getAppRoot()}dataset/display?dataset_id=${this.id}`;
+        this.attributes.url_viz = `${getAppRoot()}visualization`;
     },
 
     /**
@@ -353,6 +354,11 @@ var EmbeddedTabularDatasetChunkedView = TabularDatasetChunkedView.extend({
     }
 });
 
+function search(str, array) {
+    for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
+    return -1;
+}
+
 /** Button for trackster visualization */
 var TabularButtonTracksterView = Backbone.View.extend({
     // gene region columns
@@ -377,7 +383,7 @@ var TabularButtonTracksterView = Backbone.View.extend({
     // backbone initialize
     initialize: function(options) {
         // check if environment is available
-        var Galaxy = parent.Galaxy;
+        let Galaxy = getGalaxyInstance();
 
         // link galaxy modal or create one
         if (Galaxy && Galaxy.modal) {
@@ -423,10 +429,6 @@ var TabularButtonTracksterView = Backbone.View.extend({
         // check for vcf-file format
         if (this.file_ext == "vcf") {
             // search array
-            function search(str, array) {
-                for (var j = 0; j < array.length; j++) if (array[j].match(str)) return j;
-                return -1;
-            }
 
             // load
             this.col.chrom = search("Chrom", metadata.get("column_names"));

@@ -203,7 +203,7 @@ class JobController(BaseAPIController, UsesLibraryMixinItems):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
             trans.sa_session.flush()
-            self.app.job_manager.job_stop_queue.put(job.id)
+            self.app.job_manager.stop(job)
             return True
         else:
             return False

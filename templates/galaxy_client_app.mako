@@ -6,27 +6,70 @@ ${ h.dumps( dictionary, indent=( 2 if trans.debug else 0 ) ) }
 
 <%def name="load( app=None, **kwargs )">
     <script type="text/javascript">
+        // galaxy_client_app.mako, load
 
-        var bootstrapped = {};
-        %for key in kwargs:
-            bootstrapped[ '${key}' ] = (
-                ${ render_json( kwargs[ key ] ) }
-            );
-        %endfor
+        var bootstrapped;
+        try {
+            bootstrapped = ${render_json(kwargs)};
+        } catch(err) {
+            console.warn("Unable to parse bootstrapped variable", err);
+            bootstrapped = {};
+        }
 
-        window.Galaxy = new window.top.bundleEntries.GalaxyApp({
-            root               : '${h.url_for( "/" )}',
-            config             : ${ render_json( get_config_dict() )},
-            user               : ${ render_json( get_user_dict() )},
-            session_csrf_token : '${ trans.session_csrf_token }'
-        }, bootstrapped );
+        var options = {
+            root: '${h.url_for( "/" )}',
+            config: ${ render_json( get_config_dict() )},
+            user: ${ render_json( get_user_dict() )},
+            session_csrf_token: '${ trans.session_csrf_token }'
+        };
+
+        config.set({
+            options: options,
+            bootstrapped: bootstrapped
+        });
 
         %if app:
-            require([ '${app}' ]);
+            console.warn("Does app ever run? Is it ever not-named app?", '${app}');
         %endif
-        
+
     </script>
 </%def>
+
+<%def name="config_sentry(app)">
+    %if app and app.config:
+        <script type="text/javascript">
+
+            // TODO: make this work the same in all places, maybe 
+            // make a global func in galaxy_client_app?
+            var sentry = {};
+            %if app.config.sentry_dsn:
+                sentry.sentry_dsn_public = "${app.config.sentry_dsn_public}"
+                %if trans.user:
+                    sentry.email = "${trans.user.email|h}";
+                %endif
+            %endif
+
+            config.set({
+                sentry: sentry
+            });
+
+        </script>
+    %endif
+</%def>
+
+<%def name="config_google_analytics(app)">
+    %if app and app.config and app.config.ga_code:
+        <script>
+            (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+            })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+            ga('create', '${app.config.ga_code}', 'auto');
+            ga('send', 'pageview');
+        </script>
+    %endif
+</%def>
+
 
 
 ## ----------------------------------------------------------------------------

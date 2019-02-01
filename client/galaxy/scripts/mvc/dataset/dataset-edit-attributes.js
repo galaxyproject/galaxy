@@ -1,11 +1,18 @@
-import _l from "utils/localization";
 /** Dataset edit attributes view */
-import Utils from "utils/utils";
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
 import Tabs from "mvc/ui/ui-tabs";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
+
 var View = Backbone.View.extend({
     initialize: function() {
+        let Galaxy = getGalaxyInstance();
         this.setElement("<div/>");
         this.model = new Backbone.Model({
             dataset_id: Galaxy.params.dataset_id
@@ -26,7 +33,7 @@ var View = Backbone.View.extend({
     render: function() {
         var self = this;
         $.ajax({
-            url: `${Galaxy.root}dataset/get_edit?dataset_id=${self.model.get("dataset_id")}`,
+            url: `${getAppRoot()}dataset/get_edit?dataset_id=${self.model.get("dataset_id")}`,
             success: function(response) {
                 !self.initial_message && self.message.update(response);
                 self.initial_message = true;
@@ -41,7 +48,7 @@ var View = Backbone.View.extend({
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message: err_msg || "Error occured while loading the dataset."
+                    message: err_msg || "Error occurred while loading the dataset."
                 });
             }
         });
@@ -55,7 +62,7 @@ var View = Backbone.View.extend({
         data.operation = operation;
         $.ajax({
             type: "PUT",
-            url: `${Galaxy.root}dataset/set_edit`,
+            url: `${getAppRoot()}dataset/set_edit`,
             data: data,
             success: function(response) {
                 self.message.update(response);
@@ -66,7 +73,7 @@ var View = Backbone.View.extend({
                 var err_msg = response.responseJSON && response.responseJSON.err_msg;
                 self.message.update({
                     status: "danger",
-                    message: err_msg || "Error occured while editing the dataset attributes."
+                    message: err_msg || "Error occurred while editing the dataset attributes."
                 });
             }
         });
@@ -172,6 +179,14 @@ var View = Backbone.View.extend({
                     onclick: function() {
                         self._submit("datatype", form);
                     }
+                }),
+                submit_datatype_detect: new Ui.Button({
+                    tooltip: _l("Detect the datatype and change it."),
+                    title: _l("Detect datatype"),
+                    icon: "fa-undo",
+                    onclick: function() {
+                        self._submit("datatype_detect", form);
+                    }
                 })
             }
         });
@@ -199,8 +214,9 @@ var View = Backbone.View.extend({
 
     /** reload Galaxy's history after updating dataset's attributes */
     _reloadHistory: function() {
-        if (window.Galaxy) {
-            window.Galaxy.currHistoryPanel.loadCurrentHistory();
+        let Galaxy = getGalaxyInstance();
+        if (Galaxy) {
+            Galaxy.currHistoryPanel.loadCurrentHistory();
         }
     }
 });

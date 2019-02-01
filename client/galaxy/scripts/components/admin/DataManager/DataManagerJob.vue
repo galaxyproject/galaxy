@@ -8,7 +8,13 @@
         <b-container v-else-if="dataManager">
             <b-row>
                 <b-col>
-                    <b-card header-bg-variant="primary" header-text-variant="white" border-variant="primary" class="mb-3" id="data-manager-card">
+                    <b-card
+                        header-bg-variant="primary"
+                        header-text-variant="white"
+                        border-variant="primary"
+                        class="mb-3"
+                        id="data-manager-card"
+                    >
                         <template slot="header">
                             <b-container>
                                 <b-row align-v="center">
@@ -18,8 +24,7 @@
                                         </b-button>
                                     </b-col>
                                     <b-col>
-                                        <b>{{ dataManager["name"] }}</b>
-                                        <i>{{ dataManager['description'] }}</i>
+                                        <b>{{ dataManager["name"] }}</b> <i>{{ dataManager["description"] }}</i>
                                     </b-col>
                                 </b-row>
                             </b-container>
@@ -31,7 +36,12 @@
                                         <b-container>
                                             <b-row align-v="center">
                                                 <b-col cols="auto">
-                                                    <b-button v-b-tooltip.hover title="View complete info" :href="hdaInfo[i]['infoUrl']" target="galaxy_main">
+                                                    <b-button
+                                                        v-b-tooltip.hover
+                                                        title="View complete info"
+                                                        :href="hdaInfo[i]['infoUrl']"
+                                                        target="galaxy_main"
+                                                    >
                                                         <span class="fa fa-info-circle" />
                                                     </b-button>
                                                 </b-col>
@@ -43,10 +53,18 @@
                                     </template>
                                 </b-table>
                             </template>
-                            <b-table v-for="(output, j) in dataManagerOutput[i]" :key="j" :fields="outputFields(output[1][0])" :items="output[1]" small stacked hover striped>
+                            <b-table
+                                v-for="(output, j) in dataManagerOutput[i]"
+                                :key="j"
+                                :fields="outputFields(output[1][0])"
+                                :items="output[1]"
+                                small
+                                stacked
+                                hover
+                                striped
+                            >
                                 <template slot="table-caption">
-                                    Data Table:
-                                    <b>{{ output[0] }}</b>
+                                    Data Table: <b>{{ output[0] }}</b>
                                 </template>
                             </b-table>
                         </b-card>
@@ -58,6 +76,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 
@@ -128,7 +147,7 @@ export default {
     },
     created() {
         axios
-            .get(`${Galaxy.root}data_manager/job_info?id=${this.id}`)
+            .get(`${getAppRoot()}data_manager/job_info?id=${this.id}`)
             .then(response => {
                 this.jobId = response.data.jobId;
                 this.exitCode = response.data.exitCode;

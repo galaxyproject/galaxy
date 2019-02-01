@@ -1,11 +1,17 @@
-import STATES from "mvc/dataset/states";
-import BASE_MVC from "mvc/base-mvc";
-import _l from "utils/localization";
+// import _ from "underscore";
+import jQuery from "jquery";
+// import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+// import STATES from "mvc/dataset/states";
+// import BASE_MVC from "mvc/base-mvc";
+// import _l from "utils/localization";
 
 var collectionFuzzyCountDefault = 1000;
 try {
     collectionFuzzyCountDefault = localStorage.getItem("collectionFuzzyCountDefault") || collectionFuzzyCountDefault;
-} catch (err) {}
+} catch (err) {
+    console.debug(err);
+}
 
 //==============================================================================
 /** @class Mixin for HistoryContents content (HDAs, HDCAs).
@@ -55,7 +61,7 @@ var HistoryContentMixin = {
     // ........................................................................ ajax
     //TODO?: these are probably better done on the leaf classes
     /** history content goes through the 'api/histories' API */
-    urlRoot: `${Galaxy.root}api/histories/`,
+    urlRoot: `${getAppRoot()}api/histories/`,
 
     /** full url spec. for this content */
     url: function() {
