@@ -3,7 +3,6 @@
 
 from cgi import escape
 import six
-## from galaxy.model import Tag, ItemTagAssociation
 from galaxy.util import unicodify
 
 ## Build dict of tag name, values.
