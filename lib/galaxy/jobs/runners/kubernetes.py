@@ -263,10 +263,22 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_containers(self, ajs):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
            this has been set.
+           $GALAXY_VIRTUAL_ENV is set to None to avoid the galaxy virtualenv inside the tool container.
+           $GALAXY_LIB is set to None to avoid changing the python path inside the container.
+           Setting these variables changes the described behaviour in the job file shell script
+           used to execute the tool inside the container.
         """
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
             "image": self._find_container(ajs.job_wrapper).container_id,
+            "env": [{
+                "name": "GALAXY_VIRTUAL_ENV",
+                "value": "None"
+            }, {
+                "name": "GALAXY_LIB",
+                "value": "None"
+            }
+            ],
             # this form of command overrides the entrypoint and allows multi command
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
