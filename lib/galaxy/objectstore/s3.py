@@ -378,8 +378,6 @@ class S3ObjectStore(ObjectStore, CloudConfigMixin):
         except S3ResponseError:
             log.exception("Trouble checking existence of S3 key '%s'", rel_path)
             return False
-        if rel_path[0] == '/':
-            raise
         return exists
 
     def _in_cache(self, rel_path):
