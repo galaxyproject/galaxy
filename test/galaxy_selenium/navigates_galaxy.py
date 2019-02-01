@@ -1259,7 +1259,7 @@ class NavigatesGalaxy(HasDriver):
             self.home()
             self.click_masthead_user()
             self.wait_for_and_click(self.navigation.masthead.labels.logout)
-            self.click_label('go to the home page')
+            self.sleep_for(WAIT_TYPES.UX_TRANSITION)
             assert not self.is_logged_in()
 
     def run_tour(self, path, skip_steps=None, sleep_on_steps=None, tour_callback=None):
