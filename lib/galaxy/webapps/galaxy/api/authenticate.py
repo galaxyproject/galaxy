@@ -53,7 +53,7 @@ class AuthenticationController(BaseAPIController):
             raise exceptions.ObjectNotFound('The user does not exist.')
         elif len(user) > 1:
             # DB is inconsistent and we have more users with the same email.
-            raise exceptions.InconsistentDatabase('An error occured, please contact your administrator.')
+            raise exceptions.InconsistentDatabase('An error occurred, please contact your administrator.')
         else:
             user = user[0]
             is_valid_user = self.app.auth_manager.check_password(user, password)

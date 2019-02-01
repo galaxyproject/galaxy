@@ -351,10 +351,6 @@ tool_shed:
   # will not clobber each other.
   #cookie_path: null
 
-  # Enable authentication via OpenID.  Allows users to log in to their
-  # Galaxy account by authenticating with an OpenID provider.
-  #enable_openid: false
-
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used
   # tools menu.  The log_events and log_actions functionality will

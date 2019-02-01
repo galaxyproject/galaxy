@@ -136,7 +136,7 @@ var FolderRowView = Backbone.View.extend({
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`Dataset was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error("An error occured! Dataset was not undeleted. Please try again.");
+                    mod_toastr.error("An error occurred! Dataset was not undeleted. Please try again.");
                 }
             }
         });
@@ -163,7 +163,7 @@ var FolderRowView = Backbone.View.extend({
                 if (typeof response.responseJSON !== "undefined") {
                     mod_toastr.error(`Folder was not undeleted. ${response.responseJSON.err_msg}`);
                 } else {
-                    mod_toastr.error("An error occured! Folder was not undeleted. Please try again.");
+                    mod_toastr.error("An error occurred! Folder was not undeleted. Please try again.");
                 }
             }
         });
@@ -213,7 +213,7 @@ var FolderRowView = Backbone.View.extend({
                     if (typeof response.responseJSON !== "undefined") {
                         mod_toastr.error(response.responseJSON.err_msg);
                     } else {
-                        mod_toastr.error("An error occured while attempting to update the folder.");
+                        mod_toastr.error("An error occurred while attempting to update the folder.");
                     }
                 }
             });

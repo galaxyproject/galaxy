@@ -181,12 +181,11 @@ galaxy:
 
   # Enable / disable checking if any tools defined in the above non-shed
   # tool_config_files (i.e., tool_conf.xml) have been migrated from the
-  # Galaxy code distribution to the Tool Shed.  This setting should
-  # generally be set to False only for development Galaxy environments
-  # that are often rebuilt from scratch where migrated tools do not need
-  # to be available in the Galaxy tool panel.  If the following setting
-  # remains commented, the default setting will be True.
-  #check_migrate_tools: true
+  # Galaxy code distribution to the Tool Shed. This functionality is
+  # largely untested in modern Galaxy releases and has serious issues
+  # such as #7273 and the possibility of slowing down Galaxy startup, so
+  # the default and recommended value is False.
+  #check_migrate_tools: false
 
   # Tool config maintained by tool migration scripts.  If you use the
   # migration scripts to install tools that have been migrated to the
@@ -599,8 +598,7 @@ galaxy:
 
   # Activation grace period (in hours).  Activation is not forced (login
   # is not disabled) until grace period has passed.  Users under grace
-  # period can't run jobs. Enter 0 to disable grace period. Users with
-  # OpenID logins have grace period forever.
+  # period can't run jobs. Enter 0 to disable grace period.
   #activation_grace_period: 3
 
   # Shown in warning box to users that were not activated yet. In use
@@ -1427,18 +1425,6 @@ galaxy:
   # Force serial scheduling of workflows within the context of a
   # particular history
   #history_local_serial_workflow_scheduling: false
-
-  # Enable authentication via OpenID.  Allows users to log in to their
-  # Galaxy account by authenticating with an OpenID provider.
-  #enable_openid: false
-
-  # If OpenID is enabled, this configuration file specifies providers to
-  # use. Falls back to the .sample variant in config if default does not
-  # exist.
-  #openid_config_file: config/openid_conf.xml
-
-  # If OpenID is enabled, consumer cache directory to use.
-  #openid_consumer_cache_path: database/openid_consumer_cache
 
   # Enables and disables OpenID Connect (OIDC) support.
   #enable_oidc: false

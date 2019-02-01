@@ -31,8 +31,8 @@ from six import (
 from galaxy import util
 from galaxy.tools.parser.interface import TestCollectionDef, TestCollectionOutputDef
 from galaxy.util.bunch import Bunch
+from . import verify
 from .asserts import verify_assertions
-from ..verify import verify
 
 log = getLogger(__name__)
 

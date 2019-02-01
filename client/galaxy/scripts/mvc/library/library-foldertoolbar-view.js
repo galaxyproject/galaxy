@@ -885,7 +885,7 @@ var FolderToolbarView = Backbone.View.extend({
                 mod_toastr.success("Selected files imported into the current folder");
                 Galaxy.modal.hide();
             } else {
-                mod_toastr.error("An error occured.");
+                mod_toastr.error("An error occurred.");
             }
             return true;
         }
@@ -934,7 +934,7 @@ var FolderToolbarView = Backbone.View.extend({
                 Galaxy.modal.hide();
             } else {
                 // TODO better error report
-                mod_toastr.error("An error occured.");
+                mod_toastr.error("An error occurred.");
             }
             return true;
         }
