@@ -51,6 +51,7 @@
   <tool file="detect_errors_aggressive.xml" />
   <tool file="md5sum.xml" />
   <tool file="checksum.xml" />
+  <tool file="hdf5.xml" />
   <tool file="is_valid_xml.xml" />
   <!--
   TODO: Figure out why this transiently fails on Jenkins.
