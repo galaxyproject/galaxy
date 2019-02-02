@@ -1,0 +1,17 @@
+<tool id="hdf5" name="hdf5" version="1.0.0">
+    <command>
+        cp '$input' '$output'
+    </command>
+    <inputs>
+        <param name="input" type="data" format="cool" />
+    </inputs>
+    <outputs>
+        <data name="output" format="cool" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="matrix.cool" />
+            <output name="output" hdf5_keys="bins, chroms,indexes,pixels" hdf5_attrs="nbins:33754, nchroms:15" />
+        </test>
+    </tests>
+</tool>
