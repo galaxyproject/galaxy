@@ -88,8 +88,8 @@ def verify(
         local_attrs = h5py.File(temp_name, 'r').attrs
         attrs_items = [k.strip() for k in attributes.get("hdf5_attrs").strip().split(',')]
         for attrs_item in attrs_items:
-            k,v = attrs_item.split(':')
-            if not k in local_attrs or v != str(local_attrs[k]):
+            k, v = attrs_item.split(':')
+            if k not in local_attrs or v != str(local_attrs[k]):
                 raise AssertionError("Not a HDF5 file or H5 attributes do not match:\n\t%s\n\n\t(%s : %s)" % (local_attrs.items(), k, v))
 
     if attributes is None:
