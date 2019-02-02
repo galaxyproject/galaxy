@@ -1,6 +1,6 @@
 <tool id="checksum" name="checksum" version="1.0.0">
     <command>
-        cp $input $output
+        cp '$input' '$output'
     </command>
     <inputs>
         <param name="input" type="data" format="txt" />
