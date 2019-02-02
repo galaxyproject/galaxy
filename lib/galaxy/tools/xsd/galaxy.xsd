@@ -1208,6 +1208,33 @@ it may be inconvenient to upload the entiry file and this can be used instead.
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
+
+    <xs:attribute name="hdf5_keys" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, the target output is assumed to be an HDF5 file format.
+The value can be a comma separated string, were every element corresponds to a HDF5 key.
+This string will be checked against ``h5py.File('output_file.h5', 'r').keys()``, both will be sorted
+before comparision.
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="hdf5_attrs" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+
+If specified, the target output is assumed to be an HDF5 file format.
+The value can be a comma separated string, were every element corresponds to a HDF5 attribute key-value pair.
+This key-value pair is colon-separated (e.g. ``nbins:33754,nchroms:15``)
+
+
+]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
     <xs:attribute name="compare" type="TestOutputCompareType">
     </xs:attribute>
     <xs:attribute name="lines_diff" type="xs:integer">
