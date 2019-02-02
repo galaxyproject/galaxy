@@ -2076,7 +2076,6 @@ class WiffArchive(CompressedArchive):
             return "%s" % (dataset.metadata.wiff_files or 'No .wiff scan file')
 
 
-
 class NetCDF(Binary):
     """Binary data in netCDF format"""
     file_ext = "netcdf"
