@@ -531,6 +531,8 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
         metadata[metadata_elem.get('name')] = metadata_elem.get('value')
     md5sum = attrib.get("md5", None)
     checksum = attrib.get("checksum", None)
+    hdf5_keys = attrib.get("hdf5_keys", None)
+    hdf5_attrs = attrib.get("hdf5_attrs", None)
     element_tests = {}
     if parse_elements:
         element_tests = __parse_element_tests(output_elem)
@@ -546,13 +548,15 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
 
     has_checksum = md5sum or checksum
     has_nested_tests = extra_files or element_tests or primary_datasets
-    if not (assert_list or file or metadata or has_checksum or has_nested_tests):
+    if not (assert_list or file or metadata or has_checksum or has_nested_tests or hdf5_keys or hdf5_attrs):
         raise Exception("Test output defines nothing to check (e.g. must have a 'file' check against, assertions to check, metadata or checksum tests, etc...)")
     attributes['assert_list'] = assert_list
     attributes['extra_files'] = extra_files
     attributes['metadata'] = metadata
     attributes['md5'] = md5sum
     attributes['checksum'] = checksum
+    attributes['hdf5_keys'] = hdf5_keys
+    attributes['hdf5_attrs'] = hdf5_attrs
     attributes['elements'] = element_tests
     attributes['primary_datasets'] = primary_datasets
     return file, attributes

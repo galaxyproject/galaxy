@@ -9,6 +9,7 @@ import re
 import shutil
 import tempfile
 
+import h5py
 try:
     import pysam
 except ImportError:
@@ -69,6 +70,27 @@ def verify(
             errmsg = '%s different than expected\n' % (item_label)
             errmsg += str(err)
             raise AssertionError(errmsg)
+
+    if attributes is not None and attributes.get("hdf5_keys", None) is not None:
+        keys = [k.strip() for k in attributes.get("hdf5_keys").strip().split(',')]
+        h5_keys = sorted(keys)
+        temp_name = make_temp_fname('hdf5_output')
+        with open(temp_name, 'wb') as f:
+            f.write(output_content)
+        local_keys = sorted(list(h5py.File(temp_name, 'r').keys()))
+        if local_keys != h5_keys:
+            raise AssertionError("Not a HDF5 file or H5 keys do not match:\n\t%s\n\t%s" % (local_keys, h5_keys))
+
+    if attributes is not None and attributes.get("hdf5_attrs", None) is not None:
+        temp_name = make_temp_fname('hdf5_output')
+        with open(temp_name, 'wb') as f:
+            f.write(output_content)
+        local_attrs = h5py.File(temp_name, 'r').attrs
+        attrs_items = [k.strip() for k in attributes.get("hdf5_attrs").strip().split(',')]
+        for attrs_item in attrs_items:
+            k,v = attrs_item.split(':')
+            if not k in local_attrs or v != str(local_attrs[k]):
+                raise AssertionError("Not a HDF5 file or H5 attributes do not match:\n\t%s\n\n\t(%s : %s)" % (local_attrs.items(), k, v))
 
     if attributes is None:
         attributes = {}
