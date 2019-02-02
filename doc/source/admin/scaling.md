@@ -18,10 +18,10 @@ Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` 
 * **web worker** - Galaxy server process responsible for servicing web requests for the UI/API 
 * **job handler** - Galaxy server process responsible for setting up, starting, and monitoring jobs, submitting jobs to
   a cluster (if configured), for setting metadata (if not set on the cluster), and cleaning up after jobs
-  * **tags** - Handlers can be grouped in to a "pool" of handlers using *tags*, after which, individual tools may be ￼
+  * **tags** - Handlers can be grouped in to a "pool" of handlers using *tags*, after which, individual tools may be
     mapped to a handler tag such that all executions of that tool are handled by the tagged handler(s).
-  * **default** - Any handlers without defined tags - aka "untagged handlers" - will handle executions of all tools ￼
-    mapped to a specific handler ID or tag.
+  * **default** - Any handlers without defined tags - aka "untagged handlers" - will handle executions of all tools
+    not mapped to a specific handler ID or tag.
 * **[uWSGI][uwsgi]** - Powerful application server written in C that implements the HTTP and Python WSGI protocols
   * **[Mules][uwsgi-mules]** - uWSGI processes started after the main application (Galaxy) that can run separate code
     and receive messages from uWSGI web workers
@@ -128,7 +128,7 @@ are [managed by the administrator](#starting-and-stopping).
 
 By default, a handler is randomly assigned by the web worker when the job is submitted via the UI/API, meaning that jobs
 may be assigned to dead handlers. However, beginning in Galaxy release 19.01, new job handler assignment methods are
-available that allow handlers to self-assign jobs (a handler is no longer required to be assigned when the job is ￼
+available that allow handlers to self-assign jobs (a handler is no longer required to be assigned when the job is
 created).
 
 This is the recommended deployment strategy when **Zerg Mode** is used, for Galaxy servers that run web servers and
@@ -144,7 +144,7 @@ documentation, but these are deprecated and should no longer be used.
 
 ## Job Handler Assignment Methods
 
-Prior to Galaxy release 19.01, the method by which handlers were selected to be assigned to jobs was dependent on your ￼
+Prior to Galaxy release 19.01, the method by which handlers were selected to be assigned to jobs was dependent on your
 job configuration and use of uWSGI Mules, and was not configurable by the administrator.  Beginning with Galaxy release
 19.01, two new handler assignment methods have been added and methods are now configurable with the `assign_with`
 attribute on the `<handlers>` tag in `job_conf.xml`.  The available methods are:
@@ -167,7 +167,7 @@ attribute on the `<handlers>` tag in `job_conf.xml`.  The available methods are:
   "preassignment"). This is the default if handlers are defined and no `job-handlers` uWSGI Farm is present.
 
 - **uWSGI Mule Messaging** - Jobs are assigned a handler via uWSGI mule messaging.  A mule in the `job-handlers` (for
-  default/untagged tool-to-handler mappings) or `job-handlers.<tag>` farm will recieve the message and assign itself.
+  default/untagged tool-to-handler mappings) or `job-handlers.<tag>` farm will receive the message and assign itself.
   This the default if a `job-handlers` uWSGI Farm is present and no handlers are configured.
 
 - **Database Transaction Isolation** (new in 19.01) - Jobs are assigned a handler by handlers selecting the unassigned
@@ -391,8 +391,8 @@ You can run the startup-time setup steps as the galaxy user after upgrading Gala
 ```eval_rst
 .. warning::
 
-   In all strategies, once a handler has been assigned jobs, you cannot unconfigure that handler  (e.g. to decrease the ￼
-   number of handlers) until it has finished processing all its assigned jobs, or else its jobs will never reach a ￼
+   In all strategies, once a handler has been assigned jobs, you cannot unconfigure that handler (e.g. to decrease the
+   number of handlers) until it has finished processing all its assigned jobs, or else its jobs will never reach a
    terminal state. In order to allow a handler to run but not receive any new jobs, configure it with an unused tag (e.g
    ``<handler id="handler5" tags="drain" />``) and restart *all* Galaxy processes.
 
@@ -478,7 +478,7 @@ In `job_conf.xml`:
 ```
 <job_conf>
     <tools>
-￼       <tool id="test1" handler="special" />
+        <tool id="test1" handler="special" />
     </tools>
 </job_conf>
 ```
