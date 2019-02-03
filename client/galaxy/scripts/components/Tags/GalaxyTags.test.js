@@ -1,5 +1,9 @@
-import { mount } from "@vue/test-utils";
+import { mount, createLocalVue } from "@vue/test-utils";
 import GalaxyTags from "./GalaxyTags";
+import _l from "utils/localization";
+
+let localVue = createLocalVue();
+localVue.filter("localize", value => _l(value));
 
 describe("Tags/GalaxyTags.vue", () => {
 
@@ -8,7 +12,8 @@ describe("Tags/GalaxyTags.vue", () => {
     let wrapper, emitted;
 
     beforeEach(function () {
-        wrapper = mount(GalaxyTags);
+        
+        wrapper = mount(GalaxyTags, { localVue });
         wrapper.setProps({
             value: testTags
         });

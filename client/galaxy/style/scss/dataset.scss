@@ -304,10 +304,10 @@
             }
         }
 
-        .tags-display {
-            // Hidden by default; the interface toggles this.
-            display: none;
-        }
+        // .tags-display {
+        //     // Hidden by default; the interface toggles this.
+        //     display: none;
+        // }
         .annotation-display {
             display: none;
             @extend %vertical-spacing;

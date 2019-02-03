@@ -3,6 +3,10 @@
 
 import Vue from "vue";
 import store from "../store"; 
+import _l from "utils/localization";
+
+// make localization filter available to all components
+Vue.filter("localize", value => _l(value));
 
 export const mountVueComponent = (ComponentDefinition) => (propsData, el) => {
     // console.log("mount function", propsData);

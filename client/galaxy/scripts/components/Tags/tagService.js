@@ -16,7 +16,6 @@ import { filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/oper
 
 export function buildTagService({ id, itemClass, context, debounceInterval = 150 }) {
 
-
     /**
      * Save tag, input can be text string or tag model
      * @param {string|Tag} tag 

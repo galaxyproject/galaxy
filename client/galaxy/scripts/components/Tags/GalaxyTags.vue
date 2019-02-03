@@ -75,7 +75,7 @@ Usage:
         <a href="#" class="toggle-link" 
             v-if="linkVisible"
             @click.prevent="toggleTagDisplay">
-            {{ linkText }}
+            {{ linkText | localize }}
         </a>
         <vue-tags-input class="tag-area" 
             v-if="tagsVisible" 
@@ -83,8 +83,10 @@ Usage:
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
-            @before-adding-tag="$emit('before-adding-tag', $event)"
-            @before-deleting-tag="$emit('before-deleting-tag', $event)"
+            :placeholder="'Add Tags' | localize"
+            :add-on-key="[13, ' ']"
+            @before-adding-tag="beforeAddingTag"
+            @before-deleting-tag="beforeDeletingTag"
             @tags-changed="tagsChanged">
             <div class="tag-name" slot="tag-center" slot-scope="tagProps" 
                 @click="$emit('tag-click', tagProps.tag)">
@@ -153,6 +155,28 @@ export default {
         },
         toggleTagDisplay() {
             this.tagToggle = !this.tagToggle;
+        },
+        beforeAddingTag($event) {
+            if (!this.emitHookEvent("before-adding-tag", $event)) {
+                let { tag, addTag } = $event;
+                addTag(tag);
+            }
+        },
+        beforeDeletingTag($event) {
+            if (!this.emitHookEvent("before-deleting-tag", $event)) {
+                let { tag, deleteTag } = $event;
+                deleteTag(tag);
+            }
+        },
+        emitHookEvent(eventName, $event) {
+            if (this.hasHandler(eventName)) {
+                this.$emit(eventName, $event);
+                return true;
+            }
+            return false;
+        },
+        hasHandler(eventName) {
+            return Object.keys(this.$listeners).includes(eventName);
         }
     }
 }

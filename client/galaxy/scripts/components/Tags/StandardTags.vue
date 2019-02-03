@@ -85,11 +85,11 @@ export default {
             }
         },
         
-        add_tag_to_grid_filter: function(tag) {
+        add_tag_to_grid_filter(tag) {
             this.$store.dispatch("toggleSearchTag", tag);
         },
 
-        community_tag_click: function(tag) {
+        community_tag_click(tag) {
             // I made this match the existing behavior, but I am not clear on
             // the reason why this link redirects to a raw json page
             let suffix = tag.value ? `:${tag.value}` : "";

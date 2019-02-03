@@ -38,12 +38,15 @@ var TagsEditor = Backbone.View.extend(baseMVC.LoggableMixin)
 
         /** Build the DOM elements, call select to on the created input, and set up behaviors */
         render: function() {
+
             var self = this;
             if (this.workflow_mode) {
                 this.$el.html(this._workflowTemplate());
             } else {
                 this.$el.html(this._defaultTemplate());
             }
+            
+            console.log("render, init select2");
             this.$input().select2({
                 placeholder: "Add tags",
                 width: this.workflow_mode ? this.width : this.select_width,
