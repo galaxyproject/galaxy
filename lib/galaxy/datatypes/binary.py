@@ -2239,6 +2239,84 @@ class ICM(Binary):
         return False
 
 
+class BafTar(CompressedArchive):
+    """
+    Base class for common behavior of tar files of directory-based raw file formats
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('brukerbaf.d.tar')
+    >>> BafTar().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> BafTar().sniff(fname)
+    False
+    """
+    #edam_data = "data_2536" # mass spectrometry data
+    #edam_format = "format_3712" TODO: add more raw formats to EDAM?
+    file_ext = "brukerbaf.tar"
+
+    def get_signature_file(self):
+        return "analysis.baf"
+
+    def sniff(self, filename):
+        try:
+            if tarfile.is_tarfile(filename):
+                with tarfile.open(filename) as rawtar:
+                    return self.get_signature_file() in [os.path.basename(f).lower() for f in rawtar.getnames()]
+            return False
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def get_type(self):
+        return "Bruker BAF directory archive"
+
+    def set_peek(self, dataset, is_multi_byte=False):
+        if not dataset.dataset.purged:
+            dataset.peek = self.get_type()
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def display_peek(self, dataset):
+        try:
+            return dataset.peek
+        except Exception:
+            return "%s (%s)" % (get_type(), nice_size(dataset.get_size()))
+
+class YepTar(BafTar):
+    """ A tar'd up .d directory containing Agilent/Bruker YEP format data """
+    file_ext = "agilentbrukeryep.tar"
+    def get_signature_file(self):
+        return "analysis.yep"
+    def get_type(self):
+        return "Agilent/Bruker YEP directory archive"
+
+class TdfTar(BafTar):
+    """ A tar'd up .d directory containing Bruker TDF format data """
+    file_ext = "brukertdf.tar"
+    def get_signature_file(self):
+        return "analysis.tdf"
+    def get_type(self):
+        return "Bruker TDF directory archive"
+
+class MassHunterTar(BafTar):
+    """ A tar'd up .d directory containing Agilent MassHunter format data """
+    file_ext = "agilentmasshunter.tar"
+    def get_signature_file(self):
+        return "msscan.bin"
+    def get_type(self):
+        return "Agilent MassHunter directory archive"
+
+class MassLynxTar(BafTar):
+    """ A tar'd up .d directory containing Waters MassLynx format data """
+    file_ext = "watersmasslynxraw.tar"
+    def get_signature_file(self):
+        return "_func001.dat"
+    def get_type(self):
+        return "Waters MassLynx RAW directory archive"
+
+
 if __name__ == '__main__':
     import doctest
     doctest.testmod(sys.modules[__name__])
