@@ -177,13 +177,13 @@ class JobSearch(object):
                                              d.value == json.dumps(identifier)))
                     used_ids.append(a.dataset_id)
                 elif t == 'ldda':
-                        a = aliased(model.JobToInputLibraryDatasetAssociation)
-                        conditions.append(and_(
-                            model.Job.id == a.job_id,
-                            a.name == k,
-                            a.ldda_id == v
-                        ))
-                        used_ids.append(a.ldda_id)
+                    a = aliased(model.JobToInputLibraryDatasetAssociation)
+                    conditions.append(and_(
+                        model.Job.id == a.job_id,
+                        a.name == k,
+                        a.ldda_id == v
+                    ))
+                    used_ids.append(a.ldda_id)
                 elif t == 'hdca':
                     a = aliased(model.JobToInputDatasetCollectionAssociation)
                     b = aliased(model.HistoryDatasetCollectionAssociation)
