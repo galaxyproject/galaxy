@@ -112,21 +112,17 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
     def _setup_two_versions_in_config(self, section=False):
         if section:
             template = """<toolbox tool_path="%s">
-<section id="tid" name="TID" version="">
-    %s
-</section>
-<section id="tid" name="TID" version="">
-    %s
-</section>
+    <section id="tid" name="TID" version="">
+        %s
+    </section>
+    <section id="tid" name="TID" version="">
+        %s
+    </section>
 </toolbox>"""
         else:
             template = """<toolbox tool_path="%s">
-<section id="tid" name="TID" version="">
     %s
-</section>
-<section id="tid" name="TID" version="">
     %s
-</section>
 </toolbox>"""
         self._add_config(template % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2))
 
