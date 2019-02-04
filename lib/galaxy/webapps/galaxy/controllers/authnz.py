@@ -74,17 +74,7 @@ class OIDC(BaseUIController):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
-        return trans.fill_template('/user/login.mako',
-                                   login=user.username,
-                                   header="",
-                                   use_panels=False,
-                                   redirect_url=redirect_url,
-                                   redirect=redirect_url,
-                                   refresh_frames='refresh_frames',
-                                   message="You are now logged in as `{}.`".format(user.username),
-                                   status='done',
-                                   form_input_auto_focus=True,
-                                   active_view="user")
+        return trans.response.send_redirect(redirect_url)
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
