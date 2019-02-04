@@ -16,15 +16,18 @@ LOGGING_PREFS = {
 }
 
 
-def get_local_driver(browser=DEFAULT_BROWSER):
+def get_local_browser(browser):
     if browser == "auto":
         if _which("chromedriver"):
-            browser = "CHROME"
+            return "CHROME"
         elif _which("geckodriver"):
-            browser = "FIREFOX"
+            return "FIREFOX"
         else:
             raise Exception("Selenium browser is 'auto' but neither geckodriver or chromedriver are found on PATH.")
 
+
+def get_local_driver(browser=DEFAULT_BROWSER, headless=False):
+    browser = get_local_browser(browser)
     assert browser in ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
     driver_to_class = {
         "CHROME": webdriver.Chrome,
@@ -33,7 +36,7 @@ def get_local_driver(browser=DEFAULT_BROWSER):
         "PHANTOMJS": webdriver.PhantomJS,
     }
     driver_class = driver_to_class[browser]
-    if browser == 'CHROME':
+    if browser == 'CHROME' and headless:
         options = ChromeOptions()
         options.add_argument('--headless')
         return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS}, chrome_options=options)
