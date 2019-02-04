@@ -50,7 +50,7 @@ def expand_workflow_inputs(inputs):
                 else:
                     if linked_n is None:
                         linked_n = nval
-                    elif linked_n != nval or nval is 0:
+                    elif linked_n != nval or nval == 0:
                         raise exceptions.RequestParameterInvalidException('Failed to match linked batch selections. Please select equal number of data files.')
                     linked.append(value['values'])
                     linked_keys.append((step_id, key))

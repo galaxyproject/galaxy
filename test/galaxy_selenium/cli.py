@@ -3,7 +3,7 @@ BROWSER_DESCRIPTION = "Use specific browser for selenium (e.g. firefox or chrome
 REMOTE_HOST_DESCRIPTION = "Selenium hub remote host to use (if remote driver in use)."
 REMOTE_PORT_DESCRIPTION = "Selenium hub remote port to use (if remote driver in use)."
 GALAXY_URL_DESCRIPTION = "URL of Galaxy instance to target."
-HEADLESS_DESCRIPTION = "Use local selenium headlessly (requires pyvirtualdisplay)."
+HEADLESS_DESCRIPTION = "Use local selenium headlessly (native in chrome, otherwise this requires pyvirtualdisplay)."
 
 from six.moves.urllib.parse import urljoin
 

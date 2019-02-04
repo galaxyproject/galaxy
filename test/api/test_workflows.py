@@ -986,19 +986,19 @@ test_data:
             assert len([x for x in content.split("\n") if x]) == 2
 
     def test_run_subworkflow_auto_labels(self):
-            history_id = self.dataset_populator.new_history()
-            test_data = """
+        history_id = self.dataset_populator.new_history()
+        test_data = """
 outer_input:
   value: 1.bed
   type: File
 """
-            job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
-            assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
+        job_summary = self._run_jobs(NESTED_WORKFLOW_AUTO_LABELS, test_data=test_data, history_id=history_id)
+        assert len(job_summary.jobs) == 4, "4 jobs expected, got %d jobs" % len(job_summary.jobs)
 
-            content = self.dataset_populator.get_history_dataset_content(history_id)
-            self.assertEqual(
-                "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
-                content)
+        content = self.dataset_populator.get_history_dataset_content(history_id)
+        self.assertEqual(
+            "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\nchrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n",
+            content)
 
     @skip_without_tool("cat1")
     @skip_without_tool("collection_paired_test")
@@ -3134,18 +3134,18 @@ input_c:
             self._assert_status_code_is(usage_details_response, 403)
 
     def _invoke_paused_workflow(self, history_id):
-            workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
-            workflow_id = self.workflow_populator.create_workflow(workflow)
-            hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
-            index_map = {
-                '0': self._ds_entry(hda1),
-            }
-            invocation_id = self.__invoke_workflow(
-                history_id,
-                workflow_id,
-                index_map,
-            )
-            return workflow_id, invocation_id
+        workflow = self.workflow_populator.load_workflow_from_resource("test_workflow_pause")
+        workflow_id = self.workflow_populator.create_workflow(workflow)
+        hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
+        index_map = {
+            '0': self._ds_entry(hda1),
+        }
+        invocation_id = self.__invoke_workflow(
+            history_id,
+            workflow_id,
+            index_map,
+        )
+        return workflow_id, invocation_id
 
     def _wait_for_invocation_non_new(self, workflow_id, invocation_id):
         target_state_reached = False

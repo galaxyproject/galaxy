@@ -240,13 +240,13 @@ def files_diff(file1, file2, attributes=None):
                                 break
                         if not valid_diff:
                             invalid_diff_lines += 1
-                log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d" % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
                 if invalid_diff_lines > allowed_diff_count:
                     # Print out diff_slice so we can see what failed
                     log.info("###### diff_slice ######")
                     raise AssertionError("".join(diff_slice))
             else:
-                log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1, file2, allowed_diff_count, diff_lines))
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d" % (file1, file2, allowed_diff_count, diff_lines))
                 raise AssertionError("".join(diff_slice))
 
 
@@ -254,7 +254,7 @@ def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
     local_file = open(file1, 'U').readlines()  # regex file
     history_data = open(file2, 'U').readlines()
-    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%s != %s)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
+    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
