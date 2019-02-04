@@ -47,6 +47,8 @@ PATH_DEFAULTS = dict(
     tool_destinations_config_file=['config/tool_destinations.yml', 'config/tool_destinations.yml.sample'],
     job_metrics_config_file=['config/job_metrics_conf.xml', 'job_metrics_conf.xml', 'config/job_metrics_conf.xml.sample'],
     error_report_file=['config/error_report.yml', 'config/error_report.yml.sample'],
+    oidc_config_file=['config/oidc_config.yml', 'config/oidc_config.yml.sample'],
+    oidc_backends_config_file=['config/oidc_backends_config.yml', 'config/oidc_backends_config.yml.sample'],
     dependency_resolvers_config_file=['config/dependency_resolvers_conf.xml', 'dependency_resolvers_conf.xml'],
     job_resource_params_file=['config/job_resource_params_conf.xml', 'job_resource_params_conf.xml'],
     workflow_resource_params_file=['config/workflow_resource_params_conf.xml', 'workflow_resource_params_conf.xml'],
@@ -208,8 +210,8 @@ class Configuration(object):
         self.len_file_path = resolve_path(kwargs.get("len_file_path", os.path.join(self.tool_data_path, 'shared', 'ucsc', 'chrom')), self.root)
         # Galaxy OIDC settings.
         self.enable_oidc = kwargs.get("enable_oidc", False)
-        self.oidc_config = kwargs.get('oidc_config_file', None)
-        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", None)
+        self.oidc_config = kwargs.get("oidc_config_file", self.oidc_config_file)
+        self.oidc_backends_config = kwargs.get("oidc_backends_config_file", self.oidc_backends_config_file)
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
         self.integrated_tool_panel_config = resolve_path(kwargs.get('integrated_tool_panel_config', 'integrated_tool_panel.xml'), self.root)
