@@ -318,9 +318,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
         self.monitor_job(pulsar_job_state)
 
     def __needed_features(self, client):
-            return {
-                'remote_metadata': PulsarJobRunner.__remote_metadata(client),
-            }
+        return {
+            'remote_metadata': PulsarJobRunner.__remote_metadata(client),
+        }
 
     def __prepare_job(self, job_wrapper, job_destination):
         """Build command-line and Pulsar client for this job."""
