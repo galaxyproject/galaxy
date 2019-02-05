@@ -1,46 +1,113 @@
-<tool id="random_lines1" name="Select random lines" version="2.0.2">
-  <description>from a file</description>
+<tool id="random_lines1" name="Select random lines" version="3.0.0">
+  <description>from a file. With more customization options.</description>
   <command>
-python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}' '${num_lines}'
+python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}' 
+
+#if str( $negation_file.negation_file_need ) == "no_negation":
+     '${negation_file.num_lines}'
+#else if str( $negation_file.negation_file_need ) == "set_negation":
+    #if str( $negation_file.set_num_lines.select_method ) == "user_set_num":
+        '${negation_file.set_num_lines.user_num_lines}'
+    #else if str( $negation_file.set_num_lines.select_method ) == "file_set_num":
+        '${negation_file.set_num_lines.file_num_lines}'
+        'num_from_neg_file'
+    #end if
+    '${negation_file.neg_file}'
+#end if
+
+
 #if str( $seed_source.seed_source_selector ) == "set_seed":
     --seed '${seed_source.seed}'
 #end if
+
+
   </command>
   <inputs>
-    <param name="num_lines" type="integer" value="1" label="Randomly select" help="lines"/>
-    <param name="input" type="data" format="txt" label="from"/>
+    <param format="txt" name="input" type="data" label="Input File"/>
+    
     <conditional name="seed_source">
       <param name="seed_source_selector" type="select" label="Set a random seed">
         <option value="no_seed" selected="True">Don't set seed</option>
         <option value="set_seed">Set seed</option>
       </param>
+      
       <when value="no_seed">
         <!-- Do nothing here -->
       </when>
-      <when value="set_seed">
+      
+      <when value="set_seed"> 
         <param name="seed" type="text" label="Random seed" />
       </when>
+    
     </conditional>
+    
+    
+    <conditional name="negation_file">  
+      <param name="negation_file_need" type="select" label="Use 'ignore list' file">
+        <option value="no_negation" selected="True">Use entire input file</option>
+        <option value="set_negation">Ignore list of lines</option>
+      </param>
+      
+      <when value="no_negation">
+        <param name="num_lines" size="5" type="integer" value="1" label="Randomly select" help="lines"/>
+      </when>
+      
+      <when value="set_negation"> 
+        <param format="txt" name="neg_file" type="data" label="Remove entries present in this file from the input file before selecting random lines"/>
+        
+        <conditional name="set_num_lines">
+          <param name="select_method" type="select" label="Number from user or relative to negation file">
+            <option value="user_set_num" selected="True">User sets the number of random lines</option>
+            <option value="file_set_num">Number relative to the number of lines in the list to ignore</option>
+          </param>
+          
+          <when value="user_set_num">
+            <param name="user_num_lines" size="5" type="integer" value="1" label="Randomly select" help="lines"/>
+          </when>
+          
+          <when value="file_set_num"> 
+            <param name="file_num_lines" size="5" type="integer" value="0" optional="false" label="Randomly select N number of line in addition to number of lines to ignore" help="(Number of lines in negation file + N) number of random lines. Use 0 to select random lines equal to the number of lines ignored."/>
+          </when>
+        </conditional>
+        
+      </when>
+      
+    </conditional>
+    
   </inputs>
+  
+  
   <outputs>
-    <data name="out_file1" format="input" metadata_source="input"/>
+    <data format="txt" name="out_file1" metadata_source="input"/>
   </outputs>
+  
+  
   <tests>
     <test>
-      <param name="num_lines" value="65"/>
-      <param name="input" value="1.bed"/>
-      <param name="seed_source_selector" value="no_seed"/>
-      <output name="out_file1" file="1.bed"/>
-    </test>
-    <test>
-      <param name="num_lines" value="1"/>
-      <param name="input" value="1.bed"/>
-      <param name="seed_source_selector" value="set_seed"/>
-      <param name="seed" value="asdf"/>
-      <output name="out_file1" file="1_bed_random_lines_1_seed_asdf_out.bed"/>
+      <param name="input" value="test_input.txt"/>
+      <conditional name="seed_source">
+        <param name="seed_source_selector" value="set_seed"/>
+        <param name="seed" value="2"/>
+      </conditional>
+      <conditional name="negation_file">
+        <param name="negation_file_need" value="set_negation"/>
+        <param name="neg_file" value="test_neg_input.txt"/>
+        <conditional name="set_num_lines">
+          <param name="select_method" value="file_set_num"/>
+          <param name="file_num_lines" value="0"/>
+        </conditional>
+      </conditional>
+      <output name="out_file1">
+        <assert_contents>
+          <has_text text="human" />
+        </assert_contents>
+      </output>
     </test>
   </tests>
   <help>
+
+This is modified version of the Galaxy's "Text Manipulation" tool "random_lines" tool originally written by Dan Blankenberg
+
 **What it does**
 
 This tool selects N random lines from a file, with no repeats, and preserving ordering.
@@ -61,5 +128,15 @@ Selecting 2 random lines might return this::
 
     chr7  56736  56756   D17003_CTCF_R7  354  +
     chr7  56775  56795   D17003_CTCF_R4  207  +
+
     </help>
+    <citations>
+        <citation type="bibtex">
+@misc{Galaxy: Select Random Lines,
+    author={Dan Blankenberg and Praveen Kumar},
+    year={2018},
+    title={Select Random Lines}
+}
+        </citation>
+    </citations>
 </tool>
