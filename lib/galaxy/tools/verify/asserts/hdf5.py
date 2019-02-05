@@ -11,6 +11,7 @@ def assert_has_attr(output_bytes, name, value):
     assert name in local_attrs and str(local_attrs[name]) == value, (
         "Not a HDF5 file or H5 attributes do not match:\n\t%s\n\n\t(%s : %s)" % (local_attrs.items(), name, value))
 
+
 def assert_has_keys(output_bytes, keys):
     """ Asserts the specified HDF5 output has exactly the given keys."""
     keys = [k.strip() for k in keys.strip().split(',')]
