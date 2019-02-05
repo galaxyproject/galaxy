@@ -766,6 +766,33 @@ test_data:
             replaced_hda = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=replaced_hda_id, wait=True, assert_ok=False)
             assert not replaced_hda['visible'], replaced_hda
 
+    @skip_without_tool('multi_data_optional')
+    def test_workflow_list_list_multi_data_map_over(self):
+        # Test that a list:list is reduced to list with a multiple="true" data input
+        with self.dataset_populator.test_history() as history_id:
+            workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+inputs:
+  input_datasets: collection
+steps:
+  multi_data_optional:
+    tool_id: multi_data_optional
+    in:
+      input1: input_datasets
+""")
+            with self.dataset_populator.test_history() as history_id:
+                hdca_id = self.dataset_collection_populator.create_list_of_list_in_history(history_id).json()
+                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+                inputs = {
+                    '0': self._ds_entry(hdca_id),
+                }
+                invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
+                self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
+                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+                output_collection = self.dataset_populator.get_history_collection_details(history_id, hid=6)
+                assert output_collection['collection_type'] == 'list'
+                assert output_collection['job_source_type'] == 'ImplicitCollectionJobs'
+
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_pair")
     def test_workflow_run_output_collection_mapping(self):
