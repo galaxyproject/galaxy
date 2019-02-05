@@ -788,7 +788,6 @@ steps:
                 }
                 invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
                 self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-                self.dataset_populator.wait_for_history(history_id, assert_ok=True)
                 output_collection = self.dataset_populator.get_history_collection_details(history_id, hid=6)
                 assert output_collection['collection_type'] == 'list'
                 assert output_collection['job_source_type'] == 'ImplicitCollectionJobs'
@@ -805,7 +804,6 @@ steps:
             }
             invocation_id = self.__invoke_workflow(history_id, workflow_id, inputs)
             self.wait_for_invocation_and_jobs(history_id, workflow_id, invocation_id)
-            self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             self.assertEqual("a\nc\nb\nd\ne\ng\nf\nh\n", self.dataset_populator.get_history_dataset_content(history_id, hid=0))
 
     @skip_without_tool("cat_list")
