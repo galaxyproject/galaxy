@@ -314,13 +314,10 @@ class WorkflowModule(object):
 
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
+        dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
 
         for input_dict in all_inputs:
             name = input_dict["name"]
-            multiple = input_dict["multiple"]
-            if multiple:
-                continue
-
             data = progress.replacement_for_input(step, input_dict)
             can_map_over = hasattr(data, "collection")  # and data.collection.allow_implicit_mapping
 
@@ -329,13 +326,23 @@ class WorkflowModule(object):
 
             is_data_param = input_dict["input_type"] == "dataset"
             if is_data_param:
-                collections_to_match.add(name, data)
+                multiple = input_dict["multiple"]
+                if multiple:
+                    # multiple="true" data input, acts like "list" collection_type.
+                    # just need to figure out subcollection_type_description
+                    history_query = HistoryQuery.from_collection_types(
+                        ['list'],
+                        dataset_collection_type_descriptions,
+                    )
+                    subcollection_type_description = history_query.can_map_over(data)
+                    if subcollection_type_description:
+                        collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
+                else:
+                    collections_to_match.add(name, data)
                 continue
 
             is_data_collection_param = input_dict["input_type"] == "dataset_collection"
             if is_data_collection_param:
-                dataset_collection_type_descriptions = self.trans.app.dataset_collections_service.collection_type_descriptions
-
                 history_query = HistoryQuery.from_collection_types(
                     input_dict.get("collection_types", None),
                     dataset_collection_type_descriptions,
@@ -1158,8 +1165,9 @@ class ToolModule(WorkflowModule):
 
                 replacement = NO_REPLACEMENT
                 if iteration_elements and prefixed_name in iteration_elements:
-                    if isinstance(input, DataToolParameter):
-                        # Pull out dataset instance from element.
+                    if isinstance(input, DataToolParameter) and hasattr(iteration_elements[prefixed_name], 'dataset_instance'):
+                        # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
+                        # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = iteration_elements[prefixed_name].dataset_instance
                         if hasattr(iteration_elements[prefixed_name], u'element_identifier') and iteration_elements[prefixed_name].element_identifier:
                             replacement.element_identifier = iteration_elements[prefixed_name].element_identifier
