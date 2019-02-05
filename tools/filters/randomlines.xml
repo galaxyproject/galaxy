@@ -1,5 +1,8 @@
 <tool id="random_lines1" name="Select random lines" version="3.0.0">
   <description>from a file. With more customization options.</description>
+  <requirements>
+        <requirement type="package" version="2.7.9">python</requirement>
+  </requirements>
   <command>
 python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}' 
 
