@@ -452,7 +452,6 @@ class MetadataInRangeValidator(Validator):
     """
     Validator that ensures a metadata is in a specific range
     """
-    requires_dataset_metadata = True
 
     @classmethod
     def from_element(cls, param, elem):
