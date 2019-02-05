@@ -2291,7 +2291,7 @@ class YepTar(BafTar):
 
     def get_signature_file(self):
         return "analysis.yep"
-        
+
     def get_type(self):
         return "Agilent/Bruker YEP directory archive"
 
@@ -2302,7 +2302,7 @@ class TdfTar(BafTar):
 
     def get_signature_file(self):
         return "analysis.tdf"
-        
+
     def get_type(self):
         return "Bruker TDF directory archive"
 
@@ -2313,7 +2313,7 @@ class MassHunterTar(BafTar):
 
     def get_signature_file(self):
         return "msscan.bin"
-        
+
     def get_type(self):
         return "Agilent MassHunter directory archive"
 
@@ -2324,9 +2324,39 @@ class MassLynxTar(BafTar):
 
     def get_signature_file(self):
         return "_func001.dat"
-        
+
     def get_type(self):
         return "Waters MassLynx RAW directory archive"
+
+
+class WiffTar(BafTar):
+    """
+    A tar'd up .wiff/.scan pair containing Sciex WIFF format data
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('some.wiff.tar')
+    >>> WiffTar().sniff(fname)
+    True
+    >>> fname = get_test_fname('brukerbaf.d.tar')
+    >>> WiffTar().sniff(fname)
+    False
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> WiffTar().sniff(fname)
+    False
+    """
+    file_ext = "wiff.tar"
+
+    def sniff(self, filename):
+        try:
+            if tarfile.is_tarfile(filename):
+                with tarfile.open(filename) as rawtar:
+                    return ".wiff" in [os.path.splitext(os.path.basename(f).lower())[1] for f in rawtar.getnames()]
+            return False
+        except Exception as e:
+            log.warning('%s, sniff Exception: %s', self, e)
+        return False
+
+    def get_type(self):
+        return "Sciex WIFF/SCAN archive"
 
 
 if __name__ == '__main__':
