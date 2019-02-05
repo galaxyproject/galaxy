@@ -71,7 +71,13 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         self.config_files = []
 
     def _repo_install(self, changeset, config_filename=None):
-        metadata = {}
+        metadata = {
+            'tools': [{
+                'add_to_tool_panel': False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
+                'guid': "github.com/galaxyproject/example/test_tool/0.%s" % changeset,
+                'tool_config': 'tool.xml'
+            }],
+        }
         if config_filename:
             metadata['shed_config_filename'] = config_filename
         repository = tool_shed_install.ToolShedRepository(metadata=metadata)
@@ -98,7 +104,6 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         version2 = tool_shed_install.ToolVersion()
         version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
         version2.repository = repository2
-
         self.app.install_model.context.add(version2)
         self.app.install_model.context.flush()
 
@@ -112,21 +117,17 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
     def _setup_two_versions_in_config(self, section=False):
         if section:
             template = """<toolbox tool_path="%s">
-<section id="tid" name="TID" version="">
-    %s
-</section>
-<section id="tid" name="TID" version="">
-    %s
-</section>
+    <section id="tid" name="TID" version="">
+        %s
+    </section>
+    <section id="tid" name="TID" version="">
+        %s
+    </section>
 </toolbox>"""
         else:
             template = """<toolbox tool_path="%s">
-<section id="tid" name="TID" version="">
     %s
-</section>
-<section id="tid" name="TID" version="">
     %s
-</section>
 </toolbox>"""
         self._add_config(template % (self.test_directory, CONFIG_TEST_TOOL_VERSION_1, CONFIG_TEST_TOOL_VERSION_2))
 
