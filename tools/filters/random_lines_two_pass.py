@@ -1,8 +1,15 @@
 #!/usr/bin/env python
 # Dan Blankenberg
+#
 # Selects N random lines from a file and outputs to another file, maintaining original line order
 # allows specifying a seed
 # does two passes to determine line offsets/count, and then to output contents
+#
+# Modified by Praveen Kumar, 2018
+# In this version, user has an option to specify second file with lines to ignore from the main input.
+#
+
+
 from __future__ import print_function
 
 import optparse
@@ -11,7 +18,6 @@ from math import (
     ceil,
     log
 )
-
 
 def randint(a, b):
     return a + int(random.random() * (b + 1 - a))
@@ -85,13 +91,31 @@ def __main__():
     parser = optparse.OptionParser()
     parser.add_option('-s', '--seed', dest='seed', action='store', type="string", default=None, help='Set the random seed.')
     (options, args) = parser.parse_args()
-
-    assert len(args) == 3, "Invalid command line specified."
-
+    
+    if len(args) == 3:
+        run_mode = "no_neg_file"
+    elif len(args) == 4:
+        run_mode = "neg_file_mode_1"
+    elif len(args) == 5:
+        run_mode = "neg_file_mode_2"
+    else:
+        print("Invalid command line specified.")
+        exit()
+    
     with open(args[0], 'rb') as input, open(args[1], 'wb') as output:
-        num_lines = int(args[2])
-        assert num_lines > 0, "You must select at least one line."
-
+        if run_mode == "no_neg_file":
+            num_lines = int(args[2])
+            assert num_lines > 0, "You must select at least one line."
+        elif run_mode == "neg_file_mode_1":
+            num_lines = int(args[2])
+            if args[3].strip() == "num_from_neg_file":
+                assert num_lines > 0, "You must select at least one line."
+        elif run_mode == "neg_file_mode_2":
+            num_lines = int(args[2])
+        else:
+            num_lines = int(args[2])
+            assert num_lines > 0, "You must select at least one line."
+        
         if options.seed is not None:
             seed_int = int("".join([str(ord(_)) for _ in options.seed]))
             try:
@@ -100,7 +124,28 @@ def __main__():
             except TypeError:
                 # We're on python 2.X, which doesn't know the version argument
                 random.seed(seed_int)
-
+        
+        if run_mode == "neg_file_mode_1" or run_mode == "neg_file_mode_2":
+            if run_mode == "neg_file_mode_1":
+                neg_file_input = open(args[3], 'r').readlines()
+            elif run_mode == "neg_file_mode_2":
+                neg_file_input = open(args[4], 'r').readlines()
+                num_lines = len(neg_file_input) + num_lines
+            neg_list = []
+            for each in neg_file_input:
+                neg_list.append(each.strip())
+            original_input = []
+            for each in input.readlines():
+                original_input.append(each.strip())
+            y = [x for x in original_input if x not in neg_list]
+            tmp_file = open("tmp_file.txt", "w")
+            for each in y:
+                tmp_file.write(each + "\n")
+            tmp_file.close()
+            input.close()
+            input = open("tmp_file.txt", "r")
+        
+        
         # get line offsets
         line_offsets = []
         teller = input.tell
@@ -128,7 +173,9 @@ def __main__():
     print("Kept %i of %i total lines." % (num_lines, total_lines))
     if options.seed is not None:
         print('Used random seed of "%s".' % options.seed)
-
+    if run_mode == "neg_file_mode_1" or run_mode == "neg_file_mode_2":
+        import os
+        os.remove("tmp_file.txt")
 
 if __name__ == "__main__":
     __main__()
