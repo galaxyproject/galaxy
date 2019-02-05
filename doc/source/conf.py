@@ -64,6 +64,7 @@ def setup(app):
     app.connect("autodoc-skip-member", dont_skip_init)
     app.add_config_value('recommonmark_config', {
         'enable_auto_doc_ref': False,
+        'enable_auto_toc_tree': False,
     }, True)
     app.add_transform(AutoStructify)
 

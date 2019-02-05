@@ -279,7 +279,7 @@ and can be configured locally to adapt to any other package management system.
 ```
 
 This older example shows a tool that requires R version 2.15.1. The
-``tool_depensencies.xml`` should contain matching declarations for Galaxy to
+``tool_dependencies.xml`` should contain matching declarations for Galaxy to
 actually install the R runtime. The ``set_envirornment`` type is only respected
 by the tool shed and is ignored by the newer and preferred conda dependency
 resolver.

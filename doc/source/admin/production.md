@@ -7,8 +7,8 @@ The [basic installation instructions](https://getgalaxy.org) are suitable for de
 By default, Galaxy:
 
 * Uses [SQLite](https://www.sqlite.org/) (a serverless database), so you don't have to run/configure a database server for quick or basic development.  However, while SQLite [supports concurrent access](https://sqlite.org/lockingv3.html) it does not support multiple concurrent writes, which can reduce system throughput.
-* Uses a built-in HTTP server, written in Python.  Much of the work performed by this server can be moved to [nginx](nginx.html) or Apache, which will increase performance.
-* Runs all tools locally.  Moving to a [cluster](cluster.html) will greatly increase capacity.
+* Uses a built-in HTTP server, written in Python.  Much of the work performed by this server can be moved to [nginx](nginx.md) or [Apache](apache.md), which will increase performance.
+* Runs all tools locally.  Moving to a [cluster](cluster.md) will greatly increase capacity.
 * Runs in a single process, which is a performance problem in [CPython](http://en.wikipedia.org/wiki/CPython).
 
 Galaxy ships with this default configuration to ensure the simplest, most error-proof configuration possible when doing basic development.  As you'll soon see, the goal is to remove as much work as possible from the Galaxy process, since doing so will greatly speed up the performance of its remaining duties.  This is due to the Python Global Interpreter Lock (GIL), which is explained in detail in the [Advanced Configuration](#advanced-configuration) section.
@@ -33,7 +33,7 @@ nate@weyerbacher% cd galaxy-dist
 nate@weyerbacher% sh run.sh
 ```
 
-* Galaxy can be housed in a cluster/network filesystem (it's been tested with NFS and GPFS), and you'll want to do this if you'll be running it on a [cluster](cluster.html).
+* Galaxy can be housed in a cluster/network filesystem (it's been tested with NFS and GPFS), and you'll want to do this if you'll be running it on a [cluster](cluster.md).
 
 ## Basic configuration
 
@@ -93,16 +93,16 @@ Downloading and uploading data can also be moved to the proxy server.  This is e
 
 Virtually any server that proxies HTTP should work, although we provide configuration examples for:
 
-* [Apache](apache.html), and
-* [nginx](nginx.html), a high performance reverse proxy, used by our public Galaxy sites
+* [Apache](apache.md), and
+* [nginx](nginx.md), a high performance reverse proxy, used by our public Galaxy sites
 
 ### Using a compute cluster
 
-Galaxy is a framework that runs command-line tools, and if properly configured, can run these tools on a compute [cluster](cluster.html).  Without a cluster, you'll be limited to the number of cores in your server, minus those needed to run Galaxy itself.  Galaxy currently supports TORQUE PBS, PBS Pro, Platform LSF, and Sun Grid Engine clusters, and does not require a dedicated or special cluster configuration.  Tools can even run on heterogeneous cluster nodes (differing operating systems), as long as any dependencies necessary to run the tool are available on that platform.
+Galaxy is a framework that runs command-line tools, and if properly configured, can run these tools on a compute [cluster](cluster.md).  Without a cluster, you'll be limited to the number of cores in your server, minus those needed to run Galaxy itself.  Galaxy currently supports TORQUE PBS, PBS Pro, Platform LSF, and Sun Grid Engine clusters, and does not require a dedicated or special cluster configuration.  Tools can even run on heterogeneous cluster nodes (differing operating systems), as long as any dependencies necessary to run the tool are available on that platform.
 
 Using a cluster will also net you a fringe benefit: When running tools locally, they are child processes of the Galaxy server.  This means that if you restart the server, you lose contact with those jobs, and they must be restarted.  However on the cluster, if the Galaxy server restarts, the jobs will continue to run and finish.  Once the Galaxy job manager starts up, it'll resume tracking and finishing jobs as if nothing had happened.
 
-Configuration is not difficult once your cluster is set up.  Details can be found on the [cluster](cluster.html) page.
+Configuration is not difficult once your cluster is set up.  Details can be found on the [cluster](cluster.md) page.
 
 ### Cleaning up datasets
 
@@ -110,7 +110,7 @@ When datasets are deleted from a history or library, it is simply marked as dele
 
 ### Rotate log files
 
-To use logrotate to rotate Galaxy log files, add a new file named "galaxy" to /etc/logrotate.d/ directory with something like:
+To use logrotate to rotate Galaxy log files, add a new file named `galaxy` to `/etc/logrotate.d/` directory with something like:
 
 ```
 PATH_TO_GALAXY_LOG_FILES {
@@ -137,7 +137,7 @@ To get started with setting up local data, please see [Data Integration](https:/
 
 ### Enable upload via FTP
 
-File sizes have grown very large thanks to rapidly advancing sequencer technology, and it is not always practical to upload these files through the browser. Thankfully, a simple solution is to allow Galaxy users to upload them via FTP and import those files in to their histories. Configuration for FTP is explained on the [File Upload via FTP](special_topics/ftp.html) page.
+File sizes have grown very large thanks to rapidly advancing sequencer technology, and it is not always practical to upload these files through the browser. Thankfully, a simple solution is to allow Galaxy users to upload them via FTP and import those files in to their histories. Configuration for FTP is explained on the [File Upload via FTP](special_topics/ftp.md) page.
 
 ## Advanced configuration
 
@@ -145,11 +145,11 @@ File sizes have grown very large thanks to rapidly advancing sequencer technolog
 
 As already mentioned, unloading work from the Galaxy process is important due to the Python [Global Interpreter Lock](https://docs.python.org/c-api/init.html#thread-state-and-the-global-interpreter-lock) (GIL). The GIL is how Python ensures thread safety, and it accomplishes this by only allowing one thread to control execution at a time. This means that regardless of the number of cores in your server, Galaxy can only use one. However, there's a solution: run multiple Galaxy processes and use the proxy server to balance across all of these processes. In practice, Galaxy is split into job handler and web server processes. Job handlers do not service any user requests directly via the web. Instead, they watch the database for new jobs, and upon finding them, handle the preparation, monitoring, running, and completion of them. Likewise, the web server processes are free to deal only with serving content and files to web clients.
 
-Full details on how to configure scaling and load balancing can be found in the [scaling](scaling.html) documentation.
+Full details on how to configure scaling and load balancing can be found in the [scaling](scaling.md) documentation.
 
 ### Unloading even more work
 
-For those readers who've already been running Galaxy on a cluster, a bit of information was recently added to the [cluster](cluster.html) documentation regarding running the data source tools on the cluster (contrary to the default configuration).  Running all tools on the cluster is strongly encouraged, so if you have not done this, please check out the new information.
+For those readers who've already been running Galaxy on a cluster, a bit of information was recently added to the [cluster](cluster.md) documentation regarding running the data source tools on the cluster (contrary to the default configuration).  Running all tools on the cluster is strongly encouraged, so if you have not done this, please check out the new information.
 
 ### Tune the database
 
@@ -161,4 +161,4 @@ Finally, if you are using Galaxy <= release_2014.06.02, we recommend that you in
 
 ### Make the proxy handle uploads and downloads
 
-By default, Galaxy receives file uploads as a stream from the proxy server and then writes this file to disk.  Likewise, it sends files as a stream to the proxy server.  This occupies the GIL in that Galaxy process and will decrease responsiveness for other operations in that process.  To solve this problem, you can configure your proxy server to serve downloads directly, involving Galaxy only for the task of authorizing that the user has permission to read the dataset.  If using nginx as the proxy, you can configure it to receive uploaded files and write them to disk itself, only notifying Galaxy of the upload once it's completed.  All the details on how to configure these can be found on the [Apache](apache.html) and [nginx](nginx.html) proxy instruction pages.
+By default, Galaxy receives file uploads as a stream from the proxy server and then writes this file to disk.  Likewise, it sends files as a stream to the proxy server.  This occupies the GIL in that Galaxy process and will decrease responsiveness for other operations in that process.  To solve this problem, you can configure your proxy server to serve downloads directly, involving Galaxy only for the task of authorizing that the user has permission to read the dataset.  If using nginx as the proxy, you can configure it to receive uploaded files and write them to disk itself, only notifying Galaxy of the upload once it's completed.  All the details on how to configure these can be found on the [Apache](apache.md) and [nginx](nginx.md) proxy instruction pages.

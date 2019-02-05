@@ -31,12 +31,12 @@ The most commonly modified configuration files include:
 
 - ``galaxy.yml``: Core Galaxy configuration file.
 - ``tool_conf.xml``: Describes the paths to local tool configurations that Galaxy should attempt to load.  Tools that
-  are installed via the Tool Shed are configured to load in the ``shed_tool_conf.xml`` file.  See the :ref:`Tool Panel
+  are installed via the Tool Shed are configured to load in the ``shed_tool_conf.xml`` file.  See the :doc:`Tool Panel
   Administration <tool_panel>` and `Installing Tools into Galaxy`_ documentation for more.
 - ``datatypes_conf.xml``: Describes the file formats that are supported in Galaxy. See the `Datatypes documentation`_
   for more.
-- ``job_conf.xml``: Controls how Galaxy runs tools, e.g. to run them on a compute cluster. See the `Cluster
-  documentation`_ for more.
+- ``job_conf.xml``: Controls how Galaxy runs tools, e.g. to run them on a compute cluster. See the :doc:`Cluster
+  documentation <cluster>` for more.
 
 Some configuration files are only used when adding local components, rather than ones installed from the Tool Shed:
 
@@ -50,7 +50,7 @@ Some configuration files are only used when adding local components, rather than
   Managers documentation`_ for more.
 - ``local_conda_mapping.yml``: Define mappings between the names specified in the tool configuration (``<requirement>``
   tags) and the conda resolver's names (conda package name).
-- ``lmod_modules_mapping.yml``: Define mappings between the names specified in the tool configuration (``<requirement>`` 
+- ``lmod_modules_mapping.yml``: Define mappings between the names specified in the tool configuration (``<requirement>``
   tags) and the Lmod system.
 
 Some configuration files are used to control the way that Galaxy resolves tool dependencies. Most Galaxy tools are only
@@ -69,7 +69,7 @@ Additional configuration files and their purposes are:
   particular command line tool) should locate their dependencies (the command line tool) that are not part of the tool.
   See the `Dependency Resolvers documentation <dependency_resolvers>` for more.
 - ``error_report.yml``: Controls how user-initiated error reporting (e.g. due to tool failure) is performed. See the
-  :ref:`Bug Reports documentation <bug_reports>` for more.
+  :doc:`Bug Reports documentation <special_topics/bug_reports>` for more.
 - ``job_metrics_conf.xml``: Enables reporting of certain conditions and collection of metrics when jobs run.
 - ``job_resource_params_conf.xml``: Describes tool form elements that should be inserted into tool forms that can be
   used by users to control runtime parameters such as memory allocations, cluster selection, and so forth.
@@ -85,7 +85,6 @@ Additional configuration files and their purposes are:
 .. _standardize and unify configuration formats: https://github.com/galaxyproject/galaxy/issues/5148
 .. _Installing Tools into Galaxy: https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/
 .. _Datatypes documentation: https://galaxyproject.org/learn/datatypes/
-.. _Cluster documentation: cluster.html
 .. _Data Preparation documentation: https://galaxyproject.org/admin/data-preparation/
 .. _Data Managers documentation: https://galaxyproject.org/admin/tools/data-managers/
 
@@ -110,7 +109,7 @@ Configuration Basics
 
 .. _uWSGI YAML configuration file: https://uwsgi-docs.readthedocs.io/en/latest/Configuration.html
 .. _large number of options: https://uwsgi-docs.readthedocs.io/en/latest/Options.html
-  
+
 ----------------------------
 Configuration Options
 ----------------------------
