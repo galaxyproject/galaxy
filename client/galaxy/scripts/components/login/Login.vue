@@ -3,7 +3,7 @@
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
-                <b-form id="login" @submit.prevent="submit()">
+                <b-form id="login" @submit.prevent="submitGalaxyLogin()">
                     <b-card header="Welcome to Galaxy, please log in">
                         <b-form-group label="Username or Email Address">
                             <b-form-input name="login" type="text" v-model="login" />
@@ -19,16 +19,13 @@
                     </b-card>
                 </b-form>
             </div>
-            <div :show="showOIDC" class="col col-lg-6">
-                <div class="card">
-                    <div class="card-header">OR</div>
-                    <form name="oidc" id="oidc" action="/authnz/Google/login" method="post" >
-                        <div class="form-row">
-                            <input type="submit" value="Login with Google"/>
-                        </div>
-                    </form>
-                </div>
-            </div>
+            <b-card header="Other Login Options">
+                <b-form id="oidc" @submit.prevent="submitOIDCLogin()">
+                    <b-form-group>
+                        <b-button type="submit">Log in with Google</b-button>
+                    </b-form-group>
+                </b-form>
+            </b-card>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
             </div>
@@ -77,7 +74,7 @@ export default {
         }
     },
     methods: {
-        submit: function(method) {
+        submitGalaxyLogin: function(method) {
             let rootUrl = getAppRoot();
             let data = { login: this.login, password: this.password, redirect: this.redirect };
             axios
@@ -93,6 +90,23 @@ export default {
                     } else {
                         window.location = `${rootUrl}`;
                     }
+                })
+                .catch(error => {
+                    this.messageVariant = "danger";
+                    let message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Login failed for an unknown reason.";
+                });
+        },
+        submitOIDCLogin: function(method) {
+            let rootUrl = getAppRoot();
+            axios
+                .post(`${rootUrl}authnz/Google/login`)
+                .then(response => {
+                    console.debug(response);
+                    if (response.data.redirect_uri){
+                        window.location = encodeURI(response.data.redirect_uri);
+                    }
+                    // Else do something intelligent or maybe throw an error -- what else does this endpoint possibly return?
                 })
                 .catch(error => {
                     this.messageVariant = "danger";

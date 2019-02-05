@@ -9,7 +9,6 @@ import { CommunicationServerView } from "layout/communication-server-view";
 import Webhooks from "mvc/webhooks";
 import Utils from "utils/utils";
 
-
 function logoutClick() {
     let galaxy = getGalaxyInstance();
     let token = galaxy.session_csrf_token || "";
@@ -19,7 +18,6 @@ function logoutClick() {
     let url = `${galaxy.root}user/logout?session_csrf_token=${token}`;
     window.top.location.href = url;
 }
-
 
 var Collection = Backbone.Collection.extend({
     model: Backbone.Model.extend({
