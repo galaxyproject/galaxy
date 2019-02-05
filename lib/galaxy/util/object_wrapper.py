@@ -220,17 +220,14 @@ class SafeStringWrapper(object):
     __NO_WRAP_NAMES__ = ['__safe_string_wrapper_function__', '__class__', __UNSANITIZED_ATTRIBUTE_NAME__]
 
     def __new__(cls, *arg, **kwd):
-        # We need to define a __new__ since, we are subclassing from e.g. immutable str, which internally sets data
-        # that will be used when other + this (this + other is handled by __add__)
-        try:
-            sanitized_value = sanitize_lists_to_string(arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
-            return super(SafeStringWrapper, cls).__new__(cls, sanitized_value)
-        except TypeError:
-            # Class to be wrapped takes no parameters.
-            # This is pefectly normal for mutable types.
-            return super(SafeStringWrapper, cls).__new__(cls)
+        # We need to define a __new__ since, we are subclassing from e.g. immutable str
+        return super(SafeStringWrapper, cls).__new__(cls)
 
     def __init__(self, value, safe_string_wrapper_function=wrap_with_safe_string):
+        """
+        >>> assert '<' not in str(SafeStringWrapper([1]) + ['<'])
+        >>> assert '<' not in str(SafeStringWrapper('a') + '<')
+        """
         self.unsanitized = value
         self.__safe_string_wrapper_function__ = safe_string_wrapper_function
 
