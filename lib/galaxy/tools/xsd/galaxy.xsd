@@ -1651,6 +1651,18 @@ module.
           <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="has_keys" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts HDF5 output contains the specified ``keys`` (h5py.File().keys()) (e.g. ``<has_keys keys="bins, chroms,indexes,pixels" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+      <xs:element name="has_attr" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation><![CDATA[Asserts HDF5 output contains the specified key-vaue pair given as ``name`` and ``value`` (e.g. ``<has_attr name="nchroms" value="15" />``).]]>
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
     </xs:choice>
   </xs:group>
   <xs:complexType name="Inputs">
