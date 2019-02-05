@@ -2250,8 +2250,8 @@ class BafTar(CompressedArchive):
     >>> BafTar().sniff(fname)
     False
     """
-    edam_data = "data_2536" # mass spectrometry data
-    edam_format = "format_3712" TODO: add more raw formats to EDAM?
+    edam_data = "data_2536"  # mass spectrometry data
+    edam_format = "format_3712"  # TODO: add more raw formats to EDAM?
     file_ext = "brukerbaf.tar"
 
     def get_signature_file(self):
@@ -2291,6 +2291,7 @@ class YepTar(BafTar):
 
     def get_signature_file(self):
         return "analysis.yep"
+        
     def get_type(self):
         return "Agilent/Bruker YEP directory archive"
 
@@ -2301,6 +2302,7 @@ class TdfTar(BafTar):
 
     def get_signature_file(self):
         return "analysis.tdf"
+        
     def get_type(self):
         return "Bruker TDF directory archive"
 
@@ -2311,6 +2313,7 @@ class MassHunterTar(BafTar):
 
     def get_signature_file(self):
         return "msscan.bin"
+        
     def get_type(self):
         return "Agilent MassHunter directory archive"
 
@@ -2321,6 +2324,7 @@ class MassLynxTar(BafTar):
 
     def get_signature_file(self):
         return "_func001.dat"
+        
     def get_type(self):
         return "Waters MassLynx RAW directory archive"
 
