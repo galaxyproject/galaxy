@@ -411,6 +411,8 @@ class SubWorkflowModule(WorkflowModule):
                     extensions=["data"],
                     input_type=step_to_input_type[step_type],
                 )
+                if step.type == 'data_collection_input':
+                    input['collection_type'] = step.tool_inputs.get('collection_type') if step.tool_inputs else None
                 inputs.append(input)
         return inputs
 
@@ -432,7 +434,8 @@ class SubWorkflowModule(WorkflowModule):
             subworkflow_dict = workflow_contents_manager._workflow_to_dict_editor(trans=self.trans,
                                                                                   stored=self.subworkflow.stored_workflow,
                                                                                   workflow=self.subworkflow,
-                                                                                  tooltip=False)
+                                                                                  tooltip=False,
+                                                                                  is_subworkflow=True)
             for order_index in sorted(subworkflow_dict['steps']):
                 step = subworkflow_dict['steps'][order_index]
                 data_outputs = step['outputs']
