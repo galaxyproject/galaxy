@@ -19,6 +19,7 @@ from math import (
     log
 )
 
+
 def randint(a, b):
     return a + int(random.random() * (b + 1 - a))
 
@@ -176,6 +177,7 @@ def __main__():
     if run_mode == "neg_file_mode_1" or run_mode == "neg_file_mode_2":
         import os
         os.remove("tmp_file.txt")
+
 
 if __name__ == "__main__":
     __main__()
