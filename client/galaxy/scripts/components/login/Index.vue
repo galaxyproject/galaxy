@@ -2,10 +2,7 @@
     <div>
         <b-tabs>
             <b-tab title="Login" active>
-                <login
-                    :show_welcome_with_login="show_welcome_with_login"
-                    :welcome_url="welcome_url"
-                />
+                <login :show_welcome_with_login="show_welcome_with_login" :welcome_url="welcome_url" />
             </b-tab>
             <b-tab title="Register">
                 <register

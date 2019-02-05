@@ -60,12 +60,14 @@ export const getAdminRouter = (Galaxy, options) => {
             let instance = Vue.extend(Register);
             let vm = document.createElement("div");
             this.page.display(vm);
-            new instance({ propsData: {
-                redirect: "/admin/users",
-                registration_warning_message: options.config.registration_warning_message,
-                mailing_join_addr: options.config.mailing_join_addr,
-                smtp_server: options.config.smtp_server
-            } }).$mount(vm);
+            new instance({
+                propsData: {
+                    redirect: "/admin/users",
+                    registration_warning_message: options.config.registration_warning_message,
+                    mailing_join_addr: options.config.mailing_join_addr,
+                    smtp_server: options.config.smtp_server
+                }
+            }).$mount(vm);
         },
 
         show_roles: function() {
