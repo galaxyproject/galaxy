@@ -67,7 +67,8 @@ def tags_to_dict(item_tags):
             options.context = "${elt_context}";
             options.tagClickFn = "${tag_click_fn}";
             options.clickUrl = "${click_url}";
-
+            options.disabled = true;
+            
             bundleEntries.mountTaggingComponent(options, container);
         });
     </script>

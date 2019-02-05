@@ -1,3 +1,5 @@
+@import "scss/mixins";
+
 // all histories
 .history-panel {
     @extend .flex-vertical-container;
@@ -628,4 +630,10 @@
             margin-right: 8px;
         }
     }
+}
+
+// History panel tags editor
+.history-panel .galaxy-tags {
+    padding: 1px;
+    @include shutterFade(".ti-input", 250px);
 }

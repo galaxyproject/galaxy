@@ -9,8 +9,7 @@ parameters here.
 -->
 
 <template>
-    <galaxy-tags :class="tagContainerClasses"
-        v-model="tags" 
+    <galaxy-tags v-model="observedTags" 
         :disabled="disabled"
         :autocomplete-items="autocompleteItems"
         @tag-click="clickHandler"
@@ -24,6 +23,7 @@ parameters here.
 
 import Vue from "vue";
 import VueRx from "vue-rx";
+import { mapActions } from "vuex";
 import { map } from "rxjs/operators";
 import GalaxyTags from "./GalaxyTags";
 import { redirectToUrl } from "utils/redirect";
@@ -58,14 +58,19 @@ export default {
         disabled: { type: Boolean, required: false, default: false }
     },
     computed: {
+        observedTags: {
+            get() {
+                return this.$store.getters.getTagsById(this.id);
+            },
+            set(newTags) {
+                this.updateTags({ 
+                    key: this.id, 
+                    tags: newTags 
+                });
+            },
+        },
         tagService() {
             return buildTagService(this.$props);
-        },
-        tagContainerClasses() {
-            return {
-                "galaxy-tags": true,
-                "disabled": this.disabled
-            }
         }
     },
     subscriptions() {
@@ -119,8 +124,16 @@ export default {
 
         updateTagSearch(searchTxt) {
             this.tagService.autocompleteSearchText = searchTxt;
-        }
+        },
 
+        ...mapActions(["updateTags"])
+    },
+    created() {
+        // initialize store with loaded values
+        this.updateTags({ 
+            key: this.id, 
+            tags: this.tags 
+        });
     }
 }
 

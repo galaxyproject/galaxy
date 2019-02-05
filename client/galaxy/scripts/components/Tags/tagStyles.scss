@@ -1,6 +1,6 @@
 // TODO: use general color definition file
-@import "theme/blue.scss";
-@import "scss/mixins.scss";
+@import "theme/blue";
+@import "scss/mixins";
 
 // Puts a little graphic in place of the text-input 
 // when the input is not in focus
@@ -20,24 +20,24 @@
     }
 }
 
-// hides tag container
-@mixin hideTagContainer() {
-    .vue-tags-input {
-        background-color: transparent;
-        .ti-input {
-            border: none;
-        }
-    }
-}
-
 // general style butchering 
 @mixin matchBootstrapStyling() {
+    // TODO: actually match the bootstrap button classes in
+    // here either by importing mixins or just using colors
+    // from the boostrap .scss files
     .vue-tags-input {
         @include fill();
+        .ti-input {
+            padding: 0;
+            border: none;
+        }
         .ti-tag {
             border-radius: 4px;
             font-size: 0.8rem;
             font-weight: 400;
+        }
+        &.tag-area { 
+            background-color: transparent;
         }
     }
 }
@@ -54,7 +54,7 @@
 }
 
 .galaxy-tags {
- 
+
     // adds in a graphic in place of the text input
     @include newTagHoverButton();
 
@@ -65,10 +65,4 @@
     &.disabled {
         @include forDisplayOnly();
     }
-}
-
-// Hide the border around the tag editing container 
-// when inside a grid row
-.grid .galaxy-tags {
-    @include hideTagContainer();
 }

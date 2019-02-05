@@ -4,7 +4,8 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
-import TAGS from "mvc/tag";
+// import TAGS from "mvc/tag";
+import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
@@ -296,13 +297,37 @@ var DatasetListItemEdit = _super.extend(
                 });
             }
         },
-
-        //TODO: if possible move these to readonly view - but display the owner's tags/annotation (no edit)
+        
         /** Render the tags list/control */
         _renderTags: function($where) {
             if (!this.hasUser) {
                 return;
             }
+            
+            let el = $where.find(".tags-display")[0];
+            let propsData = {
+                model: this.model,
+                // a note in the comments requested read-only
+                disabled: true
+            };
+            let vm = mountModelTags(propsData, el);
+
+            // tag icon button open/closes
+            let activator = faIconButton({
+                title: _l("Edit dataset tags"),
+                classes: "tag-btn",
+                faIcon: "fa-tags"
+            }).appendTo($where.find(".actions .right"));
+
+            // not sure who cares about tagsEditorShown
+            activator.on("click", () => {
+                $(vm.$el).toggleClass("active");
+                this.tagsEditorShown = $(vm.$el).hasClass("active");
+            });
+
+            return vm;
+            
+            /*
             var view = this;
             this.tagsEditor = new TAGS.TagsEditor({
                 model: this.model,
@@ -326,6 +351,7 @@ var DatasetListItemEdit = _super.extend(
             if (this.tagsEditorShown) {
                 this.tagsEditor.toggle(true);
             }
+            */
         },
 
         /** Render the annotation display/control */

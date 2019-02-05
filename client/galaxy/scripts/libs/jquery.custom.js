@@ -21,7 +21,6 @@ require("imports-loader?jQuery=jqueryVendor!libs/jquery/jquery.wymeditor");
 require("imports-loader?jQuery=jqueryVendor!jquery.complexify");
 require("imports-loader?jQuery=jqueryVendor!jquery-migrate");
 
-// require("components/Tags/jquery.galaxyTags");
 // require("imports-loader?jQuery=jqueryVendor!../ui/autocom_tagging");
 
 module.exports = jQuery;

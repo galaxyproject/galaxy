@@ -1859,19 +1859,6 @@ div.toolTitleNoSection {
     opacity: 1;
 }
 
-/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
-// .tags-display {
-//     @extend %vertical-spacing;
-//     .select2-container {
-//         max-height: 80px;
-//         overflow: auto;
-//         min-width: 0px;
-//         .select2-choices {
-//             border-radius: 3px;
-//         }
-//     }
-// }
-
 /* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
  * workflow editor; everything should be moved out of the mako and into its own
  * file */

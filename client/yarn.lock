@@ -1137,6 +1137,11 @@ amdi18n-loader@^0.8.0:
     coffee-loader "^0.7.2"
     coffee-script "^1.12.2"
 
+animatewithsass@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/animatewithsass/-/animatewithsass-3.2.1.tgz#4ae833f5b852377c6e8fd574c4223334dfee8c19"
+  integrity sha1-Sugz9bhSN3xuj9V0xCIzNN/ujBk=
+
 ansi-align@^1.0.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/ansi-align/-/ansi-align-1.1.0.tgz#2f0c1658829739add5ebb15e6b0c6e3423f016ba"

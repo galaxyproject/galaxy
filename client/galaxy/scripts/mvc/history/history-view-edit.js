@@ -5,7 +5,8 @@ import HISTORY_VIEW from "mvc/history/history-view";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
-import TAGS from "mvc/tag";
+// import TAGS from "mvc/tag";
+import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
 import PAIR_COLLECTION_CREATOR from "mvc/collection/pair-collection-creator";
@@ -14,6 +15,7 @@ import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
 import "ui/editable-text";
+
 
 var $ = jQuery;
 
@@ -155,27 +157,24 @@ var HistoryViewEdit = _super.extend(
 
         /** render the tags sub-view controller */
         _renderTags: function($where) {
-            var panel = this;
-            this.tagsEditor = new TAGS.TagsEditor({
-                model: this.model,
-                el: $where.find(".controls .tags-display"),
-                onshowFirstTime: function() {
-                    this.render();
-                },
-                // show hide sub-view tag editors when this is shown/hidden
-                onshow: function() {
-                    panel.toggleHDATagEditors(true, panel.fxSpeed);
-                },
-                onhide: function() {
-                    panel.toggleHDATagEditors(false, panel.fxSpeed);
-                },
-                $activator: faIconButton({
-                    title: _l("Edit history tags"),
-                    classes: "history-tag-btn",
-                    faIcon: "fa-tags",
-                    tooltipConfig: { placement: "top" }
-                }).appendTo($where.find(".controls .actions"))
+            let el = $where.find(".controls .tags-display")[0];
+            let vm = mountModelTags(this, el);
+            
+            // tag icon button open/closes
+            let activator = faIconButton({
+                title: _l("Edit history tags"),
+                classes: "history-tag-btn",
+                faIcon: "fa-tags",
+                tooltipConfig: { placement: "top" }
+            }).appendTo($where.find(".controls .actions"));
+            
+            // TODO: store visibility w/ preferences
+            activator.on("click", () => {
+                console.log("click", vm.$el);
+                $(vm.$el).toggleClass("active");
             });
+
+            return vm;
         },
         /** render the annotation sub-view controller */
         _renderAnnotation: function($where) {
@@ -418,13 +417,13 @@ var HistoryViewEdit = _super.extend(
         },
 
         /** toggle the visibility of each content's tagsEditor applying all the args sent to this function */
-        toggleHDATagEditors: function(showOrHide, speed) {
-            _.each(this.views, view => {
-                if (view.tagsEditor) {
-                    view.tagsEditor.toggle(showOrHide, speed);
-                }
-            });
-        },
+        // toggleHDATagEditors: function(showOrHide, speed) {
+        //     _.each(this.views, view => {
+        //         if (view.tagsEditor) {
+        //             view.tagsEditor.toggle(showOrHide, speed);
+        //         }
+        //     });
+        // },
 
         /** toggle the visibility of each content's annotationEditor applying all the args sent to this function */
         toggleHDAAnnotationEditors: function(showOrHide, speed) {

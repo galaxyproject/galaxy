@@ -9,7 +9,7 @@ import WORKFLOWS from "mvc/workflow/workflow-model";
 import QueryStringParsing from "utils/query-string-parsing";
 import _l from "utils/localization";
 import LoadingIndicator from "ui/loading-indicator";
-import { mountGridTags } from "components/Tags";
+import { mountModelTags } from "components/Tags";
 
 /** View of the individual workflows */
 const WorkflowItemView = Backbone.View.extend({
@@ -126,7 +126,7 @@ const WorkflowItemView = Backbone.View.extend({
                     ${this._templateActions()}
                 </div>
             </td>
-            <td class="galaxy-tags">
+            <td>
                 <div class="tags-display"></div>
             </td>
             <td>
@@ -139,7 +139,8 @@ const WorkflowItemView = Backbone.View.extend({
 
     renderTagEditor: function() {
         let el = $(this.el).find('.tags-display')[0];
-        mountGridTags(this.model, el);
+        let vm = mountModelTags(this, el);
+        return vm;
     },
 
     /** Template for user actions for workflows */
