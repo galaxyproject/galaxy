@@ -19,6 +19,16 @@
                     </b-card>
                 </b-form>
             </div>
+            <div :show="showOIDC" class="col col-lg-6">
+                <div class="card">
+                    <div class="card-header">OR</div>
+                    <form name="oidc" id="oidc" action="/authnz/Google/login" method="post" >
+                        <div class="form-row">
+                            <input type="submit" value="Login with Google"/>
+                        </div>
+                    </form>
+                </div>
+            </div>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
             </div>
@@ -60,6 +70,10 @@ export default {
     computed: {
         messageShow() {
             return this.messageText != null;
+        },
+        showOIDC() {
+            let Galaxy = getGalaxyInstance();
+            return Galaxy.config.enable_oidc == true;
         }
     },
     methods: {
