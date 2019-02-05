@@ -71,7 +71,13 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         self.config_files = []
 
     def _repo_install(self, changeset, config_filename=None):
-        metadata = {}
+        metadata = {
+            'tools': [{
+                'add_to_tool_panel': False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
+                'guid': "github.com/galaxyproject/example/test_tool/0.%s" % changeset,
+                'tool_config': 'tool.xml'
+            }],
+        }
         if config_filename:
             metadata['shed_config_filename'] = config_filename
         repository = tool_shed_install.ToolShedRepository(metadata=metadata)
@@ -98,7 +104,6 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         version2 = tool_shed_install.ToolVersion()
         version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
         version2.repository = repository2
-
         self.app.install_model.context.add(version2)
         self.app.install_model.context.flush()
 
