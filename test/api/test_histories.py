@@ -184,12 +184,15 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
         deleted_hda = self.dataset_populator.new_dataset(history_id, content="1 2 3")
         self.dataset_populator.delete_dataset(history_id, deleted_hda["id"])
+        deleted_details = self.dataset_populator.get_history_dataset_details(history_id, id=deleted_hda["id"])
+        assert deleted_details["deleted"]
         imported_history_id = self._reimport_history(history_id, history_name, wait_on_history_length=2)
 
         def upload_job_check(job):
             assert job["tool_id"] == "upload1"
 
         def check_discarded(hda):
+            assert hda["deleted"]
             assert hda["state"] == "discarded", hda
             assert hda["purged"] is True
 
