@@ -291,16 +291,10 @@ class ToolValidator(object):
             tool = create_tool_from_source(config_file=full_path, app=self.app, tool_source=tool_source, repository_id=repository_id, allow_code_files=False)
             valid = True
             error_message = None
-        except KeyError as e:
-            tool = None
-            valid = False
-            error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str(e)
-            error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
-            error_message += 'this error.  '
-        except Exception as e:
-            tool = None
-            valid = False
-            error_message = str(e)
+        except Exception:
+            # As best I can tell, error messages will no longer get back to the UI, so raise exceptions instead so that
+            # at least something will be logged.
+            raise
         return tool, valid, error_message
 
     def load_tool_from_tmp_config(self, repo, repository_id, ctx, ctx_file, work_dir):
