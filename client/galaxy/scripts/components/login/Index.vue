@@ -1,17 +1,15 @@
 <template>
     <div>
-        <b-tabs>
-            <b-tab title="Login" active>
-                <login :show_welcome_with_login="show_welcome_with_login" :welcome_url="welcome_url" />
-            </b-tab>
-            <b-tab title="Register">
-                <register
-                    :registration_warning_message="registration_warning_message"
-                    :mailing_join_addr="mailing_join_addr"
-                    :smtp_server="smtp_server"
-                />
-            </b-tab>
-        </b-tabs>
+        <template v-if="showLogin">
+            <login :show_welcome_with_login="show_welcome_with_login" :welcome_url="welcome_url" />
+        </template>
+        <template v-else>
+            <register
+                :registration_warning_message="registration_warning_message"
+                :mailing_join_addr="mailing_join_addr"
+                :smtp_server="smtp_server"
+            />
+        </template>
     </div>
 </template>
 <script>
@@ -23,9 +21,25 @@ import BootstrapVue from "bootstrap-vue";
 Vue.use(BootstrapVue);
 
 export default {
+    data() {
+        return {
+            login: true
+        };
+    },
+    computed: {
+        showLogin: function() {
+            console.debug(this.login);
+            return this.login;
+        }
+    },
     components: {
         login: Login,
         register: Register
+    },
+    methods: {
+        toggleLogin: function() {
+            this.login = !this.login;
+        }
     },
     props: {
         show_welcome_with_login: {

@@ -7,29 +7,34 @@
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="registration" @submit.prevent="submit()">
-                    <b-card header="Create account">
-                        <b-form-group label="Email Address">
-                            <b-form-input name="email" type="text" v-model="email" />
-                        </b-form-group>
-                        <b-form-group label="Password">
-                            <b-form-input name="password" type="password" v-model="password" />
-                        </b-form-group>
-                        <b-form-group label="Confirm password">
-                            <b-form-input name="confirm" type="password" v-model="confirm" />
-                        </b-form-group>
-                        <b-form-group label="Public name">
-                            <b-form-input name="username" type="text" v-model="username" />
-                            <b-form-text
-                                >Your public name is an identifier that will be used to generate addresses for
-                                information you share publicly. Public names must be at least three characters in length
-                                and contain only lower-case letters, numbers, dots, underscores, and dashes ('.', '_',
-                                '-').</b-form-text
-                            >
-                        </b-form-group>
-                        <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">
-                            <input name="subscribe" type="checkbox" v-model="subscribe" />
-                        </b-form-group>
-                        <b-button name="create" type="submit">Create</b-button>
+                    <b-card no-body header="Create account">
+                        <b-card-body>
+                            <b-form-group label="Email Address">
+                                <b-form-input name="email" type="text" v-model="email" />
+                            </b-form-group>
+                            <b-form-group label="Password">
+                                <b-form-input name="password" type="password" v-model="password" />
+                            </b-form-group>
+                            <b-form-group label="Confirm password">
+                                <b-form-input name="confirm" type="password" v-model="confirm" />
+                            </b-form-group>
+                            <b-form-group label="Public name">
+                                <b-form-input name="username" type="text" v-model="username" />
+                                <b-form-text
+                                    >Your public name is an identifier that will be used to generate addresses for
+                                    information you share publicly. Public names must be at least three characters in
+                                    length and contain only lower-case letters, numbers, dots, underscores, and dashes
+                                    ('.', '_', '-').</b-form-text
+                                >
+                            </b-form-group>
+                            <b-form-group v-if="mailing_join_addr && smtp_server" label="Subscribe to mailing list">
+                                <input name="subscribe" type="checkbox" v-model="subscribe" />
+                            </b-form-group>
+                            <b-button name="create" type="submit">Create</b-button>
+                        </b-card-body>
+                        <b-card-footer>
+                            <a v-on:click="toggleLogin">Already have an account? Log in here.</a>
+                        </b-card-footer>
                     </b-card>
                 </b-form>
             </div>
@@ -80,6 +85,11 @@ export default {
         }
     },
     methods: {
+        toggleLogin: function() {
+            if (this.$root.toggleLogin) {
+                this.$root.toggleLogin();
+            }
+        },
         submit: function(method) {
             let rootUrl = getAppRoot();
             axios
