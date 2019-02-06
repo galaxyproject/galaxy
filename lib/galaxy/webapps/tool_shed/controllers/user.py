@@ -442,6 +442,25 @@ class User(BaseUser):
             return trans.show_ok_message('The password has been changed and any other existing Galaxy sessions have been logged out (but jobs in histories in those sessions will not be interrupted).')
         return trans.fill_template('/webapps/tool_shed/user/change_password.mako', token=token, id=id)
 
+    @web.expose
+    def logout(self, trans, logout_all=False, **kwd):
+        trans.handle_user_logout(logout_all=logout_all)
+        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % \
+            (url_for('/'))
+        if biostar.biostar_logged_in(trans):
+            biostar_url = biostar.biostar_logout(trans)
+            if biostar_url:
+                # TODO: It would be better if we automatically logged this user out of biostar
+                message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % (biostar_url)
+        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
+            trans.response.send_redirect(trans.app.config.remote_user_logout_href)
+        else:
+            return trans.fill_template('/webapps/tool_shed/user/logout.mako',
+                                       refresh_frames=['masthead'],
+                                       message=message,
+                                       status='done',
+                                       active_view="user")
+
     def __validate(self, trans, email, password, confirm, username):
         # If coming from the tool shed webapp, we'll require a public user name
         if not username:
