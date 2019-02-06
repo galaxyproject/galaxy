@@ -209,9 +209,8 @@ login:
       selector: "//button[@name='login']"
 
 registration:
-  labels:
-      tab: 'Register'
   selectors:
+    toggle: '#register-toggle'
     form: 'form#registration'
     submit:
       type: xpath

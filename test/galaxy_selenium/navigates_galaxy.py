@@ -401,7 +401,7 @@ class NavigatesGalaxy(HasDriver):
 
         self.home()
         self.click_masthead_user()
-        self.wait_for_and_click(self.navigation.registration.labels.tab)
+        self.wait_for_and_click(self.navigation.registration.selectors.toggle)
         form = self.wait_for_visible(self.navigation.registration.selectors.form)
         self.fill(form, dict(
             email=email,
