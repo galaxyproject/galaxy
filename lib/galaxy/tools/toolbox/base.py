@@ -636,6 +636,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found " \
                   "in database. Tool will be loaded without install database."
             log.warning(msg, repository_name, repository_owner)
+            # Pull the changeset_revision from the path, and determine the base repo path.
             pre = '{shed}/repos/{owner}/{name}/'.format(
                 shed=tool_shed,
                 owner=repository_owner,

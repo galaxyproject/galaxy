@@ -1178,23 +1178,26 @@ class Tool(Dictifiable):
 
     def populate_tool_shed_info(self):
         if self._tool_shed_repository is not None and self.app.name == 'galaxy':
+            tool_shed_repository = None
             if hasattr(self._tool_shed_repository, 'id') and hasattr(self.app, 'tool_shed_repository_cache'):
                 tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository(
                     repository_id=self._tool_shed_repository.id
                 )
                 self.repository_id = tool_shed_repository.id
                 self.repository_path = tool_shed_repository.repo_path(self.app)
-            else:
+            elif not hasattr(self._tool_shed_repository, 'id'):
+                # this is a ToolConfRepository
                 tool_shed_repository = self._tool_shed_repository
                 self.repository_path = tool_shed_repository.repo_path
-            self.tool_shed = tool_shed_repository.tool_shed
-            self.repository_name = tool_shed_repository.name
-            self.repository_owner = tool_shed_repository.owner
-            self.changeset_revision = tool_shed_repository.changeset_revision
-            self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
-            self.sharable_url = common_util.get_tool_shed_repository_url(
-                self.app, self.tool_shed, self.repository_owner, self.repository_name
-            )
+            if tool_shed_repository:
+                self.tool_shed = tool_shed_repository.tool_shed
+                self.repository_name = tool_shed_repository.name
+                self.repository_owner = tool_shed_repository.owner
+                self.changeset_revision = tool_shed_repository.changeset_revision
+                self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+                self.sharable_url = common_util.get_tool_shed_repository_url(
+                    self.app, self.tool_shed, self.repository_owner, self.repository_name
+                )
 
     @property
     def help(self):

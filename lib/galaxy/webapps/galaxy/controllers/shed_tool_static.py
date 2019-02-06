@@ -31,7 +31,7 @@ class ShedToolStatic(BaseUIController):
         """
         guid = '/'.join([shed, 'repos', owner, repo, tool, version])
         tool = trans.app.toolbox.get_tool(guid)
-        repo_path = tool.tool_shed_repository.repo_path
+        repo_path = tool.repository_path
         path = join(repo_path, image_file)
         if not safe_contains(repo_path, path):
             raise RequestParameterInvalidException()
