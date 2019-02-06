@@ -1,77 +1,5 @@
-<!--
-Configurable tag component. Needed to do some minor event/property remapping
-to make the 3rd party component suit the interface I wanted to expose. This 
-component is used like a glorified form input with v-model. Set v-model
-to the array of selected tags.
-
-Props: 
-    "value":
-        Standard vue property that is assigned when v-model="tags" is set.
-        No need to set it directly, just use v-model="tags"
-    autoCompleteItems: 
-        An array of autocomplete items for the current tag text. You can capture
-        changes to the tag being entered in the tag-input-changed event and reset
-        this property as required
-
-Events:
-    "input" (standard v-model update event, Not used directly):
-        Emits when list of tags change
-    before-adding-tag({ tag, addTag })
-        Hook allowing user the chance to do an operation before
-        commiting a tag to the list
-    before-deleting-tag({ tag, deleteTag })
-        Hook allowing consumer to do somehting before removing
-        a tag from the displayed list.
-    tag-click:
-        When the central name display of the tag is clicked, can
-        assign a handler from the consuming environment
-    tag-input-changed:
-        As user is typing a new tag, the text gets emitted here.
-
-Usage:
-
-    <galaxy-tags 
-        v-model="tags" 
-        :autocomplete-items="autocompleteItems"
-        @tag-click="tagClick"
-        @tag-input-changed="tagTextChanged"
-        @before-adding-tag="beforeAddingTag"
-        @before-deleting-tag="beforeDeletingTag"
-    />
-
-    ...
-
-    methods: {
-
-        // tag is only added when addTag(tag) is called
-        beforeAddingTag({ tag, addTag }) {
-            saveTagToServer().then(() => addTag(tag));
-        },
-
-        // tag is deleted when deleteTag(tag) is called
-        beforeDeletingTag({ tag, deleteTag }) {
-            deleteTagFromServer().then(() => deleteTag(tag));
-        },
-
-        // do a database lookup to generate viable options and
-        // set on the property that's passed to the component to
-        // do a little autocomplete dropdown
-        tagTextChanged(txt) {
-            generateAutocompleteOptions(txt).then((newOptions) => {
-                this.autocompleteItems = newOptions;
-            })
-        },
-
-        // any appropriate click handler (update search, etc.)
-        tagClick(tag) {
-            // do something with the tag data
-        }
-    }
-
--->
-
 <template>
-    <div>
+    <div :class="tagContainerClasses">
         <a href="#" class="toggle-link" 
             v-if="linkVisible"
             @click.prevent="toggleTagDisplay">
@@ -125,6 +53,12 @@ export default {
         }
     },
     computed: {
+        tagContainerClasses() {
+            return {
+                "galaxy-tags": true,
+                "disabled": this.disabled
+            }
+        },
         tagModels() {
             return this.value.map(createTag);
         },
@@ -155,6 +89,7 @@ export default {
         },
         toggleTagDisplay() {
             this.tagToggle = !this.tagToggle;
+            this.$emit("show", this.tagToggle);
         },
         beforeAddingTag($event) {
             if (!this.emitHookEvent("before-adding-tag", $event)) {

@@ -1,6 +1,6 @@
 // TODO: use general color definition file
-@import "theme/blue.scss";
-@import "scss/mixins.scss";
+@import "theme/blue";
+@import "scss/mixins";
 
 // Puts a little graphic in place of the text-input 
 // when the input is not in focus
@@ -20,10 +20,13 @@
     }
 }
 
-// hides tag container
-@mixin hideTagContainer() {
+// hides tag container edges
+@mixin hideEditorBorders() {
     .vue-tags-input {
-        background-color: transparent;
+        // need to add yet another class to beat the scoping
+        &.tag-area { 
+            background-color: transparent;
+        }
         .ti-input {
             border: none;
         }
@@ -34,6 +37,9 @@
 @mixin matchBootstrapStyling() {
     .vue-tags-input {
         @include fill();
+        .ti-input {
+            padding: 0;
+        }
         .ti-tag {
             border-radius: 4px;
             font-size: 0.8rem;
@@ -54,21 +60,18 @@
 }
 
 .galaxy-tags {
- 
+
     // adds in a graphic in place of the text input
     @include newTagHoverButton();
 
     // match bootstrap tag styles/colors
     @include matchBootstrapStyling();
 
+    // removes input borders (not sure if this happens everywhere)
+    @include hideEditorBorders();
+
     // display-only tags
     &.disabled {
         @include forDisplayOnly();
     }
-}
-
-// Hide the border around the tag editing container 
-// when inside a grid row
-.grid .galaxy-tags {
-    @include hideTagContainer();
 }
