@@ -9,7 +9,6 @@
 # In this version, user has an option to specify second file with lines to ignore from the main input.
 #
 
-
 from __future__ import print_function
 
 import optparse
@@ -146,7 +145,6 @@ def __main__():
             input.close()
             input = open("tmp_file.txt", "r")
         
-        
         # get line offsets
         line_offsets = []
         teller = input.tell
@@ -158,13 +156,13 @@ def __main__():
                 appender(offset)
             else:
                 break
-
+        
         total_lines = len(line_offsets)
         assert num_lines <= total_lines, "Error: asked to select more lines (%i) than there were in the file (%i)." % (num_lines, total_lines)
-
+        
         # get random line offsets
         line_offsets = get_random(line_offsets, num_lines)
-
+        
         # write out random lines
         seeker = input.seek
         writer = output.write
