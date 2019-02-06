@@ -486,7 +486,9 @@ class Tool(Dictifiable):
     @property
     def tool_shed_repository(self):
         # If this tool is included in an installed tool shed repository, return it.
-        if self.tool_shed:
+        if self._tool_shed_repository:
+            return self._tool_shed_repository
+        elif self.tool_shed:
             return repository_util.get_installed_repository(self.app,
                                                             tool_shed=self.tool_shed,
                                                             name=self.repository_name,
@@ -1225,7 +1227,7 @@ class Tool(Dictifiable):
                     help_text = tool_shed.util.shed_util_common.set_image_paths(self.app, help_text, repository_id=self.repository_id)
                 elif self._tool_shed_repository and help_text.find('.. image:: ') >= 0:
                     help_text = tool_shed.util.shed_util_common.set_image_paths(
-                        self.app, help_text, tool_shed_repository=self._tool_shed_repository, version=self.version
+                        self.app, help_text, tool_shed_repository=self._tool_shed_repository, tool_id=self.old_id, tool_version=self.version
                     )
             except Exception:
                 log.exception("Exception in parse_help, so images may not be properly displayed")

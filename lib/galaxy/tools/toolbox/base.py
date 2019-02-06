@@ -642,10 +642,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 name=repository_name
             )
             try:
-                changeset_revision = path[path.index(pre) + len(pre):].split('/', 1)[0]
+                changeset_revision, name2 = path[path.index(pre) + len(pre):].split('/')[0:2]
             except ValueError as exc:
                 raise Exception("Cannot determine changeset revision from path '%s': %s" % (path, exc))
-            pre = '/'.join([pre.rstrip('/'), changeset_revision])
+            pre = '/'.join([pre.rstrip('/'), changeset_revision, name2])
             repo_path = concrete_path[:concrete_path.index(pre) + len(pre)]
             repository = ToolConfRepository(
                 tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision, repo_path
