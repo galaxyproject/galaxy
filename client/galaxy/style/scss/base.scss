@@ -199,7 +199,6 @@ body {
     background: $panel-bg-color;
     display: flex;
     flex-direction: column;
-    box-shadow: $gray-700 0px 0px 10px;
 }
 
 #left,
@@ -406,7 +405,6 @@ div.unified-panel-body-background {
     margin-bottom: 0px;
     background-color: $base-color-1;
     height: $masthead-height;
-    z-index: 250; // Above #left/#right to cover up 'glow' from box-shadow
     .navbar-nav {
         min-height: 100%;
         > li {
