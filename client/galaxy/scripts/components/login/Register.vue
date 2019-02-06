@@ -7,7 +7,7 @@
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
                 <b-form id="registration" @submit.prevent="submit()">
-                    <b-card no-body header="Create account">
+                    <b-card no-body header="Create a Galaxy account">
                         <b-card-body>
                             <b-form-group label="Email Address">
                                 <b-form-input name="email" type="text" v-model="email" />
@@ -33,7 +33,7 @@
                             <b-button name="create" type="submit">Create</b-button>
                         </b-card-body>
                         <b-card-footer>
-                            <a v-on:click="toggleLogin">Already have an account? Log in here.</a>
+                            Already have an account? <a href="#" v-on:click="toggleLogin">Log in here.</a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
