@@ -86,7 +86,7 @@ python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}'
   
   
   <tests>
-    <test>
+    <!-- <test>
       <param name="input" value="test_input.txt"/>
       <conditional name="seed_source">
         <param name="seed_source_selector" value="set_seed"/>
@@ -105,7 +105,21 @@ python '$__tool_directory__/random_lines_two_pass.py' '${input}' '${out_file1}'
           <has_text text="human" />
         </assert_contents>
       </output>
+    </test> -->
+    <test>
+      <param name="num_lines" value="65"/>
+      <param name="input" value="1.bed"/>
+      <param name="seed_source_selector" value="no_seed"/>
+      <output name="out_file1" file="1.bed"/>
     </test>
+    <test>
+      <param name="num_lines" value="1"/>
+      <param name="input" value="1.bed"/>
+      <param name="seed_source_selector" value="set_seed"/>
+      <param name="seed" value="asdf"/>
+      <output name="out_file1" file="1_bed_random_lines_1_seed_asdf_out.bed"/>
+    </test>
+    
   </tests>
   <help>
 
