@@ -2252,19 +2252,15 @@ class BafTar(CompressedArchive):
     """
     edam_data = "data_2536"  # mass spectrometry data
     edam_format = "format_3712"  # TODO: add more raw formats to EDAM?
-    file_ext = "brukerbaf.tar"
+    file_ext = "brukerbaf.d.tar"
 
     def get_signature_file(self):
         return "analysis.baf"
 
     def sniff(self, filename):
-        try:
-            if tarfile.is_tarfile(filename):
-                with tarfile.open(filename) as rawtar:
-                    return self.get_signature_file() in [os.path.basename(f).lower() for f in rawtar.getnames()]
-            return False
-        except Exception as e:
-            log.warning('%s, sniff Exception: %s', self, e)
+        if tarfile.is_tarfile(filename):
+            with tarfile.open(filename) as rawtar:
+                return self.get_signature_file() in [os.path.basename(f).lower() for f in rawtar.getnames()]
         return False
 
     def get_type(self):
@@ -2287,7 +2283,7 @@ class BafTar(CompressedArchive):
 
 class YepTar(BafTar):
     """ A tar'd up .d directory containing Agilent/Bruker YEP format data """
-    file_ext = "agilentbrukeryep.tar"
+    file_ext = "agilentbrukeryep.d.tar"
 
     def get_signature_file(self):
         return "analysis.yep"
@@ -2298,7 +2294,7 @@ class YepTar(BafTar):
 
 class TdfTar(BafTar):
     """ A tar'd up .d directory containing Bruker TDF format data """
-    file_ext = "brukertdf.tar"
+    file_ext = "brukertdf.d.tar"
 
     def get_signature_file(self):
         return "analysis.tdf"
@@ -2309,7 +2305,7 @@ class TdfTar(BafTar):
 
 class MassHunterTar(BafTar):
     """ A tar'd up .d directory containing Agilent MassHunter format data """
-    file_ext = "agilentmasshunter.tar"
+    file_ext = "agilentmasshunter.d.tar"
 
     def get_signature_file(self):
         return "msscan.bin"
@@ -2320,7 +2316,7 @@ class MassHunterTar(BafTar):
 
 class MassLynxTar(BafTar):
     """ A tar'd up .d directory containing Waters MassLynx format data """
-    file_ext = "watersmasslynxraw.tar"
+    file_ext = "watersmasslynx.raw.tar"
 
     def get_signature_file(self):
         return "_func001.dat"
@@ -2346,13 +2342,9 @@ class WiffTar(BafTar):
     file_ext = "wiff.tar"
 
     def sniff(self, filename):
-        try:
-            if tarfile.is_tarfile(filename):
-                with tarfile.open(filename) as rawtar:
-                    return ".wiff" in [os.path.splitext(os.path.basename(f).lower())[1] for f in rawtar.getnames()]
-            return False
-        except Exception as e:
-            log.warning('%s, sniff Exception: %s', self, e)
+        if tarfile.is_tarfile(filename):
+            with tarfile.open(filename) as rawtar:
+                return ".wiff" in [os.path.splitext(os.path.basename(f).lower())[1] for f in rawtar.getnames()]
         return False
 
     def get_type(self):
