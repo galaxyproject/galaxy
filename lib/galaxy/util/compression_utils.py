@@ -35,23 +35,20 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
         compressed_formats = ['bz2', 'gzip', 'zip']
     # Remove 't' from mode, which may cause an error for compressed files
     mode = mode.replace('t', '')
-    # the various compression readers don't support 'U' mode,
-    # so we open in 'r'.
+    # 'U' mode is deprecated, we open in 'r'.
     if mode == 'U':
-        cmode = 'r'
-    else:
-        cmode = mode
+        mode = 'r'
     compressed_format = None
     if 'gzip' in compressed_formats and is_gzip(filename):
-        fh = gzip.GzipFile(filename, cmode)
+        fh = gzip.GzipFile(filename, mode)
         compressed_format = 'gzip'
     elif 'bz2' in compressed_formats and is_bz2(filename):
-        fh = bz2.BZ2File(filename, cmode)
+        fh = bz2.BZ2File(filename, mode)
         compressed_format = 'bz2'
     elif 'zip' in compressed_formats and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
-        with zipfile.ZipFile(filename, cmode) as zh:
-            fh = zh.open(zh.namelist()[0], cmode)
+        with zipfile.ZipFile(filename, mode) as zh:
+            fh = zh.open(zh.namelist()[0], mode)
         compressed_format = 'zip'
     elif 'b' in mode:
         return compressed_format, open(filename, mode)

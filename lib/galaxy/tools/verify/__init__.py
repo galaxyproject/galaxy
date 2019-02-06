@@ -3,6 +3,7 @@
 import difflib
 import filecmp
 import hashlib
+import io
 import logging
 import os
 import re
@@ -191,8 +192,8 @@ def files_diff(file1, file2, attributes=None):
             compressed_formats = []
         is_pdf = False
         try:
-            local_file = get_fileobj(file1, 'U', compressed_formats=compressed_formats).readlines()
-            history_data = get_fileobj(file2, 'U', compressed_formats=compressed_formats).readlines()
+            local_file = get_fileobj(file1, compressed_formats=compressed_formats).readlines()
+            history_data = get_fileobj(file2, compressed_formats=compressed_formats).readlines()
         except UnicodeDecodeError:
             if file1.endswith('.pdf') or file2.endswith('.pdf'):
                 is_pdf = True
@@ -252,8 +253,8 @@ def files_diff(file1, file2, attributes=None):
 
 def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
-    local_file = open(file1, 'U').readlines()  # regex file
-    history_data = open(file2, 'U').readlines()
+    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
+    history_data = io.open(file2, encoding='utf-8').readlines()
     assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
     if attributes is None:
         attributes = {}
@@ -272,24 +273,24 @@ def files_re_match(file1, file2, attributes=None):
 
 def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
-    local_file = open(file1, 'U').read()  # regex file
+    local_file = io.open(file1, encoding='utf-8').read()  # regex file
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
-        history_data = open(file2, 'U').readlines()
+        history_data = io.open(file2, encoding='utf-8').readlines()
         history_data.sort()
         history_data = ''.join(history_data)
     else:
-        history_data = open(file2, 'U').read()
+        history_data = io.open(file2, encoding='utf-8').read()
     # lines_diff not applicable to multiline matching
     assert re.match(local_file, history_data, re.MULTILINE), "Multiline Regular expression did not match data file"
 
 
 def files_contains(file1, file2, attributes=None):
     """Check the contents of file2 for substrings found in file1, on a per-line basis."""
-    local_file = open(file1, 'U').readlines()  # regex file
+    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
     # TODO: allow forcing ordering of contains
-    history_data = open(file2, 'U').read()
+    history_data = io.open(file2, encoding='utf-8').read()
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
     while local_file:

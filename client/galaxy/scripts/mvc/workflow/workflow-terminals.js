@@ -451,6 +451,7 @@ var InputCollectionTerminal = BaseInputTerminal.extend({
     update: function(input) {
         this.multiple = false;
         this.collection = true;
+        this.collection_type = input.collection_type;
         this.datatypes = input.extensions;
         var collectionTypes = [];
         if (input.collection_types) {

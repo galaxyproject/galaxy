@@ -1,7 +1,6 @@
 import io
 import logging
 import os
-import sys
 import tempfile
 from xml.etree import ElementTree as XmlET
 
@@ -10,11 +9,13 @@ from galaxy.util import (
 )
 
 log = logging.getLogger(__name__)
-using_python_27 = sys.version_info[:2] >= (2, 7)
 
 
 class Py27CommentedTreeBuilder(XmlET.TreeBuilder):
-    # Python 2.7 uses ElementTree 1.3.x.
+
+    def doctype(*args):
+        # handle deprecation warning for XMLParsing a file with DOCTYPE
+        pass
 
     def comment(self, data):
         self.start(XmlET.Comment, {})
@@ -82,18 +83,10 @@ def parse_xml(file_name):
         return None, "File does not exist %s" % str(file_name)
 
     with open(file_name, 'r') as fobj:
-        if using_python_27:
-            try:
-                tree = XmlET.parse(fobj, parser=XmlET.XMLParser(target=Py27CommentedTreeBuilder()))
-            except Exception as e:
-                error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
-                log.exception(error_message)
-                return None, error_message
-        else:
-            try:
-                tree = XmlET.parse(fobj)
-            except Exception as e:
-                error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
-                log.exception(error_message)
-                return None, error_message
+        try:
+            tree = XmlET.parse(fobj, parser=XmlET.XMLParser(target=Py27CommentedTreeBuilder()))
+        except Exception as e:
+            error_message = "Exception attempting to parse %s: %s" % (str(file_name), str(e))
+            log.exception(error_message)
+            return None, error_message
     return tree, error_message

@@ -119,7 +119,7 @@ def convert_newlines(fname, in_place=True, tmp_dir=None, tmp_prefix="gxupload"):
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with io.open(fd, mode="wt", encoding='utf-8') as fp:
         i = None
-        for i, line in enumerate(io.open(fname, mode="U", encoding='utf-8')):
+        for i, line in enumerate(io.open(fname, encoding='utf-8')):
             fp.write("%s\n" % line.rstrip("\r\n"))
     if i is None:
         i = 0
@@ -186,7 +186,7 @@ def convert_newlines_sep2tabs(fname, in_place=True, patt=r"\s+", tmp_dir=None, t
     regexp = re.compile(patt)
     fd, temp_name = tempfile.mkstemp(prefix=tmp_prefix, dir=tmp_dir)
     with io.open(fd, mode="wt", encoding='utf-8') as fp:
-        for i, line in enumerate(codecs.open(fname, mode="U", encoding='utf-8')):
+        for i, line in enumerate(io.open(fname, encoding='utf-8')):
             line = line.rstrip('\r\n')
             elems = regexp.split(line)
             fp.write(u"%s\n" % '\t'.join(elems))
