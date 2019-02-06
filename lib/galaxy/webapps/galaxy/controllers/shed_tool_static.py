@@ -1,14 +1,9 @@
 import logging
-from json import loads
 from os.path import splitext
 
-import paste.httpexceptions
-from markupsafe import escape
-from six import string_types
-
+from galaxy import web
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.util.path import join, safe_contains
-from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 
 log = logging.getLogger(__name__)

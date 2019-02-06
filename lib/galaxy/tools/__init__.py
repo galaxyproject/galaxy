@@ -1237,7 +1237,7 @@ class Tool(Dictifiable):
         if help_text is not None:
             try:
                 if self.repository_id and help_text.find('.. image:: ') >= 0:
-                # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
+                    # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
                     help_text = tool_shed.util.shed_util_common.set_image_paths(
                         self.app, help_text, encoded_repository_id=self.app.security.encode_id(self.repository_id)
                     )
