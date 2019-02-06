@@ -49,32 +49,31 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
         # Add datasets to archive and update dataset attributes.
         # TODO: security check to ensure that files added are in Galaxy dataset directory?
         for dataset_attrs in datasets_attrs:
-            if dataset_attrs['exported']:
-                dataset_file_name = dataset_attrs['file_name']  # Full file name.
-                dataset_hid = dataset_attrs['hid']
-                dataset_archive_name = os.path.join('datasets',
-                                                    get_dataset_filename(dataset_attrs['name'], dataset_attrs['extension'], dataset_hid))
-                history_archive.add(dataset_file_name, arcname=dataset_archive_name)
+            dataset_file_name = dataset_attrs['file_name']  # Full file name.
+            dataset_hid = dataset_attrs['hid']
+            dataset_archive_name = os.path.join('datasets',
+                                                get_dataset_filename(dataset_attrs['name'], dataset_attrs['extension'], dataset_hid))
+            history_archive.add(dataset_file_name, arcname=dataset_archive_name)
 
-                # Include additional files for example, files/images included in HTML output.
-                extra_files_path = dataset_attrs['extra_files_path']
-                if extra_files_path:
-                    try:
-                        file_list = os.listdir(extra_files_path)
-                    except OSError:
-                        file_list = []
+            # Include additional files for example, files/images included in HTML output.
+            extra_files_path = dataset_attrs['extra_files_path']
+            if extra_files_path:
+                try:
+                    file_list = os.listdir(extra_files_path)
+                except OSError:
+                    file_list = []
 
-                    if len(file_list):
-                        dataset_extra_files_path = 'datasets/extra_files_path_%s' % dataset_hid
-                        for fname in file_list:
-                            history_archive.add(os.path.join(extra_files_path, fname),
-                                                arcname=(os.path.join(dataset_extra_files_path, fname)))
-                        dataset_attrs['extra_files_path'] = dataset_extra_files_path
-                    else:
-                        dataset_attrs['extra_files_path'] = ''
+                if len(file_list):
+                    dataset_extra_files_path = 'datasets/extra_files_path_%s' % dataset_hid
+                    for fname in file_list:
+                        history_archive.add(os.path.join(extra_files_path, fname),
+                                            arcname=(os.path.join(dataset_extra_files_path, fname)))
+                    dataset_attrs['extra_files_path'] = dataset_extra_files_path
+                else:
+                    dataset_attrs['extra_files_path'] = ''
 
-                # Update dataset filename to be archive name.
-                dataset_attrs['file_name'] = dataset_archive_name
+            # Update dataset filename to be archive name.
+            dataset_attrs['file_name'] = dataset_archive_name
 
         # Rewrite dataset attributes file.
         with open(datasets_attrs_file, 'w') as datasets_attrs_out:

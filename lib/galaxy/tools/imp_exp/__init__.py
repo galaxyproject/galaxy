@@ -14,7 +14,7 @@ from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.item_attrs import add_item_annotation, get_item_annotation_str
-from galaxy.util import unicodify
+from galaxy.util import in_directory, unicodify
 from galaxy.version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
@@ -37,11 +37,6 @@ class JobImportHistoryArchiveWrapper:
 
     def cleanup_after_job(self):
         """ Set history, datasets, and jobs' attributes and clean up archive directory. """
-
-        def file_in_dir(file_path, a_dir):
-            """ Returns true if file is in directory. """
-            abs_file_path = os.path.abspath(file_path)
-            return os.path.split(abs_file_path)[0] == a_dir
 
         #
         # Import history.
@@ -119,23 +114,33 @@ class JobImportHistoryArchiveWrapper:
                                                           sa_session=self.sa_session)
                     if 'uuid' in dataset_attrs:
                         hda.dataset.uuid = dataset_attrs["uuid"]
-                    if dataset_attrs.get('exported', True) is False:
-                        hda.state = hda.states.DISCARDED
-                        hda.deleted = True
-                        hda.purged = True
-                    else:
-                        hda.state = hda.states.OK
                     self.sa_session.add(hda)
                     self.sa_session.flush()
                     new_history.add_dataset(hda, genome_build=None)
                     hda.hid = dataset_attrs['hid']  # Overwrite default hid set when HDA added to history.
                     self.sa_session.flush()
-                    if dataset_attrs.get('exported', True) is True:
+
+                    file_name = dataset_attrs.get('file_name')
+                    if file_name:
                         # Do security check and move/copy dataset data.
+                        archive_path = os.path.abspath(os.path.join(archive_dir, file_name))
+                        if os.path.islink(archive_path):
+                            raise MalformedContents("Invalid dataset path: %s" % archive_path)
+
                         temp_dataset_file_name = \
-                            os.path.realpath(os.path.abspath(os.path.join(archive_dir, dataset_attrs['file_name'])))
-                        if not file_in_dir(temp_dataset_file_name, os.path.join(archive_dir, "datasets")):
+                            os.path.realpath(archive_path)
+
+                        if not in_directory(temp_dataset_file_name, archive_dir):
                             raise MalformedContents("Invalid dataset path: %s" % temp_dataset_file_name)
+
+                    if not file_name or not os.path.exists(temp_dataset_file_name):
+                        hda.state = hda.states.DISCARDED
+                        hda.deleted = True
+                        hda.purged = True
+                        hda.dataset.deleted = True
+                        hda.dataset.purged = True
+                    else:
+                        hda.state = hda.states.OK
                         self.app.object_store.update_from_file(hda.dataset, file_name=temp_dataset_file_name, create=True)
 
                         # Import additional files if present. Histories exported previously might not have this attribute set.
@@ -153,6 +158,9 @@ class JobImportHistoryArchiveWrapper:
                                         alt_name=extra_file, file_name=os.path.join(archive_dir, dataset_extra_files_path, extra_file),
                                         create=True)
                         hda.dataset.set_total_size()  # update the filesize record in the database
+
+                        if hda.deleted:
+                            hda.dataset.deleted = True
 
                     if user:
                         add_item_annotation(self.sa_session, user, hda, dataset_attrs['annotation'])
@@ -298,6 +306,8 @@ class JobExportHistoryArchiveWrapper:
         class HistoryDatasetAssociationEncoder(json.JSONEncoder):
             """ Custom JSONEncoder for a HistoryDatasetAssociation. """
 
+            include_files = True
+
             def default(self, obj):
                 """ Encode an HDA, default encoding for everything else. """
                 if isinstance(obj, model.HistoryDatasetAssociation):
@@ -320,25 +330,22 @@ class JobExportHistoryArchiveWrapper:
                         "annotation": unicodify(getattr(obj, 'annotation', '')),
                         "tags": obj.make_tag_string_list()
                     }
+                    if self.include_files:
+                        try:
+                            rval['file_name'] = obj.file_name
+                        except ObjectNotFound:
+                            rval['file_name'] = None
 
-                    try:
-                        rval['file_name'] = obj.file_name
-                    except ObjectNotFound:
-                        rval['file_name'] = None
+                        if obj.extra_files_path_exists():
+                            rval['extra_files_path'] = obj.extra_files_path
+                        else:
+                            rval['extra_files_path'] = None
 
-                    if obj.extra_files_path_exists():
-                        rval['extra_files_path'] = obj.extra_files_path
-                    else:
-                        rval['extra_files_path'] = None
-
-                    if not obj.visible and not include_hidden:
-                        rval['exported'] = False
-                    elif obj.deleted and not include_deleted:
-                        rval['exported'] = False
-                    else:
-                        rval['exported'] = True
                     return rval
                 return json.JSONEncoder.default(self, obj)
+
+        class NoFilesHistoryDatasetAssociationEncoder(HistoryDatasetAssociationEncoder):
+            include_files = False
 
         #
         # Create attributes/metadata files for export.
@@ -381,7 +388,7 @@ class JobExportHistoryArchiveWrapper:
             dump(datasets_attrs, datasets_attrs_out, cls=HistoryDatasetAssociationEncoder)
 
         with open(datasets_attrs_filename + ".provenance", 'w') as provenance_attrs_out:
-            dump(provenance_attrs, provenance_attrs_out, cls=HistoryDatasetAssociationEncoder)
+            dump(provenance_attrs, provenance_attrs_out, cls=NoFilesHistoryDatasetAssociationEncoder)
 
         #
         # Write jobs attributes file.
