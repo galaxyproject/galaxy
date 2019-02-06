@@ -601,7 +601,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
     return folder_contents
 
 
-def set_image_paths(app, text, repository_id=None, tool_shed_repository=None, tool_id=None, tool_version=None):
+def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=None, tool_id=None, tool_version=None):
     """
     Handle tool help image display for tools that are contained in repositories in
     the tool shed or installed into Galaxy as well as image display in repository
@@ -609,11 +609,11 @@ def set_image_paths(app, text, repository_id=None, tool_shed_repository=None, to
     return the path to it that will enable the caller to open the file.
     """
     if text:
-        if repository_util.is_tool_shed_client(app) and repository_id:
-            route_to_images = 'admin_toolshed/static/images/%s' % repository_id
-        elif repository_id:
+        if repository_util.is_tool_shed_client(app) and encoded_repository_id:
+            route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
+        elif encoded_repository_id:
             # We're in the tool shed.
-            route_to_images = '/repository/static/images/%s' % repository_id
+            route_to_images = '/repository/static/images/%s' % encoded_repository_id
         elif tool_shed_repository and tool_id and tool_version:
             route_to_images = 'shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}'.format(
                 shed=tool_shed_repository.tool_shed,
@@ -623,7 +623,7 @@ def set_image_paths(app, text, repository_id=None, tool_shed_repository=None, to
                 version=tool_version,
             )
         else:
-            raise Exception("repository_id or tool_shed_repository and tool_id and tool_version must be provided")
+            raise Exception("encoded_repository_id or tool_shed_repository and tool_id and tool_version must be provided")
         # We used to require $PATH_TO_IMAGES and ${static_path}, but
         # we now eliminate it if it's used.
         text = text.replace('$PATH_TO_IMAGES', '')
