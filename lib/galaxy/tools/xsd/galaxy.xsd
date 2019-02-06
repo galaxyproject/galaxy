@@ -1669,11 +1669,11 @@ module.
   </xs:complexType>
   <xs:complexType name="AssertHasH5Attribute">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified key-vaue pair given as ``name`` and ``value`` (e.g. ``<has_attr name="nchroms" value="15" />``).]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified key-vaue pair given as ``key`` and ``value`` (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
     </xs:annotation>
-    <xs:attribute name="name" type="xs:string">
+    <xs:attribute name="key" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Name to check H5 attribute value of.</xs:documentation>
+        <xs:documentation xml:lang="en">Key to check H5 attribute value of.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="value" type="xs:string">

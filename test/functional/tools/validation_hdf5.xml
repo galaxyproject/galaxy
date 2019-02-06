@@ -14,8 +14,8 @@
             <output name="output">
                 <assert_contents>
                     <has_h5_keys keys="bins, chroms,indexes,pixels" />
-                    <has_h5_attribute name="nbins" value="33754" />
-                    <has_h5_attribute name="nchroms" value="15" />
+                    <has_h5_attribute key="nbins" value="33754" />
+                    <has_h5_attribute key="nchroms" value="15" />
                 </assert_contents>
             </output>
         </test>
