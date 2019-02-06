@@ -84,6 +84,9 @@ $vertical-gap: 8px;
             word-break: break-all;
             line-height: 16px;
         }
+        .title:hover {
+            text-decoration: underline;
+        }
         .subtitle {
             color: #777;
             font-size: 90%;
