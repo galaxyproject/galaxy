@@ -19,7 +19,7 @@
                             <b-button name="login" type="submit">Login</b-button>
                         </b-card-body>
                         <b-card-footer>
-                            Don't have an account? <a href="#" v-on:click="toggleLogin">Register here.</a>
+                            Don't have an account? <a href="#" @click.prevent="toggleLogin">Register here.</a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
