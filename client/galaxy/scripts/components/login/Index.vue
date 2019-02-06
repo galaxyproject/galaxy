@@ -28,7 +28,6 @@ export default {
     },
     computed: {
         showLogin: function() {
-            console.debug(this.login);
             return this.login;
         }
     },
