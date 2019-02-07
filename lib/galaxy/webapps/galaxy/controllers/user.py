@@ -146,7 +146,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
         elif trans.app.config.user_activation_on and not user.active:  # activation is ON and the user is INACTIVE
             if (trans.app.config.activation_grace_period != 0):  # grace period is ON
                 if self.is_outside_grace_period(trans, user.create_time):  # User is outside the grace period. Login is disabled and he will have the activation email resent.
-                    message, status = self.resend_activation_email(trans, user.email, user.username, unescaped=True)
+                    message, status = self.resend_activation_email(trans, user.email, user.username)
                     return self.message_exception(trans, message, sanitize=False)
                 else:  # User is within the grace period, let him log in.
                     trans.handle_user_login(user)
