@@ -146,7 +146,8 @@ class AuthnzManager(object):
             log.debug(msg)
             return False, msg, None
 
-    def _get_authnz_backend_class(self, implementation):
+    @staticmethod
+    def _get_authnz_backend_class(implementation):
         if implementation == 'psa':
             return PSAAuthnz
         elif implementation == 'keycloak':
