@@ -125,7 +125,8 @@ class AuthnzManager(object):
             return provider.lower(), implementation.lower()
         for k, v in BACKENDS_NAME.iteritems():
             if v == provider:
-                return k.lower()
+                return k.lower(), 'psa'
+        return None, None
 
     def _unify_provider_name(self, provider):
         return self._unify_provider_implementation_names(provider, 'psa')
@@ -136,7 +137,7 @@ class AuthnzManager(object):
             provider = unified_provider_name
             authnz_backend_class = self._get_authnz_backend_class(implementation)
             try:
-                return True, "", authnz_backend_class(provider, self.oidc_config, self.oidc_backends_config[provider, implementation])
+                return True, "", authnz_backend_class(provider_, self.oidc_config, self.oidc_backends_config[provider_, implementation_])
             except Exception as e:
                 log.exception('An error occurred when loading {}'.format(authnz_backend_class.__name__))
                 return False, str(e), None
