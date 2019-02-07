@@ -29,6 +29,7 @@ class DataManager(BaseUIController):
                                                          tool_id=data_manager.tool.id),
                                   'id': data_manager_id,
                                   'name': data_manager.name,
+                                  'version': data_manager.version,
                                   'description': data_manager.description.lower()})
         data_tables = []
         managed_table_names = trans.app.data_managers.managed_data_tables.keys()

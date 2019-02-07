@@ -47,7 +47,10 @@
                                     variant="primary"
                                     :id="kebabCase(dataManager['name'])"
                                 >
-                                    <div>{{ dataManager["name"] }}</div>
+                                    <div>
+                                        {{ dataManager["name"] }}
+                                        <span class="text-secondary">{{ "v" + dataManager["version"] }}</span>
+                                    </div>
                                     <div v-if="dataManager['description']">
                                         <i>{{ dataManager["description"] }}</i>
                                     </div>
