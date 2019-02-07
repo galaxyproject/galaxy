@@ -54,6 +54,15 @@ class BaseDataProvider(object):
         """
         raise Exception("Unimplemented Function")
 
+    def get_filters(self):
+        """
+        Returns filters for provider's data. Return value is a list of
+        filters; each filter is a dictionary with the keys 'name', 'index', 'type'.
+        NOTE: This method uses the original dataset's datatype and metadata to
+        create the filters.
+        """
+        return []
+
 
 class ColumnDataProvider(BaseDataProvider):
     """ Data provider for columnar data """

@@ -625,13 +625,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         tool = trans.app.toolbox.get_tool(original_job.tool_id)
         if not tool or not tool.allow_user_access(trans.user):
             return trans.app.model.Dataset.conversion_messages.NO_TOOL
-        tool_params = dict([(p.name, p.value) for p in original_job.parameters])
+        tool_params = {p.name: p.value for p in original_job.parameters}
 
         # TODO: rather than set new inputs using dict of json'ed value, unpack parameters and set using set_param_value below.
         # TODO: need to handle updates to conditional parameters; conditional
         # params are stored in dicts (and dicts within dicts).
         new_inputs = payload['inputs']
-        tool_params.update(dict([(key, dumps(value)) for key, value in new_inputs.items() if key in tool.inputs and value is not None]))
+        tool_params.update({key: dumps(value) for key, value in new_inputs.items() if key in tool.inputs and value is not None})
         tool_params = tool.params_from_strings(tool_params, self.app)
 
         #
@@ -707,17 +707,18 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
 
         # Set parameters based tool's trackster config.
         params_set = {}
-        for action in tool.trackster_conf.actions:
-            success = False
-            for joda in original_job.output_datasets:
-                if joda.name == action.output_name:
-                    set_param_value(tool_params, action.name, joda.dataset)
-                    params_set[action.name] = True
-                    success = True
-                    break
+        if tool.trackster_conf:
+            for action in tool.trackster_conf.actions:
+                success = False
+                for joda in original_job.output_datasets:
+                    if joda.name == action.output_name:
+                        set_param_value(tool_params, action.name, joda.dataset)
+                        params_set[action.name] = True
+                        success = True
+                        break
 
-            if not success:
-                return trans.app.model.Dataset.conversion_messages.ERROR
+                if not success:
+                    return trans.app.model.Dataset.conversion_messages.ERROR
 
         #
         # Set input datasets for tool. If running on regions, extract and use subset

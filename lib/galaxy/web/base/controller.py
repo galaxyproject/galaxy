@@ -1005,8 +1005,11 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         Returns track configuration dict for a dataset.
         """
+        filters = []
         # Get data provider.
         track_data_provider = trans.app.data_provider_registry.get_data_provider(trans, original_dataset=dataset)
+        if track_data_provider:
+            filters = track_data_provider.get_filters()
 
         # Get track definition.
         return {
@@ -1014,7 +1017,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             "name": dataset.name,
             "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
             "prefs": {},
-            "filters": {'filters' : track_data_provider.get_filters()},
+            "filters": {'filters' : filters},
             "tool": self.get_tool_def(trans, dataset),
             "tool_state": {}
         }

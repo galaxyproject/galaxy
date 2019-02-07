@@ -223,10 +223,7 @@ class GenomeDataProvider(BaseDataProvider):
 
     def get_filters(self):
         """
-        Returns filters for provider's data. Return value is a list of
-        filters; each filter is a dictionary with the keys 'name', 'index', 'type'.
-        NOTE: This method uses the original dataset's datatype and metadata to
-        create the filters.
+        Returns filters for provider's data.
         """
         # Get column names.
         try:
@@ -272,7 +269,9 @@ class GenomeDataProvider(BaseDataProvider):
 
 class FilterableMixin(object):
     def get_filters(self):
-        """ Returns a dataset's filters. """
+        """
+        Returns filters for provider's data.
+        """
         # Get filters.
         # TODOs:
         # (a) might be useful to move this into each datatype's set_meta method;
@@ -800,7 +799,7 @@ class RawVcfDataProvider(VcfDataProvider):
         return line_filter_iter()
 
 
-class BamDataProvider(GenomeDataProvider, FilterableMixin):
+class BamDataProvider(GenomeDataProvider):
     """
     Provides access to intervals from a sorted indexed BAM file. Coordinate
     data is reported in BED format: 0-based, half-open.
@@ -810,7 +809,7 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
     def get_filters(self):
         """
-        Returns filters for dataset.
+        Returns filters for provider's data.
         """
         # HACK: first 7 fields are for drawing, so start filter column index at 7.
         filter_col = 7
@@ -1528,7 +1527,7 @@ class ENCODEPeakTabixDataProvider(TabixDataProvider, ENCODEPeakDataProvider):
 
     def get_filters(self):
         """
-        Returns filters for dataset.
+        Returns filters for provider's data.
         """
         # HACK: first 8 fields are for drawing, so start filter column index at 9.
         filter_col = 8
