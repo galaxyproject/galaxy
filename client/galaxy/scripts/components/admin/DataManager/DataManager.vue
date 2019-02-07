@@ -48,6 +48,9 @@
                                     :id="kebabCase(dataManager['name'])"
                                 >
                                     <div>{{ dataManager["name"] }}</div>
+                                    <div v-if="dataManager['id']">
+                                        <i>v{{ dataManager['id'].split('/').slice(-1)[0] }}</i>
+                                    </div>
                                     <div v-if="dataManager['description']">
                                         <i>{{ dataManager["description"] }}</i>
                                     </div>
