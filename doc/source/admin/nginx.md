@@ -244,11 +244,10 @@ previous section:
 
 Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it in chunks through the proxy server.
 However, this ties up the Galaxy process, which can impact the performance of other operations (see [Production Server
-Configuration](production.md) for a more in-depth explanation).
+Configuration](production.md) for a more in-depth explanation). 
 
-Nginx can assume this task instead and as an added benefit, speed up downloads. This is accomplished through the use of
-the special `X-Accel-Redirect` header. Dataset security is maintained in this configuration because nginx will still
-check with Galaxy to ensure that the requesting user has permission to access the dataset before sending it.
+Nginx can assume this task instead and as an added benefit, speed up downloads. In addition, both the IGV genome browser and JBrowse tool (run within Galaxy) require support for the HTTP *Range* header, and this is only available if nginx (or Apache 
+with sendfile support) serves datasets. This is accomplished through the use ofthe special `X-Accel-Redirect` header. Dataset security is maintained in this configuration because nginx will still check with Galaxy to ensure that the requesting user has permission to access the dataset before sending it.
 
 To enable it, add the following to your Galaxy's `server {}` block:
 
