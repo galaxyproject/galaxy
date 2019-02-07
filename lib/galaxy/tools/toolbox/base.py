@@ -39,7 +39,10 @@ log = logging.getLogger(__name__)
 # A fake ToolShedRepository constructed from a shed tool conf
 ToolConfRepository = namedtuple(
     'ToolConfRepository',
-    ('tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'repo_path')
+    (
+        'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'repo_path',
+        'tool_dependencies_installed_or_in_error'
+    )
 )
 
 
@@ -649,7 +652,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             pre = '/'.join([pre.rstrip('/'), changeset_revision, name2])
             repo_path = concrete_path[:concrete_path.index(pre) + len(pre)]
             repository = ToolConfRepository(
-                tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision, repo_path
+                tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision,
+                repo_path, None
             )
         return repository
 
