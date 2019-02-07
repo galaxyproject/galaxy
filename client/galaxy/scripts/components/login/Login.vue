@@ -19,16 +19,15 @@
                             <b-button name="login" type="submit">Login</b-button>
                         </b-card-body>
                         <b-card-footer>
-                            Don't have an account? <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
+                            Don't have an account?
+                            <a id="register-toggle" href="#" @click.prevent="toggleLogin">Register here.</a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
             </div>
             <b-card header="Other Login Options">
                 <b-form id="oidc" @submit.prevent="submitOIDCLogin()">
-                    <b-form-group>
-                        <b-button type="submit">Log in with Google</b-button>
-                    </b-form-group>
+                    <b-form-group> <b-button type="submit">Log in with Google</b-button> </b-form-group>
                 </b-form>
             </b-card>
             <div v-if="show_welcome_with_login" class="col">
@@ -113,7 +112,7 @@ export default {
                 .post(`${rootUrl}authnz/Google/login`)
                 .then(response => {
                     console.debug(response);
-                    if (response.data.redirect_uri){
+                    if (response.data.redirect_uri) {
                         window.location = encodeURI(response.data.redirect_uri);
                     }
                     // Else do something intelligent or maybe throw an error -- what else does this endpoint possibly return?
