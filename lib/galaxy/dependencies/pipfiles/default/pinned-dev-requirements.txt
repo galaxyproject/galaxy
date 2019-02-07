@@ -16,6 +16,7 @@ idna==2.8
 imagesize==1.1.0
 jinja2==2.10
 lxml==4.3.0
+markdown==2.6.11
 markupsafe==1.1.0
 mock==2.0.0
 more-itertools==5.0.0
@@ -40,6 +41,7 @@ scandir==1.9.0 ; python_version < '3.5'
 selenium==3.141.0
 six==1.11.0
 snowballstemmer==1.2.1
+sphinx-markdown-tables==0.0.9
 sphinx-rtd-theme==0.4.2
 sphinx==1.6.7
 sphinxcontrib-websupport==1.1.0
