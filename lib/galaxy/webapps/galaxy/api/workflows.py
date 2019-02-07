@@ -22,6 +22,7 @@ from galaxy.managers import (
     histories,
     workflows
 )
+from galaxy.managers.jobs import fetch_job_states
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
@@ -864,14 +865,38 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  invocation_id:      the usage id (required)
-        :type   invocation_id:      str
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.cancel_invocation(trans, decoded_workflow_invocation_id)
         return self.__encode_invocation(workflow_invocation, **kwd)
+
+    @expose_api_anonymous_and_sessionless
+    def invocation_jobs_summary(self, trans, workflow_id, invocation_id, **kwd):
+        """
+        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
+            return detailed information about an HDA or HDCAs jobs
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
+
+        :rtype:     dict[]
+        :returns:   an array of job summary object dictionaries.
+        """
+        ids = [invocation_id]
+        types = ["WorkflowInvocation"]
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(self.app, trans.sa_session, ids, types)]
 
     @expose_api
     def show_invocation_report(self, trans, workflow_id, invocation_id, **kwd):

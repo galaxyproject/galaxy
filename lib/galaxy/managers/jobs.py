@@ -305,6 +305,22 @@ def fetch_job_states(app, sa_session, job_source_ids, job_source_types):
             job_ids.add(job_source_id)
         elif job_source_type == "ImplicitCollectionJobs":
             implicit_collection_job_ids.add(job_source_id)
+        elif job_source_type == "WorkflowInvocation":
+            join = model.WorkflowInvocationStep.table.join(
+                model.WorkflowInvocation
+            )
+            statement = select(
+                [model.WorkflowInvocationStep.job_id, model.WorkflowInvocationStep.implicit_collection_jobs_id]
+            ).select_from(
+                join
+            ).where(
+                model.WorkflowInvocation.id == decode(job_source_id)
+            )
+            for row in sa_session.execute(statement):
+                if row[0]:
+                    job_ids.add(row[0])
+                if row[1]:
+                    implicit_collection_job_ids.add(row[1])
         else:
             raise RequestParameterInvalidException("Invalid job source type %s found." % job_source_type)
 
