@@ -22,6 +22,7 @@ from galaxy.managers import (
     histories,
     workflows
 )
+from galaxy.managers.jobs import fetch_job_states, invocation_job_source_iter
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
@@ -864,8 +865,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  workflow_id:      the workflow id (required)
         :type   workflow_id:      str
 
-        :param  invocation_id:      the usage id (required)
-        :type   invocation_id:      str
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
 
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
@@ -913,6 +914,58 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             decoded_invocation_step_id
         )
         return self.__encode_invocation_step(trans, invocation_step)
+
+    @expose_api_anonymous_and_sessionless
+    def invocation_step_jobs_summary(self, trans, workflow_id, invocation_id, **kwd):
+        """
+        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
+            return job state summary info aggregated across per step of the workflow invocation
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
+
+        :rtype:     dict[]
+        :returns:   an array of job summary object dictionaries for each step
+        """
+        decoded_invocation_id = self.decode_id(invocation_id)
+        ids = []
+        types = []
+        for (job_source_type, job_source_id) in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
+            ids.append(job_source_id)
+            types.append(job_source_type)
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
+
+    @expose_api_anonymous_and_sessionless
+    def invocation_jobs_summary(self, trans, workflow_id, invocation_id, **kwd):
+        """
+        * GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
+            return job state summary info aggregated across all current jobs of workflow invocation
+
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+
+        :param  workflow_id:      the workflow id (required)
+        :type   workflow_id:      str
+
+        :param  invocation_id:    the invocation id (required)
+        :type   invocation_id:    str
+
+        :rtype:     dict
+        :returns:   a job summary object merged for all steps in workflow invocation
+        """
+        ids = [self.decode_id(invocation_id)]
+        types = ["WorkflowInvocation"]
+        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)][0]
 
     @expose_api
     def update_invocation_step(self, trans, workflow_id, invocation_id, step_id, payload, **kwd):

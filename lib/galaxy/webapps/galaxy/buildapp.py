@@ -566,6 +566,21 @@ def populate_api_routes(webapp, app):
         )
 
         webapp.mapper.connect(
+            'workflow_%s_jobs_summary' % name,
+            '/api/workflows/{workflow_id}/%s/{invocation_id}/jobs_summary' % noun,
+            controller='workflows',
+            action='invocation_jobs_summary',
+            conditions=dict(method=['GET'])
+        )
+        webapp.mapper.connect(
+            'workflow_%s_step_jobs_summary' % name,
+            '/api/workflows/{workflow_id}/%s/{invocation_id}/step_jobs_summary' % noun,
+            controller='workflows',
+            action='invocation_step_jobs_summary',
+            conditions=dict(method=['GET'])
+        )
+
+        webapp.mapper.connect(
             'workflow_%s_step' % name,
             '/api/workflows/{workflow_id}/%s/{invocation_id}/steps/{step_id}' % noun,
             controller='workflows',
