@@ -294,28 +294,103 @@ class JobSearch(object):
         return None
 
 
-def fetch_job_states(app, sa_session, job_source_ids, job_source_types):
-    decode = app.security.decode_id
+def invocation_job_source_iter(sa_session, invocation_id):
+    # TODO: Handle subworkflows.
+    join = model.WorkflowInvocationStep.table.join(
+        model.WorkflowInvocation
+    )
+    statement = select(
+        [model.WorkflowInvocationStep.job_id, model.WorkflowInvocationStep.implicit_collection_jobs_id]
+    ).select_from(
+        join
+    ).where(
+        model.WorkflowInvocation.id == invocation_id
+    )
+    for row in sa_session.execute(statement):
+        if row[0]:
+            yield ('Job', row[0])
+        if row[1]:
+            yield ('ImplicitCollectionJobs', row[1])
+
+
+def fetch_job_states(sa_session, job_source_ids, job_source_types):
     assert len(job_source_ids) == len(job_source_types)
     job_ids = set()
     implicit_collection_job_ids = set()
+    workflow_invocations_job_sources = {}
 
     for job_source_id, job_source_type in zip(job_source_ids, job_source_types):
         if job_source_type == "Job":
             job_ids.add(job_source_id)
         elif job_source_type == "ImplicitCollectionJobs":
             implicit_collection_job_ids.add(job_source_id)
+        elif job_source_type == "WorkflowInvocation":
+            workflow_invocation_job_sources = []
+            for (invocation_source_type, invocation_source_id) in invocation_job_source_iter(sa_session, job_source_id):
+                workflow_invocation_job_sources.append((invocation_source_type, invocation_source_id))
+                if invocation_source_type == "Job":
+                    job_ids.add(invocation_source_id)
+                elif invocation_source_type == "ImplicitCollectionJobs":
+                    implicit_collection_job_ids.add(invocation_source_id)
+            workflow_invocations_job_sources[job_source_id] = workflow_invocation_job_sources
         else:
             raise RequestParameterInvalidException("Invalid job source type %s found." % job_source_type)
 
-    # TODO: use above sets and optimize queries on second pass.
+    job_summaries = {}
+    implicit_collection_jobs_summaries = {}
+
+    for job_id in job_ids:
+        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.query(model.Job).get(job_id))
+    for implicit_collection_jobs_id in implicit_collection_job_ids:
+        implicit_collection_jobs_summaries[implicit_collection_jobs_id] = summarize_jobs_to_dict(sa_session, sa_session.query(model.ImplicitCollectionJobs).get(implicit_collection_jobs_id))
+
     rval = []
     for job_source_id, job_source_type in zip(job_source_ids, job_source_types):
         if job_source_type == "Job":
-            rval.append(summarize_jobs_to_dict(sa_session, sa_session.query(model.Job).get(decode(job_source_id))))
+            rval.append(job_summaries[job_source_id])
+        elif job_source_type == "ImplicitCollectionJobs":
+            rval.append(implicit_collection_jobs_summaries[job_source_id])
         else:
-            rval.append(summarize_jobs_to_dict(sa_session, sa_session.query(model.ImplicitCollectionJobs).get(decode(job_source_id))))
+            invocation_job_summaries = []
+            invocation_implicit_collection_job_summaries = []
+            for (invocation_job_source_type, invocation_job_source_id) in workflow_invocations_job_sources[job_source_id]:
+                if invocation_job_source_type == "Job":
+                    invocation_job_summaries.append(job_summaries[invocation_job_source_id])
+                else:
+                    invocation_implicit_collection_job_summaries.append(implicit_collection_jobs_summaries[invocation_job_source_id])
+            rval.append(summarize_invocation_jobs(job_source_id, invocation_job_summaries, invocation_implicit_collection_job_summaries))
+    return rval
 
+
+def summarize_invocation_jobs(invocation_id, job_summaries, implicit_collection_job_summaries):
+    states = {}
+    populated_state = "ok"
+
+    def merge_states(component_states):
+        for key, value in component_states.items():
+            if key not in states:
+                states[key] = value
+            else:
+                states[key] += value
+
+    for job_summary in job_summaries:
+        merge_states(job_summary["states"])
+    for implicit_collection_job_summary in implicit_collection_job_summaries:
+        # 'new' (un-populated collections might not yet have a states entry)
+        if "states" in implicit_collection_job_summary:
+            merge_states(implicit_collection_job_summary["states"])
+        component_populated_state = implicit_collection_job_summary["populated_state"]
+        if component_populated_state == "failed":
+            populated_state = "failed"
+        elif component_populated_state == "new" and populated_state != "failed":
+            populated_state = "new"
+
+    rval = {
+        "id": invocation_id,
+        "model": "WorkflowInvocation",
+        "states": states,
+        "populated_state": populated_state,
+    }
     return rval
 
 
