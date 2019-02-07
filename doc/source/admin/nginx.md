@@ -13,7 +13,7 @@ servers, [usegalaxy.org][main] ("Main") and [Test][test], as well as the [Docker
 NGINX, rather than Apache, to proxy Galaxy. NGINX was chosen for its simple, fast load balancing and other
 proxy-oriented features.
 
-Instructions for [proxying with Apache](apache.html) are also available.
+Instructions for [proxying with Apache](apache.md) are also available.
 
 [nginx]: http://nginx.org/en/
 [main]: https://galaxyproject.org/main/
@@ -57,7 +57,7 @@ uWSGI protocol support is built in to nginx, so (unlike Apache) no extra modules
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
 be incorporated with your existing/default nginx config as is appropriate for your server. Notably, the nginx package
 you installed most likely has a multi-file config layout. If you are not already familiar with that layout and where
-best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layouts.html)
+best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layout)
 documentation.
 
 ```nginx
@@ -158,7 +158,7 @@ http {
 
 Be sure to set `$galaxy_root` to the path to your copy of Galaxy and modify the value of `uwsgi_pass` to match your
 uWSGI socket path. With the default configuration, uWSGI will bind to a random TCP socket, so you will need to set it to
-a fixed value as described in the [Scaling and Load Balancing](scaling.html) documentation. If using a UNIX domain
+a fixed value as described in the [Scaling and Load Balancing](scaling.md) documentation. If using a UNIX domain
 socket, be sure to pay particular attention to the discussion of users and permissions.
 
 ### Additional Notes
@@ -235,7 +235,7 @@ previous section:
    `cookie_path` should be set to prevent Galaxy's session cookies from clobbering each other if you are running more
    than one instance of Galaxy under different URL prefixes on the same hostname.
 
-   Be sure to consult the [Scaling and Load Balancing](scaling.html) documentation, other options unrelated to proxying
+   Be sure to consult the [Scaling and Load Balancing](scaling.md) documentation, other options unrelated to proxying
    should also be set in the `uwsgi` section of the config.
 
 ## Advanced Configuration Topics
@@ -244,7 +244,7 @@ previous section:
 
 Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it in chunks through the proxy server.
 However, this ties up the Galaxy process, which can impact the performance of other operations (see [Production Server
-Configuration](production.html) for a more in-depth explanation).
+Configuration](production.md) for a more in-depth explanation).
 
 Nginx can assume this task instead and as an added benefit, speed up downloads. This is accomplished through the use of
 the special `X-Accel-Redirect` header. Dataset security is maintained in this configuration because nginx will still
@@ -360,7 +360,7 @@ galaxy:
 
 You may find it useful to require authentication for access to certain paths on your server.  For example, Galaxy can
 run a separate reports app which gives useful information about your Galaxy instance. See the [Reports Configuration
-documentation](reports.html) and [Peter Briggs' blog post on the
+documentation](reports.md) and [Peter Briggs' blog post on the
 subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
 
 After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
@@ -390,4 +390,4 @@ To secure this page to only Galaxy administrators, adjust your nginx config acco
 ### External User Authentication
 
 - [Nginx for External Authentication](https://galaxyproject.org/admin/config/nginx-external-user-auth/)
-- [Built-in Galaxy External Authentication](authentication.html)
+- [Built-in Galaxy External Authentication](authentication.md)

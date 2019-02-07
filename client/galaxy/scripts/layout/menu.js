@@ -251,21 +251,8 @@ var Collection = Backbone.Collection.extend({
                     id: "user",
                     title: _l("Login or Register"),
                     cls: "loggedout-only",
-                    tooltip: _l("Account registration or login"),
-                    menu: [
-                        {
-                            title: _l("Login"),
-                            url: "login",
-                            target: "_top",
-                            noscratchbook: true
-                        },
-                        {
-                            title: _l("Register"),
-                            url: "user/create",
-                            target: "galaxy_main",
-                            noscratchbook: true
-                        }
-                    ]
+                    url: "login",
+                    tooltip: _l("Account registration or login")
                 };
             } else {
                 userTab = {
@@ -485,10 +472,7 @@ var Tab = Backbone.View.extend({
                 .popover({
                     html: true,
                     placement: "bottom",
-                    content: `Please ${this.buildLink("login", "login")} or ${this.buildLink(
-                        "register",
-                        "user/create?use_panels=True"
-                    )} to use this feature.`
+                    content: `Please ${this.buildLink("login or register", "login")} to use this feature.`
                 })
                 .popover("show");
             window.setTimeout(() => {

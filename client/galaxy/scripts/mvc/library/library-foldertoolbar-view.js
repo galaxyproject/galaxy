@@ -1411,92 +1411,81 @@ var FolderToolbarView = Backbone.View.extend({
 
     templateToolBar: function() {
         return _.template(
-            [
-                '<div class="library_style_container">', // container start
-                '<div class="d-flex align-items-center mb-2">',
-                '<span class="mr-1">DATA LIBRARIES</span>',
-                "<div>", // toolbar start
-                '<form class="form-inline">',
-                '<div class="form-check logged-dataset-manipulation mr-1" style="display:none;">', // include deleted checkbox
-                '<input class="form-check-input include-deleted-datasets-chk" id="include_deleted_datasets_chk" type="checkbox">',
-                '<label class="form-check-label" for="include_deleted_datasets_chk">include deleted</label>',
-                "</div>",
-                '<button style="display:none;" title="Create new folder" class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">',
-                '<span class="fa fa-plus"></span> <span class="fa fa-folder"></span> Create Folder ',
-                "</button>",
-                "<% if(multiple_add_dataset_options) { %>", // add datasets button
-                '<div data-toggle="tooltip" data-placement="right" title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">',
-                '<button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">',
-                '<span class="fa fa-plus"></span> <span class="fa fa-file"></span> Add Datasets <span class="caret"></span>',
-                "</button>",
-                '<div class="dropdown-menu">',
-                '<a class="dropdown-item" href="#folders/<%= id %>/import/history"> from History</a>',
-                "<% if(Galaxy.config.user_library_import_dir !== null) { %>",
-                '<a class="dropdown-item" href="#folders/<%= id %>/import/userdir"> from User Directory</a>',
-                "<% } %>",
-                "<% if(Galaxy.config.library_import_dir !== null || Galaxy.config.allow_library_path_paste) { %>",
-                '<h5 class="dropdown-header">Admins only</h5>',
-                "<% if(Galaxy.config.library_import_dir !== null) { %>",
-                '<a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>',
-                "<% } %>",
-                "<% if(Galaxy.config.allow_library_path_paste) { %>",
-                '<a class="dropdown-item" href="#folders/<%= id %>/import/path">from Path</a>',
-                "<% } %>",
-                "<% } %>",
-                "</div>",
-                "</div>",
-
-                "<% } else { %>",
-                '<a data-placement="top" title="Add Datasets to Current Folder" style="display:none;" class="btn btn-secondary add-library-items add-library-items-datasets" href="#folders/<%= id %>/import/history" role="button">',
-                '<span class="fa fa-plus"></span><span class="fa fa-file"></span>',
-                "</a>",
-                "<% } %>",
-                // import to history button
-                '<div data-toggle="tooltip" data-placement="right" title="Import to history" class="dropdown mr-1">',
-                '<button type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">',
-                '<span class="fa fa-book"></span> To History <span class="caret"></span>',
-                "</button>",
-                '<div class="dropdown-menu" role="menu">',
-                '<a href="" class="toolbtn-bulk-import add-to-history-datasets dropdown-item">as Datasets</a>',
-                '<a href="" class="toolbtn-collection-import add-to-history-collection dropdown-item">as a Collection</a>',
-                "</div>",
-                "</div>",
-                // download button
-                '<div data-toggle="tooltip" data-placement="right" title="Download items as archive" class="dropdown dataset-manipulation mr-1" style="display:none; ">',
-                '<button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">',
-                '<span class="fa fa-save"></span> Download <span class="caret"></span>',
-                "</button>",
-                '<div class="dropdown-menu" role="menu">',
-                '<a class="dropdown-item" href="#/folders/<%= id %>/download/tgz">.tar.gz</a>',
-                '<a class="dropdown-item" href="#/folders/<%= id %>/download/tbz">.tar.bz</a>',
-                '<a class="dropdown-item" href="#/folders/<%= id %>/download/zip">.zip</a>',
-                "</div>",
-                "</div>",
-                // delete button
-                '<button data-toggle="tooltip" data-placement="right" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1" style="display:none;" type="button">',
-                '<span class="fa fa-trash"></span> Delete',
-                "</button>",
-                '<span class="mr-1" data-toggle="tooltip" data-placement="right" title="Show location details">', // location button
-                '<button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo" type="button">',
-                '<span class="fa fa-info-circle"></span>',
-                "&nbsp;Details",
-                "</button>",
-                "</span>",
-                '<span data-toggle="tooltip" data-placement="right" title="See this screen annotated">', // help button
-                '<a class="library-help-button" href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">',
-                '<button class="primary-button" type="button">',
-                '<span class="fa fa-question-circle"></span>',
-                "&nbsp;Help",
-                "</button>",
-                "</a>",
-                "</span>",
-                "</form>",
-                "</div>", // toolbar end
-                "</div>", // end flex
-                '<div id="folder_items_element" />', // folder contents will append here
-                '<div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2" />', // paginator will append here
-                "</div>" // container end
-            ].join("")
+            `<div class="library_style_container">
+                <div class="d-flex align-items-center mb-2">
+                    <a class="mr-1 btn btn-secondary" href="list" data-toggle="tooltip" title="Go to first page">
+                        <span class="fa fa-home"/>
+                    </a>
+                    <a class="mr-1 btn btn-secondary" data-toggle="tooltip" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/folder-contents/" target="_blank">
+                        <span class="fa fa-question"/>
+                    </a>
+                    <div>
+                        <form class="form-inline">
+                            <div class="form-check logged-dataset-manipulation mr-1" style="display:none;">
+                                <input class="form-check-input include-deleted-datasets-chk" id="include_deleted_datasets_chk" type="checkbox">
+                                <label class="form-check-label" for="include_deleted_datasets_chk">include deleted</label>
+                            </div>
+                            <button style="display:none;" title="Create new folder" class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">
+                            <span class="fa fa-folder"/> Create Folder</button>
+                            <% if(multiple_add_dataset_options) { %>
+                                <div data-toggle="tooltip" title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">
+                                <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
+                                    <span class="fa fa-file"/> Add Datasets <span class="caret"/>
+                                </button>
+                                <div class="dropdown-menu">
+                                    <a class="dropdown-item" href="#folders/<%= id %>/import/history"> from History</a>
+                                    <% if(Galaxy.config.user_library_import_dir !== null) { %>
+                                        <a class="dropdown-item" href="#folders/<%= id %>/import/userdir"> from User Directory</a>
+                                    <% } %>
+                                    <% if(Galaxy.config.library_import_dir !== null || Galaxy.config.allow_library_path_paste) { %>
+                                        <h5 class="dropdown-header">Admins only</h5>
+                                            <% if(Galaxy.config.library_import_dir !== null) { %>
+                                                <a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>
+                                            <% } %>
+                                        <% if(Galaxy.config.allow_library_path_paste) { %>",
+                                            <a class="dropdown-item" href="#folders/<%= id %>/import/path">from Path</a>
+                                        <% } %>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <% } else { %>
+                                <a title="Add Datasets to Current Folder" style="display:none;" class="btn btn-secondary add-library-items add-library-items-datasets mr-1" href="#folders/<%= id %>/import/history" role="button">
+                                    <span class="fa fa-file"/> Add Datasets
+                                </a>
+                            <% } %>
+                            <div class="dropdown mr-1">
+                                <button type="button" class="primary-button dropdown-toggle add-to-history" data-toggle="dropdown">
+                                    <span class="fa fa-book"></span> Export to History <span class="caret"/>
+                                </button>
+                                <div class="dropdown-menu" role="menu">
+                                    <a href="#" class="toolbtn-bulk-import add-to-history-datasets dropdown-item">as Datasets</a>
+                                    <a href="#" class="toolbtn-collection-import add-to-history-collection dropdown-item">as a Collection</a>
+                                </div>
+                            </div>
+                            <div data-toggle="tooltip" title="Download items as archive" class="dropdown dataset-manipulation mr-1" style="display:none; ">
+                                <button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">
+                                    <span class="fa fa-save"/> Download <span class="caret"/>
+                                </button>
+                                <div class="dropdown-menu" role="menu">
+                                    <a class="dropdown-item" href="#/folders/<%= id %>/download/tgz">.tar.gz</a>
+                                    <a class="dropdown-item" href="#/folders/<%= id %>/download/tbz">.tar.bz</a>
+                                    <a class="dropdown-item" href="#/folders/<%= id %>/download/zip">.zip</a>
+                                </div>
+                            </div>
+                            <button data-toggle="tooltip" title="Mark items deleted" class="primary-button toolbtn-bulk-delete logged-dataset-manipulation mr-1" style="display:none;" type="button">
+                                <span class="fa fa-trash"/> Delete
+                            </button>
+                            <span class="mr-1" data-toggle="tooltip" title="Show location details">
+                                <button data-id="<%- id %>" class="primary-button toolbtn-show-locinfo" type="button">
+                                    <span class="fa fa-info-circle"/>&nbsp;Details
+                                </button>
+                            </span>
+                        </form>
+                    </div>
+                </div>
+                <div id="folder_items_element" />
+                <div class="d-flex justify-content-center align-items-center folder-paginator mt-2 mb-2" />
+            </div>`
         );
     },
 

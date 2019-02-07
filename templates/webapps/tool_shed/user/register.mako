@@ -1,12 +1,4 @@
-<%!
-#This is a hack, we should restructure templates to avoid this.
-def inherit(context):
-    if context.get('trans').webapp.name == 'galaxy' and context.get( 'use_panels', True ):
-        return '/webapps/galaxy/base_panels.mako'
-    else:
-        return '/base.mako'
-%>
-<%inherit file="${inherit(context)}"/>
+<%inherit file="/base.mako"/>
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%def name="init()">
@@ -60,8 +52,6 @@ def inherit(context):
     <%
         if form_action is None:
             form_action = h.url_for( controller='user', action='create', cntrller=cntrller )
-        from galaxy.web.form_builder import CheckboxField
-        subscribe_check_box = CheckboxField( 'subscribe' )
     %>
 
     <script type="text/javascript">
@@ -79,12 +69,12 @@ def inherit(context):
             }
 
             function renderError(message) {
-                if (!$(".alert-danger").size()) {
-                    $('<div/>').addClass('alert alert-danger').insertBefore('#registrationForm');
+                if (!$(".errormessage").size()) {
+                    $('<div/>').addClass('errormessage').insertBefore('#registrationForm');
                 }
                 console.debug( $( '#registrationForm' ) );
-                console.debug( '.alert-danger:', $( '.alert-danger' ) );
-                $(".alert-danger").html(message);
+                console.debug( '.errormessage:', $( '.errormessage' ) );
+                $(".errormessage").html(message);
             }
 
             $("[name='password']").complexify({'minimumChars':6}, function(valid, complexity){
@@ -127,34 +117,10 @@ def inherit(context):
         });
     </script>
 
-    <div id="registrationForm" class="card">
-        ## only display the prepopulate form to admins
-        %if show_user_prepopulate_form:
-            <form name="registration" id="prepopulateform" action="${form_action}" method="post" >
-                <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
-                <div class="card-header">Pre-populate an account through LDAP</div>
-                <div class="form-row">
-                    <label>Email address:</label>
-                    <input id="email_input" type="text" name="email" value="${email | h}" size="40"/>
-                    <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
-                </div>
-                <div class="form-row">
-                    <label>Username:</label>
-                    <input id="name_input" type="text" name="username" size="40" value="${username |h}"/>
-                    <div class="toolParamHelp">
-                        Depending on your LDAP configuration in your auth_conf.xml you can either provide an
-                        email address or username.
-                    </div>
-                </div>
-                <div class="form-row">
-                    <input type="submit" id="prepopulate" name="prepopulate_user_button" value="Prepopulate"/>
-                </div>
-            </form>
-            <br />
-        %endif
+    <div id="registrationForm" class="toolForm">
         <form name="registration" id="registration" action="${form_action}" method="post" >
             <input type="hidden" name="session_csrf_token" value="${trans.session_csrf_token}" />
-            <div class="card-header">Create account</div>
+            <div class="toolFormTitle">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>
                 <input id="email_input" type="text" name="email" value="${email | h}" size="40"/>
@@ -191,14 +157,6 @@ def inherit(context):
                     </div>
                 %endif
             </div>
-            %if trans.app.config.smtp_server and trans.app.config.mailing_join_addr:
-                <div class="form-row">
-                    <label>Subscribe to mailing list:</label>
-                    ${render_checkbox(subscribe_check_box)}
-                    <p>See <a href="https://galaxyproject.org/mailing-lists/" target="_blank">
-                    all Galaxy project mailing lists</a>.</p>
-                </div>
-            %endif
             <div id="for_bears">
             If you see this, please leave following field blank.
             <input type="text" name="bear_field" size="1" value=""/>
@@ -207,11 +165,5 @@ def inherit(context):
                 <input type="submit" id="send" name="create_user_button" value="Submit"/>
             </div>
         </form>
-        %if registration_warning_message:
-        <div class="alert alert-danger" style="margin: 30px 12px 12px 12px;">
-            ${registration_warning_message}
-        </div>
-        %endif
     </div>
-
 </%def>
