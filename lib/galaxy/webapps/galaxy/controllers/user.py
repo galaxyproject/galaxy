@@ -212,6 +212,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
 
     @web.expose
     def logout(self, trans, logout_all=False, **kwd):
+        message = trans.check_csrf_token(kwd)
+        if message:
+            return self.message_exception(trans, message)
         if trans.user:
             # Queue a quota recalculation (async) task -- this takes a
             # while sometimes, so we don't want to block on logout.

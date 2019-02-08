@@ -12,11 +12,13 @@ import Utils from "utils/utils";
 
 function logoutClick() {
     let galaxy = getGalaxyInstance();
+    let session_csrf_token = galaxy.session_csrf_token;
+    let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
     if (galaxy.user) {
         galaxy.user.clearSessionStorage();
     }
     axios
-        .get(`${galaxy.root}user/logout`)
+        .get(url)
         .then(() => {
             window.top.location.href = `${galaxy.root}login`;
         });
