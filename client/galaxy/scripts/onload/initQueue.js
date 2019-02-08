@@ -17,7 +17,7 @@
 import { BehaviorSubject } from "rxjs";
 import { filter } from "rxjs/operators";
 
-const queue = (window._initQueue = new BehaviorSubject([]));
+const queue = new BehaviorSubject([]);
 
 // don't emit unless there are things to initialize
 export const initializations$ = queue.pipe(filter(list => list.length > 0));
