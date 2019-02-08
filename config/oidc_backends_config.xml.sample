@@ -32,20 +32,33 @@
         <prompt>consent</prompt>
     </provider>
 
-    <provider name="Keycloak-auth" implementation="Keycloak">
+    <provider name="Google" implementation="OIDC">
         <client_id> ... </client_id>
         <client_secret> ... </client_secret>
-        <redirect_uri>http://localhost:8000/authnz/keycloak-auth/keycloak/callback</redirect_uri>
-        <!-- The .well-known configuration URL is typically of the form:
-        https://<KEYCLOAK_SERVER_NAME>/auth/realms/<REALM_NAME>/.well-known/openid-configuration
-        For example, if the Keycloak server is on host
-        mykeycloak.org and the realm name is testrealm, then the URL is:
-        https://mykeycloak.org/auth/realms/testrealm/.well-known/openid-configuration
-        -->
-        <well_known_oidc_config_uri>https://.../auth/realms/.../.well-known/openid-configuration</well_known_oidc_config_uri>
-        <idp_hint> ... </idp_hint>
-        <!-- idp_hint is optional. It can be used to bypass the Keycloak
-        login page and skip directly to the login page of the associated
-        identity provider. -->
+        <redirect_uri>http://localhost:8000/authnz/google/oidc/callback</redirect_uri>
+
+        <!-- Either specify the .well-known configuration URL or each endpoint separately -->
+        <well_known_oidc_config_uri>https://.../.well-known/openid-configuration</well_known_oidc_config_uri>
+
+        <!-- authorization_endpoint is only needed if well_known_oidc_config_uri is not specified -->
+        <!-- <authorization_endpoint>https://...</authorization_endpoint> -->
+        <!-- token_endpoint is only needed if well_known_oidc_config_uri is not specified -->
+        <!-- <token_endpoint>https://...</token_endpoint> -->
+        <!-- userinfo_endpoint is only needed if well_known_oidc_config_uri is not specified -->
+        <!-- <userinfo_endpoint>https://...</userinfo_endpoint> -->
+
+        <!-- (Optional) Add extra parameters to the authorization URI -->
+        <extra_params>
+            <!-- <param name="..." value="..."/> -->
+        </extra_params>
+
+        <!-- (Optional) Custom UserInfo Claim Mappings. Customize what UserInfo claims
+        are used to create/associate a Galaxy user account. The following
+        represents the default claim mappings. -->
+        <!-- <userinfo_claim_mappings>
+            <email>email</email>
+            <username>preferred_username</username>
+            <id>sub</id>
+        </userinfo_claim_mappings> -->
     </provider>
 </OIDC>

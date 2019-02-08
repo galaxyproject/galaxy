@@ -32,23 +32,32 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             'client_id': 'test-client-id',
             'client_secret': 'test-client-secret',
             'redirect_uri': 'https://test-redirect-uri',
-            'well_known_oidc_config_uri': 'https://test-well-known-oidc-config-uri'
+            'well_known_oidc_config_uri': 'https://test-well-known-oidc-config-uri',
+            'extra_params': {
+                'param1': 'value1'
+            }
         })
-        self.mock_fetch_token(self.oidc_authnz)
-        self.mock_get_userinfo(self.oidc_authnz)
-        self.trans = self.mockTrans()
+        self.setupMocks()
         self.test_state = "abc123"
         self.test_nonce = "4662892146306485421546981092"
         self.test_nonce_hash = hashlib.sha256(self.test_nonce).hexdigest()
         self.test_code = "test-code"
         self.test_username = "test-username"
         self.test_email = "test-email"
+        self.test_alt_username = "test-alt-username"
+        self.test_alt_email = "test-alt-email"
         self.test_access_token = "test_access_token"
         self.test_refresh_token = "test_refresh_token"
         self.test_expires_in = 30
         self.test_refresh_expires_in = 1800
-        self.test_keycloak_user_id = str(uuid.uuid4())
-        self.trans.request.url = "https://localhost:8000/authnz/galaxy-auth/keycloak/callback?state={test_state}&code={test_code}".format(test_state=self.test_state, test_code=self.test_code)
+        self.test_user_id = str(uuid.uuid4())
+        self.test_alt_user_id = str(uuid.uuid4())
+        self.trans.request.url = "https://localhost:8000/authnz/google/oidc/callback?state={test_state}&code={test_code}".format(test_state=self.test_state, test_code=self.test_code)
+    
+    def setupMocks(self):
+        self.mock_fetch_token(self.oidc_authnz)
+        self.mock_get_userinfo(self.oidc_authnz)
+        self.trans = self.mockTrans()
 
     @property
     def test_id_token(self):
@@ -82,7 +91,10 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             return {
                 "preferred_username": self.test_username,
                 "email": self.test_email,
-                "sub": self.test_keycloak_user_id
+                "sub": self.test_user_id,
+                "alt_username": self.test_alt_username,
+                "alt_email": self.test_alt_email,
+                "alt_id": self.test_alt_user_id
             }
         oidc_authnz._get_userinfo = get_userinfo
 
@@ -175,6 +187,28 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self.oidc_authnz.config['authorization_endpoint'], 'https://test-auth-endpoint')
         self.assertEqual(self.oidc_authnz.config['token_endpoint'], 'https://test-token-endpoint')
         self.assertEqual(self.oidc_authnz.config['userinfo_endpoint'], 'https://test-userinfo-endpoint')
+        self.assertIn('param1', self.oidc_authnz.config['extra_params'])
+        self.assertEqual(self.oidc_authnz.config['extra_params']['param1'], 'value1')
+
+    def test_parse_config_without_well_known_config(self):
+        self.oidc_authnz = oidc_authnz.OIDCAuthnz('Google', {
+            'VERIFY_SSL': True
+        }, {
+            'client_id': 'test-client-id2',
+            'client_secret': 'test-client-secret2',
+            'redirect_uri': 'https://test-redirect-uri2',
+            "authorization_endpoint": "https://test-auth-endpoint2",
+            "token_endpoint": "https://test-token-endpoint2",
+            "userinfo_endpoint": "https://test-userinfo-endpoint2"
+        })
+        self.assertTrue(self.oidc_authnz.config['verify_ssl'])
+        self.assertEqual(self.oidc_authnz.config['client_id'], 'test-client-id2')
+        self.assertEqual(self.oidc_authnz.config['client_secret'], 'test-client-secret2')
+        self.assertEqual(self.oidc_authnz.config['redirect_uri'], 'https://test-redirect-uri2')
+        self.assertNotIn('well_known_oidc_config_uri', self.oidc_authnz.config)
+        self.assertEqual(self.oidc_authnz.config['authorization_endpoint'], 'https://test-auth-endpoint2')
+        self.assertEqual(self.oidc_authnz.config['token_endpoint'], 'https://test-token-endpoint2')
+        self.assertEqual(self.oidc_authnz.config['userinfo_endpoint'], 'https://test-userinfo-endpoint2')
 
     def test_authenticate_set_state_cookie(self):
         """Verify that authenticate() sets a state cookie."""
@@ -191,6 +225,13 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         nonce_in_cookie = self.trans.cookies[oidc_authnz.NONCE_COOKIE_NAME]
         hashed_nonce = self.oidc_authnz._hash_nonce(nonce_in_cookie)
         self.assertEqual(hashed_nonce, hashed_nonce_in_url)
+
+    def test_authenticate_adds_extra_params(self):
+        """Verify that authenticate() adds configured extra params."""
+        authorization_url = self.oidc_authnz.authenticate(self.trans)
+        parsed = urlparse(authorization_url)
+        param1_value = parse_qs(parsed.query)['param1'][0]
+        self.assertEqual(param1_value, 'value1')
 
     def test_callback_verify_with_state_cookie(self):
         """Verify that state from cookie is passed to OAuth2Session constructor."""
@@ -233,7 +274,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=oidc_authnz.NONCE_COOKIE_NAME)
 
-        self.assertIsNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_keycloak_user_id).one_or_none())
+        self.assertIsNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_user_id).one_or_none())
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.oidc_authnz.callback(
             state_token="xxx",
@@ -262,6 +303,34 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
         self.assertEqual(self._raw_token, added_keycloak_access_token.raw_token)
         self.assertTrue(self.trans.sa_session.flush_called)
+    
+    def test_callback_galaxy_user_created_with_alt_claim_mapping(self):
+        self.oidc_authnz = oidc_authnz.OIDCAuthnz('Google', {
+            'VERIFY_SSL': True
+        }, {
+            'client_id': 'test-client-id',
+            'client_secret': 'test-client-secret',
+            'redirect_uri': 'https://test-redirect-uri',
+            'well_known_oidc_config_uri': 'https://test-well-known-oidc-config-uri',
+            'userinfo_claim_mappings': {
+                'email': 'alt_email',
+                'username': 'alt_username',
+                'id': 'alt_id'
+            }
+        })
+        self.setupMocks()
+
+        self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=oidc_authnz.NONCE_COOKIE_NAME)
+        login_redirect_url, user = self.oidc_authnz.callback(
+            state_token="xxx",
+            authz_code=self.test_code, trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
+        self.assertEqual(self.test_alt_username, user.username)
+        self.assertEqual(self.test_alt_email, user.email)
+        self.assertEqual(2, len(self.trans.sa_session.items))
+        added_keycloak_access_token = self.trans.sa_session.items[1]
+        self.assertEqual(self.test_alt_user_id, added_keycloak_access_token.keycloak_user_id)
 
     def test_callback_galaxy_user_not_created_when_keycloak_access_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
@@ -274,7 +343,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         old_raw_token = "{}"
         existing_keycloak_access_token = KeycloakAccessToken(
             user=User(email=self.test_email, username=self.test_username),
-            keycloak_user_id=self.test_keycloak_user_id,
+            keycloak_user_id=self.test_user_id,
             access_token=old_access_token,
             id_token=old_id_token,
             refresh_token=old_refresh_token,
@@ -285,7 +354,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
 
         self.trans.sa_session._query.keycloak_access_token = existing_keycloak_access_token
 
-        self.assertIsNotNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_keycloak_user_id).one_or_none())
+        self.assertIsNotNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_user_id).one_or_none())
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.oidc_authnz.callback(
             state_token="xxx",
