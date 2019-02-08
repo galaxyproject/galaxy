@@ -15,6 +15,9 @@ from ..authnz import IdentityProvider
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = 'oidc-state'
 NONCE_COOKIE_NAME = 'oidc-nonce'
+DEFAULT_CLAIM_USERNAME = 'preferred_username'
+DEFAULT_CLAIM_EMAIL = 'email'
+DEFAULT_CLAIM_ID = 'sub'
 
 
 class OIDCAuthnz(IdentityProvider):
@@ -36,7 +39,8 @@ class OIDCAuthnz(IdentityProvider):
             self.config['authorization_endpoint'] = oidc_backend_config['authorization_endpoint']
             self.config['token_endpoint'] = oidc_backend_config['token_endpoint']
             self.config['userinfo_endpoint'] = oidc_backend_config['userinfo_endpoint']
-        self.config['idp_hint'] = oidc_backend_config.get('idp_hint', None)
+        self.config['extra_params'] = oidc_backend_config.get('extra_params', None)
+        self.config['userinfo_claim_mappings'] = oidc_backend_config.get('userinfo_claim_mappings', None)
 
     def authenticate(self, trans):
         base_authorize_url = self.config['authorization_endpoint']
@@ -44,8 +48,8 @@ class OIDCAuthnz(IdentityProvider):
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
-        if self.config['idp_hint']:
-            extra_params['kc_idp_hint'] = self.config['idp_hint']
+        if self.config['extra_params']:
+            extra_params.update(self.config['extra_params'])
         authorization_url, state = oauth2_session.authorization_url(
             base_authorize_url, **extra_params)
         trans.set_cookie(value=state, name=STATE_COOKIE_NAME)
@@ -76,16 +80,17 @@ class OIDCAuthnz(IdentityProvider):
         # Get userinfo and lookup/create Galaxy user record
         userinfo = self._get_userinfo(oauth2_session)
         log.debug("userinfo={}".format(json.dumps(userinfo, indent=True)))
-        username = userinfo["preferred_username"]
-        email = userinfo["email"]
-        keycloak_user_id = userinfo["sub"]
+        claim_mappings = self._get_claim_mappings()
+        username = userinfo[claim_mappings['username']]
+        email = userinfo[claim_mappings['email']]
+        user_id = userinfo[claim_mappings['id']]
 
         # Create or update keycloak_access_token record
-        keycloak_access_token = self._get_keycloak_access_token(trans.sa_session, keycloak_user_id)
+        keycloak_access_token = self._get_keycloak_access_token(trans.sa_session, user_id)
         if keycloak_access_token is None:
             user = self._create_user(trans.sa_session, username, email)
             keycloak_access_token = KeycloakAccessToken(user=user,
-                                                        keycloak_user_id=keycloak_user_id,
+                                                        keycloak_user_id=user_id,
                                                         access_token=access_token,
                                                         id_token=id_token,
                                                         refresh_token=refresh_token,
@@ -126,10 +131,20 @@ class OIDCAuthnz(IdentityProvider):
     def _get_userinfo(self, oauth2_session):
         userinfo_endpoint = self.config['userinfo_endpoint']
         return oauth2_session.get(userinfo_endpoint).json()
+    
+    def _get_claim_mappings(self):
+        userinfo_claim_mappings = {
+            'username': DEFAULT_CLAIM_USERNAME,
+            'email': DEFAULT_CLAIM_EMAIL,
+            'id': DEFAULT_CLAIM_ID
+        }
+        if self.config['userinfo_claim_mappings']:
+            userinfo_claim_mappings.update(self.config['userinfo_claim_mappings'])
+        return userinfo_claim_mappings
 
-    def _get_keycloak_access_token(self, sa_session, keycloak_user_id):
+    def _get_keycloak_access_token(self, sa_session, user_id):
         return sa_session.query(KeycloakAccessToken).filter_by(
-            keycloak_user_id=keycloak_user_id).one_or_none()
+            keycloak_user_id=user_id).one_or_none()
 
     def _create_user(self, sa_session, username, email):
         user = User(email=email, username=username)

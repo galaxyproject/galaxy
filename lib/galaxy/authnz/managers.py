@@ -114,10 +114,21 @@ class AuthnzManager(object):
         rtv = {
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
-            'redirect_uri': config_xml.find('redirect_uri').text,
-            'well_known_oidc_config_uri': config_xml.find('well_known_oidc_config_uri').text}
-        if config_xml.find('idp_hint') is not None:
-            rtv['idp_hint'] = config_xml.find('idp_hint').text
+            'redirect_uri': config_xml.find('redirect_uri').text}
+        if config_xml.find('well_known_oidc_config_uri') is not None:
+            rtv['well_known_oidc_config_uri'] = config_xml.find('well_known_oidc_config_uri').text
+        else:
+            rtv['authorization_endpoint'] = config_xml.find('authorization_endpoint').text
+            rtv['token_endpoint'] = config_xml.find('token_endpoint').text
+            rtv['userinfo_endpoint'] = config_xml.find('userinfo_endpoint').text
+        if config_xml.find('extra_params') is not None:
+            rtv['extra_params'] = {}
+            for extra_param in config_xml.find('extra_params'):
+                rtv['extra_params'][extra_param.attrib['name']] = extra_param.attrib['value']
+        if config_xml.find('userinfo_claim_mappings') is not None:
+            rtv['userinfo_claim_mappings'] = {}
+            for claim_mapping in config_xml.find('userinfo_claim_mappings'):
+                rtv['userinfo_claim_mappings'][claim_mapping.tag] = claim_mapping.text
         return rtv
 
     def _unify_provider_implementation_names(self, provider, implementation):
