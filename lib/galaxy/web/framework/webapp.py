@@ -899,18 +899,12 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
             )
         return token
 
-    def check_csrf_token(self):
-        session_csrf_token = self.request.params.get("session_csrf_token", None)
-        problem = False
+    def check_csrf_token(self, payload):
+        session_csrf_token = payload.get("session_csrf_token")
         if not session_csrf_token:
-            log.warning("No session_csrf_token set, denying request.")
-            problem = True
+            return "No session_csrf_token set, denying request."
         elif session_csrf_token != self.session_csrf_token:
-            log.warning("Wrong session token found, denying request.")
-            problem = True
-
-        if problem:
-            return self.show_warn_message("Failed to authorize action.")
+            return "Wrong session token found, denying request."
 
     def fill_template(self, filename, **kwargs):
         """

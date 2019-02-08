@@ -51,7 +51,7 @@ export default {
         }
     },
     data() {
-        let Galaxy = getGalaxyInstance();
+        let galaxy = getGalaxyInstance();
         return {
             login: null,
             password: null,
@@ -59,7 +59,8 @@ export default {
             provider: null,
             messageText: null,
             messageVariant: null,
-            redirect: Galaxy.params.redirect
+            redirect: galaxy.params.redirect,
+            session_csrf_token: galaxy.session_csrf_token
         };
     },
     computed: {
@@ -75,9 +76,8 @@ export default {
         },
         submit: function(method) {
             let rootUrl = getAppRoot();
-            let data = { login: this.login, password: this.password, redirect: this.redirect };
             axios
-                .post(`${rootUrl}user/login`, data)
+                .post(`${rootUrl}user/login`, this.$data)
                 .then(response => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);

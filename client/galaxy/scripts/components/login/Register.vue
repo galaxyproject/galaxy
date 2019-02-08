@@ -45,6 +45,7 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 
 Vue.use(BootstrapVue);
@@ -69,6 +70,7 @@ export default {
         }
     },
     data() {
+        let galaxy = getGalaxyInstance();
         return {
             email: null,
             password: null,
@@ -76,7 +78,8 @@ export default {
             confirm: null,
             subscribe: null,
             messageText: null,
-            messageVariant: null
+            messageVariant: null,
+            session_csrf_token: galaxy.session_csrf_token
         };
     },
     computed: {

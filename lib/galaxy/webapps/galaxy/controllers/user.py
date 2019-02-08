@@ -116,6 +116,9 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
 
     def __validate_login(self, trans, payload={}, **kwd):
         '''Handle Galaxy Log in'''
+        message = trans.check_csrf_token(payload)
+        if message:
+            return self.message_exception(trans, message)
         login = kwd.get("login", payload.get("login"))
         password = kwd.get("password", payload.get("password"))
         redirect = kwd.get("redirect", payload.get("redirect"))
@@ -223,12 +226,13 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
     def create(self, trans, payload={}, **kwd):
         if not payload:
             payload = kwd
+        message = trans.check_csrf_token(payload)
+        if message:
+            return self.message_exception(trans, message)
         user, message = self.user_manager.register(trans, **payload)
         if message:
             return self.message_exception(trans, message, sanitize=False)
         elif user and not trans.user_is_admin:
-            # The handle_user_login() method has a call to the history_set_default_permissions() method
-            # (needed when logging in with a history), user needs to have default permissions set before logging in
             trans.handle_user_login(user)
             trans.log_event("User created a new account")
             trans.log_event("User logged in")
