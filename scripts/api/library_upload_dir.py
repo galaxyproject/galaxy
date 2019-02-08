@@ -11,9 +11,9 @@ from bioblend import galaxy
 
 class Uploader(object):
 
-    def __init__(self, url, api, library_id, library_name, folder_id,
-                 should_link, non_local, root_folder, dbkey, preserve_dirs,
-                 tag_using_filenames):
+    def __init__(self, url, api, library_id, library_name, folder_id, folder_name,
+                 should_link, non_local, dbkey, preserve_dirs,
+                 tag_using_filenames, description, paths):
         """
         initialize uploader
 
@@ -21,14 +21,15 @@ class Uploader(object):
         api API key to use
         library_id id of the library
         library_name name of the library
-        folder_id id of the folder to upload to (None: root_folder)
+        folder_id id of the folder to upload to (None: root folder of the library)
+        folder_name path in the Galaxy library where the files should be uploaded to 
         should_link link data sets instead of uploading 
         non_local set to true iff not running on Galaxy head node
-        root_folder path from which files are to be uploaded
-                    ie uploaded files are given relative to this path
         dbkey data base key (aka genome build)
         preserve_dirs preserve directory structure (boolean)
         tag_using_filenames tag data sets using file name
+        description description of the topmost of the created folders
+        paths list of paths to upload if empty will be read from stdin
         """
         self.gi = galaxy.GalaxyInstance(url=url, key=api)
         libs = self.gi.libraries.get_libraries(library_id=library_id,
@@ -39,20 +40,28 @@ class Uploader(object):
             raise Exception("Ambiguous library [%s,%s]" % (library_id, library_name))
         else:
             libs = libs[0]
-
         self.library_id = libs['id']
-        if folder_id:
-            self.folder_id = folder_id
-        else:
-            self.folder_id = libs['root_folder_id']
+        
+        # set folder_id to root folder 
+        # - will be overwritten if folder_id or folder_name != None
+        # - needs to be done after prepopulate_memo
+        self.folder_id = libs['root_folder_id']
         self.should_link = should_link
         self.non_local = non_local
         self.root_folder = root_folder
         self.dbkey = dbkey
         self.preserve_dirs = preserve_dirs
         self.tag_using_filenames = tag_using_filenames
+        self.description = description
+        self.paths = paths
+        # name -> id map for all folders 'below' folder_id
         self.memo_path = {}
         self.prepopulate_memo()
+        # now really init the folder_id if folder_id or folder_name != None
+        if folder_id:
+            self.folder_id = folder_id
+        elif folder_name:
+            self.folder_id = self.memoized_path(self.rec_split(folder_name), base_folder=None)
 
     def prepopulate_memo(self):
         """
@@ -118,14 +127,14 @@ class Uploader(object):
 
         # Recursively create the path from our base_folder starting points,
         # getting the IDs of each folder per path component
-        ids = self.recursively_build_path(path_parts, base_folder)
+        ids = self.recursively_build_path(path_parts, base_folder, description=self.description)
 
         # These are then associated with the paths.
         for (key, fid) in zip(nfk, ids):
             self.memo_path[key] = fid
         return ids[-1]
 
-    def recursively_build_path(self, path_parts, parent_folder_id, ids=None):
+    def recursively_build_path(self, path_parts, parent_folder_id, ids=None, description=""):
         """Given an iterable of path components and a parent folder id, recursively
         create directories below parent_folder_id"""
         if ids is None:
@@ -133,7 +142,7 @@ class Uploader(object):
         if len(path_parts) == 0:
             return ids
         else:
-            pf = self.gi.libraries.create_folder(self.library_id, path_parts[0], base_folder_id=parent_folder_id)
+            pf = self.gi.libraries.create_folder(self.library_id, path_parts[0], base_folder_id=parent_folder_id, description=description)
             ids.append(pf[0]['id'])
             return self.recursively_build_path(path_parts[1:], pf[0]['id'], ids=ids)
 
@@ -150,10 +159,14 @@ class Uploader(object):
         return self.rec_split(rest) + (tail,)
 
     def upload(self):
-        all_files = [x.strip() for x in list(sys.stdin.readlines())]
+        if len(self.paths) == 0:
+            all_files = [x.strip() for x in list(sys.stdin.readlines())]
+        else:
+            all_files = self.paths
 
         for idx, path in enumerate(all_files):
-            if not os.path.exists(os.path.join(self.root_folder, path)):
+            if not os.path.exists(path):
+                raise Exception("no such file or directory %s" %(path))
                 continue
             (dirName, fname) = path.rsplit(os.path.sep, 1)
             # Figure out what the memo key will be early
@@ -172,14 +185,14 @@ class Uploader(object):
                 if self.non_local:
                     self.gi.libraries.upload_file_from_local_path(
                         library_id=self.library_id,
-                        file_local_path=os.path.join(self.root_folder, path),
+                        file_local_path=path,
                         folder_id=fid,
                         dbkey=self.dbkey
                     )
                 else:
                     self.gi.libraries.upload_from_galaxy_filesystem(
                         library_id=self.library_id,
-                        filesystem_paths=os.path.join(self.root_folder, path),
+                        filesystem_paths=path,
                         folder_id=fid,
                         dbkey=self.dbkey,
                         link_data_only='link_to_files' if self.should_link else 'copy_files',
@@ -191,7 +204,7 @@ class Uploader(object):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent('''
-        Upload files or directories given on stdin into a data library.
+        Upload files or directories into a data library.
 
         If PATH/TO/FILE_OR_DIR is given on stdin the contents of
         ROOT_FOLDER/PATH/TO/FILE_OR_DIR will be uploaded to PATH/TO/FILE_OR_DIR
@@ -208,9 +221,8 @@ if __name__ == '__main__':
     libparser.add_argument("-l", "--lib", dest="library_id", help="Library ID")
     libparser.add_argument("-L", "--library_name", help="Library name")
     parser.add_argument("-f", "--folder", dest="folder_id",
-                        help="Folder ID. If not specified upload to root folder of the library.")
-    parser.add_argument("--root_folder", default="/",
-                        help="files are relative to this dir")
+                        help="Folder ID. If not specified upload to root folder of the library or the folder specified with --folder_name.")
+    parser.add_argument("-F", "--folder_name", help="Folder to upload to, can be a path")
 
     parser.add_argument("--nonlocal", dest="non_local", action="store_true", default=False,
                         help="Set this flag if you are NOT running this script on your Galaxy head node with access to the full filesystem")
@@ -222,7 +234,8 @@ if __name__ == '__main__':
     localparser.add_argument("--tag_using_filenames", action="store_true", default=False,
                         help="Tag data sets with file name")
     parser.add_argument("--dbkey", default="?", help="Genome build")
-
+    parser.add_argument("--description", default="", help="description for the topmost of the created folders")
+    parser.add_argument('paths', nargs='*', help="path(s) to upload, will be read from stdin if not given")
     args = parser.parse_args()
 
     u = Uploader(**vars(args))
