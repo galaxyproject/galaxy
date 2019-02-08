@@ -1439,10 +1439,10 @@ var FolderToolbarView = Backbone.View.extend({
                                     <% } %>
                                     <% if(Galaxy.config.library_import_dir !== null || Galaxy.config.allow_library_path_paste) { %>
                                         <h5 class="dropdown-header">Admins only</h5>
-                                            <% if(Galaxy.config.library_import_dir !== null) { %>
-                                                <a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>
-                                            <% } %>
-                                        <% if(Galaxy.config.allow_library_path_paste) { %>",
+                                        <% if(Galaxy.config.library_import_dir !== null) { %>
+                                            <a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>
+                                        <% } %>
+                                        <% if(Galaxy.config.allow_library_path_paste) { %>
                                             <a class="dropdown-item" href="#folders/<%= id %>/import/path">from Path</a>
                                         <% } %>
                                     <% } %>
