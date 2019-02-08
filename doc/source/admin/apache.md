@@ -254,8 +254,8 @@ Galaxy sends files (e.g. dataset downloads) by opening the file and streaming it
 However, this ties up the Galaxy process, which can impact the performance of other operations (see [Production Server
 Configuration](production.md) for a more in-depth explanation).
 
-Apache can assume this task instead and as an added benefit, speed up downloads. This is accomplished through the use of
-`mod_xsendfile`, a 3rd-party Apache module. Dataset security is maintained in this configuration because Apache will
+Apache can assume this task instead and, as an added benefit, speed up downloads. In addition, both the IGV genome browser and JBrowse tool (run within Galaxy) require support for the HTTP *Range* header, and this is only available if the proxy serves datasets.
+This is accomplished through the use of `mod_xsendfile`, a 3rd-party Apache module. Dataset security is maintained in this configuration because Apache will
 still check with Galaxy to ensure that the requesting user has permission to access the dataset before sending it.
 
 To enable it, you must first install `mod_xsendfile`. This is usually available via your package manager
