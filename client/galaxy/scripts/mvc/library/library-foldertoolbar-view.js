@@ -1428,7 +1428,7 @@ var FolderToolbarView = Backbone.View.extend({
                             <button style="display:none;" title="Create new folder" class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">
                             <span class="fa fa-folder"/> Create Folder</button>
                             <% if(multiple_add_dataset_options) { %>
-                                <div data-toggle="tooltip" title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">
+                                <div class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">
                                 <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-file"/> Add Datasets <span class="caret"/>
                                 </button>
