@@ -13,23 +13,29 @@ from galaxy.model import KeycloakAccessToken, User
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
-STATE_COOKIE_NAME = 'keycloakauth-state'
-NONCE_COOKIE_NAME = 'keycloakauth-nonce'
+STATE_COOKIE_NAME = 'oidc-state'
+NONCE_COOKIE_NAME = 'oidc-nonce'
 
 
-class KeycloakAuthnz(IdentityProvider):
+class OIDCAuthnz(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config):
         self.config = {'provider': provider.lower()}
         self.config['verify_ssl'] = oidc_config['VERIFY_SSL']
         self.config['client_id'] = oidc_backend_config['client_id']
         self.config['client_secret'] = oidc_backend_config['client_secret']
         self.config['redirect_uri'] = oidc_backend_config['redirect_uri']
-        self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
-        self._well_known_oidc_config = self._load_well_known_oidc_config(
-            self.config['well_known_oidc_config_uri'])
-        self.config['authorization_endpoint'] = self._well_known_oidc_config['authorization_endpoint']
-        self.config['token_endpoint'] = self._well_known_oidc_config['token_endpoint']
-        self.config['userinfo_endpoint'] = self._well_known_oidc_config['userinfo_endpoint']
+        # Either get OIDC config from well-known config URI or directly
+        if 'well_known_oidc_config_uri' in oidc_backend_config:
+            self.config['well_known_oidc_config_uri'] = oidc_backend_config['well_known_oidc_config_uri']
+            well_known_oidc_config = self._load_well_known_oidc_config(
+                self.config['well_known_oidc_config_uri'])
+            self.config['authorization_endpoint'] = well_known_oidc_config['authorization_endpoint']
+            self.config['token_endpoint'] = well_known_oidc_config['token_endpoint']
+            self.config['userinfo_endpoint'] = well_known_oidc_config['userinfo_endpoint']
+        else:
+            self.config['authorization_endpoint'] = oidc_backend_config['authorization_endpoint']
+            self.config['token_endpoint'] = oidc_backend_config['token_endpoint']
+            self.config['userinfo_endpoint'] = oidc_backend_config['userinfo_endpoint']
         self.config['idp_hint'] = oidc_backend_config.get('idp_hint', None)
 
     def authenticate(self, trans):

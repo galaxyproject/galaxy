@@ -17,7 +17,7 @@ from cloudauthz.exceptions import (
 
 from galaxy import exceptions
 from galaxy import model
-from .keycloak_authnz import KeycloakAuthnz
+from .oidc_authnz import OIDCAuthnz
 from .psa_authnz import (
     BACKENDS_NAME,
     on_the_fly_config,
@@ -150,8 +150,8 @@ class AuthnzManager(object):
     def _get_authnz_backend_class(implementation):
         if implementation == 'psa':
             return PSAAuthnz
-        elif implementation == 'keycloak':
-            return KeycloakAuthnz
+        elif implementation == 'oidc':
+            return OIDCAuthnz
         else:
             return None
 
