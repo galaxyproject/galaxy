@@ -15,7 +15,13 @@ except ImportError:
     can_watch = False
 
 from galaxy.util.hash_util import md5_hash_file
-from galaxy.web.stack import register_postfork_function
+try:
+    from galaxy.web.stack import register_postfork_function
+except ImportError:
+
+    # noop, replacement for non-web environments
+    def register_postfork_function(f):
+        pass
 
 log = logging.getLogger(__name__)
 
