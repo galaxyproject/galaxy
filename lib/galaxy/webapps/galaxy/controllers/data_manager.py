@@ -1,3 +1,4 @@
+import itertools
 import logging
 from json import loads
 
@@ -22,15 +23,23 @@ class DataManager(BaseUIController):
             raise paste.httpexceptions.HTTPUnauthorized("This Galaxy instance is not configured to allow non-admins to view the data manager.")
         message = kwd.get('message', '')
         status = kwd.get('status', 'info')
+
+        def d_key(d_id, d_version):
+            if d_id.endswith(d_version):
+                return d_id[:-len(d_version)]
+            return d_id
+        sorted_data_managers = sorted(trans.app.data_managers.data_managers.values(),
+                                      key=lambda d: d_key(d.id, d.version))
         data_managers = []
-        for data_manager_id, data_manager in sorted(trans.app.data_managers.data_managers.iteritems(),
-                                                    key=lambda data_manager: data_manager[1].name):
-            data_managers.append({'toolUrl': web.url_for(controller='root',
-                                                         tool_id=data_manager.tool.id),
-                                  'id': data_manager_id,
-                                  'name': data_manager.name,
-                                  'version': data_manager.version,
-                                  'description': data_manager.description.lower()})
+        for _, group in itertools.groupby(sorted_data_managers, key=lambda d: d_key(d.id, d.version)):
+            data_managers.append([{'toolUrl': web.url_for(controller='root',
+                                                          tool_id=data_manager.tool.id),
+                                   'id': data_manager.id,
+                                   'name': data_manager.name,
+                                   'version': data_manager.version,
+                                   'description': data_manager.description.lower()}
+                                  for data_manager in sorted(group, key=lambda d: d.version, reverse=True)])
+        data_managers = sorted(data_managers, key=lambda g: g[0]['name'])
         data_tables = []
         managed_table_names = trans.app.data_managers.managed_data_tables.keys()
         for table_name in sorted(trans.app.tool_data_tables.get_tables().keys()):
@@ -72,6 +81,7 @@ class DataManager(BaseUIController):
             })
         jobs.reverse()
         return {'dataManager': {'name': data_manager.name,
+                                'version': data_manager.version,
                                 'description': data_manager.description.lower(),
                                 'toolUrl': web.url_for(controller='root',
                                                        tool_id=data_manager.tool.id)},
@@ -130,6 +140,7 @@ class DataManager(BaseUIController):
                                       job_id=trans.security.encode_id(job.id)),
                 'commandLine': job.command_line,
                 'dataManager': {'id': data_manager_id,
+                                'version': data_manager.version,
                                 'name': data_manager.name,
                                 'description': data_manager.description.lower(),
                                 'toolUrl': web.url_for(controller='root',

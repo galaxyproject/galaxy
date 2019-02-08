@@ -116,14 +116,15 @@ export default {
     },
     computed: {
         breadcrumbItems() {
+            let d = this.dataManager;
             return [
                 {
                     text: "Data Managers",
                     to: "/"
                 },
                 {
-                    text: this.dataManager["name"] + " ( " + this.dataManager["description"] + " )",
-                    href: this.dataManager["toolUrl"],
+                    text: d["name"] + " ( " + d["description"] + " ) v" + d["version"],
+                    href: d["toolUrl"],
                     target: "_blank"
                 },
                 {

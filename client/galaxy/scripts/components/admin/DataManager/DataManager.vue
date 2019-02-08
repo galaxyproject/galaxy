@@ -39,31 +39,61 @@
             <b-card-group columns>
                 <b-card no-body header="<h4>Data Managers</h4>" id="data-managers-card">
                     <b-list-group flush>
-                        <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
-                            <b-button-group vertical>
+                        <b-list-group-item v-for="(dataManagerGroup, index) in dataManagersFiltered" :key="index">
+                            <div>
+                                <h5>
+                                    {{ dataManagerGroup[0]["name"] }}
+                                    <span class="text-info">{{ "v" + dataManagerGroup[0]["version"] }}</span>
+                                    <b-badge v-if="dataManagerGroup.length > 1" variant="primary" pill
+                                        >{{ dataManagerGroup.length }} versions installed</b-badge
+                                    >
+                                </h5>
+                            </div>
+                            <h5 v-if="dataManagerGroup[0]['description']">
+                                <i>{{ dataManagerGroup[0]["description"] }}</i>
+                            </h5>
+                            <b-button-group v-if="dataManagerGroup.length == 1">
                                 <b-button
-                                    :href="dataManager['toolUrl']"
-                                    target="_blank"
                                     variant="primary"
-                                    :id="kebabCase(dataManager['name'])"
+                                    :id="kebabCase(dataManagerGroup[0]['name'])"
+                                    :href="dataManagerGroup[0]['toolUrl']"
+                                    target="_blank"
                                 >
-                                    <div>
-                                        {{ dataManager["name"] }}
-                                        <span class="text-secondary">{{ "v" + dataManager["version"] }}</span>
-                                    </div>
-                                    <div v-if="dataManager['description']">
-                                        <i>{{ dataManager["description"] }}</i>
-                                    </div>
+                                    Tool
                                 </b-button>
                                 <b-button
+                                    :id="kebabCase(dataManagerGroup[0]['name']) + '-jobs'"
                                     :to="{
                                         name: 'DataManagerJobs',
-                                        params: { id: encodeURIComponent(dataManager['id']) }
+                                        params: { id: encodeURIComponent(dataManagerGroup[0]['id']) }
                                     }"
-                                    :id="kebabCase(dataManager['name']) + '-jobs'"
                                 >
                                     Jobs
                                 </b-button>
+                            </b-button-group>
+                            <b-button-group v-else>
+                                <b-dropdown variant="primary" :id="kebabCase(dataManagerGroup[0]['name'])" text="Tool">
+                                    <b-dropdown-item
+                                        v-for="(dataManager, dindex) in dataManagerGroup"
+                                        :key="dindex"
+                                        :href="dataManager['toolUrl']"
+                                        target="_blank"
+                                    >
+                                        {{ "v" + dataManager["version"] }}
+                                    </b-dropdown-item>
+                                </b-dropdown>
+                                <b-dropdown :id="kebabCase(dataManagerGroup[0]['name']) + '-jobs'" text="Jobs">
+                                    <b-dropdown-item
+                                        v-for="(dataManager, dindex) in dataManagerGroup"
+                                        :key="dindex"
+                                        :to="{
+                                            name: 'DataManagerJobs',
+                                            params: { id: encodeURIComponent(dataManager['id']) }
+                                        }"
+                                    >
+                                        {{ "v" + dataManager["version"] }}
+                                    </b-dropdown-item>
+                                </b-dropdown>
                             </b-button-group>
                         </b-list-group-item>
                     </b-list-group>
@@ -121,7 +151,9 @@ export default {
     },
     computed: {
         dataManagersFiltered() {
-            return this.dataManagers.filter(d => d["name"].match(new RegExp(this.filter, "i")));
+            return this.dataManagers.filter(group =>
+                group.reduce((flag, d) => flag || d["name"].match(new RegExp(this.filter, "i")), false)
+            );
         },
         dataTablesFiltered() {
             return this.dataTables.filter(d => d["name"].match(new RegExp(this.filter, "i")));
