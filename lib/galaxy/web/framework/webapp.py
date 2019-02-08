@@ -902,7 +902,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
     def check_csrf_token(self, payload):
         session_csrf_token = payload.get("session_csrf_token")
         if not session_csrf_token:
-            return "No session_csrf_token set, denying request."
+            return "No session token set, denying request."
         elif session_csrf_token != self.session_csrf_token:
             return "Wrong session token found, denying request."
 
