@@ -589,6 +589,21 @@ class ToolsTestCase(api.ApiTestCase):
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
+    def test_rerun_cat1(self, history_id):
+        # Run simple non-upload tool with an input data parameter.
+        new_dataset = self.dataset_populator.new_dataset(history_id, content='Cat1Test')
+        inputs = dict(
+            input1=dataset_to_param(new_dataset),
+        )
+        outputs = self._run_cat1(history_id, inputs=inputs, assert_ok=True)
+        output1 = outputs['outputs'][0]
+        # Rerun the same tool without changing any parameter
+        output2 = self._rerun('cat1', history_id, {}, output1['id'], assert_ok=True)
+        output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
+        self.assertEqual(output2_content.strip(), "Cat1Test")
+
+    @skip_without_tool("cat1")
+    @uses_test_history(require_new=False)
     def test_run_cat1_listified_param(self, history_id):
         # Run simple non-upload tool with an input data parameter.
         new_dataset = self.dataset_populator.new_dataset(history_id, content='Cat1Testlistified')
@@ -1976,6 +1991,25 @@ class ToolsTestCase(api.ApiTestCase):
             return create
         else:
             return create_response
+
+    def _rerun(self, tool_id, history_id, inputs, target_dataset_id, assert_ok=False, wait_for_job=False):
+        payload = self.dataset_populator.run_tool_payload(
+            tool_id=tool_id,
+            inputs=inputs,
+            history_id=history_id,
+        )
+        payload['action'] = 'rerun'
+        payload['target_dataset_id'] = target_dataset_id
+        # At the moment, tool rerun does not return the job info, but a single dataset dict
+        dataset_response = self._post("tools", data=payload)
+        if wait_for_job:
+            self.dataset_populator.wait_for_dataset(history_id, dataset_response.json()['id'])
+        if assert_ok:
+            self._assert_status_code_is(dataset_response, 200)
+            dataset = dataset_response.json()
+            return dataset
+        else:
+            return dataset_response
 
     def __tool_ids(self):
         index = self._get("tools")

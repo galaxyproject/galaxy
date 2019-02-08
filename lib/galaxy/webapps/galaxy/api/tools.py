@@ -613,9 +613,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         decoded_dataset_id = self.decode_id(payload.get('target_dataset_id'))
         original_dataset = self.hda_manager.get_accessible(decoded_dataset_id, user=trans.user)
         original_dataset = self.hda_manager.error_if_uploading(original_dataset)
-        msg = self.hda_manager.data_conversion_status(original_dataset)
-        if msg:
-            return msg
 
         # Set tool parameters--except non-hidden dataset parameters--using combination of
         # job's previous parameters and incoming parameters. Incoming parameters
