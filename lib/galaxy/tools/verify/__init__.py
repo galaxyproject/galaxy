@@ -103,8 +103,9 @@ def verify(
         try:
             compare = attributes.get('compare', 'diff')
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
-                local_fh, temp_name = _bam_to_sam(local_name, temp_name)
-                local_name = local_fh.name
+                if attributes.get("decompress", None):
+                    local_fh, temp_name = _bam_to_sam(local_name, temp_name)
+                    local_name = local_fh.name
             if compare == 'diff':
                 files_diff(local_name, temp_name, attributes=attributes)
             elif compare == 're_match':
