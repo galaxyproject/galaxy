@@ -9,7 +9,7 @@ import requests
 from six.moves.urllib.parse import parse_qs, urlparse
 
 from galaxy.authnz import oidc_authnz
-from galaxy.model import KeycloakAccessToken, User
+from galaxy.model import OIDCAccessToken, User
 
 
 class OIDCAuthnzTestCase(unittest.TestCase):
@@ -136,13 +136,15 @@ class OIDCAuthnzTestCase(unittest.TestCase):
                     raise Exception("More than one result!")
 
         class Query:
-            keycloak_user_id = None
-            keycloak_access_token = None
+            external_user_id = None
+            provider = None
+            oidc_access_token = None
 
-            def filter_by(self, keycloak_user_id=None):
-                self.keycloak_user_id = keycloak_user_id
-                if self.keycloak_access_token:
-                    return QueryResult([self.keycloak_access_token])
+            def filter_by(self, external_user_id=None, provider=None):
+                self.external_user_id = external_user_id
+                self.provider = provider
+                if self.oidc_access_token:
+                    return QueryResult([self.oidc_access_token])
                 else:
                     return QueryResult()
 
@@ -270,11 +272,16 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertTrue(self._fetch_token_called)
         self.assertFalse(self._get_userinfo_called)
 
-    def test_callback_galaxy_user_created_when_no_access_token_exists(self):
+    def test_callback_galaxy_user_created_when_no_oidc_access_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=oidc_authnz.NONCE_COOKIE_NAME)
 
-        self.assertIsNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_user_id).one_or_none())
+        self.assertIsNone(
+            self.trans.sa_session.query(OIDCAccessToken)
+                .filter_by(external_user_id=self.test_user_id,
+                           provider=self.oidc_authnz.config['provider'])
+                .one_or_none()
+        )
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.oidc_authnz.callback(
             state_token="xxx",
@@ -282,26 +289,27 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             login_redirect_url="http://localhost:8000/")
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User and new KeycloakAccessToken")
+        self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User and new OIDCAccessToken")
         added_user = self.trans.sa_session.items[0]
         self.assertIsInstance(added_user, User)
         self.assertEqual(self.test_username, added_user.username)
         self.assertEqual(self.test_email, added_user.email)
         self.assertIsNotNone(added_user.password)
-        # Verify keycloak_access_token_record
-        added_keycloak_access_token = self.trans.sa_session.items[1]
-        self.assertIsInstance(added_keycloak_access_token, KeycloakAccessToken)
-        self.assertIs(user, added_keycloak_access_token.user)
-        self.assertEqual(self.test_access_token, added_keycloak_access_token.access_token)
-        self.assertEqual(self.test_id_token, added_keycloak_access_token.id_token)
-        self.assertEqual(self.test_refresh_token, added_keycloak_access_token.refresh_token)
+        # Verify added_oidc_access_token
+        added_oidc_access_token = self.trans.sa_session.items[1]
+        self.assertIsInstance(added_oidc_access_token, OIDCAccessToken)
+        self.assertIs(user, added_oidc_access_token.user)
+        self.assertEqual(self.test_access_token, added_oidc_access_token.access_token)
+        self.assertEqual(self.test_id_token, added_oidc_access_token.id_token)
+        self.assertEqual(self.test_refresh_token, added_oidc_access_token.refresh_token)
         expected_expiration_time = datetime.now() + timedelta(seconds=self.test_expires_in)
-        expiration_timedelta = expected_expiration_time - added_keycloak_access_token.expiration_time
+        expiration_timedelta = expected_expiration_time - added_oidc_access_token.expiration_time
         self.assertTrue(expiration_timedelta.total_seconds() < 1)
         expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
-        refresh_expiration_timedelta = expected_refresh_expiration_time - added_keycloak_access_token.refresh_expiration_time
+        refresh_expiration_timedelta = expected_refresh_expiration_time - added_oidc_access_token.refresh_expiration_time
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
-        self.assertEqual(self._raw_token, added_keycloak_access_token.raw_token)
+        self.assertEqual(self._raw_token, added_oidc_access_token.raw_token)
+        self.assertEqual(self.oidc_authnz.config['provider'], added_oidc_access_token.provider)
         self.assertTrue(self.trans.sa_session.flush_called)
     
     def test_callback_galaxy_user_created_with_alt_claim_mapping(self):
@@ -329,10 +337,10 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self.test_alt_username, user.username)
         self.assertEqual(self.test_alt_email, user.email)
         self.assertEqual(2, len(self.trans.sa_session.items))
-        added_keycloak_access_token = self.trans.sa_session.items[1]
-        self.assertEqual(self.test_alt_user_id, added_keycloak_access_token.keycloak_user_id)
+        added_oidc_access_token = self.trans.sa_session.items[1]
+        self.assertEqual(self.test_alt_user_id, added_oidc_access_token.external_user_id)
 
-    def test_callback_galaxy_user_not_created_when_keycloak_access_token_exists(self):
+    def test_callback_galaxy_user_not_created_when_oidc_access_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=oidc_authnz.NONCE_COOKIE_NAME)
         old_access_token = "old-access-token"
@@ -341,9 +349,10 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         old_expiration_time = datetime.now() - timedelta(days=1)
         old_refresh_expiration_time = datetime.now() - timedelta(hours=3)
         old_raw_token = "{}"
-        existing_keycloak_access_token = KeycloakAccessToken(
+        existing_oidc_access_token = OIDCAccessToken(
             user=User(email=self.test_email, username=self.test_username),
-            keycloak_user_id=self.test_user_id,
+            external_user_id=self.test_user_id,
+            provider=self.oidc_authnz.config['provider'],
             access_token=old_access_token,
             id_token=old_id_token,
             refresh_token=old_refresh_token,
@@ -352,9 +361,14 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             raw_token=old_raw_token,
         )
 
-        self.trans.sa_session._query.keycloak_access_token = existing_keycloak_access_token
+        self.trans.sa_session._query.oidc_access_token = existing_oidc_access_token
 
-        self.assertIsNotNone(self.trans.sa_session.query(KeycloakAccessToken).filter_by(keycloak_user_id=self.test_user_id).one_or_none())
+        self.assertIsNotNone(
+            self.trans.sa_session.query(OIDCAccessToken)
+                .filter_by(external_user_id=self.test_user_id,
+                           provider=self.oidc_authnz.config['provider'])
+                .one_or_none()
+        ),
         self.assertEqual(0, len(self.trans.sa_session.items))
         login_redirect_url, user = self.oidc_authnz.callback(
             state_token="xxx",
@@ -362,25 +376,28 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             login_redirect_url="http://localhost:8000/")
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(1, len(self.trans.sa_session.items), "Session has updated KeycloakAccessToken")
-        session_keycloak_access_token = self.trans.sa_session.items[0]
-        self.assertIsInstance(session_keycloak_access_token, KeycloakAccessToken)
-        self.assertIs(existing_keycloak_access_token, session_keycloak_access_token, "existing KeycloakAccessToken should be updated")
-        # Verify both that existing keycloak_access_token has the correct values and different values than before
-        self.assertEqual(self.test_access_token, session_keycloak_access_token.access_token)
-        self.assertNotEqual(old_access_token, session_keycloak_access_token.access_token)
-        self.assertEqual(self.test_id_token, session_keycloak_access_token.id_token)
-        self.assertNotEqual(old_id_token, session_keycloak_access_token.id_token)
-        self.assertEqual(self.test_refresh_token, session_keycloak_access_token.refresh_token)
-        self.assertNotEqual(old_refresh_token, session_keycloak_access_token.refresh_token)
+        # Make sure query was called with correct parameters
+        self.assertEqual(self.test_user_id, self.trans.sa_session._query.external_user_id)
+        self.assertEqual(self.oidc_authnz.config['provider'], self.trans.sa_session._query.provider)
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has updated OIDCAccessToken")
+        session_oidc_access_token = self.trans.sa_session.items[0]
+        self.assertIsInstance(session_oidc_access_token, OIDCAccessToken)
+        self.assertIs(existing_oidc_access_token, session_oidc_access_token, "existing OIDCAccessToken should be updated")
+        # Verify both that existing oidc_access_token has the correct values and different values than before
+        self.assertEqual(self.test_access_token, session_oidc_access_token.access_token)
+        self.assertNotEqual(old_access_token, session_oidc_access_token.access_token)
+        self.assertEqual(self.test_id_token, session_oidc_access_token.id_token)
+        self.assertNotEqual(old_id_token, session_oidc_access_token.id_token)
+        self.assertEqual(self.test_refresh_token, session_oidc_access_token.refresh_token)
+        self.assertNotEqual(old_refresh_token, session_oidc_access_token.refresh_token)
         expected_expiration_time = datetime.now() + timedelta(seconds=self.test_expires_in)
-        expiration_timedelta = expected_expiration_time - session_keycloak_access_token.expiration_time
+        expiration_timedelta = expected_expiration_time - session_oidc_access_token.expiration_time
         self.assertTrue(expiration_timedelta.total_seconds() < 1)
-        self.assertNotEqual(old_expiration_time, session_keycloak_access_token.expiration_time)
+        self.assertNotEqual(old_expiration_time, session_oidc_access_token.expiration_time)
         expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
-        refresh_expiration_timedelta = expected_refresh_expiration_time - session_keycloak_access_token.refresh_expiration_time
+        refresh_expiration_timedelta = expected_refresh_expiration_time - session_oidc_access_token.refresh_expiration_time
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
-        self.assertNotEqual(old_refresh_expiration_time, session_keycloak_access_token.refresh_expiration_time)
-        self.assertEqual(self._raw_token, session_keycloak_access_token.raw_token)
-        self.assertNotEqual(old_raw_token, session_keycloak_access_token.raw_token)
+        self.assertNotEqual(old_refresh_expiration_time, session_oidc_access_token.refresh_expiration_time)
+        self.assertEqual(self._raw_token, session_oidc_access_token.raw_token)
+        self.assertNotEqual(old_raw_token, session_oidc_access_token.raw_token)
         self.assertTrue(self.trans.sa_session.flush_called)
