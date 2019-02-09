@@ -13,6 +13,7 @@ from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname
 )
+from galaxy.util import biostar
 from galaxy.web import url_for
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
