@@ -9,6 +9,7 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
+from galaxy import util
 from galaxy.model import OIDCAccessToken, User
 from ..authnz import IdentityProvider
 
@@ -132,7 +133,7 @@ class OIDCAuthnz(IdentityProvider):
     def _get_userinfo(self, oauth2_session):
         userinfo_endpoint = self.config['userinfo_endpoint']
         return oauth2_session.get(userinfo_endpoint).json()
-    
+
     def _get_claim_mappings(self):
         userinfo_claim_mappings = {
             'username': DEFAULT_CLAIM_USERNAME,
@@ -155,7 +156,7 @@ class OIDCAuthnz(IdentityProvider):
         return user
 
     def _hash_nonce(self, nonce):
-        return hashlib.sha256(nonce).hexdigest()
+        return hashlib.sha256(util.smart_str(nonce)).hexdigest()
 
     def _validate_nonce(self, trans, nonce_hash):
         nonce_cookie = trans.get_cookie(name=NONCE_COOKIE_NAME)

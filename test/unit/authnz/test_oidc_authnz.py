@@ -39,7 +39,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         })
         self.setupMocks()
         self.test_state = "abc123"
-        self.test_nonce = "4662892146306485421546981092"
+        self.test_nonce = b"4662892146306485421546981092"
         self.test_nonce_hash = hashlib.sha256(self.test_nonce).hexdigest()
         self.test_code = "test-code"
         self.test_username = "test-username"
@@ -53,7 +53,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.test_user_id = str(uuid.uuid4())
         self.test_alt_user_id = str(uuid.uuid4())
         self.trans.request.url = "https://localhost:8000/authnz/google/oidc/callback?state={test_state}&code={test_code}".format(test_state=self.test_state, test_code=self.test_code)
-    
+
     def setupMocks(self):
         self.mock_fetch_token(self.oidc_authnz)
         self.mock_get_userinfo(self.oidc_authnz)
@@ -61,7 +61,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
 
     @property
     def test_id_token(self):
-        return jwt.encode({'nonce': self.test_nonce_hash}, key=None, algorithm=None)
+        return jwt.encode({'nonce': self.test_nonce_hash}, key=None, algorithm=None).decode()
 
     def mock_create_oauth2_session(self, oidc_authnz):
         orig_create_oauth2_session = oidc_authnz._create_oauth2_session
@@ -311,7 +311,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self._raw_token, added_oidc_access_token.raw_token)
         self.assertEqual(self.oidc_authnz.config['provider'], added_oidc_access_token.provider)
         self.assertTrue(self.trans.sa_session.flush_called)
-    
+
     def test_callback_galaxy_user_created_with_alt_claim_mapping(self):
         self.oidc_authnz = oidc_authnz.OIDCAuthnz('Google', {
             'VERIFY_SSL': True
