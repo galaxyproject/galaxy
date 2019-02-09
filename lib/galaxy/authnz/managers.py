@@ -110,7 +110,7 @@ class AuthnzManager(object):
             rtv['prompt'] = config_xml.find('prompt').text
         return rtv
 
-    def _parse_keycloak_config(self, config_xml):
+    def _parse_generic_oidc_backend_config(self, config_xml):
         rtv = {
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,

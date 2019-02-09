@@ -9,7 +9,7 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy.model import KeycloakAccessToken, User
+from galaxy.model import OIDCAccessToken, User
 from ..authnz import IdentityProvider
 
 log = logging.getLogger(__name__)
@@ -85,28 +85,29 @@ class OIDCAuthnz(IdentityProvider):
         email = userinfo[claim_mappings['email']]
         user_id = userinfo[claim_mappings['id']]
 
-        # Create or update keycloak_access_token record
-        keycloak_access_token = self._get_keycloak_access_token(trans.sa_session, user_id)
-        if keycloak_access_token is None:
+        # Create or update oidc_access_token record
+        oidc_access_token = self._get_oidc_access_token(trans.sa_session, user_id, self.config['provider'])
+        if oidc_access_token is None:
             user = self._create_user(trans.sa_session, username, email)
-            keycloak_access_token = KeycloakAccessToken(user=user,
-                                                        keycloak_user_id=user_id,
-                                                        access_token=access_token,
-                                                        id_token=id_token,
-                                                        refresh_token=refresh_token,
-                                                        expiration_time=expiration_time,
-                                                        refresh_expiration_time=refresh_expiration_time,
-                                                        raw_token=token)
+            oidc_access_token = OIDCAccessToken(user=user,
+                                                external_user_id=user_id,
+                                                provider=self.config['provider'],
+                                                access_token=access_token,
+                                                id_token=id_token,
+                                                refresh_token=refresh_token,
+                                                expiration_time=expiration_time,
+                                                refresh_expiration_time=refresh_expiration_time,
+                                                raw_token=token)
         else:
-            keycloak_access_token.access_token = access_token
-            keycloak_access_token.id_token = id_token
-            keycloak_access_token.refresh_token = refresh_token
-            keycloak_access_token.expiration_time = expiration_time
-            keycloak_access_token.refresh_expiration_time = refresh_expiration_time
-            keycloak_access_token.raw_token = token
-        trans.sa_session.add(keycloak_access_token)
+            oidc_access_token.access_token = access_token
+            oidc_access_token.id_token = id_token
+            oidc_access_token.refresh_token = refresh_token
+            oidc_access_token.expiration_time = expiration_time
+            oidc_access_token.refresh_expiration_time = refresh_expiration_time
+            oidc_access_token.raw_token = token
+        trans.sa_session.add(oidc_access_token)
         trans.sa_session.flush()
-        return login_redirect_url, keycloak_access_token.user
+        return login_redirect_url, oidc_access_token.user
 
     def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
         # TODO: implement?
@@ -142,9 +143,9 @@ class OIDCAuthnz(IdentityProvider):
             userinfo_claim_mappings.update(self.config['userinfo_claim_mappings'])
         return userinfo_claim_mappings
 
-    def _get_keycloak_access_token(self, sa_session, user_id):
-        return sa_session.query(KeycloakAccessToken).filter_by(
-            keycloak_user_id=user_id).one_or_none()
+    def _get_oidc_access_token(self, sa_session, user_id, provider):
+        return sa_session.query(OIDCAccessToken).filter_by(
+            external_user_id=user_id, provider=provider).one_or_none()
 
     def _create_user(self, sa_session, username, email):
         user = User(email=email, username=username)

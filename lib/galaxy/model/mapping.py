@@ -123,17 +123,20 @@ model.UserAuthnzToken.table = Table(
     Column('lifetime', Integer),
     Column('assoc_type', VARCHAR(64)))
 
-model.KeycloakAccessToken.table = Table(
-    "keycloak_access_token", metadata,
+model.OIDCAccessToken.table = Table(
+    "oidc_access_token", metadata,
     Column('id', Integer, primary_key=True),
-    Column('user_id', Integer, ForeignKey("galaxy_user.id"), unique=True, index=True),
-    Column('keycloak_user_id', String(64), unique=True, index=True),
+    Column('user_id', Integer, ForeignKey("galaxy_user.id")),
+    Column('external_user_id', String(64)),
+    Column('provider', String(255)),
     Column('access_token', Text),
     Column('id_token', Text),
     Column('refresh_token', Text),
     Column("expiration_time", DateTime),
     Column("refresh_expiration_time", DateTime),
     Column('raw_token', JSONType, nullable=True),
+    UniqueConstraint("user_id", "external_user_id", "provider"),
+    UniqueConstraint("external_user_id", "provider"),
 )
 
 model.CloudAuthz.table = Table(
@@ -1524,10 +1527,10 @@ mapper(model.UserAuthnzToken, model.UserAuthnzToken.table, properties=dict(
                   backref='social_auth')
 ))
 
-mapper(model.KeycloakAccessToken, model.KeycloakAccessToken.table, properties=dict(
+mapper(model.OIDCAccessToken, model.OIDCAccessToken.table, properties=dict(
     user=relation(model.User,
-                  primaryjoin=(model.KeycloakAccessToken.table.c.user_id == model.User.table.c.id),
-                  backref='keycloak_auth')
+                  primaryjoin=(model.OIDCAccessToken.table.c.user_id == model.User.table.c.id),
+                  backref='oidc_auth')
 ))
 
 mapper(model.CloudAuthz, model.CloudAuthz.table, properties=dict(

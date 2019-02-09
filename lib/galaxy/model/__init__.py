@@ -5099,13 +5099,14 @@ class UserAuthnzToken(UserMixin, RepresentById):
         return instance
 
 
-class KeycloakAccessToken(RepresentById):
+class OIDCAccessToken(RepresentById):
 
-    def __init__(self, user, keycloak_user_id, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time, raw_token):
+    def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time, raw_token):
         self.id = None
         # 'user' is a backref to model.User
         self.user = user
-        self.keycloak_user_id = keycloak_user_id
+        self.external_user_id = external_user_id
+        self.provider = provider
         self.access_token = access_token
         self.id_token = id_token
         self.refresh_token = refresh_token
