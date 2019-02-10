@@ -173,6 +173,9 @@ class MockTrans(object):
         self.request = Bunch(headers={}, body=None)
         self.response = Bunch(headers={}, set_content_type=lambda i : None)
 
+    def check_csrf_token(self, payload):
+        pass
+
     def handle_user_login(self, user):
         pass
 
