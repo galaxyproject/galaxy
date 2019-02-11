@@ -104,7 +104,7 @@ class UsesAnnotations(object):
     def get_item_annotation_obj(self, db_session, user, item):
         """ Returns a user's annotation object for an item. """
         # Get annotation association class.
-        annotation_assoc_class = self._get_annotation_assoc_class(item)
+        annotation_assoc_class = _get_annotation_assoc_class(item)
         if not annotation_assoc_class:
             return None
 
@@ -133,7 +133,7 @@ class UsesAnnotations(object):
         # Get/create annotation association object.
         annotation_assoc = self.get_item_annotation_obj(db_session, user, item)
         if not annotation_assoc:
-            annotation_assoc_class = self._get_annotation_assoc_class(item)
+            annotation_assoc_class = _get_annotation_assoc_class(item)
             if not annotation_assoc_class:
                 return None
             annotation_assoc = annotation_assoc_class()
@@ -158,10 +158,11 @@ class UsesAnnotations(object):
                 return annotation
         return None
 
-    def _get_annotation_assoc_class(self, item):
-        """ Returns an item's item-annotation association class. """
-        class_name = '%sAnnotationAssociation' % item.__class__.__name__
-        return getattr(galaxy.model, class_name, None)
+
+def _get_annotation_assoc_class(item):
+    """ Returns an item's item-annotation association class. """
+    class_name = '%sAnnotationAssociation' % item.__class__.__name__
+    return getattr(galaxy.model, class_name, None)
 
 
 def get_foreign_key(source_class, target_class):
