@@ -13,7 +13,6 @@ from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname
 )
-from galaxy.util import biostar
 from galaxy.web import url_for
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.galaxy.controllers.user import User as BaseUser
@@ -445,11 +444,6 @@ class User(BaseUser):
         trans.handle_user_logout(logout_all=logout_all)
         message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % \
             (url_for('/'))
-        if biostar.biostar_logged_in(trans):
-            biostar_url = biostar.biostar_logout(trans)
-            if biostar_url:
-                # TODO: It would be better if we automatically logged this user out of biostar
-                message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % (biostar_url)
         if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
             trans.response.send_redirect(trans.app.config.remote_user_logout_href)
         else:
