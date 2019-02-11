@@ -8,10 +8,6 @@ import galaxy
 log = logging.getLogger(__name__)
 
 
-class RuntimeException(Exception):
-    pass
-
-
 class UsesItemRatings(object):
     """
         Mixin for getting and setting item ratings.
@@ -28,7 +24,7 @@ class UsesItemRatings(object):
             webapp_model = galaxy.model
         item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
         if not item_rating_assoc_class:
-            raise RuntimeException("Item does not have ratings: %s" % item.__class__.__name__)
+            raise Exception("Item does not have ratings: %s" % item.__class__.__name__)
         item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
         ave_rating = db_session.query(func.avg(item_rating_assoc_class.rating)).filter(item_id_filter).scalar()
         # Convert ave_rating to float; note: if there are no item ratings, ave rating is None.
@@ -65,7 +61,7 @@ class UsesItemRatings(object):
             webapp_model = galaxy.model
         item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
         if not item_rating_assoc_class:
-            raise RuntimeException("Item does not have ratings: %s" % item.__class__.__name__)
+            raise Exception("Item does not have ratings: %s" % item.__class__.__name__)
 
         # Query rating table by user and item id.
         item_id_filter = self._get_item_id_filter_str(item, item_rating_assoc_class)
@@ -89,7 +85,7 @@ class UsesItemRatings(object):
                 break
 
         if not item_fk:
-            raise RuntimeException("Cannot find item id column in item-rating association table: %s, %s" % item_rating_assoc_class.__name__, item_rating_assoc_class.table.name)
+            raise Exception("Cannot find item id column in item-rating association table: %s, %s" % item_rating_assoc_class.__name__, item_rating_assoc_class.table.name)
 
         # TODO: can we provide a better filter than a raw string?
         return "%s=%i" % (item_fk.parent.name, item.id)
@@ -179,5 +175,4 @@ class UsesAnnotations(object):
 __all__ = (
     'UsesAnnotations',
     'UsesItemRatings',
-    'RuntimeException',
 )

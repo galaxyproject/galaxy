@@ -6,7 +6,7 @@ from markupsafe import escape
 from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
-from galaxy.model.item_attrs import RuntimeException, UsesAnnotations, UsesItemRatings
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.util import sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
@@ -511,7 +511,7 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
                     target_fk = fk
                     break
             if not target_fk:
-                raise RuntimeException("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
+                raise Exception("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
             return target_fk
         # Get the columns that connect item's table and item's rating association table.
         item_rating_assoc_class = getattr(trans.model, '%sRatingAssociation' % self.model_class.__name__)
