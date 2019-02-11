@@ -112,9 +112,20 @@ class OIDCAuthnz(IdentityProvider):
         trans.sa_session.flush()
         return login_redirect_url, oidc_access_token.user
 
-    def disconnect(self, provider, trans, disconnect_redirect_url=None, association_id=None):
-        # TODO: implement?
-        pass
+    def disconnect(self, provider, trans, disconnect_redirect_url=None):
+        try:
+            user = trans.user
+            # Find OIDCAccessToken record for this provider (should only be one)
+            provider_tokens = [token for token in user.oidc_auth if token.provider == self.config["provider"]]
+            if len(provider_tokens) == 0:
+                raise Exception("User is not associated with provider {}".format(self.config["provider"]))
+            if len(provider_tokens) > 1:
+                raise Exception("User is associated more than once with provider {}".format(self.config["provider"]))
+            trans.sa_session.delete(provider_tokens[0])
+            trans.sa_session.flush()
+            return True, "", disconnect_redirect_url
+        except Exception as e:
+            return False, "Failed to disconnect provider {}: {}".format(provider, str(e)), None
 
     def _create_oauth2_session(self, state=None):
         client_id = self.config['client_id']
