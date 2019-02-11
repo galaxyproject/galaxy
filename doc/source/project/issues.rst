@@ -114,7 +114,7 @@ particular domain, as well as more organized release notes.
 
 - ``area/admin`` - Changes to admin functionality of the Galaxy webapp
 - ``area/API``
-- ``area/authentication``
+- ``area/auth`` - Authentication and authorization
 - ``area/cleanup`` - General code cleanup
 - ``area/client-build``
 - ``area/compliance``
