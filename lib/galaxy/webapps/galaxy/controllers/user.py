@@ -115,12 +115,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
 
     def __validate_login(self, trans, payload={}, **kwd):
         '''Handle Galaxy Log in'''
+        if not payload:
+            payload = kwd
         message = trans.check_csrf_token(payload)
         if message:
             return self.message_exception(trans, message)
-        login = kwd.get("login", payload.get("login"))
-        password = kwd.get("password", payload.get("password"))
-        redirect = kwd.get("redirect", payload.get("redirect"))
+        login = payload.get("login")
+        password = payload.get("password")
+        redirect = payload.get("redirect")
         status = None
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")

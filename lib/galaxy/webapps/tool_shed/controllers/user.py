@@ -65,9 +65,6 @@ class User(BaseUser):
             message = 'You are already logged in.'
             status = 'info'
         elif kwd.get('login_button', False):
-            csrf_check = self.__check_csrf_token(trans)
-            if csrf_check:
-                return csrf_check
             response = self.__validate_login(trans, **kwd)
             if trans.response.status == 400:
                 trans.response.status = 200
@@ -167,18 +164,6 @@ class User(BaseUser):
                                    registration_warning_message=registration_warning_message,
                                    message=message,
                                    status=status)
-
-    def __check_csrf_token(self, trans):
-        session_csrf_token = trans.request.params.get("session_csrf_token", None)
-        problem = False
-        if not session_csrf_token:
-            log.warning("No session_csrf_token set, denying request.")
-            problem = True
-        elif session_csrf_token != trans.session_csrf_token:
-            log.warning("Wrong session token found, denying request.")
-            problem = True
-        if problem:
-            return trans.show_warn_message("Failed to authorize action.")
 
     def __register(self, trans, email=None, username=None, password=None, subscribe_checked=False, **kwd):
         """Registers a new user."""
