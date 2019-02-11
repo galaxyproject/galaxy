@@ -96,42 +96,18 @@ class UsesAnnotations(object):
                     annotation_obj = annotation
                     break
         else:
-            annotation_obj = self.get_item_annotation_obj(db_session, user, item)
+            annotation_obj = get_item_annotation_obj(db_session, user, item)
         if annotation_obj:
             return galaxy.util.unicodify(annotation_obj.annotation)
         return None
 
     def get_item_annotation_obj(self, db_session, user, item):
-        """ Returns a user's annotation object for an item. """
-        # Get annotation association class.
-        annotation_assoc_class = _get_annotation_assoc_class(item)
-        if not annotation_assoc_class:
-            return None
-
-        # Get annotation association object.
-        annotation_assoc = db_session.query(annotation_assoc_class).filter_by(user=user)
-
-        # TODO: use filtering like that in _get_item_id_filter_str()
-        if item.__class__ == galaxy.model.History:
-            annotation_assoc = annotation_assoc.filter_by(history=item)
-        elif item.__class__ == galaxy.model.HistoryDatasetAssociation:
-            annotation_assoc = annotation_assoc.filter_by(hda=item)
-        elif item.__class__ == galaxy.model.HistoryDatasetCollectionAssociation:
-            annotation_assoc = annotation_assoc.filter_by(history_dataset_collection=item)
-        elif item.__class__ == galaxy.model.StoredWorkflow:
-            annotation_assoc = annotation_assoc.filter_by(stored_workflow=item)
-        elif item.__class__ == galaxy.model.WorkflowStep:
-            annotation_assoc = annotation_assoc.filter_by(workflow_step=item)
-        elif item.__class__ == galaxy.model.Page:
-            annotation_assoc = annotation_assoc.filter_by(page=item)
-        elif item.__class__ == galaxy.model.Visualization:
-            annotation_assoc = annotation_assoc.filter_by(visualization=item)
-        return annotation_assoc.first()
+        return get_item_annotation_obj(db_session, user, item)
 
     def add_item_annotation(self, db_session, user, item, annotation):
         """ Add or update an item's annotation; a user can only have a single annotation for an item. """
         # Get/create annotation association object.
-        annotation_assoc = self.get_item_annotation_obj(db_session, user, item)
+        annotation_assoc = get_item_annotation_obj(db_session, user, item)
         if not annotation_assoc:
             annotation_assoc_class = _get_annotation_assoc_class(item)
             if not annotation_assoc_class:
@@ -144,7 +120,7 @@ class UsesAnnotations(object):
         return annotation_assoc
 
     def delete_item_annotation(self, db_session, user, item):
-        annotation_assoc = self.get_item_annotation_obj(db_session, user, item)
+        annotation_assoc = get_item_annotation_obj(db_session, user, item)
         if annotation_assoc:
             db_session.delete(annotation_assoc)
             db_session.flush()
@@ -157,6 +133,36 @@ class UsesAnnotations(object):
                 annotation = self.add_item_annotation(db_session, target_user, target_item, annotation_str)
                 return annotation
         return None
+
+
+def get_item_annotation_obj(db_session, user, item):
+    """Returns a user's annotation object for an item."""
+
+    # Get annotation association class.
+    annotation_assoc_class = _get_annotation_assoc_class(item)
+    if not annotation_assoc_class:
+        return None
+
+    # Get annotation association object.
+    annotation_assoc = db_session.query(annotation_assoc_class).filter_by(user=user)
+
+    # TODO: use filtering like that in _get_item_id_filter_str()
+    if item.__class__ == galaxy.model.History:
+        annotation_assoc = annotation_assoc.filter_by(history=item)
+    elif item.__class__ == galaxy.model.HistoryDatasetAssociation:
+        annotation_assoc = annotation_assoc.filter_by(hda=item)
+    elif item.__class__ == galaxy.model.HistoryDatasetCollectionAssociation:
+        annotation_assoc = annotation_assoc.filter_by(history_dataset_collection=item)
+    elif item.__class__ == galaxy.model.StoredWorkflow:
+        annotation_assoc = annotation_assoc.filter_by(stored_workflow=item)
+    elif item.__class__ == galaxy.model.WorkflowStep:
+        annotation_assoc = annotation_assoc.filter_by(workflow_step=item)
+    elif item.__class__ == galaxy.model.Page:
+        annotation_assoc = annotation_assoc.filter_by(page=item)
+    elif item.__class__ == galaxy.model.Visualization:
+        annotation_assoc = annotation_assoc.filter_by(visualization=item)
+    return annotation_assoc.first()
+
 
 
 def _get_annotation_assoc_class(item):
