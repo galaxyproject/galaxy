@@ -87,37 +87,13 @@ class UsesAnnotations(object):
     """ Mixin for getting and setting item annotations. """
 
     def get_item_annotation_str(self, db_session, user, item):
-        """ Returns a user's annotation string for an item. """
-        if hasattr(item, 'annotations'):
-            # If we already have an annotations object we use it.
-            annotation_obj = None
-            for annotation in item.annotations:
-                if annotation.user == user:
-                    annotation_obj = annotation
-                    break
-        else:
-            annotation_obj = get_item_annotation_obj(db_session, user, item)
-        if annotation_obj:
-            return galaxy.util.unicodify(annotation_obj.annotation)
-        return None
+        return get_item_annotation_str(db_session, user, item)
 
     def get_item_annotation_obj(self, db_session, user, item):
         return get_item_annotation_obj(db_session, user, item)
 
     def add_item_annotation(self, db_session, user, item, annotation):
-        """ Add or update an item's annotation; a user can only have a single annotation for an item. """
-        # Get/create annotation association object.
-        annotation_assoc = get_item_annotation_obj(db_session, user, item)
-        if not annotation_assoc:
-            annotation_assoc_class = _get_annotation_assoc_class(item)
-            if not annotation_assoc_class:
-                return None
-            annotation_assoc = annotation_assoc_class()
-            item.annotations.append(annotation_assoc)
-            annotation_assoc.user = user
-        # Set annotation.
-        annotation_assoc.annotation = annotation
-        return annotation_assoc
+        return add_item_annotation(db_session, user, item, annotation)
 
     def delete_item_annotation(self, db_session, user, item):
         annotation_assoc = get_item_annotation_obj(db_session, user, item)
@@ -163,6 +139,37 @@ def get_item_annotation_obj(db_session, user, item):
         annotation_assoc = annotation_assoc.filter_by(visualization=item)
     return annotation_assoc.first()
 
+
+def get_item_annotation_str(db_session, user, item):
+    """ Returns a user's annotation string for an item. """
+    if hasattr(item, 'annotations'):
+        # If we already have an annotations object we use it.
+        annotation_obj = None
+        for annotation in item.annotations:
+            if annotation.user == user:
+                annotation_obj = annotation
+                break
+    else:
+        annotation_obj = get_item_annotation_obj(db_session, user, item)
+    if annotation_obj:
+        return galaxy.util.unicodify(annotation_obj.annotation)
+    return None
+
+
+def add_item_annotation(db_session, user, item, annotation):
+    """ Add or update an item's annotation; a user can only have a single annotation for an item. """
+    # Get/create annotation association object.
+    annotation_assoc = get_item_annotation_obj(db_session, user, item)
+    if not annotation_assoc:
+        annotation_assoc_class = _get_annotation_assoc_class(item)
+        if not annotation_assoc_class:
+            return None
+        annotation_assoc = annotation_assoc_class()
+        item.annotations.append(annotation_assoc)
+        annotation_assoc.user = user
+    # Set annotation.
+    annotation_assoc.annotation = annotation
+    return annotation_assoc
 
 
 def _get_annotation_assoc_class(item):
