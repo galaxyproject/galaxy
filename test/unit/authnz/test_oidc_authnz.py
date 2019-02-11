@@ -167,6 +167,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             cookies_args = {}
             request = Request()
             sa_session = Session()
+            user = None
 
             def set_cookie(self, value, name=None, **kwargs):
                 self.cookies[name] = value
@@ -310,6 +311,36 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
         self.assertEqual(self._raw_token, added_oidc_access_token.raw_token)
         self.assertEqual(self.oidc_authnz.config['provider'], added_oidc_access_token.provider)
+        self.assertTrue(self.trans.sa_session.flush_called)
+
+    def test_callback_galaxy_user_not_created_when_user_logged_in_and_no_oidc_access_token_exists(self):
+        """
+        Galaxy user is already logged in and trying to associate external
+        identity with their Galaxy user account. No new user should be created.
+        """
+        self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=oidc_authnz.NONCE_COOKIE_NAME)
+        self.trans.user = User()
+
+        self.assertIsNone(
+            self.trans.sa_session.query(OIDCAccessToken)
+                .filter_by(external_user_id=self.test_user_id,
+                           provider=self.oidc_authnz.config['provider'])
+                .one_or_none()
+        )
+        self.assertEqual(0, len(self.trans.sa_session.items))
+        login_redirect_url, user = self.oidc_authnz.callback(
+            state_token="xxx",
+            authz_code=self.test_code, trans=self.trans,
+            login_redirect_url="http://localhost:8000/")
+        self.assertTrue(self._fetch_token_called)
+        self.assertTrue(self._get_userinfo_called)
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new OIDCAccessToken")
+        # Verify added_oidc_access_token
+        added_oidc_access_token = self.trans.sa_session.items[0]
+        self.assertIsInstance(added_oidc_access_token, OIDCAccessToken)
+        self.assertIs(user, added_oidc_access_token.user)
+        self.assertIs(user, self.trans.user)
         self.assertTrue(self.trans.sa_session.flush_called)
 
     def test_callback_galaxy_user_created_with_alt_claim_mapping(self):
