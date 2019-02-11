@@ -1,4 +1,3 @@
-
 import hashlib
 import unittest
 import uuid
@@ -152,9 +151,13 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             items = []
             flush_called = False
             _query = Query()
+            deleted = []
 
             def add(self, item):
                 self.items.append(item)
+
+            def delete(self, item):
+                self.deleted.append(item)
 
             def flush(self):
                 self.flush_called = True
@@ -432,3 +435,71 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self._raw_token, session_oidc_access_token.raw_token)
         self.assertNotEqual(old_raw_token, session_oidc_access_token.raw_token)
         self.assertTrue(self.trans.sa_session.flush_called)
+
+    def test_disconnect(self):
+        oidc_access_token = OIDCAccessToken(
+            user=User(email=self.test_email, username=self.test_username),
+            external_user_id=self.test_user_id,
+            provider=self.oidc_authnz.config['provider'],
+            access_token=self.test_access_token,
+            id_token=self.test_id_token,
+            refresh_token=self.test_refresh_token,
+            expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
+            refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
+            raw_token="{}",
+        )
+        self.trans.user = oidc_access_token.user
+        self.trans.user.oidc_auth = [oidc_access_token]
+
+        success, message, redirect_uri = self.oidc_authnz.disconnect("Google", self.trans, "/")
+
+        self.assertEqual(1, len(self.trans.sa_session.deleted))
+        deleted_token = self.trans.sa_session.deleted[0]
+        self.assertIs(oidc_access_token, deleted_token)
+        self.assertTrue(self.trans.sa_session.flush_called)
+        self.assertTrue(success)
+        self.assertEqual("", message)
+        self.assertEqual("/", redirect_uri)
+
+    def test_disconnect_when_no_associated_provider(self):
+        self.trans.user = User()
+        success, message, redirect_uri = self.oidc_authnz.disconnect("Google", self.trans, "/")
+        self.assertEqual(0, len(self.trans.sa_session.deleted))
+        self.assertFalse(self.trans.sa_session.flush_called)
+        self.assertFalse(success)
+        self.assertNotEqual("", message)
+        self.assertIsNone(redirect_uri)
+
+    def test_disconnect_when_more_than_one_associated_token_for_provider(self):
+        self.trans.user = User(email=self.test_email, username=self.test_username)
+        oidc_access_token1 = OIDCAccessToken(
+            user=self.trans.user,
+            external_user_id=self.test_user_id + "1",
+            provider=self.oidc_authnz.config['provider'],
+            access_token=self.test_access_token,
+            id_token=self.test_id_token,
+            refresh_token=self.test_refresh_token,
+            expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
+            refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
+            raw_token="{}",
+        )
+        oidc_access_token2 = OIDCAccessToken(
+            user=self.trans.user,
+            external_user_id=self.test_user_id + "2",
+            provider=self.oidc_authnz.config['provider'],
+            access_token=self.test_access_token,
+            id_token=self.test_id_token,
+            refresh_token=self.test_refresh_token,
+            expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
+            refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
+            raw_token="{}",
+        )
+        self.trans.user.oidc_auth = [oidc_access_token1, oidc_access_token2]
+
+        success, message, redirect_uri = self.oidc_authnz.disconnect("Google", self.trans, "/")
+
+        self.assertEqual(0, len(self.trans.sa_session.deleted))
+        self.assertFalse(self.trans.sa_session.flush_called)
+        self.assertFalse(success)
+        self.assertNotEqual("", message)
+        self.assertIsNone(redirect_uri)
