@@ -109,7 +109,7 @@ export default {
         submitOIDCLogin: function(method) {
             let rootUrl = getAppRoot();
             axios
-                .post(`${rootUrl}authnz/Google/login`)
+                .post(`${rootUrl}authnz/google/login`)
                 .then(response => {
                     console.debug(response);
                     if (response.data.redirect_uri) {
