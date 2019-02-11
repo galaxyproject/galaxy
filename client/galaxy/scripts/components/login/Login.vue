@@ -111,7 +111,6 @@ export default {
             axios
                 .post(`${rootUrl}authnz/google/login`)
                 .then(response => {
-                    console.debug(response);
                     if (response.data.redirect_uri) {
                         window.location = encodeURI(response.data.redirect_uri);
                     }
