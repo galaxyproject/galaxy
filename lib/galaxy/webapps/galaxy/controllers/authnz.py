@@ -9,12 +9,12 @@ import logging
 
 from galaxy import web
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
+from galaxy.web.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
 
 
-class OIDC(BaseUIController):
+class OIDC(JSAppLauncher):
 
     @web.expose
     @web.require_login("list third-party identities")
@@ -74,7 +74,10 @@ class OIDC(BaseUIController):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
-        return trans.response.send_redirect(redirect_url)
+        #js_options = self._get_js_options(trans)
+        #js_options['config'].update(self._get_extended_config(trans))
+        #return self.template(trans, 'analysis', options=js_options)
+        return self.client(trans)
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")
