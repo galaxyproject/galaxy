@@ -1428,7 +1428,7 @@ var FolderToolbarView = Backbone.View.extend({
                             <button style="display:none;" title="Create new folder" class="btn btn-secondary toolbtn-create-folder add-library-items add-library-items-folder mr-1" type="button">
                             <span class="fa fa-folder"/> Create Folder</button>
                             <% if(multiple_add_dataset_options) { %>
-                                <div data-toggle="tooltip" title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">
+                                <div title="Add datasets to current folder" class="dropdown add-library-items add-library-items-datasets mr-1" style="display:none;">
                                 <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-file"/> Add Datasets <span class="caret"/>
                                 </button>
@@ -1439,10 +1439,10 @@ var FolderToolbarView = Backbone.View.extend({
                                     <% } %>
                                     <% if(Galaxy.config.library_import_dir !== null || Galaxy.config.allow_library_path_paste) { %>
                                         <h5 class="dropdown-header">Admins only</h5>
-                                            <% if(Galaxy.config.library_import_dir !== null) { %>
-                                                <a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>
-                                            <% } %>
-                                        <% if(Galaxy.config.allow_library_path_paste) { %>",
+                                        <% if(Galaxy.config.library_import_dir !== null) { %>
+                                            <a class="dropdown-item" href="#folders/<%= id %>/import/importdir">from Import Directory</a>
+                                        <% } %>
+                                        <% if(Galaxy.config.allow_library_path_paste) { %>
                                             <a class="dropdown-item" href="#folders/<%= id %>/import/path">from Path</a>
                                         <% } %>
                                     <% } %>
@@ -1462,7 +1462,7 @@ var FolderToolbarView = Backbone.View.extend({
                                     <a href="#" class="toolbtn-collection-import add-to-history-collection dropdown-item">as a Collection</a>
                                 </div>
                             </div>
-                            <div data-toggle="tooltip" title="Download items as archive" class="dropdown dataset-manipulation mr-1" style="display:none; ">
+                            <div title="Download items as archive" class="dropdown dataset-manipulation mr-1" style="display:none; ">
                                 <button type="button" class="primary-button dropdown-toggle" data-toggle="dropdown">
                                     <span class="fa fa-save"/> Download <span class="caret"/>
                                 </button>

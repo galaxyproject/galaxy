@@ -62,7 +62,7 @@ Deprecation Notices
 * The Galaxy Sample Tracking and External Services functionality is now considered deprecated. In the next releases we will remove it completely. Related PRs:`#4526 <https://github.com/galaxyproject/galaxy/pull/4526>`__ `#4872 <https://github.com/galaxyproject/galaxy/pull/4872>`__ .
 * The deprecated admin-only interface for Galaxy Data Libraries is staged to be removed in the next release.
 * Workflows API: When exposing WorkflowInvocationSteps ``state`` will no longer be available.
-* The ``refresh_on_change`` attribute of a ``<param>`` tag in the tool syntax can no longer be set to a value of another parameter. Use boolean instead (e.g.``refresh_on_change="True"``). `Details <https://github.com/galaxyproject/galaxy/issues/4810>`__
+* The ``refresh_on_change`` attribute of a ``<param>`` tag in the tool syntax can no longer be set to a value of another parameter. Use boolean instead (e.g. ``refresh_on_change="True"``). `Details <https://github.com/galaxyproject/galaxy/issues/4810>`__
 * The endpoint ``/api/configuration/toolbox`` is now deprecated and will be removed in the future. All tools are now watched for changes and this feature became obsolete.
 
 
@@ -105,8 +105,8 @@ on the Galaxy server as the user running the Galaxy server process.
 
 The vulnerability only affects Galaxy servers on which Galaxy Interactive
 Environments are enabled (by setting the
-`interactive_environment_plugins_directory`
-option in `galaxy.ini`). Because the vulnerability can be exploited to
+``interactive_environment_plugins_directory``
+option in ``galaxy.ini``). Because the vulnerability can be exploited to
 execute arbitrary code, the impact for affected servers is severe.
 
 Administrators of Galaxy servers where GIEs *are* enabled should update
@@ -130,7 +130,7 @@ distribution and are enabled by default (most tools under the "Get Data"
 section of the tool panel), meaning that its exploitability is fairly high,
 as only one such tool needs to be enabled to be vulnerable, including any
 custom data source tools (any tool that uses
-`tools/data_source/data_source.py`).
+``tools/data_source/data_source.py``).
 What files are readable depends entirely upon what the job's user has
 access to read on the host(s) where jobs run.
 

@@ -27,7 +27,6 @@ docs: ## Generate HTML documentation.
 #   $ ./scripts/common_startup.sh
 #   $ . .venv/bin/activate
 #   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
-# You also need to install pandoc separately.
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 

@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import time
+
 from requests import (
     get,
     post,
@@ -199,6 +201,14 @@ class HistoriesApiTestCase(api.ApiTestCase):
             history_id=imported_history_id,
             hid=1,
         )
+        # The cleanup() method of the __IMPORT_HISTORY__ job (which is executed
+        # after the job has entered its final state):
+        # - creates a new dataset with 'ok' state and adds it to the history
+        # - starts a __SET_METADATA__ job to regerenate the dataset metadata, if
+        #   needed
+        # We need to wait a bit for the creation of the __SET_METADATA__ job.
+        time.sleep(1)
+        self.dataset_populator.wait_for_history_jobs(imported_history_id, assert_ok=True)
         bai_metadata = import_bam_metadata["meta_files"][0]
         assert bai_metadata["file_type"] == "bam_index"
         api_url = bai_metadata["download_url"].split("api/", 1)[1]

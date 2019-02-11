@@ -34,8 +34,8 @@ from galaxy.objectstore import ObjectStorePopulator
 from galaxy.util import safe_makedirs, unicodify
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
-from galaxy.util.handlers import ConfiguresHandlers
 from galaxy.util.xml_macros import load
+from galaxy.web.stack.handlers import ConfiguresHandlers
 from .datasets import (DatasetPath, NullDatasetPathRewriter,
     OutputsToWorkingDirectoryPathRewriter, TaskPathRewriter)
 from .output_checker import check_output, DETECTED_JOB_STATE

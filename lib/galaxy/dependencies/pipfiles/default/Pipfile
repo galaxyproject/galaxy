@@ -20,6 +20,7 @@ pytest-pythonpath = "*"
 recommonmark = "*"
 selenium = "*"
 Sphinx = "<1.7"  # Docs do not build with sphinx 1.7 for some reason, can't find issue.
+sphinx_markdown_tables = "*"
 sphinx_rtd_theme = "*"
 testfixtures = "*"
 twill = {version = "==0.9.1", markers = "python_version < '3'"}
