@@ -78,15 +78,7 @@ class UsesItemRatings(object):
         # Get foreign key in item-rating association table that references item table.
         if webapp_model is None:
             webapp_model = galaxy.model
-        item_fk = None
-        for fk in item_rating_assoc_class.table.foreign_keys:
-            if fk.references(item.table):
-                item_fk = fk
-                break
-
-        if not item_fk:
-            raise Exception("Cannot find item id column in item-rating association table: %s, %s" % item_rating_assoc_class.__name__, item_rating_assoc_class.table.name)
-
+        item_fk = get_foreign_key(item_rating_assoc_class, item)
         # TODO: can we provide a better filter than a raw string?
         return "%s=%i" % (item_fk.parent.name, item.id)
 
@@ -172,7 +164,20 @@ class UsesAnnotations(object):
         return getattr(galaxy.model, class_name, None)
 
 
+def get_foreign_key(source_class, target_class):
+    """ Returns foreign key in source class that references target class. """
+    target_fk = None
+    for fk in source_class.table.foreign_keys:
+        if fk.references(target_class.table):
+            target_fk = fk
+            break
+    if not target_fk:
+        raise Exception("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
+    return target_fk
+
+
 __all__ = (
+    'get_foreign_key',
     'UsesAnnotations',
     'UsesItemRatings',
 )

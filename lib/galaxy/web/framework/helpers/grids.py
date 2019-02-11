@@ -6,7 +6,7 @@ from markupsafe import escape
 from six import string_types, text_type
 from sqlalchemy.sql.expression import and_, false, func, null, or_, true
 
-from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.model.item_attrs import get_foreign_key, UsesAnnotations, UsesItemRatings
 from galaxy.util import restore_text, sanitize_text, unicodify
 from galaxy.util.odict import odict
 from galaxy.web.framework import decorators, url_for
@@ -584,16 +584,6 @@ class CommunityRatingColumn(GridColumn, UsesItemRatings):
                                    item_id=trans.security.encode_id(item.id))
 
     def sort(self, trans, query, ascending, column_name=None):
-        def get_foreign_key(source_class, target_class):
-            """ Returns foreign key in source class that references target class. """
-            target_fk = None
-            for fk in source_class.table.foreign_keys:
-                if fk.references(target_class.table):
-                    target_fk = fk
-                    break
-            if not target_fk:
-                raise Exception("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
-            return target_fk
         # Get the columns that connect item's table and item's rating association table.
         item_rating_assoc_class = getattr(trans.model, '%sRatingAssociation' % self.model_class.__name__)
         foreign_key = get_foreign_key(item_rating_assoc_class, self.model_class)
