@@ -50,8 +50,7 @@ var Collection = Backbone.Collection.extend({
             id: "analysis",
             title: _l("Analyze Data"),
             url: "",
-            tooltip: _l("Analysis home view"),
-            target: "__use_router__"
+            tooltip: _l("Analysis home view")
         });
 
         //
