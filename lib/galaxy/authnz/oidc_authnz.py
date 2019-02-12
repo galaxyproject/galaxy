@@ -45,7 +45,7 @@ class OIDCAuthnz(IdentityProvider):
 
     def authenticate(self, trans):
         base_authorize_url = self.config['authorization_endpoint']
-        oauth2_session = self._create_oauth2_session()
+        oauth2_session = self._create_oauth2_session(scope=('openid', 'email', 'profile'))
         nonce = generate_nonce()
         nonce_hash = self._hash_nonce(nonce)
         extra_params = {"nonce": nonce_hash}
@@ -67,9 +67,9 @@ class OIDCAuthnz(IdentityProvider):
         log.debug("token={}".format(json.dumps(token, indent=True)))
         access_token = token['access_token']
         id_token = token['id_token']
-        refresh_token = token['refresh_token']
+        refresh_token = token['refresh_token'] if 'refresh_token' in token else None
         expiration_time = datetime.now() + timedelta(seconds=token['expires_in'])
-        refresh_expiration_time = datetime.now() + timedelta(seconds=token['refresh_expires_in'])
+        refresh_expiration_time = (datetime.now() + timedelta(seconds=token['refresh_expires_in'])) if 'refresh_expires_in' in token else None
 
         # Get nonce from token['id_token'] and validate. 'nonce' in the
         # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
@@ -127,11 +127,11 @@ class OIDCAuthnz(IdentityProvider):
         except Exception as e:
             return False, "Failed to disconnect provider {}: {}".format(provider, str(e)), None
 
-    def _create_oauth2_session(self, state=None):
+    def _create_oauth2_session(self, state=None, scope=None):
         client_id = self.config['client_id']
         redirect_uri = self.config['redirect_uri']
         return OAuth2Session(client_id,
-                             scope=('openid', 'email', 'profile'),
+                             scope=scope,
                              redirect_uri=redirect_uri,
                              state=state)
 
