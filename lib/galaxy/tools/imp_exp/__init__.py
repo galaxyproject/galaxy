@@ -6,9 +6,9 @@ import shutil
 import tempfile
 from json import dump, dumps, load
 
+from boltons.iterutils import remap
 from sqlalchemy.orm import eagerload_all
 from sqlalchemy.sql import expression
-
 
 from galaxy import model
 from galaxy.exceptions import MalformedContents
@@ -178,17 +178,8 @@ class JobImportHistoryArchiveWrapper:
                 #
                 # Create jobs.
                 #
-
-                # Decode jobs attributes.
-                def as_hda(obj_dct):
-                    """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by
-                        the encoded object. This only works because HDAs are created above. """
-                    if obj_dct.get('__HistoryDatasetAssociation__', False):
-                        return hdas_by_key[obj_dct[object_key]]
-
-                    return obj_dct
                 jobs_attr_file_name = os.path.join(archive_dir, ATTRS_FILENAME_JOBS)
-                jobs_attrs = load(open(jobs_attr_file_name), object_hook=as_hda)
+                jobs_attrs = load(open(jobs_attr_file_name))
 
                 # Create each job.
                 for job_attrs in jobs_attrs:
@@ -215,18 +206,17 @@ class JobImportHistoryArchiveWrapper:
                     self.sa_session.add(imported_job)
                     self.sa_session.flush()
 
-                    class HistoryDatasetAssociationIDEncoder(json.JSONEncoder):
-                        """ Custom JSONEncoder for a HistoryDatasetAssociation that encodes an HDA as its ID. """
+                    def remap_objects(p, k, obj):
+                        if isinstance(obj, dict) and obj.get('__HistoryDatasetAssociation__', False):
+                            return (k, hdas_by_key[obj[object_key]].id)
+                        return (k, obj)
 
-                        def default(self, obj):
-                            """ Encode an HDA, default encoding for everything else. """
-                            if isinstance(obj, model.HistoryDatasetAssociation):
-                                return obj.id
-                            return json.JSONEncoder.default(self, obj)
+                    params = job_attrs['params']
+                    params = remap(params, remap_objects)
 
-                    for name, value in job_attrs['params'].items():
+                    for name, value in params.items():
                         # Transform parameter values when necessary.
-                        imported_job.add_parameter(name, dumps(value, cls=HistoryDatasetAssociationIDEncoder))
+                        imported_job.add_parameter(name, dumps(value))
 
                     # Connect jobs to output datasets.
                     for output_key in job_attrs['output_datasets']:
