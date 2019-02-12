@@ -273,7 +273,7 @@ class GalaxyInteractorApi(object):
     def test_data_download(self, tool_id, filename, mode='file'):
         if self.supports_test_data_download:
             response = self._get("tools/%s/test_data_download?filename=%s" % (tool_id, filename), admin=True)
-            assert response.status_code == 200, "Test file (%s) is missing. Try --update_test_data to generate one." % filename
+            assert response.status_code == 200, "Test file (%s) is missing. If you use planemo try --update_test_data to generate one." % filename
             if mode == 'file':
                 return response.content
             elif mode == 'directory':
@@ -285,7 +285,7 @@ class GalaxyInteractorApi(object):
         else:
             # We can only use local data
             response = self._get("tools/%s/test_data_path?filename=%s" % (tool_id, filename), admin=True)
-            assert response.status_code == 200, "Test file (%s) is missing. Try --update_test_data to generate one." % filename
+            assert response.status_code == 200, "Test file (%s) is missing. If you use planemo try --update_test_data to generate one." % filename
             file_name = response.json()
             if mode == 'file':
                 return open(file_name, mode='rb')
