@@ -12,13 +12,13 @@ from sqlalchemy.sql import expression
 from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.exceptions import ObjectNotFound
-from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.item_attrs import add_item_annotation, get_item_annotation_str
 from galaxy.web.framework.helpers import to_unicode
 
 log = logging.getLogger(__name__)
 
 
-class JobImportHistoryArchiveWrapper(UsesAnnotations):
+class JobImportHistoryArchiveWrapper:
     """
         Class provides support for performing jobs that import a history from
         an archive.
@@ -84,7 +84,7 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
 
                 # Add annotation, tags.
                 if user:
-                    self.add_item_annotation(self.sa_session, user, new_history, history_attrs['annotation'])
+                    add_item_annotation(self.sa_session, user, new_history, history_attrs['annotation'])
                     """
                     TODO: figure out to how add tags to item.
                     for tag, value in history_attrs[ 'tags' ].items():
@@ -161,7 +161,7 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
 
                     # Set tags, annotations.
                     if user:
-                        self.add_item_annotation(self.sa_session, user, hda, dataset_attrs['annotation'])
+                        add_item_annotation(self.sa_session, user, hda, dataset_attrs['annotation'])
                         # TODO: Set tags.
                         """
                         for tag, value in dataset_attrs[ 'tags' ].items():
@@ -269,7 +269,7 @@ class JobImportHistoryArchiveWrapper(UsesAnnotations):
                 raise
 
 
-class JobExportHistoryArchiveWrapper(UsesAnnotations):
+class JobExportHistoryArchiveWrapper:
     """
     Class provides support for performing jobs that export a history to an
     archive.
@@ -379,7 +379,7 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
             "name": to_unicode(history.name),
             "hid_counter": history.hid_counter,
             "genome_build": history.genome_build,
-            "annotation": to_unicode(self.get_item_annotation_str(trans.sa_session, history.user, history)),
+            "annotation": to_unicode(get_item_annotation_str(trans.sa_session, history.user, history)),
             "tags": get_item_tag_dict(history),
             "includes_hidden_datasets": include_hidden,
             "includes_deleted_datasets": include_deleted
@@ -396,7 +396,7 @@ class JobExportHistoryArchiveWrapper(UsesAnnotations):
         datasets_attrs = []
         provenance_attrs = []
         for dataset in datasets:
-            dataset.annotation = self.get_item_annotation_str(trans.sa_session, history.user, dataset)
+            dataset.annotation = get_item_annotation_str(trans.sa_session, history.user, dataset)
             if (not dataset.visible and not include_hidden) or (dataset.deleted and not include_deleted):
                 provenance_attrs.append(dataset)
             else:
