@@ -1,4 +1,5 @@
 import hashlib
+import os
 import unittest
 import uuid
 from datetime import datetime, timedelta
@@ -238,6 +239,32 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         parsed = urlparse(authorization_url)
         param1_value = parse_qs(parsed.query)['param1'][0]
         self.assertEqual(param1_value, 'value1')
+
+    def test_authenticate_sets_env_var_when_localhost_redirect(self):
+        """Verify that OAUTHLIB_INSECURE_TRANSPORT var is set with localhost redirect."""
+        self.oidc_authnz = oidc_authnz.OIDCAuthnz('Google', {
+            'VERIFY_SSL': True
+        }, {
+            'client_id': 'test-client-id',
+            'client_secret': 'test-client-secret',
+            'redirect_uri': 'http://localhost/auth/callback',
+            'well_known_oidc_config_uri': 'https://test-well-known-oidc-config-uri',
+            'userinfo_claim_mappings': {
+                'email': 'alt_email',
+                'username': 'alt_username',
+                'id': 'alt_id'
+            }
+        })
+        self.setupMocks()
+        self.assertIsNone(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', None))
+        self.oidc_authnz.authenticate(self.trans)
+        self.assertEqual("1", os.environ['OAUTHLIB_INSECURE_TRANSPORT'])
+
+    def test_authenticate_does_not_set_env_var_when_https_redirect(self):
+        self.assertTrue(self.oidc_authnz.config['redirect_uri'].startswith("https:"))
+        self.assertIsNone(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', None))
+        self.oidc_authnz.authenticate(self.trans)
+        self.assertIsNone(os.environ.get('OAUTHLIB_INSECURE_TRANSPORT', None))
 
     def test_callback_verify_with_state_cookie(self):
         """Verify that state from cookie is passed to OAuth2Session constructor."""
