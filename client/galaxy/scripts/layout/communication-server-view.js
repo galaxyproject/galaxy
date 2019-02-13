@@ -26,7 +26,7 @@ export var CommunicationServerView = Backbone.View.extend({
         var $el_chat_modal_header = null;
         var $el_chat_modal_body = null;
 
-        var iframe_template = `<iframe class="f-iframe fade in communication-iframe" src="${src}"> </iframe>`;
+        var iframe_template = `<iframe class="h-100 w-100" src="${src}"> </iframe>`;
 
         var header_template =
             '<i class="fa fa-comment" aria-hidden="true" title="Communicate with other users"></i>' +
