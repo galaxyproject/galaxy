@@ -64,7 +64,7 @@ class ToolProvidedMetadata(object):
         return {}
 
     def get_unnamed_outputs(self):
-        """Return unnamed outputs dataset structured introduced for upload 2.0.
+        """Return unnamed outputs dataset introduced for upload 2.0.
 
         Needs more formal specification but see output_collect for how destinations,
         types, elements, etc... are consumed.
