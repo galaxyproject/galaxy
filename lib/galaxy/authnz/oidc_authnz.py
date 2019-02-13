@@ -2,6 +2,7 @@
 import hashlib
 import json
 import logging
+import os
 from datetime import datetime, timedelta
 
 import jwt
@@ -130,6 +131,11 @@ class OIDCAuthnz(IdentityProvider):
     def _create_oauth2_session(self, state=None, scope=None):
         client_id = self.config['client_id']
         redirect_uri = self.config['redirect_uri']
+        if (redirect_uri.startswith('http://localhost')
+                and os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None) != "1"):
+            log.warn("Setting OAUTHLIB_INSECURE_TRANSPORT to '1' to "
+                     "allow plain HTTP (non-SSL) callback")
+            os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = "1"
         return OAuth2Session(client_id,
                              scope=scope,
                              redirect_uri=redirect_uri,
