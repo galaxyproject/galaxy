@@ -22,7 +22,7 @@ class Uploader(object):
         library_id id of the library
         library_name name of the library
         folder_id id of the folder to upload to (None: root_folder)
-        should_link link data sets instead of uploading 
+        should_link link data sets instead of uploading
         non_local set to true iff not running on Galaxy head node
         root_folder path from which files are to be uploaded
                     ie uploaded files are given relative to this path
