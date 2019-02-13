@@ -1058,7 +1058,7 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
-    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
+    return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
 
 
 def strip_control_characters_nested(item):
