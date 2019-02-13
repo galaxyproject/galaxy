@@ -9,11 +9,13 @@ from json import dumps, load
 from sqlalchemy.orm import eagerload_all
 from sqlalchemy.sql import expression
 
+
 from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.item_attrs import add_item_annotation, get_item_annotation_str
 from galaxy.util import unicodify
+from galaxy.version import VERSION_MAJOR
 
 log = logging.getLogger(__name__)
 
@@ -462,9 +464,9 @@ class JobExportHistoryArchiveWrapper:
         #
         # Create and return command line for running tool.
         #
-        options = ""
+        options = "--galaxy-version '%s'" % VERSION_MAJOR
         if jeha.compressed:
-            options = "-G"
+            options += " -G"
         return "%s %s" % (options, temp_output_dir)
 
     def cleanup_after_job(self, db_session):

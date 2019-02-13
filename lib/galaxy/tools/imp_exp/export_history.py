@@ -98,17 +98,24 @@ def main():
     # Parse command line.
     parser = optparse.OptionParser()
     parser.add_option('-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.')
+    parser.add_option('--galaxy-version', dest='galaxy_version', help='Galaxy version that initiated the command.', default=None)
     (options, args) = parser.parse_args()
+    galaxy_version = options.galaxy_version
+    if galaxy_version is None:
+        galaxy_version = "19.01" if len(args) == 4 else "19.05"
+
     gzip = bool(options.gzip)
-    if len(args) == 2:
+    if galaxy_version == "19.01":
+        # This job was created pre 18.0X with old argument style.
+        history_attrs, dataset_attrs, job_attrs, out_file = args
+    else:
+        assert len(args) >= 2
         # We have a 19.0X directory argument instead of individual arguments.
-        temp_directory, out_file = args
+        temp_directory = args[0]
+        out_file = args[1]
         history_attrs = os.path.join(temp_directory, 'history_attrs.txt')
         dataset_attrs = os.path.join(temp_directory, 'datasets_attrs.txt')
         job_attrs = os.path.join(temp_directory, 'jobs_attrs.txt')
-    else:
-        # This job was created pre 18.0X with old argument style.
-        history_attrs, dataset_attrs, job_attrs, out_file = args
 
     # Create archive.
     create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
