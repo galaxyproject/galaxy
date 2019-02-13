@@ -4,7 +4,7 @@ import logging
 import os
 import shutil
 import tempfile
-from json import dumps, load
+from json import dump, dumps, load
 
 from sqlalchemy.orm import eagerload_all
 from sqlalchemy.sql import expression
@@ -357,9 +357,9 @@ class JobExportHistoryArchiveWrapper:
             "tags": history.make_tag_string_list()
         }
         history_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_HISTORY)
-        history_attrs_out = open(history_attrs_filename, 'w')
-        history_attrs_out.write(dumps(history_attrs))
-        history_attrs_out.close()
+        with open(history_attrs_filename, 'w') as history_attrs_out:
+            dump(history_attrs, history_attrs_out)
+
         jeha.history_attrs_filename = history_attrs_filename
 
         # Write datasets' attributes to file.
@@ -377,13 +377,11 @@ class JobExportHistoryArchiveWrapper:
                 included_datasets.append(dataset)
 
         datasets_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_DATASETS)
-        datasets_attrs_out = open(datasets_attrs_filename, 'w')
-        datasets_attrs_out.write(dumps(datasets_attrs, cls=HistoryDatasetAssociationEncoder))
-        datasets_attrs_out.close()
+        with open(datasets_attrs_filename, 'w') as datasets_attrs_out:
+            dump(datasets_attrs, datasets_attrs_out, cls=HistoryDatasetAssociationEncoder)
 
-        provenance_attrs_out = open(datasets_attrs_filename + ".provenance", 'w')
-        provenance_attrs_out.write(dumps(provenance_attrs, cls=HistoryDatasetAssociationEncoder))
-        provenance_attrs_out.close()
+        with open(datasets_attrs_filename + ".provenance", 'w') as provenance_attrs_out:
+            dump(provenance_attrs, provenance_attrs_out, cls=HistoryDatasetAssociationEncoder)
 
         #
         # Write jobs attributes file.
@@ -454,9 +452,8 @@ class JobExportHistoryArchiveWrapper:
             jobs_attrs.append(job_attrs)
 
         jobs_attrs_filename = os.path.join(temp_output_dir, ATTRS_FILENAME_JOBS)
-        jobs_attrs_out = open(jobs_attrs_filename, 'w')
-        jobs_attrs_out.write(dumps(jobs_attrs, cls=HistoryDatasetAssociationEncoder))
-        jobs_attrs_out.close()
+        with open(jobs_attrs_filename, 'w') as jobs_attrs_out:
+            dump(jobs_attrs, jobs_attrs_out, cls=HistoryDatasetAssociationEncoder)
 
         #
         # Create and return command line for running tool.
