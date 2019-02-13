@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 def parse_tool_provided_metadata(meta_file, provided_metadata_style=None, job_wrapper=None):
     """Return a ToolProvidedMetadata object for specified file path.
 
-    If path is absent, return a NullToolProvidedMetadata. If type is None
+    If meta_file is absent, return a NullToolProvidedMetadata. If provided_metadata_style is None
     attempt to guess tool provided metadata type.
     """
     if not os.path.exists(meta_file):
