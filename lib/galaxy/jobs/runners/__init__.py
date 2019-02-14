@@ -458,11 +458,33 @@ class BaseJobRunner(object):
     def _job_io_for_db(self, stream):
         return shrink_stream_by_size(stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
 
-    def _finish_or_resubmit_job(self, job_state, stdout, stderr, job_id=None, external_job_id=None):
+    def _finish_or_resubmit_job(self, job_state, job_stdout, job_stderr, job_id=None, external_job_id=None):
+        job_wrapper = job_state.job_wrapper
         try:
             job = job_state.job_wrapper.get_job()
             exit_code = job_state.read_exit_code()
-            check_output_detected_state = job_state.job_wrapper.check_tool_output(stdout, stderr, exit_code, job)
+
+            tool_stdout_path = os.path.join(job_wrapper.working_directory, "tool_stdout")
+            tool_stderr_path = os.path.join(job_wrapper.working_directory, "tool_stderr")
+            # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
+            # assumption in 20.XX.
+            if os.path.exists(tool_stdout_path):
+                with open(tool_stdout_path, "rb") as stdout_file:
+                    tool_stdout = self._job_io_for_db(stdout_file)
+            else:
+                # Legacy job, were getting a merged output - assume it is mostly tool output.
+                tool_stdout = job_stdout
+                job_stdout = None
+
+            if os.path.exists(tool_stderr_path):
+                with open(tool_stderr_path, "rb") as stdout_file:
+                    tool_stderr = self._job_io_for_db(stdout_file)
+            else:
+                # Legacy job, were getting a merged output - assume it is mostly tool output.
+                tool_stderr = job_stderr
+                job_stderr = None
+
+            check_output_detected_state = job_wrapper.check_tool_output(tool_stdout, tool_stderr, tool_exit_code=exit_code, job=job, job_stdout=job_stdout, job_stderr=job_stderr)
             job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
 
             # clean up the job files
@@ -484,10 +506,10 @@ class BaseJobRunner(object):
                 if job_state.runner_state_handled:
                     return
 
-            job_state.job_wrapper.finish(stdout, stderr, exit_code, check_output_detected_state=check_output_detected_state)
+            job_wrapper.finish(tool_stdout, tool_stderr, exit_code, check_output_detected_state=check_output_detected_state, job_stdout=job_stdout, job_stderr=job_stderr)
         except Exception:
             log.exception("(%s/%s) Job wrapper finish method failed" % (job_id or '', external_job_id or ''))
-            job_state.job_wrapper.fail("Unable to finish job", exception=True)
+            job_wrapper.fail("Unable to finish job", exception=True)
 
 
 class JobState(object):

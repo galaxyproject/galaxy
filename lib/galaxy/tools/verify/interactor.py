@@ -883,7 +883,7 @@ def _verify_outputs(testdef, history, jobs, tool_id, data_list, data_collection_
         "stdout": "Standard output of the job",
         "stderr": "Standard error of the job",
     }
-    # TODO: Only hack the stdio like this for older profkle, for newer tool profiles
+    # TODO: Only hack the stdio like this for older profile, for newer tool profiles
     # add some syntax for asserting job messages maybe - or just drop this because exit
     # code and regex on stdio can be tested directly - so this is really testing Galaxy
     # core handling more than the tool.

@@ -21,7 +21,7 @@ JOBS_ATTRS = '''[{"info": null, "tool_id": "upload1", "update_time": "2016-02-08
 def _run_jihaw_cleanup(history_archive, msg):
     app = MockApp()
     job = model.Job()
-    job.stderr = ''
+    job.tool_stderr = ''
     jiha = model.JobImportHistoryArchive(job=job, archive_dir=history_archive.arc_directory)
     app.model.context.current.add_all([job, jiha])
     app.model.context.flush()
