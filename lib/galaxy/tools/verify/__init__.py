@@ -89,7 +89,7 @@ def verify(
 
         # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
         if keep_outputs_dir:
-            ofn = os.path.join(keep_outputs_dir, os.path.basename(local_name))
+            ofn = os.path.join(keep_outputs_dir, filename)
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
