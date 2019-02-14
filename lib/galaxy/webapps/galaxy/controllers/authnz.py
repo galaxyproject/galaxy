@@ -74,9 +74,6 @@ class OIDC(JSAppLauncher):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
-        #js_options = self._get_js_options(trans)
-        #js_options['config'].update(self._get_extended_config(trans))
-        #return self.template(trans, 'analysis', options=js_options)
         return self.client(trans)
 
     @web.expose
