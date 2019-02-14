@@ -13,7 +13,7 @@ from galaxy import model
 from galaxy.exceptions import MalformedContents
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model.item_attrs import add_item_annotation, get_item_annotation_str
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
 
@@ -307,8 +307,8 @@ class JobExportHistoryArchiveWrapper:
             """ Create dictionary of an item's tags. """
             tags = {}
             for tag in item.tags:
-                tag_user_tname = to_unicode(tag.user_tname)
-                tag_user_value = to_unicode(tag.user_value)
+                tag_user_tname = unicodify(tag.user_tname)
+                tag_user_value = unicodify(tag.user_value)
                 tags[tag_user_tname] = tag_user_value
             return tags
 
@@ -332,8 +332,8 @@ class JobExportHistoryArchiveWrapper:
                         "create_time": obj.create_time.__str__(),
                         "update_time": obj.update_time.__str__(),
                         "hid": obj.hid,
-                        "name": to_unicode(obj.name),
-                        "info": to_unicode(obj.info),
+                        "name": unicodify(obj.name),
+                        "info": unicodify(obj.info),
                         "blurb": obj.blurb,
                         "peek": obj.peek,
                         "extension": obj.extension,
@@ -343,7 +343,7 @@ class JobExportHistoryArchiveWrapper:
                         "deleted": obj.deleted,
                         "visible": obj.visible,
                         "uuid": (lambda uuid: str(uuid) if uuid else None)(obj.dataset.uuid),
-                        "annotation": to_unicode(getattr(obj, 'annotation', '')),
+                        "annotation": unicodify(getattr(obj, 'annotation', '')),
                         "tags": get_item_tag_dict(obj)
                     }
 
@@ -376,10 +376,10 @@ class JobExportHistoryArchiveWrapper:
         history_attrs = {
             "create_time": history.create_time.__str__(),
             "update_time": history.update_time.__str__(),
-            "name": to_unicode(history.name),
+            "name": unicodify(history.name),
             "hid_counter": history.hid_counter,
             "genome_build": history.genome_build,
-            "annotation": to_unicode(get_item_annotation_str(trans.sa_session, history.user, history)),
+            "annotation": unicodify(get_item_annotation_str(trans.sa_session, history.user, history)),
             "tags": get_item_tag_dict(history),
             "includes_hidden_datasets": include_hidden,
             "includes_deleted_datasets": include_deleted
