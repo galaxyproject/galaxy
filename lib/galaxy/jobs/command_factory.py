@@ -15,7 +15,6 @@ from galaxy.jobs.runners.util.job_script import (
 log = getLogger(__name__)
 
 CAPTURE_RETURN_CODE = "return_code=$?"
-YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
 [ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
@@ -252,8 +251,6 @@ class CommandsBuilder(object):
             self.append_command(CAPTURE_RETURN_CODE)
 
     def build(self):
-        if self.return_code_captured:
-            self.append_command(YIELD_CAPTURED_CODE)
         return self.commands
 
 
