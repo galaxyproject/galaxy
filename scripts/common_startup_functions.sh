@@ -81,16 +81,14 @@ conda_activate() {
     echo "Activating Conda environment: $GALAXY_CONDA_ENV"
     # Dash is actually supported by 4.4, but not with `. /path/to/activate`, only `conda activate`, which we
     # can't load unless we know the path to <conda_root>/etc/profile.d/conda.sh
-    if ! command -v source >/dev/null; then
-        echo "WARNING: Your shell is not supported with Conda, attempting to use Conda env"
-        echo "         '$GALAXY_CONDA_ENV' with manual environment setup. To avoid this"
-        echo "         message, use a supported shell or activate the environment before"
-        echo "         starting Galaxy."
+    if [ echo "$0" == "dash"  ]; then
+        echo "WARNING: dash is not supported with Conda, attempting to use Conda env"
+        echo "         '$GALAXY_CONDA_ENV' with manual environment setup."
         PATH="$(get_conda_env_path $GALAXY_CONDA_ENV)/bin:$PATH"
         CONDA_DEFAULT_ENV="$GALAXY_CONDA_ENV"
         CONDA_PREFIX="$(get_conda_root_path)"
     else
-        source activate "$GALAXY_CONDA_ENV"
+        . activate "$GALAXY_CONDA_ENV"
     fi
 }
 

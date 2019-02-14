@@ -123,7 +123,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
                     $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=2.7' 'pip>=9' 'virtualenv>=16'
                     unset __CONDA_INFO
                 fi
-                . activate "$GALAXY_CONDA_ENV"
+                conda_activate
             fi
             virtualenv "$GALAXY_VIRTUAL_ENV"
         else
