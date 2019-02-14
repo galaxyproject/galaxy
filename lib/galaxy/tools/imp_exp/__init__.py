@@ -380,9 +380,7 @@ class JobExportHistoryArchiveWrapper:
             "hid_counter": history.hid_counter,
             "genome_build": history.genome_build,
             "annotation": unicodify(get_item_annotation_str(trans.sa_session, history.user, history)),
-            "tags": get_item_tag_dict(history),
-            "includes_hidden_datasets": include_hidden,
-            "includes_deleted_datasets": include_deleted
+            "tags": get_item_tag_dict(history)
         }
         history_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
         history_attrs_out = open(history_attrs_filename, 'w')
