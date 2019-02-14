@@ -1711,11 +1711,7 @@ class JobWrapper(HasResourceParameters):
     def get_dataset_finish_context(self, job_context, output_dataset_assoc):
         meta = {}
         tool_provided_metadata = self.get_tool_provided_job_metadata()
-        if hasattr(tool_provided_metadata, "get_meta_by_dataset_id"):
-            meta = tool_provided_metadata.get_meta_by_dataset_id(output_dataset_assoc.dataset.dataset.id)
-        elif hasattr(tool_provided_metadata, "get_meta_by_name"):
-            meta = tool_provided_metadata.get_meta_by_name(output_dataset_assoc.name)
-
+        meta = tool_provided_metadata.get_dataset_meta(output_dataset_assoc.name, output_dataset_assoc.dataset.dataset.id)
         if meta:
             return ExpressionContext(meta, job_context)
         return job_context
