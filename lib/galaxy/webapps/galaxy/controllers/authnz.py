@@ -20,7 +20,7 @@ class OIDC(JSAppLauncher):
     @web.require_login("list third-party identities")
     def index(self, trans, **kwargs):
         """
-        GET /api/authnz/
+        GET /authnz/
             returns a list of third-party identities associated with the user.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
