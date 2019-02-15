@@ -57,11 +57,19 @@ class DataManagers(object):
                 tool_path = '.'
             self.tool_path = tool_path
         for data_manager_elem in root.findall('data_manager'):
-            self.load_manager_from_elem(data_manager_elem, tool_path=self.tool_path)
+            if not self.load_manager_from_elem(data_manager_elem, tool_path=self.tool_path):
+                # Wasn't able to load manager, could happen when galaxy is managed by planemo.
+                # Fall back to loading relative to the data_manager_conf.xml file
+                tool_path = os.path.dirname(xml_filename)
+                self.load_manager_from_elem(data_manager_elem, tool_path=tool_path)
 
     def load_manager_from_elem(self, data_manager_elem, tool_path=None, add_manager=True):
         try:
             data_manager = DataManager(self, data_manager_elem, tool_path=tool_path)
+        except IOError as e:
+            if e.errno == errno.ENOENT:
+                # File does not exist
+                return None
         except Exception as e:
             log.error("Error loading data_manager '%s':\n%s" % (e, util.xml_to_string(data_manager_elem)))
             return None
