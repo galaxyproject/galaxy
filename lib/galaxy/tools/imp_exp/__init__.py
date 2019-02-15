@@ -467,14 +467,11 @@ class JobExportHistoryArchiveWrapper:
 
             # -- Get input, output datasets. --
 
-            input_datasets = []
             input_mapping = {}
             for assoc in job.input_datasets:
                 # Optional data inputs will not have a dataset.
                 if assoc.dataset:
-                    input_datasets.append(assoc.dataset.hid)
                     input_mapping[assoc.name] = assoc.dataset.hid
-            job_attrs['input_datasets'] = input_datasets
             job_attrs['input_mapping'] = input_mapping
             output_datasets = [assoc.dataset.hid for assoc in job.output_datasets]
             job_attrs['output_datasets'] = output_datasets
