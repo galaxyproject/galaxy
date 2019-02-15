@@ -1218,8 +1218,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
     <xs:attribute name="decompress" type="PermissiveBoolean">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-				This flag is useful for testing BAM files and gzipped outputs that are non-deterministic despite having deterministic decompressed contents. Local and produced BAM files are converted to SAM files prior to evaluation (for any value of ``compare``). Gzipped files (local and produced) are attempted to be decompressed if needed if ``compare`` is set to ``diff``. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
-
+This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. Gzipped files (local and produced) are attempted to be decompressed if needed if ``compare`` is set to ``diff``. The default value is False. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
