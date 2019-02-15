@@ -90,7 +90,7 @@ class ConditionalDependencies(object):
     def check_psycopg2_binary(self):
         return self.config["database_connection"].startswith("postgres")
 
-    def check_mysql_python(self):
+    def check_mysqlclient(self):
         return self.config["database_connection"].startswith("mysql")
 
     def check_drmaa(self):
