@@ -100,7 +100,6 @@ if command -v git >/dev/null && [ -d .git ]; then
     esac
 else
     GIT_BRANCH=0
-    DEV_WHEELS=1
 fi
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
