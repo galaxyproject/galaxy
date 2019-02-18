@@ -344,6 +344,8 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * query.
  */
 var ToolSearch = Backbone.Model.extend({
+    SEARCH_RESERVED_TERMS_FAVORITES: ['#favs', '#favorites', '#favourites'],
+
     defaults: {
         search_hint_string: "search tools",
         min_chars_for_search: 3,
@@ -365,6 +367,7 @@ var ToolSearch = Backbone.Model.extend({
      * Do the search and update the results.
      */
     do_search: function() {
+        let Galaxy = getGalaxyInstance();
         var query = this.attributes.query;
 
         // If query is too short, do not search.
@@ -379,26 +382,31 @@ var ToolSearch = Backbone.Model.extend({
         if (this.timer) {
             clearTimeout(this.timer);
         }
-        // Start a new ajax-request in X ms
-        $("#search-clear-btn").hide();
-        $("#search-spinner").show();
-        var self = this;
-        this.timer = setTimeout(() => {
-            // log the search to analytics if present
-            if (typeof ga !== "undefined") {
-                ga("send", "pageview", `${getAppRoot()}?q=${q}`);
-            }
-            $.get(
-                self.urlRoot,
-                { q: q },
-                data => {
-                    self.set("results", data);
-                    $("#search-spinner").hide();
-                    $("#search-clear-btn").show();
-                },
-                "json"
-            );
-        }, 400);
+        // Catch reserved words
+        if (this.SEARCH_RESERVED_TERMS_FAVORITES.indexOf(q) >= 0){
+            this.set("results", Galaxy.user.getFavorites().tools);
+        } else{
+            // Start a new ajax-request in X ms
+            $("#search-clear-btn").hide();
+            $("#search-spinner").show();
+            var self = this;
+            this.timer = setTimeout(() => {
+                // log the search to analytics if present
+                if (typeof ga !== "undefined") {
+                    ga("send", "pageview", `${getAppRoot()}?q=${q}`);
+                }
+                $.get(
+                    self.urlRoot,
+                    { q: q },
+                    data => {
+                        self.set("results", data);
+                        $("#search-spinner").hide();
+                        $("#search-clear-btn").show();
+                    },
+                    "json"
+                );
+            }, 400);
+        }
     },
 
     clear_search: function() {

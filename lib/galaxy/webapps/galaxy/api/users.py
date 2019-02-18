@@ -503,6 +503,72 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         trans.log_event('User information added')
         return {'message': 'User information has been saved.'}
 
+    @expose_api
+    def set_favorite(self, trans, id, object_type, payload={}, **kwd):
+        """Add the object to user's favorites
+        PUT /api/users/{id}/favorites/{object_type}
+
+        :param id: the encoded id of the user
+        :type  id: str
+        :param object_type: the object type that users wants to favorite
+        :type  object_type: str
+        :param object_id: the id of an object that users wants to favorite
+        :type  object_id: str
+        """
+        self._validate_favorite_object_type(object_type)
+        user = self._get_user(trans, id)
+        favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
+        if object_type == 'tools':
+            tool_id = payload.get('object_id')
+            tool = self.app.toolbox.get_tool(tool_id)
+            if not tool:
+                raise exceptions.ObjectNotFound("Could not find tool with id '%s'." % tool_id)
+            if not tool.allow_user_access(user):
+                raise exceptions.AuthenticationFailed("Access denied for tool with id '%s'." % tool_id)
+            if 'tools' in favorites:
+                favorite_tools = favorites['tools']
+            else:
+                favorite_tools = []
+            if tool_id not in favorite_tools:
+                favorite_tools.append(tool_id)
+                favorites['tools'] = favorite_tools
+                user.preferences['favorites'] = json.dumps(favorites)
+                trans.sa_session.flush()
+        return favorites
+
+    @expose_api
+    def remove_favorite(self, trans, id, object_type, object_id, payload={}, **kwd):
+        """Remove the object from user's favorites
+        DELETE /api/users/{id}/favorites/{object_type}/{object_id:.*?}
+
+        :param id: the encoded id of the user
+        :type  id: str
+        :param object_type: the object type that users wants to favorite
+        :type  object_type: str
+        :param object_id: the id of an object that users wants to remove from favorites
+        :type  object_id: str
+        """
+        self._validate_favorite_object_type(object_type)
+        user = self._get_user(trans, id)
+        favorites = json.loads(user.preferences['favorites']) if 'favorites' in user.preferences else {}
+        if object_type == 'tools':
+            if 'tools' in favorites:
+                favorite_tools = favorites['tools']
+                if object_id in favorite_tools:
+                    del favorite_tools[favorite_tools.index(object_id)]
+                    favorites['tools'] = favorite_tools
+                    user.preferences['favorites'] = json.dumps(favorites)
+                    trans.sa_session.flush()
+                else:
+                    raise exceptions.ObjectNotFound('Given object is not in the list of favorites')
+        return favorites
+
+    def _validate_favorite_object_type(self, object_type):
+        if object_type in ['tools']:
+            pass
+        else:
+            raise exceptions.ObjectAttributeInvalidException("This type is not supported. Given object_type: %s" % object_type)
+
     def _validate_email(self, email):
         ''' Validate email and username using regex '''
         if email == '' or not isinstance(email, six.string_types):
