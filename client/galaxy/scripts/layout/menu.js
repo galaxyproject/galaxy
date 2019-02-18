@@ -1,6 +1,7 @@
 /** Masthead Collection **/
 import _ from "underscore";
 import $ from "jquery";
+import axios from "axios";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
@@ -11,12 +12,16 @@ import Utils from "utils/utils";
 
 function logoutClick() {
     let galaxy = getGalaxyInstance();
-    let token = galaxy.session_csrf_token || "";
-    if (galaxy.user) {
-        galaxy.user.clearSessionStorage();
-    }
-    let url = `${galaxy.root}user/logout?session_csrf_token=${token}`;
-    window.top.location.href = url;
+    let session_csrf_token = galaxy.session_csrf_token;
+    let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
+    axios
+        .get(url)
+        .then(() => {
+            if (galaxy.user) {
+                galaxy.user.clearSessionStorage();
+            }
+            window.top.location.href = `${galaxy.root}login`;
+        });
 }
 
 var Collection = Backbone.Collection.extend({
@@ -45,8 +50,7 @@ var Collection = Backbone.Collection.extend({
             id: "analysis",
             title: _l("Analyze Data"),
             url: "",
-            tooltip: _l("Analysis home view"),
-            target: "__use_router__"
+            tooltip: _l("Analysis home view")
         });
 
         //

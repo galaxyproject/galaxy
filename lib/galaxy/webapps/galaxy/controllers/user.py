@@ -21,7 +21,6 @@ from galaxy.security.validate_user_input import (
     validate_password,
     validate_publicname
 )
-from galaxy.util import biostar
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web import url_for
 from galaxy.web.base.controller import (
@@ -116,9 +115,14 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
 
     def __validate_login(self, trans, payload={}, **kwd):
         '''Handle Galaxy Log in'''
-        login = kwd.get("login", payload.get("login"))
-        password = kwd.get("password", payload.get("password"))
-        redirect = kwd.get("redirect", payload.get("redirect"))
+        if not payload:
+            payload = kwd
+        message = trans.check_csrf_token(payload)
+        if message:
+            return self.message_exception(trans, message)
+        login = payload.get("login")
+        password = payload.get("password")
+        redirect = payload.get("redirect")
         status = None
         if not login or not password:
             return self.message_exception(trans, "Please specify a username and password.")
@@ -209,52 +213,30 @@ class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
 
     @web.expose
     def logout(self, trans, logout_all=False, **kwd):
-        if trans.webapp.name == 'galaxy':
-            csrf_check = trans.check_csrf_token()
-            if csrf_check:
-                return csrf_check
-
-            if trans.app.config.require_login:
-                refresh_frames = ['masthead', 'history', 'tools']
-            else:
-                refresh_frames = ['masthead', 'history']
-            if trans.user:
-                # Queue a quota recalculation (async) task -- this takes a
-                # while sometimes, so we don't want to block on logout.
-                send_local_control_task(trans.app,
-                                        'recalculate_user_disk_usage',
-                                        {'user_id': trans.security.encode_id(trans.user.id)})
-            # Since logging an event requires a session, we'll log prior to ending the session
-            trans.log_event("User logged out")
-        else:
-            refresh_frames = ['masthead']
+        message = trans.check_csrf_token(kwd)
+        if message:
+            return self.message_exception(trans, message)
+        if trans.user:
+            # Queue a quota recalculation (async) task -- this takes a
+            # while sometimes, so we don't want to block on logout.
+            send_local_control_task(trans.app,
+                                    "recalculate_user_disk_usage",
+                                    {"user_id": trans.security.encode_id(trans.user.id)})
+        # Since logging an event requires a session, we'll log prior to ending the session
+        trans.log_event("User logged out")
         trans.handle_user_logout(logout_all=logout_all)
-        message = 'You have been logged out.<br>To log in again <a target="_top" href="%s">go to the home page</a>.' % \
-            (url_for('/'))
-        if biostar.biostar_logged_in(trans):
-            biostar_url = biostar.biostar_logout(trans)
-            if biostar_url:
-                # TODO: It would be better if we automatically logged this user out of biostar
-                message += '<br>To logout of Biostar, please click <a href="%s" target="_blank">here</a>.' % (biostar_url)
-        if trans.app.config.use_remote_user and trans.app.config.remote_user_logout_href:
-            trans.response.send_redirect(trans.app.config.remote_user_logout_href)
-        else:
-            return trans.fill_template('/user/logout.mako',
-                                       refresh_frames=refresh_frames,
-                                       message=message,
-                                       status='done',
-                                       active_view="user")
 
     @expose_api_anonymous_and_sessionless
     def create(self, trans, payload={}, **kwd):
         if not payload:
             payload = kwd
+        message = trans.check_csrf_token(payload)
+        if message:
+            return self.message_exception(trans, message)
         user, message = self.user_manager.register(trans, **payload)
         if message:
             return self.message_exception(trans, message, sanitize=False)
         elif user and not trans.user_is_admin:
-            # The handle_user_login() method has a call to the history_set_default_permissions() method
-            # (needed when logging in with a history), user needs to have default permissions set before logging in
             trans.handle_user_login(user)
             trans.log_event("User created a new account")
             trans.log_event("User logged in")

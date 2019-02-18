@@ -788,7 +788,8 @@ class ShedTwillTestCase(FunctionalTestCase):
             'username': username,
             'email': email,
             'password': password,
-            'confirm': password
+            'confirm': password,
+            'session_csrf_token': self.galaxy_token()
         }
         self.visit_galaxy_url('/user/create', params=params, allowed_codes=[200, 400])
 
@@ -1049,17 +1050,7 @@ class ShedTwillTestCase(FunctionalTestCase):
             strings_displayed.append('Reviews were saved')
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def galaxy_login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
-        if logout_first:
-            self.galaxy_logout()
-        self.create_user_in_galaxy(email=email, password=password, username=username, redirect=redirect)
-        params = {
-            "login": email,
-            "password": password
-        }
-        self.visit_galaxy_url('/user/login', params=params)
-
-    def galaxy_logout(self):
+    def galaxy_token(self):
         self.visit_galaxy_url("/")
         html = self.last_page()
         token_def_index = html.find("session_csrf_token")
@@ -1067,8 +1058,21 @@ class ShedTwillTestCase(FunctionalTestCase):
         token_quote_start_index = html.find('"', token_sep_index)
         token_quote_end_index = html.find('"', token_quote_start_index + 1)
         token = html[(token_quote_start_index + 1):token_quote_end_index]
-        self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=token))
-        self.check_page_for_string("You have been logged out")
+        return token
+
+    def galaxy_login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
+        if logout_first:
+            self.galaxy_logout()
+        self.create_user_in_galaxy(email=email, password=password, username=username, redirect=redirect)
+        params = {
+            "login": email,
+            "password": password,
+            "session_csrf_token": self.galaxy_token()
+        }
+        self.visit_galaxy_url('/user/login', params=params)
+
+    def galaxy_logout(self):
+        self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=self.galaxy_token()))
         tc.browser.cj.clear()
 
     def generate_complex_dependency_xml(self, filename, filepath, repository_tuples, package, version):
