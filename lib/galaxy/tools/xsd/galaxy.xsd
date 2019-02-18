@@ -1655,6 +1655,21 @@ module.
       </xs:element>
       <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
       </xs:element>
+      <xs:element name="has_zip_member">
+        <xs:complexType>
+          <xs:annotation>
+              <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the zip file specified by the regular expression ``path`` (e.g. ``<has_zip_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_zip_member>``).]]></xs:documentation>
+          </xs:annotation>
+          <xs:sequence>
+            <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+          <xs:attribute name="path" type="xs:string">
+            <xs:annotation>
+              <xs:documentation xml:lang="en">The regular expression specifying the zip archive member.</xs:documentation>
+            </xs:annotation>
+          </xs:attribute>
+        </xs:complexType>
+      </xs:element>
     </xs:choice>
   </xs:group>
   <xs:complexType name="AssertHasH5Keys">
