@@ -13,9 +13,10 @@
         width: inherit;
     }
     .progress {
-        height: 21px;
-        margin: 0px;
-        font-size: 0.75rem;
+        position: absolute;
+        height: inherit;
+        width: inherit;
+        font-size: inherit;
         background-color: $panel-bg-color;
     }
     .progress-bar-danger {
