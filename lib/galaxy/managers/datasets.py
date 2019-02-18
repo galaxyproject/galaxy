@@ -351,7 +351,7 @@ class DatasetAssociationManager(base.ModelManager,
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
         if data.datatype.allow_datatype_change:
             if not __ok_to_edit_metadata(data.id):
-                    raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
+                raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them.')
             else:
                 path = data.dataset.file_name
                 is_binary = check_binary(path)
