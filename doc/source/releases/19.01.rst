@@ -37,8 +37,7 @@ Enhancements
   `Pull Request 6844`_
 * Improvements to tool testing including allowing remote tests and tests without admin API keys.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 7160`_,
-  `Pull Request 7199`_, `Pull Request 7167 <https://github.com/galaxyproject/galaxy/pulls/7167>`__
+  `Pull Request 7160`_, `Pull Request 7167`_, `Pull Request 7199`_
 * Add ISA-TAB datatype
   (thanks to `@phnmnl <https://github.com/phnmnl>`__).
   `Pull Request 5787`_
@@ -770,6 +769,7 @@ Fixes
 .. _Pull Request 7161: https://github.com/galaxyproject/galaxy/pull/7161
 .. _Pull Request 7165: https://github.com/galaxyproject/galaxy/pull/7165
 .. _Pull Request 7166: https://github.com/galaxyproject/galaxy/pull/7166
+.. _Pull Request 7167: https://github.com/galaxyproject/galaxy/pull/7167
 .. _Pull Request 7168: https://github.com/galaxyproject/galaxy/pull/7168
 .. _Pull Request 7169: https://github.com/galaxyproject/galaxy/pull/7169
 .. _Pull Request 7171: https://github.com/galaxyproject/galaxy/pull/7171
