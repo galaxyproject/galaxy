@@ -39,11 +39,13 @@ Highlights
   (`Pull Request 7227`_, `Pull Request 7258`_). The workflow run form now deals with default
   values more correctly (`Pull Request 7157`_).
 
-**Support for Singularity Biocontainers**
-  Galaxy can now be configured to fetch `Biocontainers <https://biocontainers.pro/>`__ automatically
-  for `Singularity <https://singularity.lbl.gov/>`__ enabled job destinations. Previously this
-  would happen automatically for Docker containers but not Singularity containers. Thanks to
-  `@mvdbeek <https://github.com/mvdbeek>`__.
+**Enhanced Support for Singularity**
+  `Singularity <https://singularity.lbl.gov/>`__ container support in Galaxy has been brought to
+  parity with Docker container support. Specifically Galaxy can now be configured to fetch
+  `Biocontainers <https://biocontainers.pro/>`__ automatically for  enabled job destinations
+  and explicitly annotated Docker containers (either in tools or job destinations) can be used
+  with Singularity.
+  Thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
   `Pull Request 7125`_
 
 

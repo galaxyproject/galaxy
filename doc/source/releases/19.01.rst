@@ -11,9 +11,6 @@ Enhancements
 
 .. major_feature
 
-* Use singularity build / exec with biocontainers
-  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
-  `Pull Request 7125`_
 * Adds Aequatus visualisation plugin
   (thanks to `@anilthanki <https://github.com/anilthanki>`__).
   `Pull Request 6484`_
