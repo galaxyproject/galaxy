@@ -4,16 +4,13 @@ https://github.com/merenlab/anvio
 """
 import glob
 import logging
-import sys
-import shutil
 import os
+import sys
 
 from galaxy.datatypes.text import Html
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.util import FILENAME_VALID_CHARS
 
 log = logging.getLogger(__name__)
-verbose = True
 
 
 class AnvioComposite( Html ):
