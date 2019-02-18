@@ -9,8 +9,7 @@ parameters here.
 -->
 
 <template>
-    <galaxy-tags :class="tagContainerClasses"
-        v-model="tags" 
+    <galaxy-tags v-model="tags" 
         :disabled="disabled"
         :autocomplete-items="autocompleteItems"
         @tag-click="clickHandler"
@@ -60,12 +59,6 @@ export default {
     computed: {
         tagService() {
             return buildTagService(this.$props);
-        },
-        tagContainerClasses() {
-            return {
-                "galaxy-tags": true,
-                "disabled": this.disabled
-            }
         }
     },
     subscriptions() {
