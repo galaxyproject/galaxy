@@ -1243,7 +1243,7 @@ $assertions
 
 ### Examples
 
-The following demonstrtes a wide variety of text-based and tabular
+The following demonstrates a wide variety of text-based and tabular
 assertion statements.
 
 ```xml
@@ -1584,8 +1584,8 @@ module.
       <xs:element name="has_text_matching" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
-        </xs:documentation>
-      </xs:annotation>
+          </xs:documentation>
+        </xs:annotation>
       </xs:element>
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
@@ -1651,37 +1651,18 @@ module.
           <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="has_h5_keys" type="AssertHasH5Keys">
+      <xs:element name="has_h5_keys" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels" />``).]]></xs:documentation>
+        </xs:annotation>
       </xs:element>
-      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
+      <xs:element name="has_h5_attribute" type="xs:anyType">
+        <xs:annotation>
+          <xs:documentation xml:lang="en"><![CDATA[Asserts the HDF5 output has the specified ``value`` for an attribute (``key``) (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
+        </xs:annotation>
       </xs:element>
     </xs:choice>
   </xs:group>
-  <xs:complexType name="AssertHasH5Keys">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``keys`` (h5py.File().keys()) (e.g. ``<has_h5_keys keys="bins, chroms,indexes,pixels" />``).]]></xs:documentation>
-    </xs:annotation>
-    <xs:attribute name="keys" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Comma separated list of keys to check for.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
-  <xs:complexType name="AssertHasH5Attribute">
-    <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified key-vaue pair given as ``key`` and ``value`` (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
-    </xs:annotation>
-    <xs:attribute name="key" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Key to check H5 attribute value of.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="value" type="xs:string">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">Expected value of H5 attribute to check.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-  </xs:complexType>
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the
