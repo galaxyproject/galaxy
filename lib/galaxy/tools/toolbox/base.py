@@ -41,7 +41,7 @@ ToolConfRepository = namedtuple(
     'ToolConfRepository',
     (
         'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'repo_path',
-        'tool_dependencies_installed_or_in_error'
+        'tool_dependencies_installed_or_in_error', 'id'
     )
 )
 
@@ -653,8 +653,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             repo_path = concrete_path[:concrete_path.index(pre) + len(pre)]
             repository = ToolConfRepository(
                 tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision,
-                repo_path, None
+                repo_path, None, None
             )
+            self.app.tool_shed_repository_cache.add_local_repository(repository)
         return repository
 
     def _get_tool_shed_repository(self, tool_shed, name, owner, installed_changeset_revision):
