@@ -21,6 +21,9 @@ Enhancements
   `Pull Request 7006`_
 * Upgrade web client building to use `webpack <https://webpack.js.org/>`__ 4
   `Pull Request 6917`_
+* Vue.js rewrite of admin data manager user interface
+  (thanks to `@scrathat <https://github.com/scrathat>`__).
+  `Pull Request 6729`_
 * Implement 'make all datasets private' functionality.
   `Pull Request 6952`_
 * Add datatype sniff button to edit dataset attributes page
@@ -82,11 +85,8 @@ Enhancements
   `Pull Request 6700`_
 * Update to latest galaxy-lib.
   `Pull Request 6709`_
-* Updates to OIDC backends default config.
+* Updates to OIDC backends default configuration.
   `Pull Request 6727`_
-* Vue rewrite of admin data manager (local data) in steps
-  (thanks to `@scrathat <https://github.com/scrathat>`__).
-  `Pull Request 6729`_
 * Small local testing improvements
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6738`_
@@ -144,7 +144,7 @@ Enhancements
   `Pull Request 6869`_
 * Use small button for editable text fields in history annotation
   `Pull Request 6878`_
-* Improve k8s job error handling
+* Improve Kubernetes job error handling
   (thanks to `@ilveroluca <https://github.com/ilveroluca>`__).
   `Pull Request 6886`_
 * Fixes and updates to the Neo4j GIE
@@ -207,7 +207,7 @@ Enhancements
 * Allow rules module override and refactor submodule imports
   (thanks to `@nuwang <https://github.com/nuwang>`__).
   `Pull Request 6993`_
-* Fix external_runner to load json template first
+* Fix JSON loading permission problem with run-as-real-user DRMAA job runner
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 6995`_
 * CLI plugin for `LSF <https://en.wikipedia.org/wiki/Platform_LSF>`__
@@ -234,7 +234,7 @@ Enhancements
   `Pull Request 7031`_
 * Avoid replacing data-referenced input values with default values
   `Pull Request 7043`_
-* Udate error parsing docs
+* Update error parsing docs
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 7049`_
 * Add resubmit handlers on Pulsar connection failures
@@ -263,7 +263,7 @@ Enhancements
   `Pull Request 7115`_
 * Remove unused `__collected_datasets__` from tool hook dict.
   `Pull Request 7123`_
-* Add a vue component to display tool errors in the admin panel.
+* Add a Vue.js component to display tool errors in the admin panel.
   `Pull Request 7124`_
 * Update help text in `filter_from_file` tool.
   (thanks to `@pvanheus <https://github.com/pvanheus>`__).
@@ -292,7 +292,7 @@ Enhancements
   `Pull Request 6899`_
 * Refactor collection mapping workflows toward independence from tools.
   `Pull Request 6911`_
-* Normalized jquery bundle.
+* Normalized jQuery bundle.
   `Pull Request 6970`_
 * Replaced jStorage with store.
   `Pull Request 6994`_
@@ -362,7 +362,7 @@ Fixes
 * Fix typos in ``scripts/bootstrap_history.py``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 6941`_
-* Make Bam index only available for coordinate sorted bam files
+* Make BAM index only available for coordinate sorted BAM files
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 6946`_
 * Use recently introduced overflow utility instead of overwriting card
@@ -447,7 +447,7 @@ Fixes
   `Pull Request 7084`_
 * Replace `credentials` with `authz_id`
   `Pull Request 7088`_
-* boto cfg workaround
+* TravisCI configuration workaround for problems with boto configuration.
   `Pull Request 7092`_
 * Fix ``size_to_bytes`` for some float values
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
@@ -477,11 +477,9 @@ Fixes
   `Pull Request 7148`_
 * Added store library to exported libs in bundleEntries.
   `Pull Request 7149`_
-* Fix dataset discovery for YAML/dictified tools.
-  `Pull Request 7152`_
-* Fix for parsing collection outputs for YAML/dictified tools.
-  `Pull Request 7153`_
-* Lower provider name
+* Fixes for library support of YAML/dictified tools.
+  `Pull Request 7152`_, `Pull Request 7153`_
+* Fix for authnz managers
   (thanks to `@machristie <https://github.com/machristie>`__).
   `Pull Request 7166`_
 * Misc fixes
@@ -515,7 +513,7 @@ Fixes
 * Data library: fix tag_using_filenames not properly converted to bool
   (thanks to `@abretaud <https://github.com/abretaud>`__).
   `Pull Request 7204`_
-* Fix GUI wap to normal event bindings for multipanel drag/drop.
+* Fixes to event handling re-enabling multi-history panel drag and drop functionality.
   `Pull Request 7218`_
 * Fix displaying tool help images on python 3
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
