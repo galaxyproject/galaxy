@@ -7,8 +7,8 @@ import logging
 import os
 import sys
 
-from galaxy.datatypes.text import Html
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)
 
