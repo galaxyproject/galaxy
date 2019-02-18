@@ -1243,7 +1243,7 @@ $assertions
 
 ### Examples
 
-The following demonstrtes a wide variety of text-based and tabular
+The following demonstrates a wide variety of text-based and tabular
 assertion statements.
 
 ```xml
@@ -1260,7 +1260,7 @@ assertion statements.
 </output>
 ```
 
-The following demonstrtes a wide variety of XML assertion statements.
+The following demonstrates a wide variety of XML assertion statements.
 
 ```xml
 <output name="out_file1">
@@ -1278,7 +1278,7 @@ The following demonstrtes a wide variety of XML assertion statements.
 </output>
 ```
 
-The following demonstrtes verifying XML content with XPath-like expressions.
+The following demonstrates verifying XML content with XPath-like expressions.
 
 ```xml
 <output name="out_file1">
@@ -1584,8 +1584,8 @@ module.
       <xs:element name="has_text_matching" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
-        </xs:documentation>
-      </xs:annotation>
+          </xs:documentation>
+        </xs:annotation>
       </xs:element>
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
