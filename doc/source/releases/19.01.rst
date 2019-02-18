@@ -35,7 +35,7 @@ Enhancements
   `Pull Request 6583`_
 * Infrastructure/API Support for composite uploads/downloads.
   `Pull Request 6844`_
-* Improvements to tool testing including aloowing tests without admin API keys.
+* Improvements to tool testing including allowing remote tests and tests without admin API keys.
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 7160`_,
   `Pull Request 7199`_, `Pull Request 7167 <https://github.com/galaxyproject/galaxy/pulls/7167>`__
