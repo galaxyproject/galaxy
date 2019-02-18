@@ -1,5 +1,5 @@
 import logging
-from os.path import splitext
+import os
 
 from galaxy import web
 from galaxy.exceptions import RequestParameterInvalidException
@@ -26,13 +26,17 @@ class ShedToolStatic(BaseUIController):
         """
         guid = '/'.join([shed, 'repos', owner, repo, tool, version])
         tool = trans.app.toolbox.get_tool(guid)
-        repo_path = tool.repository_path
-        path = join(repo_path, image_file)
-        if not safe_contains(repo_path, path):
+        repo_path = tool._repository_dir
+        if 'static/images' not in image_file:
+            path = join(repo_path, 'static', 'images', image_file)
+        else:
+            path = join(repo_path, image_file)
+        if not safe_contains(os.path.abspath(repo_path), os.path.abspath(path)):
             raise RequestParameterInvalidException()
-        ext = splitext(image_file)[-1].lstrip('.')
+        ext = os.path.splitext(image_file)[-1].lstrip('.')
         if ext:
             mime = trans.app.datatypes_registry.get_mimetype_by_extension(ext)
             if mime:
                 trans.response.set_content_type(mime)
-        return open(path, 'rb')
+        if os.path.exists(path):
+            return open(path, 'rb')

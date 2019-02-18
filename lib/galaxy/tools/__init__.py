@@ -422,7 +422,6 @@ class Tool(Dictifiable):
         # tool_data_table_conf.xml entries exist.
         self.input_params = []
         # Attributes of tools installed from Galaxy tool sheds.
-        self._repository_path = None
         self.tool_shed = None
         self.repository_name = None
         self.repository_owner = None
@@ -492,14 +491,6 @@ class Tool(Dictifiable):
                                                             owner=self.repository_owner,
                                                             installed_changeset_revision=self.installed_changeset_revision,
                                                             repository_id=self.repository_id)
-
-    @property
-    def repository_path(self):
-        if self._repository_path is None:
-            repository = self.tool_shed_repository
-            if repository:
-                self._repository_path = repository.repo_path(self.app)
-        return self._repository_path
 
     @property
     def produces_collections_with_unknown_structure(self):
