@@ -338,7 +338,7 @@ class DatasetAssociationManager(base.ModelManager,
         return rval
 
     def detect_datatype(self, trans, dataset_assoc):
-        """Sniff and assign the datatype to a given dataset associsation (ldda or hda)"""
+        """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
         def __ok_to_edit_metadata(dataset_id):
             # prevent modifying metadata when dataset is queued or running as input/output
             # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
