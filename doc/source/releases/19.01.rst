@@ -262,7 +262,7 @@ Enhancements
   `Pull Request 7109`_
 * Add `to_dict()` to ObjectStores.
   `Pull Request 7110`_
-* Enable tagginga and annotation of jobs regardless of state.
+* Enable tagging and annotation of jobs regardless of state.
   `Pull Request 7115`_
 * Remove unused `__collected_datasets__` from tool hook dict.
   `Pull Request 7123`_
