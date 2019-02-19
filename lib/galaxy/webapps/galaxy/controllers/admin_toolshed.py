@@ -182,14 +182,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def browse_tool_sheds(self, trans, **kwd):
-        message = escape(kwd.get('message', ''))
-        return trans.fill_template('/webapps/galaxy/admin/tool_sheds.mako',
-                                   message=message,
-                                   status='error')
-
-    @web.expose
-    @web.require_admin
     def check_for_updates(self, trans, **kwd):
         """Send a request to the relevant tool shed to see if there are any updates."""
         repository_id = kwd.get('id', None)
