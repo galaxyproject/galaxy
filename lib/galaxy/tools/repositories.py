@@ -30,6 +30,7 @@ class ValidationContext(object):
         self.config.tool_data_table_config = os.path.join(self.temporary_path, 'tool_data_table_conf.xml')
         self.config.shed_tool_data_table_config = os.path.join(self.temporary_path, 'shed_tool_data_table_conf.xml')
         self.tool_data_tables = tool_data_tables
+        self.tool_shed_registry = Bunch(tool_sheds={})
         self.datatypes_registry = registry
         self.hgweb_config_manager = hgweb_config_manager
         self.config.len_file_path = os.path.join(self.temporary_path, 'chromlen.txt')

@@ -76,6 +76,7 @@ class MockApp(object):
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
+        self.tool_shed_registry = Bunch(tool_sheds={})
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
