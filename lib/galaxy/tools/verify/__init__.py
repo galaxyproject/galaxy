@@ -107,7 +107,7 @@ def verify(
                     local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                     local_name = local_fh.name
                 except Exception as e:
-                    log.warning( "Conversion BAM to SAM failed for local or temp file. Will compare BAM files")
+                    log.warning( "%s. Will compare BAM files" %e)
             if compare == 'diff':
                 files_diff(local_name, temp_name, attributes=attributes)
             elif compare == 're_match':
@@ -153,11 +153,13 @@ def _bam_to_sam(local_name, temp_name):
     try:
         pysam.view('-h', '-o%s' % temp_local.name, local_name)
     except Exception as e:
-        raise Exception("Converting local (test-data) BAM to SAM failed: %s" % e)
+        msg = "Converting local (test-data) BAM to SAM failed: %s" % e
+        raise Exception(msg)
     try:
         pysam.view('-h', '-o%s' % temp_temp, temp_name)
     except Exception as e:
-        raise Exception("Converting history BAM to SAM failed: %s" % e)
+        msg = "Converting history BAM to SAM failed: %s" % e
+        raise Exception(msg)
     os.remove(temp_name)
     return temp_local, temp_temp
 
