@@ -3,11 +3,11 @@
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If running behind a proxy server and Galaxy is served from a
-    subdirectory, enable the proxy-prefix filter, uncomment the
-    'mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()' line
-    and enable `manage-script-name` in the uwsgi config section.
-:Default: ``proxy-prefix``
+    If not running behind a proxy server, you may want to enable gzip
+    compression to decrease the size of data transferred over the
+    network.  If using a proxy server, please enable gzip compression
+    there instead.
+:Default: ``gzip``
 :Type: str
 
 
@@ -16,11 +16,11 @@
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If proxy-prefix is enabled and you're running more than one Galaxy
-    instance behind one hostname, you will want to set this to the
-    same path as the prefix in the filter above.  This value becomes
-    the "path" attribute set in the cookie so the cookies from each
-    instance will not clobber each other.
+    If you serve Galaxy at a URL prefix and you're running more than
+    one Galaxy instance behind one hostname, you will want to set this
+    to the same path as the prefix in the filter above.  This value
+    becomes the "path" attribute set in the cookie so the cookies from
+    each instance will not clobber each other.
 :Default: ````
 :Type: str
 
