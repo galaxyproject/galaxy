@@ -40,8 +40,8 @@ log = logging.getLogger(__name__)
 ToolConfRepository = namedtuple(
     'ToolConfRepository',
     (
-        'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'repo_path',
-        'tool_dependencies_installed_or_in_error', 'id'
+        'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision',
+        'tool_dependencies_installed_or_in_error',
     )
 )
 
@@ -570,7 +570,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     # In that case recreating the tool will correct the cached version.
                     from_cache = False
             if guid and not from_cache:  # tool was not in cache and is a tool shed tool
-                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path, concrete_path)
+                tool_shed_repository = self.get_tool_repository_from_xml_item(item, path)
                 if tool_shed_repository:
                     if hasattr(tool_shed_repository, 'deleted'):
                         # The shed tool is in the install database
@@ -605,7 +605,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
-    def get_tool_repository_from_xml_item(self, item, path, concrete_path):
+    def get_tool_repository_from_xml_item(self, item, path):
         tool_shed = item.elem.find("tool_shed").text
         repository_name = item.elem.find("repository_name").text
         repository_owner = item.elem.find("repository_owner").text
@@ -613,33 +613,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if installed_changeset_revision_elem is None:
             # Backward compatibility issue - the tag used to be named 'changeset_revision'.
             installed_changeset_revision_elem = item.elem.find("changeset_revision")
-        installed_changeset_revision = installed_changeset_revision_elem.text
+        installed_changeset_revision = changeset_revision = installed_changeset_revision_elem.text
         if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
-            try:
-                tool_shed_path, reduced_path = path.split('/repos/', 1)
-                splitted_path = reduced_path.split('/')
-                assert tool_shed_path == tool_shed
-                assert splitted_path[0] == repository_owner
-                assert splitted_path[1] == repository_name
-                if splitted_path[2] != installed_changeset_revision:
-                    # This can happen if the Tool Shed repository has been
-                    # updated to a new revision and the installed_changeset_revision
-                    # element in shed_tool_conf.xml file has been updated too
-                    log.debug("The installed_changeset_revision for tool %s is %s, using %s instead", path,
-                              installed_changeset_revision, splitted_path[2])
-                    installed_changeset_revision = splitted_path[2]
-            except AssertionError:
-                log.debug("Error while loading tool %s", path)
-                pass
-        repository = self._get_tool_shed_repository(tool_shed=tool_shed,
-                                                    name=repository_name,
-                                                    owner=repository_owner,
-                                                    installed_changeset_revision=installed_changeset_revision)
-        if not repository:
-            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found " \
-                  "in database. Tool will be loaded without install database."
-            log.warning(msg, repository_name, repository_owner)
-            # Pull the changeset_revision from the path, and determine the base repo path.
             pre = '{shed}/repos/{owner}/{name}/'.format(
                 shed=tool_shed,
                 owner=repository_owner,
@@ -649,11 +624,16 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 changeset_revision, name2 = path[path.index(pre) + len(pre):].split('/')[0:2]
             except ValueError as exc:
                 raise Exception("Cannot determine changeset revision from path '%s': %s" % (path, exc))
-            pre = '/'.join([pre.rstrip('/'), changeset_revision, name2])
-            repo_path = concrete_path[:concrete_path.index(pre) + len(pre)]
+        repository = self._get_tool_shed_repository(tool_shed=tool_shed,
+                                                    name=repository_name,
+                                                    owner=repository_owner,
+                                                    installed_changeset_revision=installed_changeset_revision)
+        if not repository:
+            msg = "Attempted to load tool shed tool, but the repository with name '%s' from owner '%s' was not found " \
+                  "in database. Tool will be loaded without install database."
+            log.warning(msg, repository_name, repository_owner)
             repository = ToolConfRepository(
-                tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision,
-                repo_path, None, None
+                tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision, None,
             )
             self.app.tool_shed_repository_cache.add_local_repository(repository)
         return repository
