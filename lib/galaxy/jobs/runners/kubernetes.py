@@ -263,14 +263,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         k8s_container = {
             "name": self.__get_k8s_container_name(ajs.job_wrapper),
             "image": self._find_container(ajs.job_wrapper).container_id,
-            "env": [{
-                "name": "GALAXY_VIRTUAL_ENV",
-                "value": "None"
-            }, {
-                "name": "GALAXY_LIB",
-                "value": "None"
-            }
-            ],
             # this form of command overrides the entrypoint and allows multi command
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
