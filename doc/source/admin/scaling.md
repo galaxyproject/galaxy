@@ -537,7 +537,7 @@ Stopping](#starting-and-stopping) section.
 #### Dynamically defined handlers
 
 In order to define handlers dynamically, you must be using one of the new "database locking" handler assignment methods
-as explained in [Job Handler Assignment Methods][#job-handler-assignment-methods], such as in the following
+as explained in [Job Handler Assignment Methods](#job-handler-assignment-methods), such as in the following
 `job_conf.xml`:
 
 ```xml
