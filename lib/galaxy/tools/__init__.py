@@ -1208,9 +1208,9 @@ class Tool(Dictifiable):
         help_text = tool_source.parse_help()
         if help_text is not None:
             try:
-                if self.tool_shed_repository and help_text.find('.. image:: ') >= 0:
+                if help_text.find('.. image:: ') >= 0 and (self.tool_shed_repository or self.repository_id):
                     help_text = tool_shed.util.shed_util_common.set_image_paths(
-                        self.app, help_text, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
+                        self.app, help_text, encoded_repository_id=self.repository_id, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
                     )
             except Exception:
                 log.exception("Exception in parse_help, so images may not be properly displayed")
