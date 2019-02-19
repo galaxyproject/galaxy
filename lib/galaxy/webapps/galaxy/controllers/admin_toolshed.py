@@ -264,15 +264,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def find_workflows_in_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'find_workflows'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
     def generate_workflow_image(self, trans, workflow_name, repository_id=None):
         """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
         return workflow_util.generate_workflow_image(trans, workflow_name, repository_metadata_id=None, repository_id=repository_id)
