@@ -264,15 +264,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def find_tools_in_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'find_tools'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
     def find_workflows_in_tool_shed(self, trans, **kwd):
         tool_shed_url = kwd.get('tool_shed_url', '')
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
