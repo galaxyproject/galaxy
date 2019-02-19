@@ -161,15 +161,6 @@ class AdminToolshed(AdminGalaxy):
 
     @web.expose
     @web.require_admin
-    def browse_tool_shed(self, trans, **kwd):
-        tool_shed_url = kwd.get('tool_shed_url', '')
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, tool_shed_url)
-        params = dict(galaxy_url=web.url_for('/', qualified=True))
-        url = util.build_url(tool_shed_url, pathspec=['repository', 'browse_valid_categories'], params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
-    @web.require_admin
     def browse_toolsheds(self, trans, **kwd):
         app = {
             'jscript': "adminToolshed"
