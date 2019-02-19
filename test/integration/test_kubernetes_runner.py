@@ -10,7 +10,7 @@ import time
 
 from base import integration_util  # noqa: I100,I202
 from base.populators import skip_without_tool
-from .test_dockerized_jobs import MulledJobTestCases  # noqa: I201
+from .test_containerized_jobs import MulledJobTestCases  # noqa: I201
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase  # noqa: I201
 
 PERSISTENT_VOLUME_NAME = 'pv-galaxy-integration-test'
