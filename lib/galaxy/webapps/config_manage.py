@@ -112,12 +112,12 @@ UWSGI_OPTIONS = OrderedDict([
         'type': 'str',
     }),
     ('#mount', {
-        'desc': """Mount the web application (e.g. Galaxy, Reports, etc.) at the given prefix. Cannot be used together with 'module:' above.""",
+        'desc': """Mount the web application (e.g. Galaxy, Reports, etc.) at the given URL prefix. Cannot be used together with 'module:' above.""",
         'default': '/galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()',
         'type': 'str',
     }),
     ('manage-script-name', {
-        'desc': """Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-points. Set this to true if a prefix is used.""",
+        'desc': """Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-points. Set this to true if a URL prefix is used.""",
         'default': False,
         'type': 'bool',
     }),
