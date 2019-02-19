@@ -47,8 +47,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         runner_param_specs = dict(
             k8s_config_path=dict(map=str, default=os.environ.get('KUBECONFIG', None)),
             k8s_use_service_account=dict(map=bool, default=False),
-            k8s_persistent_volume_claim_name=dict(map=str),
-            k8s_persistent_volume_claim_mount_path=dict(map=str),
+            k8s_persistent_volume_claims=dict(map=str),
             k8s_namespace=dict(map=str, default="default"),
             k8s_galaxy_instance_id=dict(map=str),
             k8s_timeout_seconds_job_deletion=dict(map=int, valid=lambda x: int > 0, default=30),
@@ -73,7 +72,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             self._pykube_api = HTTPClient(KubeConfig.from_service_account())
         else:
             self._pykube_api = HTTPClient(KubeConfig.from_file(self.runner_params["k8s_config_path"]))
-        self._galaxy_vol_name = "pvc-galaxy"  # TODO this needs to be read from params!!
 
         self._galaxy_instance_id = self.__get_galaxy_instance_id()
 
@@ -83,6 +81,14 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
         self._init_monitor_thread()
         self._init_worker_threads()
+        self.setup_volumes()
+
+    def setup_volumes(self):
+        volume_claims = dict(volume.split(":") for volume in self.runner_params['k8s_persistent_volume_claims'].split(','))
+        mountable_volumes = [{'name': claim_name, 'persistentVolumeClaim': {'claimName': claim_name}} for claim_name in volume_claims]
+        self.runner_params['k8s_mountable_volumes'] = mountable_volumes
+        volume_mounts = [{'name': claim_name, 'mountPath': mount_path} for claim_name, mount_path in volume_claims.items()]
+        self.runner_params['k8s_volume_mounts'] = volume_mounts
 
     def queue_job(self, job_wrapper):
         """Create job script and submit it to Kubernetes cluster"""
@@ -224,7 +230,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 "labels": {"app": self.__produce_unique_k8s_job_name(ajs.job_wrapper.get_id_tag())}
             },
             "spec": {
-                "volumes": self.__get_k8s_mountable_volumes(ajs.job_wrapper),
+                "volumes": self.runner_params['k8s_mountable_volumes'],
                 "restartPolicy": self.__get_k8s_restart_policy(ajs.job_wrapper),
                 "containers": self.__get_k8s_containers(ajs)
             }
@@ -245,20 +251,6 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __get_k8s_restart_policy(self, job_wrapper):
         """The default Kubernetes restart policy for Jobs"""
         return "Never"
-
-    def __get_k8s_mountable_volumes(self, job_wrapper):
-        """Provides the required volumes that the containers in the pod should be able to mount. This should be using
-        the new persistent volumes and persistent volumes claim objects. This requires that both a PersistentVolume and
-        a PersistentVolumeClaim are created before starting galaxy (starting a k8s job).
-        """
-        # TODO on this initial version we only support a single volume to be mounted.
-        k8s_mountable_volume = {
-            "name": self._galaxy_vol_name,
-            "persistentVolumeClaim": {
-                "claimName": self.runner_params['k8s_persistent_volume_claim_name']
-            }
-        }
-        return [k8s_mountable_volume]
 
     def __get_k8s_containers(self, ajs):
         """Fills in all required for setting up the docker containers to be used, including setting a pull policy if
@@ -285,10 +277,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "command": [ajs.job_wrapper.shell],
             "args": ["-c", ajs.job_file],
             "workingDir": ajs.job_wrapper.working_directory,
-            "volumeMounts": [{
-                "mountPath": self.runner_params['k8s_persistent_volume_claim_mount_path'],
-                "name": self._galaxy_vol_name
-            }]
+            "volumeMounts": self.runner_params['k8s_volume_mounts']
         }
 
         resources = self.__get_resources(ajs.job_wrapper)

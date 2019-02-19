@@ -16,6 +16,7 @@ from .test_job_environments import BaseJobEnvironmentIntegrationTestCase  # noqa
 PERSISTENT_VOLUME_NAME = 'pv-galaxy-integration-test'
 PERSISTENT_VOLUME_CLAIM_NAME = 'galaxy-pvc-integration-test'
 Config = collections.namedtuple('ConfigTuple', 'path')
+TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'tools'))
 
 
 class KubeSetupConfigTuple(Config):
@@ -27,7 +28,7 @@ class KubeSetupConfigTuple(Config):
         subprocess.check_call(['kubectl', 'delete', '-f', self.path])
 
 
-def persistent_volume(path):
+def persistent_volume(path, persistent_volume_name):
     volume_yaml = string.Template("""
 kind: PersistentVolume
 apiVersion: v1
@@ -53,13 +54,13 @@ spec:
           values:
             - 'i-do-not-exist'
     """).substitute(path=path,
-                    persistent_volume_name=PERSISTENT_VOLUME_NAME)
+                    persistent_volume_name=persistent_volume_name)
     with tempfile.NamedTemporaryFile(suffix="_persistent_volume.yml", mode="w", delete=False) as volume:
         volume.write(volume_yaml)
     return KubeSetupConfigTuple(path=volume.name)
 
 
-def persistent_volume_claim():
+def persistent_volume_claim(persistent_volume_name, persistent_volum_claim_name):
     peristent_volume_claim_yaml = string.Template("""
 kind: PersistentVolumeClaim
 apiVersion: v1
@@ -73,20 +74,19 @@ spec:
     requests:
       storage: 2Gi
   storageClassName: manual
-""").substitute(persistent_volume_name=PERSISTENT_VOLUME_NAME,
-                persistent_volume_claim_name=PERSISTENT_VOLUME_CLAIM_NAME)
+""").substitute(persistent_volume_name=persistent_volume_name,
+                persistent_volume_claim_name=persistent_volum_claim_name)
     with tempfile.NamedTemporaryFile(suffix="_persistent_volume_claim.yml", mode="w", delete=False) as volume_claim:
         volume_claim.write(peristent_volume_claim_yaml)
     return KubeSetupConfigTuple(path=volume_claim.name)
 
 
-def job_config(path):
+def job_config(jobs_directory):
     job_conf_template = string.Template("""<job_conf>
     <plugins>
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner" workers="2"/>
         <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
-            <param id="k8s_persistent_volume_claim_name">galaxy-pvc-integration-test</param>
-            <param id="k8s_persistent_volume_claim_mount_path">$path</param>
+            <param id="k8s_persistent_volume_claims">jobs-directory-claim:$jobs_directory,tool-directory-claim:$tool_directory</param>
             <param id="k8s_config_path">$k8s_config_path</param>
             <param id="k8s_galaxy_instance_id">gx-short-id</param>
         </plugin>
@@ -107,7 +107,10 @@ def job_config(path):
     </tools>
 </job_conf>
 """)
-    job_conf_str = job_conf_template.substitute(path=path, k8s_config_path=os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config'))
+    job_conf_str = job_conf_template.substitute(jobs_directory=jobs_directory,
+                                                tool_directory=TOOL_DIR,
+                                                k8s_config_path=os.environ.get('GALAXY_TEST_KUBE_CONFIG_PATH', '~/.kube/config'),
+                                                )
     with tempfile.NamedTemporaryFile(suffix="_kubernetes_integration_job_conf", mode="w", delete=False) as job_conf:
         job_conf.write(job_conf_str)
     return Config(job_conf.name)
@@ -123,17 +126,28 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
     @classmethod
     def setUpClass(cls):
         cls.jobs_directory = tempfile.mkdtemp()
-        cls.persistent_volume = persistent_volume(path=cls.jobs_directory)
-        cls.persistent_volume.setup()
-        cls.persistent_volume_claim = persistent_volume_claim()
-        cls.persistent_volume_claim.setup()
-        cls.job_config = job_config(path=cls.jobs_directory)
+        cls.volumes = [
+            [cls.jobs_directory, 'jobs-directory-volume', 'jobs-directory-claim'],
+            [TOOL_DIR, 'tool-directory-volume', 'tool-directory-claim'],
+        ]
+        cls.persistent_volumes = []
+        cls.persistent_volume_claims = []
+        for (path, volume, claim) in cls.volumes:
+            volume_obj = persistent_volume(path, volume)
+            volume_obj.setup()
+            cls.persistent_volumes.append(volume_obj)
+            claim_obj = persistent_volume_claim(volume, claim)
+            claim_obj.setup()
+            cls.persistent_volume_claims.append(claim_obj)
+        cls.job_config = job_config(jobs_directory=cls.jobs_directory)
         super(BaseKubernetesIntegrationTestCase, cls).setUpClass()
 
     @classmethod
     def tearDownClass(cls):
-        cls.persistent_volume_claim.teardown()
-        cls.persistent_volume.teardown()
+        for claim in cls.persistent_volume_claims:
+            claim.teardown()
+        for volume in cls.persistent_volumes:
+            volume.teardown()
         super(BaseKubernetesIntegrationTestCase, cls).tearDownClass()
 
     @classmethod
