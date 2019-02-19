@@ -613,17 +613,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if installed_changeset_revision_elem is None:
             # Backward compatibility issue - the tag used to be named 'changeset_revision'.
             installed_changeset_revision_elem = item.elem.find("changeset_revision")
-        installed_changeset_revision = changeset_revision = installed_changeset_revision_elem.text
-        if "/repos/" in path:  # The only time "/repos/" should not be in path is during testing!
-            pre = '{shed}/repos/{owner}/{name}/'.format(
-                shed=tool_shed,
-                owner=repository_owner,
-                name=repository_name
-            )
-            try:
-                changeset_revision, name2 = path[path.index(pre) + len(pre):].split('/')[0:2]
-            except ValueError as exc:
-                raise Exception("Cannot determine changeset revision from path '%s': %s" % (path, exc))
+        installed_changeset_revision = installed_changeset_revision_elem.text
         repository = self._get_tool_shed_repository(tool_shed=tool_shed,
                                                     name=repository_name,
                                                     owner=repository_owner,
@@ -633,7 +623,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                   "in database. Tool will be loaded without install database."
             log.warning(msg, repository_name, repository_owner)
             repository = ToolConfRepository(
-                tool_shed, repository_name, repository_owner, installed_changeset_revision, changeset_revision, None,
+                tool_shed, repository_name, repository_owner, installed_changeset_revision, installed_changeset_revision, None,
             )
             self.app.tool_shed_repository_cache.add_local_repository(repository)
         return repository
