@@ -228,6 +228,18 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         assert details['stdout'] == 'The bool is not true\n', details
         assert details['stderr'] == 'Fatal error: Exit code 127 (Failing exit code.)\nThe bool is very not true\n'
 
+    @skip_without_tool('Count1')
+    def test_python_dep(self):
+        with self.dataset_populator.test_history() as history_id:
+            hda1 = self.dataset_populator.new_dataset(history_id, content="1\t2\t3", file_type='tabular', wait=True)
+            self.dataset_populator.run_tool(
+                'Count1',
+                {'input': {"src": "hda", "id": hda1["id"]},
+                 'column': [1]},
+                self.history_id,
+                assert_ok=True,
+            )
+
     @skip_without_tool('galaxy_slots_and_memory')
     def test_slots_and_memory(self):
         self.dataset_populator.run_tool(
