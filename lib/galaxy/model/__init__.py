@@ -5099,7 +5099,7 @@ class UserAuthnzToken(UserMixin, RepresentById):
         return instance
 
 
-class OIDCAccessToken(RepresentById):
+class OIDCToken(RepresentById):
 
     def __init__(self, user, external_user_id, provider, access_token, id_token, refresh_token, expiration_time, refresh_expiration_time, raw_token):
         self.id = None

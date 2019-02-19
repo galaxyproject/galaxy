@@ -9,7 +9,7 @@ import requests
 from six.moves.urllib.parse import parse_qs, urlparse
 
 from galaxy.authnz import oidc_authnz
-from galaxy.model import OIDCAccessToken, User
+from galaxy.model import OIDCToken, User
 
 
 class OIDCAuthnzTestCase(unittest.TestCase):
@@ -138,13 +138,13 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         class Query:
             external_user_id = None
             provider = None
-            oidc_access_token = None
+            oidc_token = None
 
             def filter_by(self, external_user_id=None, provider=None):
                 self.external_user_id = external_user_id
                 self.provider = provider
-                if self.oidc_access_token:
-                    return QueryResult([self.oidc_access_token])
+                if self.oidc_token:
+                    return QueryResult([self.oidc_token])
                 else:
                     return QueryResult()
 
@@ -303,12 +303,12 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertTrue(self._fetch_token_called)
         self.assertFalse(self._get_userinfo_called)
 
-    def test_callback_galaxy_user_created_when_no_oidc_access_token_exists(self):
+    def test_callback_galaxy_user_created_when_no_oidc_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=oidc_authnz.NONCE_COOKIE_NAME)
 
         self.assertIsNone(
-            self.trans.sa_session.query(OIDCAccessToken)
+            self.trans.sa_session.query(OIDCToken)
                 .filter_by(external_user_id=self.test_user_id,
                            provider=self.oidc_authnz.config['provider'])
                 .one_or_none()
@@ -320,30 +320,30 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             login_redirect_url="http://localhost:8000/")
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User and new OIDCAccessToken")
+        self.assertEqual(2, len(self.trans.sa_session.items), "Session has new User and new OIDCToken")
         added_user = self.trans.sa_session.items[0]
         self.assertIsInstance(added_user, User)
         self.assertEqual(self.test_username, added_user.username)
         self.assertEqual(self.test_email, added_user.email)
         self.assertIsNotNone(added_user.password)
-        # Verify added_oidc_access_token
-        added_oidc_access_token = self.trans.sa_session.items[1]
-        self.assertIsInstance(added_oidc_access_token, OIDCAccessToken)
-        self.assertIs(user, added_oidc_access_token.user)
-        self.assertEqual(self.test_access_token, added_oidc_access_token.access_token)
-        self.assertEqual(self.test_id_token, added_oidc_access_token.id_token)
-        self.assertEqual(self.test_refresh_token, added_oidc_access_token.refresh_token)
+        # Verify added_oidc_token
+        added_oidc_token = self.trans.sa_session.items[1]
+        self.assertIsInstance(added_oidc_token, OIDCToken)
+        self.assertIs(user, added_oidc_token.user)
+        self.assertEqual(self.test_access_token, added_oidc_token.access_token)
+        self.assertEqual(self.test_id_token, added_oidc_token.id_token)
+        self.assertEqual(self.test_refresh_token, added_oidc_token.refresh_token)
         expected_expiration_time = datetime.now() + timedelta(seconds=self.test_expires_in)
-        expiration_timedelta = expected_expiration_time - added_oidc_access_token.expiration_time
+        expiration_timedelta = expected_expiration_time - added_oidc_token.expiration_time
         self.assertTrue(expiration_timedelta.total_seconds() < 1)
         expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
-        refresh_expiration_timedelta = expected_refresh_expiration_time - added_oidc_access_token.refresh_expiration_time
+        refresh_expiration_timedelta = expected_refresh_expiration_time - added_oidc_token.refresh_expiration_time
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
-        self.assertEqual(self._raw_token, added_oidc_access_token.raw_token)
-        self.assertEqual(self.oidc_authnz.config['provider'], added_oidc_access_token.provider)
+        self.assertEqual(self._raw_token, added_oidc_token.raw_token)
+        self.assertEqual(self.oidc_authnz.config['provider'], added_oidc_token.provider)
         self.assertTrue(self.trans.sa_session.flush_called)
 
-    def test_callback_galaxy_user_not_created_when_user_logged_in_and_no_oidc_access_token_exists(self):
+    def test_callback_galaxy_user_not_created_when_user_logged_in_and_no_oidc_token_exists(self):
         """
         Galaxy user is already logged in and trying to associate external
         identity with their Galaxy user account. No new user should be created.
@@ -353,7 +353,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.trans.user = User()
 
         self.assertIsNone(
-            self.trans.sa_session.query(OIDCAccessToken)
+            self.trans.sa_session.query(OIDCToken)
                 .filter_by(external_user_id=self.test_user_id,
                            provider=self.oidc_authnz.config['provider'])
                 .one_or_none()
@@ -365,11 +365,11 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             login_redirect_url="http://localhost:8000/")
         self.assertTrue(self._fetch_token_called)
         self.assertTrue(self._get_userinfo_called)
-        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new OIDCAccessToken")
-        # Verify added_oidc_access_token
-        added_oidc_access_token = self.trans.sa_session.items[0]
-        self.assertIsInstance(added_oidc_access_token, OIDCAccessToken)
-        self.assertIs(user, added_oidc_access_token.user)
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has new OIDCToken")
+        # Verify added_oidc_token
+        added_oidc_token = self.trans.sa_session.items[0]
+        self.assertIsInstance(added_oidc_token, OIDCToken)
+        self.assertIs(user, added_oidc_token.user)
         self.assertIs(user, self.trans.user)
         self.assertTrue(self.trans.sa_session.flush_called)
 
@@ -398,10 +398,10 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         self.assertEqual(self.test_alt_username, user.username)
         self.assertEqual(self.test_alt_email, user.email)
         self.assertEqual(2, len(self.trans.sa_session.items))
-        added_oidc_access_token = self.trans.sa_session.items[1]
-        self.assertEqual(self.test_alt_user_id, added_oidc_access_token.external_user_id)
+        added_oidc_token = self.trans.sa_session.items[1]
+        self.assertEqual(self.test_alt_user_id, added_oidc_token.external_user_id)
 
-    def test_callback_galaxy_user_not_created_when_oidc_access_token_exists(self):
+    def test_callback_galaxy_user_not_created_when_oidc_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=oidc_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=oidc_authnz.NONCE_COOKIE_NAME)
         old_access_token = "old-access-token"
@@ -410,7 +410,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         old_expiration_time = datetime.now() - timedelta(days=1)
         old_refresh_expiration_time = datetime.now() - timedelta(hours=3)
         old_raw_token = "{}"
-        existing_oidc_access_token = OIDCAccessToken(
+        existing_oidc_token = OIDCToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
             provider=self.oidc_authnz.config['provider'],
@@ -422,10 +422,10 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             raw_token=old_raw_token,
         )
 
-        self.trans.sa_session._query.oidc_access_token = existing_oidc_access_token
+        self.trans.sa_session._query.oidc_token = existing_oidc_token
 
         self.assertIsNotNone(
-            self.trans.sa_session.query(OIDCAccessToken)
+            self.trans.sa_session.query(OIDCToken)
                 .filter_by(external_user_id=self.test_user_id,
                            provider=self.oidc_authnz.config['provider'])
                 .one_or_none()
@@ -440,31 +440,31 @@ class OIDCAuthnzTestCase(unittest.TestCase):
         # Make sure query was called with correct parameters
         self.assertEqual(self.test_user_id, self.trans.sa_session._query.external_user_id)
         self.assertEqual(self.oidc_authnz.config['provider'], self.trans.sa_session._query.provider)
-        self.assertEqual(1, len(self.trans.sa_session.items), "Session has updated OIDCAccessToken")
-        session_oidc_access_token = self.trans.sa_session.items[0]
-        self.assertIsInstance(session_oidc_access_token, OIDCAccessToken)
-        self.assertIs(existing_oidc_access_token, session_oidc_access_token, "existing OIDCAccessToken should be updated")
-        # Verify both that existing oidc_access_token has the correct values and different values than before
-        self.assertEqual(self.test_access_token, session_oidc_access_token.access_token)
-        self.assertNotEqual(old_access_token, session_oidc_access_token.access_token)
-        self.assertEqual(self.test_id_token, session_oidc_access_token.id_token)
-        self.assertNotEqual(old_id_token, session_oidc_access_token.id_token)
-        self.assertEqual(self.test_refresh_token, session_oidc_access_token.refresh_token)
-        self.assertNotEqual(old_refresh_token, session_oidc_access_token.refresh_token)
+        self.assertEqual(1, len(self.trans.sa_session.items), "Session has updated OIDCToken")
+        session_oidc_token = self.trans.sa_session.items[0]
+        self.assertIsInstance(session_oidc_token, OIDCToken)
+        self.assertIs(existing_oidc_token, session_oidc_token, "existing OIDCToken should be updated")
+        # Verify both that existing OIDCToken has the correct values and different values than before
+        self.assertEqual(self.test_access_token, session_oidc_token.access_token)
+        self.assertNotEqual(old_access_token, session_oidc_token.access_token)
+        self.assertEqual(self.test_id_token, session_oidc_token.id_token)
+        self.assertNotEqual(old_id_token, session_oidc_token.id_token)
+        self.assertEqual(self.test_refresh_token, session_oidc_token.refresh_token)
+        self.assertNotEqual(old_refresh_token, session_oidc_token.refresh_token)
         expected_expiration_time = datetime.now() + timedelta(seconds=self.test_expires_in)
-        expiration_timedelta = expected_expiration_time - session_oidc_access_token.expiration_time
+        expiration_timedelta = expected_expiration_time - session_oidc_token.expiration_time
         self.assertTrue(expiration_timedelta.total_seconds() < 1)
-        self.assertNotEqual(old_expiration_time, session_oidc_access_token.expiration_time)
+        self.assertNotEqual(old_expiration_time, session_oidc_token.expiration_time)
         expected_refresh_expiration_time = datetime.now() + timedelta(seconds=self.test_refresh_expires_in)
-        refresh_expiration_timedelta = expected_refresh_expiration_time - session_oidc_access_token.refresh_expiration_time
+        refresh_expiration_timedelta = expected_refresh_expiration_time - session_oidc_token.refresh_expiration_time
         self.assertTrue(refresh_expiration_timedelta.total_seconds() < 1)
-        self.assertNotEqual(old_refresh_expiration_time, session_oidc_access_token.refresh_expiration_time)
-        self.assertEqual(self._raw_token, session_oidc_access_token.raw_token)
-        self.assertNotEqual(old_raw_token, session_oidc_access_token.raw_token)
+        self.assertNotEqual(old_refresh_expiration_time, session_oidc_token.refresh_expiration_time)
+        self.assertEqual(self._raw_token, session_oidc_token.raw_token)
+        self.assertNotEqual(old_raw_token, session_oidc_token.raw_token)
         self.assertTrue(self.trans.sa_session.flush_called)
 
     def test_disconnect(self):
-        oidc_access_token = OIDCAccessToken(
+        oidc_token = OIDCToken(
             user=User(email=self.test_email, username=self.test_username),
             external_user_id=self.test_user_id,
             provider=self.oidc_authnz.config['provider'],
@@ -475,14 +475,14 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
             raw_token="{}",
         )
-        self.trans.user = oidc_access_token.user
-        self.trans.user.oidc_auth = [oidc_access_token]
+        self.trans.user = oidc_token.user
+        self.trans.user.oidc_auth = [oidc_token]
 
         success, message, redirect_uri = self.oidc_authnz.disconnect("Google", self.trans, "/")
 
         self.assertEqual(1, len(self.trans.sa_session.deleted))
         deleted_token = self.trans.sa_session.deleted[0]
-        self.assertIs(oidc_access_token, deleted_token)
+        self.assertIs(oidc_token, deleted_token)
         self.assertTrue(self.trans.sa_session.flush_called)
         self.assertTrue(success)
         self.assertEqual("", message)
@@ -499,7 +499,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
 
     def test_disconnect_when_more_than_one_associated_token_for_provider(self):
         self.trans.user = User(email=self.test_email, username=self.test_username)
-        oidc_access_token1 = OIDCAccessToken(
+        oidc_token1 = OIDCToken(
             user=self.trans.user,
             external_user_id=self.test_user_id + "1",
             provider=self.oidc_authnz.config['provider'],
@@ -510,7 +510,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
             raw_token="{}",
         )
-        oidc_access_token2 = OIDCAccessToken(
+        oidc_token2 = OIDCToken(
             user=self.trans.user,
             external_user_id=self.test_user_id + "2",
             provider=self.oidc_authnz.config['provider'],
@@ -521,7 +521,7 @@ class OIDCAuthnzTestCase(unittest.TestCase):
             refresh_expiration_time=datetime.now() + timedelta(seconds=self.test_refresh_expires_in),
             raw_token="{}",
         )
-        self.trans.user.oidc_auth = [oidc_access_token1, oidc_access_token2]
+        self.trans.user.oidc_auth = [oidc_token1, oidc_token2]
 
         success, message, redirect_uri = self.oidc_authnz.disconnect("Google", self.trans, "/")
 
