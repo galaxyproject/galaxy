@@ -2078,13 +2078,6 @@ mapping:
 
           Please read the GDPR section under the special topics area of the
           admin documentation.
-      enable_beta_ts_api_install:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Enable the new interface for installing tools from Tool Shed
-          via the API. Admin menu will list both if enabled.
 
       enable_beta_containers_interface:
         type: bool

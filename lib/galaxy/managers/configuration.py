@@ -53,8 +53,6 @@ class ConfigSerializer(base.ModelSerializer):
             'biostar_url'                       : _defaults_to(''),
             'biostar_url_redirect'              : lambda *a, **c: self.url_for(controller='biostar', action='biostar_redirect', qualified=True),
             'default_locale'                    : _defaults_to(self.app.config.default_locale),
-
-            'enable_beta_ts_api_install'        : _defaults_to(False),
             'enable_communication_server'       : _defaults_to(False),
             'communication_server_port'         : _defaults_to(None),
             'communication_server_host'         : _defaults_to(None),

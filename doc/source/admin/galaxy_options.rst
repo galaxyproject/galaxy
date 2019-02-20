@@ -2784,17 +2784,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``enable_beta_ts_api_install``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Enable the new interface for installing tools from Tool Shed via
-    the API. Admin menu will list both if enabled.
-:Default: ``true``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_beta_containers_interface``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

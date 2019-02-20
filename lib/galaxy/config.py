@@ -366,10 +366,6 @@ class Configuration(object):
         self.local_task_queue_workers = int(kwargs.get("local_task_queue_workers", 2))
         self.tool_submission_burst_threads = int(kwargs.get('tool_submission_burst_threads', '1'))
         self.tool_submission_burst_at = int(kwargs.get('tool_submission_burst_at', '10'))
-
-        # Enable new interface for API installations from TS.
-        # Admin menu will list both if enabled.
-        self.enable_beta_ts_api_install = string_as_bool(kwargs.get('enable_beta_ts_api_install', 'True'))
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool(kwargs.get('enable_beta_job_managers', 'False'))
         # Set this to go back to setting the object store in the tool request instead of
