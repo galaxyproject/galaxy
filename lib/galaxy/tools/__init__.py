@@ -2701,7 +2701,8 @@ class SortTool(DatabaseOperationTool):
             sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
         if sorttype == 'file':
             hda = incoming["sort_type"]["sort_file"]
-            if hda.metadata and hda.metadata.get('data_lines', 0) == len(elements):
+            data_lines = hda.metadata.get('data_lines', 0)
+            if data_lines == len(elements):
                 old_elements_dict = OrderedDict()
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
@@ -2711,6 +2712,9 @@ class SortTool(DatabaseOperationTool):
                     hdca_history_name = "%s: %s" % (hdca.hid, hdca.name)
                     message = "List of element identifiers does not match element identifiers in collection '%s'" % hdca_history_name
                     raise Exception(message)
+            else:
+                message = "Number of lines must match number of list elements (%i), but file has %i lines"
+                raise Exception(message % (data_lines, len(elements)))
 
         for dce in sorted_elements:
             dce_object = dce.element_object
