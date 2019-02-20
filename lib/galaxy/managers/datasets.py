@@ -337,20 +337,21 @@ class DatasetAssociationManager(base.ModelManager,
             rval["modify_item_roles"] = modify_item_role_list
         return rval
 
+    def __ok_to_edit_metadata(self, trans, dataset_id):
+        # prevent modifying metadata when dataset is queued or running as input/output
+        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
+        for job_to_dataset_association in trans.sa_session.query(
+                self.app.model.JobToInputDatasetAssociation).filter_by(dataset_id=dataset_id).all() \
+                + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(dataset_id=dataset_id).all():
+            if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
+                return False
+        return True
+
     def detect_datatype(self, trans, dataset_assoc):
         """Sniff and assign the datatype to a given dataset association (ldda or hda)"""
-        def __ok_to_edit_metadata(dataset_id):
-            # prevent modifying metadata when dataset is queued or running as input/output
-            # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
-            for job_to_dataset_association in trans.sa_session.query(
-                    self.app.model.JobToInputDatasetAssociation).filter_by(dataset_id=dataset_id).all() \
-                    + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(dataset_id=dataset_id).all():
-                if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
-                    return False
-            return True
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
         if data.datatype.allow_datatype_change:
-            if not __ok_to_edit_metadata(data.id):
+            if not self.__ok_to_edit_metadata(trans, data.id):
                 raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot change datatype until the jobs have completed or you have canceled them.')
             else:
                 path = data.dataset.file_name
@@ -363,10 +364,14 @@ class DatasetAssociationManager(base.ModelManager,
             raise exceptions.InsufficientPermissionsException('Changing datatype "%s" is not allowed.' % (data.extension))
 
     def set_metadata(self, trans, dataset_assoc):
+        """Trigger a job that detects and sets metadata on a given dataset association (ldda or hda)"""
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
-        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
-            trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
-            overwrite=False)  # overwrite is False as per existing behavior
+        if not self.__ok_to_edit_metadata(trans, data.id):
+            raise exceptions.ItemAccessibilityException('This dataset is currently being used as input or output. You cannot edit metadata until the jobs have completed or you have canceled them.')
+        else:
+            trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                overwrite=False)  # overwrite is False as per existing behavior
 
     def update_permissions(self, trans, dataset_assoc, **kwd):
         action = kwd.get('action', 'set_permissions')
