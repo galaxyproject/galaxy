@@ -19,7 +19,7 @@ these guidelines.
       partial result may or may not be returned depending on the controller -
       this behavior should be documented.
     - API methods should throw a finite number of exceptions 
-      (defined in :doc:`galaxy.exceptions`) and these should subclass 
+      (defined in :mod:`galaxy.exceptions`) and these should subclass 
       `MessageException` and not paste/wsgi HTTP exceptions. When possible, 
       the framework itself should be responsible catching these exceptions, 
       setting the status code, and building an error response.
@@ -48,7 +48,7 @@ consider them when modifying the API.
     - Functionality should not be copied and pasted between controllers -
       consider refactoring functionality into associated classes or short of
       that into Mixins (http://en.wikipedia.org/wiki/Composition_over_inheritance)
-      or into Managers (:doc:`galaxy.managers`).
+      or into Managers (:mod:`galaxy.managers`).
     - API additions are more permanent changes to Galaxy than many other potential
       changes and so a second opinion on API changes should be sought.
     - New API functionality should include functional tests. These functional
