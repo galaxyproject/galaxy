@@ -277,10 +277,10 @@ class JSAppLauncher(BaseUIController):
         self._check_require_login(trans)
         return self._bootstrapped_client(trans)
 
-    def _bootstrapped_client(self, trans):
+    def _bootstrapped_client(self, trans, app_name='analysis', **additional_options):
         js_options = self._get_js_options(trans)
         js_options['config'].update(self._get_extended_config(trans))
-        return self.template(trans, 'analysis', options=js_options)
+        return self.template(trans, app_name, options=js_options, **additional_options)
 
     def _get_js_options(self, trans, root=None):
         """
