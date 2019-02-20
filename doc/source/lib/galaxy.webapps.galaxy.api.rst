@@ -33,6 +33,14 @@ galaxy\.webapps\.galaxy\.api\.cloud module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.webapps\.galaxy\.api\.cloudauthz module
+-----------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.cloudauthz
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.webapps\.galaxy\.api\.configuration module
 --------------------------------------------------
 
@@ -61,6 +69,14 @@ galaxy\.webapps\.galaxy\.api\.datatypes module
 ----------------------------------------------
 
 .. automodule:: galaxy.webapps.galaxy.api.datatypes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.webapps\.galaxy\.api\.display\_applications module
+----------------------------------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.display_applications
     :members:
     :undoc-members:
     :show-inheritance:
