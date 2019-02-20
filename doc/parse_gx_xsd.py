@@ -108,7 +108,11 @@ def _build_tag(tag, hide_attributes):
             assertions_buffer.write("--- | ---\n")
             elements = assertion_tag.findall("{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element")
             for element in elements:
-                doc = _doc_or_none(element).strip()
+                doc = _doc_or_none(element)
+                if doc is None:
+                    doc = _doc_or_none(_type_el(element))
+                assert doc is not None, "Documentation for %s is empty" % element.attrib["name"]
+                doc = doc.strip()
                 assertions_buffer.write("``%s`` | %s\n" % (element.attrib["name"], doc))
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
