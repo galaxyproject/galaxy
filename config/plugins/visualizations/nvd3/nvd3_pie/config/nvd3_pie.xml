@@ -93,7 +93,7 @@
                     <value>key</value>
                     <inputs>
                         <inputs>
-                            <name>label_outside</name>
+                            <name>outside</name>
                             <label>Show outside</label>
                             <help>Would you like to show labels outside the donut?</help>
                             <type>select</type>
