@@ -72,8 +72,8 @@ export default {
             return this.messageText != null;
         },
         oidcShow() {
-            let Galaxy = getGalaxyInstance();
-            return Galaxy.config.enable_oidc == true;
+            let galaxy = getGalaxyInstance();
+            return galaxy.config.enable_oidc == true;
         }
     },
     methods: {
