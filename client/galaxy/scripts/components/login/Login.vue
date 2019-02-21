@@ -24,7 +24,7 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
-                <b-button v-if="oidcShow" class="mt-3" @click="submitOIDCLogin()">
+                <b-button v-if="enable_oidc" class="mt-3" @click="submitOIDCLogin()">
                     <icon class="fa fa-google"/> Sign in with Google
                 </b-button>
             </div>
@@ -64,16 +64,13 @@ export default {
             messageText: null,
             messageVariant: null,
             redirect: galaxy.params.redirect,
-            session_csrf_token: galaxy.session_csrf_token
+            session_csrf_token: galaxy.session_csrf_token,
+            enable_oidc: galaxy.config.enable_oidc
         };
     },
     computed: {
         messageShow() {
             return this.messageText != null;
-        },
-        oidcShow() {
-            let galaxy = getGalaxyInstance();
-            return galaxy.config.enable_oidc == true;
         }
     },
     methods: {
