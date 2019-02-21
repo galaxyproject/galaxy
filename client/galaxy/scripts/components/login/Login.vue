@@ -24,7 +24,7 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
-                <b-button id="oidc" class="mt-3" @click="submitOIDCLogin()">
+                <b-button v-if="oidcShow" class="mt-3" @click="submitOIDCLogin()">
                     <icon class="fa fa-google"/> Sign in with Google
                 </b-button>
             </div>
@@ -71,7 +71,7 @@ export default {
         messageShow() {
             return this.messageText != null;
         },
-        showOIDC() {
+        oidcShow() {
             let Galaxy = getGalaxyInstance();
             return Galaxy.config.enable_oidc == true;
         }
