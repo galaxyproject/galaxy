@@ -817,7 +817,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
         if len_type not in ['file', 'fasta', 'text'] or not len_value:
             raise exceptions.RequestParameterInvalidException('Please specify a valid data source type.')
         if not name or not key:
-            raise exceptions.RequestParameterInvalidException('You must specify values for all the fields.')
+            raise exceptions.RequestParameterMissingException('You must specify values for all the fields.')
         elif key in dbkeys:
             raise exceptions.Conflict('There is already a custom build with that key. Delete it first if you want to replace it.')
         else:
