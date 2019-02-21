@@ -1,17 +1,4 @@
 ~~~~~~~~~~~~~~~
-``filter-with``
-~~~~~~~~~~~~~~~
-
-:Description:
-    If not running behind a proxy server, you may want to enable gzip
-    compression to decrease the size of data transferred over the
-    network.  If using a proxy server, please enable gzip compression
-    there instead.
-:Default: ``gzip``
-:Type: str
-
-
-~~~~~~~~~~~~~~~
 ``cookie_path``
 ~~~~~~~~~~~~~~~
 

@@ -98,12 +98,6 @@ uwsgi:
 
 galaxy:
 
-  # If not running behind a proxy server, you may want to enable gzip
-  # compression to decrease the size of data transferred over the
-  # network.  If using a proxy server, please enable gzip compression
-  # there instead.
-  #filter-with: gzip
-
   # If you serve Galaxy at a URL prefix and you're running more than one
   # Galaxy instance behind one hostname, you will want to set this to
   # the same path as the prefix in the filter above.  This value becomes
