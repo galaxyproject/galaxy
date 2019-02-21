@@ -871,7 +871,7 @@ class UserAPIController(BaseAPIController, UsesTagsMixin, CreatesApiKeysMixin, B
                     build_dict['len'] = new_len.id
                     build_dict['linecount'] = new_linecount.id
                 except Exception:
-                    raise exceptions.InternalServerError('Failed to convert dataset.')
+                    raise exceptions.ToolExecutionError('Failed to convert dataset.')
             dbkeys[key] = build_dict
             user.preferences['dbkeys'] = json.dumps(dbkeys)
             trans.sa_session.flush()
