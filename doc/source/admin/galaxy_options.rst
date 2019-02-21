@@ -5,9 +5,9 @@
 :Description:
     If you serve Galaxy at a URL prefix and you're running more than
     one Galaxy instance behind one hostname, you will want to set this
-    to the same path as the prefix in the filter above.  This value
-    becomes the "path" attribute set in the cookie so the cookies from
-    each instance will not clobber each other.
+    to the same path as the prefix in the mount uWSGI configuration
+    above. This value becomes the "path" attribute set in the cookie
+    so the cookies from each instance will not clobber each other.
 :Default: ````
 :Type: str
 

@@ -25,15 +25,6 @@ mapping:
     required: true
     mapping:
 
-      filter-with:
-        type: str
-        default: gzip
-        required: false
-        desc: |
-          If not running behind a proxy server, you may want to enable gzip compression
-          to decrease the size of data transferred over the network.  If using a proxy
-          server, please enable gzip compression there instead.
-
       cookie_path:
         type: str
         default: ''
@@ -41,7 +32,7 @@ mapping:
         desc: |
           If you serve Galaxy at a URL prefix and you're running more than one Galaxy instance
           behind one hostname, you will want to set this to the same path as the prefix
-          in the filter above.  This value becomes the "path" attribute set in the
+          in the mount uWSGI configuration above. This value becomes the "path" attribute set in the
           cookie so the cookies from each instance will not clobber each other.
 
       database_connection:
