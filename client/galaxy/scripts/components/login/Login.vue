@@ -24,12 +24,10 @@
                         </b-card-footer>
                     </b-card>
                 </b-form>
+                <b-button id="oidc" class="mt-3" @click="submitOIDCLogin()">
+                    <icon class="fa fa-google"/> Sign in with Google
+                </b-button>
             </div>
-            <b-card header="Other Login Options">
-                <b-form id="oidc" @submit.prevent="submitOIDCLogin()">
-                    <b-form-group> <b-button type="submit">Log in with Google</b-button> </b-form-group>
-                </b-form>
-            </b-card>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
             </div>
