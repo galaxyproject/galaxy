@@ -67,6 +67,16 @@ To update an existing Galaxy repository run:
 
 See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
 
+Security
+========
+
+Permissions Not Checked to Modify Dataset Metadata
+--------------------------------------------------
+
+Jelle Scholtalbers reported an issue where permissions were not being checked when modifying dataset
+metadata. This has been resolved with `Pull Request 7322
+<https://github.com/galaxyproject/galaxy/pull/7322>`__ and the fix backported through 18.01.
+
 Release Notes
 ===========================================================
 
