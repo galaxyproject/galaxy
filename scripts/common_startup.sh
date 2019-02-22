@@ -246,7 +246,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
     # Build client
     cd client
-    if yarn install --network-timeout 120000 --check-files; then
+    if yarn install --network-timeout 300000 --check-files; then
         if ! yarn run build-production-maps; then
             echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
             exit 1
