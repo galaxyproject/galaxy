@@ -60,6 +60,7 @@
   <tool file="job_environment_default.xml" />
   <tool file="job_environment_default_legacy.xml" />
   <tool file="job_environment_explicit_shared_home.xml" />
+  <tool file="galaxy_slots_and_memory.xml" />
   <tool file="version_command_plain.xml" />
   <tool file="version_command_interpreter.xml" />
   <tool file="version_command_tool_dir.xml" />

@@ -120,11 +120,6 @@
         <plugin id="k8s" type="runner" load="galaxy.jobs.runners.kubernetes:KubernetesJobRunner">
             <!-- The Kubernetes (k8s) plugin allows to send jobs to a k8s cluster which shares filesystem with Galaxy.
 
-                 This requires installing pykube. Install pykube by activating Galaxy's virtual
-                 environment and then executing the following pip command:
-
-                 pip install pykube==0.15.0
-
                  The shared file system needs to be exposed to k8s through a Persistent Volume (rw) and a Persistent
                  Volume Claim. An example of a Persistent Volume could be, in yaml (access modes, reclaim policy and
                  path are relevant) (persistent_volume.yaml):
@@ -140,7 +135,7 @@
                         storage: 10Gi
                       accessModes:
                         - ReadWriteMany
-                      persistentVolumeReclaimPolicy: Retained
+                      persistentVolumeReclaimPolicy: Retain
                       nfs:
                         path: /scratch1/galaxy_data
                         server: 192.168.64.1
@@ -170,7 +165,7 @@
                  kubectl create -f <path/to/persistent_volume.yaml>
                  kubectl create -f <path/to/pv_claim.yaml>
 
-                 pointing of course to the same Kubernetes cluster that you intend to use.
+                 pointing to the Kubernetes cluster that you intend to use.
             -->
 
             <param id="k8s_config_path">/path/to/kubeconfig</param>
@@ -196,14 +191,12 @@
                  Kubernetes 1.2 and on. Changing this a much newer version in the future might require changes to the
                  plugin runner code. Value extensions/v1beta1 is also supported for pre 1.2 legacy installations.
                  -->
-            <param id="k8s_persistent_volume_claim_name">galaxy_pvc</param>
-            <!-- The name of the Persisten Volume Claim (PVC) to be used, details above, needs to match the PVC's
-                 metadata:name -->
+            <param id="k8s_persistent_volume_claims">galaxy_pvc1:/mount_point1,galaxy_pvc2:/mount_point2</param>
+            <!-- Comma separated list of Persistent Volume Claim (PVC) to container mount point mappings, in the format
+                 PVC:mount point
 
-            <param id="k8s_persistent_volume_claim_mount_path">/scratch1/galaxy_data</param>
-            <!-- The mount path needs to be parent directory of the "file_path" and "new_file_path" paths
-                 set in universe_wsgi.ini (or equivalent general galaxy config file). This is the mount path of the
-                 PVC within the docker container that will be actually running the tool -->
+                 Typical mount paths are the file_path, job_working_directory, all paths containing tools and scripts
+                 and all library paths set in galaxy.yml (or equivalent general galaxy config file). -->
 
             <!-- <param id="k8s_namespace">default</param> -->
             <!-- The namespace to be used on the Kubernetes cluster, if different from default, this needs to be set

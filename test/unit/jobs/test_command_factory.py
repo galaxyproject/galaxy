@@ -153,7 +153,7 @@ class TestCommandFactory(TestCase):
 
 
 def _surround_command(command):
-    return '''rm -rf working; mkdir -p working; cd working; %s''' % command
+    return '''rm -rf working; mkdir -p working; cd working; %s; sh -c "exit $return_code"''' % command
 
 
 class MockJobWrapper(object):
