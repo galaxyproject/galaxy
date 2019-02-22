@@ -20,6 +20,7 @@ let buildconfig = {
     },
     output: {
         path: path.join(__dirname, "../", "static/scripts/bundled"),
+        publicPath: "/static/scripts/bundled/",
         filename: "[name].bundled.js",
         chunkFilename: "[name].chunk.js"
     },
