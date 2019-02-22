@@ -1076,24 +1076,26 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
         title: title
     });
     const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
-    var ruleCollectionBuilderInstance = Vue.extend(import("components/RuleCollectionBuilder.vue"));
-    var vm = document.createElement("div");
-    showEl(vm);
-    new ruleCollectionBuilderInstance({
-        propsData: {
-            initialElements: elements,
-            elementsType: elementsType,
-            importType: importType,
-            ftpUploadSite: options.ftpUploadSite,
-            creationFn: options.creationFn,
-            oncancel: options.oncancel,
-            oncreate: options.oncreate,
-            defaultHideSourceItems: options.defaultHideSourceItems,
-            saveRulesFn: options.saveRulesFn,
-            initialRules: options.initialRules
-        }
-    }).$mount(vm);
-    return deferred;
+    return import("components/RuleCollectionBuilder.vue").then(module => {
+        var ruleCollectionBuilderInstance = Vue.extend(module.default);
+        var vm = document.createElement("div");
+        showEl(vm);
+        new ruleCollectionBuilderInstance({
+            propsData: {
+                initialElements: elements,
+                elementsType: elementsType,
+                importType: importType,
+                ftpUploadSite: options.ftpUploadSite,
+                creationFn: options.creationFn,
+                oncancel: options.oncancel,
+                oncreate: options.oncreate,
+                defaultHideSourceItems: options.defaultHideSourceItems,
+                saveRulesFn: options.saveRulesFn,
+                initialRules: options.initialRules
+            }
+        }).$mount(vm);
+        return deferred;
+    });
 };
 
 /** List collection flavor of collectionCreatorModal. */
