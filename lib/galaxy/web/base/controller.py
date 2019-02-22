@@ -267,7 +267,7 @@ class JSAppLauncher(BaseUIController):
             trans.response.send_redirect(login_url)
 
     @web.expose
-    def client(self, trans, do_login_checks=False, **kwd):
+    def client(self, trans, **kwd):
         """
         Endpoint for clientside routes.  This ships the primary SPA client.
 
@@ -275,12 +275,12 @@ class JSAppLauncher(BaseUIController):
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
         self._check_require_login(trans)
-        return self._bootstrapped_client(trans)
+        return self._bootstrapped_client(trans, **kwd)
 
-    def _bootstrapped_client(self, trans):
+    def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
         js_options = self._get_js_options(trans)
         js_options['config'].update(self._get_extended_config(trans))
-        return self.template(trans, 'analysis', options=js_options)
+        return self.template(trans, app_name, options=js_options, **kwd)
 
     def _get_js_options(self, trans, root=None):
         """
