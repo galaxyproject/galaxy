@@ -88,7 +88,7 @@ var AdminPanel = Backbone.View.extend({
                 title: _l("Tool Management"),
                 items: [
                     {
-                        title: "Install new tools (Beta)",
+                        title: "Install new tools",
                         url: "admin_toolshed/browse_toolsheds",
                         enabled: self.settings.is_tool_shed_installed
                     },
