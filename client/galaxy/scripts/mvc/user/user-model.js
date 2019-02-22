@@ -60,21 +60,21 @@ var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
             this.preferences = preferences;
         },
 
-        getFavorites: function(){
+        getFavorites: function() {
             let preferences = this.get("preferences");
-            if (preferences && preferences.favorites){
+            if (preferences && preferences.favorites) {
                 return JSON.parse(preferences.favorites);
             } else {
                 return {
-                    "tools": []
+                    tools: []
                 };
             }
         },
 
-        updateFavorites: function(object_type, new_favorites){
+        updateFavorites: function(object_type, new_favorites) {
             let favorites = this.getFavorites();
             favorites[object_type] = new_favorites[object_type];
-            this.updatePreferences("favorites", favorites)
+            this.updatePreferences("favorites", favorites);
         },
 
         /** Load a user with the API using an id.

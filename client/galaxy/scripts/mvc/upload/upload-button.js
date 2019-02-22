@@ -45,16 +45,14 @@ var View = Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            `<div class="upload-button">
+        return `<div class="upload-button">
                 <div class="progress">
                     <div class="progress-bar"/>
                         <a class="upload-button-link" href="javascript:void(0)" id="tool-panel-upload-button">
                             <span class="fa fa-upload"/>
                         </a>
                     </div>
-            </div>`
-        );
+            </div>`;
     }
 });
 export default { View: View };

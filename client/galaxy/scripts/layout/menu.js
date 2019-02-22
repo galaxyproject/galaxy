@@ -14,14 +14,12 @@ function logoutClick() {
     let galaxy = getGalaxyInstance();
     let session_csrf_token = galaxy.session_csrf_token;
     let url = `${galaxy.root}user/logout?session_csrf_token=${session_csrf_token}`;
-    axios
-        .get(url)
-        .then(() => {
-            if (galaxy.user) {
-                galaxy.user.clearSessionStorage();
-            }
-            window.top.location.href = `${galaxy.root}login`;
-        });
+    axios.get(url).then(() => {
+        if (galaxy.user) {
+            galaxy.user.clearSessionStorage();
+        }
+        window.top.location.href = `${galaxy.root}login`;
+    });
 }
 
 var Collection = Backbone.Collection.extend({
