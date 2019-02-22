@@ -344,7 +344,7 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * query.
  */
 var ToolSearch = Backbone.Model.extend({
-    SEARCH_RESERVED_TERMS_FAVORITES: ['#favs', '#favorites', '#favourites'],
+    SEARCH_RESERVED_TERMS_FAVORITES: ["#favs", "#favorites", "#favourites"],
 
     defaults: {
         search_hint_string: "search tools",
@@ -383,9 +383,9 @@ var ToolSearch = Backbone.Model.extend({
             clearTimeout(this.timer);
         }
         // Catch reserved words
-        if (this.SEARCH_RESERVED_TERMS_FAVORITES.indexOf(q) >= 0){
+        if (this.SEARCH_RESERVED_TERMS_FAVORITES.indexOf(q) >= 0) {
             this.set("results", Galaxy.user.getFavorites().tools);
-        } else{
+        } else {
             // Start a new ajax-request in X ms
             $("#search-clear-btn").hide();
             $("#search-spinner").show();

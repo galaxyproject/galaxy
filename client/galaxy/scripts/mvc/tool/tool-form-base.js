@@ -125,11 +125,11 @@ export default FormBase.extend({
             visible: !Galaxy.user.isAnonymous() && !in_favorites,
             onclick: () => {
                 axios
-                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, {'object_id': options.id})
+                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: options.id })
                     .then(response => {
                         favorite_button.hide();
                         remove_favorite_button.show();
-                        Galaxy.user.updateFavorites("tools", response.data)
+                        Galaxy.user.updateFavorites("tools", response.data);
                     });
             }
         });
@@ -141,11 +141,13 @@ export default FormBase.extend({
             visible: !Galaxy.user.isAnonymous() && in_favorites,
             onclick: () => {
                 axios
-                    .delete(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`)
+                    .delete(
+                        `${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`
+                    )
                     .then(response => {
                         remove_favorite_button.hide();
                         favorite_button.show();
-                        Galaxy.user.updateFavorites("tools", response.data)
+                        Galaxy.user.updateFavorites("tools", response.data);
                     });
             }
         });

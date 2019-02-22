@@ -25,7 +25,7 @@
                     </b-card>
                 </b-form>
                 <b-button v-if="enable_oidc" class="mt-3" @click="submitOIDCLogin()">
-                    <icon class="fa fa-google"/> Sign in with Google
+                    <icon class="fa fa-google" /> Sign in with Google
                 </b-button>
             </div>
             <div v-if="show_welcome_with_login" class="col">
