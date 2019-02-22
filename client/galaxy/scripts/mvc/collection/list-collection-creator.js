@@ -7,7 +7,6 @@ import BASE_MVC from "mvc/base-mvc";
 import baseCreator from "mvc/collection/base-creator";
 import UI_MODAL from "mvc/ui/ui-modal";
 import _l from "utils/localization";
-import RuleCollectionBuilder from "components/RuleCollectionBuilder.vue";
 import Vue from "vue";
 import { getGalaxyInstance } from "app";
 
@@ -1077,7 +1076,7 @@ var ruleBasedCollectionCreatorModal = function _ruleBasedCollectionCreatorModal(
         title: title
     });
     const { deferred, creatorOptions, showEl } = collectionCreatorModalSetup(options); // eslint-disable-line no-unused-vars
-    var ruleCollectionBuilderInstance = Vue.extend(RuleCollectionBuilder);
+    var ruleCollectionBuilderInstance = Vue.extend(import("components/RuleCollectionBuilder.vue"));
     var vm = document.createElement("div");
     showEl(vm);
     new ruleCollectionBuilderInstance({
