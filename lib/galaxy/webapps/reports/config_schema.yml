@@ -7,20 +7,12 @@ mapping:
     desc: |
       Galaxy Reports configuration options.
     mapping:
-      filter-with:
-        type: str
-        default: proxy-prefix
-        desc: |
-          If running behind a proxy server and Galaxy is served from a subdirectory,
-          enable the proxy-prefix filter and set the prefix in the
-          [filter:proxy-prefix] section above.
-      
       cookie_path:
         type: str
         desc: |
-          If proxy-prefix is enabled and you're running more than one Galaxy instance
+          If Galaxy Reports is served at a URL prefix and you are running more than one Galaxy Reports instance
           behind one hostname, you will want to set this to the same path as the prefix
-          in the filter above.  This value becomes the "path" attribute set in the
+          in the mount uWSGI configuration above. This value becomes the "path" attribute set in the
           cookie so the cookies from each instance will not clobber each other.
       
       log_level:
@@ -34,8 +26,8 @@ mapping:
         type: str
         default: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
         desc: |
-          Database connection
-          Galaxy reports are intended for production Galaxy instances, so sqlite (and the default value
+          Database connection.
+          Galaxy Reports are intended for production Galaxy instances, so sqlite (and the default value
           below) is not supported. An SQLAlchemy connection string should be used specify an external
           database.
       
@@ -43,15 +35,15 @@ mapping:
         type: str
         default: database/files
         desc: |
-          Where dataset files are saved
-          Temporary storage for additional datasets, this should be shared through the cluster
+          Where dataset files are saved.
+          Temporary storage for additional datasets, this should be shared through the cluster.
       
       new_file_path:
         type: str
         default: database/tmp
         desc: |
-          Where dataset files are saved
-          Temporary storage for additional datasets, this should be shared through the cluster
+          Where dataset files are saved.
+          Temporary storage for additional datasets, this should be shared through the cluster.
       
       template_cache_path:
         type: str

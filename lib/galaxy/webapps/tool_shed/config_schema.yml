@@ -37,7 +37,7 @@ mapping:
         default: database/community_files
         required: false
         desc: |
-          Where tool shed repositories are stored.
+          Where Tool Shed repositories are stored.
       
       new_file_path:
         type: str
@@ -293,14 +293,14 @@ mapping:
         default: smtp.your_tool_shed_server
         required: false
         desc: |
-          For use by email messages sent from the tool shed
+          For use by email messages sent from the Tool Shed.
       
       email_from:
         type: str
         default: your_tool_shed_email@server
         required: false
         desc: |
-          For use by email messages sent from the tool shed
+          For use by email messages sent from the Tool Shed.
       
       smtp_username:
         type: str
@@ -521,9 +521,9 @@ mapping:
         default: null
         required: false
         desc: |
-          If proxy-prefix is enabled and you're running more than one Galaxy instance
+          If the Tool Shed is served at a URL prefix and you are running more than one Tool Shed instance
           behind one hostname, you will want to set this to the same path as the prefix
-          in the filter above.  This value becomes the "path" attribute set in the
+          in the mount uWSGI configuration above. This value becomes the "path" attribute set in the
           cookie so the cookies from each instance will not clobber each other.
 
       enable_openid:
