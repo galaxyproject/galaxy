@@ -625,7 +625,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction,
         Update the session cookie to match the current session.
         """
         self.set_cookie(self.security.encode_guid(self.galaxy_session.session_key),
-                        name=name, path=self.app.config.cookie_path)
+                        name=name, path=self.app.config.cookie_path or url_for('/'))
 
     def check_user_library_import_dir(self, user):
         if getattr(self.app.config, "user_library_import_dir_auto_creation", False):

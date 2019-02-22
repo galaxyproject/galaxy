@@ -148,7 +148,7 @@ class GolangProxyLauncher(object):
                 config.dynamic_proxy_bind_port,
             ),
             "--listenPath", "/".join((
-                config.cookie_path,
+                (config.cookie_path or '/'),
                 config.dynamic_proxy_prefix
             )),
             "--cookieName", "galaxysession",
