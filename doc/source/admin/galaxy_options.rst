@@ -1,25 +1,13 @@
 ~~~~~~~~~~~~~~~
-``filter-with``
-~~~~~~~~~~~~~~~
-
-:Description:
-    If running behind a proxy server and Galaxy is served from a
-    subdirectory, enable the proxy-prefix filter and set the prefix in
-    the [filter:proxy-prefix] section above.
-:Default: ``proxy-prefix``
-:Type: str
-
-
-~~~~~~~~~~~~~~~
 ``cookie_path``
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If proxy-prefix is enabled and you're running more than one Galaxy
-    instance behind one hostname, you will want to set this to the
-    same path as the prefix in the filter above.  This value becomes
-    the "path" attribute set in the cookie so the cookies from each
-    instance will not clobber each other.
+    When running multiple Galaxy instances under separate URL prefixes
+    on a single hostname, you will want to set this to the same path
+    as the prefix set in the uWSGI "mount" configuration option above.
+    This value becomes the "path" attribute set in the cookie so the
+    cookies from one instance will not clobber those from another.
 :Default: ````
 :Type: str
 
@@ -173,7 +161,9 @@
 ~~~~~~~~~~~~~
 
 :Description:
-    Dataset files are stored in this directory.
+    Where dataset files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/files``
 :Type: str
 
@@ -183,7 +173,9 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Temporary files are stored in this directory.
+    Where temporary files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/tmp``
 :Type: str
 

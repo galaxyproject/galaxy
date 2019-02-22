@@ -48,6 +48,14 @@ uwsgi:
   # Reports, etc.) that you are loading.
   module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
 
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # URL prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
+  # points. Set this to true if a URL prefix is used.
+  manage-script-name: false
+
   # It is usually a good idea to set this to ``true`` if processes is
   # greater than 1.
   thunder-lock: false
@@ -87,11 +95,10 @@ tool_shed:
   # installation directory.
   #hgweb_config_dir: null
 
-  # Where tool shed repositories are stored.
+  # Where Tool Shed repositories are stored.
   #file_path: database/community_files
 
-  # Temporary storage for additional datasets, this should be shared
-  # through the cluster
+  # Where temporary files are stored.
   #new_file_path: database/tmp
 
   # File containing old-style genome builds
@@ -225,10 +232,10 @@ tool_shed:
   # Allow administrators to delete accounts.
   #allow_user_deletion: false
 
-  # For use by email messages sent from the tool shed
+  # For use by email messages sent from the Tool Shed.
   #smtp_server: smtp.your_tool_shed_server
 
-  # For use by email messages sent from the tool shed
+  # For use by email messages sent from the Tool Shed.
   #email_from: your_tool_shed_email@server
 
   # If your SMTP server requires a username and password, you can
@@ -344,11 +351,11 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
-  # If proxy-prefix is enabled and you're running more than one Galaxy
-  # instance behind one hostname, you will want to set this to the same
-  # path as the prefix in the filter above.  This value becomes the
-  # "path" attribute set in the cookie so the cookies from each instance
-  # will not clobber each other.
+  # When running multiple Tool Shed instances under separate URL
+  # prefixes on a single hostname, you will want to set this to the same
+  # path as the prefix set in the uWSGI "mount" configuration option
+  # above. This value becomes the "path" attribute set in the cookie so
+  # the cookies from one instance will not clobber those from another.
   #cookie_path: null
 
   # Enable authentication via OpenID.  Allows users to log in to their
