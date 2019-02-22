@@ -1,17 +1,3 @@
-~~~~~~~~~~~~~~~
-``cookie_path``
-~~~~~~~~~~~~~~~
-
-:Description:
-    When running multiple Galaxy instances under separate URL prefixes
-    on a single hostname, you will want to set this to the same path
-    as the prefix set in the uWSGI "mount" configuration option above.
-    This value becomes the "path" attribute set in the cookie so the
-    cookies from one instance will not clobber those from another.
-:Default: ````
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``database_connection``
 ~~~~~~~~~~~~~~~~~~~~~~~

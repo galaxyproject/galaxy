@@ -98,13 +98,6 @@ uwsgi:
 
 galaxy:
 
-  # When running multiple Galaxy instances under separate URL prefixes
-  # on a single hostname, you will want to set this to the same path as
-  # the prefix set in the uWSGI "mount" configuration option above. This
-  # value becomes the "path" attribute set in the cookie so the cookies
-  # from one instance will not clobber those from another.
-  #cookie_path: ''
-
   # By default, Galaxy uses a SQLite database at
   # 'database/universe.sqlite'.  You may use a SQLAlchemy connection
   # string to specify an external database instead.  This string takes
