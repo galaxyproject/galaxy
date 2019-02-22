@@ -98,8 +98,7 @@ tool_shed:
   # Where Tool Shed repositories are stored.
   #file_path: database/community_files
 
-  # Temporary storage for additional datasets, this should be shared
-  # through the cluster
+  # Where temporary files are stored.
   #new_file_path: database/tmp
 
   # File containing old-style genome builds
@@ -351,12 +350,11 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
-  # If the Tool Shed is served at a URL prefix and you are running more
-  # than one Tool Shed instance behind one hostname, you will want to
-  # set this to the same path as the prefix in the mount uWSGI
-  # configuration above. This value becomes the "path" attribute set in
-  # the cookie so the cookies from each instance will not clobber each
-  # other.
+  # When running multiple Tool Shed instances under separate URL
+  # prefixes on a single hostname, you will want to set this to the same
+  # path as the prefix set in the uWSGI "mount" configuration option
+  # above. This value becomes the "path" attribute set in the cookie so
+  # the cookies from one instance will not clobber those from another.
   #cookie_path: null
 
   # Enable authentication via OpenID.  Allows users to log in to their

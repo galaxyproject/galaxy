@@ -3,12 +3,12 @@
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If Galaxy Reports is served at a URL prefix and you are running
-    more than one Galaxy Reports instance behind one hostname, you
-    will want to set this to the same path as the prefix in the mount
-    uWSGI configuration above. This value becomes the "path" attribute
-    set in the cookie so the cookies from each instance will not
-    clobber each other.
+    When running multiple Galaxy Reports instances under separate URL
+    prefixes on a single hostname, you will want to set this to the
+    same path as the prefix set in the uWSGI "mount" configuration
+    option above. This value becomes the "path" attribute set in the
+    cookie so the cookies from one instance will not clobber those
+    from another.
 :Default: ``None``
 :Type: str
 
@@ -43,8 +43,7 @@
 ~~~~~~~~~~~~~
 
 :Description:
-    Where dataset files are saved. Temporary storage for additional
-    datasets, this should be shared through the cluster.
+    Where dataset files are stored.
 :Default: ``database/files``
 :Type: str
 
@@ -54,8 +53,7 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Where dataset files are saved. Temporary storage for additional
-    datasets, this should be shared through the cluster.
+    Where temporary files are stored.
 :Default: ``database/tmp``
 :Type: str
 
