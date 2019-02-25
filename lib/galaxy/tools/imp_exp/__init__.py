@@ -275,15 +275,6 @@ class JobExportHistoryArchiveWrapper:
         # Helper methods/classes.
         #
 
-        def get_item_tag_dict(item):
-            """ Create dictionary of an item's tags. """
-            tags = {}
-            for tag in item.tags:
-                tag_user_tname = unicodify(tag.user_tname)
-                tag_user_value = unicodify(tag.user_value)
-                tags[tag_user_tname] = tag_user_value
-            return tags
-
         def prepare_metadata(metadata):
             """ Prepare metatdata for exporting. """
             for name, value in list(metadata.items()):
@@ -316,7 +307,7 @@ class JobExportHistoryArchiveWrapper:
                         "visible": obj.visible,
                         "uuid": (lambda uuid: str(uuid) if uuid else None)(obj.dataset.uuid),
                         "annotation": unicodify(getattr(obj, 'annotation', '')),
-                        "tags": get_item_tag_dict(obj)
+                        "tags": obj.make_tag_string_list()
                     }
 
                     try:
@@ -352,7 +343,7 @@ class JobExportHistoryArchiveWrapper:
             "hid_counter": history.hid_counter,
             "genome_build": history.genome_build,
             "annotation": unicodify(get_item_annotation_str(trans.sa_session, history.user, history)),
-            "tags": get_item_tag_dict(history)
+            "tags": history.make_tag_string_list()
         }
         history_attrs_filename = tempfile.NamedTemporaryFile(dir=temp_output_dir).name
         history_attrs_out = open(history_attrs_filename, 'w')
