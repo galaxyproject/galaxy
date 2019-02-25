@@ -93,7 +93,7 @@ def verify(
             ofn = os.path.join(keep_outputs_dir, filename)
             ofd = os.path.dirname(ofn)
             if not os.path.isdir(ofd):
-                os.makedirs(os.path.dirname(ofd))
+                os.makedirs(ofd)
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
