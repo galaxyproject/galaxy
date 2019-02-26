@@ -1658,14 +1658,14 @@ module.
       <xs:element name="has_archive_member">
         <xs:complexType>
           <xs:annotation>
-              <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the zip file specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``).]]></xs:documentation>
+              <xs:documentation xml:lang="en"><![CDATA[This tag allows the developer to recursively specify additional assertions as child elements about just the member contained in the archive specified by the regular expression ``path`` (e.g. ``<has_archive_member path=".*/my-file.txt"><not_has_text text="EDK72998.1" /></has_archive_member>``). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.]]></xs:documentation>
           </xs:annotation>
           <xs:sequence>
             <xs:group ref="TestAssertion" minOccurs="0" maxOccurs="unbounded"/>
           </xs:sequence>
           <xs:attribute name="path" type="xs:string">
             <xs:annotation>
-              <xs:documentation xml:lang="en">The regular expression specifying the zip archive member.</xs:documentation>
+              <xs:documentation xml:lang="en">The regular expression specifying the archive member.</xs:documentation>
             </xs:annotation>
           </xs:attribute>
         </xs:complexType>
