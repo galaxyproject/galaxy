@@ -18,9 +18,7 @@ export function clear_main_area() {
 }
 
 export function display_spinner() {
-    $("#main").append(
-        `<div id="ie-loading-spinner"></div>`
-    );
+    $("#main").append(`<div id="ie-loading-spinner"></div>`);
 }
 
 /* Create a spin_state object used by spin() and spin_again() */
