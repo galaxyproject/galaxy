@@ -523,10 +523,8 @@ class ShedTwillTestCase(FunctionalTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_tool_shed(self, url, strings_displayed=None, strings_not_displayed=None):
-        params = {
-            'tool_shed_url': url
-        }
-        self.visit_galaxy_url('/admin_toolshed/browse_tool_shed', params=params)
+        url = '/repository/browse_valid_categories'
+        self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_tool_dependencies(self, strings_displayed=None, strings_not_displayed=None):

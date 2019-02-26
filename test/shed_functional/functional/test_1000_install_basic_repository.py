@@ -68,6 +68,11 @@ class BasicToolShedFeatures(ShedTwillTestCase):
                              strings_displayed=[],
                              strings_not_displayed=[])
 
+    def test_0010_browse_tool_sheds(self):
+        """Browse the available tool sheds in this Galaxy instance."""
+        self.galaxy_login(email=common.admin_email, username=common.admin_username)
+        self.browse_tool_shed(url=self.url, strings_displayed=['Test 0000 Basic Repository Features 1', 'Test 0000 Basic Repository Features 2'])
+
     def test_0015_browse_test_0000_category(self):
         '''Browse the category created in test 0000. It should contain the filtering_0000 repository also created in that test.'''
         category = self.test_db_util.get_category_by_name('Test 0000 Basic Repository Features 1')
