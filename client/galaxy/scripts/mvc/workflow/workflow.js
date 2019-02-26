@@ -195,13 +195,14 @@ const WorkflowListView = Backbone.View.extend({
     },
 
     events: {
-        dragleave: "unhighlightDropZone",
-        drop: "drop",
-        dragover: function(ev) {
-            $(".hidden_description_layer").addClass("dragover");
-            $(".menubutton").addClass("background-none");
-            ev.preventDefault();
-        }
+        dragover: "highlightDropZone",
+        dragleave: "unhighlightDropZone"
+    },
+
+    highlightDropZone: function(ev) {
+        $(".hidden_description_layer").addClass("dragover");
+        $(".menubutton").addClass("background-none");
+        ev.preventDefault();
     },
 
     unhighlightDropZone: function() {
@@ -272,6 +273,7 @@ const WorkflowListView = Backbone.View.extend({
         this.searchWorkflow(this.$(".search-wf"), this.$(".workflow-search tr"), minQueryLength);
         this.adjustActiondropdown();
         this._showArgErrors();
+        this.$(".hidden_description_layer").get(0).addEventListener('drop', _.bind(this.drop, this));
         return this;
     },
 
