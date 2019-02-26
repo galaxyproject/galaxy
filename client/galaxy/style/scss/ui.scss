@@ -195,7 +195,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .ui-portlet {
     @extend .card;
     border: none;
-    height: 100%;
     .portlet-header:first-child {
         @extend .card-header;
         @extend .rounded;
