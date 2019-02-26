@@ -178,10 +178,7 @@ def add_composite_file(dataset, registry, output_path, files_path):
 
     # Find data type
     if dataset.file_type is not None:
-        try:
-            datatype = registry.get_datatype_by_extension(dataset.file_type)
-        except Exception:
-            print("Unable to instantiate the datatype object for the file type '%s'" % dataset.file_type)
+        datatype = registry.get_datatype_by_extension(dataset.file_type)
 
     def to_path(path_or_url):
         is_url = path_or_url.find('://') != -1  # todo fixme
