@@ -273,7 +273,9 @@ const WorkflowListView = Backbone.View.extend({
         this.searchWorkflow(this.$(".search-wf"), this.$(".workflow-search tr"), minQueryLength);
         this.adjustActiondropdown();
         this._showArgErrors();
-        this.$(".hidden_description_layer").get(0).addEventListener('drop', _.bind(this.drop, this));
+        this.$(".hidden_description_layer")
+            .get(0)
+            .addEventListener("drop", _.bind(this.drop, this));
         return this;
     },
 
