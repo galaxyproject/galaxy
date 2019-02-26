@@ -12,14 +12,9 @@
 <body class="body-ap">
     <div class="main-container">
     </div>
-    ${h.javascript_link( app_root +  "plyr.js" )}
-    <script>
-        $(document).ready(function () {
-            console.log('${hda}');
-        });
-    </script>	
+    ${h.javascript_link( app_root +  "plyr.js" )}	
     <audio id="main-container" controls>
-        <source src="${hda.name}" type="audio/wav" />
+        <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='audio/wav' />
     </audio>
 
 </body>
