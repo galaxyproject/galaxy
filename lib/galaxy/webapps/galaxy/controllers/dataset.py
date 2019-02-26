@@ -17,6 +17,7 @@ from galaxy import (
     util,
     web
 )
+from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
@@ -25,6 +26,7 @@ from galaxy.util import (
     sanitize_text,
     smart_str
 )
+from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
@@ -124,7 +126,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
-        return (allow_admin and trans.user_is_admin()) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
+        return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
 
     @web.expose
     def errors(self, trans, id):
@@ -184,7 +186,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, file_ext)
-        return open(data.metadata.get(metadata_name).file_name)
+        return open(data.metadata.get(metadata_name).file_name, 'rb')
 
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
@@ -203,7 +205,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin() or (data.history and trans.get_user() == data.history.user)):
+        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message("Please wait until this dataset finishes uploading before attempting to view it.")
@@ -251,27 +253,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     @web.expose_api_anonymous
     def get_edit(self, trans, dataset_id=None, **kwd):
         """Produces the input definitions available to modify dataset attributes"""
-        message = None
         status = None
-        if dataset_id is not None:
-            id = self.decode_id(dataset_id)
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        else:
-            trans.log_event("dataset_id is None, cannot load a dataset to edit.")
-            return self.message_exception(trans, 'You must provide a dataset id to edit attributes.')
-        if data is None:
-            trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
-            return self.message_exception(trans, 'The dataset id is invalid.')
-        if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event("User attempted to edit a dataset they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
-            return self.message_exception(trans, 'The dataset id is invalid.')
-        if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
-            # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
-            # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
-            # permission.  In this case, we'll reset this permission to the hda user's private role.
-            manage_permissions_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
-            permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
-            trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
+        data, message = self._get_dataset_for_edit(trans, dataset_id)
+        if message:
+            return message
+
         if self._can_access_dataset(trans, data):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
@@ -416,13 +402,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     return False
             return True
 
-        message = None
         status = 'success'
-        dataset_id = payload.get('dataset_id')
         operation = payload.get('operation')
-        if dataset_id is not None:
-            id = self.decode_id(dataset_id)
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+        dataset_id = payload.get('dataset_id')
+        data, message = self._get_dataset_for_edit(trans, dataset_id)
+        if message:
+            return message
+
         if operation == 'attributes':
             # The user clicked the Save button on the 'Edit Attributes' form
             data.name = payload.get('name')
@@ -459,6 +445,24 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     message = 'Changed the type to %s.' % datatype
             else:
                 return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
+        elif operation == 'datatype_detect':
+            # The user clicked the 'Detect datatype' button on the 'Change data type' form
+            if data.datatype.allow_datatype_change:
+                # prevent modifying datatype when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata(data.id):
+                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
+                else:
+                    path = data.dataset.file_name
+                    is_binary = check_binary(path)
+                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                    trans.app.datatypes_registry.change_datatype(data, datatype)
+                    trans.sa_session.flush()
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                        trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                        overwrite=False)  # overwrite is False as per existing behavior
+                    message = 'Detection was finished and changed the datatype to %s.' % datatype
+            else:
+                return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
         elif operation == 'autodetect':
             # The user clicked the Auto-detect button on the 'Edit Attributes' form
             # prevent modifying metadata when dataset is queued or running as input/output
@@ -509,6 +513,28 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
         return {'status': status, 'message': sanitize_text(message)}
+
+    def _get_dataset_for_edit(self, trans, dataset_id):
+        if dataset_id is not None:
+            id = self.decode_id(dataset_id)
+            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
+        else:
+            trans.log_event("dataset_id is None, cannot load a dataset to edit.")
+            return None, self.message_exception(trans, 'You must provide a dataset id to edit attributes.')
+        if data is None:
+            trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
+            return None, self.message_exception(trans, 'The dataset id is invalid.')
+        if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
+            trans.log_event("User attempted to edit a dataset they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
+            return None, self.message_exception(trans, 'The dataset id is invalid.')
+        if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
+            # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
+            # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
+            # permission.  In this case, we'll reset this permission to the hda user's private role.
+            manage_permissions_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
+            permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
+            trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
+        return data, None
 
     @web.expose
     @web.json
@@ -657,7 +683,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.text.Html):
                 trans.response.set_content_type(dataset.get_mime())
-                return open(dataset.file_name)
+                return open(dataset.file_name, 'rb')
             else:
                 # Get rating data.
                 user_item_rating = 0
@@ -872,9 +898,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Dataset id %s marked as deleted" % str(id))
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
-        except Exception as e:
+        except Exception:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % (dataset_id, id)
-            log.exception(msg + ': ' + str(e))
+            log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
             status = 'error'
@@ -966,8 +992,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 except Exception:
                     log.exception('Unable to purge dataset (%s) on purge of HDA (%s):' % (hda.dataset.id, hda.id))
             trans.sa_session.flush()
-        except Exception as exc:
-            msg = 'HDA purge failed (encoded: %s, decoded: %s): %s' % (dataset_id, id, exc)
+        except Exception:
+            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % (dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'

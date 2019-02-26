@@ -25,7 +25,7 @@ JobEnviromentProperties = collections.namedtuple("JobEnvironmentProperties", [
 ])
 
 
-class RunsEnvironmentJobs:
+class RunsEnvironmentJobs(object):
 
     def _run_and_get_environment_properties(self, tool_id="job_environment_default"):
         with self.dataset_populator.test_history() as history_id:

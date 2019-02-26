@@ -10,6 +10,10 @@ import unittest
 from functools import partial, wraps
 
 import requests
+from gxformat2 import (
+    convert_and_import_workflow,
+    ImporterGalaxyInterface,
+)
 try:
     from pyvirtualdisplay import Display
 except ImportError:
@@ -20,10 +24,6 @@ from base import populators  # noqa: I100,I202
 from base.api import UsesApiTestCaseMixin  # noqa: I100
 from base.driver_util import classproperty, DEFAULT_WEB_HOST, get_ip_address  # noqa: I100
 from base.testcase import FunctionalTestCase  # noqa: I100
-from base.workflows_format_2 import (  # noqa: I100
-    convert_and_import_workflow,
-    ImporterGalaxyInterface,
-)
 from galaxy_selenium import (  # noqa: I100,I201
     driver_factory,
 )
@@ -431,7 +431,7 @@ class SharedStateSeleniumTestCase(SeleniumTestCase):
         """Override this to setup shared data for tests that gets initialized only once."""
 
 
-class UsesHistoryItemAssertions:
+class UsesHistoryItemAssertions(object):
 
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -508,7 +508,7 @@ def get_remote_driver():
     )
 
 
-class SeleniumSessionGetPostMixin:
+class SeleniumSessionGetPostMixin(object):
     """Mixin for adapting Galaxy testing populators helpers to Selenium session backed bioblend."""
 
     def _get(self, route, data={}):

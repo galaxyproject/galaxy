@@ -51,7 +51,7 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     """
 
     # all items are accessible to an admin
-    if trans.user_is_admin():
+    if trans.user_is_admin:
         return item
 
     # Verify ownership: there is a current user and that user is the same as the item's

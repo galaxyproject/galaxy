@@ -1,9 +1,15 @@
 /** This class renders the chart data selection form with repeats. */
+
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import Repeat from "mvc/form/form-repeat";
 import FormData from "mvc/form/form-data";
+
 var GroupView = Backbone.View.extend({
     initialize: function(app, options) {
         var self = this;
@@ -24,7 +30,7 @@ var GroupView = Backbone.View.extend({
             this.chart.state("wait", "Loading metadata...");
             this.deferred.execute(function(process) {
                 Utils.get({
-                    url: Galaxy.root + "api/datasets/" + dataset_id,
+                    url: getAppRoot() + "api/datasets/" + dataset_id,
                     cache: true,
                     success: function(dataset) {
                         var data_columns = {};
@@ -63,7 +69,6 @@ var GroupView = Backbone.View.extend({
                         self.chart.state("ok", "Metadata initialized...");
                         self.form = new Form({
                             inputs: inputs,
-                            cls: "ui-portlet-plain",
                             onchange: function() {
                                 self.group.set(self.form.data.create());
                                 self.chart.set("modified", true);
@@ -105,7 +110,6 @@ export default Backbone.View.extend({
         this.listenTo(this.chart.groups, "add", function(group) {
             self.repeat.add({
                 id: group.id,
-                cls: "ui-portlet-panel",
                 $el: new GroupView(self.app, { group: group }).$el,
                 ondel: function() {
                     self.chart.groups.remove(group);

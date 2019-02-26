@@ -238,7 +238,7 @@ class MappingTests(unittest.TestCase):
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        # self.assertEquals(len(loaded_dataset_collection.datasets), 2)
+        # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
         # assert loaded_dataset_collection.collection_type == "pair"
 
     def test_default_disk_usage(self):
@@ -484,6 +484,11 @@ class MappingTests(unittest.TestCase):
         workflow_step_2.order_index = 1
         workflow_step_2.type = "subworkflow"
         workflow_step_2.subworkflow = child_workflow
+
+        workflow_step_1.get_or_add_input("moo1")
+        workflow_step_1.get_or_add_input("moo2")
+        workflow_step_2.get_or_add_input("moo")
+        workflow_step_1.add_connection("foo", "cow", workflow_step_2)
 
         workflow = workflow_from_steps([workflow_step_1, workflow_step_2])
         self.persist(workflow)

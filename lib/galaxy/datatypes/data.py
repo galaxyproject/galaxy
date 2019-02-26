@@ -430,7 +430,7 @@ class Data(object):
         else:
             trans.response.set_content_type("text/html")
             return trans.stream_template_mako("/dataset/large_file.mako",
-                                              truncated_data=open(data.file_name).read(max_peek_size),
+                                              truncated_data=open(data.file_name, 'rb').read(max_peek_size),
                                               data=data)
 
     def _yield_user_file_content(self, trans, from_dataset, filename):
@@ -928,6 +928,10 @@ class Text(Data):
         """
         dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
         return dataproviders.line.RegexLineDataProvider(dataset_source, **settings)
+
+
+class Directory(Data):
+    """Class representing a directory of files."""
 
 
 class GenericAsn1(Text):

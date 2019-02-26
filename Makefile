@@ -1,5 +1,5 @@
 RELEASE_CURR:=16.01
-RELEASE_CURR_MINOR_NEXT:=$(shell expr `awk '$$1 == "VERSION_MINOR" {print $$NF}' lib/galaxy/version.py | tr -d \" | sed 's/None/0/;s/dev/0/;' ` + 1)
+RELEASE_CURR_MINOR_NEXT:=$(shell python scripts/bootstrap_history.py --print-next-minor-version)
 RELEASE_NEXT:=16.04
 # TODO: This needs to be updated with create_release_rc
 #RELEASE_NEXT_BRANCH:=release_$(RELEASE_NEXT)
@@ -141,7 +141,7 @@ ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 	false;
 else
-	cd client && yarn install --network-timeout 120000 --check-files
+	cd client && yarn install --network-timeout 300000 --check-files
 endif
 	
 
@@ -161,10 +161,10 @@ client-watch: node-deps ## A useful target for parallel development building.
 	cd client && yarn run watch
 
 _client-test-mocha:  ## Run mocha tests via karma
-	cd client && GALAXY_TEST_FRAMEWORK=mocha yarn run test
+	cd client && yarn run test-mocha
 
 _client-test-qunit:  ## Run qunit tests via karma
-	cd client && GALAXY_TEST_FRAMEWORK=qunit yarn run test
+	cd client && yarn run test-qunit
 
 client-test: client _client-test-mocha _client-test-qunit ## Run JS unit tests via Karma
 

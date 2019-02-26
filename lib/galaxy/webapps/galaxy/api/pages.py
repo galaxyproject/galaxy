@@ -44,7 +44,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         """
         out = []
 
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             r = trans.sa_session.query(trans.app.model.Page)
             if not deleted:
                 r = r.filter_by(deleted=False)
@@ -162,7 +162,7 @@ class PagesController(BaseAPIController, SharableItemSecurityMixin, UsesAnnotati
         if not page:
             raise exceptions.ObjectNotFound()
 
-        if page.user != trans.user and not trans.user_is_admin():
+        if page.user != trans.user and not trans.user_is_admin:
             raise exceptions.ItemOwnershipException()
 
         return page

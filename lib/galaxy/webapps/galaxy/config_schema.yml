@@ -25,33 +25,16 @@ mapping:
     required: true
     mapping:
 
-      filter-with:
-        type: str
-        default: gzip
-        required: false
-        desc: |
-          If not running behind a proxy server, you may want to enable gzip compression
-          to decrease the size of data transferred over the network.  If using a proxy
-          server, please enable gzip compression there instead.
-
-      filter-with:
-        type: str
-        default: proxy-prefix
-        required: false
-        desc: |
-          If running behind a proxy server and Galaxy is served from a subdirectory,
-          enable the proxy-prefix filter and set the prefix in the
-          [filter:proxy-prefix] section above.
-
       cookie_path:
         type: str
         default: ''
         required: false
         desc: |
-          If proxy-prefix is enabled and you're running more than one Galaxy instance
-          behind one hostname, you will want to set this to the same path as the prefix
-          in the filter above.  This value becomes the "path" attribute set in the
-          cookie so the cookies from each instance will not clobber each other.
+          When running multiple Galaxy instances under separate URL prefixes on a
+          single hostname, you will want to set this to the same path as the prefix set
+          in the uWSGI "mount" configuration option above. This value becomes the "path"
+          attribute set in the cookie so the cookies from one instance will not clobber
+          those from another.
 
       database_connection:
         type: str
@@ -161,14 +144,16 @@ mapping:
         default: database/files
         required: false
         desc: |
-          Dataset files are stored in this directory.
+          Where dataset files are stored. It must accessible at the same path on any cluster
+          nodes that will run Galaxy jobs, unless using Pulsar.
 
       new_file_path:
         type: str
         default: database/tmp
         required: false
         desc: |
-          Temporary files are stored in this directory.
+          Where temporary files are stored. It must accessible at the same path on any cluster
+          nodes that will run Galaxy jobs, unless using Pulsar.
 
       tool_config_file:
         type: str
@@ -182,16 +167,14 @@ mapping:
 
       check_migrate_tools:
         type: bool
-        default: true
+        default: false
         required: false
         desc: |
           Enable / disable checking if any tools defined in the above non-shed
           tool_config_files (i.e., tool_conf.xml) have been migrated from the Galaxy
-          code distribution to the Tool Shed.  This setting should generally be set to
-          False only for development Galaxy environments that are often rebuilt from
-          scratch where migrated tools do not need to be available in the Galaxy tool
-          panel.  If the following setting remains commented, the default setting will
-          be True.
+          code distribution to the Tool Shed. This functionality is largely untested
+          in modern Galaxy releases and has serious issues such as #7273 and the possibility
+          of slowing down Galaxy startup, so the default and recommended value is False.
 
       migrated_tools_config:
         type: str
@@ -276,6 +259,13 @@ mapping:
         desc: |
           conda channels to enable by default
           (https://conda.io/docs/user-guide/tasks/manage-channels.html)
+
+      conda_use_local:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Use locally-built conda packages.
 
       conda_auto_install:
         type: bool
@@ -407,7 +397,7 @@ mapping:
         default: database/dependencies/involucro
         required: false
         desc: |
-          involucro is a tool used to build Docker containers for tools from Conda
+          involucro is a tool used to build Docker or Singularity containers for tools from Conda
           dependencies referenced in tools as `requirement`s. The following path is
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
@@ -418,8 +408,15 @@ mapping:
         default: true
         required: false
         desc: |
-          Install involucro as needed to build Docker containers for tools. Ignored if
+          Install involucro as needed to build Docker or Singularity containers for tools. Ignored if
           relevant container resolver is not used.
+
+      mulled_channels:
+        type: str
+        default: 'conda-forge,bioconda'
+        required: false
+        desc: |
+          Conda channels to use when building Docker or Singularity containers using involucro.
 
       enable_tool_shed_check:
         type: bool
@@ -731,7 +728,7 @@ mapping:
 
       smtp_username:
         type: str
-        default: '' 
+        default: ''
         required: false
         desc: |
           If your SMTP server requires a username and password, you can provide them
@@ -921,7 +918,8 @@ mapping:
         default: info
         required: false
         desc: |
-          Show a message box under the masthead.
+          Class of the message box under the masthead. Possible values are:
+          'info' (the default), 'warning', 'error', 'done'.
 
       brand:
         type: str
@@ -996,6 +994,13 @@ mapping:
         required: false
         desc: |
           The URL linked by the "Galaxy/brand" text.
+
+      helpsite_url:
+        type: str
+        default: ''
+        required: false
+        desc: |
+          The URL linked by the "Galaxy Help" link in the "Help" menu.
 
       wiki_url:
         type: str
@@ -1556,12 +1561,17 @@ mapping:
 
       monitor_thread_join_timeout:
         type: int
-        default: 5
+        default: 30
         required: false
         desc: |
           When stopping Galaxy cleanly, how much time to give various monitoring/polling
           threads to finish before giving up on joining them. Set to 0 to disable this and
-          restore the pre-18.01 default behavior.
+          terminate without waiting. Among others, these threads include the job handler
+          workers, which are responsible for preparing/submitting and collecting/finishing
+          jobs, and which can cause job errors if not shut down cleanly. If using
+          supervisord, consider also increasing the value of `stopwaitsecs`. If using job
+          handler mules, consider also setting the `mule-reload-mercy` uWSGI option. See
+          the Galaxy Admin Documentation for more.
 
       use_heartbeat:
         type: bool
@@ -2100,6 +2110,13 @@ mapping:
           Enable beta workflow modules that should not yet be considered part of Galaxy's
           stable API.
 
+      enable_beta_workflow_format:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enable import and export of workflows as Galaxy Format 2 workflows.
+
       force_beta_workflow_scheduled_min_steps:
         type: int
         default: 250
@@ -2415,9 +2432,8 @@ mapping:
         default: true
         required: false
         desc: |
-          In multiprocess configurations, notification between processes about new jobs
-          must be done via the database.  In single process configurations, this can be
-          done in memory, which is a bit quicker.
+          This option is deprecated, use the `mem-self` handler assignment option in the
+          job configuration instead.
 
       use_tasked_jobs:
         type: bool

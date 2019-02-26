@@ -8,13 +8,16 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException
 )
-from galaxy.managers import tags
+from galaxy.managers import (
+    datasets,
+    tags
+)
 from galaxy.util import validation
 
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsManager(object):
+class LibraryDatasetsManager(datasets.DatasetAssociationManager):
     """Interface/service object for interacting with library datasets."""
 
     def __init__(self, app):
@@ -134,7 +137,7 @@ class LibraryDatasetsManager(object):
         :returns:   the original library dataset
         :rtype:     galaxy.model.LibraryDataset
         """
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             # all operations are available to an admin
             return ld
         if check_accessible:
@@ -174,7 +177,7 @@ class LibraryDatasetsManager(object):
         """
         if ld.deleted:
             raise ObjectNotFound('Library dataset with the id provided is deleted.')
-        elif trans.user_is_admin():
+        elif trans.user_is_admin:
             return ld
         if not trans.app.security_agent.can_modify_library_item(trans.get_current_user_roles(), ld):
             raise InsufficientPermissionsException('You do not have proper permission to modify this library dataset.')
@@ -214,12 +217,12 @@ class LibraryDatasetsManager(object):
         rval['full_path'] = full_path
         rval['file_size'] = util.nice_size(int(ldda.get_size()))
         rval['date_uploaded'] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['can_user_modify'] = trans.user_is_admin() or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
+        rval['can_user_modify'] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
         rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ldda.dataset)
         rval['tags'] = self.tag_manager.get_tags_str(ldda.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
-        rval['can_user_manage'] = trans.user_is_admin() or trans.app.security_agent.can_manage_dataset(current_user_roles, ldda.dataset)
+        rval['can_user_manage'] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(current_user_roles, ldda.dataset)
         return rval
 
     def _build_path(self, trans, folder):

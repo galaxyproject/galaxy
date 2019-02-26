@@ -9,9 +9,7 @@ from galaxy.util.checkers import (
 
 
 class UploadProblemException(Exception):
-
-    def __init__(self, message):
-        self.message = message
+    pass
 
 
 def handle_upload(

@@ -38,10 +38,10 @@ export default Backbone.View.extend({
         // build upload functions
         this.uploadinput = this.$el.uploadinput({
             ondragover: function() {
-                self.model.get("enabled") && self.$el.addClass("warning");
+                self.model.get("enabled") && self.$el.addClass("alert-success");
             },
             ondragleave: function() {
-                self.$el.removeClass("warning");
+                self.$el.removeClass("alert-success");
             },
             onchange: function(files) {
                 if (self.model.get("status") != "running" && files && files.length > 0) {
@@ -91,14 +91,14 @@ export default Backbone.View.extend({
         });
 
         // add ftp file viewer
-        this.ftp = new Popover.View({
-            title: "Choose FTP file:",
-            container: this.$source.find(".ui-button-menu"),
+        this.ftp = new Popover({
+            title: "Select a file",
+            container: this.$source.find(".dropdown"),
             placement: "right"
         });
 
         // append popup to settings icon
-        this.settings = new Popover.View({
+        this.settings = new Popover({
             title: _l("Upload configuration"),
             container: this.$settings,
             placement: "bottom"
@@ -256,41 +256,29 @@ export default Backbone.View.extend({
 
     /** Show/hide ftp popup */
     _showFtp: function() {
-        if (!this.ftp.visible) {
-            var self = this;
-            this.ftp.empty();
-            this.ftp.append(
-                new UploadFtp({
-                    ftp_upload_site: this.app.ftp_upload_site,
-                    onchange: function(ftp_file) {
-                        self.ftp.hide();
-                        if (self.model.get("status") != "running" && ftp_file) {
-                            self.model.reset({
-                                file_mode: "ftp",
-                                file_name: ftp_file.path,
-                                file_size: ftp_file.size,
-                                file_path: ftp_file.path
-                            });
-                            self._refreshReady();
-                        }
+        var self = this;
+        this.ftp.show(
+            new UploadFtp({
+                ftp_upload_site: this.app.ftp_upload_site,
+                onchange: function(ftp_file) {
+                    self.ftp.hide();
+                    if (self.model.get("status") != "running" && ftp_file) {
+                        self.model.reset({
+                            file_mode: "ftp",
+                            file_name: ftp_file.path,
+                            file_size: ftp_file.size,
+                            file_path: ftp_file.path
+                        });
+                        self._refreshReady();
                     }
-                }).$el
-            );
-            this.ftp.show();
-        } else {
-            this.ftp.hide();
-        }
+                }
+            }).$el
+        );
     },
 
     /** Show/hide settings popup */
     _showSettings: function() {
-        if (!this.settings.visible) {
-            this.settings.empty();
-            this.settings.append(new UploadSettings(this).$el);
-            this.settings.show();
-        } else {
-            this.settings.hide();
-        }
+        this.settings.show(new UploadSettings(this).$el);
     },
 
     /** Template */

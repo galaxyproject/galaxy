@@ -2,7 +2,7 @@
 
 By default, jobs in Galaxy are run locally on the server on which the Galaxy application was started.  Many options are available for running Galaxy jobs on other systems, including clusters and other remote resources.
 
-This document is a reference for the job configuration file.  [Detailed documentation](cluster) is provided for configuring Galaxy to work with a variety of Distributed Resource Managers (DRMs) such as TORQUE, Grid Engine, LSF, and HTCondor.  Additionally, a wide range of infrastructure decisions and configuration changes should be made when running Galaxy as a production service, as one is likely doing if using a cluster.  It is highly recommended that the [production server documentation](production.html) and [cluster configuration documentation](cluster.html) be read before making changes to the job configuration.
+This document is a reference for the job configuration file.  [Detailed documentation](cluster.html) is provided for configuring Galaxy to work with a variety of Distributed Resource Managers (DRMs) such as TORQUE, Grid Engine, LSF, and HTCondor.  Additionally, a wide range of infrastructure decisions and configuration changes should be made when running Galaxy as a production service, as one is likely doing if using a cluster.  It is highly recommended that the [production server documentation](production.html) and [cluster configuration documentation](cluster.html) be read before making changes to the job configuration.
 
 **The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
 
@@ -38,9 +38,9 @@ workers
 
 ### Job Handlers
 
-The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](https://galaxyproject.org/admin/config/performance/scaling/)) should be used for running jobs, and how to group those processes.
+The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](scaling.html)) should be used for running jobs, and how to group those processes.
 
-The handlers configuration may define a ``default`` attribute. This is the the handler(s) that should be used if no explicit handler is defined for a job and is required if >1 handlers defined.
+The handlers configuration may define a ``default`` attribute. This is the the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
 
 The collection contains `<handler>` elements.
 
@@ -110,6 +110,21 @@ destination
 ```
 
 **Note:** Currently, failure conditions for memory limits and walltime are only implemented for the [Slurm](cluster.html) job runner plugin. Contributions for other implementations would be greatly appreciated! An example job configuration and an always-fail job runner plugin for development [can be found in this gist](https://gist.github.com/natefoo/361414fbca3c0ea63aa5).
+
+
+### Running jobs in containers
+
+Galaxy can be configured to run jobs in container runtimes. Currently the two supported runtimes are [Docker](https://www.docker.com) and [Singularity](https://www.sylabs.io/). Each ``<destination>`` can enable container support
+with ``<param id="docker_enabled">true</param>`` and/or ``<param id="singularity_enabled">true</param>``, as documented
+in the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/config/job_conf.xml.sample_advanced).
+In the case of Docker, containers are run using **sudo** unless ``<param id="docker_sudo">false</param>`` is specified, thus
+the user that Galaxy runs as should be able to run ``sudo docker`` without a password prompt for Docker containers to
+work.
+
+The images used for containers can either be specified explicitely in the ``<destination>`` using the *docker_default_container_id*, *docker_container_id_override*, *singularity_default_container_id* and
+*singularity_container_id_override* parameters, but (perhaps more commonly) the image to use can be derived from the
+tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
+tool using a ``<container>`` tag in the ``<requirements>`` section. 
 
 ### Macros
 

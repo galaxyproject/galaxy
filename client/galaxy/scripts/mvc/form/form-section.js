@@ -59,7 +59,7 @@ var View = Backbone.View.extend({
                 var sub_section = new View(this.app, {
                     inputs: input_def.cases[i].inputs
                 });
-                this._append(sub_section.$el.addClass("ui-form-section"), `${input_def.id}-section-${i}`);
+                this._append(sub_section.$el.addClass("ui-portlet-section pl-2"), `${input_def.id}-section-${i}`);
             }
             field.model.set("onchange", value => {
                 var selectedCase = self.app.data.matchCase(input_def, value);
@@ -148,7 +148,7 @@ var View = Backbone.View.extend({
         portlet.append(new View(this.app, { inputs: input_def.inputs }).$el);
         portlet.append(
             $("<div/>")
-                .addClass("ui-form-info")
+                .addClass("form-text text-muted")
                 .html(input_def.help)
         );
         this.app.on("expand", input_id => {
@@ -175,6 +175,7 @@ var View = Backbone.View.extend({
             text_value: input_def.text_value,
             collapsible_value: input_def.collapsible_value,
             collapsible_preview: input_def.collapsible_preview,
+            connectable: input_def.connectable,
             help: input_def.help,
             argument: input_def.argument,
             disabled: input_def.disabled,

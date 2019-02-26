@@ -11,7 +11,7 @@ from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger(__name__)
 
-VALID_FIELDNAME_RE = re.compile("^[a-zA-Z0-9\_]+$")
+VALID_FIELDNAME_RE = re.compile(r"^[a-zA-Z0-9\_]+$")
 
 
 class FormsGrid(grids.Grid):

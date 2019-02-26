@@ -1,11 +1,11 @@
-import sys
 from functools import partial
 from os.path import dirname
 
 from galaxy.queue_worker import (
+    job_rule_modules,
     reload_data_managers,
     reload_job_rules,
-    reload_toolbox,
+    reload_toolbox
 )
 from galaxy.tools.toolbox.watcher import (
     get_tool_conf_watcher,
@@ -93,15 +93,7 @@ class ConfigWatchers(object):
     @property
     def job_rules_paths(self):
         job_rules_paths = []
-        default = 'galaxy.jobs.rules'
-        rules_module_name = default
-        if self.app.job_config.dynamic_params is not None:
-            rules_module_name = self.app.job_config.dynamic_params.get('rules_module', default)
-        rules_module = sys.modules.get(rules_module_name, None)
-        if not rules_module:
-            # if using a non-default module, it's not imported until a JobRunnerMapper is instantiated when the first
-            # JobWrapper is created
-            rules_module = __import__(rules_module_name)
-        job_rules_dir = dirname(rules_module.__file__)
-        job_rules_paths.append(job_rules_dir)
+        for rules_module in job_rule_modules(self.app):
+            job_rules_dir = dirname(rules_module.__file__)
+            job_rules_paths.append(job_rules_dir)
         return job_rules_paths

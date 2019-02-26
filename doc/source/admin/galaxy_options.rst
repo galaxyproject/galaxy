@@ -1,25 +1,13 @@
 ~~~~~~~~~~~~~~~
-``filter-with``
-~~~~~~~~~~~~~~~
-
-:Description:
-    If running behind a proxy server and Galaxy is served from a
-    subdirectory, enable the proxy-prefix filter and set the prefix in
-    the [filter:proxy-prefix] section above.
-:Default: ``proxy-prefix``
-:Type: str
-
-
-~~~~~~~~~~~~~~~
 ``cookie_path``
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If proxy-prefix is enabled and you're running more than one Galaxy
-    instance behind one hostname, you will want to set this to the
-    same path as the prefix in the filter above.  This value becomes
-    the "path" attribute set in the cookie so the cookies from each
-    instance will not clobber each other.
+    When running multiple Galaxy instances under separate URL prefixes
+    on a single hostname, you will want to set this to the same path
+    as the prefix set in the uWSGI "mount" configuration option above.
+    This value becomes the "path" attribute set in the cookie so the
+    cookies from one instance will not clobber those from another.
 :Default: ````
 :Type: str
 
@@ -173,7 +161,9 @@
 ~~~~~~~~~~~~~
 
 :Description:
-    Dataset files are stored in this directory.
+    Where dataset files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/files``
 :Type: str
 
@@ -183,7 +173,9 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Temporary files are stored in this directory.
+    Where temporary files are stored. It must accessible at the same
+    path on any cluster nodes that will run Galaxy jobs, unless using
+    Pulsar.
 :Default: ``database/tmp``
 :Type: str
 
@@ -208,13 +200,12 @@
 :Description:
     Enable / disable checking if any tools defined in the above non-
     shed tool_config_files (i.e., tool_conf.xml) have been migrated
-    from the Galaxy code distribution to the Tool Shed.  This setting
-    should generally be set to False only for development Galaxy
-    environments that are often rebuilt from scratch where migrated
-    tools do not need to be available in the Galaxy tool panel.  If
-    the following setting remains commented, the default setting will
-    be True.
-:Default: ``true``
+    from the Galaxy code distribution to the Tool Shed. This
+    functionality is largely untested in modern Galaxy releases and
+    has serious issues such as #7273 and the possibility of slowing
+    down Galaxy startup, so the default and recommended value is
+    False.
+:Default: ``false``
 :Type: bool
 
 
@@ -334,6 +325,16 @@
     guide/tasks/manage-channels.html)
 :Default: ``iuc,conda-forge,bioconda,defaults``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``conda_use_local``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Use locally-built conda packages.
+:Default: ``false``
+:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -511,12 +512,12 @@
 ~~~~~~~~~~~~~~~~~~
 
 :Description:
-    involucro is a tool used to build Docker containers for tools from
-    Conda dependencies referenced in tools as `requirement`s. The
-    following path is the location of involucro on the Galaxy host.
-    This is ignored if the relevant container resolver isn't enabled,
-    and will install on demand unless involucro_auto_init is set to
-    False.
+    involucro is a tool used to build Docker or Singularity containers
+    for tools from Conda dependencies referenced in tools as
+    `requirement`s. The following path is the location of involucro on
+    the Galaxy host. This is ignored if the relevant container
+    resolver isn't enabled, and will install on demand unless
+    involucro_auto_init is set to False.
 :Default: ``database/dependencies/involucro``
 :Type: str
 
@@ -526,10 +527,22 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Install involucro as needed to build Docker containers for tools.
-    Ignored if relevant container resolver is not used.
+    Install involucro as needed to build Docker or Singularity
+    containers for tools. Ignored if relevant container resolver is
+    not used.
 :Default: ``true``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~
+``mulled_channels``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Conda channels to use when building Docker or Singularity
+    containers using involucro.
+:Default: ``conda-forge,bioconda``
+:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1208,7 +1221,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Show a message box under the masthead.
+    Class of the message box under the masthead. Possible values are:
+    'info' (the default), 'warning', 'error', 'done'.
 :Default: ``info``
 :Type: str
 
@@ -1306,6 +1320,16 @@
 :Description:
     The URL linked by the "Galaxy/brand" text.
 :Default: ``/``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~
+``helpsite_url``
+~~~~~~~~~~~~~~~~
+
+:Description:
+    The URL linked by the "Galaxy Help" link in the "Help" menu.
+:Default: ````
 :Type: str
 
 
@@ -2087,9 +2111,15 @@
 :Description:
     When stopping Galaxy cleanly, how much time to give various
     monitoring/polling threads to finish before giving up on joining
-    them. Set to 0 to disable this and restore the pre-18.01 default
-    behavior.
-:Default: ``5``
+    them. Set to 0 to disable this and terminate without waiting.
+    Among others, these threads include the job handler workers, which
+    are responsible for preparing/submitting and collecting/finishing
+    jobs, and which can cause job errors if not shut down cleanly. If
+    using supervisord, consider also increasing the value of
+    `stopwaitsecs`. If using job handler mules, consider also setting
+    the `mule-reload-mercy` uWSGI option. See the Galaxy Admin
+    Documentation for more.
+:Default: ``30``
 :Type: int
 
 
@@ -2810,6 +2840,17 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beta_workflow_format``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enable import and export of workflows as Galaxy Format 2
+    workflows.
+:Default: ``false``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``force_beta_workflow_scheduled_min_steps``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3240,10 +3281,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    In multiprocess configurations, notification between processes
-    about new jobs must be done via the database.  In single process
-    configurations, this can be done in memory, which is a bit
-    quicker.
+    This option is deprecated, use the `mem-self` handler assignment
+    option in the job configuration instead.
 :Default: ``true``
 :Type: bool
 

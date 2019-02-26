@@ -1,9 +1,14 @@
-import _l from "utils/localization";
 /** This class renders the chart configuration form. */
-import Utils from "utils/utils";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import _l from "utils/localization";
+// import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
 import Form from "mvc/form/form-view";
 import Table from "mvc/ui/ui-table";
+
 var Collection = Backbone.Collection.extend({
     comparator: function(a, b) {
         a = a.get("name");
@@ -14,13 +19,14 @@ var Collection = Backbone.Collection.extend({
 
 var View = Backbone.View.extend({
     initialize: function(options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.active_tab = "user";
         var history_id = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
         this.model = new Backbone.Model();
-        this.model.url = `${Galaxy.root}api/histories/${history_id}/custom_builds_metadata`;
+        this.model.url = `${getAppRoot()}api/histories/${history_id}/custom_builds_metadata`;
         this.collection = new Collection();
-        this.collection.url = `${Galaxy.root}api/users/${Galaxy.user.id}/custom_builds`;
+        this.collection.url = `${getAppRoot()}api/users/${Galaxy.user.id}/custom_builds`;
         this.message = new Ui.Message({});
         this.installed_builds = new Ui.Select.View({
             optional: true,
@@ -45,25 +51,25 @@ var View = Backbone.View.extend({
                         .append(
                             $("<h4/>")
                                 .text("System Installed Builds")
-                                .addClass("ui-margin-top")
+                                .addClass("mt-1")
                         )
                         .append(this.installed_builds.$el))
                 )
                 .append(
                     $("<h4/>")
                         .text("Add a Custom Build")
-                        .addClass("ui-margin-top")
+                        .addClass("mt-4")
                 )
                 .append(
                     $("<span/>")
-                        .addClass("ui-column")
+                        .addClass("row")
                         .append(
                             $("<div/>")
-                                .addClass("ui-column-left")
+                                .addClass("col")
                                 .append(this.message.$el)
-                                .append((this.$form = $("<div/>").addClass("ui-margin-top")))
+                                .append((this.$form = $("<div/>").addClass("mt-1")))
                         )
-                        .append((this.$help = $("<div/>").addClass("ui-column-right")))
+                        .append((this.$help = $("<div/>").addClass("col m-2")))
                 )
         );
         this.listenTo(this.collection, "add remove reset", () => {
@@ -90,7 +96,7 @@ var View = Backbone.View.extend({
             self.table.add(model.id);
             self.table.add(model.get("count") !== undefined ? model.get("count") : "Processing...");
             self.table.add(
-                new Ui.ButtonIcon({
+                new Ui.Button({
                     icon: "fa-trash-o",
                     cls: "ui-button-icon-plain",
                     tooltip: _l("Delete custom build."),
@@ -186,7 +192,7 @@ var View = Backbone.View.extend({
                     icon: "fa-save",
                     tooltip: _l("Create new Build"),
                     title: _l("Save"),
-                    cls: "btn btn-primary ui-clear-float",
+                    cls: "btn btn-primary",
                     onclick: function() {
                         var data = form.data.create();
                         if (!data.id || !data.name) {

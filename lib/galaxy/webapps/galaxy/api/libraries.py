@@ -208,7 +208,7 @@ class LibrariesController(BaseAPIController):
         :raises: InsufficientPermissionsException
         """
         current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this library.')
@@ -274,7 +274,7 @@ class LibrariesController(BaseAPIController):
         """
         if payload:
             kwd.update(payload)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
 

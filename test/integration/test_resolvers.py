@@ -1,4 +1,4 @@
-"""Integration tests for conda dependency resolution."""
+"""Integration tests for dependency resolution."""
 import os
 from tempfile import mkdtemp
 
@@ -124,6 +124,29 @@ class CondaResolutionIntegrationTestCase(integration_util.IntegrationTestCase):
         self._assert_status_code_is(create_response, 200)
         response = create_response.json()
         assert not [True for d in response if d['dependency_type'] == 'conda']
+
+    def _uninstall_mulled_example_multi_1(self, resolver_type=None):
+        tool_id = 'mulled_example_multi_1'
+        endpoint = "tools/%s/dependencies" % tool_id
+        data = {'id': tool_id, 'resolver_type': resolver_type}
+        create_response = self._delete(endpoint, data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
+        response = create_response.json()
+        assert not [True for d in response if d['dependency_type'] == 'conda']
+
+    def test_conda_install_with_resolver_type_via_tools_api(self):
+        # Makes sure dependency is not already installed
+        self._uninstall_mulled_example_multi_1(resolver_type='conda')
+        # Now do the actual test
+        tool_id = 'mulled_example_multi_1'
+        endpoint = "tools/%s/dependencies" % tool_id
+        data = {'id': tool_id, 'resolver_type': 'conda'}
+        create_response = self._post(endpoint, data=data, admin=True)
+        self._assert_status_code_is(create_response, 200)
+        response = create_response.json()
+        assert any([True for d in response if d['dependency_type'] == 'conda'])
+        # Now that we know install was successfullt we can also doube check that the uninstall works
+        self._uninstall_mulled_example_multi_1(resolver_type='conda')
 
     def test_conda_clean(self):
         endpoint = 'dependency_resolvers/clean'

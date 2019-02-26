@@ -2,6 +2,7 @@
 API operations on the contents of a history dataset.
 """
 import logging
+import os
 
 from six import string_types
 
@@ -13,6 +14,9 @@ from galaxy import (
     web
 )
 from galaxy.datatypes import dataproviders
+from galaxy.util.path import (
+    safe_walk
+)
 from galaxy.visualization.data_providers.genome import (
     BamDataProvider,
     FeatureLocationIndexDataProvider,
@@ -112,7 +116,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
         else:
             self.ldda_manager.update_permissions(trans, dataset_assoc, **kwd)
-            return self.hda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
+            return self.ldda_manager.serialize_dataset_association_roles(trans, dataset_assoc)
 
     def _dataset_state(self, trans, dataset, **kwargs):
         """
@@ -302,6 +306,25 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
 
         return data
 
+    @web.expose_api_anonymous
+    def extra_files(self, trans, history_content_id, history_id, **kwd):
+        """
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/extra_files
+        Generate list of extra files.
+        """
+        decoded_content_id = self.decode_id(history_content_id)
+
+        hda = self.hda_manager.get_accessible(decoded_content_id, trans.user)
+        extra_files_path = hda.extra_files_path
+        rval = []
+        for root, directories, files in safe_walk(extra_files_path):
+            for directory in directories:
+                rval.append({"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)})
+            for file in files:
+                rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
+
+        return rval
+
     @web.expose_api_raw_anonymous
     def display(self, trans, history_content_id, history_id,
                 preview=False, filename=None, to_ext=None, raw=False, **kwd):
@@ -353,7 +376,7 @@ class DatasetsController(BaseAPIController, UsesVisualizationMixin):
             fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in hda.name)[0:150]
             trans.response.headers["Content-Type"] = "application/octet-stream"
             trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (hda.hid, fname, file_ext)
-            return open(hda.metadata.get(metadata_file).file_name)
+            return open(hda.metadata.get(metadata_file).file_name, 'rb')
         except Exception as exception:
             log.error("Error getting metadata_file (%s) for dataset (%s) from history (%s): %s",
                       metadata_file, history_content_id, history_id, str(exception), exc_info=True)

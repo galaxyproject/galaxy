@@ -28,7 +28,7 @@ def validate_server_directory_upload(trans, server_dir):
     if server_dir in [None, 'None', '']:
         raise RequestParameterInvalidException("Invalid or unspecified server_dir parameter")
 
-    if trans.user_is_admin():
+    if trans.user_is_admin:
         import_dir = trans.app.config.library_import_dir
         import_dir_desc = 'library_import_dir'
         if not import_dir:
@@ -61,7 +61,7 @@ def validate_path_upload(trans):
     if not trans.app.config.allow_library_path_paste:
         raise ConfigDoesNotAllowException('"allow_path_paste" is not set to True in the Galaxy configuration file')
 
-    if not trans.user_is_admin():
+    if not trans.user_is_admin:
         raise AdminRequiredException('Uploading files via filesystem paths can only be performed by administrators')
 
 
@@ -248,7 +248,7 @@ class LibraryActions(object):
         uploaded_dataset.dbkey = params.get('dbkey', None)
         uploaded_dataset.to_posix_lines = params.get('to_posix_lines', None)
         uploaded_dataset.space_to_tab = params.get('space_to_tab', None)
-        uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', True)
+        uploaded_dataset.tag_using_filenames = params.get('tag_using_filenames', False)
         uploaded_dataset.purge_source = getattr(trans.app.config, 'ftp_upload_purge', True)
         if in_folder:
             uploaded_dataset.in_folder = in_folder
@@ -262,7 +262,7 @@ class LibraryActions(object):
         return uploaded_dataset
 
     def _create_folder(self, trans, parent_id, library_id, **kwd):
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         try:
             parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(parent_id))

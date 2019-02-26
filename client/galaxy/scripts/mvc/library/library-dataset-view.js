@@ -1,8 +1,14 @@
+/* global $, jQuery */
+import _ from "underscore";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
 import mod_toastr from "libs/toastr";
 import mod_library_model from "mvc/library/library-model";
 import mod_utils from "utils/utils";
 import mod_select from "mvc/ui/ui-select";
+
 var LibraryDatasetView = Backbone.View.extend({
     el: "#center",
 
@@ -60,6 +66,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     fetchDataset: function(options) {
+        let Galaxy = getGalaxyInstance();
         this.options = _.extend(this.options, options);
         this.model = new mod_library_model.Item({
             id: this.options.id
@@ -148,7 +155,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     downloadDataset: function() {
-        var url = `${Galaxy.root}api/libraries/datasets/download/uncompressed`;
+        var url = `${getAppRoot()}api/libraries/datasets/download/uncompressed`;
         var data = { ld_ids: this.id };
         this.processDownload(url, data);
     },
@@ -176,6 +183,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     importIntoHistory: function() {
         this.refreshUserHistoriesList(self => {
+            let Galaxy = getGalaxyInstance();
             var template = self.templateBulkImportInModal();
             self.modal = Galaxy.modal;
             self.modal.show({
@@ -202,7 +210,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 if (histories.length === 0) {
                     mod_toastr.warning("You have to create history first. Click this to do so.", "", {
                         onclick: function() {
-                            window.location = Galaxy.root;
+                            window.location = getAppRoot();
                         }
                     });
                 } else {
@@ -224,7 +232,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var new_history_name = this.modal.$("input[name=history_name]").val();
         var self = this;
         if (new_history_name !== "") {
-            $.post(`${Galaxy.root}api/histories`, {
+            $.post(`${getAppRoot()}api/histories`, {
                 name: new_history_name
             })
                 .done(new_history => {
@@ -246,11 +254,12 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     processImportToHistory: function(history_id) {
+        let Galaxy = getGalaxyInstance();
         var historyItem = new mod_library_model.HistoryItem();
         historyItem.url = `${historyItem.urlRoot + history_id}/contents`;
         // set the used history as current so user will see the last one
         // that he imported into in the history panel on the 'analysis' page
-        jQuery.getJSON(`${Galaxy.root}history/set_as_current?id=${history_id}`);
+        jQuery.getJSON(`${getAppRoot()}history/set_as_current?id=${history_id}`);
         // save the dataset into selected history
         historyItem.save(
             { content: this.id, source: "library" },
@@ -259,7 +268,7 @@ var LibraryDatasetView = Backbone.View.extend({
                     Galaxy.modal.hide();
                     mod_toastr.success("Dataset imported. Click this to start analyzing it.", "", {
                         onclick: function() {
-                            window.location = Galaxy.root;
+                            window.location = getAppRoot();
                         }
                     });
                 },
@@ -275,6 +284,7 @@ var LibraryDatasetView = Backbone.View.extend({
     },
 
     showPermissions: function(options) {
+        let Galaxy = getGalaxyInstance();
         var template = this.templateDatasetPermissions();
         var self = this;
         this.options = _.extend(this.options, options);
@@ -292,7 +302,7 @@ var LibraryDatasetView = Backbone.View.extend({
                 is_admin: Galaxy.config.is_admin_user
             })
         );
-        $.get(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?scope=current`)
+        $.get(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?scope=current`)
             .done(fetched_permissions => {
                 self.prepareSelectBoxes({
                     fetched_permissions: fetched_permissions,
@@ -368,7 +378,7 @@ var LibraryDatasetView = Backbone.View.extend({
         select_options.css = options.selector;
         select_options.initialData = options.initialData.join(",");
         select_options.ajax = {
-            url: `${Galaxy.root}api/libraries/datasets/${this.id}/permissions?scope=available`,
+            url: `${getAppRoot()}api/libraries/datasets/${this.id}/permissions?scope=available`,
             dataType: "json",
             quietMillis: 100,
             data: function(term, page) {
@@ -457,7 +467,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     makeDatasetPrivate: function() {
         var self = this;
-        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=make_private`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=make_private`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: false });
                 self.showPermissions({
@@ -472,7 +482,7 @@ var LibraryDatasetView = Backbone.View.extend({
 
     removeDatasetRestrictions: function() {
         var self = this;
-        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
+        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=remove_restrictions`)
             .done(fetched_permissions => {
                 self.model.set({ is_unrestricted: true });
                 self.showPermissions({
@@ -504,7 +514,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var access_ids = this._extractIds(this.accessSelectObject.$el.select2("data"));
         var manage_ids = this._extractIds(this.manageSelectObject.$el.select2("data"));
         var modify_ids = this._extractIds(this.modifySelectObject.$el.select2("data"));
-        $.post(`${Galaxy.root}api/libraries/datasets/${self.id}/permissions?action=set_permissions`, {
+        $.post(`${getAppRoot()}api/libraries/datasets/${self.id}/permissions?action=set_permissions`, {
             "access_ids[]": access_ids,
             "manage_ids[]": manage_ids,
             "modify_ids[]": modify_ids
@@ -528,7 +538,7 @@ var LibraryDatasetView = Backbone.View.extend({
         var self = this;
         if (this.list_genomes.length == 0) {
             mod_utils.get({
-                url: `${Galaxy.root}api/datatypes?extension_only=False`,
+                url: `${getAppRoot()}api/datatypes?extension_only=False`,
                 success: function(datatypes) {
                     for (var key in datatypes) {
                         self.list_extensions.push({
@@ -545,7 +555,7 @@ var LibraryDatasetView = Backbone.View.extend({
         }
         if (this.list_extensions.length == 0) {
             mod_utils.get({
-                url: `${Galaxy.root}api/genomes`,
+                url: `${getAppRoot()}api/genomes`,
                 success: function(genomes) {
                     for (var key in genomes) {
                         self.list_genomes.push({

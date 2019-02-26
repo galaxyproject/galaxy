@@ -41,7 +41,7 @@ log = logging.getLogger(__name__)
 
 workflow_building_modes = Bunch(DISABLED=False, ENABLED=True, USE_HISTORY=1)
 
-WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile('''\$\{.+?\}''')
+WORKFLOW_PARAMETER_REGULAR_EXPRESSION = re.compile(r'\$\{.+?\}')
 
 
 def contains_workflow_parameter(value, search=False):
@@ -56,7 +56,7 @@ def contains_workflow_parameter(value, search=False):
 
 def is_runtime_value(value):
     return isinstance(value, RuntimeValue) or (isinstance(value, dict)
-        and value.get("__class__") == "RuntimeValue")
+        and value.get("__class__") in ["RuntimeValue", "ConnectedValue"])
 
 
 def is_runtime_context(trans, other_values):
@@ -155,13 +155,13 @@ class ToolParameter(Dictifiable):
 
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
-            return {'__class__': 'RuntimeValue'}
+            return runtime_to_json(value)
         return self.to_json(value, app, use_security)
 
     def value_from_basic(self, value, app, ignore_errors=False):
         # Handle Runtime and Unvalidated values
         if is_runtime_value(value):
-            return RuntimeValue()
+            return runtime_to_object(value)
         elif isinstance(value, dict) and value.get('__class__') == 'UnvalidatedValue':
             return value['value']
         # Delegate to the 'to_python' method
@@ -270,7 +270,7 @@ class TextToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(TextToolParameter, self).__init__(tool, input_source)
         self.datalist = []
         for (title, value, selected) in input_source.parse_static_options():
             self.datalist.append({'label' : title, 'value': value})
@@ -320,8 +320,7 @@ class IntegerToolParameter(TextToolParameter):
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        TextToolParameter.__init__(self, tool, input_source)
+        super(IntegerToolParameter, self).__init__(tool, input_source)
         if self.value:
             try:
                 int(self.value)
@@ -394,8 +393,7 @@ class FloatToolParameter(TextToolParameter):
     dict_collection_visible_keys = ToolParameter.dict_collection_visible_keys + ['min', 'max']
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        TextToolParameter.__init__(self, tool, input_source)
+        super(FloatToolParameter, self).__init__(tool, input_source)
         self.min = input_source.get('min')
         self.max = input_source.get('max')
         if self.value:
@@ -470,7 +468,7 @@ class BooleanToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(BooleanToolParameter, self).__init__(tool, input_source)
         self.truevalue = input_source.get('truevalue', 'true')
         self.falsevalue = input_source.get('falsevalue', 'false')
         self.checked = input_source.get_bool('checked', False)
@@ -521,8 +519,7 @@ class FileToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(FileToolParameter, self).__init__(tool, input_source)
 
     def from_json(self, value, trans=None, other_values={}):
         # Middleware or proxies may encode files in special ways (TODO: this
@@ -532,7 +529,7 @@ class FileToolParameter(ToolParameter):
                 # handle api upload
                 session_id = value["session_id"]
                 upload_store = trans.app.config.new_file_path
-                if re.match('^[\w-]+$', session_id) is None:
+                if re.match(r'^[\w-]+$', session_id) is None:
                     raise ValueError("Invald session id format.")
                 local_filename = os.path.abspath(os.path.join(upload_store, session_id))
             else:
@@ -589,7 +586,7 @@ class FTPFileToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(FTPFileToolParameter, self).__init__(tool, input_source)
         self.multiple = input_source.get_bool('multiple', True)
         self.optional = input_source.parse_optional(True)
         self.user_ftp_dir = ''
@@ -653,8 +650,7 @@ class GenomespaceFileToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(GenomespaceFileToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value')
 
     def get_initial_value(self, trans, other_values):
@@ -674,8 +670,7 @@ class HiddenToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(HiddenToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value')
         self.hidden = True
 
@@ -708,8 +703,7 @@ class ColorToolParameter(ToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(ColorToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value', '#fdeada')
         self.rgb = input_source.get('rgb', False)
 
@@ -739,7 +733,6 @@ class BaseURLToolParameter(HiddenToolParameter):
     """
 
     def __init__(self, tool, input_source):
-        input_source = ensure_input_source(input_source)
         super(BaseURLToolParameter, self).__init__(tool, input_source)
         self.value = input_source.get('value', '')
 
@@ -797,7 +790,7 @@ class SelectToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(SelectToolParameter, self).__init__(tool, input_source)
         self.multiple = input_source.get_bool('multiple', False)
         # Multiple selects are optional by default, single selection is the inverse.
         self.optional = input_source.parse_optional(self.multiple)
@@ -1038,7 +1031,7 @@ class SelectTagParameter(SelectToolParameter):
     """
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        SelectToolParameter.__init__(self, tool, input_source)
+        super(SelectTagParameter, self).__init__(tool, input_source)
         self.tool = tool
         self.tag_key = input_source.get("group", False)
         self.optional = input_source.get("optional", False)
@@ -1152,7 +1145,7 @@ class ColumnListParameter(SelectToolParameter):
 
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
-        SelectToolParameter.__init__(self, tool, input_source)
+        super(ColumnListParameter, self).__init__(tool, input_source)
         self.numerical = input_source.get_bool("numerical", False)
         self.optional = input_source.parse_optional(False)
         self.accept_default = input_source.get_bool("accept_default", False)
@@ -1273,7 +1266,7 @@ class ColumnListParameter(SelectToolParameter):
     def get_initial_value(self, trans, other_values):
         if self.default_value is not None:
             return self.default_value
-        return SelectToolParameter.get_initial_value(self, trans, other_values)
+        return super(ColumnListParameter, self).get_initial_value(trans, other_values)
 
     def get_legal_values(self, trans, other_values):
         if self.data_ref not in other_values:
@@ -1335,13 +1328,13 @@ class DrillDownSelectToolParameter(SelectToolParameter):
     """
 
     def __init__(self, tool, input_source, context=None):
-        input_source = ensure_input_source(input_source)
-
         def recurse_option_elems(cur_options, option_elems):
             for option_elem in option_elems:
                 selected = string_as_bool(option_elem.get('selected', False))
                 cur_options.append({'name': option_elem.get('name'), 'value': option_elem.get('value'), 'options': [], 'selected': selected})
                 recurse_option_elems(cur_options[-1]['options'], option_elem.findall('option'))
+
+        input_source = ensure_input_source(input_source)
         ToolParameter.__init__(self, tool, input_source)
         # TODO: abstract XML out of here - so non-XML InputSources can
         # specify DrillDown parameters.
@@ -2162,7 +2155,7 @@ class LibraryDatasetToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super(LibraryDatasetToolParameter, self).__init__(tool, input_source)
         self.multiple = input_source.get_bool('multiple', True)
 
     def from_json(self, value, trans, other_values={}):
@@ -2253,7 +2246,7 @@ class BaseJsonToolParameter(ToolParameter):
 
     def value_to_basic(self, value, app, use_security=False):
         if is_runtime_value(value):
-            return {'__class__': 'RuntimeValue'}
+            return runtime_to_json(value)
         return value
 
     def to_json(self, value, app, use_security):
@@ -2330,8 +2323,29 @@ parameter_types = dict(
 )
 
 
+def runtime_to_json(runtime_value):
+    if isinstance(runtime_value, ConnectedValue) or (isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"):
+        return {"__class__": "ConnectedValue"}
+    else:
+        return {"__class__": "RuntimeValue"}
+
+
+def runtime_to_object(runtime_value):
+    if isinstance(runtime_value, ConnectedValue) or (isinstance(runtime_value, dict) and runtime_value["__class__"] == "ConnectedValue"):
+        return ConnectedValue()
+    else:
+        return RuntimeValue()
+
+
 class RuntimeValue(object):
     """
     Wrapper to note a value that is not yet set, but will be required at runtime.
+    """
+    pass
+
+
+class ConnectedValue(RuntimeValue):
+    """
+    Wrapper to note a value that is not yet set, but will be inferred from a connection.
     """
     pass

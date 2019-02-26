@@ -1,7 +1,4 @@
-from galaxy.exceptions import (
-    NotImplemented,
-    RequestParameterMissingException
-)
+from galaxy import exceptions
 
 
 class DependencyResolversView(object):
@@ -34,7 +31,7 @@ class DependencyResolversView(object):
         requirements = []
         resolver = self._dependency_resolver(index)
         if not hasattr(resolver, "list_dependencies"):
-            raise NotImplemented()
+            raise exceptions.NotImplemented()
         for requirement in resolver.list_dependencies():
             requirements.append(requirement.to_dict())
         return requirements
@@ -52,10 +49,12 @@ class DependencyResolversView(object):
         kwds = {'install': False,
                 'return_null': True,
                 'installed_tool_dependencies': installed_tool_dependencies}
-        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements, **kwds) for tool, requirements in tool_requirements_d.items()}
+        dependencies_per_tool = {tool: self._dependency_manager.requirements_to_dependencies(requirements,
+                                                                                             **kwds)
+                                 for tool, requirements in tool_requirements_d.items()}
         return dependencies_per_tool
 
-    def uninstall_dependencies(self, index=None, **payload):
+    def uninstall_dependencies(self, index=None, resolver_type=None, **payload):
         """Attempt to uninstall requirements. Returns 0 if successfull, else None."""
         requirements = payload.get('requirements')
         if not requirements:
@@ -64,6 +63,10 @@ class DependencyResolversView(object):
             resolver = self._dependency_resolvers[index]
             if resolver.can_uninstall_dependencies:
                 return resolver.uninstall(requirements)
+        elif resolver_type:
+            for resolver in self._dependency_resolvers:
+                if resolver.resolver_type == resolver_type and resolver.can_uninstall_dependencies:
+                    return resolver.uninstall(requirements)
         else:
             for index in self.uninstallable_resolvers:
                 return_code = self._dependency_resolvers[index].uninstall(requirements)
@@ -100,8 +103,8 @@ class DependencyResolversView(object):
                     envs_to_remove = envs_to_remove.difference(can_remove)
         return list(removed_environments)
 
-    def install_dependencies(self, requirements):
-        return self._dependency_manager._requirements_to_dependencies_dict(requirements, **{'install': True})
+    def install_dependencies(self, requirements, **kwds):
+        return self._dependency_manager._requirements_to_dependencies_dict(requirements, **kwds)
 
     def install_dependency(self, index=None, **payload):
         """
@@ -128,7 +131,7 @@ class DependencyResolversView(object):
         """
         resolver = self._dependency_resolver(index)
         if not hasattr(resolver, "install_dependency"):
-            raise NotImplemented()
+            raise exceptions.NotImplemented()
 
         name, version, type, extra_kwds = self._parse_dependency_info(payload)
         return resolver.install_dependency(
@@ -157,7 +160,7 @@ class DependencyResolversView(object):
         extra_kwds = kwds.copy()
         name = extra_kwds.pop("name", None)
         if name is None:
-            raise RequestParameterMissingException("Missing 'name' parameter required for resolution.")
+            raise exceptions.RequestParameterMissingException("Missing 'name' parameter required for resolution.")
         version = extra_kwds.pop("version", None)
         type = extra_kwds.pop("type", "package")
         return name, version, type, extra_kwds
@@ -227,7 +230,7 @@ class DependencyResolversView(object):
         if index:
             resolver = self._dependency_resolver(index)
             if not hasattr(resolver, "clean"):
-                raise NotImplemented()
+                raise exceptions.NotImplemented()
             else:
                 resolver.clean()
                 return "OK"

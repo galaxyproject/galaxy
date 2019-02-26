@@ -116,7 +116,7 @@ class UploadController(BaseUIController):
                             else:
                                 tar = tarfile.open(uploaded_file_name)
                             istar = True
-                        except tarfile.ReadError as e:
+                        except tarfile.ReadError:
                             tar = None
                             istar = False
                 else:

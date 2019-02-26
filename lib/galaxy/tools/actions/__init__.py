@@ -261,6 +261,7 @@ class DefaultToolAction(object):
         submitting the job to the job queue. If history is not specified, use
         trans.history as destination for tool's output datasets.
         """
+        trans.check_user_activation()
         incoming = incoming or {}
         self._check_access(tool, trans)
         app = trans.app
@@ -516,7 +517,6 @@ class DefaultToolAction(object):
         job.object_store_id = object_store_populator.object_store_id
         if job_params:
             job.params = dumps(job_params)
-        job.set_handler(tool.get_job_handler(job_params))
         if completed_job:
             job.set_copied_from_job_id(completed_job.id)
         trans.sa_session.add(job)
@@ -528,11 +528,8 @@ class DefaultToolAction(object):
                                      rerun_remap_job_id=rerun_remap_job_id,
                                      current_job=job,
                                      out_data=out_data)
-        log.info("Setup for job %s complete, ready to flush %s" % (job.log_str(), job_setup_timer))
+        log.info("Setup for job %s complete, ready to be enqueued %s" % (job.log_str(), job_setup_timer))
 
-        job_flush_timer = ExecutionTimer()
-        trans.sa_session.flush()
-        log.info("Flushed transaction for job %s %s" % (job.log_str(), job_flush_timer))
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
         # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
         # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
@@ -554,8 +551,8 @@ class DefaultToolAction(object):
             trans.sa_session.flush()
             trans.response.send_redirect(url_for(controller='tool_runner', action='redirect', redirect_url=redirect_url))
         else:
-            # Put the job in the queue if tracking in memory
-            app.job_manager.job_queue.put(job.id, job.tool_id)
+            # Dispatch to a job handler. enqueue() is responsible for flushing the job
+            app.job_manager.enqueue(job, tool=tool)
             trans.log_event("Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
             return job, out_data
 

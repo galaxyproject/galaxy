@@ -11,7 +11,7 @@ from galaxy import (
     quota
 )
 from galaxy.datatypes import registry
-from galaxy.jobs import NoopQueue
+from galaxy.jobs.manager import NoopManager
 from galaxy.managers import tags
 from galaxy.model import mapping
 from galaxy.tools.deps.containers import NullContainerFinder
@@ -69,13 +69,14 @@ class MockApp(object):
         self.init_datatypes()
         self.job_config = Bunch(
             dynamic_params=None,
+            destinations={}
         )
         self.tool_data_tables = {}
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
         self.genome_builds = GenomeBuilds(self)
-        self.job_manager = Bunch(job_queue=NoopQueue())
+        self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
 
     def init_datatypes(self):

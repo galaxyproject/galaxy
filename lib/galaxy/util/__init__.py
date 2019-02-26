@@ -222,6 +222,11 @@ def parse_xml(fname):
     tree = ElementTree.ElementTree()
     try:
         root = tree.parse(fname, parser=ElementTree.XMLParser(target=DoctypeSafeCallbackTarget()))
+        for elem in root.iter('*'):
+            if elem.text is not None:
+                elem.text = elem.text.strip()
+            if elem.tail is not None:
+                elem.tail = elem.tail.strip()
     except ParseError:
         log.exception("Error parsing file %s", fname)
         raise
@@ -231,11 +236,18 @@ def parse_xml(fname):
 
 def parse_xml_string(xml_string):
     tree = ElementTree.fromstring(xml_string)
+    for elem in tree.iter('*'):
+        if elem.text is not None:
+            elem.text = elem.text.strip()
+        if elem.tail is not None:
+            elem.tail = elem.tail.strip()
     return tree
 
 
 def xml_to_string(elem, pretty=False):
-    """Returns a string from an xml tree"""
+    """
+    Returns a string from an xml tree.
+    """
     try:
         if elem is not None:
             if PY2:
@@ -640,9 +652,9 @@ def ready_name_for_url(raw_name):
     """
 
     # Replace whitespace with '-'
-    slug_base = re.sub("\s+", "-", raw_name)
+    slug_base = re.sub(r"\s+", "-", raw_name)
     # Remove all non-alphanumeric characters.
-    slug_base = re.sub("[^a-zA-Z0-9\-]", "", slug_base)
+    slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
     # Remove trailing '-'.
     if slug_base.endswith('-'):
         slug_base = slug_base[:-1]
@@ -957,7 +969,7 @@ def listify(item, do_strip=False):
 
 def commaify(amount):
     orig = amount
-    new = re.sub("^(-?\d+)(\d{3})", '\g<1>,\g<2>', amount)
+    new = re.sub(r"^(-?\d+)(\d{3})", r'\g<1>,\g<2>', amount)
     if orig == new:
         return new
     else:
@@ -1046,7 +1058,7 @@ def smart_str(s, encoding=DEFAULT_ENCODING, strings_only=False, errors='strict')
 
 def strip_control_characters(s):
     """Strip unicode control characters from a string."""
-    return "".join(c for c in unicodify(s) if unicodedata.category(c)[0] != "C")
+    return "".join(c for c in unicodify(s) if unicodedata.category(c) != "Cc")
 
 
 def strip_control_characters_nested(item):
@@ -1256,7 +1268,7 @@ def umask_fix_perms(path, umask, unmasked_perms, gid=None):
     perms = unmasked_perms & ~umask
     try:
         st = os.stat(path)
-    except OSError as e:
+    except OSError:
         log.exception('Unable to set permissions or group on %s', path)
         return
     # fix modes
@@ -1347,29 +1359,48 @@ def nice_size(size):
 
 def size_to_bytes(size):
     """
-    Returns a number of bytes if given a reasonably formatted string with the size
+    Returns a number of bytes (as integer) if given a reasonably formatted string with the size
+
+    >>> size_to_bytes('1024')
+    1024
+    >>> size_to_bytes('1.0')
+    1
+    >>> size_to_bytes('10 bytes')
+    10
+    >>> size_to_bytes('4k')
+    4096
+    >>> size_to_bytes('2.2 TB')
+    2418925581107
+    >>> size_to_bytes('.01 TB')
+    10995116277
+    >>> size_to_bytes('1.b')
+    1
+    >>> size_to_bytes('1.2E2k')
+    122880
     """
-    # Assume input in bytes if we can convert directly to an int
-    try:
-        return int(size)
-    except ValueError:
-        pass
-    # Otherwise it must have non-numeric characters
-    size_re = re.compile('([\d\.]+)\s*([tgmk]b?|b|bytes?)$')
-    size_match = re.match(size_re, size.lower())
-    assert size_match is not None
-    size = float(size_match.group(1))
-    multiple = size_match.group(2)
-    if multiple.startswith('t'):
-        return int(size * 1024 ** 4)
-    elif multiple.startswith('g'):
-        return int(size * 1024 ** 3)
-    elif multiple.startswith('m'):
-        return int(size * 1024 ** 2)
+    # The following number regexp is based on https://stackoverflow.com/questions/385558/extract-float-double-value/385597#385597
+    size_re = re.compile(r'(?P<number>(\d+(\.\d*)?|\.\d+)(e[+-]?\d+)?)\s*(?P<multiple>[eptgmk]?(b|bytes?)?)?$')
+    size_match = size_re.match(size.lower())
+    if size_match is None:
+        raise ValueError("Could not parse string '%s'" % size)
+    number = float(size_match.group("number"))
+    multiple = size_match.group("multiple")
+    if multiple == "" or multiple.startswith('b'):
+        return int(number)
     elif multiple.startswith('k'):
-        return int(size * 1024)
-    elif multiple.startswith('b'):
-        return int(size)
+        return int(number * 1024)
+    elif multiple.startswith('m'):
+        return int(number * 1024 ** 2)
+    elif multiple.startswith('g'):
+        return int(number * 1024 ** 3)
+    elif multiple.startswith('t'):
+        return int(number * 1024 ** 4)
+    elif multiple.startswith('p'):
+        return int(number * 1024 ** 5)
+    elif multiple.startswith('e'):
+        return int(number * 1024 ** 6)
+    else:
+        raise ValueError("Unknown multiplier '%s' in '%s'" % (multiple, size))
 
 
 def send_mail(frm, to, subject, body, config, html=None):
@@ -1544,7 +1575,7 @@ def parse_int(value, min_val=None, max_val=None, default=None, allow_none=False)
 
 
 def parse_non_hex_float(s):
-    """
+    r"""
     Parse string `s` into a float but throw a `ValueError` if the string is in
     the otherwise acceptable format `\d+e\d+` (e.g. 40000000000000e5.)
 

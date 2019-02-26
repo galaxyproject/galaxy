@@ -117,7 +117,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         dataset = library_dataset.library_dataset_dataset_association.dataset
         # User has to have manage permissions permission in order to see the roles.
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions.')
         scope = kwd.get('scope', None)
@@ -155,7 +155,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         :rtype:     dictionary
         :returns:   dict of current roles for all available permission types
         """
-        return self.serialize_dataset_association_roles(library_dataset)
+        return self.ldda_manager.serialize_dataset_association_roles(trans, library_dataset)
 
     @expose_api
     def update(self, trans, encoded_dataset_id, payload=None, **kwd):
@@ -221,7 +221,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         # Some permissions are attached directly to the underlying dataset.
         dataset = library_dataset.library_dataset_dataset_association.dataset
         current_user_roles = trans.get_current_user_roles()
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to manage permissions on this dataset.')
         new_access_roles_ids = util.listify(kwd.get('access_ids[]', None))
@@ -310,7 +310,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         library_dataset = self.ld_manager.get(trans, managers_base.decode_id(self.app, encoded_dataset_id))
         current_user_roles = trans.get_current_user_roles()
         allowed = trans.app.security_agent.can_modify_library_item(current_user_roles, library_dataset)
-        if (not allowed) and (not trans.user_is_admin()):
+        if (not allowed) and (not trans.user_is_admin):
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to delete this dataset.')
 
         if undelete:
@@ -390,7 +390,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         if source not in ['userdir_file', 'userdir_folder', 'importdir_file', 'importdir_folder', 'admin_path']:
             raise exceptions.RequestParameterMissingException('You have to specify "source" parameter. Possible values are "userdir_file", "userdir_folder", "admin_path", "importdir_file" and "importdir_folder". ')
         elif source in ['importdir_file', 'importdir_folder']:
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from importdir.')
             if not trans.app.config.library_import_dir:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from importdir.')
@@ -437,7 +437,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
         elif source == 'admin_path':
             if not trans.app.config.allow_library_path_paste:
                 raise exceptions.ConfigDoesNotAllowException('The configuration of this Galaxy instance does not allow admins to import into library from path.')
-            if not trans.user_is_admin():
+            if not trans.user_is_admin:
                 raise exceptions.AdminRequiredException('Only admins can import from path.')
 
         # Set up the traditional tool state/params
@@ -544,7 +544,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
             current_user_roles = trans.get_current_user_roles()
 
             def traverse(folder):
-                admin = trans.user_is_admin()
+                admin = trans.user_is_admin
                 rval = []
                 for subfolder in folder.active_folders:
                     if not admin:
@@ -706,7 +706,7 @@ class LibraryDatasetsController(BaseAPIController, UsesVisualizationMixin, Libra
                 fname = ''.join(c in util.FILENAME_VALID_CHARS and c or '_' for c in fname)[0:150]
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % fname
                 try:
-                    return open(dataset.file_name)
+                    return open(dataset.file_name, 'rb')
                 except Exception:
                     raise exceptions.InternalServerError("This dataset contains no content.")
         else:

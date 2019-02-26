@@ -37,7 +37,7 @@ Sections & Labels
 .. code-block:: xml
 
     <?xml version="1.0"?>
-    <toolbox tool_path="../shed_tools">
+    <toolbox tool_path="database/shed_tools">
         <section id="mts" name="MTS" version="">
           <tool file="toolshed.g2.bx.psu.edu/repos/devteam/fastqc/a00a6402d09a/fastqc/rgFastQC.xml" guid="toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.67" labels="new">
               <tool_shed>toolshed.g2.bx.psu.edu</tool_shed>

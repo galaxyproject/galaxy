@@ -332,24 +332,47 @@
              used by Galaxy is no environment variable of the specified name is found.
         -->
     </plugins>
-    <handlers default="handlers">
-        <!-- Additional job handlers - the id should match the name of a
-             [server:<id>] in galaxy.ini.
+    <handlers>
+        <!-- Job handler processes - for a full discussion of job handlers, see the documentation at:
+             https://docs.galaxyproject.org/en/latest/admin/scaling.html
+
+             The <handlers> container tag takes two optional attributes:
+
+               <handlers assign_with="method" default="id_or_tag"/>
+
+               - `assign_with` - How jobs should be assigned to handlers. The value can be a single method or a
+                 comma-separated list that will be tried in order. The default depends on whether any handlers and a job
+                 handler "pool" (such as uWSGI mules in a `job-handlers` farm) are configured. Valid methods are
+                 explained in detail in the documentation referenced above and have the values:
+
+                   - `mem-self` - In-memory Self Assignment
+                   - `db-self`- Database Self Assignment
+                   - `db-preassign` - Database Preassignment
+                   - `uwsgi-mule-message` - uWSGI Mule Messaging
+                   - `db-transaction-isolation` - Database Transaction Isolation
+                   - `db-skip-locked` - Database SKIP LOCKED
+
+               - `default` - An ID or tag of the handler(s) that should handle any jobs not assigned to a specific
+                 handler (which is probably most of them). If unset, the default is any untagged handlers plus any
+                 handlers in the `job-handlers` (no tag) pool.
+        -->
+        <!-- Explicitly defined job handlers - the id should match the handler process's `server_name`. For webless
+             handlers, this is the value of the `server-name` argument to `galaxy-main`.
          -->
-        <handler id="handler0" tags="handlers"/>
-        <handler id="handler1" tags="handlers"/>
+        <handler id="handler0"/>
+        <handler id="handler1"/>
         <!-- Handlers will load all plugins defined in the <plugins> collection
              above by default, but can be limited to a subset using <plugin>
              tags. This is useful for heterogenous environments where the DRMAA
              plugin would need to be loaded more than once with different
              configs.
-         -->
+        -->
         <handler id="sge_handler">
             <plugin id="sge"/>
         </handler>
+        <!-- Handlers are grouped by defining (comma-separated) tags -->
         <handler id="special_handler0" tags="special_handlers"/>
         <handler id="special_handler1" tags="special_handlers"/>
-        <handler id="trackster_handler"/>
     </handlers>
     <destinations default="local">
         <!-- Destinations define details about remote resources and how jobs
@@ -652,6 +675,30 @@
             <param id="num_jobs">50</param>
             <!-- <param id="job_states">queued</param> -->
         </destination>
+        <destination id="burst_if_queued" runner="dynamic">
+            <!-- Dynamic destinations can be chained together to create more
+            complex rules. In this example, the built-in burst stock rule
+            determines whether to burst, and if so, directs to burst_if_size,
+            a user-defined dynamic destination. This destination in turn will
+            conditionally route it to a remote pulsar node if the input size
+            is below a certain threshold, or route to local if not. -->
+            <param id="type">burst</param>
+            <param id="from_destination_ids">local</param>
+            <param id="to_destination_id">burst_if_size</param>
+            <param id="num_jobs">2</param>
+            <param id="job_states">queued</param>
+        </destination>
+        <destination id="burst_if_size" runner="dynamic">
+            <param id="type">python</param>
+            <param id="function">to_destination_if_size</param>
+            <!-- Also demonstrates a destination level override of the
+            rules_module. This rules_module will take precedence over the
+            plugin level rules module when resolving the dynamic function -->
+            <param id="rules_module">galaxycloudrunner.rules</param>
+            <param id="max_size">1g</param>
+            <param id="to_destination_id">pulsar</param>
+            <param id="fallback_destination_id">local</param>
+        </destination>
         <destination id="docker_dispatch" runner="dynamic">
             <!-- Follow dynamic destination type will send all tool's that
             support docker to static destination defined by
@@ -746,6 +793,14 @@
             <param id="job_time">2:00:00</param>
             <param id="job_ncpus">4</param>
             <param id="job_partition">my_partition</param>
+        </destination>
+
+        <!-- Example CLI LSF Runner: 8 cores and 16 GB ram -->
+        <destination id="local_lsf_8cpu_16GbRam" runner="cli">
+            <param id="shell_plugin">LocalShell</param>
+            <param id="job_plugin">LSF</param>
+            <param id="memory">16000</param>
+            <param id="cores">8</param>
         </destination>
 
         <destination id="condor" runner="condor">

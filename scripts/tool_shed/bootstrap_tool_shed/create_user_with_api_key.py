@@ -20,8 +20,8 @@ from bootstrap_util import admin_user_info  # noqa: I100,I201
 log = logging.getLogger(__name__)
 
 
-VALID_PUBLICNAME_RE = re.compile("^[a-z0-9\-]+$")
-VALID_EMAIL_RE = re.compile("[^@]+@[^@]+\.[^@]+")
+VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9\-]+$")
+VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
 
 
 class BootstrapApplication(object):

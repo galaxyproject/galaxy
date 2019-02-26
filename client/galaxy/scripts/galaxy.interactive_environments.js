@@ -18,9 +18,7 @@ export function clear_main_area() {
 }
 
 export function display_spinner() {
-    $("#main").append(
-        `<img id="spinner" src="${galaxy_root}static/style/largespinner.gif" style="position:absolute;margin:auto;top:0;left:0;right:0;bottom:0;">`
-    );
+    $("#main").append(`<div id="ie-loading-spinner"></div>`);
 }
 
 /* Create a spin_state object used by spin() and spin_again() */

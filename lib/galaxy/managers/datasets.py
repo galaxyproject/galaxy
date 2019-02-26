@@ -296,7 +296,7 @@ class DatasetAssociationManager(base.ModelManager,
                 # Are *all* of the job's other output datasets deleted?
                 if job.check_if_output_datasets_deleted():
                     job.mark_deleted(self.app.config.track_jobs_in_database)
-                    self.app.job_manager.job_stop_queue.put(job.id)
+                    self.app.job_manager.stop(job)
                     return True
         return False
 
@@ -348,7 +348,7 @@ class DatasetAssociationManager(base.ModelManager,
             dataset = dataset_assoc.dataset
 
         current_user_roles = trans.get_current_user_roles()
-        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin()
+        can_manage = trans.app.security_agent.can_manage_dataset(current_user_roles, dataset) or trans.user_is_admin
         if not can_manage:
             raise exceptions.InsufficientPermissionsException('You do not have proper permissions to manage permissions on this dataset.')
 

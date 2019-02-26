@@ -25,6 +25,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
+from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
 from galaxy.web.base.controller import (
     BaseAPIController,
     SharableMixin,
@@ -54,7 +55,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                 return shed_url
         return None
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def index(self, trans, **kwd):
         """
         GET /api/workflows
@@ -122,11 +123,14 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         :param  missing_tools:       if True, include a list of missing tools per workflow
         :type   missing_tools:       boolean
         """
-        show_published = util.string_as_bool(kwd.get('show_published', 'False'))
         missing_tools = util.string_as_bool(kwd.get('missing_tools', 'False'))
         rval = []
         filter1 = (trans.app.model.StoredWorkflow.user == trans.user)
         user = trans.get_user()
+        if user is None:
+            show_published = util.string_as_bool(kwd.get('show_published', 'True'))
+        else :
+            show_published = util.string_as_bool(kwd.get('show_published', 'False'))
         if show_published:
             filter1 = or_(filter1, (trans.app.model.StoredWorkflow.published == true()))
         for wf in trans.sa_session.query(trans.app.model.StoredWorkflow).options(
@@ -140,7 +144,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['url'] = url_for('workflow', id=encoded_id)
             item['owner'] = wf.user.username
             item['number_of_steps'] = wf.latest_workflow.step_count
-            item['show_in_tool_panel'] = wf.show_in_tool_panel(user_id=user.id)
+            item['show_in_tool_panel'] = False
+            if user is not None:
+                item['show_in_tool_panel'] = wf.show_in_tool_panel(user_id=user.id)
             rval.append(item)
         for wf_sa in trans.sa_session.query(model.StoredWorkflowUserShareAssociation).join(
                 model.StoredWorkflowUserShareAssociation.stored_workflow).options(
@@ -155,7 +161,9 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item['slug'] = wf_sa.stored_workflow.slug
             item['owner'] = wf_sa.stored_workflow.user.username
             item['number_of_steps'] = wf_sa.stored_workflow.latest_workflow.step_count
-            item['show_in_tool_panel'] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
+            item['show_in_tool_panel'] = False
+            if user is not None:
+                item['show_in_tool_panel'] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
             rval.append(item)
         if missing_tools:
             workflows_missing_tools = []
@@ -189,7 +197,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return workflows
         return rval
 
-    @expose_api
+    @expose_api_anonymous_and_sessionless
     def show(self, trans, id, **kwd):
         """
         GET /api/workflows/{encoded_workflow_id}
@@ -197,7 +205,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Displays information needed to run a workflow from the command line.
         """
         stored_workflow = self.__get_stored_workflow(trans, id)
-        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
@@ -276,6 +284,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'workflow_id',
             'installed_repository_file',
             'from_history_id',
+            'from_path',
             'shared_workflow_id',
             'workflow',
         ])
@@ -305,10 +314,17 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             archive_file = payload.get('archive_file')
             archive_data = None
             if archive_source:
-                try:
-                    archive_data = requests.get(archive_source).text
-                except Exception:
-                    raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
+                if archive_source.startswith("file://"):
+                    if not trans.user_is_admin:
+                        raise exceptions.AdminRequiredException()
+                    workflow_src = {"src": "from_path", "path": archive_source[len("file://"):]}
+                    payload["workflow"] = workflow_src
+                    return self.__api_import_new_workflow(trans, payload, **kwd)
+                else:
+                    try:
+                        archive_data = requests.get(archive_source).text
+                    except Exception:
+                        raise exceptions.MessageException("Failed to open URL '%s'." % escape(archive_source))
             elif hasattr(archive_file, 'file'):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
@@ -341,6 +357,11 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             item = stored_workflow.to_dict(value_mapper={'id': trans.security.encode_id})
             item['url'] = url_for('workflow', id=item['id'])
             return item
+
+        if 'from_path' in payload:
+            from_path = payload.get('from_path')
+            payload["workflow"] = {"src": "from_path", "path": from_path}
+            return self.__api_import_new_workflow(trans, payload, **kwd)
 
         if 'shared_workflow_id' in payload:
             workflow_id = payload['shared_workflow_id']
@@ -429,7 +450,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str(e))
 
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin():
+        if stored_workflow.user != trans.user and not trans.user_is_admin:
             trans.response.status = 403
             return("Workflow is not owned by current user")
 
@@ -484,6 +505,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         stored_workflow = self.__get_stored_workflow(trans, id)
         workflow_dict = payload.get('workflow') or payload
         if workflow_dict:
+            raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
+            workflow_dict = raw_workflow_description.as_dict
             new_workflow_name = workflow_dict.get('name') or workflow_dict.get('name')
             if new_workflow_name and new_workflow_name != stored_workflow.name:
                 sanitized_name = sanitize_html(new_workflow_name)
@@ -514,10 +537,12 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
             if 'steps' in workflow_dict:
                 try:
-                    workflow, errors = self.workflow_contents_manager.update_workflow_from_dict(
+                    from_dict_kwds = self.__import_or_update_kwds(payload)
+                    workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(
                         trans,
                         stored_workflow,
-                        workflow_dict,
+                        raw_workflow_description,
+                        **from_dict_kwds
                     )
                 except workflows.MissingToolsException:
                     raise exceptions.MessageException("This workflow contains missing tools. It cannot be saved until they have been removed from the workflow or installed.")
@@ -546,8 +571,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             'annotation'        : inputs.get('__annotation', ''),
             'name'              : module.get_name(),
             'tool_state'        : module.get_state(),
-            'data_inputs'       : module.get_data_inputs(),
-            'data_outputs'      : module.get_data_outputs(),
+            'inputs'            : module.get_all_inputs(connectable_only=True),
+            'outputs'           : module.get_all_outputs(),
             'config_form'       : module.get_config_form(),
             'post_job_actions'  : module.get_post_job_actions(inputs)
         }
@@ -562,7 +587,8 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, data, source=source)
+        raw_workflow_description = self.__normalize_workflow(trans, data)
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, source=source)
         workflow = workflow.latest_workflow
         if workflow.has_errors:
             return {"message": "Imported, but some steps in this workflow have validation errors.", "status": "error"}
@@ -574,22 +600,23 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
 
     def __api_import_new_workflow(self, trans, payload, **kwd):
         data = payload['workflow']
+        raw_workflow_description = self.__normalize_workflow(trans, data)
+        data = raw_workflow_description.as_dict
         import_tools = util.string_as_bool(payload.get("import_tools", False))
-        if import_tools and not trans.user_is_admin():
+        if import_tools and not trans.user_is_admin:
             raise exceptions.AdminRequiredException()
+
+        from_dict_kwds = self.__import_or_update_kwds(payload)
+
         publish = util.string_as_bool(payload.get("publish", False))
         # If 'publish' set, default to importable.
         importable = util.string_as_bool(payload.get("importable", publish))
-        # Galaxy will try to upgrade tool versions that don't match exactly during import,
-        # this prevents that.
-        exact_tools = util.string_as_bool(payload.get("exact_tools", True))
+
         if publish and not importable:
             raise exceptions.RequestParameterInvalidException("Published workflow must be importable.")
-        from_dict_kwds = dict(
-            publish=publish,
-            exact_tools=exact_tools,
-        )
-        workflow, missing_tool_tups = self._workflow_from_dict(trans, data, **from_dict_kwds)
+
+        from_dict_kwds["publish"] = publish
+        workflow, missing_tool_tups = self._workflow_from_dict(trans, raw_workflow_description, **from_dict_kwds)
         if importable:
             self._make_item_accessible(trans.sa_session, workflow)
             trans.sa_session.flush()
@@ -627,6 +654,23 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
                             changeset_revision,
                             payload)
         return item
+
+    def __import_or_update_kwds(self, payload):
+        # Galaxy will try to upgrade tool versions that don't match exactly during import,
+        # this prevents that.
+        exact_tools = util.string_as_bool(payload.get("exact_tools", True))
+
+        # Fill in missing tool state for hand built so the workflow can run, default of this
+        # should become True at some point in the future I imagine.
+        fill_defaults = util.string_as_bool(payload.get("fill_defaults", False))
+
+        return {
+            'exact_tools': exact_tools,
+            'fill_defaults': fill_defaults,
+        }
+
+    def __normalize_workflow(self, trans, as_dict):
+        return self.workflow_contents_manager.normalize_workflow_format(trans, as_dict)
 
     @expose_api
     def import_shared_workflow_deprecated(self, trans, payload, **kwd):

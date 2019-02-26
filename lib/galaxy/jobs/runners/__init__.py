@@ -6,8 +6,10 @@ import logging
 import os
 import string
 import subprocess
+import sys
 import threading
 import time
+import traceback
 
 from six.moves.queue import (
     Empty,
@@ -22,6 +24,10 @@ from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
     job_script,
     write_script
+)
+from galaxy.tools.deps.dependencies import (
+    JobInfo,
+    ToolInfo
 )
 from galaxy.util import (
     DATABASE_MAX_STRING_SIZE,
@@ -85,9 +91,20 @@ class BaseJobRunner(object):
         log.debug('Starting %s %s workers' % (self.nworkers, self.runner_name))
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
-            worker.setDaemon(True)
+            worker.daemon = True
             self.app.application_stack.register_postfork_function(worker.start)
             self.work_threads.append(worker)
+
+    def _alive_worker_threads(self, cycle=False):
+        # yield endlessly as long as there are alive threads if cycle is True
+        alive = True
+        while alive:
+            alive = False
+            for thread in self.work_threads:
+                if thread.is_alive():
+                    if cycle:
+                        alive = True
+                    yield thread
 
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
@@ -129,22 +146,36 @@ class BaseJobRunner(object):
     def shutdown(self):
         """Attempts to gracefully shut down the worker threads
         """
-        log.info("%s: Sending stop signal to %s worker threads" % (self.runner_name, len(self.work_threads)))
+        log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
         for i in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
         join_timeout = self.app.config.monitor_thread_join_timeout
         if join_timeout > 0:
-            exception = None
-            for thread in self.work_threads:
+            log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
+            start = time.time()
+            # NOTE: threads that have already joined by now are not going to be logged
+            for thread in self._alive_worker_threads(cycle=True):
+                if time.time() > (start + join_timeout):
+                    break
                 try:
-                    thread.join(join_timeout)
-                except Exception as e:
-                    exception = e
-                    log.exception("Faild to shutdown worker thread")
+                    thread.join(2)
+                except Exception:
+                    log.exception("Caught exception attempting to shutdown job worker thread %s:", thread.name)
+                if not thread.is_alive():
+                    log.debug("Job worker thread terminated: %s", thread.name)
+            else:
+                log.info("All job worker threads shutdown cleanly")
+                return
 
-            if exception:
-                raise exception
+            for thread in self._alive_worker_threads():
+                try:
+                    frame = sys._current_frames()[thread.ident]
+                except KeyError:
+                    # thread is now stopped
+                    continue
+                log.warning("Timed out waiting for job worker thread %s to terminate, shutdown will be unclean! Thread "
+                            "stack is:\n%s", thread.name, ''.join(traceback.format_stack(frame)))
 
     # Most runners should override the legacy URL handler methods and destination param method
     def url_to_destination(self, url):
@@ -193,7 +224,7 @@ class BaseJobRunner(object):
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail(e.message if hasattr(e, 'message') else "Job preparation failed", exception=True)
+            job_wrapper.fail(str(e), exception=True)
             return False
 
         if not job_wrapper.runner_command_line:
@@ -206,7 +237,7 @@ class BaseJobRunner(object):
     def queue_job(self, job_wrapper):
         raise NotImplementedError()
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         raise NotImplementedError()
 
     def recover(self, job, job_wrapper):
@@ -367,9 +398,8 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
-        job_info = containers.JobInfo(
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
+        job_info = JobInfo(
             compute_working_directory,
             compute_tool_directory,
             compute_job_directory,
@@ -395,7 +425,8 @@ class BaseJobRunner(object):
 
     def fail_job(self, job_state, exception=False):
         if getattr(job_state, 'stop_job', True):
-            self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+            self.stop_job(job_state.job_wrapper)
+        job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state('failure', job_state)
         # Not convinced this is the best way to indicate this state, but
         # something necessary

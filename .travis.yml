@@ -1,4 +1,3 @@
-sudo: false
 language: python
 python: 2.7
 os:
@@ -13,6 +12,9 @@ env:
 
 matrix:
   include:
+    - env: TOX_ENV=qunit
+      addons:
+        chrome: stable
     - env: TOX_ENV=py34-first_startup
       addons:
         &py3_addons
@@ -32,6 +34,10 @@ matrix:
             - ack-grep
     - env: TOX_ENV=py34-unit
       addons: *py3_addons
+
+before_install:
+  # Workaround for https://github.com/travis-ci/travis-ci/issues/7940
+  - sudo rm -f /etc/boto.cfg
 
 install:
   - set -e

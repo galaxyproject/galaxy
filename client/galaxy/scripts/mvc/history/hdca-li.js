@@ -1,7 +1,7 @@
+import _ from "underscore";
 import STATES from "mvc/dataset/states";
 import DC_LI from "mvc/collection/collection-li";
 import DC_VIEW from "mvc/collection/collection-view";
-import BASE_MVC from "mvc/base-mvc";
 import HISTORY_ITEM_LI from "mvc/history/history-item-li";
 import _l from "utils/localization";
 
@@ -17,7 +17,8 @@ var HDCAListItemView = _super.extend(
         _setUpListeners: function() {
             _super.prototype._setUpListeners.call(this);
             var renderListen = (model, options) => {
-                this.render();
+                // We want this to swap immediately without extra animations.
+                this.render(0);
             };
             if (this.model.jobStatesSummary) {
                 this.listenTo(this.model.jobStatesSummary, "change", renderListen);
@@ -64,9 +65,7 @@ var HDCAListItemView = _super.extend(
 
         stateDescription: function() {
             var collection = this.model;
-            var elementCount = collection.get("element_count");
             var jobStateSource = collection.get("job_source_type");
-            var collectionType = this.model.get("collection_type");
             var collectionTypeDescription = DC_VIEW.collectionTypeDescription(collection);
             var simpleDescription = DC_VIEW.collectionDescription(collection);
             var jobStatesSummary = collection.jobStatesSummary;

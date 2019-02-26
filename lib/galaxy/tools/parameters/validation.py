@@ -37,7 +37,7 @@ class RegexValidator(Validator):
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" size="10" value="10">
+    ... <param name="blah" type="text" value="10">
     ...     <validator type="regex" message="Not gonna happen">[Ff]oo</validator>
     ... </param>
     ... '''))
@@ -71,7 +71,7 @@ class ExpressionValidator(Validator):
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" size="10" value="10">
+    ... <param name="blah" type="text" value="10">
     ...     <validator type="expression" message="Not gonna happen">value.lower() == "foo"</validator>
     ... </param>
     ... '''))
@@ -108,7 +108,7 @@ class InRangeValidator(Validator):
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="integer" size="10" value="10">
+    ... <param name="blah" type="integer" value="10">
     ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20"/>
     ... </param>
     ... '''))
@@ -176,7 +176,7 @@ class LengthValidator(Validator):
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
     >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" size="10" value="foobar">
+    ... <param name="blah" type="text" value="foobar">
     ...     <validator type="length" min="2" max="8"/>
     ... </param>
     ... '''))

@@ -218,7 +218,7 @@
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
-                                <button v-b-tooltip.hover :title="titleAddColumnDefinition" type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
+                                <button type="button" class="dropdown-toggle btn btn-primary mr-1" data-toggle="dropdown" v-if="unmappedTargets.length > 0">
                                     <span class="fa fa-plus rule-add-mapping"></span> {{ "Add Definition" }}<span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
@@ -412,6 +412,7 @@
     </state-div>
 </template>
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import AjaxQueue from "utils/ajax-queue";
 import axios from "axios";
 import _l from "utils/localization";
@@ -903,7 +904,6 @@ export default {
             titleColumMenu: _l("Rules that generate new columns"),
             titleRemoveMapping: _l("Remove column definition assignment"),
             titleApplyColumnDefinitions: _l("Apply these column definitions and return to rules preview"),
-            titleAddColumnDefinition: _l("Assign a new piece of metadata as being derived from a column of the table"),
             titleErrorOkay: _l("Dismiss this error and return to the rule builder to try again with new rules"),
             namePlaceholder: _l("Enter a name for your new collection"),
             activeRuleIndex: null,
@@ -1402,7 +1402,7 @@ export default {
             };
             const doJobCheck = () => {
                 axios
-                    .get(`${Galaxy.root}api/jobs/${jobId}`)
+                    .get(`${getAppRoot()}api/jobs/${jobId}`)
                     .then(handleJobShow)
                     .catch(this.renderFetchError);
             };
@@ -1422,7 +1422,7 @@ export default {
                 }
             };
             axios
-                .get(`${Galaxy.root}api/jobs/${jobId}?full=True`)
+                .get(`${getAppRoot()}api/jobs/${jobId}?full=True`)
                 .then(handleJobShow)
                 .catch(this.renderFetchError);
         },
@@ -1510,7 +1510,7 @@ export default {
 
                 if (this.state !== "error") {
                     axios
-                        .post(`${Galaxy.root}api/tools/fetch`, {
+                        .post(`${getAppRoot()}api/tools/fetch`, {
                             history_id: historyId,
                             targets: targets,
                             auto_decompress: true

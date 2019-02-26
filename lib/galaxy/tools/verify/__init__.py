@@ -28,16 +28,17 @@ def verify(
     output_content,
     attributes,
     filename=None,
-    get_filename=None,
+    get_filecontent=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
+    mode='file',
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
     Throw an informative assertion error if any of these tests fail.
     """
-    if get_filename is None:
-        get_filename = DEFAULT_TEST_DATA_RESOLVER.get_filename
+    if get_filecontent is None:
+        get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -69,15 +70,26 @@ def verify(
             errmsg += str(err)
             raise AssertionError(errmsg)
 
+    if attributes is None:
+        attributes = {}
+
     if filename is not None:
-        local_name = get_filename(filename)
+        if mode == 'directory':
+            # if verifying a file inside a extra_files_path directory
+            # filename already point to a file that exists on disk
+            local_name = filename
+        else:
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
 
         # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
         if keep_outputs_dir:
-            ofn = os.path.join(keep_outputs_dir, os.path.basename(local_name))
+            ofn = os.path.join(keep_outputs_dir, filename)
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
@@ -88,8 +100,6 @@ def verify(
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
         try:
-            if attributes is None:
-                attributes = {}
             compare = attributes.get('compare', 'diff')
             if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
                 local_fh, temp_name = _bam_to_sam(local_name, temp_name)
@@ -110,10 +120,6 @@ def verify(
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
                 raise Exception('Unimplemented Compare type: %s' % compare)
-            if verify_extra_files:
-                extra_files = attributes.get('extra_files', None)
-                if extra_files:
-                    verify_extra_files(extra_files)
         except AssertionError as err:
             errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
             errmsg += "( %s v. %s )\n" % (local_name, temp_name)
@@ -122,6 +128,11 @@ def verify(
         finally:
             if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
                 os.remove(temp_name)
+
+    if verify_extra_files:
+        extra_files = attributes.get('extra_files', None)
+        if extra_files:
+            verify_extra_files(extra_files)
 
 
 def make_temp_fname(fname=None):

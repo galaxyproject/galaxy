@@ -731,7 +731,7 @@ def get_attributes_from_fasta_header(header):
 
 
 def iter_fasta_alignment(filename):
-    class fastaComponent:
+    class fastaComponent(object):
         def __init__(self, species, text=""):
             self.species = species
             self.text = text

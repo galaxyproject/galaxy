@@ -26,7 +26,7 @@
             'allow_user_creation'       : app.config.allow_user_creation,
             'logo_url'                  : h.url_for(app.config.get( 'logo_url', '/')),
             'logo_src'                  : h.url_for( app.config.get( 'logo_src', '/static/images/galaxyIcon_noText.png' ) ),
-            'is_admin_user'             : trans.user_is_admin(),
+            'is_admin_user'             : trans.user_is_admin,
             'active_view'               : active_view,
             'ftp_upload_dir'            : app.config.get("ftp_upload_dir",  None),
             'ftp_upload_site'           : app.config.get("ftp_upload_site",  None),
@@ -37,9 +37,6 @@
 
     ## load the frame manager
     <script type="text/javascript">
-        if( !window.Galaxy ){
-            Galaxy = {};
-        }
 
         // if we're in an iframe, create styles that hide masthead/messagebox, and reset top for panels
         // note: don't use a link to avoid roundtrip request

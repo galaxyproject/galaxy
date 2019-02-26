@@ -1,13 +1,12 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
-
+import $ from "jquery";
+import Backbone from "backbone";
+import _ from "underscore";
 import _l from "utils/localization";
-
-/* global Galaxy */
-/* global $ */
+import { getGalaxyInstance } from "app";
 
 var AdminPanel = Backbone.View.extend({
     initialize: function(page, options) {
+        let Galaxy = getGalaxyInstance();
         var self = this;
         this.page = page;
         this.root = options.root;
@@ -35,6 +34,7 @@ var AdminPanel = Backbone.View.extend({
                     {
                         title: _l("Display applications"),
                         url: "admin/display_applications",
+                        target: "__use_router__",
                         id: "admin-link-display-applications"
                     },
                     {
@@ -44,7 +44,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("Local data"),
-                        url: "data_manager",
+                        url: "admin/data_manager",
+                        target: "__use_router__",
                         id: "admin-link-local-data"
                     }
                 ]
@@ -132,7 +133,8 @@ var AdminPanel = Backbone.View.extend({
                     },
                     {
                         title: _l("View error logs"),
-                        url: "admin/tool_errors"
+                        url: "admin/error_stack",
+                        target: "__use_router__"
                     }
                 ]
             }
@@ -145,7 +147,7 @@ var AdminPanel = Backbone.View.extend({
         this.$el.empty();
         this.categories.each(category => {
             var $section = $(self._templateSection(category.attributes));
-            var $entries = $section.find(".ui-side-section-body");
+            var $entries = $section.find(".toolSectionBody");
             _.each(category.get("items"), item => {
                 if (item.enabled === undefined || item.enabled) {
                     var $link = $("<a/>")
@@ -164,7 +166,7 @@ var AdminPanel = Backbone.View.extend({
                     }
                     $entries.append(
                         $("<div/>")
-                            .addClass("ui-side-section-body-title")
+                            .addClass("toolTitle")
                             .append($link)
                     );
                 }
@@ -174,16 +176,14 @@ var AdminPanel = Backbone.View.extend({
     },
 
     _templateSection: function(options) {
-        return [
-            "<div>",
-            `<div class="ui-side-section-title">${_l(options.title)}</div>`,
-            '<div class="ui-side-section-body"/>',
-            "</div>"
-        ].join("");
+        return `<div class="toolSectionWrapper">
+                    <div class="toolSectionTitle">${_l(options.title)}</div>
+                    <div class="toolSectionBody"/>
+                </div>`;
     },
 
     _template: function() {
-        return '<div class="ui-side-panel"/>';
+        return '<div class="toolMenuContainer"/>';
     },
 
     toString: function() {

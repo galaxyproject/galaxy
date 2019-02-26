@@ -276,7 +276,7 @@ class AdminToolshed(AdminGalaxy):
                         mimetype = trans.app.datatypes_registry.get_mimetype_by_extension(extension)
                         if mimetype:
                             trans.response.set_content_type(mimetype)
-                    return open(path_to_file, 'r')
+                    return open(path_to_file, 'rb')
         return None
 
     @web.expose
@@ -577,7 +577,7 @@ class AdminToolshed(AdminGalaxy):
             tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
             return json.dumps(tsr_ids_for_monitoring)
         except install_manager.RepositoriesInstalledException as e:
-            return self.message_exception(trans, e.message)
+            return self.message_exception(trans, str(e))
 
     @web.expose
     @web.require_admin
@@ -587,6 +587,11 @@ class AdminToolshed(AdminGalaxy):
         repository_id = kwd.get('id', None)
         if repository_id is None:
             return trans.show_error_message('Missing required encoded repository id.')
+        if repository_id and isinstance(repository_id, list):
+            # FIXME: This is a hack that avoids unhandled and duplicate url parameters leaking in.
+            # This should be handled somewhere in the grids system, but given the legacy status
+            # this should be OK.
+            repository_id = [r for r in repository_id if '=' not in r][0]  # This method only work for a single repo id
         operation = kwd.get('operation', None)
         repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
         if repository is None:
@@ -815,7 +820,7 @@ class AdminToolshed(AdminGalaxy):
             message += 'shed tool configuration file name with a <b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> '
             message += 'attribute value which is a directory relative to the Galaxy installation directory in order '
             message += 'to automatically install tools from a Galaxy Tool Shed (e.g., the file name <b>shed_tool_conf.xml</b> '
-            message += 'whose <b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
+            message += 'whose <b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="database/shed_tools"&gt;</b>).<p/>See the '
             message += '<a href="https://galaxyproject.org/installing-repositories-to-galaxy/" target="_blank">Installation '
             message += 'of Galaxy Tool Shed repository tools into a local Galaxy instance</a> section of the Galaxy Tool '
             message += 'Shed wiki for all of the details.'

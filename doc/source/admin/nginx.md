@@ -57,7 +57,7 @@ uWSGI protocol support is built in to nginx, so (unlike Apache) no extra modules
 The following configuration is not exhaustive, only the portions most relevant to serving Galaxy are shown, these should
 be incorporated with your existing/default nginx config as is appropriate for your server. Notably, the nginx package
 you installed most likely has a multi-file config layout. If you are not already familiar with that layout and where
-best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layouts.html)
+best to place your configuration, you can learn more in the [Proxy Package Layouts](proxy_package_layout.html)
 documentation.
 
 ```nginx
@@ -363,7 +363,7 @@ run a separate reports app which gives useful information about your Galaxy inst
 documentation](reports.html) and [Peter Briggs' blog post on the
 subject](http://galacticengineer.blogspot.com/2015/06/exposing-galaxy-reports-via-nginx-in.html) for more.
 
-After succesfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
+After successfully following the blog post, Galaxy reports should be available at e.g. `https://galaxy.example.org/reports`.
 To secure this page to only Galaxy administrators, adjust your nginx config accordingly:
 
 **TODO:** This is not valid for the uWSGI proxy method and needs to be updated. -nate 2018-01-11

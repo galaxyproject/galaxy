@@ -270,7 +270,7 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-DOCKER_DEFAULT_IMAGE='galaxy/testing-base:18.09.0'
+DOCKER_DEFAULT_IMAGE='mvdbeek/testing-base:19.01.3'
 
 test_script="./scripts/functional_tests.py"
 report_file="run_functional_tests.html"
@@ -295,20 +295,12 @@ then
     else
        db_type="sqlite"
     fi
-    if [ "$1" = "--external_tmp" ]; then
-       # If /tmp is a tmpfs there may be better performance by reusing
-       # the parent's temp file system. Also, it seems to decrease the
-       # frequency or errors such as the following:
-       # /bin/sh: 1: /tmp/tmpiWU3kJ/tmp_8zLxx/job_working_directory_mwwDmg/000/274/galaxy_274.sh: Text file busy
-       tmp=$(mktemp -d)
-       chmod 1777 $tmp
-       DOCKER_RUN_EXTRA_ARGS="-v ${tmp}:/tmp ${DOCKER_RUN_EXTRA_ARGS}"
-       shift
-    fi
     MY_UID=$(id -u)
     # Skip client build process in the Docker container for all tests, the Jenkins task builds the client
     # locally before testing - you will need to do this also if using this script for Selenium testing.
     DOCKER_RUN_EXTRA_ARGS="-e GALAXY_TEST_UID=${MY_UID} -e GALAXY_SKIP_CLIENT_BUILD=1 ${DOCKER_RUN_EXTRA_ARGS}"
+    echo "Docker version:"
+    docker --version
     echo "Launching docker container for testing with extra args ${DOCKER_RUN_EXTRA_ARGS}..."
     docker $DOCKER_EXTRA_ARGS run $DOCKER_RUN_EXTRA_ARGS \
         -e "BUILD_NUMBER=$BUILD_NUMBER" \
@@ -541,12 +533,6 @@ do
           GALAXY_INSTALL_TEST_NO_CLEANUP=1
           export GALAXY_INSTALL_TEST_NO_CLEANUP
           echo "Skipping Python test clean up."
-          shift
-          ;;
-      -watch|--watch)
-          # Have grunt watch test or directory for changes, only
-          # valid for javascript testing.
-          watch=1
           shift
           ;;
       --skip-venv)

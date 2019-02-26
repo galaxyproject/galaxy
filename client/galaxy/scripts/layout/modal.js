@@ -1,8 +1,4 @@
-import jQuery from "jquery";
-
-// ============================================================================
-//TODO: (the older version) unify with ui-modal (the newer version)
-var $ = jQuery;
+/* global $ */
 
 // Modal dialog boxes
 var Modal = function(options) {

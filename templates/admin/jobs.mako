@@ -80,11 +80,11 @@
         %endfor
     </table>
     <p/>
-    <div class="toolForm">
-        <div class="toolFormTitle">
+    <div class="card">
+        <div class="card-header">
             Stop Jobs
         </div>
-        <div class="toolFormBody">
+        <div class="card-body">
             <div class="form-row">
                 <label>
                     Stop message:
@@ -154,11 +154,11 @@
 %endif
 
 <form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
-    <div class="toolForm">
-        <div class="toolFormTitle">
+    <div class="card">
+        <div class="card-header">
             Update Jobs
         </div>
-        <div class="toolFormBody">
+        <div class="card-body">
 
             <div class="form-row">
                 <label>
@@ -180,11 +180,11 @@
 
 <form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
     <p/>
-    <div class="toolForm">
-        <div class="toolFormTitle">
+    <div class="card">
+        <div class="card-header">
             Administrative Job Lock
         </div>
-        <div class="toolFormBody">
+        <div class="card-body">
             <div class="form-row">
                 <input type="hidden" name="ajl_submit" value="True"/>
     %if job_lock==True:

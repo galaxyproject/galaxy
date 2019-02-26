@@ -12,6 +12,7 @@
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml"/>
   <tool file="library_data.xml"/>
+  <tool file="remove_value.xml"/>
   <tool file="bibtex.xml"/>
   <tool file="multi_select.xml" />
   <tool file="multi_output.xml" />
@@ -27,6 +28,9 @@
   <tool file="tool_provided_metadata_7.xml" />
   <tool file="tool_provided_metadata_8.xml" />
   <tool file="tool_provided_metadata_9.xml" />
+  <tool file="tool_provided_metadata_10.xml" />
+  <tool file="tool_provided_metadata_11.xml" />
+  <tool file="tool_provided_metadata_12.xml" />
   <tool file="empty_datasets.xml" />
   <tool file="inputs_as_json.xml" />
   <tool file="inputs_as_json_with_paths.xml" />
@@ -61,6 +65,7 @@
   <tool file="version_command_tool_dir.xml" />
   <tool file="exit_code_oom.xml" />
   <tool file="exit_code_from_file.xml" />
+  <tool file="exit_code_from_env.xml" />
   <tool file="gzipped_inputs.xml" />
   <tool file="output_order.xml" />
   <tool file="output_format.xml" />
@@ -90,6 +95,7 @@
   <tool file="section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
+  <tool file="validation_hdf5.xml" />
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />

@@ -1,3 +1,7 @@
+import _ from "underscore";
+import $ from "jquery";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
 import TAGS from "mvc/tag";
@@ -5,10 +9,6 @@ import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
 import BASE_MVC from "mvc/base-mvc";
 import _l from "utils/localization";
-import * as _ from "underscore";
-
-/* global Galaxy */
-/* global $ */
 
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
@@ -59,10 +59,11 @@ var DatasetListItemEdit = _super.extend(
 
             var editBtnData = {
                 title: _l("Edit attributes"),
-                href: `${Galaxy.root}datasets/edit?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/edit?dataset_id=${this.model.attributes.id}`,
                 faIcon: "fa-pencil",
                 classes: "edit-btn",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/edit", {
@@ -82,7 +83,7 @@ var DatasetListItemEdit = _super.extend(
                 }
 
                 // disable if still uploading or new
-            } else if (_.contains([STATES.UPLOAD, STATES.NEW], this.model.get("state"))) {
+            } else if ([STATES.UPLOAD, STATES.NEW].includes(this.model.get("state"))) {
                 editBtnData.disabled = true;
                 editBtnData.title = _l("This dataset is not yet editable");
             }
@@ -118,10 +119,13 @@ var DatasetListItemEdit = _super.extend(
 
             var state = this.model.get("state");
 
-            if (!this.model.isDeletedOrPurged() && _.contains([STATES.OK, STATES.FAILED_METADATA], state)) {
+            if (!this.model.isDeletedOrPurged()) {
+                //Enable tagging+annotation regardless of job state (see issue #6330)
                 this._renderTags($details);
                 this._renderAnnotation($details);
-                this._makeDbkeyEditLink($details);
+                if ([STATES.OK, STATES.FAILED_METADATA].includes(state)) {
+                    this._makeDbkeyEditLink($details);
+                }
             }
 
             this._setUpBehaviors($details);
@@ -150,7 +154,7 @@ var DatasetListItemEdit = _super.extend(
             };
             var parseToolID = data => {
                 $.ajax({
-                    url: `${Galaxy.root}api/tools/${data.tool_id}/build`
+                    url: `${getAppRoot()}api/tools/${data.tool_id}/build`
                 })
                     .done(data => {
                         parseToolBuild(data);
@@ -159,9 +163,12 @@ var DatasetListItemEdit = _super.extend(
                         parseToolBuild({});
                     });
             };
+
+            let Galaxy = getGalaxyInstance();
             if (Galaxy.user.id === null) {
                 return null;
             }
+
             return faIconButton({
                 title: _l("Tool Help"),
                 classes: "icon-btn",
@@ -172,7 +179,7 @@ var DatasetListItemEdit = _super.extend(
                         self.$el.find(".toolhelp").toggle();
                     } else {
                         $.ajax({
-                            url: `${Galaxy.root}api/jobs/${jobID}`
+                            url: `${getAppRoot()}api/jobs/${jobID}`
                         })
                             .done(data => {
                                 parseToolID(data);
@@ -215,10 +222,11 @@ var DatasetListItemEdit = _super.extend(
             var self = this;
             return faIconButton({
                 title: _l("View or report this error"),
-                href: `${Galaxy.root}datasets/error?dataset_id=${this.model.attributes.id}`,
+                href: `${getAppRoot()}datasets/error?dataset_id=${this.model.attributes.id}`,
                 classes: "report-error-btn",
                 faIcon: "fa-bug",
                 onclick: function(ev) {
+                    let Galaxy = getGalaxyInstance();
                     if (Galaxy.router) {
                         ev.preventDefault();
                         Galaxy.router.push("datasets/error", {
@@ -240,6 +248,7 @@ var DatasetListItemEdit = _super.extend(
                     target: this.linkTarget,
                     faIcon: "fa-refresh",
                     onclick: function(ev) {
+                        let Galaxy = getGalaxyInstance();
                         if (Galaxy.router) {
                             ev.preventDefault();
                             Galaxy.router.push("/", {
@@ -265,13 +274,14 @@ var DatasetListItemEdit = _super.extend(
 
             if (visualizations.length >= 1) {
                 let dsid = this.model.get("id");
-                let url = Galaxy.root + "visualizations?dataset_id=" + dsid;
+                let url = getAppRoot() + "visualizations?dataset_id=" + dsid;
                 return faIconButton({
                     title: _l("Visualize this data"),
                     href: url,
                     classes: "visualization-link",
                     faIcon: "fa-bar-chart-o",
                     onclick: ev => {
+                        let Galaxy = getGalaxyInstance();
                         if (Galaxy.frame && Galaxy.frame.active) {
                             ev.preventDefault();
                             Galaxy.frame.add({ url: url, title: "Visualization" });

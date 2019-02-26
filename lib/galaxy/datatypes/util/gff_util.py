@@ -217,7 +217,7 @@ class GFFReaderWrapper(NiceReaderWrapper):
             try:
                 interval = super(GenomicIntervalReader, self).__next__()
                 raw_size += len(self.current_line)
-            except StopIteration as e:
+            except StopIteration:
                 # No more intervals to read, but last feature needs to be
                 # returned.
                 interval = None

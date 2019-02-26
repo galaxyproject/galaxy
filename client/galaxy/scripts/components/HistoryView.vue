@@ -27,6 +27,7 @@
 </template>
 
 <script>
+import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Vue from "vue";
 import DisplayStructure from "components/DisplayStructured.vue";
@@ -49,7 +50,7 @@ export default {
         };
     },
     created: function() {
-        let url = Galaxy.root + "history/view/" + this.id;
+        let url = getAppRoot() + "history/view/" + this.id;
         this.ajaxCall(url, this.updateHistoryView);
     },
     methods: {
@@ -100,7 +101,7 @@ export default {
             new displayStructureInstance({ propsData: { id: QueryStringParsing.get("id") } }).$mount(mountView);
         },
         switchHistory: function() {
-            let url = Galaxy.root + "history/switch_to_history?hist_id=" + this.historyHistory["id"];
+            let url = getAppRoot() + "history/switch_to_history?hist_id=" + this.historyHistory["id"];
             this.ajaxCall(url, this.reloadPage);
         },
         reloadPage: function() {

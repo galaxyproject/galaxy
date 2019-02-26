@@ -233,8 +233,8 @@ For more information, see https://planemo.readthedocs.io/en/latest/writing_advan
 This is a container tag set for the ``requirement`` and ``container`` tags
 described in greater detail below. ``requirement``s describe software packages
 and other individual computing requirements required to execute a tool, while
-``container``s describe Docker containers that should be able to serve as
-complete descriptions of the runtime of a tool.
+``container``s describe Docker or Singularity containers that should be able to
+serve as complete descriptions of the runtime of a tool.
 
 ]]></xs:documentation>
     </xs:annotation>
@@ -312,9 +312,21 @@ resolver.
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
 This tag set is contained within the 'requirements' tag set. Galaxy can be
-configured to run tools within [Docker](https://www.docker.com/) containers -
-this tag allows the tool to suggest possible valid Docker containers for this
-tool.
+configured to run tools within [Docker](https://www.docker.com/) or [Singularity](https://www.sylabs.io/singularity/)
+containers - this tag allows the tool to suggest possible valid containers for this tool. The contents of the tag should
+be a container image identifier appropriate for the particular container runtime being used, e.g. 
+``quay.io/biocontainers/fastqc:0.11.2--1`` for Docker or ``docker://quay.io/biocontainers/fastqc:0.11.2--1``
+(or alternatively ``/opt/containers/fastqc.simg`` if your Galaxy installation will be loading the image from a filesystem path)
+for Singularity. The ``requirements`` tag can contain multiple ``container`` tags describing suitable container options, in
+which case the first container that is found by the Galaxy container resolver at runtime will be used.
+
+Example:
+
+```xml
+<requirements>
+  <container type="docker">quay.io/biocontainers/fastqc:0.11.2--1</container>
+<requirements>
+```
 
 Read more about configuring Galaxy to run Docker jobs
 [here](https://galaxyproject.org/admin/tools/docker/).
@@ -324,7 +336,7 @@ Read more about configuring Galaxy to run Docker jobs
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="ContainerType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently must be ``docker``.</xs:documentation>
+            <xs:documentation xml:lang="en">This value describes the type of container that the tool may be executed in and currently may be ``docker`` or ``singularity``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
       </xs:extension>
@@ -1207,7 +1219,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
 
-If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy 17.05+ and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
+If ``compare`` is set to ``diff``, attempt to decompress both produced output and expected output files if needed before performing the diff. This flag is useful for testing gzipped outputs that are non-deterministic despite having deterministic decompressed contents. This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
 
 ]]></xs:documentation>
       </xs:annotation>
@@ -1231,7 +1243,7 @@ $assertions
 
 ### Examples
 
-The following demonstrtes a wide variety of text-based and tabular
+The following demonstrates a wide variety of text-based and tabular
 assertion statements.
 
 ```xml
@@ -1248,7 +1260,7 @@ assertion statements.
 </output>
 ```
 
-The following demonstrtes a wide variety of XML assertion statements.
+The following demonstrates a wide variety of XML assertion statements.
 
 ```xml
 <output name="out_file1">
@@ -1266,7 +1278,7 @@ The following demonstrtes a wide variety of XML assertion statements.
 </output>
 ```
 
-The following demonstrtes verifying XML content with XPath-like expressions.
+The following demonstrates verifying XML content with XPath-like expressions.
 
 ```xml
 <output name="out_file1">
@@ -1572,8 +1584,8 @@ module.
       <xs:element name="has_text_matching" type="xs:anyType">
         <xs:annotation>
           <xs:documentation><![CDATA[Asserts text matching the specified regular expression (``expression``) appears in the output (e.g. ``<has_text_matching expression="1274\d+53" />`` ).]]>
-        </xs:documentation>
-      </xs:annotation>
+          </xs:documentation>
+        </xs:annotation>
       </xs:element>
       <xs:element name="has_line" type="xs:anyType">
         <xs:annotation>
@@ -1639,8 +1651,37 @@ module.
           <xs:documentation><![CDATA[This tag allows the developer to recurisively specify additional assertions as child elements about just the text contained in the element specified by the XPath-like ``path`` (e.g. ``<element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"><not_has_text text="EDK72998.1" /></element_text>``).]]></xs:documentation>
         </xs:annotation>
       </xs:element>
+      <xs:element name="has_h5_keys" type="AssertHasH5Keys">
+      </xs:element>
+      <xs:element name="has_h5_attribute" type="AssertHasH5Attribute">
+      </xs:element>
     </xs:choice>
   </xs:group>
+  <xs:complexType name="AssertHasH5Keys">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output has a set of attributes (``keys``), specified as a comma-separated list (e.g. ``<has_h5_keys keys="bins,chroms,indexes,pixels" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="keys" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Comma-separated list of HDF5 attributes to check for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasH5Attribute">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Asserts HDF5 output contains the specified ``value`` for an attribute (``key``) (e.g. ``<has_attr key="nchroms" value="15" />``).]]></xs:documentation>
+    </xs:annotation>
+    <xs:attribute name="key" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">HDF5 attribute to check value of.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="value" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Expected value of HDF5 attribute to check.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="Inputs">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[Consists of all elements that define the
@@ -2055,21 +2096,21 @@ in the tool form.
 ##### Examples
 
 Sometimes you need labels for data or graph axes, chart titles, etc. This can be
-done using a text field. The following will create a text box 30 characters wide
-with the default value of "V1".
+done using a text field. The following will create a text box with the default
+value of "V1".
 
 ```xml
-<param name="xlab" size="30" type="text" value="V1" label="Label for x axis"/>
+<param name="xlab" type="text" value="V1" label="Label for x axis" />
 ```
 
-The ``size`` parameter can be two dimensional, if it is the textbox will be
-rendered on the tool form as a text area instead of a single line text box.
+The ``area`` boolean attribute can be used to change the ``text`` parameter to a
+two-dimensional text area instead of a single line text box.
 
 ```xml
-<param name="foo" type="text" area="true" size="5x25" />
+<param name="foo" type="text" area="true" />
 ```
 
-As of 17.01, ``text`` parameters can also supply a static list of preset
+Since release 17.01, ``text`` parameters can also supply a static list of preset
 defaults options. The user **may** be presented with the option to select one of
 these but will be allowed to supply an arbitrary text value.
 
@@ -2092,7 +2133,7 @@ These parameters represent whole number and real numbers, respectively.
 ##### Example
 
 ```xml
-<param name="region_size" size="4" type="integer" value="1" label="flanking regions of size" />
+<param name="region_size" type="integer" value="1" label="Size of the flanking regions" />
 ```
 
 $attribute_list:value,min,max:5
@@ -2278,8 +2319,8 @@ periods (e.g. ``.``). Some "reserved" names are ``REDIRECT_URL``,
         <xs:attribute name="area" type="PermissiveBoolean">
           <xs:annotation>
             <xs:documentation xml:lang="en">Boolean indicating if this should be
-rendered as a one line text box (if ``false``) or a multi-line text area (if
-``true``).</xs:documentation>
+rendered as a one line text box (if ``false``, the default) or a multi-line text
+ area (if ``true``).</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="argument" type="xs:string">
@@ -2450,13 +2491,11 @@ template if the parameter is ``false`` or not checked by the user. Only valid if
 ``type`` is ``boolean``.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="size" type="xs:string">
+        <xs:attribute name="size" type="xs:string" gxdocs:deprecated="true">
           <!-- TODO: can be integer or integerxinteger -->
           <xs:annotation>
-            <xs:documentation xml:lang="en">Used only if ``type`` attribute
-value is ``text``. To create a multi-line text box add an ``area="true"``
-attribute to the param tag. This can be one dimensional (e.g. ``size="40"``)
-or two dimensional (e.g. ``size="5x25"``).</xs:documentation>
+            <xs:documentation xml:lang="en">*Deprecated*. Used only if ``type`` attribute
+value is ``text``. Completely ignored since release 16.10.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <!-- metadata_name appears in some wrappers but I think this is a copy
@@ -2687,20 +2726,13 @@ on the topic of ``GALAXY_SLOTS`` for more information and examples.
 
 ### Error detection
 
-The ``detect_errors`` attribute of ``command``, if present, can be one of:
+The ``detect_errors`` attribute of ``command``, if present, loads a preset of error detection checks (for exit codes and content of stdio to indicate fatal tool errors or fatal out of memory errors). It can be one of:
 
-* ``default``: no-op fallback to ``stdio`` tags and erroring on standard error output (for legacy tools).
-* ``exit_code``: error if tool exit code is not 0. (The @jmchilton recommendation).
-* ``aggressive``: error if tool exit code is not 0 or ``Exception:``, ``Error:``, or
-  various messages related to being out of memory appear in the standard error or output.
-  (The @bgruening recommendation).
+* ``default``: for non-legacy tools with absent stdio block non-zero exit codes are added. For legacy tools or if a stdio block is present nothing is added.
+* ``exit_code``: adds checks for non zero exit codes (The @jmchilton recommendation). The ``oom_exit_code`` parameter can be used to add an additional out of memory indicating exit code.
+* ``aggressive``: adds checks for non zero exit codes, and checks for ``Exception:``, ``Error:`` in the standard error. Additionally checks for messages in the standard error that indicate an out of memory error (``MemoryError``, ``std::bad_alloc``, ``java.lang.OutOfMemoryError``, ``Out of memory``). (The @bgruening recommendation).
 
-For newer tools with ``profile>=16.04``, the default behavior is ``exit_code``.
-Legacy tools default to ``default`` behavior described above (erroring if the tool
-produces any standard error output).
-
-See [pull request 117](https://github.com/galaxyproject/galaxy/pull/117) for more implementation
-information and discussion on the ``detect_errors`` attribute.
+Prior to Galaxy release 19.01 the stdio block has only been used for non-legacy tools using ``default``. From release 19.01 checks defined in the stdio tag are prepended to the checks defined by the presets loaded in the command block.
 ]]></xs:documentation>
     </xs:annotation>
     <xs:simpleContent>
@@ -2893,7 +2925,7 @@ and demonstrates generating options from a dataset directly.
 
 ```xml
 <param name="taxonomy" type="data" format="mothur.seq.taxonomy" label="taxonomy - Taxonomy" help="please make sure your file has no quotation marks in it"/>
-<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+<param name="taxons" type="select" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
     <options from_dataset="taxonomy">
         <column name="name" index="1"/>
         <column name="value" index="1"/>
@@ -3432,7 +3464,7 @@ tool demonstrates using filters to sort a list and remove duplicate entries.
 
 ```xml
 <param name="taxonomy" type="data" format="mothur.cons.taxonomy" label="constaxonomy - Constaxonomy file. Provide either a constaxonomy file or a taxonomy file" help="please make sure your file has no quotation marks in it"/>
-<param name="taxons" type="select" size="120" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
+<param name="taxons" type="select" optional="true" multiple="true" label="Browse Taxons from Taxonomy">
     <options from_dataset="taxonomy">
         <column name="name" index="2"/>
         <column name="value" index="2"/>
@@ -3899,7 +3931,12 @@ tool ultimately creates. If the code, when executed, returns ``True``,
 the output dataset is retained. In these code blocks the tool parameters appear
 as Python variables and are thus referred to without the $ used for the Cheetah
 template (used in the ``<command>`` tag). Variables that are part of
-conditionals are accessed using a hash named after the conditional.
+conditionals are accessed using a dictionary named after the conditional. Boolean
+parameters appear as booleans, not the value of their ``truevalue`` and
+``falsevalue`` attributes. In the example below, ``options["selection_mode"]`` would
+appear as ``$options.selection_mode`` in Cheetah. Similarly ``options["vcf_output"]``
+would appear as ``$options.vcf_output`` having the values ``'--vcf'`` when true and
+``''`` when false in Cheetah.
 
 ### Example
 

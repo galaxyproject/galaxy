@@ -305,7 +305,7 @@ class _PageContentProcessor(HTMLParser, object):
     Processes page content to produce HTML that is suitable for display.
     For now, processor renders embedded objects.
     """
-    bare_ampersand = re.compile("&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
+    bare_ampersand = re.compile(r"&(?!#\d+;|#x[0-9a-fA-F]+;|\w+;)")
     elements_no_end_tag = set([
         'area', 'base', 'basefont', 'br', 'col', 'command', 'embed', 'frame',
         'hr', 'img', 'input', 'isindex', 'keygen', 'link', 'meta', 'param',
@@ -993,7 +993,8 @@ def _placeholderRenderForSave(trans, item_class, item_id, encode=False):
         item_name = history.name
     elif item_class == 'HistoryDatasetAssociation':
         hda = trans.sa_session.query(trans.model.HistoryDatasetAssociation).get(decoded_item_id)
-        hda = managers.base.security_check(trans, hda , False, True)
+        hda_manager = managers.hdas.HDAManager(trans.app)
+        hda = hda_manager.get_accessible(decoded_item_id, trans.user)
         item_name = hda.name
     elif item_class == 'StoredWorkflow':
         wf = trans.sa_session.query(trans.model.StoredWorkflow).get(decoded_item_id)

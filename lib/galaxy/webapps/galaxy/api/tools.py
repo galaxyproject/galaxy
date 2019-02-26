@@ -1,9 +1,11 @@
 import logging
+import os
 from json import dumps
 
 import galaxy.queue_worker
 from galaxy import exceptions, managers, util, web
 from galaxy.managers.collections_util import dictify_dataset_collection_instance
+from galaxy.tools import global_tool_errors
 from galaxy.util.json import safe_dumps
 from galaxy.util.odict import odict
 from galaxy.visualization.genomes import GenomeRegion
@@ -129,6 +131,25 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         else:
             raise exceptions.ObjectNotFound("Specified test data path not found.")
 
+    @expose_api_raw_anonymous_and_sessionless
+    def test_data_download(self, trans, id, **kwd):
+        """
+        GET /api/tools/{tool_id}/test_data_download?tool_version={tool_version}&filename={filename}
+        """
+        tool_version = kwd.get('tool_version', None)
+        tool = self._get_tool(id, tool_version=tool_version, user=trans.user)
+        filename = kwd.get("filename")
+        if filename is None:
+            raise exceptions.ObjectNotFound("Test data filename not specified.")
+        path = tool.test_data_path(filename)
+        if path:
+            if os.path.isfile(path):
+                trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % filename
+                return open(path, mode='rb')
+            elif os.path.isdir(path):
+                return util.streamball.stream_archive(trans=trans, path=path, upstream_gzip=self.app.config.upstream_gzip)
+        raise exceptions.ObjectNotFound("Specified test data path not found.")
+
     @expose_api_anonymous_and_sessionless
     def tests_summary(self, trans, **kwd):
         """
@@ -213,7 +234,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Return the resolver status for a specific tool id.
         [{"status": "installed", "name": "hisat2", "versionless": false, "resolver_type": "conda", "version": "2.0.3", "type": "package"}]
         """
-        tool = self._get_tool(id)
+        tool = self._get_tool(id, user=trans.user)
         return tool.tool_requirements_status
 
     @expose_api
@@ -228,11 +249,15 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         Attempts to install requirements via the dependency resolver
 
         parameters:
+            index:                   index of dependency resolver to use when installing dependency.
+                                     Defaults to using the highest ranking resolver
+            resolver_type:           Use the dependency resolver of this resolver_type to install dependency.
             build_dependency_cache:  If true, attempts to cache dependencies for this tool
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
-        tool = self._get_tool(id)
-        tool._view.install_dependencies(tool.requirements)
+        tool = self._get_tool(id, user=trans.user)
+        kwds['install'] = True
+        tool._view.install_dependencies(tool.requirements, **kwds)
         if kwds.get('build_dependency_cache'):
             tool.build_dependency_cache(**kwds)
         # TODO: rework resolver install system to log and report what has been done.
@@ -246,9 +271,13 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         DELETE /api/tools/{tool_id}/dependencies
         Attempts to uninstall requirements via the dependency resolver
 
+        parameters:
+            index:                   index of dependency resolver to use when installing dependency.
+                                     Defaults to using the highest ranking resolver
+            resolver_type:           Use the dependency resolver of this resolver_type to install dependency
         """
-        tool = self._get_tool(id)
-        tool._view.uninstall_dependencies(index=None, requirements=tool.requirements)
+        tool = self._get_tool(id, user=trans.user)
+        tool._view.uninstall_dependencies(requirements=tool.requirements, **kwds)
         # TODO: rework resolver install system to log and report what has been done.
         return tool.tool_requirements_status
 
@@ -404,6 +433,15 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         create_payload.update(files_payload)
         return self._create(trans, create_payload, **kwd)
 
+    @expose_api
+    @web.require_admin
+    def error_stack(self, trans, **kwd):
+        """
+        GET /api/tools/error_stack
+        Returns global tool error stack
+        """
+        return global_tool_errors.error_stack
+
     @expose_api_anonymous
     def create(self, trans, payload, **kwd):
         """
@@ -458,7 +496,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
         for k, v in inputs.items():
             if isinstance(v, dict) and v.get('src', '') == 'ldda' and 'id' in v:
                 ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v['id']))
-                if trans.user_is_admin() or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
+                if trans.user_is_admin or trans.app.security_agent.can_access_dataset(trans.get_current_user_roles(), ldda.dataset):
                     input_patch[k] = ldda.to_history_dataset_association(target_history, add_to_history=True)
 
         for k, v in input_patch.items():

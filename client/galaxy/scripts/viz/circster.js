@@ -1,5 +1,9 @@
+import _ from "underscore";
+import $ from "jquery";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import * as _ from "libs/underscore";
 import * as d3 from "d3";
 import { event as currentEvent } from "d3";
 import visualization from "viz/visualization";
@@ -7,6 +11,7 @@ import mod_utils from "utils/utils";
 import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
 import "libs/farbtastic";
+
 /**
  * Utility class for working with SVG.
  */
@@ -1167,6 +1172,8 @@ var Circster = Backbone.View.extend({
                     icon_class: "disk--arrow",
                     title: _l("Save"),
                     on_click: function() {
+                        let Galaxy = getGalaxyInstance();
+
                         // show saving dialog box
                         Galaxy.modal.show({
                             title: _l("Saving..."),
@@ -1175,7 +1182,7 @@ var Circster = Backbone.View.extend({
 
                         // send to server
                         $.ajax({
-                            url: `${Galaxy.root}visualization/save`,
+                            url: `${getAppRoot()}visualization/save`,
                             type: "POST",
                             dataType: "json",
                             data: {
@@ -1208,7 +1215,7 @@ var Circster = Backbone.View.extend({
                     icon_class: "cross-circle",
                     title: _l("Close"),
                     on_click: function() {
-                        window.top.location = `${Galaxy.root}visualizations/list`;
+                        window.top.location = `${getAppRoot()}visualizations/list`;
                     }
                 }
             ],

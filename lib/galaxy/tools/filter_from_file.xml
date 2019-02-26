@@ -81,9 +81,11 @@
     
 .. class:: infomark
 
-        This tool will take an input list and a text file with identifiers to
-        filter the list with. It will build two new lists - one "filtered" to
-        contain only the supplied identifiers and one of the discarded elements.
+        This tool will take an input list and a text file with  
+        names (i.e. identifiers). It will split the input list into
+        two new lists - one filtered to contain only the list members
+        whose names are listed in the text file, and one containing 
+        all the other elements.
 
         This tool will create new history datasets from your collection
         but your quota usage will not increase.

@@ -76,12 +76,9 @@ var View = Backbone.View.extend({
             }
         }
         if (this.has_slider) {
-            this.$text.addClass("ui-form-slider-left");
             this.$slider.slider({ min: opts.min, max: opts.max, step: step }).on("slide", (event, ui) => {
                 self.value(ui.value);
             });
-        } else {
-            this.$slider.hide();
         }
 
         // add listeners
@@ -91,15 +88,26 @@ var View = Backbone.View.extend({
 
     render: function() {
         var value = this.model.get("value");
-        this.has_slider && this.$slider.slider("value", value);
-        value !== this.$text.val() && this.$text.val(value);
+        if (this.has_slider) {
+            this.$slider.slider("value", value);
+            this.$slider.show();
+            this.$text.addClass("col-3 mr-3");
+        } else {
+            this.$slider.hide();
+            this.$text.removeClass("col-3 mr-3");
+        }
+        if (value !== this.$text.val()) {
+            this.$text.val(value);
+        }
     },
 
     /** Set and return the current value */
     value: function(new_val) {
-        var options = this.model.attributes;
         if (new_val !== undefined) {
-            if (new_val !== null && new_val !== "" && !this._isParameter(new_val)) {
+            let options = this.model.attributes;
+            let original_val = new_val;
+            let is_value = new_val !== null && new_val !== "" && !this._isParameter(new_val);
+            if (is_value) {
                 if (isNaN(new_val)) {
                     new_val = 0;
                 }
@@ -116,6 +124,9 @@ var View = Backbone.View.extend({
             this.model.set("value", new_val);
             this.model.trigger("change");
             options.onchange(new_val);
+            let has_changed = is_value && parseInt(original_val) !== parseInt(new_val);
+            let message = has_changed ? "This value was invalid or out-of-range. It has been auto-corrected." : null;
+            this.model.trigger("error", message);
         }
         return this.model.get("value");
     },
@@ -127,12 +138,12 @@ var View = Backbone.View.extend({
 
     /** Slider template */
     _template: function() {
-        return (
-            '<div class="ui-form-slider">' +
-            '<input class="ui-form-slider-text" type="text"/>' +
-            '<div class="ui-form-slider-element"/>' +
-            "</div>"
-        );
+        return `<div class="ui-form-slider container-fluid">
+                    <div class="row">
+                        <input class="ui-input ui-form-slider-text" type="text"/>
+                        <div class="ui-form-slider-element col mt-1"/>
+                    </div>
+                </div>`;
     }
 });
 

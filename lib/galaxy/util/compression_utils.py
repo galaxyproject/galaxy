@@ -65,6 +65,10 @@ def get_fileobj_raw(filename, mode="r", compressed_formats=None):
 
 class CompressedFile(object):
 
+    @staticmethod
+    def can_decompress(file_path):
+        return tarfile.is_tarfile(file_path) or zipfile.is_zipfile(file_path)
+
     def __init__(self, file_path, mode='r'):
         if tarfile.is_tarfile(file_path):
             self.file_type = 'tar'

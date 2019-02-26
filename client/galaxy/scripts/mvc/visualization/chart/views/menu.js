@@ -7,7 +7,7 @@ export default Backbone.View.extend({
     initialize: function(app) {
         this.app = app;
         this.model = new Backbone.Model({ visible: true });
-        this.execute_button = new Ui.ButtonIcon({
+        this.execute_button = new Ui.Button({
             icon: "fa-check-square",
             tooltip: "Confirm",
             onclick: () => {
@@ -79,7 +79,7 @@ export default Backbone.View.extend({
                 });
             }
         });
-        this.left_button = new Ui.ButtonIcon({
+        this.left_button = new Ui.Button({
             icon: "fa-angle-double-left",
             tooltip: "Show",
             onclick: () => {
@@ -87,7 +87,7 @@ export default Backbone.View.extend({
                 window.dispatchEvent(new Event("resize"));
             }
         });
-        this.right_button = new Ui.ButtonIcon({
+        this.right_button = new Ui.Button({
             icon: "fa-angle-double-right",
             tooltip: "Hide",
             onclick: () => {
@@ -95,7 +95,7 @@ export default Backbone.View.extend({
                 window.dispatchEvent(new Event("resize"));
             }
         });
-        this.save_button = new Ui.ButtonIcon({
+        this.save_button = new Ui.Button({
             icon: "fa-save",
             tooltip: "Save",
             onclick: () => {

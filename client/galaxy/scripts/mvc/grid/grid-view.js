@@ -1,5 +1,6 @@
-import * as Backbone from "backbone";
-import * as _ from "underscore";
+import Backbone from "backbone";
+import _ from "underscore";
+import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import GridModel from "mvc/grid/grid-model";
 import Templates from "mvc/grid/grid-template";
@@ -66,8 +67,9 @@ export default Backbone.View.extend({
     handle_refresh: function(refresh_frames) {
         if (refresh_frames) {
             if ($.inArray("history", refresh_frames) > -1) {
-                if (window.top.Galaxy && window.top.Galaxy.currHistoryPanel) {
-                    window.top.Galaxy.currHistoryPanel.loadCurrentHistory();
+                let Galaxy = getGalaxyInstance();
+                if (Galaxy && Galaxy.currHistoryPanel) {
+                    Galaxy.currHistoryPanel.loadCurrentHistory();
                 }
             }
         }
