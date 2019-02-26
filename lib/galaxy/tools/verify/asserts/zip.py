@@ -3,7 +3,7 @@ import re
 import zipfile
 
 
-def assert_has_zip_member(output_bytes, path, verify_assertions_function, children):
+def assert_has_archive_member(output_bytes, path, verify_assertions_function, children):
     """ Recursively checks the specified assertions against the text of
     the first element matching the specified path found within the zip archive."""
     output_temp = io.BytesIO(output_bytes)
