@@ -715,7 +715,9 @@
     <!-- End IDEAS datatypes -->
     <datatype extension="sbml" type="galaxy.datatypes.xml:Sbml" mimetype="application/xml" display_in_upload="true"/>
     <!-- Audio and video datatypes -->
+    <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
     <datatype extension="wav" type="galaxy.datatypes.media:WAV" display_in_upload="true" mimetype="audio/wav"/>
+    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3"/>
   </registration>
   <sniffers>
     <!--
@@ -886,7 +888,9 @@
     <sniffer type="galaxy.datatypes.images:Xpm"/>
     <sniffer type="galaxy.datatypes.images:Eps"/>
     <sniffer type="galaxy.datatypes.images:Rast"/>
+    <sniffer type="galaxy.datatypes.media:Mp4"/>
     <sniffer type="galaxy.datatypes.media:WAV"/>
+    <sniffer type="galaxy.datatypes.media:Mp3"/>
     <!--
     Keep this commented until the sniff method in the assembly.py
     module is fixed to not read the entire file.
