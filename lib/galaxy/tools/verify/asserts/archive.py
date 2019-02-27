@@ -4,7 +4,6 @@ import tarfile
 import zipfile
 
 
-
 def _extract_from_tar(tar_temp, path):
     for fn in tar_temp.getnames():
         if re.match(path, fn):
@@ -25,10 +24,10 @@ def assert_has_archive_member(output_bytes, path, verify_assertions_function, ch
     Currently supported formats: .zip, .tar, .tar.gz."""
 
     output_temp = io.BytesIO(output_bytes)
-    try: # tar / tar.gz
+    try:  # tar / tar.gz
         temp = tarfile.open(fileobj=output_temp, mode='r')
         contents = _extract_from_tar(temp, path)
-    except tarfile.TarError: # zip
+    except tarfile.TarError:  # zip
         temp = zipfile.ZipFile(output_temp, mode='r')
         contents = _extract_from_zip(temp, path)
     finally:
