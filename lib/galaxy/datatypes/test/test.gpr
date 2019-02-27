@@ -1,0 +1,13 @@
+ATF       1.0
+8         5
+"Type=GenePix ArrayList V1.0"
+"BlockCount=4"
+"BlockType=0"
+"URL=http://genome-www.stanford.edu/cgi-bin/dbrun/SacchDB?find+Locus+%22[ID]%22"
+"Block1= 400, 400, 100, 24, 175, 5, 175"
+"Block2= 4896, 400, 100, 24, 175, 5, 175"
+"Block3= 400, 4896, 100, 24, 175, 5, 175"
+"Block4= 4896, 4896, 100, 24, 175, 5, 175"
+"Block"  "Column"  "Row"  "Name"  "ID"
+ 1        1         1      VPS8    YAL002W
+ 1        2         1      NTG1    YAL015C
