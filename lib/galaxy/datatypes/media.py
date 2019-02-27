@@ -26,7 +26,7 @@ class Mp3(Binary):
     def sniff(self, filename):
         try:
             header = open(filename, 'rb').read(3)
-            if header == b'ID3':
+            if header == b'ID3' or header == b'\xff\xfb\x90':
                 return True
             return False
         except Exception:
