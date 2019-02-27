@@ -147,7 +147,7 @@ class Gpr(Binary):
         False
         """
         try:
-            format = open(filename,'rb').read(3).decode('ascii')
+            format = open(filename, 'rb').read(3).decode('ascii')
             if format == 'ATF':
                 return True
             return False
