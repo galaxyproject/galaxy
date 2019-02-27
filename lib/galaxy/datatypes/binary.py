@@ -128,7 +128,7 @@ class Cel(Binary):
 
 class Gpr(Binary):
 
-    """Binary data in GPR format."""
+    """Binary data in GPR, Axon Text File (ATF) format."""
     file_ext = "gpr"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -138,7 +138,7 @@ class Gpr(Binary):
         Try to guess if the file is a GPR file.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname('test_gpr.gpr')
+        >>> fname = get_test_fname('test.gpr')
         >>> Gpr().sniff(fname)
         True
 
