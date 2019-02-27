@@ -391,7 +391,7 @@ class Tool(Dictifiable):
     default_tool_action = DefaultToolAction
     dict_collection_visible_keys = ['id', 'name', 'version', 'description', 'labels']
 
-    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, allow_code_files=True):
+    def __init__(self, config_file, tool_source, app, guid=None, repository_id=None, tool_shed_repository=None, allow_code_files=True):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
@@ -437,7 +437,7 @@ class Tool(Dictifiable):
         self._lineage = None
         self.dependencies = []
         # populate toolshed repository info, if available
-        self.populate_tool_shed_info()
+        self.populate_tool_shed_info(tool_shed_repository)
         # add tool resource parameters
         self.populate_resource_parameters(tool_source)
         self.tool_errors = None
@@ -490,8 +490,8 @@ class Tool(Dictifiable):
                                                             tool_shed=self.tool_shed,
                                                             name=self.repository_name,
                                                             owner=self.repository_owner,
-                                                            installed_changeset_revision=self.installed_changeset_revision)
-        return None
+                                                            installed_changeset_revision=self.installed_changeset_revision,
+                                                            repository_id=self.repository_id)
 
     @property
     def produces_collections_with_unknown_structure(self):
@@ -522,7 +522,7 @@ class Tool(Dictifiable):
         preserve_python_environment = config.preserve_python_environment
         if preserve_python_environment == "always":
             return True
-        elif preserve_python_environment == "legacy_and_local" and self.repository_id is None:
+        elif preserve_python_environment == "legacy_and_local" and self.tool_shed is None:
             return True
         else:
             unversioned_legacy_tool = self.old_id in GALAXY_LIB_TOOLS_UNVERSIONED
@@ -851,7 +851,7 @@ class Tool(Dictifiable):
         """If tool shed installed tool, the base directory of the repository installed."""
         repository_dir = None
 
-        if hasattr(self, 'tool_shed') and self.tool_shed:
+        if getattr(self, 'tool_shed', None):
             repository_dir = self.tool_dir
             while True:
                 repository_dir_name = os.path.basename(repository_dir)
@@ -1168,18 +1168,16 @@ class Tool(Dictifiable):
                     root.append(inputs)
                 inputs.append(resource_xml)
 
-    def populate_tool_shed_info(self):
-        if self.repository_id is not None and self.app.name == 'galaxy':
-            repository_id = self.app.security.decode_id(self.repository_id)
-            if hasattr(self.app, 'tool_shed_repository_cache'):
-                tool_shed_repository = self.app.tool_shed_repository_cache.get_installed_repository(repository_id=repository_id)
-                if tool_shed_repository:
-                    self.tool_shed = tool_shed_repository.tool_shed
-                    self.repository_name = tool_shed_repository.name
-                    self.repository_owner = tool_shed_repository.owner
-                    self.changeset_revision = tool_shed_repository.changeset_revision
-                    self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
-                    self.sharable_url = tool_shed_repository.get_sharable_url(self.app)
+    def populate_tool_shed_info(self, tool_shed_repository):
+        if tool_shed_repository:
+            self.tool_shed = tool_shed_repository.tool_shed
+            self.repository_name = tool_shed_repository.name
+            self.repository_owner = tool_shed_repository.owner
+            self.changeset_revision = tool_shed_repository.changeset_revision
+            self.installed_changeset_revision = tool_shed_repository.installed_changeset_revision
+            self.sharable_url = common_util.get_tool_shed_repository_url(
+                self.app, self.tool_shed, self.repository_owner, self.repository_name
+            )
 
     @property
     def help(self):
@@ -1202,16 +1200,16 @@ class Tool(Dictifiable):
         tool_source = self.__help_source
         self.__help = None
         self.__help_by_page = []
-        help_header = ""
         help_footer = ""
         help_text = tool_source.parse_help()
         if help_text is not None:
-            if self.repository_id and help_text.find('.. image:: ') >= 0:
-                # Handle tool help image display for tools that are contained in repositories in the tool shed or installed into Galaxy.
-                try:
-                    help_text = tool_shed.util.shed_util_common.set_image_paths(self.app, self.repository_id, help_text)
-                except Exception:
-                    log.exception("Exception in parse_help, so images may not be properly displayed")
+            try:
+                if help_text.find('.. image:: ') >= 0 and (self.tool_shed_repository or self.repository_id):
+                    help_text = tool_shed.util.shed_util_common.set_image_paths(
+                        self.app, help_text, encoded_repository_id=self.repository_id, tool_shed_repository=self.tool_shed_repository, tool_id=self.old_id, tool_version=self.version
+                    )
+            except Exception:
+                log.exception("Exception in parse_help, so images may not be properly displayed")
             try:
                 self.__help = Template(rst_to_html(help_text), input_encoding='utf-8',
                                        default_filters=['decode.utf8'],
