@@ -3,6 +3,7 @@ API operations for Workflows
 """
 from __future__ import absolute_import
 
+import io
 import json
 import logging
 import os
@@ -302,8 +303,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
             if not os.path.exists(installed_repository_file):
                 raise exceptions.MessageException("Repository file '%s' not found.")
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
-                workflow_data = None
-                with open(installed_repository_file, 'rb') as f:
+                with io.open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
                 return self.__api_import_from_archive(trans, workflow_data)
             else:
