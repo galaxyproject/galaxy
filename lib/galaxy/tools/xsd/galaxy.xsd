@@ -3134,7 +3134,7 @@ validators is in the ``validator_types`` dictionary in
 Valid values include: ``expression``, ``regex``, ``in_range``, ``length``,
 ``metadata``, ``unspecified_build``, ``no_options``, ``empty_field``,
 ``dataset_metadata_in_file``, ``dataset_metadata_in_data_table``,
-``dataset_ok_validator``]]></xs:documentation>
+``dataset_ok_validator``, ``dataset_metadata_in_range``]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="message" type="xs:string">

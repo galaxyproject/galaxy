@@ -98,6 +98,7 @@
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />
+  <tool file="validation_metadata_in_range.xml"/>
   <tool file="empty_output.xml" />
   <tool file="validation_empty_dataset.xml" />
   <tool file="implicit_conversion.xml" />
