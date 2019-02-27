@@ -12,7 +12,7 @@
 </head>
 <body class="body-audio-player">
     ${h.javascript_link( app_root +  "js/plyr.js" )}	
-    <audio id="audio-container" controls data-plyr-config='{ "title": "${hda.name}"}'>
+    <audio id="audio-container" controls>
         <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='audio/wav' />
         <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='audio/mp3' />
     </audio>

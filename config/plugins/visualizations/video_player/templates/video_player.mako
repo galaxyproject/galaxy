@@ -12,7 +12,7 @@
 </head>
 <body class="body-video-player">
     ${h.javascript_link( app_root +  "js/plyr.js" )}
-    <video id="video-container" data-plyr-config='{ "title": "${hda.name}"}' playsinline controls>
+    <video id="video-container" playsinline controls>
         <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='video/mp4' />
     </video>
 </body>
