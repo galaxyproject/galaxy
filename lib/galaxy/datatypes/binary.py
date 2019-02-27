@@ -143,7 +143,7 @@ class Gpr(Binary):
         True
 
         >>> fname = get_test_fname('drugbank_drugs.mz5')
-        >>> Gpr.sniff(fname)
+        >>> Gpr().sniff(fname)
         False
         """
         try:
