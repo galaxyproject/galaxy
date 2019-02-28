@@ -13,6 +13,23 @@ def ffprobe(path):
     data = json.loads(subprocess.check_output(['ffprobe', '-loglevel', 'quiet', '-show_format', '-show_streams', '-of', 'json', path]))
     return data['format'], data['streams']
 
+
+class Audio(Binary):
+
+    MetadataElement(name="duration", default=0, desc="Length of audio sample", readonly=True, visible=True, optional=True, no_value=0)
+    MetadataElement(name="audio_codecs", default="", desc="Audio codec(s)", readonly=True, visible=True, optional=True, no_value="")
+    MetadataElement(name="sample_rates", default="", desc="Sampling Rate(s)", readonly=True, visible=True, optional=True, no_value="")
+    MetadataElement(name="audio_streams", default=0, desc="Number of audio streams", readonly=True, visible=True, optional=True, no_value=0)
+
+    def set_meta(self, dataset, **kwd):
+        metadata, streams = ffprobe(dataset.file_name)
+
+        dataset.metadata.duration = metadata['duration']
+        dataset.metadata.audio_codecs = '|'.join([stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio'])
+        dataset.metadata.sample_rates = '|'.join([stream['sample_rate'] for stream in streams if stream['codec_type'] == 'audio'])
+        dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
+
+
 class Video(Binary):
 
     MetadataElement(name="resolution_w", default=0, desc="Width of video stream", readonly=True, visible=True, optional=True, no_value=0)
@@ -104,17 +121,31 @@ class Mpg(Video):
 Binary.register_sniffable_binary_format("mpg", "mpg", Mpg)
 
 
-class WAV( Binary ):
+class Mp3(Audio):
+    """Mp3 audio file"""
+    file_ext = "mp3"
+
+    def sniff(self, filename):
+        try:
+            metadata, streams = ffprobe(filename)
+            return 'mp3' in metadata['format_name'].split(',')
+        except subprocess.CalledProcessException:
+            return False
+
+Binary.register_sniffable_binary_format('mp3', 'mp3', Mp3)
+
+
+class WAV(Binary):
     """RIFF WAV audio file"""
 
     file_ext = "wav"
     blurb = "RIFF WAV Audio file"
     is_binary = True
 
-    MetadataElement( name="rate", desc="Sample Rate", default=0, no_value=0, readonly=True, visible=True, optional=True )
-    MetadataElement( name="nframes", desc="Number of Samples", default=0, no_value=0, readonly=True, visible=True, optional=True )
-    MetadataElement( name="nchannels", desc="Number of Channels", default=0, no_value=0, readonly=True, visible=True, optional=True )
-    MetadataElement( name="sampwidth", desc="Sample Width", default=0, no_value=0, readonly=True, visible=True, optional=True )
+    MetadataElement(name="rate", desc="Sample Rate", default=0, no_value=0, readonly=True, visible=True, optional=True)
+    MetadataElement(name="nframes", desc="Number of Samples", default=0, no_value=0, readonly=True, visible=True, optional=True)
+    MetadataElement(name="nchannels", desc="Number of Channels", default=0, no_value=0, readonly=True, visible=True, optional=True)
+    MetadataElement(name="sampwidth", desc="Sample Width", default=0, no_value=0, readonly=True, visible=True, optional=True)
 
     def get_mime(self):
         """Returns the mime type of the datatype"""

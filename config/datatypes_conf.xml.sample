@@ -641,6 +641,7 @@
 
     <!-- media datatypes -->
     <datatype extension="wav" type="galaxy.datatypes.media:WAV" display_in_upload="true" mimetype="audio/wav"/>
+    <datatype extension="mp3" type="galaxy.datatypes.media:Mp3" display_in_upload="true" mimetype="audio/mp3"/>
     <datatype extension="mkv" type="galaxy.datatypes.media:Mkv" display_in_upload="true" mimetype="video/mkv"/>
     <datatype extension="mp4" type="galaxy.datatypes.media:Mp4" display_in_upload="true" mimetype="video/mp4"/>
     <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
@@ -789,6 +790,7 @@
     <sniffer type="galaxy.datatypes.images:Rast"/>
     <sniffer type="galaxy.datatypes.media:WAV"/>
     <sniffer type="galaxy.datatypes.media:Mkv"/>
+    <sniffer type="galaxy.datatypes.media:Mp3"/>
     <sniffer type="galaxy.datatypes.media:Mp4"/>
     <sniffer type="galaxy.datatypes.media:Flv"/>
     <sniffer type="galaxy.datatypes.media:Mpg"/>
