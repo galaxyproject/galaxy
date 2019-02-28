@@ -641,7 +641,7 @@ class Configuration(object):
         self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
         self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
-        self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', None)
+        self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', 'config/user_preferences_extra_conf.yml')
         try:
             with open(self.user_preferences_extra_config_file, 'r') as stream:
                 self.user_preferences_extra = yaml.safe_load(stream)
