@@ -301,7 +301,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         if 'installed_repository_file' in payload:
             installed_repository_file = payload.get('installed_repository_file', '')
             if not os.path.exists(installed_repository_file):
-                raise exceptions.MessageException("Repository file '%s' not found.")
+                raise exceptions.RequestParameterInvalidException("Workflow file '%s' not found" % installed_repository_file)
             elif os.path.getsize(os.path.abspath(installed_repository_file)) > 0:
                 with io.open(installed_repository_file, encoding='utf-8') as f:
                     workflow_data = f.read()
