@@ -45,6 +45,10 @@ class BPF( Text ):
     >>> BPF().sniff(fname)
     True
 
+    >>> fname = get_test_fname('1_1119_2_22_001-1.par')
+    >>> BPF().sniff(fname)
+    True
+
     >>> fname = get_test_fname('drugbank_drugs.cml')
     >>> BPF().sniff(fname)
     False
@@ -54,7 +58,8 @@ class BPF( Text ):
     file_ext = "par"
 
     MetadataElement( name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[] )
-    mandatory = ['LHD', 'REP', 'SNB', 'SAM', 'SBF', 'SSB', 'NCH', 'SPN', 'LBD']
+    mandatory_headers = ['LHD', 'REP', 'SNB', 'SAM', 'SBF', 'SSB', 'NCH', 'SPN', 'LBD']
+    optional_headers = ['FIL', 'TYP', 'DBN', 'VOL', 'DIR', 'SRC', 'BEG', 'END', 'RED', 'RET', 'RCC', 'CMT', 'SPI', 'PCF', 'PCN', 'EXP', 'SYS', 'DAT', 'SPA', 'MAO', 'GPO', 'SAO']
 
     def set_meta( self, dataset, overwrite=True, **kwd ):
         """Set the metadata for this dataset from the file contents"""
@@ -72,7 +77,16 @@ class BPF( Text ):
         # We loop over 30 as there are 9 mandatory headers (the last should be
         # `LBD:`), while there are 21 optional headers that can be
         # interspersed.
-        for line in get_headers(filename, sep=':', count=30):
-            if line[0] not in self.mandatory:
+        seen_headers = [line[0] for line in get_headers(filename, sep=':', count=30)]
+
+        # Check that every mandatory header is present in the seen headers
+        for header in self.mandatory_headers:
+            if header not in seen_headers:
                 return False
-        return False
+
+        # Check that every seen header is either in mandatory or optional
+        for header in seen_headers:
+            if header not in self.mandatory_headers and header not in self.optional_headers:
+                return False
+
+        return True
