@@ -1161,3 +1161,39 @@ class ConnectivityTable(Tabular):
         ck_data_body = re.sub('[ ]+', '\t', ck_data_body)
 
         return dumps({'ck_data': util.unicodify(ck_data_header + "\n" + ck_data_body), 'ck_index': ck_index + 1})
+
+
+class Gal(Tabular):
+    """ Gal File format described at:
+        http://mdc.custhelp.com/app/answers/detail/a_id/18883/kw/18883/session/L2F2LzEvdGltZS8xNTUxMjY5NTc2L3NpZC9MajhQX3E4bw%3D%3D#gal
+    """
+    edam_format = "format_3829"
+    edam_data = "data_3110"
+    file_ext = "gal"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a Gal file.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.gal')
+        >>> Gal().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('test.gpr')
+        >>> Gal().sniff(fname)
+        False
+        """
+
+        try:
+            source = open(filename)
+            header_lines = [source.readline(), source.readline()]
+            line = None
+            for line in source:
+                if not line.startswith('"'):
+                    break
+                header_lines.append(line)
+            if any("ATF" in s for s in header_lines) and any("GenePix" in s for s in header_lines) and any(
+                    "BlockCount" in s for s in header_lines):
+                return True
+        except Exception:
+            return False
