@@ -126,6 +126,42 @@ class Cel(Binary):
             return False
 
 
+class Gpr (Binary):
+    """ Gpr File format described at:
+    http://mdc.custhelp.com/app/answers/detail/a_id/18883/kw/18883/session/L2F2LzEvdGltZS8xNTUxMjY5NTc2L3NpZC9MajhQX3E4bw%3D%3D#gpr
+    """
+    edam_format = "format_3829"
+    edam_data = "data_3110"
+    file_ext = "gpr"
+
+    def sniff(self, filename):
+        """
+        Try to guess if the file is a GPR file.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.gpr')
+        >>> Gpr().sniff(fname)
+        True
+
+        >>> fname = get_test_fname('test.gal')
+        >>> Gpr().sniff(fname)
+        False
+        """
+
+        try:
+            source = open(filename, 'rb')
+            header_lines = [source.readline(), source.readline()]
+            line = None
+            for line in source:
+                if not line.startswith('"'):
+                    break
+                header_lines.append(line)
+            if any("ATF" in s for s in header_lines) and any("GenePix" in s for s in header_lines) and not any(
+                    "BlockCount" in s for s in header_lines):
+                return True
+        except Exception:
+            return False
+
+
 class MashSketch(Binary):
     """
         Mash Sketch file.
