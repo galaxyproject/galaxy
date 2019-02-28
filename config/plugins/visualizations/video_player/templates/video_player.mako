@@ -15,8 +15,6 @@
     <video id="video-container" playsinline controls>
         <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='video/mp4' />
         <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='video/mkv' />
-        <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='video/flv' />
-        <source src="${h.url_for( controller='/datasets', action='index')}/${hda.id}/display" type='video/mpg' />
     </video>
 </body>
 </html>
