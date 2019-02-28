@@ -73,12 +73,3 @@ class BPF( Text ):
                 return match is not None
         # in case the file is empty
         return False
-
-
-def _test():
-    import doctest
-    doctest.testmod()
-
-
-if __name__ == "__main__":
-    _test()
