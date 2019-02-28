@@ -79,6 +79,11 @@ class BPF(Text):
         # interspersed.
         seen_headers = [line[0] for line in get_headers(filename, sep=':', count=30)]
 
+        # We cut everything after LBD, where the headers end and contents
+        # start. We choose not to validate contents.
+        if 'LBD' in seen_headers:
+            seen_headers = seen_headers[0:seen_headers.index('LBD') + 1]
+
         # Check that every mandatory header is present in the seen headers
         for header in self.mandatory_headers:
             if header not in seen_headers:
@@ -86,7 +91,7 @@ class BPF(Text):
 
         # Check that every seen header is either in mandatory or optional
         for header in seen_headers:
-            if header not in self.mandatory_headers and header not in self.optional_headers:
+            if not (header in self.mandatory_headers or header in self.optional_headers):
                 return False
 
         return True
