@@ -1,1 +1,0 @@
-../ext/videojs-speed/video-speed.js
