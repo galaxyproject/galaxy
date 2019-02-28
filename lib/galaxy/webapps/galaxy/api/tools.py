@@ -264,7 +264,6 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             force_rebuild:           If true and cache dir exists, attempts to delete cache dir
         """
         tool = self._get_tool(id, user=trans.user)
-        kwds['install'] = True
         tool._view.install_dependencies(tool.requirements, **kwds)
         if kwds.get('build_dependency_cache'):
             tool.build_dependency_cache(**kwds)
