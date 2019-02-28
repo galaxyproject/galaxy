@@ -1,12 +1,10 @@
 """Video classes"""
 import json
-import logging
 import subprocess
 import wave
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.metadata import MetadataElement
-log = logging.getLogger(__name__)
+from galaxy.datatypes.metadata import MetadataElement, ListParameter
 
 
 def ffprobe(path):

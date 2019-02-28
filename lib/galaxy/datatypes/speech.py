@@ -1,10 +1,7 @@
 import re
-import logging
 
 from galaxy.datatypes.text import Text
-from galaxy.datatypes.metadata import MetadataElement, MetadataParameter, ListParameter, DictParameter
-
-log = logging.getLogger(__name__)
+from galaxy.datatypes.metadata import MetadataElement, ListParameter, DictParameter
 
 
 class TextGrid( Text ):
