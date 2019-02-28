@@ -4,7 +4,7 @@ import subprocess
 import wave
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.metadata import MetadataElement, ListParameter
+from galaxy.datatypes.metadata import ListParameter, MetadataElement
 
 
 def ffprobe(path):
@@ -69,7 +69,6 @@ class Mkv(Video):
     def sniff(self, filename):
         metadata, streams = ffprobe(filename)
         return 'matroska' in metadata['format_name'].split(',')
-
 
 
 class Mp4(Video):

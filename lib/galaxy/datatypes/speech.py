@@ -1,11 +1,11 @@
 import re
 
-from galaxy.datatypes.text import Text
-from galaxy.datatypes.metadata import MetadataElement, ListParameter
+from galaxy.datatypes.metadata import ListParameter, MetadataElement
 from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.text import Text
 
 
-class TextGrid( Text ):
+class TextGrid(Text):
     """Praat Textgrid file for speech annotations
 
     >>> from galaxy.datatypes.sniff import get_test_fname
@@ -24,7 +24,7 @@ class TextGrid( Text ):
 
     blurb = "Praat TextGrid file"
 
-    MetadataElement( name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[] )
+    MetadataElement(name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
 
     def sniff(self, filename):
 
@@ -36,7 +36,7 @@ class TextGrid( Text ):
         return False
 
 
-class BPF( Text ):
+class BPF(Text):
     """Munich BPF annotation format
     https://www.phonetik.uni-muenchen.de/Bas/BasFormatseng.html#Partitur
 
@@ -57,11 +57,11 @@ class BPF( Text ):
 
     file_ext = "par"
 
-    MetadataElement( name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[] )
+    MetadataElement(name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
     mandatory_headers = ['LHD', 'REP', 'SNB', 'SAM', 'SBF', 'SSB', 'NCH', 'SPN', 'LBD']
     optional_headers = ['FIL', 'TYP', 'DBN', 'VOL', 'DIR', 'SRC', 'BEG', 'END', 'RED', 'RET', 'RCC', 'CMT', 'SPI', 'PCF', 'PCN', 'EXP', 'SYS', 'DAT', 'SPA', 'MAO', 'GPO', 'SAO']
 
-    def set_meta( self, dataset, overwrite=True, **kwd ):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents"""
 
         types = set()
