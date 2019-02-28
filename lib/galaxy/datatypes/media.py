@@ -4,7 +4,16 @@ from galaxy.datatypes.binary import Binary
 
 
 class WAV(Binary):
-    """WAV audio file"""
+    """Class that reads WAV audio file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('audio_1.wav')
+    >>> WAV().sniff(fname)
+    True
+    >>> fname = get_test_fname('audio_2.mp3')
+    >>> WAV().sniff(fname)
+    False
+    """
 
     file_ext = "wav"
 
@@ -19,7 +28,16 @@ class WAV(Binary):
 
 
 class Mp3(Binary):
-    """MP3 audio file"""
+    """Class that reads MP3 audio file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('audio_2.mp3')
+    >>> Mp3().sniff(fname)
+    True
+    >>> fname = get_test_fname('audio_1.wav')
+    >>> Mp3().sniff(fname)
+    False
+    """
 
     file_ext = "mp3"
 
@@ -34,7 +52,16 @@ class Mp3(Binary):
 
 
 class Mp4(Binary):
-    """MP4 video file"""
+    """Class that reads MP4 video file
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('video_1.mp4')
+    >>> Mp4().sniff(fname)
+    True
+    >>> fname = get_test_fname('audio_1.wav')
+    >>> Mp4().sniff(fname)
+    False
+    """
 
     file_ext = "mp4"
 
