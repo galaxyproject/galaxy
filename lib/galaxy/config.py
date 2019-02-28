@@ -17,6 +17,7 @@ import sys
 import tempfile
 import threading
 import time
+import yaml
 from datetime import timedelta
 
 from six import string_types
@@ -642,6 +643,13 @@ class Configuration(object):
         self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
         self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', None)
+        try:
+            with open(self.user_preferences_extra_config_file, 'r') as stream:
+                self.user_preferences_extra = yaml.safe_load(stream)
+        except Exception:
+            log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_config_file)
+            self.user_preferences_extra = {'preferences': {}}
+
         self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file
