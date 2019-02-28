@@ -647,7 +647,7 @@
     <datatype extension="flv" type="galaxy.datatypes.media:Flv" display_in_upload="true" mimetype="video/flv"/>
     <datatype extension="mpg" type="galaxy.datatypes.media:Mpg" display_in_upload="true" mimetype="video/mpeg"/>
     <!-- speech datatypes -->
-    <datatype extension="textgrid" type="galaxy.datatypes.speech:TextGrid" display_in_upload="true" mimetype="text/plain"/>
+    <datatype extension="TextGrid" type="galaxy.datatypes.speech:TextGrid" display_in_upload="true" mimetype="text/plain"/>
     <datatype extension="par" type="galaxy.datatypes.speech:BPF" display_in_upload="true" mimetype="text/plain-bas"/>
 
 
