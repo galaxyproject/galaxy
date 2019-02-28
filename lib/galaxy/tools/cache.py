@@ -128,6 +128,9 @@ class ToolShedRepositoryCache(object):
         self.app = app
         self.cache = local()
 
+    def add_local_repository(self, repository):
+        self.cache.repositories.append(repository)
+
     @property
     def tool_shed_repositories(self):
         try:

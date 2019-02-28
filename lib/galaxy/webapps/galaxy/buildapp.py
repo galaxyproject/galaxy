@@ -894,6 +894,17 @@ def populate_api_routes(webapp, app):
                      repository_id=None,
                      image_file=None)
 
+    # Do the same but without a repository id
+    webapp.add_route('/shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}/{image_file:.+?}',
+                     controller='shed_tool_static',
+                     action='index',
+                     shed=None,
+                     owner=None,
+                     repo=None,
+                     tool=None,
+                     version=None,
+                     image_file=None)
+
     webapp.mapper.connect('tool_shed_contents',
                           '/api/tool_shed/contents',
                           controller='toolshed',

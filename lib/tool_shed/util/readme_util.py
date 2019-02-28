@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import threading
 
 from mako.template import Template
 
@@ -50,16 +49,12 @@ def build_readme_files_dict(app, repository, changeset_revision, metadata, tool_
                         text_of_reasonable_length = basic_util.size_string(text)
                         if text_of_reasonable_length.find('.. image:: ') >= 0:
                             # Handle image display for README files that are contained in repositories in the tool shed or installed into Galaxy.
-                            lock = threading.Lock()
-                            lock.acquire(True)
                             try:
                                 text_of_reasonable_length = suc.set_image_paths(app,
-                                                                                app.security.encode_id(repository.id),
-                                                                                text_of_reasonable_length)
+                                                                                text_of_reasonable_length,
+                                                                                encoded_repository_id=app.security.encode_id(repository.id))
                             except Exception:
                                 log.exception("Exception in build_readme_files_dict, so images may not be properly displayed")
-                            finally:
-                                lock.release()
                         if readme_file_name.endswith('.rst'):
                             text_of_reasonable_length = Template(rst_to_html(text_of_reasonable_length),
                                                                  input_encoding='utf-8',
