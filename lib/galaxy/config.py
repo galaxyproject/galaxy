@@ -17,9 +17,9 @@ import sys
 import tempfile
 import threading
 import time
-import yaml
 from datetime import timedelta
 
+import yaml
 from six import string_types
 from six.moves import configparser
 
