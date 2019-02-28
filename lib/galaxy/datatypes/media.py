@@ -69,14 +69,9 @@ class Mkv(Video):
     file_ext = "mkv"
 
     def sniff(self, filename):
-        try:
-            metadata, streams = ffprobe(filename)
-            return 'matroska' in metadata['format_name'].split(',')
-        except subprocess.CalledProcessException:
-            return False
+        metadata, streams = ffprobe(filename)
+        return 'matroska' in metadata['format_name'].split(',')
 
-
-Binary.register_sniffable_binary_format("mkv", "mkv", Mkv)
 
 
 class Mp4(Video):
@@ -93,42 +88,24 @@ class Mp4(Video):
     file_ext = "mp4"
 
     def sniff(self, filename):
-        try:
-            metadata, streams = ffprobe(filename)
-            return 'mp4' in metadata['format_name'].split(',')
-        except subprocess.CalledProcessException:
-            return False
-
-
-Binary.register_sniffable_binary_format("mp4", "mp4", Mp4)
+        metadata, streams = ffprobe(filename)
+        return 'mp4' in metadata['format_name'].split(',')
 
 
 class Flv(Video):
     file_ext = "flv"
 
     def sniff(self, filename):
-        try:
-            metadata, streams = ffprobe(filename)
-            return 'flv' in metadata['format_name'].split(',')
-        except subprocess.CalledProcessException:
-            return False
-
-
-Binary.register_sniffable_binary_format("flv", "flv", Flv)
+        metadata, streams = ffprobe(filename)
+        return 'flv' in metadata['format_name'].split(',')
 
 
 class Mpg(Video):
     file_ext = "mpg"
 
     def sniff(self, filename):
-        try:
-            metadata, streams = ffprobe(filename)
-            return 'mpegvideo' in metadata['format_name'].split(',')
-        except subprocess.CalledProcessException:
-            return False
-
-
-Binary.register_sniffable_binary_format("mpg", "mpg", Mpg)
+        metadata, streams = ffprobe(filename)
+        return 'mpegvideo' in metadata['format_name'].split(',')
 
 
 class Mp3(Audio):
@@ -144,13 +121,8 @@ class Mp3(Audio):
     file_ext = "mp3"
 
     def sniff(self, filename):
-        try:
-            metadata, streams = ffprobe(filename)
-            return 'mp3' in metadata['format_name'].split(',')
-        except subprocess.CalledProcessException:
-            return False
-
-Binary.register_sniffable_binary_format('mp3', 'mp3', Mp3)
+        metadata, streams = ffprobe(filename)
+        return 'mp3' in metadata['format_name'].split(',')
 
 
 class WAV(Binary):
@@ -203,12 +175,13 @@ class WAV(Binary):
         """Set the metadata for this dataset from the file contents
         """
 
-        fd = wave.open(dataset.dataset.file_name, 'rb')
-        dataset.metadata.rate = fd.getframerate()
-        dataset.metadata.nframes = fd.getnframes()
-        dataset.metadata.sampwidth = fd.getsampwidth()
-        dataset.metadata.nchannels = fd.getnchannels()
-        fd.close()
-
-
-Binary.register_sniffable_binary_format('wav', 'wav', WAV)
+        try:
+            fd = wave.open(dataset.dataset.file_name, 'rb')
+            dataset.metadata.rate = fd.getframerate()
+            dataset.metadata.nframes = fd.getnframes()
+            dataset.metadata.sampwidth = fd.getsampwidth()
+            dataset.metadata.nchannels = fd.getnchannels()
+        except wave.Error:
+            pass
+        finally:
+            fd.close()
