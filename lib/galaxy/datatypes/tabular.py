@@ -1195,5 +1195,7 @@ class Gal(Tabular):
             if any("ATF" in s for s in header_lines) and any("GenePix" in s for s in header_lines) and any(
                     "BlockCount" in s for s in header_lines):
                 return True
+            else:
+                return False
         except Exception:
             return False
