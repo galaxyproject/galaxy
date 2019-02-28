@@ -15,16 +15,16 @@ def ffprobe(path):
 class Audio(Binary):
 
     MetadataElement(name="duration", default=0, desc="Length of audio sample", readonly=True, visible=True, optional=True, no_value=0)
-    MetadataElement(name="audio_codecs", default="", desc="Audio codec(s)", readonly=True, visible=True, optional=True, no_value="")
-    MetadataElement(name="sample_rates", default="", desc="Sampling Rate(s)", readonly=True, visible=True, optional=True, no_value="")
+    MetadataElement(name="audio_codecs", default=[], desc="Audio codec(s)", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="sample_rates", default=[], desc="Sampling Rate(s)", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
     MetadataElement(name="audio_streams", default=0, desc="Number of audio streams", readonly=True, visible=True, optional=True, no_value=0)
 
     def set_meta(self, dataset, **kwd):
         metadata, streams = ffprobe(dataset.file_name)
 
         dataset.metadata.duration = metadata['duration']
-        dataset.metadata.audio_codecs = '|'.join([stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio'])
-        dataset.metadata.sample_rates = '|'.join([stream['sample_rate'] for stream in streams if stream['codec_type'] == 'audio'])
+        dataset.metadata.audio_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio']
+        dataset.metadata.sample_rates = [stream['sample_rate'] for stream in streams if stream['codec_type'] == 'audio']
         dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
 
 
@@ -33,8 +33,8 @@ class Video(Binary):
     MetadataElement(name="resolution_w", default=0, desc="Width of video stream", readonly=True, visible=True, optional=True, no_value=0)
     MetadataElement(name="resolution_h", default=0, desc="Height of video stream", readonly=True, visible=True, optional=True, no_value=0)
     MetadataElement(name="fps", default=0, desc="FPS of video stream", readonly=True, visible=True, optional=True, no_value=0)
-    MetadataElement(name="video_codecs", default="", desc="Video codec(s)", readonly=True, visible=True, optional=True, no_value="")
-    MetadataElement(name="audio_codecs", default="", desc="Audio codec(s)", readonly=True, visible=True, optional=True, no_value="")
+    MetadataElement(name="video_codecs", default=[], desc="Video codec(s)", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(name="audio_codecs", default=[], desc="Audio codec(s)", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
     MetadataElement(name="video_streams", default=0, desc="Number of video streams", readonly=True, visible=True, optional=True, no_value=0)
     MetadataElement(name="audio_streams", default=0, desc="Number of audio streams", readonly=True, visible=True, optional=True, no_value=0)
 
@@ -56,8 +56,8 @@ class Video(Binary):
         dataset.metadata.resolution_h = h
         dataset.metadata.fps = fps
 
-        dataset.metadata.audio_codecs = '|'.join([stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio'])
-        dataset.metadata.video_codecs = '|'.join([stream['codec_name'] for stream in streams if stream['codec_type'] == 'video'])
+        dataset.metadata.audio_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'audio']
+        dataset.metadata.video_codecs = [stream['codec_name'] for stream in streams if stream['codec_type'] == 'video']
 
         dataset.metadata.audio_streams = len([stream for stream in streams if stream['codec_type'] == 'audio'])
         dataset.metadata.video_streams = len([stream for stream in streams if stream['codec_type'] == 'video'])
