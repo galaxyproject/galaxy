@@ -149,7 +149,7 @@ class Gpr (Binary):
 
         try:
             source = open(filename, 'rb').read()
-            return source.find('ATF') >= 0 and source.find(b'GenePix') >=0 and source.find(b'BlockCount') < 0
+            return source.find('ATF') >= 0 and source.find('GenePix') >= 0 and source.find('BlockCount') < 0
         except Exception:
             return False
 
