@@ -936,6 +936,14 @@ mapping:
           - $iso8601 (complete format string as specified by ISO 8601 international
             standard).
 
+      user_preferences_extra_conf_path:
+        type: str
+        default: 'config/user_preferences_extra_conf.yml'
+        required: false
+        desc: |
+          Location of the user_preferences_extra_conf.yml file, if not in the
+          standard configuration directory.
+
       default_locale:
         type: str
         default: auto

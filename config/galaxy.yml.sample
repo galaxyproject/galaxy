@@ -674,6 +674,10 @@ galaxy:
   # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
+  # Location of the user_preferences_extra_conf.yml file, if not in the
+  # standard configuration directory.
+  #user_preferences_extra_conf_path: config/user_preferences_extra_conf.yml
+
   # Default localization for Galaxy UI. Allowed values are listed at the
   # end of client/galaxy/scripts/nls/locale.js. With the default value
   # (auto), the locale will be automatically adjusted to the user's
