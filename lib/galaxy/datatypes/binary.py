@@ -149,15 +149,18 @@ class Gpr (Binary):
 
         try:
             source = open(filename, 'rb')
-            header_lines = [source.readline(), source.readline()]
+            header_lines = [source.readline().decode('ascii'), source.readline().decode('ascii')]
             line = None
             for line in source:
+                line = line.decode('ascii')
                 if not line.startswith('"'):
                     break
                 header_lines.append(line)
             if any("ATF" in s for s in header_lines) and any("GenePix" in s for s in header_lines) and not any(
                     "BlockCount" in s for s in header_lines):
                 return True
+            else:
+                return False
         except Exception:
             return False
 
