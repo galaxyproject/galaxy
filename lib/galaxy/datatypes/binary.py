@@ -149,7 +149,7 @@ class Gpr (Binary):
 
         try:
             source = open(filename, 'rb').read(2000).decode("ascii")
-            return 'ATF' in source and 'GenePix' in source and not 'BlockCount' in source
+            return 'ATF' in source and 'GenePix' in source and 'BlockCount' not in source
         except Exception:
             return False
 
