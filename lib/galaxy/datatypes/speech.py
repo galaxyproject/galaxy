@@ -1,7 +1,7 @@
 import re
 
 from galaxy.datatypes.text import Text
-from galaxy.datatypes.metadata import MetadataElement, ListParameter, DictParameter
+from galaxy.datatypes.metadata import MetadataElement, ListParameter
 
 
 class TextGrid( Text ):
@@ -67,10 +67,9 @@ class BPF( Text ):
         dataset.metadata.annotations = list(types)
 
     def sniff(self, filename):
-
         with open(filename, 'r') as fd:
             for line in fd:
-                match = re.match("([A-Z]+):\s", line)
+                match = re.match("(LHD|REP|SNB|SAM|SBF|SSB|NCH|SPN|LBD|FIL|TYP|DBN|VOL|DIR|SRC|BEG|END|RED|RET|RCC|CMT|SPI|PCF|PCN|EXP|SYS|DAT|SPA|MAO|GPO|SAO|PTR|ORT|TRL|TR2|SUP|PHO|SAP|TRS|GES|USH|USM|OCC|USP|TLN|PRM|TRW|MAS|SPK):\s", line)
                 return match is not None
         # in case the file is empty
         return False
