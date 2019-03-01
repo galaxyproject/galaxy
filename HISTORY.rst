@@ -6,10 +6,11 @@ History
 .. to_doc
 
 ---------------------
-18.9.3.dev0
+19.5.0.dev0
 ---------------------
 
-    
+* Synchronize with the development tip of Galaxy.
+* Fix Travis CI configuration (thanks to @nsoranzo).
 
 ---------------------
 18.9.2 (2019-01-02)
