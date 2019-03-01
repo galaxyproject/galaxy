@@ -24,6 +24,7 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
     apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9 && \
     apt-get update -y && \
     apt-get install -y --no-install-recommends postgresql postgresql-client ansible wget \
+            python3-dev \
             git-core \
             python-prettytable python-virtualenv python-pip \
             rsync swig sysstat unzip \
@@ -71,7 +72,7 @@ RUN cd $GALAXY_ROOT && \
     virtualenv -p /usr/bin/python3 $GALAXY_VIRTUAL_ENV_3 && \
     for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
         export GALAXY_VIRTUAL_ENV=$VENV && \
-        sh ./scripts/common_startup.sh || true && \
+        ./scripts/common_startup.sh && \
         dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt && \
         [ -f $dev_requirements ] && $VENV/bin/pip install -r $dev_requirements; done
 
