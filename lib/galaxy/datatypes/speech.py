@@ -80,7 +80,7 @@ class BPF(Text):
         # We loop over 30 as there are 9 mandatory headers (the last should be
         # `LBD:`), while there are 21 optional headers that can be
         # interspersed.
-        seen_headers = [line[0] for line in get_headers(filename, sep=':', count=30)]
+        seen_headers = [line[0] for line in get_headers(filename, sep=':', count=40)]
 
         # We cut everything after LBD, where the headers end and contents
         # start. We choose not to validate contents.
