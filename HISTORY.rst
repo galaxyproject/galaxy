@@ -6,7 +6,7 @@ History
 .. to_doc
 
 ---------------------
-19.5.0.dev0
+19.5.0 (2019-03-01)
 ---------------------
 
 * Synchronize with the development tip of Galaxy.
