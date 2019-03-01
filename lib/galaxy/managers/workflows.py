@@ -1200,7 +1200,7 @@ class WorkflowContentsManager(UsesAnnotations):
         if not module.label and module.type in ['data_input', 'data_collection_input']:
             new_state = safe_loads(state)
             default_label = new_state.get('name')
-            if str(default_label).lower() not in ['input dataset', 'input dataset collection']:
+            if util.unicodify(default_label).lower() not in ['input dataset', 'input dataset collection']:
                 step.label = module.label = default_label
 
 

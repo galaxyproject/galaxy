@@ -30,11 +30,11 @@ SLURM_MEMORY_LIMIT_EXCEEDED_PARTIAL_WARNINGS = [': Exceeded job memory limit at 
 SLURM_MEMORY_LIMIT_SCAN_SIZE = 16 * 1024 * 1024  # 16MB
 SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE = re.compile(r"""slurmstepd: error: task/cgroup: unable to add task\[pid=\d+\] to memory cg '\(null\)'$""")
 SLURM_UNABLE_TO_CREATE_CGROUP_MSG_RE = re.compile(r"""slurmstepd: error: xcgroup_instantiate: unable to create cgroup '[^']+' : No space left on device$""")
-SLURM_UNABLE_TO_INSTANCIATE_JOB_MSG_RE = re.compile(r"""slurmstepd: error: jobacct_gather/cgroup: unable to instanciate job \d+ memory cgroup$""")
+SLURM_UNABLE_TO_INSTANCIATE_CGROUP_MSG_RE = re.compile(r"""slurmstepd: error: jobacct_gather/cgroup: unable to instanciate (job|user) \d+ memory cgroup$""")
 SLURM_TOP_WARNING_RES = (
     SLURM_UNABLE_TO_ADD_TASK_TO_MEMORY_CG_MSG_RE,
     SLURM_UNABLE_TO_CREATE_CGROUP_MSG_RE,
-    SLURM_UNABLE_TO_INSTANCIATE_JOB_MSG_RE
+    SLURM_UNABLE_TO_INSTANCIATE_CGROUP_MSG_RE
 )
 
 # These messages are returned to the user
