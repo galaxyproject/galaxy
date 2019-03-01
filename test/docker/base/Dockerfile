@@ -20,16 +20,15 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
     apt-add-repository -y ppa:ansible/ansible && \
     curl -s https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
     echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
+    curl -s http://neuro.debian.net/lists/xenial.us-ca.full > /etc/apt/sources.list.d/neurodebian.sources.list && \
+    apt-key adv --recv-keys --keyserver hkp://pool.sks-keyservers.net:80 0xA5D32F012649A5A9 && \
     apt-get update -y && \
-    apt-get install -y --no-install-recommends libpq-dev postgresql postgresql-client ansible wget \
-            ant cmake curl \
-            g++ gcc gfortran git-core libffi-dev \
-            libncurses5-dev libpam0g-dev  libsparsehash-dev make patch \
-            python-dev python3-dev \
+    apt-get install -y --no-install-recommends postgresql postgresql-client ansible wget \
+            git-core \
             python-prettytable python-virtualenv python-pip \
             rsync swig sysstat unzip \
-            autoconf automake build-essential openssl \
-            bzip2 uuid-dev libgpgme11-dev squashfs-tools libseccomp-dev pkg-config \
+            openssl \
+            bzip2 \
             ca-certificates \
             openjdk-8-jre-headless \
             tzdata \
@@ -37,15 +36,12 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
             locales \
             xvfb \
             ${CHROME_VERSION:-google-chrome-stable} \
-            wget \
             ffmpeg \
             bcftools \
+            singularity-container \
             libnss3 libgconf-2-4 && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install golang
-RUN export VERSION=1.11 OS=linux ARCH=amd64 && curl -sL https://dl.google.com/go/go$VERSION.$OS-$ARCH.tar.gz \
-    | tar -C /usr/local -xzf -
 
 RUN mkdir -p /tmp/ansible && \
     mkdir -p /opt/galaxy/db && \
@@ -75,7 +71,7 @@ RUN cd $GALAXY_ROOT && \
     virtualenv -p /usr/bin/python3 $GALAXY_VIRTUAL_ENV_3 && \
     for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
         export GALAXY_VIRTUAL_ENV=$VENV && \
-        ./scripts/common_startup.sh || true && \
+        sh ./scripts/common_startup.sh || true && \
         dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt && \
         [ -f $dev_requirements ] && $VENV/bin/pip install -r $dev_requirements; done
 
@@ -114,18 +110,6 @@ RUN  sudo mkdir -p /opt/selenium \
   && sudo chown seluser:seluser /opt/selenium \
   && wget --no-verbose https://selenium-release.storage.googleapis.com/3.6/selenium-server-standalone-3.6.0.jar \
     -O /opt/selenium/selenium-server-standalone.jar
-
-USER seluser
-
-RUN export GOPATH=${HOME}/go && export PATH=/usr/local/go/bin:${PATH}:${GOPATH}/bin && \
-    mkdir -p $GOPATH/src/github.com/sylabs && \
-    cd $GOPATH/src/github.com/sylabs && \
-    git clone https://github.com/sylabs/singularity.git && \
-    cd singularity && \
-    git checkout v3.0.1 && \
-    ./mconfig && \
-    cd builddir && make && sudo make install && \
-    rm -Rf ${HOME}/go
 
 USER root
 
