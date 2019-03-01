@@ -157,20 +157,21 @@ var Terminal = Backbone.Model.extend({
         });
     },
     setMapOver: function(val) {
+        let output_val = val;
         if (this.multiple) {
             // emulate list input
             let description = new CollectionTypeDescription('list');
             if (val.collectionType === description.collectionType) {
                 // No mapping over necessary
-                return
+                return;
             }
-            val = val.effectiveMapOver ? val.effectiveMapOver(description): val;
+            output_val = val.effectiveMapOver ? val.effectiveMapOver(description): val;
         }
 
         if (!this.mapOver().equal(val)) {
             this.terminalMapping.setMapOver(val);
             _.each(this.node.output_terminals, outputTerminal => {
-                outputTerminal.setMapOver(val);
+                outputTerminal.setMapOver(output_val);
             });
         }
     },
