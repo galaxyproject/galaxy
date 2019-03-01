@@ -19,20 +19,17 @@ ENV DEBIAN_FRONTEND=noninteractive \
 RUN apt-get update -y && apt-get install -y software-properties-common apt-transport-https curl && \
     apt-add-repository -y ppa:ansible/ansible && \
     curl -s https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - && \
-    curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | apt-key add - && \
-    curl -sL https://deb.nodesource.com/setup_8.x | bash -  && \
     echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update -y && \
-    apt-get install -y libpq-dev postgresql postgresql-client ansible wget \
+    apt-get install -y --no-install-recommends libpq-dev postgresql postgresql-client ansible wget \
             slurm-llnl libmunge-dev slurm-drmaa-dev ant cmake curl \
-            g++ gcc gfortran git-core libffi-dev liblapack-dev \
-            libncurses5-dev libopenblas-dev libpam0g-dev libpq-dev libsparsehash-dev make \
-            patch postgresql postgresql \
-            postgresql-client python-dev python3-dev \
-            python-prettytable python-psycopg2 python-virtualenv python-pip \
+            g++ gcc gfortran git-core libffi-dev \
+            libncurses5-dev libpam0g-dev  libsparsehash-dev make patch \
+            python-dev python3-dev \
+            python-prettytable python-virtualenv python-pip \
             rsync slurm-drmaa-dev swig sysstat unzip \
-            autoconf automake build-essential libatlas-base-dev libblas-dev openssl \
-            bzip2 uuid-dev libssl-dev libgpgme11-dev squashfs-tools libseccomp-dev pkg-config \
+            autoconf automake build-essential openssl \
+            bzip2 uuid-dev libgpgme11-dev squashfs-tools libseccomp-dev pkg-config \
             ca-certificates \
             openjdk-8-jre-headless \
             tzdata \
@@ -40,7 +37,9 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
             locales \
             xvfb \
             ${CHROME_VERSION:-google-chrome-stable} \
-            wget zlib1g-dev nodejs \
+            wget \
+            ffmpeg \
+            bcftools \
             libnss3 libgconf-2-4 && \
     apt-get autoremove -y && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -95,16 +94,6 @@ RUN for VENV in $GALAXY_VIRTUAL_ENV_3 $GALAXY_VIRTUAL_ENV_2; do \
     TOOL_SHED_CONFIG_DATABASE_CONNECTION="postgresql://root@localhost:5930/toolshed" bash create_db.sh tool_shed && \
     echo "Prepopulating toolshed sqlite database" && \
     TOOL_SHED_CONFIG_DATABASE_CONNECTION="sqlite:////opt/galaxy/toolshed.sqlite" bash create_db.sh tool_shed
-
-# bcftools for Galaxy.
-RUN mkdir -p /tmp/install && \
-    cd /tmp/install && \
-    wget https://github.com/samtools/bcftools/releases/download/1.2/bcftools-1.2.tar.bz2 && \
-    tar xvjf bcftools-1.2.tar.bz2 && \
-    cd bcftools-1.2 && \
-    make && \
-    make install && \
-    cd && rm -rf /tmp/install
 
 #========================================
 # Add Selenium user with passwordless sudo
