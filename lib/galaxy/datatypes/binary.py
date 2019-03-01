@@ -126,7 +126,7 @@ class Cel(Binary):
             return False
 
 
-class Gpr (Binary):
+class Gpr(Binary):
     """ Gpr File format described at:
     http://mdc.custhelp.com/app/answers/detail/a_id/18883/#gpr
     """
