@@ -17,13 +17,9 @@ variables:
     run: sudo pip install tox
   set_workdir: &set_workdir
     working_directory: ~/repo
-  get_code_and_branch: &get_code_and_branch
+  get_code: &get_code
     requires:
       - get_code
-    filters:
-      branches:
-        only:
-          circle-ci
 jobs:
   get_code:
     docker:
@@ -165,30 +161,26 @@ workflows:
   version: 2
   get_code_and_test:
     jobs:
-      - get_code:
-          filters:
-            branches:
-              only:
-                circle-ci
+      - get_code
       - py27_lint:
-          <<: *get_code_and_branch
+          <<: *get_code
       - py27_unit:
-          <<: *get_code_and_branch
+          <<: *get_code
       - py27_1startup:
-          <<: *get_code_and_branch
+          <<: *get_code
       - py27_docstring:
-          <<: *get_code_and_branch
+          <<: *get_code
       - py35_lint:
-          <<: *get_code_and_branch
+          <<: *get_code
       - py35_unit:
-          <<: *get_code_and_branch
+          <<: *get_code
       - py35_1startup:
-          <<: *get_code_and_branch
+          <<: *get_code
       - validate_test_tools:
-          <<: *get_code_and_branch
+          <<: *get_code
       - check_py3_compatibility:
-          <<: *get_code_and_branch
+          <<: *get_code
       - js_unit:
-          <<: *get_code_and_branch
+          <<: *get_code
       - js_lint:
-          <<: *get_code_and_branch
+          <<: *get_code
