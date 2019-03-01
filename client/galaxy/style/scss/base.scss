@@ -1545,8 +1545,6 @@ div.toolPanelLabel {
 }
 
 div.toolTitle {
-    padding-top: 5px;
-    padding-bottom: 5px;
     margin-left: 10px;
     margin-right: 10px;
     display: block;
@@ -1559,9 +1557,15 @@ div.toolTitle {
 div a.tool-link {
     text-decoration: none;
     display: block;
+    padding-top: 5px;
+    padding-bottom: 5px;
 
     span.tool-old-link {
         text-decoration: underline;
+    }
+
+    &:hover {
+        background: darken($panel-bg-color, 5%);
     }
 }
 
