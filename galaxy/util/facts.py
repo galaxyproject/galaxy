@@ -10,6 +10,7 @@ class Facts(MutableMapping):
     """A dict-like object that evaluates values at access time."""
 
     def __init__(self, config=None, **kwargs):
+        config = config or {}
         self.__dict__ = {}
         self.__set_defaults(config)
         self.__set_config(config)
