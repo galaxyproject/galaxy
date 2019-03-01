@@ -1,5 +1,3 @@
-import re
-
 from galaxy.datatypes.metadata import ListParameter, MetadataElement
 from galaxy.datatypes.sniff import get_headers
 from galaxy.datatypes.text import Text
@@ -63,14 +61,19 @@ class BPF(Text):
 
     def set_meta(self, dataset, overwrite=True, **kwd):
         """Set the metadata for this dataset from the file contents"""
-
         types = set()
         with open(dataset.dataset.file_name, 'r') as fd:
             for line in fd:
-                match = re.match("([A-Z]+):\s", line)
-                if match is None:
+                # Split the line on a colon rather than regexing it
+                parts = line.split(':')
+
+                # And if the first part is a 3 character string, then it's
+                # interesting.
+                if len(parts) and len(parts[0]) == 3:
+                    types.add(parts[0])
+                else:
                     return False
-                types.add(match.group(1))
+
         dataset.metadata.annotations = list(types)
 
     def sniff(self, filename):
