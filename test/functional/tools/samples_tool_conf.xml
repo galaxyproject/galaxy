@@ -60,6 +60,7 @@
   <tool file="job_environment_default.xml" />
   <tool file="job_environment_default_legacy.xml" />
   <tool file="job_environment_explicit_shared_home.xml" />
+  <tool file="galaxy_slots_and_memory.xml" />
   <tool file="version_command_plain.xml" />
   <tool file="version_command_interpreter.xml" />
   <tool file="version_command_tool_dir.xml" />
@@ -95,6 +96,7 @@
   <tool file="section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
+  <tool file="validation_hdf5.xml" />
   <tool file="validation_default.xml" />
   <tool file="validation_sanitizer.xml" />
   <tool file="validation_repeat.xml" />

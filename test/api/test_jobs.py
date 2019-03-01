@@ -159,7 +159,7 @@ class JobsApiTestCase(api.ApiTestCase):
     @skip_without_tool('detect_errors_aggressive')
     def test_report_error_anon(self):
         # Need to get a cookie and use that for anonymous tool runs
-        cookies = requests.get(self.galaxy_interactor.api_url.rsplit('/api', 1)[0]).cookies
+        cookies = requests.get(self.url).cookies
         payload = json.dumps({"tool_id": "detect_errors_aggressive",
                               "inputs": {"error_bool": "true"}})
         run_response = requests.post("%s/tools" % self.galaxy_interactor.api_url, data=payload, cookies=cookies).json()

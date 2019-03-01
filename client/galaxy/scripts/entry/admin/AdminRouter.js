@@ -9,6 +9,7 @@ import DataTables from "components/admin/DataTables.vue";
 import DataTypes from "components/admin/DataTypes.vue";
 import DataManagerView from "components/admin/DataManager/DataManagerView.vue";
 import DataManagerRouter from "components/admin/DataManager/DataManagerRouter.vue";
+import Register from "components/login/Register.vue";
 import ErrorStack from "components/admin/ErrorStack.vue";
 import DisplayApplications from "components/admin/DisplayApplications.vue";
 import Vue from "vue";
@@ -20,6 +21,7 @@ export const getAdminRouter = (Galaxy, options) => {
         routes: {
             "(/)admin(/)": "home",
             "(/)admin(/)users": "show_users",
+            "(/)admin(/)users(/)create": "show_users_create",
             "(/)admin(/)roles": "show_roles",
             "(/)admin(/)groups": "show_groups",
             "(/)admin(/)error_stack": "show_error_stack",
@@ -52,6 +54,20 @@ export const getAdminRouter = (Galaxy, options) => {
 
         show_users: function() {
             this._show_grid_view("admin/users_list");
+        },
+
+        show_users_create: function() {
+            let instance = Vue.extend(Register);
+            let vm = document.createElement("div");
+            this.page.display(vm);
+            new instance({
+                propsData: {
+                    redirect: "/admin/users",
+                    registration_warning_message: options.config.registration_warning_message,
+                    mailing_join_addr: options.config.mailing_join_addr,
+                    smtp_server: options.config.smtp_server
+                }
+            }).$mount(vm);
         },
 
         show_roles: function() {

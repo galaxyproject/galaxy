@@ -14,6 +14,7 @@ from base.populators import (
     skip_without_tool,
     uses_test_history,
 )
+from requests import get
 from six import BytesIO
 
 
@@ -27,6 +28,12 @@ class ToolsTestCase(api.ApiTestCase):
     def test_index(self):
         tool_ids = self.__tool_ids()
         assert "upload1" in tool_ids
+
+    @skip_without_tool("cat1")
+    def test_search(self):
+        url = self._api_url("tools?q=cat")
+        get_response = get(url).json()
+        assert "cat1" in get_response
 
     def test_no_panel_index(self):
         index = self._get("tools", data=dict(in_panel=False))

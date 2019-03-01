@@ -288,7 +288,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             stage_commands = ''
 
         env_setup_commands = [stage_commands]
-        script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands)
+        script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands, shell=job_wrapper.shell)
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         self.write_executable_script(job_file, script)
         # job was deleted while we were preparing it

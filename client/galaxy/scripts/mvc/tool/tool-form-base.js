@@ -13,6 +13,7 @@ import FormBase from "mvc/form/form-view";
 import Webhooks from "mvc/webhooks";
 import Citations from "components/Citations.vue";
 import Vue from "vue";
+import axios from "axios";
 
 export default FormBase.extend({
     initialize: function(options) {
@@ -113,6 +114,43 @@ export default FormBase.extend({
     _operations: function() {
         var self = this;
         var options = this.model.attributes;
+        let Galaxy = getGalaxyInstance();
+
+        // Buttons for adding and removing favorite.
+        let in_favorites = Galaxy.user.getFavorites().tools.indexOf(options.id) >= 0;
+        var favorite_button = new Ui.Button({
+            icon: "fa-star-o",
+            title: "Favorite",
+            tooltip: "Add to favorites",
+            visible: !Galaxy.user.isAnonymous() && !in_favorites,
+            onclick: () => {
+                axios
+                    .put(`${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools`, { object_id: options.id })
+                    .then(response => {
+                        favorite_button.hide();
+                        remove_favorite_button.show();
+                        Galaxy.user.updateFavorites("tools", response.data);
+                    });
+            }
+        });
+
+        var remove_favorite_button = new Ui.Button({
+            icon: "fa-star",
+            title: "Added",
+            tooltip: "Remove from favorites",
+            visible: !Galaxy.user.isAnonymous() && in_favorites,
+            onclick: () => {
+                axios
+                    .delete(
+                        `${Galaxy.root}api/users/${Galaxy.user.id}/favorites/tools/${encodeURIComponent(options.id)}`
+                    )
+                    .then(response => {
+                        remove_favorite_button.hide();
+                        favorite_button.show();
+                        Galaxy.user.updateFavorites("tools", response.data);
+                    });
+            }
+        });
 
         // button for version selection
         var versions_button = new Ui.ButtonMenu({
@@ -120,6 +158,7 @@ export default FormBase.extend({
             title: (!options.narrow && "Versions") || null,
             tooltip: "Select another tool version"
         });
+
         if (!options.sustain_version && options.versions && options.versions.length > 1) {
             for (var i in options.versions) {
                 var version = options.versions[i];
@@ -176,7 +215,6 @@ export default FormBase.extend({
         });
 
         // add admin operations
-        let Galaxy = getGalaxyInstance();
         if (Galaxy.user && Galaxy.user.get("is_admin")) {
             menu_button.addMenu({
                 icon: "fa-download",
@@ -242,7 +280,9 @@ export default FormBase.extend({
 
         return {
             menu: menu_button,
-            versions: versions_button
+            versions: versions_button,
+            favorite: favorite_button,
+            remove_favorite: remove_favorite_button
         };
     },
 

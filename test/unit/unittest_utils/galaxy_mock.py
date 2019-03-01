@@ -76,6 +76,7 @@ class MockApp(object):
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
         self._toolbox_lock = MockLock()
+        self.tool_shed_registry = Bunch(tool_sheds={})
         self.genome_builds = GenomeBuilds(self)
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
@@ -172,6 +173,9 @@ class MockTrans(object):
 
         self.request = Bunch(headers={}, body=None)
         self.response = Bunch(headers={}, set_content_type=lambda i : None)
+
+    def check_csrf_token(self, payload):
+        pass
 
     def handle_user_login(self, user):
         pass

@@ -80,10 +80,12 @@ $vertical-gap: 8px;
         .title {
             display: inline;
             font-weight: bold;
-            text-decoration: underline;
             word-wrap: break-word;
             word-break: break-all;
             line-height: 16px;
+        }
+        .title:hover {
+            text-decoration: underline;
         }
         .subtitle {
             color: #777;

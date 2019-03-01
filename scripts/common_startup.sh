@@ -18,7 +18,7 @@ CREATE_VENV=1
 REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
-NODE_VERSION="10.13.0"
+NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 
 for arg in "$@"; do
     [ "$arg" = "--skip-eggs" ] && FETCH_WHEELS=0
@@ -100,7 +100,6 @@ if command -v git >/dev/null && [ -d .git ]; then
     esac
 else
     GIT_BRANCH=0
-    DEV_WHEELS=1
 fi
 
 : ${GALAXY_VIRTUAL_ENV:=.venv}
@@ -114,7 +113,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
         set_conda_exe
         if [ -n "$CONDA_EXE" ]; then
             echo "Found Conda, will set up a virtualenv using conda."
-            echo "To use a virtualenv instead, create one with a non-Conda Python 2.7 at $GALAXY_VIRTUAL_ENV"
+            echo "To use a virtualenv instead, create one with a non-Conda Python at $GALAXY_VIRTUAL_ENV"
             : ${GALAXY_CONDA_ENV:="_galaxy_"}
             if [ "$CONDA_DEFAULT_ENV" != "$GALAXY_CONDA_ENV" ]; then
                 if ! check_conda_env "$GALAXY_CONDA_ENV"; then
@@ -247,7 +246,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     fi
     # Build client
     cd client
-    if yarn install --network-timeout 120000 --check-files; then
+    if yarn install --network-timeout 300000 --check-files; then
         if ! yarn run build-production-maps; then
             echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
             exit 1

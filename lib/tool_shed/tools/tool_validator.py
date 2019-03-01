@@ -297,10 +297,12 @@ class ToolValidator(object):
             error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str(e)
             error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
             error_message += 'this error.  '
+            log.exception(error_message)
         except Exception as e:
             tool = None
             valid = False
             error_message = str(e)
+            log.exception('Caught exception loading tool from %s:', full_path)
         return tool, valid, error_message
 
     def load_tool_from_tmp_config(self, repo, repository_id, ctx, ctx_file, work_dir):

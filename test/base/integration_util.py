@@ -37,6 +37,10 @@ def skip_unless_singularity():
     return skip_unless_executable("singularity")
 
 
+def skip_unless_kubernetes():
+    return skip_unless_executable("kubectl")
+
+
 class IntegrationTestCase(TestCase, UsesApiTestCaseMixin):
     """Unit test case with utilities for spinning up Galaxy."""
 

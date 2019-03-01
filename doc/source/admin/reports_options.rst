@@ -1,25 +1,14 @@
 ~~~~~~~~~~~~~~~
-``filter-with``
-~~~~~~~~~~~~~~~
-
-:Description:
-    If running behind a proxy server and Galaxy is served from a
-    subdirectory, enable the proxy-prefix filter and set the prefix in
-    the [filter:proxy-prefix] section above.
-:Default: ``proxy-prefix``
-:Type: str
-
-
-~~~~~~~~~~~~~~~
 ``cookie_path``
 ~~~~~~~~~~~~~~~
 
 :Description:
-    If proxy-prefix is enabled and you're running more than one Galaxy
-    instance behind one hostname, you will want to set this to the
-    same path as the prefix in the filter above.  This value becomes
-    the "path" attribute set in the cookie so the cookies from each
-    instance will not clobber each other.
+    When running multiple Galaxy Reports instances under separate URL
+    prefixes on a single hostname, you will want to set this to the
+    same path as the prefix set in the uWSGI "mount" configuration
+    option above. This value becomes the "path" attribute set in the
+    cookie so the cookies from one instance will not clobber those
+    from another.
 :Default: ``None``
 :Type: str
 
@@ -41,7 +30,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Database connection Galaxy reports are intended for production
+    Database connection. Galaxy Reports are intended for production
     Galaxy instances, so sqlite (and the default value below) is not
     supported. An SQLAlchemy connection string should be used specify
     an external database.
@@ -54,8 +43,7 @@
 ~~~~~~~~~~~~~
 
 :Description:
-    Where dataset files are saved Temporary storage for additional
-    datasets, this should be shared through the cluster
+    Where dataset files are stored.
 :Default: ``database/files``
 :Type: str
 
@@ -65,8 +53,7 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Where dataset files are saved Temporary storage for additional
-    datasets, this should be shared through the cluster
+    Where temporary files are stored.
 :Default: ``database/tmp``
 :Type: str
 

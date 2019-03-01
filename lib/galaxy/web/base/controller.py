@@ -259,15 +259,28 @@ class JSAppLauncher(BaseUIController):
         self.config_serializer = configuration.ConfigSerializer(app)
         self.admin_config_serializer = configuration.AdminConfigSerializer(app)
 
+    def _check_require_login(self, trans):
+        if self.app.config.require_login and self.user_manager.is_anonymous(trans.user):
+            # TODO: this doesn't properly redirect when login is done
+            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
+            login_url = web.url_for(controller="root", action="login")
+            trans.response.send_redirect(login_url)
+
     @web.expose
     def client(self, trans, **kwd):
         """
-        Endpoint for clientside routes.  Currently a passthrough to index
-        (minus kwargs) though we can differentiate it more in the future.
+        Endpoint for clientside routes.  This ships the primary SPA client.
+
         Should not be used with url_for -- see
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
-        return self.index(trans)
+        self._check_require_login(trans)
+        return self._bootstrapped_client(trans, **kwd)
+
+    def _bootstrapped_client(self, trans, app_name='analysis', **kwd):
+        js_options = self._get_js_options(trans)
+        js_options['config'].update(self._get_extended_config(trans))
+        return self.template(trans, app_name, options=js_options, **kwd)
 
     def _get_js_options(self, trans, root=None):
         """
@@ -285,6 +298,30 @@ class JSAppLauncher(BaseUIController):
             'session_csrf_token' : trans.session_csrf_token,
         }
         return js_options
+
+    def _get_extended_config(self, trans):
+        config = {
+            'active_view'                   : 'analysis',
+            'enable_cloud_launch'           : trans.app.config.get_bool('enable_cloud_launch', False),
+            'enable_webhooks'               : True if trans.app.webhooks_registry.webhooks else False,
+            # TODO: next two should be redundant - why can't we build one from the other?
+            'toolbox'                       : trans.app.toolbox.to_dict(trans, in_panel=False),
+            'toolbox_in_panel'              : trans.app.toolbox.to_dict(trans),
+            'message_box_visible'           : trans.app.config.message_box_visible,
+            'show_inactivity_warning'       : trans.app.config.user_activation_on and trans.user and not trans.user.active
+        }
+
+        # TODO: move to user
+        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
+        for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
+            stored_workflow_menu_entries.append({
+                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
+                'stored_workflow': {
+                    'name': util.unicodify(menu_item.stored_workflow.name)
+                }
+            })
+
+        return config
 
     def _get_site_configuration(self, trans):
         """

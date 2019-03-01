@@ -76,6 +76,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         script = self.get_job_file(
             job_wrapper,
             exit_code_path=ajs.exit_code_file,
+            shell=job_wrapper.shell,
             **job_file_kwargs
         )
 

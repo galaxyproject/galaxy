@@ -85,6 +85,11 @@ class ConfigSerializer(base.ModelSerializer):
             'message_box_visible'               : _defaults_to(False),
             'message_box_class'                 : _defaults_to('info'),
             'server_startttime'                 : lambda i, k, **c: server_starttime,
+            'mailing_join_addr'                 : _defaults_to('galaxy-announce-join@bx.psu.edu'),
+            'smtp_server'                       : _defaults_to(None),
+            'registration_warning_message'      : _defaults_to(None),
+            'welcome_url'                       : _defaults_to(None),
+            'show_welcome_with_login'           : _defaults_to(True),
         }
 
 

@@ -207,32 +207,37 @@ var LibraryToolbarView = Backbone.View.extend({
 
     templateToolBar: function() {
         return _.template(
-            [
-                '<div class="library_style_container">',
-                '<div class="d-flex align-items-center mb-2">',
-                '<a class="mr-1" href="#" data-toggle="tooltip" data-placement="top" title="Go to first page">DATA LIBRARIES</a>',
-                '<div class="d-flex align-items-center library-paginator mr-1" />', // paginator will append here
-                '<form class="form-inline mr-1">',
-                '<input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">',
-                "<% if(admin_user === true) { %>", // only admins
-                '<div class="form-check mr-1">',
-                '<input class="form-check-input" id="include_deleted_chk" type="checkbox">',
-                '<label class="form-check-label" for="include_deleted_chk">include deleted</label>',
-                "</div>",
-                '<div class="form-check mr-1">',
-                '<input class="form-check-input" id="exclude_restricted_chk" type="checkbox">',
-                '<label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>',
-                "</div>",
-                '<button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="btn btn-secondary" type="button"><span class="fa fa-plus"></span> New Library</button>',
-                "<% } %>", // end admins
-                "</form>",
-                '<a class="library-help-button" data-toggle="tooltip" data-placement="top" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">',
-                '<button class="btn btn-secondary" type="button"><span class="fa fa-question-circle"></span> Help</button>',
-                "</a>",
-                "</div>", // end flex
-                '<div id="libraries_element" />', // table with libraries will append here
-                "</div>" // end library_style_container
-            ].join("")
+            `<div class="library_style_container">
+                <div class="d-flex align-items-center mb-2">
+                    <a class="btn btn-secondary mr-1" data-toggle="tooltip" data-placement="top" title="Go to first page" href="#">
+                        <span class="fa fa-home"/>
+                    </a>
+                    <a class="library-help-button btn btn-secondary mr-1" data-toggle="tooltip" title="See this screen annotated" href="https://galaxyproject.org/data-libraries/screen/list-of-libraries/" target="_blank">
+                        <span class="fa fa-question"/>
+                    </a>
+                    <% if(admin_user === true) { %>
+                        <button data-toggle="tooltip" data-placement="top" title="Create new library" id="create_new_library_btn" class="mr-1 btn btn-secondary" type="button">
+                            <span class="fa fa-plus"/>
+                        </button>
+                    <% } %>
+                    <div class="d-flex align-items-center library-paginator mr-1" />
+                        <form class="form-inline mr-1">
+                            <input type="text" class="form-control library-search-input mr-1" placeholder="Great Library" size="15">
+                            <% if(admin_user === true) { %>
+                                <div class="form-check mr-1">
+                                    <input class="form-check-input" id="include_deleted_chk" type="checkbox"/>
+                                    <label class="form-check-label" for="include_deleted_chk">include deleted</label>
+                                </div>
+                                <div class="form-check mr-1">
+                                    <input class="form-check-input" id="exclude_restricted_chk" type="checkbox"/>
+                                    <label class="form-check-label" for="exclude_restricted_chk">exclude restricted</label>
+                                </div>
+                            <% } %>
+                        </form>
+                    </div>
+                    <div id="libraries_element" />
+                </div>
+            </div>`
         );
     },
 

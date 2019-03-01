@@ -6,7 +6,7 @@ which prevents more than one thread from being on CPU at a time.  Because of thi
 improve the Galaxy framework's performance out of the box since Galaxy can use (at most) one core at a time in its
 default configuration.  However, Galaxy can easily run in multiple separate processes, which solves this problem.  For a
 more thorough explanation of this problem and why you will almost surely want to switch to the multiprocess
-configuration if running for more than a small handful of users, see the [production configuration](production.html)
+configuration if running for more than a small handful of users, see the [production configuration](production.md)
 page.
 
 Just to be clear: increasing the values of `threadpool_workers` in `galaxy.yml` or the number of plugin workers in
@@ -43,7 +43,7 @@ Beginning with Galaxy release 18.01, the default application server for new inst
 Prior to 18.01, it was possible (and indeed, recommended for production Galaxy servers) to run Galaxy under uWSGI, but
 it was necessary to install and configure uWSGI separately from Galaxy. uWSGI is now provided with Galaxy as a Python
 Wheel and installed in to its virtualenv, as described in detail in the [Framework
-Dependencies](framework_dependencies.html) documentation.
+Dependencies](framework_dependencies) documentation.
 
 uWSGI has numerous benefits over Python Paste for our purposes:
 
@@ -62,15 +62,15 @@ uWSGI has numerous benefits over Python Paste for our purposes:
 
 There are multiple deployment strategies for the Galaxy application that you can choose from. The right one depends on
 the configuration of the infrastructure on which you are deploying. In all cases, all Galaxy job features such as
-[running on a cluster](cluster.html) are supported.
+[running on a cluster](cluster.md) are supported.
 
 Although uWSGI implements nearly all the features that were previously the responsibility of an upstream proxy server,
 at this time, it is still recomended to place a proxy server in front of uWSGI and utilize it for all of its traditional
 roles (serving static content, serving dataset downloads, etc.) as described in the [production
-configuration](production.html) documentation.
+configuration](production.md) documentation.
 
 When using uWSGI with a proxy server, it is recommended that you use the native high performance uWSGI protocol
-(supported by both [Apache](apache.html) and [nginx](nginx.html)) between uWSGI and the
+(supported by both [Apache](apache.md) and [nginx](nginx.md)) between uWSGI and the
 proxy server, rather than HTTP.
 
 ### uWSGI with jobs handled by web workers (default configuration)
@@ -340,7 +340,7 @@ permission on the socket. Because Galaxy and the proxy server most likely run as
 be the case by default. One common solution is to add the proxy server's user to the Galaxy user's primary group.
 uWSGI's `chmod-socket` option can also help here.
 
-You can consult the Galaxy documentation for [Apache](apache.html) or [nginx](nginx.html)
+You can consult the Galaxy documentation for [Apache](apache.md) or [nginx](nginx.md)
 for help with the proxy-side configuration.
 
 By setting the `socket` option, `run.sh` will no longer automatically serve Galaxy via HTTP (since it is assumed that
@@ -440,7 +440,7 @@ separated,  to the `job-handlers` farm. For example, 3 handlers are defined like
 
 By default, a job will be handled by whatever mule currently has the lock on the mule message queue. After receiving a
 message, it will release the lock, giving other mules a chance to handle future jobs.  Jobs can be explicitly mapped to
-specific mules as described in the [Job configuration documentation](jobs.html) by using the handler IDs
+specific mules as described in the [Job configuration documentation](jobs.md) by using the handler IDs
 `main.job-handlers.N`, where `N` is the mule's position in the farm, starting at 1 and incrementing for each mule in the
 farm (this is not necessarily the mule ID, but it will be if you only define one farm and you add mules to that farm in
 sequential order).  Each worker that you wish to explicitly map jobs to should be defined in the `<handlers>` section
@@ -537,7 +537,7 @@ Stopping](#starting-and-stopping) section.
 #### Dynamically defined handlers
 
 In order to define handlers dynamically, you must be using one of the new "database locking" handler assignment methods
-as explained in [Job Handler Assignment Methods][#job-handler-assignment-methods], such as in the following
+as explained in [Job Handler Assignment Methods](#job-handler-assignment-methods), such as in the following
 `job_conf.xml`:
 
 ```xml
@@ -624,7 +624,7 @@ More details on the `unix_signal` hook can be found in [uWSGI Issue #849](https:
 
 It's possible to configure uWSGI to log to a file with the `logto` or `logto2` options (when running in the foreground,
 the default), but more advanced logging options that split log files for each process are possible and described in the
-Galaxy [Logging Configuration documentation](config_logging.html)
+Galaxy [Logging Configuration documentation](config_logging)
 
 When running as a daemon with `run.sh --daemon`, output is logged to `galaxy.log` and the pid is written to
 `galaxy.pid`. These can be controlled with the `daemonize` and `pidfile` arguments (their `daemonize2` and `pidfile2`
