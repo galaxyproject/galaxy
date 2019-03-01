@@ -1165,7 +1165,7 @@ class ConnectivityTable(Tabular):
 
 class Gal(Tabular):
     """ Gal File format described at:
-        http://mdc.custhelp.com/app/answers/detail/a_id/18883/kw/18883/session/L2F2LzEvdGltZS8xNTUxMjY5NTc2L3NpZC9MajhQX3E4bw%3D%3D#gal
+        http://mdc.custhelp.com/app/answers/detail/a_id/18883/#gal
     """
     edam_format = "format_3829"
     edam_data = "data_3110"
