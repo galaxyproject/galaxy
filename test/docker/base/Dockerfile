@@ -22,12 +22,12 @@ RUN apt-get update -y && apt-get install -y software-properties-common apt-trans
     echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list && \
     apt-get update -y && \
     apt-get install -y --no-install-recommends libpq-dev postgresql postgresql-client ansible wget \
-            slurm-llnl libmunge-dev slurm-drmaa-dev ant cmake curl \
+            ant cmake curl \
             g++ gcc gfortran git-core libffi-dev \
             libncurses5-dev libpam0g-dev  libsparsehash-dev make patch \
             python-dev python3-dev \
             python-prettytable python-virtualenv python-pip \
-            rsync slurm-drmaa-dev swig sysstat unzip \
+            rsync swig sysstat unzip \
             autoconf automake build-essential openssl \
             bzip2 uuid-dev libgpgme11-dev squashfs-tools libseccomp-dev pkg-config \
             ca-certificates \
@@ -75,7 +75,7 @@ RUN cd $GALAXY_ROOT && \
     virtualenv -p /usr/bin/python3 $GALAXY_VIRTUAL_ENV_3 && \
     for VENV in $GALAXY_VIRTUAL_ENV_2 $GALAXY_VIRTUAL_ENV_3; do \
         export GALAXY_VIRTUAL_ENV=$VENV && \
-        ./scripts/common_startup.sh || { echo "common_startup.sh failed"; exit 1; } && \
+        ./scripts/common_startup.sh || true && \
         dev_requirements=./lib/galaxy/dependencies/dev-requirements.txt && \
         [ -f $dev_requirements ] && $VENV/bin/pip install -r $dev_requirements; done
 
