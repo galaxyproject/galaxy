@@ -485,3 +485,23 @@ class CollectionTestCase(BaseLoaderTestCase):
         tests = tests_dict["tests"]
         assert len(tests) == 2
         assert len(tests[0]["inputs"]) == 3, tests[0]
+        outputs, output_collections = self._tool_source.parse_outputs(None)
+        assert len(output_collections) == 0
+
+
+class CollectionOutputXmlTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair.xml")
+    source_contents = None
+
+    def test_tests(self):
+        outputs, output_collections = self._tool_source.parse_outputs(None)
+        assert len(output_collections) == 1
+
+
+class CollectionOutputYamlTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/collection_creates_pair_y.yml")
+    source_contents = None
+
+    def test_tests(self):
+        outputs, output_collections = self._tool_source.parse_outputs(None)
+        assert len(output_collections) == 1
