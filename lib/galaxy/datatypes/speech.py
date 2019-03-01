@@ -7,7 +7,7 @@ class TextGrid(Text):
     """Praat Textgrid file for speech annotations
 
     >>> from galaxy.datatypes.sniff import get_test_fname
-    >>> fname = get_test_fname('1_1119_2_22_001.TextGrid')
+    >>> fname = get_test_fname('1_1119_2_22_001.textgrid')
     >>> TextGrid().sniff(fname)
     True
 
