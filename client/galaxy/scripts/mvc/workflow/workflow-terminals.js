@@ -414,6 +414,10 @@ var InputTerminal = BaseInputTerminal.extend({
                     // collection (yet...)
                     return false;
                 }
+                if (otherCollectionType.collectionType.endsWith('paired')) {
+                    // shouldn't process pairs in multiple="true" input
+                    return false;
+                }
             }
             if (thisMapOver.isCollection && thisMapOver.canMatch(otherCollectionType)) {
                 return this._producesAcceptableDatatype(other);

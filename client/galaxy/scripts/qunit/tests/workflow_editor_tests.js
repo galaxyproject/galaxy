@@ -1174,7 +1174,14 @@ QUnit.test("multiple input attachable by collections", function(assert) {
     this.verifyAttachable(assert, this.inputTerminal1, "list");
 });
 
-QUnit.test("unconnected multiple inputs cannot be connected to rank > 1 collections (yet...)", function(assert) {
+QUnit.test("multiple input attachable by nested collections", function(assert) {
+    this.inputTerminal1 = this.newInputTerminal(null, { multiple: true });
+    var connectedInput1 = this.addConnectedInput(this.inputTerminal1);
+    this.addConnectedOutput(connectedInput1);
+    this.verifyAttachable(assert, this.inputTerminal1, "list:list");
+});
+
+QUnit.test("Multiple inputs cannot be connected to pairs", function(assert) {
     this.inputTerminal1 = this.newInputTerminal(null, { multiple: true });
     this.verifyNotAttachable(assert, this.inputTerminal1, "list:paired");
 });
