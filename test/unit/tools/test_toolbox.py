@@ -236,7 +236,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def _try_until_no_errors(self, f):
         e = None
-        for i in range(300):
+        for i in range(10):
             try:
                 f()
                 return

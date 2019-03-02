@@ -1,5 +1,8 @@
 import os
-from threading import local
+from threading import (
+    local,
+    Lock,
+)
 
 from sqlalchemy.orm.exc import DetachedInstanceError
 
@@ -13,6 +16,7 @@ class ToolCache(object):
     """
 
     def __init__(self):
+        self._lock = Lock()
         self._hash_by_tool_paths = {}
         self._tools_by_path = {}
         self._tool_paths_by_id = {}
@@ -30,22 +34,23 @@ class ToolCache(object):
         """
         removed_tool_ids = []
         try:
-            paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
-            for config_filename, tool_ids in paths_to_cleanup.items():
-                del self._hash_by_tool_paths[config_filename]
-                if os.path.exists(config_filename):
-                    # This tool has probably been broken while editing on disk
-                    # We record it here, so that we can recover it
-                    self._removed_tools_by_path[config_filename] = self._tools_by_path[config_filename]
-                del self._tools_by_path[config_filename]
-                for tool_id in tool_ids:
-                    if tool_id in self._tool_paths_by_id:
-                        del self._tool_paths_by_id[tool_id]
-                removed_tool_ids.extend(tool_ids)
-            for tool_id in removed_tool_ids:
-                self._removed_tool_ids.add(tool_id)
-                if tool_id in self._new_tool_ids:
-                    self._new_tool_ids.remove(tool_id)
+            with self._lock:
+                paths_to_cleanup = {path: tool.all_ids for path, tool in self._tools_by_path.items() if self._should_cleanup(path)}
+                for config_filename, tool_ids in paths_to_cleanup.items():
+                    del self._hash_by_tool_paths[config_filename]
+                    if os.path.exists(config_filename):
+                        # This tool has probably been broken while editing on disk
+                        # We record it here, so that we can recover it
+                        self._removed_tools_by_path[config_filename] = self._tools_by_path[config_filename]
+                    del self._tools_by_path[config_filename]
+                    for tool_id in tool_ids:
+                        if tool_id in self._tool_paths_by_id:
+                            del self._tool_paths_by_id[tool_id]
+                    removed_tool_ids.extend(tool_ids)
+                for tool_id in removed_tool_ids:
+                    self._removed_tool_ids.add(tool_id)
+                    if tool_id in self._new_tool_ids:
+                        self._new_tool_ids.remove(tool_id)
         except Exception:
             # If by chance the file is being removed while calculating the hash or modtime
             # we don't want the thread to die.
@@ -79,31 +84,33 @@ class ToolCache(object):
         return self.get_tool(self._tool_paths_by_id.get(tool_id))
 
     def expire_tool(self, tool_id):
-        if tool_id in self._tool_paths_by_id:
-            config_filename = self._tool_paths_by_id[tool_id]
-            del self._hash_by_tool_paths[config_filename]
-            del self._tool_paths_by_id[tool_id]
-            del self._tools_by_path[config_filename]
-            del self._mod_time_by_path[config_filename]
-            if tool_id in self._new_tool_ids:
-                self._new_tool_ids.remove(tool_id)
+        with self._lock:
+            if tool_id in self._tool_paths_by_id:
+                config_filename = self._tool_paths_by_id[tool_id]
+                del self._hash_by_tool_paths[config_filename]
+                del self._tool_paths_by_id[tool_id]
+                del self._tools_by_path[config_filename]
+                del self._mod_time_by_path[config_filename]
+                if tool_id in self._new_tool_ids:
+                    self._new_tool_ids.remove(tool_id)
 
     def cache_tool(self, config_filename, tool):
         tool_hash = md5_hash_file(config_filename)
         if tool_hash is None:
             return
         tool_id = str(tool.id)
-        self._hash_by_tool_paths[config_filename] = tool_hash
-        self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
-        self._tool_paths_by_id[tool_id] = config_filename
-        self._tools_by_path[config_filename] = tool
-        self._new_tool_ids.add(tool_id)
-        for macro_path in tool._macro_paths:
-            self._mod_time_by_path[macro_path] = os.path.getmtime(macro_path)
-            if tool_id not in self._macro_paths_by_id:
-                self._macro_paths_by_id[tool_id] = {macro_path}
-            else:
-                self._macro_paths_by_id[tool_id].add(macro_path)
+        with self._lock:
+            self._hash_by_tool_paths[config_filename] = tool_hash
+            self._mod_time_by_path[config_filename] = os.path.getmtime(config_filename)
+            self._tool_paths_by_id[tool_id] = config_filename
+            self._tools_by_path[config_filename] = tool
+            self._new_tool_ids.add(tool_id)
+            for macro_path in tool._macro_paths:
+                self._mod_time_by_path[macro_path] = os.path.getmtime(macro_path)
+                if tool_id not in self._macro_paths_by_id:
+                    self._macro_paths_by_id[tool_id] = {macro_path}
+                else:
+                    self._macro_paths_by_id[tool_id].add(macro_path)
 
     def reset_status(self):
         """
