@@ -17,7 +17,6 @@ class ToolCache(object):
         self._tools_by_path = {}
         self._tool_paths_by_id = {}
         self._macro_paths_by_id = {}
-        self._tool_ids_by_macro_paths = {}
         self._mod_time_by_path = {}
         self._new_tool_ids = set()
         self._removed_tool_ids = set()
@@ -105,10 +104,6 @@ class ToolCache(object):
                 self._macro_paths_by_id[tool_id] = {macro_path}
             else:
                 self._macro_paths_by_id[tool_id].add(macro_path)
-            if macro_path not in self._macro_paths_by_id:
-                self._tool_ids_by_macro_paths[macro_path] = {tool_id}
-            else:
-                self._tool_ids_by_macro_paths[macro_path].add(tool_id)
 
     def reset_status(self):
         """

@@ -340,7 +340,6 @@ class GalaxyInteractorApi(object):
             tool_input.update({
                 "files_0|NAME": name,
                 "files_0|type": "upload_dataset",
-
             })
             files = {}
             if force_path_paste:
