@@ -122,9 +122,10 @@ class ToolCache(object):
         """
         Reset tracking of new and newly disabled tools.
         """
-        self._new_tool_ids = set()
-        self._removed_tool_ids = set()
-        self._removed_tools_by_path = {}
+        with self._lock:
+            self._new_tool_ids = set()
+            self._removed_tool_ids = set()
+            self._removed_tools_by_path = {}
 
 
 class ToolShedRepositoryCache(object):
