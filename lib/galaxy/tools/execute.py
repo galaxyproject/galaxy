@@ -5,11 +5,9 @@ collections from matched collections.
 """
 import collections
 import logging
-from threading import Thread
 
 import six
 import six.moves
-from six.moves.queue import Queue
 
 from galaxy import model
 from galaxy.dataset_collections.structure import get_structure, tool_output_to_structure
@@ -46,7 +44,6 @@ def execute(trans, tool, mapping_params, history, rerun_remap_job_id=None, colle
         execution_tracker = ToolExecutionTracker(trans, tool, mapping_params, collection_info)
     else:
         execution_tracker = WorkflowStepExecutionTracker(trans, tool, mapping_params, collection_info, invocation_step, job_callback=job_callback)
-    app = trans.app
     execution_cache = ToolExecutionCache(trans)
 
     def execute_single_job(execution_slice, completed_job):
