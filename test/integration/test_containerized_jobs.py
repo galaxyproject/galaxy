@@ -31,7 +31,6 @@ class MulledJobTestCases(object):
         assert "0.7.15-r1140" in output
 
 
-@integration_util.skip_unless_docker()
 class DockerizedJobsIntegrationTestCase(integration_util.IntegrationTestCase, RunsEnvironmentJobs, MulledJobTestCases):
 
     framework_tool_and_types = True
