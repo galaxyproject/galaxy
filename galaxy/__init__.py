@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-__version__ = '19.5.1.dev0'
+__version__ = '19.5.1'
 
 PROJECT_NAME = "galaxy-lib"
 PROJECT_OWNER = PROJECT_USERAME = "galaxyproject"

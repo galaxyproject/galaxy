@@ -6,10 +6,10 @@ History
 .. to_doc
 
 ---------------------
-19.5.1.dev0
+19.5.1 (2019-03-03)
 ---------------------
 
-    
+* Fix galaxy.tools.verify API method interface change breaking Planemo compatibility.
 
 ---------------------
 19.5.0 (2019-03-01)
