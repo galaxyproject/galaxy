@@ -1,20 +1,8 @@
 import logging
-import os
 import subprocess
 
-from galaxy.datatypes import (
-    data,
-    metadata
-)
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import get_file_peek
+from galaxy.datatypes import data
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import (
-    build_sniff_from_prefix,
-    get_headers,
-    iter_headers
-)
-from galaxy.datatypes.tabular import Tabular
 
 log = logging.getLogger(__name__)
 
@@ -56,10 +44,7 @@ def count_lines(filename, non_empty=False):
         counting the number of lines from the 'filename' file
     """
     try:
-        if non_empty:
-            out = subprocess.Popen(['grep', '-cve', '^\s*$', filename], stdout=subprocess.PIPE)
-        else:
-            out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
+        out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
         return int(out.communicate()[0].split()[0])
     except Exception:
         pass
