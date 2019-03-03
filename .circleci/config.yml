@@ -14,7 +14,7 @@ variables:
     run: sudo pip install tox
   set_workdir: &set_workdir
     working_directory: ~/repo
-  get_code: &get_code
+  requires_get_code: &requires_get_code
     requires:
       - get_code
 jobs:
@@ -71,7 +71,7 @@ jobs:
       - *restore_repo_cache
       - *install_tox
       - run: tox -e py27-lint_docstring_include_list
-  py27_1startup:
+  py27_first_startup:
     docker:
       - image: circleci/python:2.7.15
     <<: *set_workdir
@@ -99,7 +99,7 @@ jobs:
       - *restore_repo_cache
       - *install_tox
       - run: tox -e py35-unit
-  py35_1startup:
+  py35_first_startup:
     docker:
       - image: circleci/python:3.5
     <<: *set_workdir
@@ -160,24 +160,24 @@ workflows:
     jobs:
       - get_code
       - py27_lint:
-          <<: *get_code
+          <<: *requires_get_code
       - py27_unit:
-          <<: *get_code
-      - py27_1startup:
-          <<: *get_code
+          <<: *requires_get_code
+      - py27_first_startup:
+          <<: *requires_get_code
       - py27_docstring:
-          <<: *get_code
+          <<: *requires_get_code
       - py35_lint:
-          <<: *get_code
+          <<: *requires_get_code
       - py35_unit:
-          <<: *get_code
-      - py35_1startup:
-          <<: *get_code
+          <<: *requires_get_code
+      - py35_first_startup:
+          <<: *requires_get_code
       - validate_test_tools:
-          <<: *get_code
+          <<: *requires_get_code
       - check_py3_compatibility:
-          <<: *get_code
+          <<: *requires_get_code
       - js_unit:
-          <<: *get_code
+          <<: *requires_get_code
       - js_lint:
-          <<: *get_code
+          <<: *requires_get_code
