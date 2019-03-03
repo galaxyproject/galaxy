@@ -1,0 +1,183 @@
+# Python CircleCI 2.0 configuration file
+version: 2
+variables:
+  restore_repo_cache: &restore_repo_cache
+    restore_cache:
+      keys:
+        - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+  restore_yarn_cache: &restore_yarn_cache
+    restore_cache:
+      keys:
+        - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        - yarn-packages-{{ checksum "client/yarn.lock" }}
+  save_yarn_cache: &save_yarn_cache
+    save_cache:
+      key: yarn-packages-{{ checksum "client/yarn.lock" }}
+      paths:
+        - ~/.cache/yarn
+  install_tox: &install_tox
+    run: sudo pip install tox
+  set_workdir: &set_workdir
+    working_directory: ~/repo
+  requires_get_code: &requires_get_code
+    requires:
+      - get_code
+jobs:
+  get_code:
+    docker:
+      - image: circleci/python:2.7.15
+    <<: *set_workdir
+    steps:
+      # Replace standard code checkout with shallow clone to speed things up.
+      - run:
+          name: Checkout code
+          command: |-
+              # add github.com to known hosts
+              mkdir -p ~/.ssh
+              echo 'github.com ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==
+              ' >> ~/.ssh/known_hosts
+
+              # add the user ssh key and set correct perms
+              umask 077
+              echo "$CHECKOUT_KEY" > ~/.ssh/id_rsa
+              chmod 0600 ~/.ssh/id_rsa
+
+              # use git+ssh instead of https
+              git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
+              git config --global gc.auto 0 || true
+
+              # get shallow clone of single repo branch for speed purposes
+              git clone --depth=1 --single-branch -b $CIRCLE_BRANCH git@github.com:$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME ~/repo
+      - save_cache:
+          key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+          paths:
+            - ~/repo
+  py27_lint:
+    docker:
+      - image: circleci/python:2.7.15
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - *install_tox
+      - run: tox -e py27-lint
+  py27_unit:
+    docker:
+      - image: circleci/python:2.7.15
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - *install_tox
+      - run: tox -e py27-unit
+  py27_docstring:
+    docker:
+      - image: circleci/python:2.7.15
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - *install_tox
+      - run: tox -e py27-lint_docstring_include_list
+  py27_first_startup:
+    docker:
+      - image: circleci/python:2.7.15
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - run: sh scripts/common_startup.sh
+      - run: wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
+      - run: mv db_gx_rev_0127.sqlite database/universe.sqlite
+      - run: sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
+      - *install_tox
+      - run: tox -e py27-first_startup
+  py35_lint:
+    docker:
+      - image: circleci/python:3.5
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - *install_tox
+      - run: tox -e py35-lint
+  py35_unit:
+    docker:
+      - image: circleci/python:3.5
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - *install_tox
+      - run: tox -e py35-unit
+  py35_first_startup:
+    docker:
+      - image: circleci/python:3.5
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - *install_tox
+      - run: sudo apt-get update
+      # For uwsgi
+      - run: sudo apt-get install -y libpython3.5-dev
+      - run: tox -e py35-first_startup
+  validate_test_tools:
+    docker:
+      - image: circleci/python:2.7.15
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y libxml2-utils
+      - *install_tox
+      - run: tox -e validate_test_tools
+  check_py3_compatibility:
+    docker:
+      - image: circleci/python:2.7.15
+    <<: *set_workdir
+    steps:
+      - *restore_repo_cache
+      - run: sudo apt-get update
+      - run: sudo apt-get install -y ack-grep
+      - *install_tox
+      - run: tox -e check_py3_compatibility
+  js_unit:
+    docker:
+      - image: circleci/node:10-browsers
+    <<: *set_workdir
+    steps:
+      - *restore_yarn_cache
+      - run: cd client && yarn install --frozen-lockfile
+      - *save_yarn_cache
+      - run: cd client && yarn run build
+      - run: cd client && yarn run test
+  js_lint:
+    docker:
+      - image: circleci/node:10-browsers
+    <<: *set_workdir
+    steps:
+      - *restore_yarn_cache
+      - run: cd client && yarn install --frozen-lockfile
+      - *save_yarn_cache
+      - run: cd client && yarn run eslint
+workflows:
+  version: 2
+  get_code_and_test:
+    jobs:
+      - get_code
+      - py27_lint:
+          <<: *requires_get_code
+      - py27_unit:
+          <<: *requires_get_code
+      - py27_first_startup:
+          <<: *requires_get_code
+      - py27_docstring:
+          <<: *requires_get_code
+      - py35_lint:
+          <<: *requires_get_code
+      - py35_unit:
+          <<: *requires_get_code
+      - py35_first_startup:
+          <<: *requires_get_code
+      - validate_test_tools:
+          <<: *requires_get_code
+      - check_py3_compatibility:
+          <<: *requires_get_code
+      - js_unit:
+          <<: *requires_get_code
+      - js_lint:
+          <<: *requires_get_code
