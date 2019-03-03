@@ -21,9 +21,7 @@ log = logging.getLogger(__name__)
 
 def get_n_first_lines(filename, n=3):
     """
-        searching for special 'words' using the grep tool
-        grep is used to speed up the searching and counting
-        The number of hits is returned.
+        Rendering n first lines in order to populate peek.
     """
     try:
         cmd = ["head", '-' + str(n)]
