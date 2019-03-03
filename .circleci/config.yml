@@ -5,6 +5,11 @@ variables:
     restore_cache:
       keys:
         - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+  restore_yarn_cache: &restore_yarn_cache
+    restore_cache:
+      keys:
+        - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
+        - yarn-packages-{{ checksum "client/yarn.lock" }}
   save_yarn_cache: &save_yarn_cache
     save_cache:
       key: yarn-packages-{{ checksum "client/yarn.lock" }}
@@ -134,10 +139,7 @@ jobs:
       - image: circleci/node:10-browsers
     <<: *set_workdir
     steps:
-      - restore_cache:
-          keys:
-            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-            - yarn-packages-{{ checksum "client/yarn.lock" }}
+      - *restore_yarn_cache
       - run: cd client && yarn install --frozen-lockfile
       - *save_yarn_cache
       - run: cd client && yarn run build
@@ -147,10 +149,7 @@ jobs:
       - image: circleci/node:10-browsers
     <<: *set_workdir
     steps:
-      - restore_cache:
-          keys:
-            - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-            - yarn-packages-{{ checksum "client/yarn.lock" }}
+      - *restore_yarn_cache
       - run: cd client && yarn install --frozen-lockfile
       - *save_yarn_cache
       - run: cd client && yarn run eslint
