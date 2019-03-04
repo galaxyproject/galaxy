@@ -24,7 +24,22 @@ Or a StatsD server via:
       socket: ...
       stats-push: statsd:127.0.0.1:8125
 
-The `official documentation <https://uwsgi-docs.readthedocs.io/en/latest/Metrics.html#stats-pushers>`__ contains further information on uWSGI and stats servers. In the `uWSGI Stats Server <https://uwsgi-docs.readthedocs.io/en/latest/StatsServer.html>` documentation, you can see an example of the sort of information that you will be able to collect.
+The `official documentation <https://uwsgi-docs.readthedocs.io/en/latest/Metrics.html#stats-pushers>`__ contains further information on uWSGI and stats servers. In the `uWSGI Stats Server <https://uwsgi-docs.readthedocs.io/en/latest/StatsServer.html>`__ documentation, you can see an example of the sort of information that you will be able to collect. Note that you will need to make sure that the statsd pusher plugin is activated in your uWSGI servers.
+
+Alternatively, you can use `gxadmin <https://github.com/usegalaxy-eu/gxadmin#uwsgi-stats_influx>`__ to generate data ready to load in an InfluxDB database. In this case, you will need to add the stats option to your galaxy.yml:
+
+.. code-block:: yaml
+
+   uwsgi:
+      socket: ...
+      stats: 127.0.0.1:9191
+
+And then run gxadmin like this:
+
+
+.. code-block:: bash
+
+   gxadmin uwsgi stats_influx 127.0.0.1:9191
 
 API / Route Timing Statistics
 -----------------------------
