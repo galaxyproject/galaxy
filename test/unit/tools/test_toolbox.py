@@ -51,11 +51,9 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
 
     @property
     def toolbox(self):
-        if self.__toolbox is None:
-            self.__toolbox = SimplifiedToolBox(self)
-            # wire app with this new toolbox
-            self.app.toolbox = self.__toolbox
-        return self.__toolbox
+        if self._toolbox is None:
+            self.app.toolbox = self._toolbox = SimplifiedToolBox(self)
+        return self._toolbox
 
     def setUp(self):
         self.reindexed = False
@@ -67,8 +65,11 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         itp_config = os.path.join(self.test_directory, "integrated_tool_panel.xml")
         self.app.config.integrated_tool_panel_config = itp_config
         self.app.watchers = ConfigWatchers(self.app)
-        self.__toolbox = None
+        self._toolbox = None
         self.config_files = []
+
+    def tearDown(self):
+        self.app.watchers.shutdown()
 
     def _repo_install(self, changeset, config_filename=None):
         metadata = {
@@ -193,13 +194,14 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         assert tool is not None
         assert len(tool._macro_paths) == 1
         macro_path = tool._macro_paths[0]
-        time.sleep(1.5)
         with open(macro_path, 'w') as macro_out:
             macro_out.write(SIMPLE_MACRO.substitute(tool_version="3.0"))
-        time.sleep(1.5)
-        tool = self.app.toolbox.get_tool("tool_with_macro")
 
-        assert tool.version == "3.0"
+        def check_tool_macro():
+            tool = self.toolbox.get_tool("tool_with_macro")
+            assert tool.version == "3.0"
+
+        self._try_until_no_errors(check_tool_macro)
 
     def test_tool_reload_for_broken_tool(self):
         self._init_tool(filename="simple_tool.xml", version="1.0")
@@ -215,7 +217,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
             out.write('certainly not a valid tool')
 
         def check_tool_errors():
-            tool = self.app.toolbox.get_tool("test_tool")
+            tool = self.toolbox.get_tool("test_tool")
             assert tool is not None
             assert tool.version == "1.0"
             assert tool.tool_errors == 'Current on-disk tool is not valid'
@@ -226,7 +228,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         self._init_tool(filename="simple_tool.xml", version="2.0")
 
         def check_no_tool_errors():
-            tool = self.app.toolbox.get_tool("test_tool")
+            tool = self.toolbox.get_tool("test_tool")
             assert tool is not None
             assert tool.version == "2.0"
             assert tool.tool_errors is None
@@ -236,7 +238,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def _try_until_no_errors(self, f):
         e = None
-        for i in range(300):
+        for i in range(10):
             try:
                 f()
                 return
@@ -561,4 +563,4 @@ class SimplifiedToolBox(ToolBox):
 
 def reload_callback(test_case):
     test_case.app.tool_cache.cleanup()
-    test_case.__toolbox = test_case.app.toolbox = SimplifiedToolBox(test_case)
+    test_case._toolbox = test_case.app.toolbox = SimplifiedToolBox(test_case)
