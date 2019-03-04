@@ -19,6 +19,7 @@ import threading
 import time
 from datetime import timedelta
 
+import yaml
 from six import string_types
 from six.moves import configparser
 
@@ -60,7 +61,6 @@ PATH_DEFAULTS = dict(
     workflow_schedulers_config_file=['config/workflow_schedulers_conf.xml', 'config/workflow_schedulers_conf.xml.sample'],
     modules_mapping_files=['config/environment_modules_mapping.yml', 'config/environment_modules_mapping.yml.sample'],
     local_conda_mapping_file=['config/local_conda_mapping.yml', 'config/local_conda_mapping.yml.sample'],
-    user_preferences_extra_config_file=['config/user_preferences_extra_conf.yml'],
     containers_config_file=['config/containers_conf.yml'],
 )
 
@@ -639,6 +639,14 @@ class Configuration(object):
         self.biostar_enable_bug_reports = string_as_bool(kwargs.get('biostar_enable_bug_reports', True))
         self.biostar_never_authenticate = string_as_bool(kwargs.get('biostar_never_authenticate', False))
         self.pretty_datetime_format = expand_pretty_datetime_format(kwargs.get('pretty_datetime_format', '$locale (UTC)'))
+        self.user_preferences_extra_config_file = kwargs.get('user_preferences_extra_conf_path', 'config/user_preferences_extra_conf.yml')
+        try:
+            with open(self.user_preferences_extra_config_file, 'r') as stream:
+                self.user_preferences_extra = yaml.safe_load(stream)
+        except Exception:
+            log.warning('Config file (%s) could not be found or is malformed.' % self.user_preferences_extra_config_file)
+            self.user_preferences_extra = {'preferences': {}}
+
         self.default_locale = kwargs.get('default_locale', None)
         self.master_api_key = kwargs.get('master_api_key', None)
         if self.master_api_key == "changethis":  # default in sample config file

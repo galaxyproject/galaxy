@@ -1249,6 +1249,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_preferences_extra_conf_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of the configuration file containing extra user
+    preferences.
+:Default: ``config/user_preferences_extra_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~
 ``default_locale``
 ~~~~~~~~~~~~~~~~~~
