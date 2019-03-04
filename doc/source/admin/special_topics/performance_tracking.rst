@@ -20,7 +20,7 @@ Or a StatsD server via:
 
 .. code-block:: yaml
 
-   wsgi:
+   uwsgi:
       socket: ...
       stats-push: statsd:127.0.0.1:8125
 
