@@ -868,7 +868,7 @@
     <sniffer type="galaxy.datatypes.msa:InfernalCM"/>
     <sniffer type="galaxy.datatypes.annotation:SnapHmm"/>
     <sniffer type="galaxy.datatypes.binary:Cel"/>
-    sniffer type="galaxy.datatypes.microarrays:Gpr"/>
+    <sniffer type="galaxy.datatypes.microarrays:Gpr"/>
     <sniffer type="galaxy.datatypes.microarrays:Gal"/>
     <sniffer type="galaxy.datatypes.binary:RData"/>
     <sniffer type="galaxy.datatypes.images:Jpg"/>
