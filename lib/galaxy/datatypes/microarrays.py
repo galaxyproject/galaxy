@@ -8,20 +8,6 @@ from galaxy.datatypes.metadata import MetadataElement
 log = logging.getLogger(__name__)
 
 
-def get_n_first_lines(filename, n=3):
-    """
-        Rendering n first lines in order to populate peek.
-    """
-    try:
-        cmd = ["head", '-' + str(n)]
-        cmd.extend([filename])
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        return out.communicate()[0]
-    except Exception:
-        pass
-    return 0
-
-
 def count_special_lines(word, filename, invert=False):
     """
         searching for special 'words' using the grep tool
@@ -67,7 +53,6 @@ class GenericMicroarrayFile(data.Text):
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_blocks == 1:
                 dataset.blurb = "1 block %s recodrs" % dataset.metadata.number_of_records
-                dataset.peek = get_n_first_lines(dataset.file_name, n=3)
             else:
                 dataset.blurb = "%s blocks %s recodrs" % (dataset.metadata.number_of_blocks, dataset.metadata.number_of_records)
             dataset.peek = get_file_peek(dataset.file_name)
