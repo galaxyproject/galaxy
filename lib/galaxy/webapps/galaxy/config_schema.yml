@@ -941,8 +941,7 @@ mapping:
         default: 'config/user_preferences_extra_conf.yml'
         required: false
         desc: |
-          Location of the user_preferences_extra_conf.yml file, if not in the
-          standard configuration directory.
+          Location of the configuration file containing extra user preferences.
 
       default_locale:
         type: str

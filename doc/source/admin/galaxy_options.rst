@@ -1254,8 +1254,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Location of the user_preferences_extra_conf.yml file, if not in
-    the standard configuration directory.
+    Location of the configuration file containing extra user
+    preferences.
 :Default: ``config/user_preferences_extra_conf.yml``
 :Type: str
 

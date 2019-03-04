@@ -674,8 +674,8 @@ galaxy:
   # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
-  # Location of the user_preferences_extra_conf.yml file, if not in the
-  # standard configuration directory.
+  # Location of the configuration file containing extra user
+  # preferences.
   #user_preferences_extra_conf_path: config/user_preferences_extra_conf.yml
 
   # Default localization for Galaxy UI. Allowed values are listed at the
