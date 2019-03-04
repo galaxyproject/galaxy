@@ -68,6 +68,9 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesApp, UsesTools):
         self._toolbox = None
         self.config_files = []
 
+    def tearDown(self):
+        self.app.watchers.shutdown()
+
     def _repo_install(self, changeset, config_filename=None):
         metadata = {
             'tools': [{
