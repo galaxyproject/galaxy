@@ -8,9 +8,8 @@ developers have made significant effort to provide these dependencies in as simp
 compatible with the `Python packaging best practices`_. Thus, Galaxy's runtime setup procedure makes use of virtualenv_
 for package environment isolation, pip_ for installation, and wheel_ to provide pre-built versions of dependencies.
 
-In addition to framework dependencies, as of Galaxy 18.01, the client (UI) is no longer provided in its built format
-**in the development (dev) branch of the source repository**. The built client is still provided in
-``release_YY.MM`` branches and the ``master`` branch.
+In addition to framework dependencies, since Galaxy 18.09, the client (UI) is no longer provided in its built format
+when downloading Galaxy. For more information, see https://github.com/galaxyproject/galaxy/blob/dev/client/README.md .
 
 .. _Python module dependencies: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/dependencies/pipfiles/default/pinned-requirements.txt
 .. _Python packaging best practices: https://packaging.python.org
@@ -27,12 +26,12 @@ Upon startup (with ``run.sh``), the startup scripts will:
 
 2. Unset the ``$PYTHONPATH`` environment variable (if set) as this can interfere with installing dependencies.
 
-3. Download and install packages from the Galaxy project wheel server, wheels.galaxyproject.org_, as well as the `Python
+3. Download and install packages from the `Galaxy project wheel server`_, as well as the `Python
    Package Index`_ (aka PyPI) , using pip_.
 
 4. Start Galaxy using ``.venv/bin/python``.
 
-.. _wheels.galaxyproject.org: https://wheels.galaxyproject.org/
+.. _Galaxy project wheel server: https://wheels.galaxyproject.org/
 .. _Python Package Index: https://pypi.org
 
 Options
@@ -175,7 +174,7 @@ Conda
     These instruction apply to Galaxy release 19.01 or newer. Please consult the documentation for your version of Galaxy.
 
 
-`Conda`_ and `virtualenv`_ are incompatible, unless an adapted `virtualenv_` from the `conda-forge_` channel is used.
+`Conda`_ and `virtualenv`_ are incompatible, unless an adapted ``virtualenv`` package from the `conda-forge`_ channel is used.
 Galaxy can create a virtualenv using the adapted virtualenv package. Once a valid ``.venv`` environment exists it will be used.
 
 .. tip::
@@ -217,7 +216,7 @@ Galaxy's dependencies can be installed either "pinned" (they will be installed a
 Galaxy release) or "unpinned" (the latest versions of all dependencies will be installed unless there are known
 incompatibilities with new versions). By default, the release branches of Galaxy use pinned versions for three reasons:
 
-1. Using pinned versions insures that the prebuilt wheels on `wheels.galaxyproject.org`_ will be installed, and no
+1. Using pinned versions insures that the prebuilt wheels will be installed, and no
    compilation will be necessary.
 
 2. Galaxy releases are tested with the pinned versions and this allows us to give as much assurance as possible that the

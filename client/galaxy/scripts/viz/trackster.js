@@ -24,6 +24,7 @@ import "libs/jquery/jquery.form";
 import "libs/jquery/jquery.rating";
 import "ui/editable-text";
 
+//import "style/scss/autocomplete_tagging.scss";
 //import "static/style/jquery-ui/smoothness/jquery-ui.css";
 //import "static/style/library.css";
 //import "static/style/trackster.css";

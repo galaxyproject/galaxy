@@ -51,6 +51,36 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         self.model_class = app.model.User
         super(UserManager, self).__init__(app)
 
+    def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False, **kwd):
+        """
+        Register a new user.
+        """
+        if not trans.app.config.allow_user_creation and not trans.user_is_admin:
+            message = "User registration is disabled.  Please contact your local Galaxy administrator for an account."
+            if trans.app.config.error_email_to is not None:
+                message += " Contact: %s" % trans.app.config.error_email_to
+            return None, message
+        if not email or not username or not password or not confirm:
+            return None, "Please provide email, username and password."
+        message = "\n".join([validate_email(trans, email),
+                             validate_password(trans, password, confirm),
+                             validate_publicname(trans, username)]).rstrip()
+        if message:
+            return None, message
+        email = util.restore_text(email)
+        username = util.restore_text(username)
+        message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
+        if message:
+            return None, message
+        if subscribe:
+            message = self.send_subscription_email(email)
+            if message:
+                return None, message
+        user = self.create(email=email, username=username, password=password)
+        if self.app.config.user_activation_on:
+            self.send_activation_email(trans, email, username)
+        return user, None
+
     def create(self, email=None, username=None, password=None, **kwargs):
         """
         Create a new user.
@@ -261,7 +291,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if not token and not id:
             return None, "Please provide a token or a user and password."
         if token:
-            token_result = trans.sa_session.query(trans.app.model.PasswordResetToken).get(token)
+            token_result = trans.sa_session.query(self.app.model.PasswordResetToken).get(token)
             if not token_result or not token_result.expiration_time > datetime.utcnow():
                 return None, "Invalid or expired password reset token, please request a new one."
             user = token_result.user
@@ -297,10 +327,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 user.set_password_cleartext(password)
                 # Invalidate all other sessions
                 if trans.galaxy_session:
-                    for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession) \
-                                                     .filter(and_(trans.app.model.GalaxySession.table.c.user_id == user.id,
-                                                                  trans.app.model.GalaxySession.table.c.is_valid == true(),
-                                                                  trans.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
+                    for other_galaxy_session in trans.sa_session.query(self.app.model.GalaxySession) \
+                                                     .filter(and_(self.app.model.GalaxySession.table.c.user_id == user.id,
+                                                                  self.app.model.GalaxySession.table.c.is_valid == true(),
+                                                                  self.app.model.GalaxySession.table.c.id != trans.galaxy_session.id)):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
@@ -325,14 +355,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 "Your Galaxy Team" % (escape(username), escape(email),
                                       datetime.utcnow().strftime("%D"),
                                       trans.request.host, activation_link,
-                                      trans.app.config.terms_url,
-                                      trans.app.config.error_email_to,
-                                      trans.app.config.instance_resource_url))
+                                      self.app.config.terms_url,
+                                      self.app.config.error_email_to,
+                                      self.app.config.instance_resource_url))
         to = email
-        frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
+        frm = self.app.config.email_from or 'galaxy-no-reply@' + host
         subject = 'Galaxy Account Activation'
         try:
-            util.send_mail(frm, to, subject, body, trans.app.config)
+            util.send_mail(frm, to, subject, body, self.app.config)
             return True
         except Exception:
             log.debug(body)
@@ -343,7 +373,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
         """
-        user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+        user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
         activation_token = user.activation_token
         if activation_token is None:
             activation_token = util.hash_util.new_secure_hash(str(random.getrandbits(256)))
@@ -372,7 +402,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 frm = trans.app.config.email_from or 'galaxy-no-reply@' + host
                 subject = 'Galaxy Password Reset'
                 try:
-                    util.send_mail(frm, email, subject, body, trans.app.config)
+                    util.send_mail(frm, email, subject, body, self.app.config)
                     trans.sa_session.add(reset_user)
                     trans.sa_session.flush()
                     trans.log_event('User reset password: %s' % email)
@@ -383,12 +413,12 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 return "Failed to produce password reset token. User not found."
 
     def get_reset_token(self, trans, email):
-        reset_user = trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
+        reset_user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
         if not reset_user:
             # Perform a case-insensitive check only if the user wasn't found
-            reset_user = trans.sa_session.query(trans.app.model.User).filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email)).first()
+            reset_user = trans.sa_session.query(self.app.model.User).filter(func.lower(self.app.model.User.table.c.email) == func.lower(email)).first()
         if reset_user:
-            prt = trans.app.model.PasswordResetToken(reset_user)
+            prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
             trans.sa_session.flush()
             return reset_user, prt
@@ -399,6 +429,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if host in ['localhost', '127.0.0.1', '0.0.0.0']:
             host = socket.getfqdn()
         return host
+
+    def send_subscription_email(self, email):
+        if self.app.config.smtp_server is None:
+            return "Subscribing to the mailing list has failed because mail is not configured for this Galaxy instance. Please contact your local Galaxy administrator."
+        else:
+            body = 'Join Mailing list.\n'
+            to = self.app.config.mailing_join_addr
+            frm = email
+            subject = 'Join Mailing List'
+            try:
+                util.send_mail(frm, to, subject, body, self.app.config)
+            except Exception:
+                log.exception('Subscribing to the mailing list has failed.')
+                return "Subscribing to the mailing list has failed."
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):

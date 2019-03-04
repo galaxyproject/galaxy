@@ -285,8 +285,7 @@ export default Backbone.View.extend({
 
     /** Template */
     _template: function() {
-        return (
-            `<tr class="upload-row">
+        return `<tr class="upload-row">
                 <td>
                     <div class="upload-source"/>
                     <div class="upload-text-column">
@@ -320,7 +319,6 @@ export default Backbone.View.extend({
                         </div>
                     </div>
                 </td>
-            </tr>`
-        );
+            </tr>`;
     }
 });

@@ -30,4 +30,4 @@ export const gridSearchStore = {
             commit("setSearchTags", new Set());
         }
     }
-}
+};

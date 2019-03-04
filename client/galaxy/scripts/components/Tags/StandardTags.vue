@@ -20,7 +20,6 @@ parameters here.
 </template>
 
 <script>
-
 import Vue from "vue";
 import VueRx from "vue-rx";
 import { mapActions } from "vuex";
@@ -37,7 +36,7 @@ export default {
         GalaxyTags
     },
     props: {
-        tags: { type: Array, required: false, default: () => ([]) },
+        tags: { type: Array, required: false, default: () => [] },
 
         // currently we're passing in the click handler name as a property, and
         // that property is still defined by python, so this will have to stay
@@ -76,14 +75,12 @@ export default {
     subscriptions() {
         return {
             // return search result tags without the ones we've already selected
-            autocompleteItems: 
-                this.tagService.autocompleteOptions.pipe(
-                    map(resultTags => diffTags(resultTags, this.tags))
-                )
-        }
+            autocompleteItems: this.tagService.autocompleteOptions.pipe(
+                map(resultTags => diffTags(resultTags, this.tags))
+            )
+        };
     },
     methods: {
-
         clickHandler(tag) {
             if (undefined !== this[this.tagClickFn]) {
                 this[this.tagClickFn](tag);
@@ -102,21 +99,21 @@ export default {
             redirectToUrl(href);
         },
 
-
         // Hooks to save/delete tag to server before updating UI
 
         beforeAddingTag({ tag, addTag }) {
-            this.tagService.save(tag)
+            this.tagService
+                .save(tag)
                 .then(() => addTag(tag))
                 .catch(err => console.warn("unable to save tag", err));
         },
 
         beforeDeletingTag({ tag, deleteTag }) {
-            this.tagService.delete(tag)
+            this.tagService
+                .delete(tag)
                 .then(result => deleteTag(tag))
                 .catch(err => console.warn("Unable to delete tag", err));
         },
-
 
         // Set search value on tag service input proprety and eventually search
         // results will appear on the tagService.autocompleteOptions observable
@@ -135,6 +132,5 @@ export default {
             tags: this.tags 
         });
     }
-}
-
+};
 </script>

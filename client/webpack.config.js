@@ -29,8 +29,7 @@ let buildconfig = {
         alias: {
             jquery$: `${libsBase}/jquery.custom.js`,
             jqueryVendor$: `${libsBase}/jquery/jquery.js`,
-            store$: "store/dist/store.modern.js",
-            vue$: "vue/dist/vue.esm.js"
+            storemodern$: "store/dist/store.modern.js"
         }
     },
     optimization: {

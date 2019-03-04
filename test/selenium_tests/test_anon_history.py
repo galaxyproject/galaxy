@@ -44,8 +44,9 @@ class AnonymousHistoriesTestCase(SeleniumTestCase):
     def test_clean_anon_history_after_logout(self):
         self._upload_file_anonymous_then_register_user()
         self.logout_if_needed()
-        # Give Galaxy a chance to load the new empty history for that now
+        # Give Galaxy the chance to load a new empty history for that now
         # anonymous user. Make sure this new history is empty.
+        self.home()
         self.history_panel_wait_for_history_loaded()
         history_contents = self.current_history_contents()
         assert len(history_contents) == 0

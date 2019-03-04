@@ -1,7 +1,7 @@
 # These dependencies are only required when certain config options are set
 psycopg2-binary==2.7.4
 weberror==0.10.3
-mysql-python
+mysqlclient
 fluent-logger
 raven
 pbs_python
@@ -16,6 +16,9 @@ galaxycloudrunner
 
 # Chronos client
 chronos-python==0.38.0
+
+# Kubernetes job runner
+pykube==0.15.0
 
 # Synnefo / Pithos+ object store client
 kamaki

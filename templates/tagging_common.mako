@@ -1,26 +1,6 @@
 <%namespace file="/display_common.mako" import="get_controller_name" />
 <%!
-
 from cgi import escape
-import six
-from galaxy.util import unicodify
-
-## Build dict of tag name, values.
-def tags_to_dict(item_tags):
-    tag_names_and_values = dict()
-    for tag in item_tags:
-        tag_name = escape( tag.user_tname )
-        tag_value = ""
-        if tag.value is not None:
-            tag_value = escape( tag.user_value )
-
-        ## Tag names and values may be string or unicode object.
-        if isinstance( tag_name, six.binary_type ):
-            tag_names_and_values[unicodify(tag_name, 'utf-8')] = unicodify(tag_value, 'utf-8')
-        else:
-            tag_names_and_values[tag_name] = tag_value
-    return tag_names_and_values
-
 %>
 
 ## Render a tagging element if there is a tagged_item.
@@ -53,6 +33,12 @@ def tags_to_dict(item_tags):
         controller_name = get_controller_name(tagged_item)
         click_url = h.url_for( controller='/' + controller_name , action='list_published')
         community_tags = trans.app.tag_handler.get_community_tags( item=tagged_item, limit=5 )
+        
+        ## Having trouble converting list of tags into a plain array, this just
+        ## just plucks out the name
+        community_tag_names = []
+        for tag in community_tags:
+            community_tag_names.append(escape(tag.name))
     %>
     
     <div id="tags-community-${controller_name}-${tagged_item.id}"></div>
@@ -62,13 +48,13 @@ def tags_to_dict(item_tags):
             var container = document.getElementById("tags-community-${controller_name}-${tagged_item.id}");
             
             var options = ${h.dumps(tagged_item.to_dict())};
+            options.tags = ${h.dumps(community_tag_names)};
             options.id = String(options.id);
             options.itemClass = options.model_class;
             options.context = "${elt_context}";
             options.tagClickFn = "${tag_click_fn}";
             options.clickUrl = "${click_url}";
             options.disabled = true;
-            
             bundleEntries.mountTaggingComponent(options, container);
         });
     </script>
@@ -87,17 +73,20 @@ def tags_to_dict(item_tags):
     <%
         tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
         item_tags = [ tag for tag in tagged_item.tags if ( tag.user == user ) ]
+
+        item_tag_names = []
+        for ta in item_tags:
+            item_tag_names.append(escape(ta.tag.name))
     %>
 
     <div id="tags-${tagged_item_id}"></div>
 
     <script type="text/javascript">
         config.addInitialization(function(galaxy, config) {
-            console.log("render_individual_tagging_element");
-            
             var container = document.getElementById("tags-${tagged_item_id}");
 
             var options = ${h.dumps(tagged_item.to_dict())};
+            options.tags = ${h.dumps(item_tag_names)};
             options.id = "${tagged_item_id}";
             options.itemClass = "${tagged_item.__class__.__name__}";
             options.context = "${elt_context}";

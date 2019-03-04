@@ -6,8 +6,8 @@ from galaxy import (
     model,
     util
 )
-from galaxy.tools.parameters.output_collect import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from galaxy.tools.parser import output_collection_def
+from galaxy.tools.provided_metadata import LegacyToolProvidedMetadata, NullToolProvidedMetadata
 from .. import tools_support
 
 DEFAULT_TOOL_OUTPUT = "out1"
@@ -329,7 +329,7 @@ class CollectPrimaryDatasetsTestCase(unittest.TestCase, tools_support.UsesApp, t
         if not os.path.exists(meta_file):
             tool_provided_metadata = NullToolProvidedMetadata()
         else:
-            tool_provided_metadata = LegacyToolProvidedMetadata(None, meta_file)
+            tool_provided_metadata = LegacyToolProvidedMetadata(meta_file)
 
         return self.tool.collect_primary_datasets(self.outputs, tool_provided_metadata, job_working_directory, "txt", input_dbkey="btau")
 

@@ -176,8 +176,7 @@ export default Backbone.View.extend({
 
     /** Load html template */
     _template: function() {
-        return (
-            `<div class="upload-view-composite">
+        return `<div class="upload-view-composite">
                 <div class="upload-top">
                     <div class="upload-top-info">&nbsp;</div>
                 </div>
@@ -205,7 +204,6 @@ export default Backbone.View.extend({
                     <span class="upload-footer-genome"/>
                 </div>
                 <div class="upload-buttons"/>
-            </div>`
-        );
+            </div>`;
     }
 });

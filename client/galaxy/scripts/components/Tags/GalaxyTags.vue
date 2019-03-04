@@ -5,8 +5,9 @@
             @click.prevent="toggleTagDisplay">
             {{ linkText | localize }}
         </a>
-        <vue-tags-input class="tag-area" 
-            v-if="tagsVisible" 
+        <vue-tags-input
+            class="tag-area"
+            v-if="tagsVisible"
             v-model="tagText"
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
@@ -25,7 +26,6 @@
 </template>
 
 <script>
-
 import VueTagsInput from "@johmun/vue-tags-input";
 import { createTag } from "./model";
 
@@ -35,7 +35,7 @@ export default {
     },
     props: {
         value: { type: Array, required: false, default: () => [] },
-        autocompleteItems: { type: Array, required: false, default: () => ([]) },
+        autocompleteItems: { type: Array, required: false, default: () => [] },
         maxVisibleTags: { type: Number, required: false, default: 5 },
         useToggleLink: { type: Boolean, required: false, default: true },
         disabled: { type: Boolean, required: false, default: false }
@@ -47,7 +47,7 @@ export default {
         return { 
             tagText: "",
             tagToggle: !isClosed
-        }
+        };
     },
     computed: {
         tagContainerClasses() {
@@ -66,7 +66,7 @@ export default {
             return `${this.tagModels.length} Tags`;
         },
         linkVisible() {
-            return this.useToggleLink && (this.tagModels.length > this.maxVisibleTags);
+            return this.useToggleLink && this.tagModels.length > this.maxVisibleTags;
         },
         tagsVisible() {
             return this.useToggleLink ? this.tagToggle : true;
@@ -79,7 +79,7 @@ export default {
     },
     methods: {
         tagsChanged(newTags) {
-            this.$emit('input', this.pluckLabels(newTags));
+            this.$emit("input", this.pluckLabels(newTags));
         },
         pluckLabels(newTags) {
             return newTags.map(t => createTag(t).toString());
@@ -111,8 +111,83 @@ export default {
             return Object.keys(this.$listeners).includes(eventName);
         }
     }
-}
-
+};
 </script>
 
-<style lang="scss" src="./tagStyles.scss"></style>
+<style lang="scss">
+@import "theme/blue";
+@import "scss/mixins";
+
+// Puts a little graphic in place of the text-input
+// when the input is not in focus
+@mixin newTagHoverButton() {
+    .vue-tags-input .ti-tags .ti-new-tag-input-wrapper {
+        input {
+            background-color: transparent;
+        }
+        input:not(:focus) {
+            background: url("/static/images/fugue/tag--plus.png");
+            background-repeat: no-repeat;
+            color: transparent;
+            &::placeholder {
+                color: transparent;
+            }
+        }
+    }
+}
+
+// hides tag container edges
+@mixin hideEditorBorders() {
+    .vue-tags-input {
+        // need to add yet another class to beat the scoping
+        &.tag-area {
+            background-color: transparent;
+        }
+        .ti-input {
+            border: none;
+        }
+    }
+}
+
+// general style butchering
+@mixin matchBootstrapStyling() {
+    .vue-tags-input {
+        @include fill();
+        .ti-input {
+            padding: 0;
+        }
+        .ti-tag {
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 400;
+        }
+    }
+}
+
+// Version of the tags that only allow clicking
+// existing tags instead of the full editing UI
+@mixin forDisplayOnly() {
+    .vue-tags-input {
+        .ti-actions,
+        .ti-new-tag-input-wrapper {
+            display: none;
+        }
+    }
+}
+
+.galaxy-tags {
+    // adds in a graphic in place of the text input
+    @include newTagHoverButton();
+
+    // match bootstrap tag styles/colors
+    @include matchBootstrapStyling();
+
+    // removes input borders (not sure if this happens everywhere)
+    @include hideEditorBorders();
+
+    // display-only tags
+    &.disabled {
+        @include forDisplayOnly();
+    }
+}
+</style>

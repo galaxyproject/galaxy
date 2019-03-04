@@ -9,18 +9,18 @@ import logging
 
 from galaxy import web
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController
+from galaxy.web.base.controller import JSAppLauncher
 
 log = logging.getLogger(__name__)
 
 
-class OIDC(BaseUIController):
+class OIDC(JSAppLauncher):
 
     @web.expose
     @web.require_login("list third-party identities")
     def index(self, trans, **kwargs):
         """
-        GET /api/authnz/
+        GET /authnz/
             returns a list of third-party identities associated with the user.
 
         :type  trans: galaxy.web.framework.webapp.GalaxyWebTransaction
@@ -74,17 +74,7 @@ class OIDC(BaseUIController):
                                             "identity provider. Please try again, and if the problem persists, "
                                             "contact the Galaxy instance admin.".format(provider))
         trans.handle_user_login(user)
-        return trans.fill_template('/user/login.mako',
-                                   login=user.username,
-                                   header="",
-                                   use_panels=False,
-                                   redirect_url=redirect_url,
-                                   redirect=redirect_url,
-                                   refresh_frames='refresh_frames',
-                                   message="You are now logged in as `{}.`".format(user.username),
-                                   status='done',
-                                   form_input_auto_focus=True,
-                                   active_view="user")
+        return self.client(trans)
 
     @web.expose
     @web.require_login("authenticate against the selected identity provider")

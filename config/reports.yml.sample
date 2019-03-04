@@ -48,6 +48,14 @@ uwsgi:
   # Reports, etc.) that you are loading.
   module: galaxy.webapps.reports.buildapp:uwsgi_app()
 
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # URL prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
+  # points. Set this to true if a URL prefix is used.
+  manage-script-name: false
+
   # It is usually a good idea to set this to ``true`` if processes is
   # greater than 1.
   thunder-lock: false
@@ -72,34 +80,27 @@ uwsgi:
 
 reports:
 
-  # If running behind a proxy server and Galaxy is served from a
-  # subdirectory, enable the proxy-prefix filter and set the prefix in
-  # the [filter:proxy-prefix] section above.
-  #filter-with: proxy-prefix
-
-  # If proxy-prefix is enabled and you're running more than one Galaxy
-  # instance behind one hostname, you will want to set this to the same
-  # path as the prefix in the filter above.  This value becomes the
-  # "path" attribute set in the cookie so the cookies from each instance
-  # will not clobber each other.
+  # When running multiple Galaxy Reports instances under separate URL
+  # prefixes on a single hostname, you will want to set this to the same
+  # path as the prefix set in the uWSGI "mount" configuration option
+  # above. This value becomes the "path" attribute set in the cookie so
+  # the cookies from one instance will not clobber those from another.
   #cookie_path: null
 
   # Verbosity of console log messages.  Acceptable values can be found
   # here: https://docs.python.org/2/library/logging.html#logging-levels
   #log_level: DEBUG
 
-  # Database connection Galaxy reports are intended for production
+  # Database connection. Galaxy Reports are intended for production
   # Galaxy instances, so sqlite (and the default value below) is not
   # supported. An SQLAlchemy connection string should be used specify an
   # external database.
   #database_connection: 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
 
-  # Where dataset files are saved Temporary storage for additional
-  # datasets, this should be shared through the cluster
+  # Where dataset files are stored.
   #file_path: database/files
 
-  # Where dataset files are saved Temporary storage for additional
-  # datasets, this should be shared through the cluster
+  # Where temporary files are stored.
   #new_file_path: database/tmp
 
   # Mako templates are compiled as needed and cached for reuse, this

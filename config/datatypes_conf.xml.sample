@@ -3,6 +3,19 @@
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'ab1' format with a '.ab1' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Ab1"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
+    <datatype extension="anvio_cog_profile" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" subclass="true" />
+    <datatype extension="anvio_composite" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" />
+    <datatype extension="anvio_classifier" type="galaxy.datatypes.data:Data" display_in_upload="false" subclass="true" />
+    <datatype extension="anvio_contigs_db" type="galaxy.datatypes.anvio:AnvioContigsDB" display_in_upload="false" />
+    <datatype extension="anvio_db" type="galaxy.datatypes.anvio:AnvioDB" display_in_upload="false" />
+    <datatype extension="anvio_genomes_db" type="galaxy.datatypes.anvio:AnvioGenomesDB" display_in_upload="false" />
+    <datatype extension="anvio_pan_db" type="galaxy.datatypes.anvio:AnvioPanDB" display_in_upload="false" />
+    <datatype extension="anvio_pfam_profile" type="galaxy.datatypes.anvio:AnvioComposite" display_in_upload="false" subclass="true" />
+    <datatype extension="anvio_profile_db" type="galaxy.datatypes.anvio:AnvioProfileDB" display_in_upload="false" />
+    <datatype extension="anvio_samples_db" type="galaxy.datatypes.anvio:AnvioSamplesDB" display_in_upload="false" />
+    <datatype extension="anvio_state" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false" />
+    <datatype extension="anvio_structure_db" type="galaxy.datatypes.anvio:AnvioStructureDB" display_in_upload="false" />
+    <datatype extension="anvio_variability" type="galaxy.datatypes.tabular:TSV" display_in_upload="false" subclass="true" />
     <datatype extension="arff" type="galaxy.datatypes.text:Arff" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true"/>
     <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -219,6 +232,12 @@
     <datatype extension="idxml" type="galaxy.datatypes.proteomics:IdXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="tandem" type="galaxy.datatypes.proteomics:TandemXML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="thermo.raw" type="galaxy.datatypes.proteomics:ThermoRAW" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="brukerbaf.d.tar" type="galaxy.datatypes.binary:BafTar" display_in_upload="true"/>
+    <datatype extension="agilentbrukeryep.d.tar" type="galaxy.datatypes.binary:YepTar" display_in_upload="true"/>
+    <datatype extension="brukertdf.d.tar" type="galaxy.datatypes.binary:TdfTar" display_in_upload="true"/>
+    <datatype extension="agilentmasshunter.d.tar" type="galaxy.datatypes.binary:MassHunterTar" display_in_upload="true"/>
+    <datatype extension="watersmasslynx.raw.tar" type="galaxy.datatypes.binary:MassLynxTar" display_in_upload="true"/>
+    <datatype extension="wiff.tar" type="galaxy.datatypes.binary:WiffTar" display_in_upload="true"/>
     <datatype extension="mzml" type="galaxy.datatypes.proteomics:MzML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="nmrml" type="galaxy.datatypes.proteomics:NmrML" mimetype="application/xml" display_in_upload="true" description="nmrML is an open mark-up language for NMR data." description_url="http://nmrml.org/schema/"/>
     <datatype extension="mgf" type="galaxy.datatypes.proteomics:Mgf" display_in_upload="true"/>
@@ -738,6 +757,8 @@
     <sniffer type="galaxy.datatypes.binary:Biom2"/>
     <sniffer type="galaxy.datatypes.binary:H5"/>
     <sniffer type="galaxy.datatypes.binary:Bam"/>
+    <sniffer type="galaxy.datatypes.binary:BamQuerynameSorted"/>
+    <sniffer type="galaxy.datatypes.binary:BamNative"/>
     <sniffer type="galaxy.datatypes.binary:CRAM"/>
     <sniffer type="galaxy.datatypes.binary:Sff"/>
     <sniffer type="galaxy.datatypes.binary:Sra"/>
@@ -745,6 +766,12 @@
     <sniffer type="galaxy.datatypes.binary:DAA"/>
     <sniffer type="galaxy.datatypes.binary:RMA6"/>
     <sniffer type="galaxy.datatypes.binary:DMND"/>
+    <sniffer type="galaxy.datatypes.binary:BafTar"/>
+    <sniffer type="galaxy.datatypes.binary:TdfTar"/>
+    <sniffer type="galaxy.datatypes.binary:MassHunterTar"/>
+    <sniffer type="galaxy.datatypes.binary:MassLynxTar"/>
+    <sniffer type="galaxy.datatypes.binary:YepTar"/>
+    <sniffer type="galaxy.datatypes.binary:WiffTar"/>
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveGz"/>
     <sniffer type="galaxy.datatypes.binary:Fast5ArchiveBz2"/>
     <sniffer type="galaxy.datatypes.binary:Fast5Archive"/>

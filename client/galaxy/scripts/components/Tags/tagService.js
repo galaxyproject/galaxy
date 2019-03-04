@@ -13,12 +13,11 @@ import { createTag } from "./model";
 import { Subject } from "rxjs";
 import { filter, debounceTime, switchMap, distinctUntilChanged } from "rxjs/operators";
 
-
 export function buildTagService({ id, itemClass, context, debounceInterval = 150 }) {
 
     /**
      * Save tag, input can be text string or tag model
-     * @param {string|Tag} tag 
+     * @param {string|Tag} tag
      * @returns Promise yielding new tag model
      */
     async function saveTag(rawTag) {
@@ -33,7 +32,7 @@ export function buildTagService({ id, itemClass, context, debounceInterval = 150
 
     /**
      * Delete tag, input can be text string or tag model
-     * @param {string|Tag} tag 
+     * @param {string|Tag} tag
      * @returns Promise yielding deleted tag model
      */
     async function deleteTag(rawTag) {
@@ -48,7 +47,7 @@ export function buildTagService({ id, itemClass, context, debounceInterval = 150
 
     /**
      * Looks up autocomplete options based on search text
-     * @param {string} searchText 
+     * @param {string} searchText
      * @returns Promise yielding an array of tag models
      */
     async function autocomplete(searchText) {
@@ -66,7 +65,6 @@ export function buildTagService({ id, itemClass, context, debounceInterval = 150
     const _searchText = new Subject();
 
     return {
-
         // saves a single tag
         save: saveTag,
 
@@ -77,7 +75,7 @@ export function buildTagService({ id, itemClass, context, debounceInterval = 150
         // exposed for testing purposes only, in practice a consuming component
         // will set the autocompleteSearchText property and observe results by
         // subscribing to the autocompleteOptions observable property
-        autocomplete, 
+        autocomplete,
 
         // input point for autocomplete text search
         set autocompleteSearchText(txt) {
@@ -92,17 +90,17 @@ export function buildTagService({ id, itemClass, context, debounceInterval = 150
             distinctUntilChanged(),
             switchMap(autocomplete)
         )
-    }
+    };
 }
 
-
 /**
- * Parser for the archaic result format in the current API. 
+ * Parser for the archaic result format in the current API.
  * See testData/autocompleteResponse.txt for a sample
- * @param {string} rawResponse 
+ * @param {string} rawResponse
  */
 export function parseAutocompleteResults(rawResponse) {
-    return rawResponse.split("\n")
+    return rawResponse
+        .split("\n")
         .filter(line => line.includes("|"))
         .map(line => line.split("|")[0])
         .filter(label => label.length)
