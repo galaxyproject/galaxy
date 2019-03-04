@@ -21,7 +21,7 @@
                     @filtered="filtered"
                 >
                     <template slot="name" slot-scope="data">
-                        <i v-if="data.item.history_content_type == 'dataset'" class="fa fa-file-o" />
+                        <i v-if="isDataset(data.item)" class="fa fa-file-o"/>
                         <i v-else class="fa fa-copy" /> {{ data.item.hid }}: {{ data.value }}
                     </template>
                     <template slot="extension" slot-scope="data">
@@ -83,6 +83,9 @@ export default {
         this.load();
     },
     methods: {
+        isDataset: function(item) {
+            return item.history_content_type == "dataset";
+        },
         filtered: function(items) {
             this.nItems = items.length;
         },
