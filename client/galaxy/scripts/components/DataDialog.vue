@@ -17,7 +17,7 @@
                     :items="items"
                     :fields="fields"
                     :filter="filter"
-                    @row-clicked="clicked"
+                    @row-clicked="selected"
                     @filtered="filtered"
                 >
                     <template slot="name" slot-scope="data">
@@ -30,11 +30,46 @@
                     <template slot="update_time" slot-scope="data">
                         {{ data.value ? data.value.substring(0, 16).replace("T", " ") : "-" }}
                     </template>
+                    <template slot="arrow" slot-scope="data">
+                        <b-button variant="link" size="sm"
+                            class="py-0"
+                            v-if="!isDataset(data.item)"
+                            @click.stop="load(data.item.url)">
+                            View
+                        </b-button>
+                    </template>
                 </b-table>
-                <div v-if="nItems == 0">No search results found for: {{ this.filter }}.</div>
+                <div v-if="nItems == 0">
+                    <div v-if="filter">
+                        No search results found for: <b>{{ this.filter }}</b>.
+                    </div>
+                    <div v-else>
+                        No entries.
+                    </div>
+                </div>
             </div>
-            <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
+            <div v-else>
+                <span class="fa fa-spinner fa-spin"/>
+                <span>Please wait...</span>
+            </div>
         </div>
+        <div slot="modal-footer" class="w-100">
+            <b-btn size="sm" class="float-left"
+                v-if="undoShow"
+                @click="load()">
+                <div class="fa fa-caret-left mr-1"/>Back
+            </b-btn>
+            <b-btn size="sm" class="float-right ml-1"
+                variant="primary"
+                @click="done"
+                :disabled="values.length === 0">
+                Ok
+            </b-btn>
+            <b-btn size="sm" class="float-right"
+                @click="modalShow=false">
+                Cancel
+            </b-btn>
+         </div>
     </b-modal>
 </template>
 
@@ -52,6 +87,14 @@ export default {
         callback: {
             type: Function,
             required: true
+        },
+        multiple: {
+            type: Boolean,
+            default: false
+        },
+        format: {
+            type: String,
+            default: "url"
         }
     },
     data() {
@@ -65,8 +108,25 @@ export default {
                 },
                 update_time: {
                     sortable: true
+                },
+                arrow: {
+                    label: "",
+                    sortable: false,
+                    "class": "text-right"
                 }
             },
+            url: null,
+            values: [],
+            valuesType: null,
+            filter: null,
+            nItems: 0,
+            items: [],
+            errorMessage: null,
+            errorShow: true,
+            modalShow: true,
+            undoShow: false,
+            optionsShow: false,
+
             filter: null,
             nItems: 0,
             currentPage: 0,
@@ -94,7 +154,23 @@ export default {
             this.callback(`${host}/${record.url}/display`);
             this.modalShow = false;
         },
-        load: function() {
+        selected: function(record) {
+            if (!this.multiple || this.valuesType !== record.history_content_type) {
+                this.values = [];
+                this.valuesType = record.history_content_type;
+            }
+            let found = this.values.findIndex(value =>
+                ["id", "history_content_type"]
+                .every(key => value[key] == record[key]));
+            if (found == -1) {
+                this.values.push(record);
+            } else {
+                this.values.splice(found, 1);
+            }
+            this.items.every(item => item._rowVariant = "default");
+            this.values.every(value => value._rowVariant = "success");
+        },
+        load_legacy: function() {
             let Galaxy = getGalaxyInstance();
             this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
             if (this.historyId) {
@@ -115,6 +191,63 @@ export default {
             } else {
                 this.errorMessage = "History not accessible.";
             }
+        },
+        done: function() {
+            let results = [];
+            this.values.forEach(v => {
+                let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+                results.push(`${host}/api/histories/${v.history_id}/contents/${v.id}/display`);
+            });
+            if (results.length > 0 && !this.multiple) {
+                results = results[0];
+            }
+            this.modalShow = false;
+            this.callback(results);
+        },
+        load: function(url) {
+            let Galaxy = getGalaxyInstance();
+            this.optionsShow = false;
+            this.undoShow = false;
+            let hasUrl = !!url;
+            if (!hasUrl) {
+                let historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
+                if (historyId) {
+                    url = `${Galaxy.root}api/histories/${historyId}/contents`;
+                } else {
+                    this.errorMessage = "History not accessible.";
+                    return;
+                }
+            }
+            axios
+                .get(url)
+                .then(response => {
+                    this.items = [];
+                    this.stack = [response.data];
+                    while (this.stack.length > 0) {
+                        let root = this.stack.pop();
+                        if (Array.isArray(root)) {
+                            root.forEach(element => {
+                                this.stack.push(element);
+                            });
+                        } else if (root.elements) {
+                            this.stack.push(root.elements);
+                        } else if (root.object) {
+                            this.stack.push(root.object);
+                        } else if (root.hid) {
+                            this.items.push(root);
+                            window.console.log(root);
+                        }
+                    }
+                    this.optionsShow = true;
+                    this.undoShow = hasUrl;
+                })
+                .catch(e => {
+                    if (e.response) {
+                        this.errorMessage = e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
+                    } else {
+                        this.errorMessage = "Server unavailable.";
+                    }
+                });
         }
     }
 };
@@ -122,6 +255,7 @@ export default {
 <style>
 .data-dialog-modal .modal-body {
     max-height: 50vh;
+    height: 50vh;
     overflow-y: auto;
 }
 </style>
