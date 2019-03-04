@@ -8,7 +8,7 @@ Most performance tracking requires sending metrics to a metrics collection serve
 uWSGI
 -----
 
-As you have certainly switched to uWSGI from the default paste server, there is some built-in uWSGI support for performance logging. You can send uWSGI's internal metrics to a carbon (Graphite) server by setting the carbon option in your galaxy.yml:
+There is some built-in uWSGI support for performance logging. You can send uWSGI's internal metrics to a carbon (Graphite) server by setting the carbon option in your galaxy.yml:
 
 .. code-block:: yaml
 
