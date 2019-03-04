@@ -1,10 +1,8 @@
 import logging
 import subprocess
 
-from galaxy.datatypes import (
-    data,
-    get_file_peek
-)
+from galaxy.datatypes import data
+from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
 
 log = logging.getLogger(__name__)
