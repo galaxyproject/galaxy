@@ -545,6 +545,8 @@ QUnit.module("Node view ", {
             input_terminals: {},
             output_terminals: {},
             markChanged: function() {},
+            hasConnectedOutputTerminals: function() {},
+            connectedMappedInputTerminals: function() {},
             terminalMapping: { disableMapOver: function() {} }
         });
     },
