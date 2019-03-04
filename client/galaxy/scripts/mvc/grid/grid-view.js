@@ -30,11 +30,11 @@ export default Backbone.View.extend({
 
         // Subscribe to changes in the store, currently just storing
         // tag changes from the tagging components, but that will change
-        // when we rework the grid. This subscription ties this older grid 
+        // when we rework the grid. This subscription ties this older grid
         // code to the new vue components
         store.watch(
-            (state) => state.gridSearch.searchTags,
-            (newTags) => {
+            state => state.gridSearch.searchTags,
+            newTags => {
                 let tagArray = Array.from(newTags);
                 self.grid.add_filter("tags", tagArray, false);
                 self.openAdvancedSearch();
@@ -113,7 +113,7 @@ export default Backbone.View.extend({
 
         // append main template
         this.$el.html(Templates.grid(options));
-        
+
         // add a class identifier for styling purposes
         this.$el.addClass(this.getRootClassName(grid_config));
 
@@ -336,7 +336,6 @@ export default Backbone.View.extend({
     },
 
     render_filter_button: function(name, value) {
-
         // Add button that displays filter and provides a button to delete it.
         var t = $(Templates.filter_element(name, value));
         var self = this;
@@ -354,10 +353,10 @@ export default Backbone.View.extend({
     },
 
     // Remove a condition to the grid filter; this adds the condition and refreshes the grid.
-    remove_filter_condition: function(name, value) {  
+    remove_filter_condition: function(name, value) {
         // Remove filter condition.
         this.grid.remove_filter(name, value);
-        
+
         // update vuex if the one criteria we're currently tracking changes
         if (name == "tags") {
             store.dispatch("removeSearchTag", { text: value });
@@ -701,5 +700,4 @@ export default Backbone.View.extend({
     getRootClassName({ title = "grid" }) {
         return slug(title).toLowerCase();
     }
-
 });

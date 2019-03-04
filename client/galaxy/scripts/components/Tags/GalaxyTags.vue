@@ -1,12 +1,11 @@
 <template>
     <div :class="tagContainerClasses">
-        <a href="#" class="toggle-link" 
-            v-if="linkVisible"
-            @click.prevent="toggleTagDisplay">
+        <a href="#" class="toggle-link" v-if="linkVisible" @click.prevent="toggleTagDisplay">
             {{ linkText | localize }}
         </a>
-        <vue-tags-input class="tag-area" 
-            v-if="tagsVisible" 
+        <vue-tags-input
+            class="tag-area"
+            v-if="tagsVisible"
             v-model="tagText"
             :tags="tagModels"
             :autocomplete-items="autocompleteTags"
@@ -15,9 +14,9 @@
             :add-on-key="[13, ' ']"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
-            @tags-changed="tagsChanged">
-            <div class="tag-name" slot="tag-center" slot-scope="tagProps" 
-                @click="$emit('tag-click', tagProps.tag)">
+            @tags-changed="tagsChanged"
+        >
+            <div class="tag-name" slot="tag-center" slot-scope="tagProps" @click="$emit('tag-click', tagProps.tag)">
                 {{ tagProps.tag.text }}
             </div>
         </vue-tags-input>
@@ -25,7 +24,6 @@
 </template>
 
 <script>
-
 import VueTagsInput from "@johmun/vue-tags-input";
 import { createTag } from "./model";
 
@@ -35,29 +33,28 @@ export default {
     },
     props: {
         value: { type: Array, required: false, default: () => [] },
-        autocompleteItems: { type: Array, required: false, default: () => ([]) },
+        autocompleteItems: { type: Array, required: false, default: () => [] },
         maxVisibleTags: { type: Number, required: false, default: 5 },
         useToggleLink: { type: Boolean, required: false, default: true },
         disabled: { type: Boolean, required: false, default: false }
     },
     data() {
-        
         // initialize toggle value
-        let isClosed = this.useToggleLink && (this.value.length > this.maxVisibleTags);
-        
-        return { 
+        let isClosed = this.useToggleLink && this.value.length > this.maxVisibleTags;
+
+        return {
             // text of the new tag, when editable
             tagText: "",
             // if list is too long and we're using the toggle, then hide the tags
             tagToggle: !isClosed
-        }
+        };
     },
     computed: {
         tagContainerClasses() {
             return {
                 "galaxy-tags": true,
-                "disabled": this.disabled
-            }
+                disabled: this.disabled
+            };
         },
         tagModels() {
             return this.value.map(createTag);
@@ -69,7 +66,7 @@ export default {
             return `${this.tagModels.length} Tags`;
         },
         linkVisible() {
-            return this.useToggleLink && (this.tagModels.length > this.maxVisibleTags);
+            return this.useToggleLink && this.tagModels.length > this.maxVisibleTags;
         },
         tagsVisible() {
             return this.useToggleLink ? this.tagToggle : true;
@@ -82,7 +79,7 @@ export default {
     },
     methods: {
         tagsChanged(newTags) {
-            this.$emit('input', this.pluckLabels(newTags));
+            this.$emit("input", this.pluckLabels(newTags));
         },
         pluckLabels(newTags) {
             return newTags.map(t => createTag(t).toString());
@@ -114,16 +111,14 @@ export default {
             return Object.keys(this.$listeners).includes(eventName);
         }
     }
-}
-
+};
 </script>
 
 <style lang="scss">
-
 @import "theme/blue";
 @import "scss/mixins";
 
-// Puts a little graphic in place of the text-input 
+// Puts a little graphic in place of the text-input
 // when the input is not in focus
 @mixin newTagHoverButton() {
     .vue-tags-input .ti-tags .ti-new-tag-input-wrapper {
@@ -145,7 +140,7 @@ export default {
 @mixin hideEditorBorders() {
     .vue-tags-input {
         // need to add yet another class to beat the scoping
-        &.tag-area { 
+        &.tag-area {
             background-color: transparent;
         }
         .ti-input {
@@ -154,7 +149,7 @@ export default {
     }
 }
 
-// general style butchering 
+// general style butchering
 @mixin matchBootstrapStyling() {
     .vue-tags-input {
         @include fill();
@@ -181,7 +176,6 @@ export default {
 }
 
 .galaxy-tags {
-
     // adds in a graphic in place of the text input
     @include newTagHoverButton();
 
@@ -196,5 +190,4 @@ export default {
         @include forDisplayOnly();
     }
 }
-
 </style>
