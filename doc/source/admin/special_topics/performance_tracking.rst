@@ -22,7 +22,7 @@ Or a StatsD server via:
 
    wsgi:
       socket: ...
-      statsd-push: 127.0.0.1:8125
+      stats-push: statsd:127.0.0.1:8125
 
 The `official documentation <https://uwsgi-docs.readthedocs.io/en/latest/Metrics.html#stats-pushers>`__ contains further information on uWSGI and stats servers. In the `uWSGI Stats Server <https://uwsgi-docs.readthedocs.io/en/latest/StatsServer.html>` documentation, you can see an example of the sort of information that you will be able to collect.
 
