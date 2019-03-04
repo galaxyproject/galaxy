@@ -4,26 +4,9 @@ import subprocess
 from galaxy.datatypes import data
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.util.generic_util import count_special_lines
 
 log = logging.getLogger(__name__)
-
-
-def count_special_lines(word, filename, invert=False):
-    """
-        searching for special 'words' using the grep tool
-        grep is used to speed up the searching and counting
-        The number of hits is returned.
-    """
-    try:
-        cmd = ["grep", "-c"]
-        if invert:
-            cmd.append('-v')
-        cmd.extend([word, filename])
-        out = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        return int(out.communicate()[0].split()[0])
-    except Exception:
-        pass
-    return 0
 
 
 def count_lines(filename, non_empty=False):
