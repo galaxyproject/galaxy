@@ -38,16 +38,39 @@ jobs:
               ' >> ~/.ssh/known_hosts
 
               # add the user ssh key and set correct perms
-              umask 077
-              echo "$CHECKOUT_KEY" > ~/.ssh/id_rsa
+              (umask 077; touch ~/.ssh/id_rsa)
               chmod 0600 ~/.ssh/id_rsa
+              echo "$CHECKOUT_KEY" > ~/.ssh/id_rsa
 
               # use git+ssh instead of https
               git config --global url."ssh://git@github.com".insteadOf "https://github.com" || true
               git config --global gc.auto 0 || true
 
-              # get shallow clone of single repo branch for speed purposes
-              git clone --depth=1 --single-branch -b $CIRCLE_BRANCH git@github.com:$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME ~/repo
+              # Shallow clone
+              git clone --depth=1 "${CIRCLE_REPOSITORY_URL}" .
+
+              if [ -n "$CIRCLE_TAG" ]
+              then
+                git fetch --depth=10 --force origin "refs/tags/${CIRCLE_TAG}"
+              elif [[ "$CIRCLE_BRANCH" =~ ^pull\/* ]]
+              then
+              # For PR from Fork
+                git fetch --depth=10 --force origin "$CIRCLE_BRANCH/head:remotes/origin/$CIRCLE_BRANCH"
+              else
+                git fetch --depth=10 --force origin "$CIRCLE_BRANCH:remotes/origin/$CIRCLE_BRANCH"
+              fi
+
+              if [ -n "$CIRCLE_TAG" ]
+              then
+                git reset --hard "$CIRCLE_SHA1"
+                git checkout -q "$CIRCLE_TAG"
+              elif [ -n "$CIRCLE_BRANCH" ]
+              then
+                git reset --hard "$CIRCLE_SHA1"
+                git checkout -q -B "$CIRCLE_BRANCH"
+              fi
+
+              git reset --hard "${CIRCLE_SHA1}"
       - save_cache:
           key: v1-repo-{{ .Environment.CIRCLE_SHA1 }}
           paths:
