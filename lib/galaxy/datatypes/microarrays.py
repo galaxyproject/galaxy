@@ -69,7 +69,7 @@ class GenericMicroarrayFile(data.Text):
                 dataset.peek = get_n_first_lines(dataset.file_name, n=3)
             else:
                 dataset.blurb = "%s blocks %s recodrs" % (dataset.metadata.number_of_blocks, dataset.metadata.number_of_records)
-                dataset.peek = get_n_first_lines(dataset.file_name, n=3)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
