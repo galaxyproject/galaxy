@@ -102,7 +102,8 @@ class UsesTools(object):
 
     def __write_tool(self, contents, path=None):
         path = path or self.tool_file
-        open(path, "w").write(contents)
+        with open(path, "w") as out:
+            out.write(contents)
 
 
 class MockContext(object):
