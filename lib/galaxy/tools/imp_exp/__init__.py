@@ -398,7 +398,7 @@ class JobExportHistoryArchiveWrapper:
 
         # Get all jobs associated with included HDAs.
         jobs_dict = {}
-        for hda in included_datasets:
+        for hda in (included_datasets + provenance_attrs):
             # Get the associated job, if any. If this hda was copied from another,
             # we need to find the job that created the origial hda
             job_hda = hda
