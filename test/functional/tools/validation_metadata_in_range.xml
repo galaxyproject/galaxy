@@ -3,7 +3,7 @@
     echo "Hello World" > out1;
   </command>
   <inputs>
-    <param name="input1" type="data" format="fasta" label="fasta file with more than 10 sequences">
+    <param name="input1" type="data" format="fasta" label="fasta file with more than one sequence">
       <validator type="dataset_metadata_in_range" metadata_name="sequences" min="2"/>
     </param>
   </inputs>

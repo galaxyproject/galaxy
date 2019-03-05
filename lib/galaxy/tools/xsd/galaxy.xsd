@@ -5305,6 +5305,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="empty_field"/>
       <xs:enumeration value="dataset_metadata_in_file"/>
       <xs:enumeration value="dataset_metadata_in_data_table"/>
+      <xs:enumeration value="dataset_metadata_in_range"/>
       <xs:enumeration value="dataset_ok_validator"/>
     </xs:restriction>
   </xs:simpleType>
