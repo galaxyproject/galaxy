@@ -2127,7 +2127,7 @@ mapper(model.Job, model.Job.table, properties=dict(
     # user=relation( model.User.mapper ),
     user=relation(model.User),
     galaxy_session=relation(model.GalaxySession),
-    history=relation(model.History),
+    history=relation(model.History, backref="jobs"),
     library_folder=relation(model.LibraryFolder, lazy=True),
     parameters=relation(model.JobParameter, lazy=True),
     input_datasets=relation(model.JobToInputDatasetAssociation),

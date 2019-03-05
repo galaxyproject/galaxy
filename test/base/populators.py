@@ -568,6 +568,11 @@ class BaseDatasetPopulator(object):
         self.wait_for_history(imported_history_id)
         return imported_history_id
 
+    def rename_history(self, history_id, new_name):
+        update_url = "histories/%s" % history_id
+        put_response = self._put(update_url, {"name": new_name})
+        return put_response
+
     def get_histories(self):
         history_index_response = self._get("histories")
         api_asserts.assert_status_code_is(history_index_response, 200)
@@ -576,12 +581,16 @@ class BaseDatasetPopulator(object):
     def wait_on_history_length(self, history_id, wait_on_history_length):
 
         def history_has_length():
-            contents_response = self._get("histories/%s/contents" % history_id)
-            api_asserts.assert_status_code_is(contents_response, 200)
-            contents = contents_response.json()
-            return None if len(contents) != wait_on_history_length else True
+            history_length = self.history_length(history_id)
+            return None if history_length != wait_on_history_length else True
 
         wait_on(history_has_length, desc="import history population")
+
+    def history_length(self, history_id):
+        contents_response = self._get("histories/%s/contents" % history_id)
+        api_asserts.assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        return len(contents)
 
     def reimport_history(self, history_id, history_name, wait_on_history_length, export_kwds, url, api_key):
         # Export the history.
