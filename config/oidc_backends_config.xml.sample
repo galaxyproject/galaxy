@@ -22,6 +22,8 @@
          login to Galaxy using their Google account.
         -->
     </provider>
+
+    <!-- Documentation: http://globus-integration-examples.readthedocs.io -->
     <provider name="Globus">
         <client_id> ... </client_id>
         <client_secret> ... /client_secret>
