@@ -366,11 +366,6 @@ class JobContext(object):
             primary_data.visible = visible
             primary_data.dbkey = dbkey
 
-        # Copy metadata from one of the inputs if requested.
-        metadata_source = None
-        if metadata_source_name:
-            metadata_source = self.inp_data[metadata_source_name]
-
         sa_session.flush()
 
         if tag_list:
@@ -387,6 +382,11 @@ class JobContext(object):
         # If match specified a name use otherwise generate one from
         # designation.
         primary_data.name = name
+
+        # Copy metadata from one of the inputs if requested.
+        metadata_source = None
+        if metadata_source_name:
+            metadata_source = self.inp_data[metadata_source_name]
 
         if metadata_source:
             primary_data.init_meta(copy_from=metadata_source)
