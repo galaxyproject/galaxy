@@ -284,6 +284,7 @@ def __mock_tool(
                                           format='input',
                                           format_source=None,
                                           change_format=[],
+                                          filters=[],
                                           label=None)},
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
