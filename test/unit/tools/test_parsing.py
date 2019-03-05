@@ -485,6 +485,7 @@ class CollectionTestCase(BaseLoaderTestCase):
         tests = tests_dict["tests"]
         assert len(tests) == 2
         assert len(tests[0]["inputs"]) == 3, tests[0]
+
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 0
 
@@ -505,3 +506,16 @@ class CollectionOutputYamlTestCase(BaseLoaderTestCase):
     def test_tests(self):
         outputs, output_collections = self._tool_source.parse_outputs(None)
         assert len(output_collections) == 1
+
+
+class ExpectationsTestCase(BaseLoaderTestCase):
+    source_file_name = os.path.join(os.getcwd(), "test/functional/tools/detect_errors.xml")
+    source_contents = None
+
+    def test_tests(self):
+        tests_dict = self._tool_source.parse_tests_to_dict()
+        tests = tests_dict["tests"]
+        assert len(tests) == 10
+        test_0 = tests[0]
+        assert len(test_0["stderr"]) == 1
+        assert len(test_0["stdout"]) == 2

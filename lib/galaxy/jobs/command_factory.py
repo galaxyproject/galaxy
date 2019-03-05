@@ -143,6 +143,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     commands = local_container_script
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
+    commands += " > ../tool_stdout 2> ../tool_stderr"
     log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
