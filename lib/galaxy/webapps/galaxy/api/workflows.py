@@ -564,7 +564,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Builds module models for the workflow editor.
         """
         inputs = payload.get('inputs', {})
-        trans.workflow_build_mode = workflow_building_modes.ENABLED
+        trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload)
         if 'tool_state' not in payload:
             module_state = {}
