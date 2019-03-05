@@ -2074,6 +2074,23 @@ outer_input:
         content = self.dataset_populator.get_history_dataset_details(history_id, wait=True, assert_ok=True)
         assert content["name"] == "foo was replaced"
 
+    @skip_without_tool("hidden_param")
+    def test_hidden_param_in_workflow(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_object = self._run_jobs("""
+class: GalaxyWorkflow
+steps:
+  step1:
+    tool_id: hidden_param
+""", test_data={}, history_id=history_id, wait=False)
+            self.wait_for_invocation_and_jobs(history_id, run_object.workflow_id, run_object.invocation_id)
+            contents = self.__history_contents(history_id)
+            assert len(contents) == 1
+            okay_dataset = contents[0]
+            assert okay_dataset["state"] == "ok"
+            content = self.dataset_populator.get_history_dataset_content(history_id, hid=1)
+            assert content == '1\n'
+
     @skip_without_tool("output_filter")
     def test_optional_workflow_output(self):
         with self.dataset_populator.test_history() as history_id:

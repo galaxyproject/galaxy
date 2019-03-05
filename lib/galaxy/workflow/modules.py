@@ -33,6 +33,7 @@ from galaxy.tools.parameters.basic import (
     ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
+    HiddenToolParameter,
     is_runtime_value,
     parameter_types,
     runtime_to_json,
@@ -889,6 +890,8 @@ class ToolModule(WorkflowModule):
                     skip = not visible or not is_data
                 elif connectable_only:
                     skip = not visible or not (is_data or is_connectable)
+                elif isinstance(input, HiddenToolParameter):
+                    skip = False
                 else:
                     skip = not visible
                 if not skip:
