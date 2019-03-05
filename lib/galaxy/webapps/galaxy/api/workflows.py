@@ -23,6 +23,7 @@ from galaxy.managers import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.tools.parameters import populate_state
+from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
@@ -563,6 +564,7 @@ class WorkflowsAPIController(BaseAPIController, UsesStoredWorkflowMixin, UsesAnn
         Builds module models for the workflow editor.
         """
         inputs = payload.get('inputs', {})
+        trans.workflow_build_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload)
         if 'tool_state' not in payload:
             module_state = {}
