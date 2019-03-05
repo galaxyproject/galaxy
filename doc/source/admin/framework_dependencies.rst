@@ -154,8 +154,15 @@ If this is the case, you can instruct jobs to activate the virtualenv with an ``
         <env file="/cluster/galaxy/venv/bin/activate" />
     </destination>
 
-If your Galaxy server's virtualenv isn't available on the cluster you can create one manually using the instructions
-under `Managing dependencies manually`_.
+If your Galaxy server has a different Python version installed than the one on the cluster worker nodes, you might encounter an error containing this message:
+
+.. code-block:: pytb
+
+	File "/usr/lib/python2.7/weakref.py", line 14, in <module>
+	    from _weakref import (
+	ImportError: cannot import name _remove_dead_weakref
+	
+If you encounter this error or your Galaxy server's virtualenv isn't available on the cluster you can create one manually using the instructions under `Managing dependencies manually`_ and activate it using the above-mentioned ``env`` tag in ``job_conf.xml``.
 
 Pulsar
 ^^^^^^
