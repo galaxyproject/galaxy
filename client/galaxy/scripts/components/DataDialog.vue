@@ -170,28 +170,6 @@ export default {
             this.items.every(item => item._rowVariant = "default");
             this.values.every(value => value._rowVariant = "success");
         },
-        load_legacy: function() {
-            let Galaxy = getGalaxyInstance();
-            this.historyId = Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model.id;
-            if (this.historyId) {
-                axios
-                    .get(`${getAppRoot()}api/histories/${this.historyId}/contents`)
-                    .then(response => {
-                        this.items = response.data;
-                        this.optionsShow = true;
-                    })
-                    .catch(e => {
-                        if (e.response) {
-                            this.errorMessage =
-                                e.response.data.err_msg || `${e.response.statusText} (${e.response.status})`;
-                        } else {
-                            this.errorMessage = "Server unavailable.";
-                        }
-                    });
-            } else {
-                this.errorMessage = "History not accessible.";
-            }
-        },
         done: function() {
             let results = [];
             this.values.forEach(v => {
