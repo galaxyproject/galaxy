@@ -4,41 +4,41 @@ import subprocess
 from galaxy.datatypes import data
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.util.generic_util import count_special_lines
+from galaxy.datatypes.sniff import iter_headers
 
 log = logging.getLogger(__name__)
-
-
-def count_lines(filename, non_empty=False):
-    """
-        counting the number of lines from the 'filename' file
-    """
-    try:
-        out = subprocess.Popen(['wc', '-l', filename], stdout=subprocess.PIPE)
-        return int(out.communicate()[0].split()[0])
-    except Exception:
-        pass
-    return 0
 
 
 class GenericMicroarrayFile(data.Text):
     """
     Abstract class for most of the microarray files.
     """
-    MetadataElement(name="number_of_comments", default=1, desc="Number of comments", readonly=True, visible=True,
-                    optional=True, no_value=0)
-    MetadataElement(name="number_of_blocks", default=1, desc="Number of blocks", readonly=True, visible=True,
-                    optional=True, no_value=0)
-    MetadataElement(name="number_of_records", default=1, desc="Number of records", readonly=True, visible=True,
+    MetadataElement(name="version_number", default="1.0", desc="Version number", readonly=True, visible=True,
+                    optional=True, no_value="1.0")
+    MetadataElement(name="file_format", default="ATF", desc="File format", readonly=True, visible=True,
+                    optional=True, no_value="ATF")
+    MetadataElement(name="number_of_optional_header_records", default=1, desc="Number of optional header records",
+                    readonly=True, visible=True, optional=True, no_value=1)
+    MetadataElement(name="number_of_data_columns", default=1, desc="Number of data columns",
+                    readonly=True, visible=True,
+                    optional=True, no_value=1)
+    MetadataElement(name="file_type", default="GenePix", desc="File type",
+                    readonly=True, visible=True,
+                    optional=True, no_value="GenePix")
+    MetadataElement(name="block_count", default=1, desc="Number of blocks described in the file",
+                    readonly=True, visible=True,
+                    optional=True, no_value=1)
+    MetadataElement(name="block_type", default=0, desc="Type of block",
+                    readonly=True, visible=True,
                     optional=True, no_value=0)
 
     def set_peek(self, dataset, is_multi_byte=False):
         if not dataset.dataset.purged:
-            if dataset.metadata.number_of_blocks == 1:
-                dataset.blurb = "1 block %s recodrs" % dataset.metadata.number_of_records
+            if dataset.metadata.block_count == 1:
+                dataset.blurb = "%s %s: Format %s, 1 block, %s headers and %s columns" % (dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
             else:
-                dataset.blurb = "%s blocks %s recodrs" % (dataset.metadata.number_of_blocks, dataset.metadata.number_of_records)
-            dataset.peek = get_file_peek(dataset.file_name, WIDTH=60, LINE_COUNT=3, line_wrap=False)
+                dataset.blurb = "%s %s: Format %s, %s blocks, %s headers and %s columns" % (dataset.metadata.file_type, dataset.metadata.version_number, dataset.metadata.file_format, dataset.metadata.block_count, dataset.metadata.number_of_optional_header_records, dataset.metadata.number_of_data_columns)
+            dataset.peek = get_file_peek(dataset.file_name)
         else:
             dataset.peek = 'file does not exist'
             dataset.blurb = 'file purged from disk'
@@ -67,26 +67,46 @@ class Gal(GenericMicroarrayFile):
         >>> Gal().sniff(fname)
         False
         """
-        found_genepix = count_special_lines("GenePix", filename) >= 1
-        found_atf = count_special_lines("ATF", filename) >= 1
-        found_blockcount = count_special_lines("BlockCount", filename) >= 1
-        if found_atf * found_genepix * found_blockcount:
-            return True
-        else:
-            return False
+        header = iter_headers(filename, sep="\t", count=3)
+        count = 0
+        for line in header:
+            if count == 0:
+                if "ATF" not in line[0]:
+                    return False
+            elif count == 2:
+                if "GenePix ArrayList" not in line[0]:
+                    return False
+            count += 1
+        return True
 
     def set_meta(self, dataset, **kwd):
         """
-        Set the number of blocks, in the case of Gpr its always one.
+        Set metadata for Gal file.
         """
-        dataset.metadata.number_of_blocks = count_special_lines('^"Block[0-9]', dataset.file_name)
-        dataset.metadata.number_of_comments = count_special_lines('^"', dataset.file_name) + 1
-        dataset.metadata.number_of_records = count_lines(dataset.file_name) - dataset.metadata.number_of_comments - 2
+        super(Gal, self).set_meta(dataset, **kwd)
+        header = iter_headers(dataset.file_name, sep="\t", count=5)
+        count = 0
+        for line in header:
+            if count == 0:
+                dataset.metadata.file_format = str(line[0])
+                dataset.metadata.version_number = str(line[1])
+            elif count == 1:
+                dataset.metadata.number_of_optional_header_records = int(line[0])
+                dataset.metadata.number_of_data_columns = int(line[1])
+            elif count == 2:
+                dataset.metadata.file_type = str(line[0].strip().replace('"', '').split("=")[1])
+            elif count == 3:
+                if "BlockCount" in line[0]:
+                    dataset.metadata.block_count = int(line[0].strip().replace('"', '').split("=")[1])
+            elif count == 4:
+                if "BlockType" in line[0]:
+                    dataset.metadata.block_type = int(line[0].strip().replace('"', '').split("=")[1])
+            count += 1
 
 
 class Gpr(GenericMicroarrayFile):
     """ Gpr File format described at:
-        http://mdc.custhelp.com/app/answers/detail/a_id/18883/#gpr
+            http://mdc.custhelp.com/app/answers/detail/a_id/18883/#gpr
     """
 
     edam_format = "format_3829"
@@ -95,7 +115,7 @@ class Gpr(GenericMicroarrayFile):
 
     def sniff(self, filename):
         """
-        Try to guess if the file is a GPR file.
+        Try to guess if the file is a Gpr file.
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.gpr')
         >>> Gpr().sniff(fname)
@@ -104,18 +124,32 @@ class Gpr(GenericMicroarrayFile):
         >>> Gpr().sniff(fname)
         False
         """
-        found_genepix = count_special_lines("GenePix", filename) >= 1
-        found_atf = count_special_lines("ATF", filename) >= 1
-        found_blockcount = count_special_lines("BlockCount", filename) == 0
-        if found_atf * found_genepix * found_blockcount:
-            return True
-        else:
-            return False
+        header = iter_headers(filename, sep="\t", count=3)
+        count = 0
+        for line in header:
+            if count == 0:
+                if "ATF" not in line[0]:
+                    return False
+            elif count == 2:
+                if "GenePix Results" not in line[0]:
+                    return False
+            count += 1
+        return True
 
     def set_meta(self, dataset, **kwd):
         """
-        Set the number of blocks, in the case of Gpr its always one.
+        Set metadata for Gpr file.
         """
-        dataset.metadata.number_of_blocks = count_special_lines('^"Block', dataset.file_name)
-        dataset.metadata.number_of_comments = count_special_lines('^"', dataset.file_name) + 1
-        dataset.metadata.number_of_records = count_lines(dataset.file_name) - dataset.metadata.number_of_comments - 1
+        super(Gpr, self).set_meta(dataset, **kwd)
+        header = iter_headers(dataset.file_name, sep="\t", count=5)
+        count = 0
+        for line in header:
+            if count == 0:
+                dataset.metadata.file_format = str(line[0])
+                dataset.metadata.version_number = str(line[1])
+            elif count == 1:
+                dataset.metadata.number_of_optional_header_records = int(line[0])
+                dataset.metadata.number_of_data_columns = int(line[1])
+            elif count == 2:
+                dataset.metadata.file_type = str(line[0].strip().replace('"', '').split("=")[1])
+            count += 1
