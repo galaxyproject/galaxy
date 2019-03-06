@@ -99,6 +99,8 @@ export default {
     },
     data() {
         return {
+            errorMessage: null,
+            errorShow: true,
             fields: {
                 name: {
                     sortable: true
@@ -115,18 +117,16 @@ export default {
                     "class": "text-right"
                 }
             },
+            filter: null,
+            historyId: null,
+            items: [],
+            modalShow: true,
+            nItems: 0,
+            optionsShow: false,
+            undoShow: false,
             url: null,
             values: [],
-            valuesType: null,
-            filter: null,
-            nItems: 0,
-            items: [],
-            errorMessage: null,
-            errorShow: true,
-            modalShow: true,
-            undoShow: false,
-            optionsShow: false,
-            historyId: null
+            valuesType: null
         };
     },
     created: function() {
