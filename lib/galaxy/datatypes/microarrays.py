@@ -3,7 +3,10 @@ import logging
 from galaxy.datatypes import data
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import iter_headers
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    iter_headers
+)
 
 log = logging.getLogger(__name__)
 
@@ -46,6 +49,7 @@ class GenericMicroarrayFile(data.Text):
         return 'text/plain'
 
 
+@build_sniff_from_prefix
 class Gal(GenericMicroarrayFile):
     """ Gal File format described at:
             http://mdc.custhelp.com/app/answers/detail/a_id/18883/#gal
@@ -55,7 +59,7 @@ class Gal(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gal"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a Gal file.
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -66,7 +70,7 @@ class Gal(GenericMicroarrayFile):
         >>> Gal().sniff(fname)
         False
         """
-        header = iter_headers(filename, sep="\t", count=3)
+        header = iter_headers(file_prefix, sep="\t", count=3)
         count = 0
         found_gal = False
         found_atf = False
@@ -105,6 +109,7 @@ class Gal(GenericMicroarrayFile):
             count += 1
 
 
+@build_sniff_from_prefix
 class Gpr(GenericMicroarrayFile):
     """ Gpr File format described at:
             http://mdc.custhelp.com/app/answers/detail/a_id/18883/#gpr
@@ -114,7 +119,7 @@ class Gpr(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gpr"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Try to guess if the file is a Gpr file.
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -125,7 +130,7 @@ class Gpr(GenericMicroarrayFile):
         >>> Gpr().sniff(fname)
         False
         """
-        header = iter_headers(filename, sep="\t", count=3)
+        header = iter_headers(file_prefix, sep="\t", count=3)
         count = 0
         found_gpr = False
         found_atf = False
