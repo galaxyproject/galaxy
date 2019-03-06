@@ -91,13 +91,13 @@ class Gal(GenericMicroarrayFile):
         headers = iter_headers(dataset.file_name, sep="\t", count=5)
         for count, line in enumerate(headers):
             if count == 0:
-                dataset.metadata.file_format = str(line[0])
-                dataset.metadata.version_number = str(line[1])
+                dataset.metadata.file_format = line[0]
+                dataset.metadata.version_number = line[1]
             elif count == 1:
                 dataset.metadata.number_of_optional_header_records = int(line[0])
                 dataset.metadata.number_of_data_columns = int(line[1])
             elif count == 2:
-                dataset.metadata.file_type = str(line[0].strip().replace('"', '').split("=")[1])
+                dataset.metadata.file_type = line[0].strip().replace('"', '').split("=")[1]
             elif count == 3:
                 if "BlockCount" in line[0]:
                     dataset.metadata.block_count = int(line[0].strip().replace('"', '').split("=")[1])
@@ -149,11 +149,11 @@ class Gpr(GenericMicroarrayFile):
         headers = iter_headers(dataset.file_name, sep="\t", count=5)
         for count, line in enumerate(headers):
             if count == 0:
-                dataset.metadata.file_format = str(line[0])
-                dataset.metadata.version_number = str(line[1])
+                dataset.metadata.file_format = line[0]
+                dataset.metadata.version_number = line[1]
             elif count == 1:
                 dataset.metadata.number_of_optional_header_records = int(line[0])
                 dataset.metadata.number_of_data_columns = int(line[1])
             elif count == 2:
-                dataset.metadata.file_type = str(line[0].strip().replace('"', '').split("=")[1])
+                dataset.metadata.file_type = line[0].strip().replace('"', '').split("=")[1]
             count += 1
