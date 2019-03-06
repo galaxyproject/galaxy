@@ -154,7 +154,7 @@ if [ $SET_VENV -eq 1 -a $CREATE_VENV -eq 1 ]; then
     from urllib import urlretrieve
 except:
     from urllib.request import urlretrieve
-urllib.urlretrieve('$vurl', '$vsrc')"
+urlretrieve('$vurl', '$vsrc')"
                 fi
                 echo "Verifying $vsrc checksum is $vsha"
                 python -c "import hashlib; assert hashlib.sha256(open('$vsrc', 'rb').read()).hexdigest() == '$vsha', '$vsrc: invalid checksum'"
