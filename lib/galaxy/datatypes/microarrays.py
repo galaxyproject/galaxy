@@ -70,11 +70,10 @@ class Gal(GenericMicroarrayFile):
         >>> Gal().sniff(fname)
         False
         """
-        header = iter_headers(file_prefix, sep="\t", count=3)
-        count = 0
+        headers = iter_headers(file_prefix, sep="\t", count=3)
         found_gal = False
         found_atf = False
-        for line in header:
+        for count, line in enumerate(headers):
             if count == 0:
                 if "ATF" in line[0]:
                     found_atf = True
@@ -89,9 +88,8 @@ class Gal(GenericMicroarrayFile):
         Set metadata for Gal file.
         """
         super(Gal, self).set_meta(dataset, **kwd)
-        header = iter_headers(dataset.file_name, sep="\t", count=5)
-        count = 0
-        for line in header:
+        headers = iter_headers(dataset.file_name, sep="\t", count=5)
+        for count, line in enumerate(headers):
             if count == 0:
                 dataset.metadata.file_format = str(line[0])
                 dataset.metadata.version_number = str(line[1])
@@ -130,11 +128,10 @@ class Gpr(GenericMicroarrayFile):
         >>> Gpr().sniff(fname)
         False
         """
-        header = iter_headers(file_prefix, sep="\t", count=3)
-        count = 0
+        headers = iter_headers(file_prefix, sep="\t", count=3)
         found_gpr = False
         found_atf = False
-        for line in header:
+        for count, line in enumerate(headers):
             if count == 0:
                 if "ATF" in line[0]:
                     found_atf = True
@@ -149,9 +146,8 @@ class Gpr(GenericMicroarrayFile):
         Set metadata for Gpr file.
         """
         super(Gpr, self).set_meta(dataset, **kwd)
-        header = iter_headers(dataset.file_name, sep="\t", count=5)
-        count = 0
-        for line in header:
+        headers = iter_headers(dataset.file_name, sep="\t", count=5)
+        for count, line in enumerate(headers):
             if count == 0:
                 dataset.metadata.file_format = str(line[0])
                 dataset.metadata.version_number = str(line[1])
