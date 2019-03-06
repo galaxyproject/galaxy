@@ -1,6 +1,5 @@
 import logging
 
-
 from galaxy.datatypes import data
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
@@ -69,15 +68,17 @@ class Gal(GenericMicroarrayFile):
         """
         header = iter_headers(filename, sep="\t", count=3)
         count = 0
+        found_gal = False
+        found_atf = False
         for line in header:
             if count == 0:
-                if "ATF" not in line[0]:
-                    return False
+                if "ATF" in line[0]:
+                    found_atf = True
             elif count == 2:
-                if "GenePix ArrayList" not in line[0]:
-                    return False
+                if "GenePix ArrayList" in line[0]:
+                    found_gal = True
             count += 1
-        return True
+        return found_gal and found_atf
 
     def set_meta(self, dataset, **kwd):
         """
@@ -126,15 +127,17 @@ class Gpr(GenericMicroarrayFile):
         """
         header = iter_headers(filename, sep="\t", count=3)
         count = 0
+        found_gpr = False
+        found_atf = False
         for line in header:
             if count == 0:
-                if "ATF" not in line[0]:
-                    return False
+                if "ATF" in line[0]:
+                    found_atf = True
             elif count == 2:
-                if "GenePix Results" not in line[0]:
-                    return False
+                if "GenePix Results" in line[0]:
+                    found_gpr = True
             count += 1
-        return True
+        return found_atf and found_gpr
 
     def set_meta(self, dataset, **kwd):
         """
