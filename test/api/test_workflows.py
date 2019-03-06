@@ -491,7 +491,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
                 'label',
             )
 
-    @skip_without_tool('output_filter')
+    @skip_without_tool('output_filter_with_input')
     def test_export_editor_filtered_outputs(self):
         template = """
 class: GalaxyWorkflow
@@ -522,7 +522,7 @@ steps:
         assert outputs[1]['name'] == 'out_2'
         assert outputs[2]['name'] == 'out_3'
 
-    @skip_without_tool('output_filter_with_input')
+    @skip_without_tool('output_filter_exception_1')
     def test_export_editor_filtered_outputs_exception_handling(self):
         workflow_id = self._upload_yaml_workflow("""
 class: GalaxyWorkflow
