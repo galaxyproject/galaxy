@@ -8,7 +8,9 @@
                 </b-input-group-append>
             </b-input-group>
         </template>
-        <b-alert v-if="errorMessage" variant="danger" :show="errorShow"> {{ errorMessage }} </b-alert>
+        <b-alert v-if="errorMessage" variant="danger" :show="errorShow">
+            {{ errorMessage }}
+        </b-alert>
         <div v-else>
             <div v-if="optionsShow">
                 <b-table
@@ -17,7 +19,7 @@
                     :items="items"
                     :fields="fields"
                     :filter="filter"
-                    @row-clicked="selected"
+                    @row-clicked="clicked"
                     @filtered="filtered"
                 >
                     <template slot="name" slot-scope="data">
@@ -139,7 +141,7 @@ export default {
         filtered: function(items) {
             this.nItems = items.length;
         },
-        selected: function(record) {
+        clicked: function(record) {
             if (!this.multiple || this.valuesType !== record.history_content_type) {
                 this.values = [];
                 this.valuesType = record.history_content_type;
