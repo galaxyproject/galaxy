@@ -126,17 +126,7 @@ export default {
             modalShow: true,
             undoShow: false,
             optionsShow: false,
-
-            filter: null,
-            nItems: 0,
-            currentPage: 0,
-            perPage: 10,
-            items: [],
-            errorMessage: null,
-            errorShow: true,
-            historyId: null,
-            modalShow: true,
-            optionsShow: false
+            historyId: null
         };
     },
     created: function() {
