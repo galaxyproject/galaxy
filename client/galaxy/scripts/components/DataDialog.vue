@@ -161,8 +161,12 @@ export default {
         done: function() {
             let results = [];
             this.values.forEach(v => {
-                let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
-                results.push(`${host}/api/histories/${v.history_id}/contents/${v.id}/display`);
+                let value = v.id;
+                if (this.format == "url") {
+                    let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
+                    value = `${host}/api/histories/${v.history_id}/contents/${value}/display`;
+                }
+                results.push(value);
             });
             if (results.length > 0 && !this.multiple) {
                 results = results[0];
@@ -201,7 +205,6 @@ export default {
                             this.stack.push(root.object);
                         } else if (root.hid) {
                             this.items.push(root);
-                            window.console.log(root);
                         }
                     }
                     this.optionsShow = true;
