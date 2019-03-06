@@ -1,5 +1,5 @@
 import logging
-import subprocess
+
 
 from galaxy.datatypes import data
 from galaxy.datatypes.data import get_file_peek
