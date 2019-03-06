@@ -100,7 +100,7 @@ export default {
     data() {
         return {
             errorMessage: null,
-            errorShow: true,
+            errorShow: false,
             fields: {
                 name: {
                     sortable: true
@@ -139,11 +139,6 @@ export default {
         filtered: function(items) {
             this.nItems = items.length;
         },
-        clicked: function(record) {
-            let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
-            this.callback(`${host}/${record.url}/display`);
-            this.modalShow = false;
-        },
         selected: function(record) {
             if (!this.multiple || this.valuesType !== record.history_content_type) {
                 this.values = [];
@@ -159,6 +154,9 @@ export default {
             }
             this.items.every(item => item._rowVariant = "default");
             this.values.every(value => value._rowVariant = "success");
+            if (!this.multiple) {
+                this.done();
+            }
         },
         done: function() {
             let results = [];
