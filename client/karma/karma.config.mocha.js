@@ -4,42 +4,56 @@
  * Individual files can be run by passing in a comma-delimited list
  * of globs for the karma config like this:
  * 
- *    env KARMA_TESTS="Tags.test.js,something.js,doodads.js" npm run test-watch
+ *    npm run test-watch watch-only="Tags.test.js,something.js,doodads.js" 
  */
 
 const baseKarmaConfig = require("./karma.config.base");
 
-
-// Unless we have an environment variable picking out
-// a specified set of files, this is what's going to run
+// Complete list of unit tests
 const defaultFiles = [
     // component/module tests
     "**/*.test.js",
     // pre-existing rules definition tests
     "**/mocha/tests/*_tests.js"
-]
+];
 
-// allows running just a set list of files
-function getTestFiles(testFiles) {
-    let patterns = testFiles ? testFiles.split(",").map(checkGlobPrefix) : defaultFiles;
+function getTestFiles() {
+    // check for user-supplied list
+    let userPatterns = getUserTestGlobs();
+    let patterns = userPatterns.length ? userPatterns : defaultFiles;
     return patterns.map(pattern => ({ pattern, watched: true}));
+}
+
+// command line arg "watch-only" can be a list of file globs 
+// for karma to watch
+function getUserTestGlobs() {
+    let userGlobs = process.argv.find(s => s.startsWith("watch-only"));
+    return userGlobs ? processUserGlobs(userGlobs) : [];
+}
+
+// split command line arg into an array
+function processUserGlobs(val) {
+    let result = [];
+    let fileListString = val.split("=")[1];
+    if (fileListString) {
+        result = fileListString.split(",")
+            .map(s => s.trim())
+            .map(checkGlobPrefix);
+    }
+    return result;
 }
 
 // prefixes user-supplied glob with directory wildcard
 function checkGlobPrefix(glob) {
-    if (!glob.startsWith("**/")) {
-        return `**/${glob}`;
-    }
-    return glob;
+    return glob.startsWith("**/") ? glob : `**/${glob}`;
 }
+
 
 module.exports = function (config) {
 
-    // assemble test files, can run individuals by specifying
-    // globs on command line
     let files = [
         "../../node_modules/@babel/polyfill/dist/polyfill.js",
-        ...getTestFiles(process.env.KARMA_TESTS)
+        ...getTestFiles()
     ];
 
     let settings = Object.assign({}, baseKarmaConfig, {
