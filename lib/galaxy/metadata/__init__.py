@@ -287,7 +287,8 @@ class JobExternalOutputMetadataWrapper(MetadataCollectionStrategy):
             # return command required to build
             fd, fp = tempfile.mkstemp(suffix='.py', dir=tmp_dir, prefix="set_metadata_")
             metadata_script_file = abspath(fp)
-            os.fdopen(fd, 'w').write(SET_METADATA_SCRIPT)
+            with os.fdopen(fd, 'w') as f:
+                f.write(SET_METADATA_SCRIPT)
             return 'python "%s" %s' % (metadata_path_on_compute(metadata_script_file), args)
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
