@@ -171,17 +171,36 @@ export var ToursView = Backbone.View.extend({
             })
             .on("click", ".tag-selector-button", e => {
                 var elem = $(e.target);
-                var display = "block";
                 var tag = elem.attr("tag-selector-button");
+                var active_tags = [];
 
+                // Switch classes for the buttons
                 elem.toggleClass("btn-primary");
                 elem.toggleClass("btn-secondary");
 
-                if (elem.hasClass("btn-secondary")) {
-                    display = "none";
-                }
+                // Get all non-disabled tags
+                $(`.tag-selector-button.btn-primary`).each(function() {
+                    active_tags.push($(this).attr('tag-selector-button'));
+                });
 
-                $(`li[tags*='${tag}']`).css({ display: display });
+                // Loop over all list items, subsequently determine these are
+                // only the tours (tags should be unique). Then use the non-disabled tags to
+                // determien whether or not to display this specific tour.
+                $(`li.list-group-item`).each(function() {
+                    if($(this).attr('tags')) {
+                        var tour_tags = [];
+                        var tour_tags_html = $(this).attr('tags');
+
+                        tour_tags = tour_tags_html.split(',');
+                        var fil_tour_tags = tour_tags.filter(
+                            function(tag) {
+                                return active_tags.indexOf(tag.toLowerCase()) > -1;
+                            }
+                        )
+
+                        $(this).css('display', (fil_tour_tags.length > 0) ? "block" : "none")
+                    }
+                });
             });
     }
 });
