@@ -296,7 +296,7 @@ Torque attributes can be defined in either their short (e.g. [qsub(1B)](http://c
 
 ```xml
 <plugins>
-    <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:CLIJobRunner"/>
+    <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner"/>
 </plugins>
 <destinations default="cli_default">
     <destination id="cli_default" runner="cli">
