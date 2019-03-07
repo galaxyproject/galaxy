@@ -1,4 +1,5 @@
 import json
+import time
 import unittest
 
 from base import api
@@ -208,6 +209,8 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
 
     def test_invalid_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForInvalidUpdateDataset")
+        # Sleep here, because there is metadata job running on the new dataset.
+        time.sleep(2)
         data = {'file_ext': 'nonexisting_type'}
         create_response = self._patch("libraries/datasets/%s" % ld.json()["id"], data=data)
         self._assert_status_code_is(create_response, 400)
