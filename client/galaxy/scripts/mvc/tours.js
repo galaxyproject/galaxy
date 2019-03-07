@@ -24,23 +24,19 @@ const TOURPAGE_TEMPLATE = `
 <div class="row mb-3">
     <div class="col-12 btn-group" role="group" aria-label="Tag selector">
         <% _.each(tourtagorder, function(tag) { %>
-        <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag %>">
-            <%- tag %>
+        <button class="btn btn-primary tag-selector-button" tag-selector-button="<%- tag.key %>">
+            <%- tag.name %>
         </button>
         <% }); %>
     </div>
 </div>
 
-<% _.each(tourtagorder, function(tourtagkey) { %>
-<div tag="<%- tourtagkey %>" class="row mb-3">
+<div class="row mb-3">
     <div class="col-12">
-    <% var tourtag = tourtags[tourtagkey]; %>
-    <h4>
-        <%- tourtag.name %>
-    </h4>
+    <h4>Tours</h4>
     <ul class="list-group">
-    <% _.each(tourtag.tours, function(tour) { %>
-        <li class="list-group-item">
+    <% _.each(tours, function(tour) { %>
+        <li class="list-group-item" tags="<%- tour.attributes.tags_lc %>">
             <a href="/tours/<%- tour.id %>" class="tourItem" data-tour.id=<%- tour.id %>>
                 <%- tour.attributes.name || tour.id %>
             </a>
@@ -54,8 +50,7 @@ const TOURPAGE_TEMPLATE = `
     <% }); %>
     </ul>
     </div>
-</div>
-<% }); %>`;
+</div>`;
 
 var tour_opts = {
     storage: window.sessionStorage,
@@ -139,22 +134,28 @@ export var ToursView = Backbone.View.extend({
 
         var tourtags = {};
         _.each(this.model.models, tour => {
+            tour.attributes.tags_lc = [];
             if (tour.attributes.tags === null) {
                 if (tourtags.Untagged === undefined) {
                     tourtags.Untagged = { name: "Untagged", tours: [] };
                 }
                 tourtags.Untagged.tours.push(tour);
             } else {
-                _.each(tour.attributes.tags, tag => {
-                    tag = tag.charAt(0).toUpperCase() + tag.slice(1);
+                _.each(tour.attributes.tags, otag => {
+                    var tag = otag.charAt(0).toUpperCase() + otag.slice(1);
                     if (tourtags[tag] === undefined) {
                         tourtags[tag] = { name: tag, tours: [] };
                     }
+                    tour.attributes.tags_lc.push(otag.toLowerCase());
                     tourtags[tag].tours.push(tour);
                 });
             }
         });
-        var tourtagorder = Object.keys(tourtags).sort();
+        //var tourtagorder = Object.keys(tourtags).sort();
+        var tourtagorder = [];
+        Object.keys(tourtags).forEach(function(tag, index) {
+            tourtagorder.push({"name": tag, "key": tag.toLowerCase()});
+        });
 
         this.$el
             .html(
@@ -179,7 +180,8 @@ export var ToursView = Backbone.View.extend({
                 if (elem.hasClass("btn-secondary")) {
                     display = "none";
                 }
-                $(`div[tag='${tag}']`).css({ display: display });
+
+                $(`li[tags*='${tag}']`).css({ display: display });
             });
     }
 });
