@@ -73,7 +73,9 @@
 # gitlab_base_url='https://...'. This is based off of the Github error
 # reporting backend. It supports creating an issue on the git repository of
 # the tool by querying the ToolShed where the tool comes from (if applicable).
+# Set verbose to true if you want the message to be displayed to the user.
 # - type: gitlab
+#   verbose: false
 #   user_submission: true
 #   gitlab_base_url: https://gitlab.com
 #   gitlab_private_token: 00000000000
