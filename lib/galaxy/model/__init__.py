@@ -6,7 +6,6 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import base64
 import errno
-import hashlib
 import json
 import logging
 import numbers
@@ -1993,6 +1992,8 @@ class Dataset(StorableObject, RepresentById):
         self.external_extra_files_path = None
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        self.sources = []
+        self.hashes = []
         if uuid is None:
             self.uuid = uuid4()
         else:
@@ -2144,100 +2145,17 @@ class Dataset(StorableObject, RepresentById):
                 return True
         return False
 
-    def set_checksum(self, trans, hash_function, hash_value):
-        """
-        Sets the checksum of this dataset.
-        :param trans: Galaxy trans.
-        :param hash_function: Sets the hash function used
-        to compute the given hash value.
-        :param hash_value: Sets the hash value
-        :return: void
-        """
-        checksum = DatasetChecksum(self.id, hash_function, hash_value)
-        trans.sa_session.add(checksum)
-        trans.sa_session.flush()
 
-    def compute_checksum(self, trans, hash_function, filename):
-        """
-        Computes a checksum value for this dataset.
-        :param trans: Galaxy trans.
-        :param hash_function: Sets the hash function to be
-        used for computing the hash value. Value should be
-        a key from `DatasetChecksum.hash_functions` dictionary.
-        :param filename: absolute path to the dataset file.
-        :return: void
-        """
-        checksum = DatasetChecksum(self.id)
-        checksum.compute_checksum(hash_function, filename)
-        trans.sa_session.add(checksum)
-        trans.sa_session.flush()
+class DatasetSource(RepresentById):
+    """ """
 
 
-class DatasetChecksum(object):
-    hash_functions = Bunch(MD5='md5',
-                           SHA1='sha-1',
-                           SHA256='SHA-256',
-                           SHA512='SHA-512')
+class DatasetSourceHash(RepresentById):
+    """ """
 
-    _buffer_size = 4096  # in bytes
 
-    def __init__(self,
-                 dataset_id,
-                 hash_function=None,
-                 hash_value=None):
-        self.dataset_id = dataset_id
-        if hash_function is not None and hash_function not in self.hash_functions.values():
-            raise ValueError('Invalid hash function received. Hash function should match "hash_functions"')
-        self.hash_function = hash_function
-        self.hash_value = hash_value
-
-    def set_checksum(self, hash_function, hash_value):
-        """
-        Sets the checksum of the dataset referenced by
-        `dataset_id`. This function should be used when
-        the dataset checksum is computed by a third-party.
-        :param hash_function: is the hash function
-        which is used to compute the hash value. Its
-        value should match a value from `hash_functions`.
-        :param hash_value: is a string (hex) hash value.
-        :return: void
-        """
-        if hash_function not in self.hash_functions.values():
-            raise ValueError('Invalid hash function received. Hash function should match "hash_functions"')
-        self.hash_function = hash_function
-        self.hash_value = hash_value
-
-    def compute_checksum(self, hash_function, filename):
-        """
-        Computes a checksum value for the dataset referenced
-        by `dataset_id` based on the chosen hash function.
-        :param hash_function: Sets the hash function to be used
-        for computing the checksum. Its value should be a value
-        from `hash_functions` dictionary.
-        :param filename: Sets the absolute path to the dataset file.
-        :return: void
-        """
-        if hash_function not in self.hash_functions.values():
-            raise ValueError('Invalid hash function received. Hash function should match "hash_functions"')
-        self.hash_function = hash_function
-        self.hash_value = self.__compute_checksum(filename)
-
-    def __compute_checksum(self, filename):
-        if self.hash_function == self.hash_functions.MD5:
-            hf = hashlib.md5()
-        elif self.hash_function == self.hash_functions.SHA1:
-            hf = hashlib.sha1()
-        elif self.hash_function == self.hash_functions.SHA256:
-            hf = hashlib.sha256()
-        elif self.hash_function == self.hash_functions.SHA512:
-            hf = hashlib.sha512()
-        else:
-            raise TypeError("Invalid checksum hash function")
-
-        with open(filename, "rb") as f:
-            for chunk in iter(lambda: f.read(self._buffer_size), b""):
-                hf.update(chunk)
-        return hf.hexdigest()
+class DatasetHash(RepresentById):
+    """ """
 
 
 def datatype_for_extension(extension, datatypes_registry=None):

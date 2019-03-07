@@ -223,10 +223,28 @@ model.Dataset.table = Table(
     Column('total_size', Numeric(15, 0)),
     Column('uuid', UUIDType()))
 
-model.DatasetChecksum.table = Table(
-    "dataset_checksum", metadata,
+model.DatasetSource.table = Table(
+    "dataset_source", metadata,
     Column("id", Integer, primary_key=True),
     Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("source_uri", TEXT),
+    Column("extra_files_path", TEXT),
+    Column("transform", JSONType)
+)
+
+model.DatasetHash.table = Table(
+    "dataset_hash", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("hash_function", TEXT),
+    Column("hash_value", TEXT),
+    Column("extra_files_path", TEXT),
+)
+
+model.DatasetSourceHash.table = Table(
+    "dataset_source_hash", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset_source.id"), index=True),
     Column("hash_function", TEXT),
     Column("hash_value", TEXT)
 )
@@ -1573,8 +1591,16 @@ simple_mapping(model.Dataset,
         backref='datasets')
 )
 
-mapper(model.DatasetChecksum, model.DatasetChecksum.table, properties=dict(
-    user=relation(model.Dataset)
+mapper(model.DatasetHash, model.DatasetHash.table, properties=dict(
+    dataset=relation(model.Dataset, backref='hashes')
+))
+
+mapper(model.DatasetSource, model.DatasetSource.table, properties=dict(
+    dataset=relation(model.Dataset, backref='sources')
+))
+
+mapper(model.DatasetSourceHash, model.DatasetSourceHash.table, properties=dict(
+    source=relation(model.DatasetSource, backref='hashes')
 ))
 
 mapper(model.HistoryDatasetAssociationHistory, model.HistoryDatasetAssociationHistory.table)

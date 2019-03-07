@@ -135,18 +135,41 @@ class LibrariesApiTestCase(api.ApiTestCase, TestsDatasets):
 
     def test_fetch_single_url_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
-        items = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"}]
+        items = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed", "MD5": "37b59762b59fff860460522d271bc111"}]
         targets = [{
             "destination": destination,
-            "items": items
+            "items": items,
         }]
         payload = {
             "history_id": history_id,  # TODO: Shouldn't be needed :(
             "targets": json.dumps(targets),
+            "validate_hashes": True
         }
         self.dataset_populator.fetch(payload)
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
+
+    def test_fetch_failed_validation(self):
+        # Exception handling is really rough here - we should be creating a dataset in error instead
+        # of just failing the job like this.
+        history_id, library, destination = self._setup_fetch_to_folder("single_url")
+        items = [{"src": "url", "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed", "MD5": "37b59762b59fff860460522d271bc112"}]
+        targets = [{
+            "destination": destination,
+            "items": items,
+        }]
+        payload = {
+            "history_id": history_id,  # TODO: Shouldn't be needed :(
+            "targets": json.dumps(targets),
+            "validate_hashes": True
+        }
+        tool_response = self.dataset_populator.fetch(payload, assert_ok=False)
+        job = self.dataset_populator.check_run(tool_response)
+        self.dataset_populator.wait_for_job(job["id"])
+
+        job = tool_response.json()["jobs"][0]
+        details = self.dataset_populator.get_job_details(job["id"]).json()
+        assert details["state"] == "error", details
 
     def test_fetch_url_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
