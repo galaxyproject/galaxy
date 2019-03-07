@@ -64,3 +64,18 @@
 #   github_oauth_token: 00000000000
 #   github_repo_owner: galaxyproject
 #   github_repo_name: galaxy
+
+# GitLab error reporting backend. You will need to `pip install python-gitlab`
+# in the galaxy virtualenv. This will create a new issue if none exists, and
+# comment on existing, open issues. The issues are labelled based on tool ID /
+# version and include all of the information the normal emailed bug reports
+# include. If you use a private GitLab deployment, you can set
+# gitlab_base_url='https://...'. This is based off of the Github error
+# reporting backend. It supports creating an issue on the git repository of
+# the tool by querying the ToolShed where the tool comes from (if applicable).
+# - type: gitlab
+#   user_submission: true
+#   gitlab_base_url: https://gitlab.com
+#   gitlab_private_token: 00000000000
+#   gitlab_default_repo_owner: galaxyproject
+#   gitlab_default_repo_name: galaxy
