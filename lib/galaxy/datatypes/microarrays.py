@@ -5,7 +5,7 @@ from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
-    iter_headers
+    get_headers
 )
 
 log = logging.getLogger(__name__)
@@ -70,39 +70,24 @@ class Gal(GenericMicroarrayFile):
         >>> Gal().sniff(fname)
         False
         """
-        headers = iter_headers(file_prefix, sep="\t", count=3)
-        found_gal = False
-        found_atf = False
-        for count, line in enumerate(headers):
-            if count == 0:
-                if "ATF" in line[0]:
-                    found_atf = True
-            elif count == 2:
-                if "GenePix ArrayList" in line[0]:
-                    found_gal = True
-        return found_gal and found_atf
+        headers = get_headers(file_prefix, sep="\t", count=3)
+        return "ATF" in headers[0][0] and "GenePix ArrayList" in headers[2][0]
 
     def set_meta(self, dataset, **kwd):
         """
         Set metadata for Gal file.
         """
         super(Gal, self).set_meta(dataset, **kwd)
-        headers = iter_headers(dataset.file_name, sep="\t", count=5)
-        for count, line in enumerate(headers):
-            if count == 0:
-                dataset.metadata.file_format = line[0]
-                dataset.metadata.version_number = line[1]
-            elif count == 1:
-                dataset.metadata.number_of_optional_header_records = int(line[0])
-                dataset.metadata.number_of_data_columns = int(line[1])
-            elif count == 2:
-                dataset.metadata.file_type = line[0].strip().replace('"', '').split("=")[1]
-            elif count == 3:
-                if "BlockCount" in line[0]:
-                    dataset.metadata.block_count = int(line[0].strip().replace('"', '').split("=")[1])
-            elif count == 4:
-                if "BlockType" in line[0]:
-                    dataset.metadata.block_type = int(line[0].strip().replace('"', '').split("=")[1])
+        headers = get_headers(dataset.file_name, sep="\t", count=5)
+        dataset.metadata.file_format = headers[0][0]
+        dataset.metadata.version_number = headers[0][1]
+        dataset.metadata.number_of_optional_header_records = int(headers[1][0])
+        dataset.metadata.number_of_data_columns = int(headers[1][1])
+        dataset.metadata.file_type = headers[2][0].strip().strip('"').split("=")[1]
+        if "BlockCount" in headers[3][0]:
+            dataset.metadata.block_count = int(headers[3][0].strip().strip('"').split("=")[1])
+        if "BlockType" in headers[4][0]:
+            dataset.metadata.block_type = int(headers[4][0].strip().strip('"').split("=")[1])
 
 
 @build_sniff_from_prefix
@@ -126,30 +111,17 @@ class Gpr(GenericMicroarrayFile):
         >>> Gpr().sniff(fname)
         False
         """
-        headers = iter_headers(file_prefix, sep="\t", count=3)
-        found_gpr = False
-        found_atf = False
-        for count, line in enumerate(headers):
-            if count == 0:
-                if "ATF" in line[0]:
-                    found_atf = True
-            elif count == 2:
-                if "GenePix Results" in line[0]:
-                    found_gpr = True
-        return found_atf and found_gpr
+        headers = get_headers(file_prefix, sep="\t", count=3)
+        return "ATF" in headers[0][0] and "GenePix Results" in headers[2][0]
 
     def set_meta(self, dataset, **kwd):
         """
         Set metadata for Gpr file.
         """
         super(Gpr, self).set_meta(dataset, **kwd)
-        headers = iter_headers(dataset.file_name, sep="\t", count=5)
-        for count, line in enumerate(headers):
-            if count == 0:
-                dataset.metadata.file_format = line[0]
-                dataset.metadata.version_number = line[1]
-            elif count == 1:
-                dataset.metadata.number_of_optional_header_records = int(line[0])
-                dataset.metadata.number_of_data_columns = int(line[1])
-            elif count == 2:
-                dataset.metadata.file_type = line[0].strip().replace('"', '').split("=")[1]
+        headers = get_headers(dataset.file_name, sep="\t", count=5)
+        dataset.metadata.file_format = headers[0][0]
+        dataset.metadata.version_number = headers[0][1]
+        dataset.metadata.number_of_optional_header_records = int(headers[1][0])
+        dataset.metadata.number_of_data_columns = int(headers[1][1])
+        dataset.metadata.file_type = headers[2][0].strip().strip('"').split("=")[1]
