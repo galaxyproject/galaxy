@@ -12,7 +12,7 @@ Galaxy is known to work with:
 * [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities)
 * [Open Grid Engine](http://gridscheduler.sourceforge.net/)
 * [Univa Grid Engine](http://www.univa.com/products/grid-engine.php) (previously known as Sun Grid Engine and Oracle Grid Engine)
-* [Platform LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management)
+* [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management)
 * [HTCondor](http://research.cs.wisc.edu/htcondor/)
 * [Slurm](https://slurm.schedmd.com/)
 * [Galaxy Pulsar](#pulsar) (formerly LWR)
@@ -105,7 +105,7 @@ The value of *local_slots* is used to define [GALAXY_SLOTS](https://galaxyprojec
 
 ### DRMAA
 
-Runs jobs via any DRM which supports the [Distributed Resource Management Application API](http://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities), [Sun Grid Engine](http://gridscheduler.sourceforge.net/), [Univa Grid Engine](http://www.univa.com/products/grid-engine.php), [Platform LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
+Runs jobs via any DRM which supports the [Distributed Resource Management Application API](http://www.drmaa.org). Most commonly used to interface with [PBS Professional](https://www.pbsworks.com/PBSProduct.aspx?n=PBS-Professional&c=Overview-and-Capabilities), [Sun Grid Engine](http://gridscheduler.sourceforge.net/), [Univa Grid Engine](http://www.univa.com/products/grid-engine.php), [Spectrum LSF](https://www.ibm.com/us-en/marketplace/hpc-workload-management), and [SLURM](https://slurm.schedmd.com/).
 
 #### Dependencies
 
