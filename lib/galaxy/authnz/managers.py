@@ -114,15 +114,16 @@ class AuthnzManager(object):
                 return k.lower()
 
     def _get_authnz_backend(self, provider):
-        provider = self._unify_provider_name(provider)
-        if provider in self.oidc_backends_config:
+        unified_provider_name = self._unify_provider_name(provider)
+        if unified_provider_name in self.oidc_backends_config:
+            provider = unified_provider_name
             try:
                 return True, "", PSAAuthnz(provider, self.oidc_config, self.oidc_backends_config[provider])
             except Exception as e:
                 log.exception('An error occurred when loading PSAAuthnz')
                 return False, str(e), None
         else:
-            msg = 'The requested identity provider, `{}`, is not a recognized/expected provider'.format(provider)
+            msg = 'The requested identity provider, `{}`, is not a recognized/expected provider.'.format(provider)
             log.debug(msg)
             return False, msg, None
 

@@ -7,6 +7,7 @@ from __future__ import absolute_import
 import json
 import logging
 
+from galaxy import exceptions
 from galaxy import web
 from galaxy.web import url_for
 from galaxy.web.base.controller import JSAppLauncher
@@ -43,7 +44,10 @@ class OIDC(JSAppLauncher):
             log.debug(msg)
             return trans.show_error_message(msg)
         success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
-        return json.dumps({"redirect_uri": redirect_uri})
+        if success:
+            return json.dumps({"redirect_uri": redirect_uri})
+        else:
+            raise exceptions.AuthenticationFailed(message)
 
     @web.expose
     def callback(self, trans, provider, **kwargs):
