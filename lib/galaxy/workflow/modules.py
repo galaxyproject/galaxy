@@ -19,6 +19,7 @@ from galaxy.exceptions import ToolMissingException
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
 from galaxy.tools import (
+    DatabaseOperationTool,
     DefaultToolState,
     ToolInputsNotReadyException
 )
@@ -1292,7 +1293,7 @@ class ToolModule(WorkflowModule):
         flush_required = False
         effective_post_job_actions = self._effective_post_job_actions(step)
         for pja in effective_post_job_actions:
-            if pja.action_type in ActionBox.immediate_actions:
+            if pja.action_type in ActionBox.immediate_actions or isinstance(self.tool, DatabaseOperationTool):
                 ActionBox.execute(self.trans.app, self.trans.sa_session, pja, job, replacement_dict)
             else:
                 pjaa = model.PostJobActionAssociation(pja, job_id=job.id)
