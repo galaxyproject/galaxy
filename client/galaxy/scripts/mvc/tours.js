@@ -154,7 +154,7 @@ export var ToursView = Backbone.View.extend({
         //var tourtagorder = Object.keys(tourtags).sort();
         var tourtagorder = [];
         Object.keys(tourtags).forEach(function(tag, index) {
-            tourtagorder.push({"name": tag, "key": tag.toLowerCase()});
+            tourtagorder.push({ name: tag, key: tag.toLowerCase() });
         });
 
         this.$el
@@ -179,25 +179,23 @@ export var ToursView = Backbone.View.extend({
 
                 // Get all non-disabled tags
                 $(`.tag-selector-button.btn-primary`).each(function() {
-                    active_tags.push($(this).attr('tag-selector-button'));
+                    active_tags.push($(this).attr("tag-selector-button"));
                 });
 
                 // Loop over all list items, subsequently determine these are
                 // only the tours (tags should be unique). Then use the non-disabled tags to
                 // determien whether or not to display this specific tour.
                 $(`li.list-group-item`).each(function() {
-                    if($(this).attr('tags')) {
+                    if ($(this).attr("tags")) {
                         var tour_tags = [];
-                        var tour_tags_html = $(this).attr('tags');
+                        var tour_tags_html = $(this).attr("tags");
 
-                        tour_tags = tour_tags_html.split(',');
-                        var fil_tour_tags = tour_tags.filter(
-                            function(tag) {
-                                return active_tags.indexOf(tag.toLowerCase()) > -1;
-                            }
-                        )
+                        tour_tags = tour_tags_html.split(",");
+                        var fil_tour_tags = tour_tags.filter(function(tag) {
+                            return active_tags.indexOf(tag.toLowerCase()) > -1;
+                        });
 
-                        $(this).css('display', (fil_tour_tags.length > 0) ? "block" : "none")
+                        $(this).css("display", fil_tour_tags.length > 0 ? "block" : "none");
                     }
                 });
             });
