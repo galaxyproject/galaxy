@@ -36,7 +36,6 @@
         }
 
         //TODO: move these out
-        .tags-display,
         .annotation-display {
             display: none;
             margin-bottom: 8px;
@@ -220,7 +219,6 @@
     .subtitle,
     .history-size,
     //TODO: move these out
-    .tags-display .prompt,
     .annotation-display .prompt {
         display: none;
     }
@@ -635,5 +633,5 @@
 // History panel tags editor
 .history-panel .galaxy-tags {
     padding: 1px;
-    @include shutterFade(".ti-input", 250px);
+    @include shutterFade(250px);
 }

@@ -133,7 +133,7 @@ history_panel:
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
     tag_area: '.controls .tags-display'
-    tag_area_input: '.controls .tags-display .tags-input input'
+    tag_area_input: '.controls .tags-display .vue-tags-input input'
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.controls .annotation-display'
     annotation_editable_text: '.controls .annotation-display .annotation.editable-text'

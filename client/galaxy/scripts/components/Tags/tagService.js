@@ -37,9 +37,7 @@ export class TagService {
             filter(txt => txt.length),
             debounceTime(this.debounceInterval),
             distinctUntilChanged(),
-            switchMap(txt => {
-                return this.autocomplete(txt);
-            })
+            switchMap(txt => this.autocomplete(txt))
         )
     }
 

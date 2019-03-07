@@ -985,7 +985,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_tags(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element_by_css_selector(".tags-display")
-        tag_spans = tag_display.find_elements_by_css_selector("span.badge-tags")
+        tag_spans = tag_display.find_elements_by_css_selector(".tag-name")
         tags = []
         for tag_span in tag_spans:
             tags.append(tag_span.text)
@@ -1004,7 +1004,7 @@ class NavigatesGalaxy(HasDriver):
 
         for i, tag in enumerate(tags):
             if auto_closes or i == 0:
-                tag_area = parent_selector + ".tags-input input[type='text']"
+                tag_area = parent_selector + ".ti-new-tag-input-wrapper input[type='text']"
                 tag_area = self.wait_for_selector_clickable(tag_area)
                 tag_area.click()
 

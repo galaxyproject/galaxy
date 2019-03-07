@@ -163,7 +163,7 @@ var HistoryViewEdit = _super.extend(
                 disabled: false,
                 context: "history-view-edit"
             };
-
+            
             let vm = mountModelTags(propsData, el);
             
             // tag icon button open/closes
@@ -175,7 +175,6 @@ var HistoryViewEdit = _super.extend(
             }).appendTo($where.find(".controls .actions"));
             
             activator.on("click", () => {
-                console.log("click", vm.$el);
                 $(vm.$el).toggleClass("active");
             });
 

@@ -3,7 +3,7 @@ retrieval as well as and specific event handling should be managed from an
 upstream component or environment that is accessed through props and events -->
 
 <template>
-    <div :class="tagContainerClasses">
+    <div class="galaxy-tags tags-display" :class="tagContainerClasses">
         <a href="#" class="toggle-link" 
             v-if="linkVisible"
             @click.prevent="toggleTagDisplay">
@@ -57,7 +57,6 @@ export default {
     computed: {
         tagContainerClasses() {
             return {
-                "galaxy-tags": true,
                 "disabled": this.disabled
             }
         },

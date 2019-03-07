@@ -9,29 +9,27 @@
     height: 100%;
 }
 
-// Animates $container selector, changes maxheight to
-// show and hide element when toggled with ".active"
-// The downside of this technique is the requirement
-// to pick an appropriate boxHeight since we need a
-// numeric CSS property to animate
-@mixin shutterFade($container, $boxHeight: 100px) {
-    
-    // The default state is closed, animate max-height
-    // to show/hide contents which are contained in
-    // the passed $container selector
-    #{$container} {
-        overflow-y: hidden;
-        max-height: 0px;
-        transition-duration: 0.35s;
-        transition-property: max-height;
-        transition-timing-function: ease-in;
-        &::-webkit-scrollbar { 
-            display: none;
-        }
+
+// animates max-height and visibility hidden by default, add .active to show
+// boxHeight must be larger than the expected maximum height of the element
+// or it will be clipped
+
+@mixin shutterFade($boxHeight: 100px) {    
+    overflow-y: hidden;
+    max-height: 0px;
+    visibility: hidden;
+    opacity: 0;
+    transition-duration: 0.35s;
+    transition-property: visibility, opacity, max-height;
+    transition-timing-function: ease;
+
+    &.active {
+        max-height: $boxHeight;
+        visibility: visible;
+        opacity: 1;
     }
 
-    // Put active class above the container to open contents
-    &.active #{$container} {
-        max-height: $boxHeight;
+    &::-webkit-scrollbar { 
+        display: none;
     }
 }
