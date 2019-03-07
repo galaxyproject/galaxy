@@ -80,7 +80,6 @@ class Gal(GenericMicroarrayFile):
             elif count == 2:
                 if "GenePix ArrayList" in line[0]:
                     found_gal = True
-            count += 1
         return found_gal and found_atf
 
     def set_meta(self, dataset, **kwd):
@@ -104,7 +103,6 @@ class Gal(GenericMicroarrayFile):
             elif count == 4:
                 if "BlockType" in line[0]:
                     dataset.metadata.block_type = int(line[0].strip().replace('"', '').split("=")[1])
-            count += 1
 
 
 @build_sniff_from_prefix
@@ -138,7 +136,6 @@ class Gpr(GenericMicroarrayFile):
             elif count == 2:
                 if "GenePix Results" in line[0]:
                     found_gpr = True
-            count += 1
         return found_atf and found_gpr
 
     def set_meta(self, dataset, **kwd):
@@ -156,4 +153,3 @@ class Gpr(GenericMicroarrayFile):
                 dataset.metadata.number_of_data_columns = int(line[1])
             elif count == 2:
                 dataset.metadata.file_type = line[0].strip().replace('"', '').split("=")[1]
-            count += 1
