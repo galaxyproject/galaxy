@@ -171,7 +171,6 @@ export var ToursView = Backbone.View.extend({
             })
             .on("click", ".tag-selector-button", e => {
                 var elem = $(e.target);
-                var tag = elem.attr("tag-selector-button");
                 var active_tags = [];
 
                 // Switch classes for the buttons
