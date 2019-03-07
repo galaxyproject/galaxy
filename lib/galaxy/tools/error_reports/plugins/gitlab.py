@@ -69,9 +69,9 @@ class GitLabPlugin(ErrorPlugin):
             log.info(tool.tool_shed)
 
             # Determine the ToolShed
-            ts_url_request = requests.get('http://'+str(tool.tool_shed))
+            ts_url_request = requests.get('http://' + str(tool.tool_shed))
             ts_url = ts_url_request.url
-            log.info("Determined ToolShed is "+ts_url)
+            log.info("Determined ToolShed is " + ts_url)
 
             # Find the repo inside the ToolShed
             ts_repo_request = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id))
@@ -84,7 +84,7 @@ class GitLabPlugin(ErrorPlugin):
                         if 'remote_repository_url' in repoinfo['repository'].keys():
                             ts_repourl = repoinfo['repository']['remote_repository_url']
 
-            log.info("Determine ToolShed Repository URL: "+ts_repourl)
+            log.info("Determine ToolShed Repository URL: " + ts_repourl)
 
             if ts_repourl:
                 gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:]
