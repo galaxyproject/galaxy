@@ -5,7 +5,6 @@ import HISTORY_VIEW from "mvc/history/history-view";
 import HDA_MODEL from "mvc/history/hda-model";
 import HDA_LI_EDIT from "mvc/history/hda-li-edit";
 import HDCA_LI_EDIT from "mvc/history/hdca-li-edit";
-// import TAGS from "mvc/tag";
 import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import LIST_COLLECTION_CREATOR from "mvc/collection/list-collection-creator";
@@ -158,7 +157,14 @@ var HistoryViewEdit = _super.extend(
         /** render the tags sub-view controller */
         _renderTags: function($where) {
             let el = $where.find(".controls .tags-display")[0];
-            let vm = mountModelTags(this, el);
+
+            let propsData = {
+                model: this.model,
+                disabled: false,
+                context: "history-view-edit"
+            };
+
+            let vm = mountModelTags(propsData, el);
             
             // tag icon button open/closes
             let activator = faIconButton({
@@ -168,7 +174,6 @@ var HistoryViewEdit = _super.extend(
                 tooltipConfig: { placement: "top" }
             }).appendTo($where.find(".controls .actions"));
             
-            // TODO: store visibility w/ preferences
             activator.on("click", () => {
                 console.log("click", vm.$el);
                 $(vm.$el).toggleClass("active");
@@ -176,6 +181,7 @@ var HistoryViewEdit = _super.extend(
 
             return vm;
         },
+
         /** render the annotation sub-view controller */
         _renderAnnotation: function($where) {
             var panel = this;

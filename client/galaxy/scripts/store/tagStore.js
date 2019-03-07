@@ -5,7 +5,11 @@ export const tagStore = {
     },
     getters: {
         getTagsById: (state) => (key) => {
-            return state.modelTagCache.get(key).sort();
+            if (state.modelTagCache.has(key)) {
+                let tagSet = state.modelTagCache.get(key); //.sort();
+                return Array.from(tagSet);
+            }
+            return [];
         }
     },
     actions: {
@@ -15,11 +19,8 @@ export const tagStore = {
     },
     mutations: {
         setTags(state, { key, tags }) {
-            // Have to reset the object to a whole new object or the observable
-            // will not trigger a change. Just setting a new property on
-            // an object instance is not enough
             state.modelTagCache = new Map(state.modelTagCache);
-            state.modelTagCache.set(key, tags);
+            state.modelTagCache.set(key, new Set(tags));
         }
     }
 }

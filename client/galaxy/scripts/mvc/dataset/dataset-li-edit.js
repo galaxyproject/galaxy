@@ -4,7 +4,6 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import STATES from "mvc/dataset/states";
 import DATASET_LI from "mvc/dataset/dataset-li";
-// import TAGS from "mvc/tag";
 import { mountModelTags } from "components/Tags";
 import ANNOTATIONS from "mvc/annotation";
 import faIconButton from "ui/fa-icon-button";
@@ -305,11 +304,13 @@ var DatasetListItemEdit = _super.extend(
             }
             
             let el = $where.find(".tags-display")[0];
+
             let propsData = {
                 model: this.model,
-                // a note in the comments requested read-only
-                disabled: true
+                disabled: false,
+                context: "dataset-li-edit"
             };
+            
             let vm = mountModelTags(propsData, el);
 
             // tag icon button open/closes
@@ -319,39 +320,21 @@ var DatasetListItemEdit = _super.extend(
                 faIcon: "fa-tags"
             }).appendTo($where.find(".actions .right"));
 
-            // not sure who cares about tagsEditorShown
-            activator.on("click", () => {
+            let toggleEditor = () => {
                 $(vm.$el).toggleClass("active");
                 this.tagsEditorShown = $(vm.$el).hasClass("active");
-            });
+            };
+
+            activator.on("click", toggleEditor);
+
+            if (this.tagsEditorShown) {
+                let editorIsOpen = $(vm.$el).hasClass("active");
+                if (!editorIsOpen) {
+                    toggleEditor();
+                }
+            }
 
             return vm;
-            
-            /*
-            var view = this;
-            this.tagsEditor = new TAGS.TagsEditor({
-                model: this.model,
-                el: $where.find(".tags-display"),
-                onshowFirstTime: function() {
-                    this.render();
-                },
-                // persist state on the hda view (and not the editor) since these are currently re-created each time
-                onshow: function() {
-                    view.tagsEditorShown = true;
-                },
-                onhide: function() {
-                    view.tagsEditorShown = false;
-                },
-                $activator: faIconButton({
-                    title: _l("Edit dataset tags"),
-                    classes: "tag-btn",
-                    faIcon: "fa-tags"
-                }).appendTo($where.find(".actions .right"))
-            });
-            if (this.tagsEditorShown) {
-                this.tagsEditor.toggle(true);
-            }
-            */
         },
 
         /** Render the annotation display/control */

@@ -139,8 +139,12 @@ const WorkflowItemView = Backbone.View.extend({
 
     renderTagEditor: function() {
         let el = $(this.el).find('.tags-display')[0];
-        let vm = mountModelTags(this, el);
-        return vm;
+        let propsData = {
+            model: this.model,
+            disabled: false,
+            context: "workflow"
+        };
+        return mountModelTags(propsData, el);
     },
 
     /** Template for user actions for workflows */

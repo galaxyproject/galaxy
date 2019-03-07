@@ -1,3 +1,7 @@
+<!-- This is intended to be a stateless UI-only component. All data storage and
+retrieval as well as and specific event handling should be managed from an
+upstream component or environment that is accessed through props and events -->
+
 <template>
     <div :class="tagContainerClasses">
         <a href="#" class="toggle-link" 
@@ -13,7 +17,7 @@
             :autocomplete-items="autocompleteTags"
             :disabled="disabled"
             :placeholder="'Add Tags' | localize"
-            :add-on-key="[13, ' ']"
+            :add-on-key="triggerKeys"
             @before-adding-tag="beforeAddingTag"
             @before-deleting-tag="beforeDeletingTag"
             @tags-changed="tagsChanged">
@@ -46,7 +50,8 @@ export default {
         
         return { 
             tagText: "",
-            tagToggle: !isClosed
+            tagToggle: !isClosed,
+            triggerKeys: [13, ' ']
         };
     },
     computed: {
@@ -114,80 +119,4 @@ export default {
 };
 </script>
 
-<style lang="scss">
-@import "theme/blue";
-@import "scss/mixins";
-
-// Puts a little graphic in place of the text-input
-// when the input is not in focus
-@mixin newTagHoverButton() {
-    .vue-tags-input .ti-tags .ti-new-tag-input-wrapper {
-        input {
-            background-color: transparent;
-        }
-        input:not(:focus) {
-            background: url("/static/images/fugue/tag--plus.png");
-            background-repeat: no-repeat;
-            color: transparent;
-            &::placeholder {
-                color: transparent;
-            }
-        }
-    }
-}
-
-// hides tag container edges
-@mixin hideEditorBorders() {
-    .vue-tags-input {
-        // need to add yet another class to beat the scoping
-        &.tag-area {
-            background-color: transparent;
-        }
-        .ti-input {
-            border: none;
-        }
-    }
-}
-
-// general style butchering
-@mixin matchBootstrapStyling() {
-    .vue-tags-input {
-        @include fill();
-        .ti-input {
-            padding: 0;
-        }
-        .ti-tag {
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 400;
-        }
-    }
-}
-
-// Version of the tags that only allow clicking
-// existing tags instead of the full editing UI
-@mixin forDisplayOnly() {
-    .vue-tags-input {
-        .ti-actions,
-        .ti-new-tag-input-wrapper {
-            display: none;
-        }
-    }
-}
-
-.galaxy-tags {
-    // adds in a graphic in place of the text input
-    @include newTagHoverButton();
-
-    // match bootstrap tag styles/colors
-    @include matchBootstrapStyling();
-
-    // removes input borders (not sure if this happens everywhere)
-    @include hideEditorBorders();
-
-    // display-only tags
-    &.disabled {
-        @include forDisplayOnly();
-    }
-}
-</style>
+<style lang="scss" src="./StatelessTags.styles.scss"></style>
