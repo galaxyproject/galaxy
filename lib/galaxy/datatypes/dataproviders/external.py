@@ -7,7 +7,7 @@ import logging
 import subprocess
 import tempfile
 
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import urlopen
 
 from . import (
@@ -111,6 +111,9 @@ class URLDataProvider(base.DataProvider):
 
         self.data = data or {}
         encoded_data = urlencode(self.data)
+
+        scheme = urlparse(url).scheme
+        assert scheme in ('http', 'https', 'ftp'), 'Invalid URL scheme: %s' % scheme
 
         if method == 'GET':
             self.url += '?%s' % (encoded_data)

@@ -5,10 +5,10 @@ Provides wrappers and utilities for working with MAF files and alignments.
 # Dan Blankenberg
 from __future__ import print_function
 
+import functools
 import logging
 import os
 import resource
-import string
 import sys
 import tempfile
 from copy import deepcopy
@@ -19,10 +19,14 @@ import bx.interval_index_file
 import bx.intervals
 from six.moves import xrange
 
-assert sys.version_info[:2] >= (2, 4)
+try:
+    from string import maketrans
+except ImportError:
+    maketrans = str.maketrans
+
+assert sys.version_info[:2] >= (2, 6)
 
 log = logging.getLogger(__name__)
-
 
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
@@ -138,7 +142,7 @@ class TempFileHandler(object):
 # an object corresponding to a reference layered alignment
 class RegionAlignment(object):
 
-    DNA_COMPLEMENT = string.maketrans("ACGTacgt", "TGCAtgca")
+    DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
     def __init__(self, size, species=[], temp_file_handler=None):
@@ -168,7 +172,7 @@ class RegionAlignment(object):
         for name in skip:
             try:
                 names.remove(name)
-            except:
+            except ValueError:
                 pass
         return names
 
@@ -222,7 +226,7 @@ class GenomicRegionAlignment(RegionAlignment):
 
 class SplicedAlignment(object):
 
-    DNA_COMPLEMENT = string.maketrans("ACGTacgt", "TGCAtgca")
+    DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
     def __init__(self, exon_starts, exon_ends, species=[], temp_file_handler=None):
         if not isinstance(exon_starts, list):
@@ -295,7 +299,7 @@ def maf_index_by_uid(maf_uid, index_location_file):
                     return bx.align.maf.MultiIndexed(maf_files, keep_open=True, parse_e_rows=False)
                 except Exception as e:
                     raise Exception('MAF UID (%s) found, but configuration appears to be malformed: %s' % (maf_uid, e))
-        except:
+        except Exception:
             pass
     return None
 
@@ -304,7 +308,7 @@ def maf_index_by_uid(maf_uid, index_location_file):
 def open_or_build_maf_index(maf_file, index_filename, species=None):
     try:
         return (bx.align.maf.Indexed(maf_file, index_filename=index_filename, keep_open=True, parse_e_rows=False), None)
-    except:
+    except Exception:
         return build_maf_index(maf_file, species=species)
 
 
@@ -652,7 +656,7 @@ def sort_block_components_by_block(block1, block2):
     # orders the components in block1 by the index of the component in block2
     # block1 must be a subset of block2
     # occurs in-place
-    return block1.components.sort(cmp=lambda x, y: block2.components.index(x) - block2.components.index(y))
+    return block1.components.sort(key=functools.cmp_to_key(lambda x, y: block2.components.index(x) - block2.components.index(y)))
 
 
 def get_species_in_maf(maf_filename):
@@ -675,7 +679,7 @@ def parse_species_option(species):
 def remove_temp_index_file(index_filename):
     try:
         os.unlink(index_filename)
-    except:
+    except Exception:
         pass
 
 # Below are methods to deal with FASTA files
@@ -713,7 +717,7 @@ def get_attributes_from_fasta_header(header):
         region = region[1].lstrip(':').split('-')
         attributes['start'] = int(region[0])
         attributes['end'] = int(region[1])
-    except:
+    except Exception:
         # fields 0 is not a region coordinate
         pass
     if len(fields) > 2:
@@ -727,7 +731,7 @@ def get_attributes_from_fasta_header(header):
 
 
 def iter_fasta_alignment(filename):
-    class fastaComponent:
+    class fastaComponent(object):
         def __init__(self, species, text=""):
             self.species = species
             self.text = text

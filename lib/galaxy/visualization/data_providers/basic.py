@@ -37,7 +37,7 @@ class BaseDataProvider(object):
         """
         raise Exception("Unimplemented Function")
 
-    def get_data(self, chrom, start, end, start_val=0, max_vals=sys.maxint, **kwargs):
+    def get_data(self, chrom, start, end, start_val=0, max_vals=sys.maxsize, **kwargs):
         """
         Returns data as specified by kwargs. start_val is the first element to
         return and max_vals indicates the number of values to return.
@@ -104,7 +104,6 @@ class ColumnDataProvider(BaseDataProvider):
                    (column >= 0)), (
                 "column index (%d) must be positive and less" % (column) +
                 " than the number of columns: %d" % (self.original_dataset.metadata.columns))
-        # print columns, start_val, max_vals, skip_comments, kwargs
 
         # set up the response, column lists
         response = {}
@@ -124,12 +123,12 @@ class ColumnDataProvider(BaseDataProvider):
             if type == 'int':
                 try:
                     val = int(val)
-                except:
+                except ValueError:
                     return None
             elif type == 'float':
                 try:
                     val = float(val)
-                except:
+                except ValueError:
                     return None
             return val
 

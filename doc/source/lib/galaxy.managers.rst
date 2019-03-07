@@ -41,6 +41,22 @@ galaxy\.managers\.citations module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.managers\.cloud module
+------------------------------
+
+.. automodule:: galaxy.managers.cloud
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.managers\.cloudauthzs module
+------------------------------------
+
+.. automodule:: galaxy.managers.cloudauthzs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.managers\.collections module
 ------------------------------------
 
@@ -137,6 +153,14 @@ galaxy\.managers\.history\_contents module
     :undoc-members:
     :show-inheritance:
 
+galaxy\.managers\.jobs module
+-----------------------------
+
+.. automodule:: galaxy.managers.jobs
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 galaxy\.managers\.lddas module
 ------------------------------
 
@@ -149,6 +173,14 @@ galaxy\.managers\.libraries module
 ----------------------------------
 
 .. automodule:: galaxy.managers.libraries
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.managers\.library\_datasets module
+------------------------------------------
+
+.. automodule:: galaxy.managers.library_datasets
     :members:
     :undoc-members:
     :show-inheritance:

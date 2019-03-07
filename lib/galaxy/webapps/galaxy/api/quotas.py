@@ -4,12 +4,22 @@ API operations on Quota objects.
 import logging
 
 from paste.httpexceptions import HTTPBadRequest
-from sqlalchemy import false, true
+from sqlalchemy import (
+    false,
+    true
+)
 
-from galaxy import web, util
+from galaxy import (
+    util,
+    web
+)
 from galaxy.actions.admin import AdminActions
 from galaxy.exceptions import ActionInputError
-from galaxy.web.base.controller import BaseAPIController, UsesQuotaMixin, url_for
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    url_for,
+    UsesQuotaMixin
+)
 from galaxy.web.params import QuotaParamParser
 
 log = logging.getLogger(__name__)

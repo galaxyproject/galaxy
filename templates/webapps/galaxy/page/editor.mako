@@ -9,31 +9,32 @@
 %>
 </%def>
 
-<%def name="javascripts()">
-    ${parent.javascripts()}
+<%def name="javascript_app()">
+    ${parent.javascript_app()}
     <script type="text/javascript">
-        // Define variables needed by galaxy.pages script.
-        var page_id = "${trans.security.encode_id(page.id)}",
-            page_list_url = '${h.url_for( controller='pages', action='list' )}',
-            list_objects_url = "${h.url_for(controller='page', action='LIST_ACTION' )}",
-            set_accessible_url = "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
-            get_name_and_link_url = "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",
-            editor_base_path = "${h.url_for('/static/wymeditor')}/",
-            iframe_base_path = "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
-            save_url = "${h.url_for(controller='page', action='save' )}";
+        // Define global variables needed by galaxy.pages script.
+        // Apparently pages() relies on these variables being defined
+        // in window. 
+        config.addInitialization(function(){
+            var pagesConfig = {
+                page_id: "${trans.security.encode_id(page.id)}",
+                page_list_url: '${h.url_for( controller='pages', action='list' )}',
+                list_objects_url: "${h.url_for(controller='page', action='LIST_ACTION' )}",
+                set_accessible_url: "${h.url_for( controller='ITEM_CONTROLLER', action='set_accessible_async' )}",
+                get_name_and_link_url: "${h.url_for( controller='ITEM_CONTROLLER', action='get_name_and_link_async' )}?id=",
+                editor_base_path: "${h.url_for('/static/wymeditor')}/",
+                iframe_base_path: "${h.url_for('/static/wymeditor/iframe/galaxy')}/",
+                save_url: "${h.url_for(controller='page', action='save' )}"
+            };
+            console.log("editor.mako, javascript_app", "define variables needed by galaxy.pages script");
+            window.bundleEntries.pages(pagesConfig);
+        });
     </script>
-    ${h.js(
-        "libs/jquery/jquery.form",
-        "libs/jquery/jstorage",
-        "libs/jquery/jquery.wymeditor",
-        "libs/jquery/jquery.autocomplete",
-        "galaxy.pages"
-    )}
 </%def>
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "base", "autocomplete_tagging", "embed_item" )}
+    ${h.css( "base", "embed_item" )}
     <style type='text/css'>
         .galaxy-page-editor-button
         {
@@ -47,17 +48,14 @@
 <%def name="center_panel()">
 
     <div class="unified-panel-header" unselectable="on">
-        <div class="unified-panel-header-inner" style="float: right">
-            <a id="save-button" class="panel-header-button">Save</a>
-            <a id="close-button" class="panel-header-button">Close</a>
-        </div>
         <div class="unified-panel-header-inner">
-            Page Editor <span style="font-weight: normal">| Title : ${page.title | h}</span>
+            Page Editor: ${page.title | h}
+            <a id="save-button" class="btn btn-secondary fa fa-save float-right"></a>
         </div>
     </div>
 
     <div class="unified-panel-body">
-        <textarea name="page_content">${util.unicodify( page.latest_revision.content )}</textarea>
+        <textarea name="page_content">${ content }</textarea>
     </div>
 
 </%def>

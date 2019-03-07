@@ -20,7 +20,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 
@@ -42,7 +41,7 @@ ${render_galaxy_repository_actions( repository=repository )}
                         else:
                             tip_str = ''
                     %>
-                    ${changeset_revision_select_field.get_html()} <i>${tip_str | h}</i>
+                    ${render_select(changeset_revision_select_field)} <i>${tip_str | h}</i>
                     <div class="toolParamHelp" style="clear: both;">
                         Select a revision to inspect and download versions of Galaxy utilities from this repository.
                     </div>

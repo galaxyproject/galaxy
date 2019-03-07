@@ -160,7 +160,6 @@ class GodockerJobRunner(AsynchronousJobRunner):
             # Create an object of AsynchronousJobState and add it to the monitor queue.
             ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
             self.monitor_queue.put(ajs)
-        return None
 
     def check_watched_item(self, job_state):
         """ Get the job current status from GoDocker
@@ -226,18 +225,19 @@ class GodockerJobRunner(AsynchronousJobRunner):
             self.mark_as_failed(job_state)
             return None
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """ Attempts to delete a dispatched executing Job in GoDocker """
         '''This function is called by fail_job()
            where param job = self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id )
            No Return data expected
         '''
-        log.debug("STOP JOB EXECUTION OF JOB ID: " + str(job.id))
+        job_id = job_wrapper.job_id
+        log.debug("STOP JOB EXECUTION OF JOB ID: " + str(job_id))
         # Get task status from GoDocker.
-        job_status_god = self.get_task_status(job.id)
+        job_status_god = self.get_task_status(job_id)
         if job_status_god['status']['primary'] != "over":
             # Initiate a delete call,if the job is running in GoDocker.
-            self.delete_task(job.id)
+            self.delete_task(job_id)
         return None
 
     def recover(self, job, job_wrapper):
@@ -336,16 +336,16 @@ class GodockerJobRunner(AsynchronousJobRunner):
             job_destination = job_wrapper.job_destination
             try:
                 docker_cpu = int(job_destination.params["docker_cpu"])
-            except:
+            except Exception:
                 docker_cpu = 1
             try:
                 docker_ram = int(job_destination.params["docker_memory"])
-            except:
+            except Exception:
                 docker_ram = 1
             try:
                 docker_image = self._find_container(job_wrapper).container_id
                 log.debug("GoDocker runner using container %s.", docker_image)
-            except:
+            except Exception:
                 log.error("Unable to find docker_image for job %s, failing." % job_wrapper.job_id)
                 return False
 
@@ -367,7 +367,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 for i in volume:
                     temp = dict({"name": i})
                     volumes.append(temp)
-            except:
+            except Exception:
                 log.debug("godocker_volume not set, using default.")
 
             dt = datetime.now()
@@ -379,7 +379,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                     command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + venv + "\n" + job_wrapper.runner_command_line
                 else:
                     command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
-            except:
+            except Exception:
                 command = "#!/bin/bash\n" + "cd " + job_wrapper.working_directory + "\n" + job_wrapper.runner_command_line
 
             # GoDocker Job model schema

@@ -1,32 +1,80 @@
-sudo: false
 language: python
 python: 2.7
 os:
   - linux
 env:
-  - TOX_ENV=py34-lint
   - TOX_ENV=py27-lint
   - TOX_ENV=py27-unit
-  - TOX_ENV=qunit
-  - TOX_ENV=first_startup
-  - TOX_ENV=py27-lint-imports
-  - TOX_ENV=py27-lint-imports-include-list
-  - TOX_ENV=validate-test-tools
-  - TOX_ENV=py27-lint-docstring-include-list
+  - TOX_ENV=py27-first_startup
+  - TOX_ENV=py27-lint_docstring_include_list
 
 matrix:
-  allow_failures:
-  - env: TOX_ENV=py27-lint-imports
+  include:
+    - env: TOX_ENV=py35-lint
+      addons:
+        apt:
+          packages:
+            - python3.5
+    - env: TOX_ENV=py35-first_startup
+      addons:
+        &py3_addons
+        apt:
+          packages:
+            - python3.5
+            # For psutil, pyyaml, uwsgi...
+            - libpython3.5-dev
+    - env: TOX_ENV=validate_test_tools
+      addons:
+        apt:
+          packages:
+            - libxml2-utils
+    - env: TOX_ENV=check_py3_compatibility
+      addons:
+        apt:
+          packages:
+            - ack-grep
+    - env: TOX_ENV=py35-unit
+      addons: *py3_addons
+    - os: osx
+      # No version of Python is available via virtualenv on OS X workers, see https://github.com/travis-ci/travis-ci/issues/2312
+      language: generic
+      env: TOX_ENV=py27-first_startup
+    - name: js-unit
+      language: node_js
+      node_js:
+          - 10
+      before_install:
+        - cd client
+      install:
+        - yarn
+        - yarn run build
+      script:
+        - yarn run test
+    - name: js-lint
+      language: node_js
+      node_js:
+          - 10
+      before_install:
+        - cd client
+      install:
+        - yarn
+      script:
+        - yarn run eslint
 
-addons:
-  apt:
-    packages:
-      - libxml2-utils
+before_install:
+  # Workaround for https://github.com/travis-ci/travis-ci/issues/7940
+  - sudo rm -f /etc/boto.cfg
 
 install:
+  - set -e
   - pip install tox
-  - if [ "$TOX_ENV" == "qunit" ]; then bash -c 'cd test/qunit && npm install'; fi
-  - if [ "$TOX_ENV" == "first_startup" ]; then bash -c "bash scripts/common_startup.sh && wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite && mv db_gx_rev_0127.sqlite database/universe.sqlite && bash manage_db.sh -c ./config/galaxy.ini.sample upgrade"; fi
+  - |
+    if [ "$TOX_ENV" == "py27-first_startup" ]; then
+        sh scripts/common_startup.sh
+        wget -q https://github.com/jmchilton/galaxy-downloads/raw/master/db_gx_rev_0127.sqlite
+        mv db_gx_rev_0127.sqlite database/universe.sqlite
+        sh manage_db.sh -c ./config/galaxy.yml.sample upgrade
+    fi
 
 script: tox -e $TOX_ENV
 

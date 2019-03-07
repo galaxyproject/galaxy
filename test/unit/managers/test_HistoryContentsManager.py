@@ -10,7 +10,6 @@ from sqlalchemy.sql import text
 
 from galaxy.managers import collections, hdas, history_contents
 from galaxy.managers.histories import HistoryManager
-
 from .base import BaseTestCase
 from .base import CreatesCollectionsMixin
 
@@ -36,8 +35,10 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
         return hda
 
     def add_list_collection_to_history(self, history, hdas, name='test collection', **kwargs):
-        hdca = self.collection_manager.create(self.trans, history, name, 'list',
-            element_identifiers=self.build_element_identifiers(hdas))
+        hdca = self.collection_manager.create(self.trans,
+                                              history, name, 'list',
+                                              element_identifiers=self.build_element_identifiers(hdas),
+                                              **kwargs)
         return hdca
 
 
@@ -74,6 +75,16 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         self.add_list_collection_to_history(history, hdas)
         self.assertEqual(list(self.contents_manager.contained(history)), hdas)
 
+    def test_copy_elements_on_collection_creation(self):
+        user2 = self.user_manager.create(**user2_data)
+        history = self.history_manager.create(name='history', user=user2)
+        hdas = [self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(3)]
+        hdca = self.add_list_collection_to_history(history, hdas)
+        self.assertEqual(hdas, hdca.dataset_instances)
+
+        hdca = self.add_list_collection_to_history(history, hdas, copy_elements=True)
+        self.assertNotEqual(hdas, hdca.dataset_instances)
+
     def test_subcontainers(self):
         user2 = self.user_manager.create(**user2_data)
         history = self.history_manager.create(name='history', user=user2)
@@ -96,17 +107,8 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         contents.extend([self.add_hda_to_history(history, name=('hda-' + str(x))) for x in range(4, 6)])
         contents.append(self.add_list_collection_to_history(history, contents[4:6]))
 
-        # _subquery = self.contents_manager._contents_common_query( self.contents_manager.subcontainer_class, history.id )
-        # _subquery = self.contents_manager._contents_common_query( self.contents_manager.contained_class, history.id )
-        # print _subquery
-        # for row in _subquery.all():
-        #     print row
-
         self.log("should be able to limit and offset")
         results = self.contents_manager.contents(history)
-        # print [ r.id for r in results ]
-        # print '--'
-        # print [ c.id for c in contents ]
         self.assertEqual(results, contents)
 
         self.assertEqual(self.contents_manager.contents(history, limit=4), contents[0:4])
@@ -134,8 +136,6 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
 
         # TODO: cross db compat?
         filters = [text('deleted = 1')]
-        # for content in self.contents_manager.contents( history, filters=filters ):
-        #     print content.hid, content.history_content_type, content.id, content.name
         self.assertEqual(self.contents_manager.contents(history, filters=filters), deleted)
 
         # even stranger that sqlalx can use the first model in the union (HDA) for columns across the union
@@ -151,8 +151,6 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         contents[5].visible = False
         contents[6].visible = False
         invisible = [contents[2], contents[5], contents[6]]
-        # for content in invisible:
-        #     print content.id, content.__class__.__name__, content
         self.app.model.context.flush()
 
         filters = [text('visible = 0')]

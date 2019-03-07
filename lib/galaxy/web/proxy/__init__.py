@@ -1,15 +1,18 @@
+import json
 import logging
 import os
-import json
+import time
 from collections import namedtuple
 
+import requests
+
+from galaxy.util import (
+    sockets,
+    sqlite,
+    unique_id
+)
 from galaxy.util.filelock import FileLock
-from galaxy.util import sockets
 from galaxy.util.lazy_process import LazyProcess, NoOpLazyProcess
-from galaxy.util import sqlite
-from galaxy.util import unique_id
-import urllib2
-import time
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +23,11 @@ SECURE_COOKIE = "galaxysession"
 
 
 class ProxyManager(object):
+
+    valid_update_keys = (
+        'host',
+        'port',
+    )
 
     def __init__(self, config):
         for option in ["manage_dynamic_proxy", "dynamic_proxy_bind_port",
@@ -80,6 +88,13 @@ class ProxyManager(object):
             'proxied_port': proxy_requests.port,
             'proxied_host': proxy_requests.host,
         }
+
+    def update_proxy(self, trans, **kwargs):
+        authentication = AuthenticationToken(trans)
+        for k in kwargs.keys():
+            if k not in self.valid_update_keys:
+                raise Exception("Invalid proxy request update key: %s" % k)
+        return self.proxy_ipc.update_requests(authentication, **kwargs)
 
     def query_proxy(self, trans):
         authentication = AuthenticationToken(trans)
@@ -208,6 +223,15 @@ class JsonFileProxyIpc(object):
             new_json_data = json.dumps(session_map)
             open(self.proxy_session_map, "w").write(new_json_data)
 
+    def update_requests(self, authentication, host=None, port=None):
+        key = authentication.cookie_value
+        with FileLock(self.proxy_session_map):
+            session_map = json.load(open(self.proxy_session_map))
+            session_map[key]['host'] = host
+            session_map[key]['port'] = port
+            new_json_data = json.dumps(session_map)
+            open(self.proxy_session_map, "w").write(new_json_data)
+
     def fetch_requests(self, authentication):
         key = authentication.cookie_value
         try:
@@ -261,6 +285,20 @@ class SqliteProxyIpc(object):
             finally:
                 conn.close()
 
+    def update_requests(self, authentication, host=None, port=None):
+        key = authentication.cookie_value
+        with FileLock(self.proxy_session_map):
+            conn = sqlite.connect(self.proxy_session_map)
+            try:
+                c = conn.cursor()
+                update = '''UPDATE gxproxy2
+                            SET host = ?, port = ?
+                            WHERE key = ?'''
+                c.execute(update, (host, port, key))
+                conn.commit()
+            finally:
+                conn.close()
+
     def fetch_requests(self, authentication):
         key = authentication.cookie_value
         with FileLock(self.proxy_session_map):
@@ -301,21 +339,17 @@ class RestGolangProxyIpc(object):
             'ContainerIds': container_ids,
         }
 
-        req = urllib2.Request(self.api_url)
-        req.add_header('Content-Type', 'application/json')
-
         # Sometimes it takes our poor little proxy a second or two to get
         # going, so if this fails, re-call ourselves with an increased timeout.
         try:
-            urllib2.urlopen(req, json.dumps(values))
-        except urllib2.URLError as err:
-            log.debug(err)
+            requests.get(self.api_url, headers={'Content-Type': 'application/json'}, data=json.dumps(values))
+        except requests.exceptions.ConnectionError as err:
+            log.exception(err)
             if sleep > 5:
                 excp = "Could not contact proxy after %s seconds" % sum(range(sleep + 1))
                 raise Exception(excp)
             time.sleep(sleep)
-            self.handle_requests(authentication, proxy_requests, route_name, container_ids, sleep=sleep + 1)
-        pass
+            self.handle_requests(authentication, proxy_requests, route_name, container_ids, container_interface, sleep=sleep + 1)
 
 
 ProxyMapping = namedtuple('ProxyMapping', ['host', 'port', 'container_ids', 'container_interface'])

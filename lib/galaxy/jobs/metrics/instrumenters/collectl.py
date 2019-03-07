@@ -4,14 +4,13 @@ import os
 import shutil
 
 from galaxy import util
-
+from . import InstrumentPlugin
+from .. import formatting
 from ..collectl import (
     cli,
     processes,
     subsystems
 )
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
 
 log = logging.getLogger(__name__)
 

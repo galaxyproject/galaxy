@@ -4,20 +4,34 @@
     <datatype extension="velvet" type="galaxy.datatypes.assembly:Velvet" display_in_upload="true"/>
     <datatype extension="txt" type="galaxy.datatypes.data:Text" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" display_in_upload="true"/>
+    <datatype extension="csv" type="galaxy.datatypes.tabular:CSV" display_in_upload="true" />
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order)." >
     </datatype>
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
         <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
     </datatype>
     <datatype extension="fastq" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" />
-    <datatype extension="fastqsanger" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true" />
+    <datatype extension="fastqsanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true" />
     <datatype extension="fastqsolexa" type="galaxy.datatypes.sequence:FastqSolexa" display_in_upload="true" />
     <datatype extension="fastqcssanger" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true" />
     <datatype extension="fastqillumina" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" />
-    <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true" />
+    <datatype extension="sam" type="galaxy.datatypes.tabular:Sam" display_in_upload="true">
+        <converter file="sam_to_unsorted_bam.xml" target_datatype="unsorted.bam"/>
+        <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
+        <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
+        <converter file="sam_to_bigwig_converter.xml" target_datatype="bigwig"/>
+    </datatype>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://galaxyproject.org/learn/datatypes/#bam" />
+    <datatype extension="qname_input_sorted.bam" type="galaxy.datatypes.binary:BamInputSorted" mimetype="application/octet-stream" display_in_upload="false" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted based on the aligner output." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM"/>
+    <datatype extension="qname_sorted.bam" type="galaxy.datatypes.binary:BamQuerynameSorted" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension and sorted by queryname." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM"/>
+    <datatype extension="unsorted.bam" type="galaxy.datatypes.binary:BamNative" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bam' file extension." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#BAM">
+        <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
+        <converter file="to_coordinate_sorted_bam.xml" target_datatype="bam"/>
+        <converter file="to_qname_sorted_bam.xml" target_datatype="qname_sorted.bam"/>
+    </datatype>
     <datatype extension="bcf" type="galaxy.datatypes.binary:Bcf" mimetype="application/octet-stream" display_in_upload="true" description="A binary file compressed in the BGZF format with a '.bcf' file extension." description_url="https://galaxyproject.org/learn/datatypes/#bcf" />
     <datatype extension="biom1" type="galaxy.datatypes.text:Biom1" display_in_upload="True" subclass="True" mimetype="application/json"/>
+    <datatype extension="sra" type="galaxy.datatypes.binary:Sra" mimetype="application/octet-stream" display_in_upload="true" description="A binary file archive format from the NCBI Sequence Read Archive with a '.sra' file extension." description_url="http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure"/>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true" description="BED format provides a flexible way to define the data lines that are displayed in an annotation track. BED lines have three required columns and nine additional optional columns. The three required columns are chrom, chromStart and chromEnd." description_url="https://galaxyproject.org/learn/datatypes/#bed">
     </datatype>
     <datatype extension="xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" display_in_upload="true"/>
@@ -25,5 +39,15 @@
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" />
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true"/>
     <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
+    <datatype extension="data_manager_json" type="galaxy.datatypes.text:Json" mimetype="application/json" subclass="true" display_in_upload="false"/>
+    <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="binary" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true">
+    </datatype>
+    <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
+      <converter file="tar_to_directory.xml" target_datatype="directory"/>
+    </datatype>
+    <datatype extension="directory" type="galaxy.datatypes.data:Directory">
+    </datatype>
   </registration>
 </datatypes>

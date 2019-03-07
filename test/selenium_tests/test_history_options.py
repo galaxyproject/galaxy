@@ -1,5 +1,7 @@
-from .framework import SeleniumTestCase
-from .framework import selenium_test
+from .framework import (
+    selenium_test,
+    SeleniumTestCase
+)
 
 
 class HistoryOptionsTestCase(SeleniumTestCase):
@@ -11,20 +13,17 @@ class HistoryOptionsTestCase(SeleniumTestCase):
         self.wait_for_history()
         self.click_history_options()
 
-        menu_selector = self.history_options_menu_selector()
-        self.wait_for_selector_visible(menu_selector)
+        menu_selector = self.navigation.history_panel.selectors.options_menu
+        self.wait_for_visible(menu_selector)
 
         # Click away closes history options
         self.click_center()
 
-        self.assert_selector_absent_or_hidden(menu_selector)
+        self.wait_for_absent_or_hidden(menu_selector)
 
-        hda_id = self.latest_history_item()["id"]
-        self.click_hda_title(hda_id, wait=True)
-
-        hda_body_selector = self.hda_body_selector(hda_id)
-        self.wait_for_selector_visible(hda_body_selector)
-
-        self.click_hda_title(hda_id, wait=True)
-
-        self.assert_selector_absent_or_hidden(hda_body_selector)
+        hid = 1
+        self.history_panel_click_item_title(hid=hid, wait=True)
+        item_component = self.history_panel_item_body_component(hid=hid)
+        item_component.wait_for_visible()
+        self.history_panel_click_item_title(hid=hid, wait=True)
+        item_component.assert_absent_or_hidden_after_transitions()

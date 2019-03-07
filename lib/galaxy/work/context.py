@@ -28,8 +28,6 @@ class WorkRequestContext(ProvidesAppContext, ProvidesUserContext, ProvidesHistor
         self.workflow_building_mode = workflow_building_mode
 
     def get_history(self, create=False):
-        if create:
-            raise NotImplementedError("Cannot create histories from a work request context.")
         return self.__history
 
     def set_history(self):

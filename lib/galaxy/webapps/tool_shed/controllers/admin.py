@@ -1,19 +1,21 @@
 import logging
 
-from galaxy import util
-from galaxy.util import inflector
-from galaxy import web
-from tool_shed.util.web_util import escape
-
-from galaxy.web.base.controller import BaseUIController
-from tool_shed.util.admin_util import Admin
-
 import tool_shed.grids.admin_grids as admin_grids
+from galaxy import (
+    util,
+    web
+)
+from galaxy.util import inflector
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.framework.helpers import grids
 from tool_shed.metadata import repository_metadata_manager
-
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
+from tool_shed.util import (
+    metadata_util,
+    repository_util,
+    shed_util_common as suc
+)
+from tool_shed.util.admin_util import Admin
+from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
 
@@ -26,6 +28,10 @@ class AdminController(BaseUIController, Admin):
     manage_category_grid = admin_grids.ManageCategoryGrid()
     repository_grid = admin_grids.AdminRepositoryGrid()
     repository_metadata_grid = admin_grids.RepositoryMetadataGrid()
+
+    delete_operation = grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True)
+    undelete_operation = grids.GridOperation("Undelete", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
+    purge_operation = grids.GridOperation("Purge", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True)
 
     @web.expose
     @web.require_admin
@@ -45,7 +51,7 @@ class AdminController(BaseUIController, Admin):
                                                                 **kwd))
             elif operation == "repositories_by_user":
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 if 'user_id' in kwd:
@@ -60,7 +66,7 @@ class AdminController(BaseUIController, Admin):
                     kwd['f-email'] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
+                for k, v in list(kwd.items()):
                     if k.startswith('f-'):
                         del kwd[k]
                 category_id = kwd.get('id', None)

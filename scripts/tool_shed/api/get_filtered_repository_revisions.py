@@ -19,6 +19,7 @@ This script is useful for analyzing the Tool Shed's install and test framework.
 Here is a working example of how to use this script.
 ./get_filtered_repository_revisions.py --url http://testtoolshed.g2.bx.psu.edu
 """
+from __future__ import print_function
 
 import argparse
 import os
@@ -28,7 +29,7 @@ sys.path.insert(1, os.path.join(os.path.dirname(__file__), os.pardir, os.pardir,
 from galaxy.util import asbool
 from tool_shed.util import hg_util
 
-from common import get_api_url, get_repository_dict, json_from_url
+from common import get_api_url, get_repository_dict, json_from_url  # noqa: I100
 
 
 def main(options):
@@ -54,7 +55,7 @@ def main(options):
     api_url = get_api_url(base=base_tool_shed_url, parts=parts, params=params)
     baseline_repository_dicts, error_message = json_from_url(api_url)
     if baseline_repository_dicts is None or error_message:
-        print error_message
+        print(error_message)
     else:
         repository_dicts = []
         for baseline_repository_dict in baseline_repository_dicts:
@@ -62,7 +63,7 @@ def main(options):
             # module that will generate the install methods.
             repository_dict, error_message = get_repository_dict(base_tool_shed_url, baseline_repository_dict)
             if error_message:
-                print 'Error getting additional details from the API: ', error_message
+                print('Error getting additional details from the API: ', error_message)
                 repository_dicts.append(baseline_repository_dict)
             else:
                 # Don't test empty repositories.
@@ -73,11 +74,11 @@ def main(options):
                     if latest_revision_only:
                         latest_revision = repository_dict.get('latest_revision', hg_util.INITIAL_CHANGELOG_HASH)
                         if changeset_revision == latest_revision:
-                            repository_dicts.append(dict(repository_dict.items() + baseline_repository_dict.items()))
+                            repository_dicts.append(dict(list(repository_dict.items()) + list(baseline_repository_dict.items())))
                     else:
-                        repository_dicts.append(dict(repository_dict.items() + baseline_repository_dict.items()))
-        print '\n\n', repository_dicts
-        print '\nThe url:\n\n', api_url, '\n\nreturned ', len(repository_dicts), ' repository dictionaries...'
+                        repository_dicts.append(dict(list(repository_dict.items()) + list(baseline_repository_dict.items())))
+        print('\n\n', repository_dicts)
+        print('\nThe url:\n\n', api_url, '\n\nreturned ', len(repository_dicts), ' repository dictionaries...')
 
 
 if __name__ == '__main__':

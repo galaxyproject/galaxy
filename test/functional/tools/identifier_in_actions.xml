@@ -1,0 +1,23 @@
+<tool id="identifier_in_actions" name="identifier_in_actions" version="1.0.0">
+    <command><![CDATA[
+        cp '$input' '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" multiple="false" />
+    </inputs>
+    <outputs>
+        <data format="tabular" name="output">
+            <actions>
+                <action name="column_names" type="metadata" default="First,${input.element_identifier}" />
+            </actions>
+        </data>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="2.tabular" />
+            <output name="output">
+                <metadata name="column_names" value="First,2.tabular"/>
+            </output>
+        </test>
+    </tests>
+</tool>

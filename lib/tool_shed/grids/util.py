@@ -71,9 +71,7 @@ def build_changeset_revision_select_field(trans, repository, selected_value=None
         name = 'changeset_revision_%d' % repository.id
     else:
         name = 'changeset_revision'
-    select_field = SelectField(name=name,
-                               refresh_on_change=True,
-                               refresh_on_change_values=refresh_on_change_values)
+    select_field = SelectField(name=name, refresh_on_change=True)
     for option_tup in options:
         selected = selected_value and option_tup[1] == selected_value
         select_field.add_option(option_tup[0], option_tup[1], selected=selected)
@@ -114,7 +112,7 @@ def get_latest_downloadable_repository_metadata(trans, repository):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id(repository.id)
-    repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
     tip_ctx = str(repo.changectx(repo.changelog.tip()))
     repository_metadata = None
     try:
@@ -122,11 +120,8 @@ def get_latest_downloadable_repository_metadata(trans, repository):
         if repository_metadata is not None and repository_metadata.downloadable:
             return repository_metadata
         return None
-    except:
-        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                              repo,
-                                                                                              tip_ctx,
-                                                                                              downloadable=True)
+    except Exception:
+        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, tip_ctx, downloadable=True)
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
@@ -156,16 +151,13 @@ def get_latest_repository_metadata(trans, repository):
      tool_dependency_definition.
     """
     encoded_repository_id = trans.security.encode_id(repository.id)
-    repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
     tip_ctx = str(repo.changectx(repo.changelog.tip()))
     try:
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, encoded_repository_id, tip_ctx)
         return repository_metadata
-    except:
-        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(repository,
-                                                                                              repo,
-                                                                                              tip_ctx,
-                                                                                              downloadable=False)
+    except Exception:
+        latest_downloadable_revision = metadata_util.get_previous_metadata_changeset_revision(trans.app, repository, tip_ctx, downloadable=False)
         if latest_downloadable_revision == hg_util.INITIAL_CHANGELOG_HASH:
             return None
         repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,

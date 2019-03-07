@@ -18,7 +18,7 @@ Highlighted Enhancements
 * Implement a collection operation tool for merging collections
   (thanks to `@Takadonet <https://github.com/Takadonet>`__).
   `Pull Request 2771`_
-* Replace `reference documentation <https://docs.galaxyproject.org/en/latest/dev/schema.html>`__
+* Replace :doc:`reference documentation <../dev/schema>`
   for tool XML files with automatically generated
   documentation from a now official Galaxy XSD documentation (with help from many).
   `Pull Request 2923`_, `Pull Request 2936`_, `Pull Request 3086`_,
@@ -285,7 +285,7 @@ Fixes
 * Remove unnecessary ``set_output_history`` parameter
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
   `Pull Request 3155`_
-* Fix BLAST database *.loc files inconsistency
+* Fix BLAST database ``*.loc`` files inconsistency
   (thanks to `@peterjc <https://github.com/peterjc>`__).
   `Pull Request 3098`_
 * Log invalid XML filename
@@ -387,7 +387,7 @@ Fixes
   `Pull Request 3049`_
 * Remove incorrect communication server check.
   `Pull Request 3053`_
-* Fix tool XSD to accept a help attribute for ``section``s
+* Fix tool XSD to accept a help attribute for ``section``\ s
   (thanks to `@joachimwolff <https://github.com/joachimwolff>`__).
   `Pull Request 3131`_
 * Fix import orders for updates to flake8_import_order.
@@ -445,8 +445,8 @@ Fixes
 * Fix for ToolShed install when copied sample data target exists, but is broken symlink.
   `Pull Request 3279`_
 
-.. _Issue 2375: https://github.com/galaxyproject/galaxy/issues/2375
 .. github_links
+.. _Issue 2375: https://github.com/galaxyproject/galaxy/issues/2375
 .. _Pull Request 1768: https://github.com/galaxyproject/galaxy/pull/1768
 .. _Pull Request 2588: https://github.com/galaxyproject/galaxy/pull/2588
 .. _Pull Request 2653: https://github.com/galaxyproject/galaxy/pull/2653

@@ -1,19 +1,29 @@
 import calendar
-from datetime import datetime, date, timedelta
 import logging
+import re
 from collections import namedtuple
+from datetime import (
+    date,
+    datetime,
+    timedelta
+)
+from math import (
+    ceil,
+    floor
+)
+
 import sqlalchemy as sa
-from sqlalchemy import and_
 from markupsafe import escape
+from sqlalchemy import and_
 
 from galaxy import model, util
-from math import floor
 from galaxy.web.base.controller import BaseUIController, web
-from galaxy.web.framework.helpers import grids
-import re
-from math import ceil
+from galaxy.webapps.reports.controllers.jobs import (
+    get_spark_time,
+    sorter
+)
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-from galaxy.webapps.reports.controllers.jobs import sorter, get_spark_time
+from galaxy.webapps.reports.framework import grids
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +81,6 @@ class SpecifiedDateListGrid(grids.Grid):
     use_async = False
     model_class = model.StoredWorkflow
     title = "Workflows"
-    template = '/webapps/reports/grid.mako'
     default_sort_key = "name"
     columns = [
         WorkflowNameColumn("Name",
@@ -103,7 +112,6 @@ class SpecifiedDateListGrid(grids.Grid):
     standard_filters = []
     default_filter = {'specified_date': 'All'}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = True
 
     def build_initial_query(self, trans, **kwd):

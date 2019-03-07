@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import argparse
 import os
 import shutil
@@ -11,9 +13,9 @@ from tool_shed.util.basic_util import INSTALLATION_LOG
 def main(args):
     empty_installation_paths = []
     if not os.path.exists(args.basepath):
-        print 'Tool dependency path %s does not exist.' % str(args.basepath)
+        print('Tool dependency path "%s" does not exist.' % args.basepath)
         return 1
-    print 'Checking path %s for empty tool dependency installation directories.' % args.basepath
+    print('Checking path "%s" for empty tool dependency installation directories.' % args.basepath)
     for root, dirs, files in os.walk(args.basepath):
         path_parts = root.replace(args.basepath, '').lstrip('/').split(os.sep)
         # Skip certain special directories.
@@ -35,18 +37,18 @@ def main(args):
         if no_files and no_dirs and root not in empty_installation_paths:
             empty_installation_paths.append(root)
     if len(empty_installation_paths) > 0:
-        print 'The following %d tool dependency installation directories were found to be empty or contain only the file %s.' % \
-            (len(empty_installation_paths), INSTALLATION_LOG)
+        print('The following %d tool dependency installation directories were found to be empty or contain only the file %s.' %
+            (len(empty_installation_paths), INSTALLATION_LOG))
         if args.delete:
             for path in empty_installation_paths:
                 if os.path.exists(path):
                     shutil.rmtree(path)
-                    print 'Deleted %s.' % path
+                    print('Deleted %s.' % path)
         else:
             for empty_installation_path in empty_installation_paths:
-                print empty_installation_path
+                print(empty_installation_path)
     else:
-        print 'No empty tool dependency installation directories found.'
+        print('No empty tool dependency installation directories found.')
     return 0
 
 

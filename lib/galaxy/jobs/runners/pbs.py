@@ -143,7 +143,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             # stripping the - comes later (in parse_destination_params)
             for i, opt in enumerate(opts):
                 opts[i] = '-' + opt
-        except:
+        except Exception:
             opts = []
         for opt in opts:
             param, value = opt.split(None, 1)
@@ -168,7 +168,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                     arg = PBS_ARGMAP[arg]
                 arg = arg.lstrip('-')
                 args[arg] = value
-            except:
+            except Exception:
                 log.warning('Unrecognized long argument in destination params: %s' % arg)
         return self.__args_to_attrs(args)
 
@@ -288,7 +288,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             stage_commands = ''
 
         env_setup_commands = [stage_commands]
-        script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands)
+        script = self.get_job_file(job_wrapper, exit_code_path=ecfile, env_setup_commands=env_setup_commands, shell=job_wrapper.shell)
         job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.job_id)
         self.write_executable_script(job_file, script)
         # job was deleted while we were preparing it
@@ -371,7 +371,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                     self.check_single_job(pbs_server_name, job_id)
                     log.warning("(%s/%s) PBS job was not in state check list, but was found with individual state check" % (galaxy_job_id, job_id))
                     new_watched.append(pbs_job_state)
-                except:
+                except Exception:
                     errno, text = pbs.error()
                     if errno == 15001:
                         # 15001 == job not in queue
@@ -482,7 +482,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         # NB: The stop_job method was modified to limit exceptions being sent up here,
         # so the wrapper's fail method will now be called in case of error:
         if pbs_job_state.stop_job:
-            self.stop_job(self.sa_session.query(self.app.model.Job).get(pbs_job_state.job_wrapper.job_id))
+            self.stop_job(pbs_job_state.job_wrapper)
         pbs_job_state.job_wrapper.fail(pbs_job_state.fail_message)
         if pbs_job_state.job_wrapper.cleanup_job == "always":
             self.cleanup((pbs_job_state.output_file, pbs_job_state.error_file, pbs_job_state.exit_code_file, pbs_job_state.job_file))
@@ -502,8 +502,9 @@ class PBSJobRunner(AsynchronousJobRunner):
                 stage += "%s@%s:%s" % (stage_name, self.app.config.pbs_dataset_server, fname)
         return stage
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         """Attempts to delete a job from the PBS queue"""
+        job = job_wrapper.get_job()
         job_id = job.get_job_runner_external_id().encode('utf-8')
         job_tag = "(%s/%s)" % (job.get_id_tag(), job_id)
         log.debug("%s Stopping PBS job" % job_tag)
@@ -525,7 +526,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             pbs.pbs_deljob(c, job_id, '')
             log.debug("%s Removed from PBS queue before job completion"
                       % job_tag)
-        except:
+        except Exception:
             e = traceback.format_exc()
             log.debug("%s Unable to stop job: %s" % (job_tag, e))
         finally:

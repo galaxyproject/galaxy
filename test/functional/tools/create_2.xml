@@ -1,5 +1,5 @@
 <tool id="create_2" name="create_2">
-    <command><![CDATA[
+    <command detect_errors="exit_code"><![CDATA[
         echo "1" > '$out_file1';
         echo "2" > '$out_file2';
         sleep '$sleep_time';

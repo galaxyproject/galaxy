@@ -36,14 +36,14 @@ class RegexValidator(Validator):
 
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build( None, XML( '''
-    ... <param name="blah" type="text" size="10" value="10">
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="10">
     ...     <validator type="regex" message="Not gonna happen">[Ff]oo</validator>
     ... </param>
-    ... ''' ) )
-    >>> t = p.validate( "Foo" )
-    >>> t = p.validate( "foo" )
-    >>> t = p.validate( "Fop" )
+    ... '''))
+    >>> t = p.validate("Foo")
+    >>> t = p.validate("foo")
+    >>> t = p.validate("Fop")
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
@@ -70,14 +70,14 @@ class ExpressionValidator(Validator):
 
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build( None, XML( '''
-    ... <param name="blah" type="text" size="10" value="10">
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="10">
     ...     <validator type="expression" message="Not gonna happen">value.lower() == "foo"</validator>
     ... </param>
-    ... ''' ) )
-    >>> t = p.validate( "Foo" )
-    >>> t = p.validate( "foo" )
-    >>> t = p.validate( "Fop" )
+    ... '''))
+    >>> t = p.validate("Foo")
+    >>> t = p.validate("foo")
+    >>> t = p.validate("Fop")
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
@@ -103,22 +103,22 @@ class ExpressionValidator(Validator):
 
 class InRangeValidator(Validator):
     """
-    Validator that ensures a number is in a specific range
+    Validator that ensures a number is in a specified range
 
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build( None, XML( '''
-    ... <param name="blah" type="integer" size="10" value="10">
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="integer" value="10">
     ...     <validator type="in_range" message="Not gonna happen" min="10" exclude_min="true" max="20"/>
     ... </param>
-    ... ''' ) )
-    >>> t = p.validate( 10 )
+    ... '''))
+    >>> t = p.validate(10)
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
-    >>> t = p.validate( 15 )
-    >>> t = p.validate( 20 )
-    >>> t = p.validate( 21 )
+    >>> t = p.validate(15)
+    >>> t = p.validate(20)
+    >>> t = p.validate(21)
     Traceback (most recent call last):
         ...
     ValueError: Not gonna happen
@@ -134,7 +134,7 @@ class InRangeValidator(Validator):
         """
         When the optional exclude_min and exclude_max attributes are set
         to true, the range excludes the end points (i.e., min < value < max),
-        while if set to False ( the default), then range includes the end points
+        while if set to False (the default), then range includes the end points
         (1.e., min <= value <= max).  Combinations of exclude_min and exclude_max
         values are allowed.
         """
@@ -175,18 +175,18 @@ class LengthValidator(Validator):
 
     >>> from xml.etree.ElementTree import XML
     >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build( None, XML( '''
-    ... <param name="blah" type="text" size="10" value="foobar">
+    >>> p = ToolParameter.build(None, XML('''
+    ... <param name="blah" type="text" value="foobar">
     ...     <validator type="length" min="2" max="8"/>
     ... </param>
-    ... ''' ) )
-    >>> t = p.validate( "foo" )
-    >>> t = p.validate( "bar" )
-    >>> t = p.validate( "f" )
+    ... '''))
+    >>> t = p.validate("foo")
+    >>> t = p.validate("bar")
+    >>> t = p.validate("f")
     Traceback (most recent call last):
         ...
     ValueError: Must have length of at least 2
-    >>> t = p.validate( "foobarbaz" )
+    >>> t = p.validate("foobarbaz")
     Traceback (most recent call last):
         ...
     ValueError: Must have length no more than 8
@@ -410,7 +410,7 @@ class MetadataInDataTableColumnValidator(Validator):
         metadata_column = elem.get("metadata_column", 0)
         try:
             metadata_column = int(metadata_column)
-        except:
+        except ValueError:
             pass
         message = elem.get("message", "Value for metadata %s was not found in %s." % (metadata_name, table_name))
         line_startswith = elem.get("line_startswith", None)
@@ -448,19 +448,55 @@ class MetadataInDataTableColumnValidator(Validator):
         raise ValueError(self.message)
 
 
-validator_types = dict(expression=ExpressionValidator,
-                       regex=RegexValidator,
-                       in_range=InRangeValidator,
-                       length=LengthValidator,
-                       metadata=MetadataValidator,
-                       unspecified_build=UnspecifiedBuildValidator,
-                       no_options=NoOptionsValidator,
-                       empty_field=EmptyTextfieldValidator,
-                       empty_dataset=DatasetEmptyValidator,
-                       empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
-                       dataset_metadata_in_file=MetadataInFileColumnValidator,
-                       dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
-                       dataset_ok_validator=DatasetOkValidator, )
+class MetadataInRangeValidator(InRangeValidator):
+    """
+    Validator that ensures metadata is in a specified range
+    """
+    requires_dataset_metadata = True
+
+    @classmethod
+    def from_element(cls, param, elem):
+        metadata_name = elem.get('metadata_name', None)
+        assert metadata_name, "dataset_metadata_in_range validator requires metadata_name attribute."
+        metadata_name = metadata_name.strip()
+        return cls(metadata_name,
+                   elem.get('message', None), elem.get('min'),
+                   elem.get('max'), elem.get('exclude_min', 'false'),
+                   elem.get('exclude_max', 'false'))
+
+    def __init__(self, metadata_name, message, range_min, range_max, exclude_min=False, exclude_max=False):
+        self.metadata_name = metadata_name
+        super(MetadataInRangeValidator, self).__init__(message, range_min, range_max, exclude_min, exclude_max)
+
+    def validate(self, value, trans=None):
+        if value:
+            if not isinstance(value, model.DatasetInstance):
+                raise ValueError('A non-dataset value was provided.')
+            try:
+                value_to_check = float(value.metadata.spec[self.metadata_name].param.to_string(value.metadata.get(self.metadata_name)))
+            except KeyError:
+                raise ValueError('{} Metadata missing'.format(self.metadata_name))
+            except ValueError:
+                raise ValueError('{} must be a float or an integer'.format(self.metadata_name))
+            super(MetadataInRangeValidator, self).validate(value_to_check, trans)
+
+
+validator_types = dict(
+    expression=ExpressionValidator,
+    regex=RegexValidator,
+    in_range=InRangeValidator,
+    length=LengthValidator,
+    metadata=MetadataValidator,
+    unspecified_build=UnspecifiedBuildValidator,
+    no_options=NoOptionsValidator,
+    empty_field=EmptyTextfieldValidator,
+    empty_dataset=DatasetEmptyValidator,
+    empty_extra_files_path=DatasetExtraFilesPathEmptyValidator,
+    dataset_metadata_in_file=MetadataInFileColumnValidator,
+    dataset_metadata_in_data_table=MetadataInDataTableColumnValidator,
+    dataset_metadata_in_range=MetadataInRangeValidator,
+    dataset_ok_validator=DatasetOkValidator,
+)
 
 
 def get_suite():

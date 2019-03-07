@@ -1,29 +1,43 @@
 """
 Base classes for job runner plugins.
 """
-
-import os
-import time
-import string
-import logging
 import datetime
-import threading
+import logging
+import os
+import string
 import subprocess
+import sys
+import threading
+import time
+import traceback
 
-from Queue import Queue, Empty
+from six.moves.queue import (
+    Empty,
+    Queue
+)
 
 import galaxy.jobs
-from galaxy.jobs.command_factory import build_command
 from galaxy import model
-from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
-from galaxy.util import in_directory
-from galaxy.util import ParamsWithSpecs
-from galaxy.util import ExecutionTimer
-from galaxy.util.bunch import Bunch
-from galaxy.jobs.runners.util.job_script import write_script
-from galaxy.jobs.runners.util.job_script import job_script
+from galaxy.jobs.command_factory import build_command
+from galaxy.jobs.output_checker import DETECTED_JOB_STATE
 from galaxy.jobs.runners.util.env import env_to_statement
-
+from galaxy.jobs.runners.util.job_script import (
+    job_script,
+    write_script
+)
+from galaxy.tools.deps.dependencies import (
+    JobInfo,
+    ToolInfo
+)
+from galaxy.util import (
+    DATABASE_MAX_STRING_SIZE,
+    ExecutionTimer,
+    in_directory,
+    ParamsWithSpecs,
+    shrink_stream_by_size
+)
+from galaxy.util.bunch import Bunch
+from galaxy.util.monitors import Monitors
 from .state_handler_factory import build_state_handlers
 
 log = logging.getLogger(__name__)
@@ -52,12 +66,13 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner(object):
-    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: x >= 0, default=0))
+    DEFAULT_SPECS = dict(recheck_missing_job_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=0))
 
     def __init__(self, app, nworkers, **kwargs):
         """Start the job runner
         """
         self.app = app
+        self.redact_email_in_job_name = self.app.config.redact_email_in_job_name
         self.sa_session = app.model.context
         self.nworkers = nworkers
         runner_param_specs = self.DEFAULT_SPECS.copy()
@@ -76,9 +91,20 @@ class BaseJobRunner(object):
         log.debug('Starting %s %s workers' % (self.nworkers, self.runner_name))
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
-            worker.setDaemon(True)
-            worker.start()
+            worker.daemon = True
+            self.app.application_stack.register_postfork_function(worker.start)
             self.work_threads.append(worker)
+
+    def _alive_worker_threads(self, cycle=False):
+        # yield endlessly as long as there are alive threads if cycle is True
+        alive = True
+        while alive:
+            alive = False
+            for thread in self.work_threads:
+                if thread.is_alive():
+                    if cycle:
+                        alive = True
+                    yield thread
 
     def run_next(self):
         """Run the next item in the work queue (a job waiting to run)
@@ -94,15 +120,15 @@ class BaseJobRunner(object):
                 else:
                     # arg should be a JobWrapper/TaskWrapper
                     job_id = arg.get_id_tag()
-            except:
+            except Exception:
                 job_id = 'unknown'
             try:
                 name = method.__name__
-            except:
+            except Exception:
                 name = 'unknown'
             try:
                 method(arg)
-            except:
+            except Exception:
                 log.exception("(%s) Unhandled exception calling %s" % (job_id, name))
 
     # Causes a runner's `queue_job` method to be called from a worker thread
@@ -110,12 +136,7 @@ class BaseJobRunner(object):
         """Add a job to the queue (by job identifier), indicate that the job is ready to run.
         """
         put_timer = ExecutionTimer()
-        job = job_wrapper.get_job()
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state(model.Job.states.QUEUED, flush=False, job=job)
-        # Persist the destination so that the job will be included in counts if using concurrency limits
-        job_wrapper.set_job_destination(job_wrapper.job_destination, None, flush=False, job=job)
-        self.sa_session.flush()
+        job_wrapper.enqueue()
         self.mark_as_queued(job_wrapper)
         log.debug("Job [%s] queued %s" % (job_wrapper.job_id, put_timer))
 
@@ -125,9 +146,36 @@ class BaseJobRunner(object):
     def shutdown(self):
         """Attempts to gracefully shut down the worker threads
         """
-        log.info("%s: Sending stop signal to %s worker threads" % (self.runner_name, len(self.work_threads)))
+        log.info("%s: Sending stop signal to %s job worker threads", self.runner_name, len(self.work_threads))
         for i in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
+
+        join_timeout = self.app.config.monitor_thread_join_timeout
+        if join_timeout > 0:
+            log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
+            start = time.time()
+            # NOTE: threads that have already joined by now are not going to be logged
+            for thread in self._alive_worker_threads(cycle=True):
+                if time.time() > (start + join_timeout):
+                    break
+                try:
+                    thread.join(2)
+                except Exception:
+                    log.exception("Caught exception attempting to shutdown job worker thread %s:", thread.name)
+                if not thread.is_alive():
+                    log.debug("Job worker thread terminated: %s", thread.name)
+            else:
+                log.info("All job worker threads shutdown cleanly")
+                return
+
+            for thread in self._alive_worker_threads():
+                try:
+                    frame = sys._current_frames()[thread.ident]
+                except KeyError:
+                    # thread is now stopped
+                    continue
+                log.warning("Timed out waiting for job worker thread %s to terminate, shutdown will be unclean! Thread "
+                            "stack is:\n%s", thread.name, ''.join(traceback.format_stack(frame)))
 
     # Most runners should override the legacy URL handler methods and destination param method
     def url_to_destination(self, url):
@@ -145,8 +193,13 @@ class BaseJobRunner(object):
         """
         raise NotImplementedError()
 
-    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
-                    modify_command_for_container=True):
+    def prepare_job(self,
+                    job_wrapper,
+                    include_metadata=False,
+                    include_work_dir_outputs=True,
+                    modify_command_for_container=True,
+                    stdout_file=None,
+                    stderr_file=None):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
@@ -172,11 +225,13 @@ class BaseJobRunner(object):
                 job_wrapper,
                 include_metadata=include_metadata,
                 include_work_dir_outputs=include_work_dir_outputs,
-                modify_command_for_container=modify_command_for_container
+                modify_command_for_container=modify_command_for_container,
+                stdout_file=stdout_file,
+                stderr_file=stderr_file,
             )
         except Exception as e:
             log.exception("(%s) Failure preparing job" % job_id)
-            job_wrapper.fail(e.message if hasattr(e, 'message') else "Job preparation failed", exception=True)
+            job_wrapper.fail(str(e), exception=True)
             return False
 
         if not job_wrapper.runner_command_line:
@@ -189,14 +244,19 @@ class BaseJobRunner(object):
     def queue_job(self, job_wrapper):
         raise NotImplementedError()
 
-    def stop_job(self, job):
+    def stop_job(self, job_wrapper):
         raise NotImplementedError()
 
     def recover(self, job, job_wrapper):
         raise NotImplementedError()
 
-    def build_command_line(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True,
-                           modify_command_for_container=True):
+    def build_command_line(self,
+                           job_wrapper,
+                           include_metadata=False,
+                           include_work_dir_outputs=True,
+                           modify_command_for_container=True,
+                           stdout_file=None,
+                           stderr_file=None):
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
@@ -206,7 +266,9 @@ class BaseJobRunner(object):
             include_metadata=include_metadata,
             include_work_dir_outputs=include_work_dir_outputs,
             modify_command_for_container=modify_command_for_container,
-            container=container
+            container=container,
+            stdout_file=stdout_file,
+            stderr_file=stderr_file,
         )
 
     def get_work_dir_outputs(self, job_wrapper, job_working_directory=None, tool_working_directory=None):
@@ -306,7 +368,9 @@ class BaseJobRunner(object):
         for env in envs:
             env_setup_commands.append(env_to_statement(env))
         command_line = job_wrapper.runner_command_line
+        tmp_dir_creation_statement = job_wrapper.tmp_dir_creation_statement
         options = dict(
+            tmp_dir_creation_statement=tmp_dir_creation_statement,
             job_instrumenter=job_instrumenter,
             galaxy_lib=job_wrapper.galaxy_lib_dir,
             galaxy_virtual_env=job_wrapper.galaxy_virtual_env,
@@ -332,6 +396,7 @@ class BaseJobRunner(object):
         compute_working_directory=None,
         compute_tool_directory=None,
         compute_job_directory=None,
+        compute_tmp_directory=None,
     ):
         job_directory_type = "galaxy" if compute_working_directory is None else "pulsar"
         if not compute_working_directory:
@@ -343,13 +408,16 @@ class BaseJobRunner(object):
         if not compute_tool_directory:
             compute_tool_directory = job_wrapper.tool.tool_dir
 
+        if not compute_tmp_directory:
+            compute_tmp_directory = job_wrapper.tmp_directory()
+
         tool = job_wrapper.tool
-        from galaxy.tools.deps import containers
-        tool_info = containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
-        job_info = containers.JobInfo(
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
+        job_info = JobInfo(
             compute_working_directory,
             compute_tool_directory,
             compute_job_directory,
+            compute_tmp_directory,
             job_directory_type,
         )
 
@@ -366,12 +434,13 @@ class BaseJobRunner(object):
                 handler(self.app, self, job_state)
                 if job_state.runner_state_handled:
                     break
-        except:
-            log.exception('Caught exception in runner state handler:')
+        except Exception:
+            log.exception('Caught exception in runner state handler')
 
     def fail_job(self, job_state, exception=False):
         if getattr(job_state, 'stop_job', True):
-            self.stop_job(self.sa_session.query(self.app.model.Job).get(job_state.job_wrapper.job_id))
+            self.stop_job(job_state.job_wrapper)
+        job_state.job_wrapper.reclaim_ownership()
         self._handle_runner_state('failure', job_state)
         # Not convinced this is the best way to indicate this state, but
         # something necessary
@@ -386,6 +455,62 @@ class BaseJobRunner(object):
             job_state.job_wrapper.change_state(model.Job.states.QUEUED)
             self.app.job_manager.job_handler.dispatcher.put(job_state.job_wrapper)
 
+    def _job_io_for_db(self, stream):
+        return shrink_stream_by_size(stream, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+
+    def _finish_or_resubmit_job(self, job_state, job_stdout, job_stderr, job_id=None, external_job_id=None):
+        job_wrapper = job_state.job_wrapper
+        try:
+            job = job_state.job_wrapper.get_job()
+            exit_code = job_state.read_exit_code()
+
+            tool_stdout_path = os.path.join(job_wrapper.working_directory, "tool_stdout")
+            tool_stderr_path = os.path.join(job_wrapper.working_directory, "tool_stderr")
+            # TODO: These might not exist for running jobs at the upgrade to 19.XX, remove that
+            # assumption in 20.XX.
+            if os.path.exists(tool_stdout_path):
+                with open(tool_stdout_path, "rb") as stdout_file:
+                    tool_stdout = self._job_io_for_db(stdout_file)
+            else:
+                # Legacy job, were getting a merged output - assume it is mostly tool output.
+                tool_stdout = job_stdout
+                job_stdout = None
+
+            if os.path.exists(tool_stderr_path):
+                with open(tool_stderr_path, "rb") as stdout_file:
+                    tool_stderr = self._job_io_for_db(stdout_file)
+            else:
+                # Legacy job, were getting a merged output - assume it is mostly tool output.
+                tool_stderr = job_stderr
+                job_stderr = None
+
+            check_output_detected_state = job_wrapper.check_tool_output(tool_stdout, tool_stderr, tool_exit_code=exit_code, job=job, job_stdout=job_stdout, job_stderr=job_stderr)
+            job_not_ok = check_output_detected_state != DETECTED_JOB_STATE.OK
+
+            # clean up the job files
+            cleanup_job = job_state.job_wrapper.cleanup_job
+            if cleanup_job == "always" or (job_not_ok and cleanup_job == "onsuccess"):
+                job_state.cleanup()
+
+            # Flush with streams...
+            self.sa_session.add(job)
+            self.sa_session.flush()
+
+            if job_not_ok:
+                job_runner_state = JobState.runner_states.TOOL_DETECT_ERROR
+                if check_output_detected_state == DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR:
+                    job_runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
+                job_state.runner_state = job_runner_state
+                self._handle_runner_state('failure', job_state)
+                # Was resubmitted or something - I think we are done with it.
+                if job_state.runner_state_handled:
+                    return
+
+            job_wrapper.finish(tool_stdout, tool_stderr, exit_code, check_output_detected_state=check_output_detected_state, job_stdout=job_stdout, job_stderr=job_stderr)
+        except Exception:
+            log.exception("(%s/%s) Job wrapper finish method failed" % (job_id or '', external_job_id or ''))
+            job_wrapper.fail("Unable to finish job", exception=True)
+
 
 class JobState(object):
     """
@@ -394,15 +519,21 @@ class JobState(object):
     runner_states = Bunch(
         WALLTIME_REACHED='walltime_reached',
         MEMORY_LIMIT_REACHED='memory_limit_reached',
+        JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER='Job output not returned from cluster',
         UNKNOWN_ERROR='unknown_error',
         GLOBAL_WALLTIME_REACHED='global_walltime_reached',
-        OUTPUT_SIZE_LIMIT='output_size_limit'
+        OUTPUT_SIZE_LIMIT='output_size_limit',
+        TOOL_DETECT_ERROR='tool_detected',  # job runner interaction worked fine but the tool indicated error
     )
 
     def __init__(self, job_wrapper, job_destination):
         self.runner_state_handled = False
         self.job_wrapper = job_wrapper
         self.job_destination = job_destination
+
+        self.redact_email_in_job_name = True
+        if self.job_wrapper:
+            self.redact_email_in_job_name = self.job_wrapper.app.config.redact_email_in_job_name
 
         self.cleanup_file_attributes = ['job_file', 'output_file', 'error_file', 'exit_code_file']
 
@@ -417,9 +548,9 @@ class JobState(object):
             job_name = 'g%s' % id_tag
             if self.job_wrapper.tool.old_id:
                 job_name += '_%s' % self.job_wrapper.tool.old_id
-            if self.job_wrapper.user:
+            if not self.redact_email_in_job_name and self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
-            self.job_name = ''.join(map(lambda x: x if x in (string.ascii_letters + string.digits + '_') else '_', job_name))
+            self.job_name = ''.join(x if x in (string.ascii_letters + string.digits + '_') else '_' for x in job_name)
 
     @staticmethod
     def default_job_file(files_dir, id_tag):
@@ -428,6 +559,24 @@ class JobState(object):
     @staticmethod
     def default_exit_code_file(files_dir, id_tag):
         return os.path.join(files_dir, 'galaxy_%s.ec' % id_tag)
+
+    def read_exit_code(self):
+        try:
+            # This should be an 8-bit exit code, but read ahead anyway:
+            exit_code_str = open(self.exit_code_file, "r").read(32)
+        except Exception:
+            # By default, the exit code is 0, which typically indicates success.
+            exit_code_str = "0"
+
+        try:
+            # Decode the exit code. If it's bogus, then just use 0.
+            exit_code = int(exit_code_str)
+        except ValueError:
+            galaxy_id_tag = self.job_wrapper.get_id_tag()
+            log.warning("(%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, exit_code_str))
+            exit_code = 0
+
+        return exit_code
 
     def cleanup(self):
         for file in [getattr(self, a) for a in self.cleanup_file_attributes if hasattr(self, a)]:
@@ -500,7 +649,7 @@ class AsynchronousJobState(JobState):
             self.cleanup_file_attributes.append(attribute)
 
 
-class AsynchronousJobRunner(BaseJobRunner):
+class AsynchronousJobRunner(BaseJobRunner, Monitors):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
     a distributed resource manager).  Provides general methods for having a
     thread to monitor the state of asynchronous jobs and submitting those jobs
@@ -518,9 +667,8 @@ class AsynchronousJobRunner(BaseJobRunner):
         self.monitor_queue = Queue()
 
     def _init_monitor_thread(self):
-        self.monitor_thread = threading.Thread(name="%s.monitor_thread" % self.runner_name, target=self.monitor)
-        self.monitor_thread.setDaemon(True)
-        self.monitor_thread.start()
+        name = "%s.monitor_thread" % self.runner_name
+        super(AsynchronousJobRunner, self)._init_monitor_thread(name=name, target=self.monitor, start=True, config=self.app.config)
 
     def handle_stop(self):
         # DRMAA and SGE runners should override this and disconnect.
@@ -559,6 +707,7 @@ class AsynchronousJobRunner(BaseJobRunner):
         log.info("%s: Sending stop signal to monitor thread" % self.runner_name)
         self.monitor_queue.put(STOP_SIGNAL)
         # Call the parent's shutdown method to stop workers
+        self.shutdown_monitor()
         super(AsynchronousJobRunner, self).shutdown()
 
     def check_watched_items(self):
@@ -593,44 +742,30 @@ class AsynchronousJobRunner(BaseJobRunner):
 
         # wait for the files to appear
         which_try = 0
-        while which_try < (self.app.config.retry_job_output_collection + 1):
+        collect_output_success = True
+        while which_try < self.app.config.retry_job_output_collection + 1:
             try:
-                stdout = shrink_stream_by_size(open(job_state.output_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-                stderr = shrink_stream_by_size(open(job_state.error_file, "r"), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-                which_try = (self.app.config.retry_job_output_collection + 1)
+                with open(job_state.output_file, "rb") as stdout_file, open(job_state.error_file, 'rb') as stderr_file:
+                    stdout = self._job_io_for_db(stdout_file)
+                    stderr = self._job_io_for_db(stderr_file)
+                break
             except Exception as e:
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
-                    stderr = 'Job output not returned from cluster'
+                    stderr = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
                     log.error('(%s/%s) %s: %s' % (galaxy_id_tag, external_job_id, stderr, str(e)))
+                    collect_output_success = False
                 else:
                     time.sleep(1)
                 which_try += 1
 
-        try:
-            # This should be an 8-bit exit code, but read ahead anyway:
-            exit_code_str = open(job_state.exit_code_file, "r").read(32)
-        except:
-            # By default, the exit code is 0, which typically indicates success.
-            exit_code_str = "0"
+        if not collect_output_success:
+            job_state.fail_message = stderr
+            job_state.runner_state = job_state.runner_states.JOB_OUTPUT_NOT_RETURNED_FROM_CLUSTER
+            self.mark_as_failed(job_state)
+            return
 
-        try:
-            # Decode the exit code. If it's bogus, then just use 0.
-            exit_code = int(exit_code_str)
-        except:
-            log.warning("(%s/%s) Exit code '%s' invalid. Using 0." % (galaxy_id_tag, external_job_id, exit_code_str))
-            exit_code = 0
-
-        # clean up the job files
-        cleanup_job = job_state.job_wrapper.cleanup_job
-        if cleanup_job == "always" or (not stderr and cleanup_job == "onsuccess"):
-            job_state.cleanup()
-
-        try:
-            job_state.job_wrapper.finish(stdout, stderr, exit_code)
-        except:
-            log.exception("(%s/%s) Job wrapper finish method failed" % (galaxy_id_tag, external_job_id))
-            job_state.job_wrapper.fail("Unable to finish job", exception=True)
+        self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=galaxy_id_tag, external_job_id=external_job_id)
 
     def mark_as_finished(self, job_state):
         self.work_queue.put((self.finish_job, job_state))

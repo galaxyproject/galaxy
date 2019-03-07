@@ -4,11 +4,10 @@ import shutil
 
 import galaxy.tools
 from galaxy import util
+from galaxy.datatypes.sniff import is_column_based
 from galaxy.util import checkers
-from galaxy.util import unicodify
 from galaxy.util.expressions import ExpressionContext
 from galaxy.web.form_builder import SelectField
-
 from tool_shed.util import basic_util
 
 log = logging.getLogger(__name__)
@@ -42,13 +41,14 @@ def build_tool_panel_section_select_field(app):
 
 def copy_sample_file(app, filename, dest_path=None):
     """
-    Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path
-    is ~/tool-data.
+    Copies a sample file at `filename` to `the dest_path`
+    directory and strips the '.sample' extensions from `filename`.
+    Returns the path to the copied file (with the .sample extension).
     """
     if dest_path is None:
         dest_path = os.path.abspath(app.config.tool_data_path)
     sample_file_name = basic_util.strip_path(filename)
-    copied_file = sample_file_name.replace('.sample', '')
+    copied_file = sample_file_name.rsplit('.sample', 1)[0]
     full_source_path = os.path.abspath(filename)
     full_destination_path = os.path.join(dest_path, sample_file_name)
     # Don't copy a file to itself - not sure how this happens, but sometimes it does...
@@ -57,8 +57,10 @@ def copy_sample_file(app, filename, dest_path=None):
         shutil.copy(full_source_path, full_destination_path)
     # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it
     # contains stuff proprietary to the local instance.
-    if not os.path.lexists(os.path.join(dest_path, copied_file)):
+    non_sample_path = os.path.join(dest_path, copied_file)
+    if not os.path.lexists(non_sample_path):
         shutil.copy(full_source_path, os.path.join(dest_path, copied_file))
+    return non_sample_path
 
 
 def copy_sample_files(app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None):
@@ -126,20 +128,6 @@ def generate_message_for_invalid_tools(app, invalid_file_tups, repository, metad
     return message
 
 
-def get_headers(fname, sep, count=60, is_multi_byte=False):
-    """Returns a list with the first 'count' lines split by 'sep'."""
-    headers = []
-    for idx, line in enumerate(open(fname)):
-        line = line.rstrip('\n\r')
-        if is_multi_byte:
-            line = unicodify(line, 'utf-8')
-            sep = sep.encode('utf-8')
-        headers.append(line.split(sep))
-        if idx == count:
-            break
-    return headers
-
-
 def get_tool_path_install_dir(partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems):
     for elem in config_elems:
         if elem.tag == 'tool':
@@ -174,35 +162,12 @@ def handle_missing_index_file(app, tool_path, sample_files, repository_tools_tup
                 for sample_file in sample_files:
                     sample_file_name = basic_util.strip_path(sample_file)
                     if sample_file_name == '%s.sample' % missing_file_name:
-                        copy_sample_file(app, sample_file)
+                        target_path = copy_sample_file(app, os.path.join(tool_path, sample_file))
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
-                            options.tool_data_table.handle_found_index_file(options.missing_index_file)
-                        sample_files_copied.append(options.missing_index_file)
+                            options.tool_data_table.handle_found_index_file(target_path)
+                        sample_files_copied.append(target_path)
                         break
-        # Reload the tool into the local list of repository_tools_tups.
-        repository_tool = app.toolbox.load_tool(os.path.join(tool_path, tup_path), guid=guid, use_cached=False)
-        repository_tools_tups[index] = (tup_path, guid, repository_tool)
     return repository_tools_tups, sample_files_copied
-
-
-def is_column_based(fname, sep='\t', skip=0, is_multi_byte=False):
-    """See if the file is column based with respect to a separator."""
-    headers = get_headers(fname, sep, is_multi_byte=is_multi_byte)
-    count = 0
-    if not headers:
-        return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) > 1:
-                count = len(hdr)
-            break
-    if count < 2:
-        return False
-    for hdr in headers[skip:]:
-        if hdr and hdr[0] and not hdr[0].startswith('#'):
-            if len(hdr) != count:
-                return False
-    return True
 
 
 def is_data_index_sample_file(file_path):
@@ -225,7 +190,7 @@ def is_data_index_sample_file(file_path):
         return False
     if checkers.is_gzip(file_path):
         return False
-    if checkers.check_zip(file_path):
+    if checkers.is_zip(file_path):
         return False
     # Default to copying the file if none of the above are true.
     return True
@@ -249,7 +214,7 @@ def new_state(trans, tool, invalid=False):
     for input in inputs.values():
         try:
             state.inputs[input.name] = input.get_initial_value(trans, context)
-        except:
+        except Exception:
             # FIXME: not all values should be an empty list
             state.inputs[input.name] = []
     return state

@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-
 from xml.etree import ElementTree as XmlET
 
 from tool_shed.util import hg_util, xml_util
@@ -9,7 +8,7 @@ from tool_shed.util import hg_util, xml_util
 log = logging.getLogger(__name__)
 
 
-class ToolDataTableManager(object):
+class ShedToolDataTableManager(object):
 
     def __init__(self, app):
         self.app = app
@@ -82,9 +81,6 @@ class ToolDataTableManager(object):
                 if error:
                     # TODO: Do more here than logging an exception.
                     log.debug(message)
-            # Reload the tool into the local list of repository_tools_tups.
-            repository_tool = self.app.toolbox.load_tool(os.path.join(tool_path, tup_path), guid=guid, use_cached=False)
-            repository_tools_tups[index] = (tup_path, guid, repository_tool)
             # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
             self.reset_tool_data_tables()
         return repository_tools_tups
@@ -98,7 +94,6 @@ class ToolDataTableManager(object):
         file on disk.
         """
         error = False
-        message = ''
         try:
             new_table_elems, message = self.app.tool_data_tables \
                 .add_new_entries_from_config_file(config_filename=filename,
@@ -174,3 +169,7 @@ class ToolDataTableManager(object):
     def reset_tool_data_tables(self):
         # Reset the tool_data_tables to an empty dictionary.
         self.app.tool_data_tables.data_tables = {}
+
+
+# For backwards compatibility with exisiting data managers
+ToolDataTableManager = ShedToolDataTableManager

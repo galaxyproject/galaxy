@@ -8,7 +8,7 @@ usage: %prog in_file out_file
 import optparse
 import os.path
 
-from pysam import ctabix
+import pysam
 
 
 def main():
@@ -26,9 +26,9 @@ def main():
     output_dir = os.path.dirname(output_fname)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    ctabix.tabix_compress(input_fname, output_fname, force=True)
+    pysam.tabix_compress(input_fname, output_fname, force=True)
     # Column indices are 0-based.
-    ctabix.tabix_index(output_fname, seq_col=options.chrom_col, start_col=options.start_col, end_col=options.end_col)
+    pysam.tabix_index(output_fname, seq_col=options.chrom_col, start_col=options.start_col, end_col=options.end_col)
 
 
 if __name__ == "__main__":

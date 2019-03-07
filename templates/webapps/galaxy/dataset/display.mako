@@ -3,33 +3,35 @@
 <%namespace file="/display_common.mako" import="*" />
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
 
-<%def name="javascripts()">
-    ${parent.javascripts()}
+<%def name="javascript_app()">
+    <!-- display.mako javascript_app() -->
+    ${parent.javascript_app()}
 
     ## If data is chunkable, use JavaScript for display.
     %if item.datatype.CHUNKABLE:
+        <script type="text/javascript">
+            config.addInitialization(function() {
+                console.log("display.mako", "chunkable init");
 
-    <script type="text/javascript">
-        require(['mvc/dataset/data'], function(data) {
-            //
-            // Use tabular data display progressively by deleting data from page body
-            // and then showing dataset view.
-            //
-            $('.page-body').children().remove();
+                // Use tabular data display progressively by deleting data from page body
+                // and then showing dataset view.
+                var item = ${h.dumps(item.to_dict())};
+                var chunk_url = "${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( item.id ))}";
+                var first_data_chunk = ${first_chunk};
 
-            data.createTabularDatasetChunkedView({
-                // TODO: encode id.
-                dataset_config:
-                    _.extend( ${h.dumps( item.to_dict() )}, {
-                        chunk_url: "${h.url_for( controller='/dataset', action='display',
-                                         dataset_id=trans.security.encode_id( item.id ))}",
-                        first_data_chunk: ${first_chunk}
-                    }),
-                parent_elt: $('.page-body')
-            });
-        });
-    </script>
+                var dataset_config = Object.assign({}, item, {
+                    chunk_url: chunk_url,
+                    first_data_chunk: first_data_chunk
+                });
+                var target = '.page-body';
 
+                $(target).children().remove();
+                window.bundleEntries.createTabularDatasetChunkedView({
+                    dataset_config: dataset_config,
+                    parent_elt: target
+                });
+            })
+        </script>
     %endif
 </%def>
 
@@ -49,11 +51,12 @@
 
 <%def name="render_item_links( data )">
     ## Provide links to save data and import dataset.
-    <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}" class="icon-button disk" title="Save dataset"></a>
-        <a
-            href="${h.url_for( controller='/dataset', action='imp', dataset_id=trans.security.encode_id( data.id ) )}"
-            class="icon-button import"
-            title="Import dataset"></a>
+    <a href="${h.url_for( controller='/dataset', action='display', dataset_id=trans.security.encode_id( data.id ), to_ext=data.ext )}"
+        class="icon-button disk"
+        title="Save dataset"></a>
+    <a href="${h.url_for( controller='/dataset', action='imp', dataset_id=trans.security.encode_id( data.id ) )}"
+        class="icon-button import"
+        title="Import dataset"></a>
 </%def>
 
 ## Renders dataset content. Function is used to render data in stand-along page and to provide content for embedded datasets as well.

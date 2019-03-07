@@ -31,17 +31,7 @@ run_common_start_up
 setup_python
 
 if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
-    if [ -f reports_wsgi.ini ]; then
-        GALAXY_REPORTS_CONFIG=reports_wsgi.ini
-    elif [ -f config/reports_wsgi.ini ]; then
-        GALAXY_REPORTS_CONFIG=config/reports_wsgi.ini
-    elif [ -f config/reports.ini ]; then
-        GALAXY_REPORTS_CONFIG=config/reports.ini
-    elif [ -f config/reports.yml ]; then
-        GALAXY_REPORTS_CONFIG=config/reports.yml
-    else
-        GALAXY_REPORTS_CONFIG=config/reports.yml.sample
-    fi
+    GALAXY_REPORTS_CONFIG=$(PYTHONPATH=lib python -c "from __future__ import print_function; from galaxy.util.properties import find_config_file; print(find_config_file(['reports', 'reports_wsgi']) or '')")
     export GALAXY_REPORTS_CONFIG
 fi
 
@@ -49,5 +39,6 @@ if [ -n "$GALAXY_REPORTS_CONFIG_DIR" ]; then
     python ./scripts/build_universe_config.py "$GALAXY_REPORTS_CONFIG_DIR" "$GALAXY_REPORTS_CONFIG"
 fi
 
-find_server $GALAXY_REPORTS_CONFIG
-$run_server $server_args
+find_server ${GALAXY_REPORTS_CONFIG:-none} reports
+echo "Executing: $run_server $server_args"
+eval $run_server $server_args

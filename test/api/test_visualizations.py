@@ -5,8 +5,8 @@ from requests import (
     put
 )
 
-from base import api
-from base.api_asserts import assert_has_keys
+from base import api  # noqa: I100,I202
+from base.api_asserts import assert_has_keys  # noqa: I100
 
 INDEX_KEYS = [
     'id', 'title', 'type', 'dbkey', 'url'
@@ -78,7 +78,7 @@ class VisualizationsApiTestCase(api.ApiTestCase):
         create_payload = {
             "title": title,
             "slug": slug,
-            "type": 'test',
+            "type": 'example',
             "dbkey": 'hg17',
             "annotation": 'this is a test of the emergency visualization system',
             "config": config,

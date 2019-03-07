@@ -4,21 +4,21 @@
         <meta charset="utf-8">
         <link rel="stylesheet" href="style/base.css" type="text/css" />
     </head>
-    <body style="margin: 0">
-        <div class="jumbotron">
+    <body class="m-0">
+        <div class="jumbotron rounded-0">
             <div class="container">
                 <h2>Hello, <strong>Galaxy</strong> is running!</h2>
                 To customize this page edit <code>static/welcome.html</code>
                 <br>
-                <a target="_blank" href="https://galaxyproject.org/admin/config/" class="btn btn-primary btn-lg">Configuring Galaxy »</a>
+                <a target="_blank" href="https://docs.galaxyproject.org/en/latest/admin/config.html" class="btn btn-primary btn-lg">Configuring Galaxy »</a>
                 <a target="_blank" href="https://galaxyproject.org/admin/tools/add-tool-from-toolshed-tutorial/" class="btn btn-primary btn-lg">Installing Tools »</a>
             </div>
             <br>
             <div class="container">
                 <p>Take an interactive tour:
-                    <a target="_parent" href="../tours/core.galaxy_ui" class="btn btn-default btn-xs">Galaxy UI</a>
-                    <a target="_parent" href="../tours/core.history" class="btn btn-default btn-xs">History</a>
-                    <a target="_parent" href="../tours/core.scratchbook" class="btn btn-default btn-xs">Scratchbook</a>
+                    <a target="_parent" href="../tours/core.galaxy_ui" class="btn btn-secondary btn-sm">Galaxy UI</a>
+                    <a target="_parent" href="../tours/core.history" class="btn btn-secondary btn-sm">History</a>
+                    <a target="_parent" href="../tours/core.scratchbook" class="btn btn-secondary btn-sm">Scratchbook</a>
                 </p>
             </div>
         </div>

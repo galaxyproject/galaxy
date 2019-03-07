@@ -2,47 +2,105 @@ uwsgi:
 
   # The address and port on which to listen.  By default, only listen to
   # localhost (reports will not be accessible over the network).  Use
-  # '0.0.0.0' to listen on all available network interfaces.
+  # ':9001' to listen on all available network interfaces.
   http: 127.0.0.1:9001
 
-  threads: 8
+  # By default uWSGI allocates a very small buffer (4096 bytes) for the
+  # headers of each request. If you start receiving "invalid request
+  # block size" in your logs, it could mean you need a bigger buffer. We
+  # recommend at least 16384.
+  buffer-size: 16384
 
-  http-raw-body: True
+  # Number of web server (worker) processes to fork after the
+  # application has loaded. If this is set to greater than 1, thunder-
+  # lock likely should be enabled below.
+  processes: 1
 
-  offload-threads: 8
+  # Number of threads for each web server process.
+  threads: 4
 
+  # Number of threads for serving static content and handling internal
+  # routing requests.
+  offload-threads: 2
+
+  # Mapping to serve style content.
+  static-map: /static/style=static/style/blue
+
+  # Mapping to serve the remainder of the static content.
+  static-map: /static=static
+
+  # Mapping to serve the favicon.
+  static-map: /favicon.ico=static/favicon.ico
+
+  # Enable the master process manager. Disabled by default for maximum
+  # compatibility with CTRL+C, but should be enabled for use with
+  # --daemon and/or production deployments.
+  master: false
+
+  # Path to the application's Python virtual environment. If using Conda
+  # for Galaxy's framework dependencies (not tools!), do not set this.
+  virtualenv: .venv
+
+  # Path to the application's Python library.
+  pythonpath: lib
+
+  # The entry point which returns the web application (e.g. Galaxy,
+  # Reports, etc.) that you are loading.
   module: galaxy.webapps.reports.buildapp:uwsgi_app()
+
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # URL prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
+  # points. Set this to true if a URL prefix is used.
+  manage-script-name: false
+
+  # It is usually a good idea to set this to ``true`` if processes is
+  # greater than 1.
+  thunder-lock: false
+
+  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
+  # (its default is to brutally reload workers)
+  die-on-term: true
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGINT (its default is to brutally kill workers)
+  hook-master-start: unix_signal:2 gracefully_kill_them_all
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGTERM (its default is to brutally kill workers)
+  hook-master-start: unix_signal:15 gracefully_kill_them_all
+
+  # Feature necessary for proper mule signal handling
+  py-call-osafterfork: true
+
+  # Ensure application threads will run if `threads` is unset.
+  enable-threads: true
 
 reports:
 
-  # If running behind a proxy server and Galaxy is served from a
-  # subdirectory, enable the proxy-prefix filter and set the prefix in
-  # the [filter:proxy-prefix] section above.
-  #filter-with: proxy-prefix
-
-  # If proxy-prefix is enabled and you're running more than one Galaxy
-  # instance behind one hostname, you will want to set this to the same
-  # path as the prefix in the filter above.  This value becomes the
-  # "path" attribute set in the cookie so the cookies from each instance
-  # will not clobber each other.
-  #cookie_path: None
+  # When running multiple Galaxy Reports instances under separate URL
+  # prefixes on a single hostname, you will want to set this to the same
+  # path as the prefix set in the uWSGI "mount" configuration option
+  # above. This value becomes the "path" attribute set in the cookie so
+  # the cookies from one instance will not clobber those from another.
+  #cookie_path: null
 
   # Verbosity of console log messages.  Acceptable values can be found
   # here: https://docs.python.org/2/library/logging.html#logging-levels
   #log_level: DEBUG
 
-  # Database connection Galaxy reports are intended for production
+  # Database connection. Galaxy Reports are intended for production
   # Galaxy instances, so sqlite (and the default value below) is not
   # supported. An SQLAlchemy connection string should be used specify an
   # external database.
-  #database_connection: sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE
+  #database_connection: 'sqlite:///./database/universe.sqlite?isolation_level=IMMEDIATE'
 
-  # Where dataset files are saved Temporary storage for additional
-  # datasets, this should be shared through the cluster
+  # Where dataset files are stored.
   #file_path: database/files
 
-  # Where dataset files are saved Temporary storage for additional
-  # datasets, this should be shared through the cluster
+  # Where temporary files are stored.
   #new_file_path: database/tmp
 
   # Mako templates are compiled as needed and cached for reuse, this
@@ -50,24 +108,31 @@ reports:
   #template_cache_path: database/compiled_templates/reports
 
   # Configuration for debugging middleware
-  #debug: False
+  #debug: false
 
   # Check for WSGI compliance.
-  #use_lint: False
+  #use_lint: false
 
   # NEVER enable this on a public site (even test or QA)
-  #use_interactive: True
+  #use_interactive: false
 
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk space rapidly!)
-  #use_heartbeat: True
+  #use_heartbeat: true
 
   # Profiling middleware (cProfile based)
-  #use_profile: True
+  #use_profile: true
 
   # Mail
   #smtp_server: yourserver@yourfacility.edu
 
   # Mail
   #error_email_to: your_bugs@bx.psu.edu
+
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing
+  # emails/usernames from logs and bug reports.  You are responsible for
+  # removing personal data from backups.  Please read the GDPR section
+  # under the special topics area of the admin documentation.
+  #enable_beta_gdpr: false
 

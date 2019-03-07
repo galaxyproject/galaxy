@@ -20,14 +20,19 @@ API tasks. IOW, this ain't about batching jobs.
 ..warning: this endpoint is experimental is likely to change.
 """
 import io
-from urlparse import urlparse
 import json
+import logging
 import re
 
-from paste import httpexceptions
 import routes
+import webob.exc
+from six.moves.urllib.parse import urlparse
 
-import logging
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -53,9 +58,9 @@ class BatchMiddleware(object):
     DEFAULT_CONFIG = {
         'route' : '/api/batch',
         'allowed_routes' : [
-            '^api\/users.*',
-            '^api\/histories.*',
-            '^api\/jobs.*',
+            r'^api\/users.*',
+            r'^api\/histories.*',
+            r'^api\/jobs.*',
         ]
     }
 
@@ -92,19 +97,19 @@ class BatchMiddleware(object):
             response = self._process_batch_request(request, request_environ, start_response)
             responses.append(response)
 
-        batch_response_body = json.dumps(responses)
+        batch_response_body = smart_str(json.dumps(responses))
         start_response('200 OK', [
             ('Content-Length', len(batch_response_body)),
             ('Content-Type', 'application/json'),
         ])
-        return batch_response_body
+        return [batch_response_body]
 
     def _read_post_payload(self, environ):
         request_body_size = int(environ.get('CONTENT_LENGTH', 0))
         request_body = environ['wsgi.input'].read(request_body_size) or '{}'
         # TODO: json decode error handling
         # log.debug( 'request_body: (%s)\n%s', type( request_body ), request_body )
-        payload = json.loads(request_body)
+        payload = json.loads(unicodify(request_body))
         return payload
 
     def _is_allowed_route(self, route):
@@ -140,13 +145,10 @@ class BatchMiddleware(object):
         request_environ['QUERY_STRING'] = parsed.query
 
         request_body = request.get('body', u'')
-        # set this to None so webob/request will copy the body using the raw bytes
-        # if we set it, webob will try to use the buffer interface on a unicode string
-        request_environ['CONTENT_LENGTH'] = None
-        # this may well need to change in py3
-        request_body = io.BytesIO(bytearray(request_body, encoding='utf8'))
+        request_body = request_body.encode('utf8')
+        request_environ['CONTENT_LENGTH'] = len(request_body)
+        request_body = io.BytesIO(request_body)
         request_environ['wsgi.input'] = request_body
-        # log.debug( 'request_environ:\n%s', pprint.pformat( request_environ ) )
 
         return request_environ
 
@@ -161,7 +163,7 @@ class BatchMiddleware(object):
         try:
             response = self.galaxy.handle_request(environ, start_response, body_renderer=self.body_renderer)
         # handle errors from galaxy.handle_request (only 404s)
-        except httpexceptions.HTTPNotFound:
+        except webob.exc.HTTPNotFound:
             response = dict(status=404, headers=self._default_headers(), body={})
         return response
 
@@ -171,7 +173,7 @@ class BatchMiddleware(object):
         return dict(
             status=trans.response.status,
             headers=trans.response.headers,
-            body=json.loads(self.galaxy.make_body_iterable(trans, body)[0])
+            body=json.loads(unicodify(self.galaxy.make_body_iterable(trans, body)[0]))
         )
 
     def _default_headers(self):

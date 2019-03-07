@@ -1,13 +1,16 @@
-from datetime import datetime
 import hashlib
+import logging
 import random
+from datetime import datetime
 
 from sqlalchemy import func
 
-from galaxy import model
-from galaxy import util
+from galaxy import (
+    model,
+    util
+)
+from galaxy.tools.deps.dependencies import ToolInfo
 
-import logging
 log = logging.getLogger(__name__)
 
 VALID_JOB_HASH_STRATEGIES = ["job", "user", "history", "workflow_invocation"]
@@ -40,9 +43,7 @@ class RuleHelper(object):
         else:
             # Have a Job object.
             tool = self.app.toolbox.get_tool(job_or_tool.tool_id, tool_version=job_or_tool.tool_version)
-        # Can't import at top because circular import between galaxy.tools and galaxy.jobs.
-        import galaxy.tools.deps.containers
-        tool_info = galaxy.tools.deps.containers.ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment)
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
         container_description = self.app.container_finder.find_best_container_description(["docker"], tool_info)
         return container_description is not None
 
@@ -152,7 +153,7 @@ class RuleHelper(object):
 
         if not isinstance(hash_value, int):
             # Convert hash_value string into index
-            as_hex = hashlib.md5(hash_value).hexdigest()
+            as_hex = hashlib.md5(util.smart_str(hash_value)).hexdigest()
             hash_value = int(as_hex, 16)
         # else assumed to be 'random' int from 0-~Inf
         random_index = hash_value % len(lst)

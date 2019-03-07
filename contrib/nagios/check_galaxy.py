@@ -13,9 +13,14 @@ import os
 import socket
 import sys
 import time
-import urllib2
 import warnings
 from user import home
+
+from six.moves.urllib.request import (
+    build_opener,
+    HTTPCookieProcessor,
+    Request
+)
 
 with warnings.catch_warnings():
     warnings.simplefilter('ignore')
@@ -68,7 +73,7 @@ tc.agent("Mozilla/5.0 (compatible; check_galaxy/0.2)")
 tc.config('use_tidy', 0)
 
 
-class Browser:
+class Browser(object):
     def __init__(self):
         self.server = server
         self.handler = handler
@@ -85,7 +90,7 @@ class Browser:
             dprint("no cookie jar at above path, creating")
             tc.save_cookies(self.cookie_jar)
         tc.load_cookies(self.cookie_jar)
-        self.opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(tc.get_browser().cj))
+        self.opener = build_opener(HTTPCookieProcessor(tc.get_browser().cj))
 
     def get(self, path):
         tc.go("%s%s" % (self.server, path))
@@ -94,9 +99,9 @@ class Browser:
     def req(self, path, data=None, method=None):
         url = self.server + path
         if data:
-            req = urllib2.Request(url, headers={'Content-Type': 'application/json'}, data=json.dumps(data))
+            req = Request(url, headers={'Content-Type': 'application/json'}, data=json.dumps(data))
         else:
-            req = urllib2.Request(url, headers={'Content-Type': 'application/json'})
+            req = Request(url, headers={'Content-Type': 'application/json'})
         if method:
             req.get_method = lambda: method
         res = self.opener.open(req)

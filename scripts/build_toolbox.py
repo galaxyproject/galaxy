@@ -22,7 +22,7 @@ def getfilenamelist(startdir):
             elif fn.endswith('.xml'):
                 try:
                     doc = ET.parse(fullfn)
-                except:
+                except Exception:
                     print("An OOPS on", fullfn)
                     raise
                 rootelement = doc.getroot()

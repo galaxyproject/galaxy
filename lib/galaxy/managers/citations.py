@@ -1,11 +1,11 @@
 import functools
+import logging
 import os
-import urllib2
 
+import requests
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -45,12 +45,10 @@ class DoiCache(object):
         self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache('doi')
 
     def _raw_get_bibtex(self, doi):
-        dx_url = "http://dx.doi.org/" + doi
+        doi_url = "https://doi.org/" + doi
         headers = {'Accept': 'text/bibliography; style=bibtex, application/x-bibtex'}
-        req = urllib2.Request(dx_url, data="", headers=headers)
-        response = urllib2.urlopen(req)
-        bibtex = response.read()
-        return bibtex
+        req = requests.get(doi_url, headers=headers)
+        return req.text
 
     def get_bibtex(self, doi):
         createfunc = functools.partial(self._raw_get_bibtex, doi)

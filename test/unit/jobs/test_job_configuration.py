@@ -4,14 +4,18 @@ import shutil
 import tempfile
 import unittest
 
+import mock
+
 from galaxy.jobs import JobConfiguration
 from galaxy.util import bunch
+from galaxy.web.stack import ApplicationStack, UWSGIApplicationStack
 
 # File would be slightly more readable if contents were embedded directly, but
 # there are advantages to testing the documentation/examples.
 SIMPLE_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "job_conf.xml.sample_basic")
 ADVANCED_JOB_CONF = os.path.join(os.path.dirname(__file__), "..", "..", "..", "config", "job_conf.xml.sample_advanced")
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
+HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
 
 
 class JobConfXmlParserTestCase(unittest.TestCase):
@@ -24,10 +28,15 @@ class JobConfXmlParserTestCase(unittest.TestCase):
             job_resource_params_file="/tmp/fake_absent_path",
             config_dict={},
             default_job_resubmission_condition="",
+            track_jobs_in_database=True,
+            server_name="main",
         )
         self.__write_config_from(SIMPLE_JOB_CONF)
-        self.app = bunch.Bunch(config=self.config, job_metrics=MockJobMetrics())
+        self.__app = None
+        self.__application_stack = None
         self.__job_configuration = None
+        self.__job_configuration_base_pools = None
+        self.__uwsgi_opt = None
 
     def tearDown(self):
         shutil.rmtree(self.temp_directory)
@@ -48,21 +57,109 @@ class JobConfXmlParserTestCase(unittest.TestCase):
         assert len(task_runners) == 1
         assert task_runners[0]["workers"] == 5
 
-    def test_load_simple_handler(self):
-        main_handler = self.job_config.handlers["main"]
-        assert main_handler[0] == "main"
-
-    def test_if_one_handler_implicit_default(self):
-        assert self.job_config.default_handler_id == "main"
-
     def test_explicit_handler_default(self):
-        self.__with_advanced_config()
+        self.__with_handlers_config(
+            handlers=[{'id': 'handler0', 'tags': 'handlers'}, {'id': 'handler1', 'tags': 'handlers'}],
+            default='handlers'
+        )
         assert self.job_config.default_handler_id == "handlers"
 
     def test_handler_tag_parsing(self):
-        self.__with_advanced_config()
+        self.__with_handlers_config(
+            handlers=[{'id': 'handler0', 'tags': 'handlers'}, {'id': 'handler1', 'tags': 'handlers'}],
+            default='handlers'
+        )
         assert "handler0" in self.job_config.handlers["handlers"]
         assert "handler1" in self.job_config.handlers["handlers"]
+
+    def test_implict_db_self_handler_assign(self):
+        assert self.job_config.handler_assignment_methods == ['db-self']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers == {}
+
+    def test_implicit_db_assign_handler_assign_with_explicit_handlers(self):
+        self.__with_handlers_config(handlers=[{'id': 'handler0'}, {'id': 'handler1'}])
+        assert self.job_config.handler_assignment_methods == ['db-preassign']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0', 'handler1']
+
+    def test_implict_uwsgi_mule_message_handler_assign(self):
+        self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
+        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['main.job-handlers.1']
+
+    def test_implict_uwsgi_mule_message_handler_assign_with_explicit_handlers(self):
+        self.__with_handlers_config(handlers=[{'id': 'handler0'}, {'id': 'handler1'}])
+        self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
+        assert self.job_config.handler_assignment_methods == ['uwsgi-mule-message', 'db-preassign']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0', 'handler1', 'main.job-handlers.1']
+
+    def test_explicit_mem_self_handler_assign(self):
+        self.__with_handlers_config(assign_with='mem-self')
+        assert self.job_config.handler_assignment_methods == ['mem-self']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers == {}
+        assert not self.config.track_jobs_in_database
+
+    def test_explicit_mem_self_handler_assign_with_handlers(self):
+        self.__with_handlers_config(assign_with='mem-self', handlers=[{'id': 'handler0'}])
+        assert self.job_config.handler_assignment_methods == ['mem-self']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0']
+
+    def test_explicit_db_preassign_handler_assign_with_uwsgi(self):
+        self.__with_handlers_config(assign_with='db-preassign', handlers=[{'id': 'handler0'}])
+        self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
+        assert self.job_config.handler_assignment_methods == ['db-preassign']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+
+    def test_explicit_db_transaction_isolation_handler_assign(self):
+        self.__with_handlers_config(assign_with='db-transaction-isolation')
+        assert self.job_config.handler_assignment_methods == ['db-transaction-isolation']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers == {}
+
+    def test_explicit_db_transaction_isolation_handler_assign_with_uwsgi(self):
+        self.__with_handlers_config(assign_with='db-transaction-isolation', handlers=[{'id': 'handler0'}])
+        self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
+        assert self.job_config.handler_assignment_methods == ['db-transaction-isolation']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+
+    def test_explicit_db_skip_locked_handler_assign(self):
+        self.__with_handlers_config(assign_with='db-skip-locked')
+        assert self.job_config.handler_assignment_methods == ['db-skip-locked']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers == {}
+
+    def test_explicit_db_skip_locked_handler_assign_with_uwsgi(self):
+        self.__with_handlers_config(assign_with='db-skip-locked', handlers=[{'id': 'handler0'}])
+        self.__with_uwsgi_application_stack(mule='lib/galaxy/main.py', farm='job-handlers:1')
+        assert self.job_config.handler_assignment_methods == ['db-skip-locked']
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['handler0', 'main.job-handlers.1']
+
+    def test_uwsgi_farms_as_handler_tags(self):
+        self.__with_uwsgi_application_stack(
+            mule=['lib/galaxy/main.py'] * 2,
+            farm=['job-handlers:1', 'job-handlers.foo:2']
+        )
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['main.job-handlers.1']
+        assert self.job_config.handlers['foo'] == ['main.job-handlers.foo.1']
+
+    def test_uwsgi_overlapping_pools(self):
+        self.__with_handlers_config(base_pools=('workflow-schedulers', 'job-handlers'))
+        self.__with_uwsgi_application_stack(
+            mule=['lib/galaxy/main.py'] * 3,
+            farm=['job-handlers:1', 'workflow-schedulers:2', 'job-handlers.foo:3']
+        )
+        assert self.job_config.default_handler_id is None
+        assert self.job_config.handlers['_default_'] == ['main.workflow-schedulers.1']
+        assert self.job_config.handlers['foo'] == ['main.job-handlers.foo.1']
 
     def test_load_simple_destination(self):
         local_dest = self.job_config.destinations["local"][0]
@@ -165,16 +262,57 @@ class JobConfXmlParserTestCase(unittest.TestCase):
     # TODO: Add job metrics parsing test.
 
     @property
+    def app(self):
+        if not self.__app:
+            self.__app = bunch.Bunch(
+                config=self.config,
+                job_metrics=MockJobMetrics(),
+                application_stack=self.application_stack
+            )
+        return self.__app
+
+    @property
+    def application_stack(self):
+        if not self.__application_stack:
+            self.__application_stack = ApplicationStack()
+        return self.__application_stack
+
+    @property
     def job_config(self):
         if not self.__job_configuration:
-            self.__job_configuration = JobConfiguration(self.app)
+            base_handler_pools = self.__job_configuration_base_pools or JobConfiguration.DEFAULT_BASE_HANDLER_POOLS
+            mock_uwsgi = mock.Mock()
+            mock_uwsgi.mule_id = lambda: 1
+            with mock.patch('galaxy.web.stack.uwsgi', mock_uwsgi), \
+                    mock.patch('galaxy.web.stack.uwsgi.opt', self.__uwsgi_opt), \
+                    mock.patch('galaxy.jobs.JobConfiguration.DEFAULT_BASE_HANDLER_POOLS', base_handler_pools):
+                self.__job_configuration = JobConfiguration(self.app)
         return self.__job_configuration
+
+    def __with_uwsgi_application_stack(self, **uwsgi_opt):
+        self.__uwsgi_opt = uwsgi_opt
+        self.__application_stack = UWSGIApplicationStack()
 
     def __with_advanced_config(self):
         self.__write_config_from(ADVANCED_JOB_CONF)
 
-    def __write_config_from(self, path):
-        self.__write_config(open(path, "r").read())
+    def __with_handlers_config(self, assign_with=None, default=None, handlers=None, base_pools=None):
+        handlers = handlers or []
+        template = {
+            'assign_with': ' assign_with="%s"' % assign_with if assign_with is not None else '',
+            'default': ' default="%s"' % default if default is not None else '',
+            'handlers': '\n'.join([
+                '<handler id="{id}"{tags}/>'.format(
+                    id=x['id'],
+                    tags=' tags="%s"' % x['tags'] if 'tags' in x else ''
+                ) for x in handlers]),
+        }
+        self.__job_configuration_base_pools = base_pools
+        self.__write_config_from(HANDLER_TEMPLATE_JOB_CONF, template=template)
+
+    def __write_config_from(self, path, template=None):
+        template = template or {}
+        self.__write_config(open(path, "r").read().format(**template))
 
     def __write_config(self, contents):
         with open(os.path.join(self.temp_directory, "job_conf.xml"), "w") as f:

@@ -8,7 +8,6 @@ from galaxy import exceptions, model
 from galaxy.managers import hdas
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.histories import HistoryManager
-
 from .base import BaseTestCase
 
 # =============================================================================
@@ -65,7 +64,7 @@ class HDAManagerTestCase(HDATestCase):
             [hda3, hda2, hda1])
 
     def test_create(self):
-        owner = self.user_manager.create(self.trans, **user2_data)
+        owner = self.user_manager.create(**user2_data)
 
         history1 = self.history_manager.create(name='history1', user=owner)
         dataset1 = self.dataset_manager.create()

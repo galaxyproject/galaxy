@@ -4,20 +4,23 @@ Manager and Serializer for HDAs.
 HistoryDatasetAssociations (HDAs) are datasets contained or created in a
 history.
 """
-
-import os
 import gettext
-
-from galaxy import model
-from galaxy import exceptions
-from galaxy import datatypes
-from galaxy.managers import datasets
-from galaxy.managers import secured
-from galaxy.managers import taggable
-from galaxy.managers import annotatable
-from galaxy.managers import users
-
 import logging
+import os
+
+from galaxy import (
+    datatypes,
+    exceptions,
+    model
+)
+from galaxy.managers import (
+    annotatable,
+    datasets,
+    secured,
+    taggable,
+    users
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -54,14 +57,14 @@ class HDAManager(datasets.DatasetAssociationManager,
         #   I can not access that dataset even if it's in my history
         # if self.is_owner( hda, user, **kwargs ):
         #     return True
-        return super(HDAManager, self).is_accessible(hda, user)
+        return super(HDAManager, self).is_accessible(hda, user, **kwargs)
 
     def is_owner(self, hda, user, current_history=None, **kwargs):
         """
         Use history to see if current user owns HDA.
         """
         history = hda.history
-        if self.user_manager.is_admin(user):
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
         # allow anonymous user to access current history
         # TODO: some dup here with historyManager.is_owner but prevents circ import
@@ -94,25 +97,13 @@ class HDAManager(datasets.DatasetAssociationManager,
             self.session().flush()
         return hda
 
-    def copy(self, hda, history=None, **kwargs):
+    def copy(self, hda, history=None, hide_copy=False, **kwargs):
         """
-        Copy and return the given HDA.
+        Copy hda, including annotation and tags, add to history and return the given HDA.
         """
-        # TODO:?? not using the following as this fn does not set history and COPIES hid (this doesn't seem correct)
-        # return hda.copy()
-        copy = model.HistoryDatasetAssociation(
-            name=hda.name,
-            info=hda.info,
-            blurb=hda.blurb,
-            peek=hda.peek,
-            tool_version=hda.tool_version,
-            extension=hda.extension,
-            dbkey=hda.dbkey,
-            dataset=hda.dataset,
-            visible=hda.visible,
-            deleted=hda.deleted,
-            parent_id=kwargs.get('parent_id', None),
-        )
+        copy = hda.copy(parent_id=kwargs.get('parent_id'), copy_hid=False)
+        if hide_copy:
+            copy.visible = False
         # add_dataset will update the hid to the next avail. in history
         if history:
             history.add_dataset(copy)
@@ -121,24 +112,11 @@ class HDAManager(datasets.DatasetAssociationManager,
         copy.set_size()
 
         original_annotation = self.annotation(hda)
-        self.annotate(copy, original_annotation, user=history.user)
+        self.annotate(copy, original_annotation, user=hda.history.user)
 
-        # TODO: update from kwargs?
-
-        # Need to set after flushed, as MetadataFiles require dataset.id
-        self.session().add(copy)
-        self.session().flush()
-        copy.metadata = hda.metadata
-
-        # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
-        if not hda.datatype.copy_safe_peek:
-            copy.set_peek()
-
-        self.session().flush()
-
-        # these use a second session flush and need to be after the first
+        # these use a session flush
         original_tags = self.get_tags(hda)
-        self.set_tags(copy, original_tags, user=history.user)
+        self.set_tags(copy, original_tags, user=hda.history.user)
 
         return copy
 
@@ -237,6 +215,23 @@ class HDAManager(datasets.DatasetAssociationManager,
     def annotation(self, hda):
         # override to scope to history owner
         return self._user_annotation(hda, hda.history.user)
+
+    def _set_permissions(self, trans, hda, role_ids_dict):
+        # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+        # need to ensure that they did not associate roles that would cause accessibility problems.
+        permissions, in_roles, error, message = \
+            trans.app.security_agent.derive_roles_from_access(trans, hda.dataset.id, 'root', **role_ids_dict)
+        if error:
+            # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
+            access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
+            permissions[access_action] = hda.dataset.get_access_roles(trans)
+            trans.sa_session.refresh(hda.dataset)
+            raise exceptions.RequestParameterInvalidException(message)
+        else:
+            error = trans.app.security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+            trans.sa_session.refresh(hda.dataset)
+            if error:
+                raise exceptions.RequestParameterInvalidException(error)
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
@@ -351,7 +346,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                                                              history_content_id=self.app.security.encode_id(i.id)),
             'parent_id'     : self.serialize_id,
             # TODO: to DatasetAssociationSerializer
-            'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user),
+            'accessible'    : lambda i, k, user=None, **c: self.manager.is_accessible(i, user, **c),
             'api_type'      : lambda *a, **c: 'file',
             'type'          : lambda *a, **c: 'file'
         })
@@ -370,10 +365,10 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
         Return dictionary containing new-style display app urls.
         """
         display_apps = []
-        for display_app in hda.get_display_applications(trans).itervalues():
+        for display_app in hda.get_display_applications(trans).values():
 
             app_links = []
-            for link_app in display_app.links.itervalues():
+            for link_app in display_app.links.values():
                 app_links.append({
                     'target': link_app.url.get('target_frame', '_blank'),
                     'href': link_app.get_display_url(hda, trans),

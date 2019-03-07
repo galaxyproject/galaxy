@@ -26,7 +26,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
 ${render_tool_shed_repository_actions( repository=repository, metadata=metadata )}

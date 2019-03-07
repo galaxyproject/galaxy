@@ -7,17 +7,14 @@ import os.path
 import shutil
 import string
 import tempfile
-
 from collections import defaultdict
-
-from unittest_utils import galaxy_mock
 
 import galaxy.datatypes.registry
 import galaxy.model
-
 from galaxy.tools import create_tool_from_source
 from galaxy.tools.parser import get_tool_source
 from galaxy.util.bunch import Bunch
+from .unittest_utils import galaxy_mock
 
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -75,12 +72,21 @@ class UsesTools(object):
         version="1.0",
         profile="16.01",
         tool_id="test_tool",
+        extra_file_contents=None,
+        extra_file_path=None,
     ):
         self._init_app_for_tools()
         self.tool_file = os.path.join(self.test_directory, filename)
         contents_template = string.Template(tool_contents)
         tool_contents = contents_template.safe_substitute(dict(version=version, profile=profile, tool_id=tool_id))
         self.__write_tool(tool_contents)
+        if extra_file_contents and extra_file_path:
+            self.__write_tool(extra_file_contents, path=os.path.join(self.test_directory, extra_file_path))
+        return self.__setup_tool()
+
+    def _init_tool_for_path(self, tool_file):
+        self._init_app_for_tools()
+        self.tool_file = tool_file
         return self.__setup_tool()
 
     def _init_app_for_tools(self):
@@ -99,8 +105,10 @@ class UsesTools(object):
             self.tool.tool_action = self.tool_action
         return self.tool
 
-    def __write_tool(self, contents):
-        open(self.tool_file, "w").write(contents)
+    def __write_tool(self, contents, path=None):
+        path = path or self.tool_file
+        with open(path, "w") as out:
+            out.write(contents)
 
 
 class MockContext(object):

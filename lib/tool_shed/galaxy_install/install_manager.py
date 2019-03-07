@@ -19,8 +19,8 @@ from tool_shed.galaxy_install.tool_dependencies.recipe.install_environment impor
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import StepManager
 from tool_shed.galaxy_install.tool_dependencies.recipe.recipe_manager import TagManager
 from tool_shed.galaxy_install.tools import data_manager, tool_panel_manager
-from tool_shed.tools import data_table_manager, tool_version_manager
-from tool_shed.util import basic_util, common_util, encoding_util, hg_util, repository_util
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
+from tool_shed.util import basic_util, encoding_util, hg_util, repository_util
 from tool_shed.util import shed_util_common as suc, tool_dependency_util
 from tool_shed.util import tool_util, xml_util
 
@@ -470,7 +470,7 @@ class InstallRepositoryManager(object):
             # dictionaries, a dictionary defining the Repository, a dictionary defining the
             # Repository revision (RepositoryMetadata), and a dictionary including the additional
             # information required to install the repository.
-            items = json.loads(raw_text)
+            items = json.loads(util.unicodify(raw_text))
             repository_revision_dict = items[1]
             repo_info_dict = items[2]
         else:
@@ -499,7 +499,7 @@ class InstallRepositoryManager(object):
         reinstalling an uninstalled repository.
         """
         shed_config_dict = self.app.toolbox.get_shed_config_dict_by_filename(shed_tool_conf)
-        tdtm = data_table_manager.ToolDataTableManager(self.app)
+        stdtm = ShedToolDataTableManager(self.app)
         irmm = InstalledRepositoryMetadataManager(app=self.app,
                                                   tpm=self.tpm,
                                                   repository=tool_shed_repository,
@@ -527,30 +527,24 @@ class InstallRepositoryManager(object):
                                                                 set_status=True)
         if 'sample_files' in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get('sample_files', [])
-            tool_index_sample_files = tdtm.get_tool_index_sample_files(sample_files)
+            tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
             tool_data_table_conf_filename, tool_data_table_elems = \
-                tdtm.install_tool_data_tables(tool_shed_repository, tool_index_sample_files)
+                stdtm.install_tool_data_tables(tool_shed_repository, tool_index_sample_files)
             if tool_data_table_elems:
                 self.app.tool_data_tables.add_new_entries_from_config_file(tool_data_table_conf_filename,
                                                                            None,
                                                                            self.app.config.shed_tool_data_table_config,
                                                                            persist=True)
         if 'tools' in irmm_metadata_dict:
-            # Get the tool_versions from the Tool Shed for each tool in the installed change set.
-            self.update_tool_shed_repository_status(tool_shed_repository,
-                                                    self.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS)
-            tool_version_dicts = fetch_tool_versions(self.app, tool_shed_repository)
-            tvm = tool_version_manager.ToolVersionManager(self.app)
-            tvm.handle_tool_versions(tool_version_dicts, tool_shed_repository)
             tool_panel_dict = self.tpm.generate_tool_panel_dict_for_new_install(irmm_metadata_dict['tools'], tool_section)
             sample_files = irmm_metadata_dict.get('sample_files', [])
-            tool_index_sample_files = tdtm.get_tool_index_sample_files(sample_files)
+            tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
             tool_util.copy_sample_files(self.app, tool_index_sample_files, tool_path=tool_path)
             sample_files_copied = [str(s) for s in tool_index_sample_files]
             repository_tools_tups = irmm.get_repository_tools_tups()
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = tdtm.handle_missing_data_table_entry(relative_install_dir,
+                repository_tools_tups = stdtm.handle_missing_data_table_entry(relative_install_dir,
                                                                              tool_path,
                                                                              repository_tools_tups)
                 # Handle missing index files for tool parameters that are dynamically generated select lists.
@@ -885,12 +879,9 @@ class InstallRepositoryManager(object):
                 current_changeset_revision = changeset_revision_dict.get('changeset_revision', None)
                 current_ctx_rev = changeset_revision_dict.get('ctx_rev', None)
                 if current_ctx_rev != ctx_rev:
-                    repo = hg_util.get_repo_for_repository(self.app,
-                                                           repository=None,
-                                                           repo_path=os.path.abspath(install_dir),
-                                                           create=False)
-                    hg_util.pull_repository(repo, repository_clone_url, current_changeset_revision)
-                    hg_util.update_repository(repo, ctx_rev=current_ctx_rev)
+                    repo_path = os.path.abspath(install_dir)
+                    hg_util.pull_repository(repo_path, repository_clone_url, current_changeset_revision)
+                    hg_util.update_repository(repo_path, ctx_rev=current_ctx_rev)
             self.__handle_repository_contents(tool_shed_repository=tool_shed_repository,
                                               tool_path=tool_path,
                                               repository_clone_url=repository_clone_url,
@@ -1012,24 +1003,3 @@ class RepositoriesInstalledException(exceptions.RequestParameterInvalidException
 
     def __init__(self):
         super(RepositoriesInstalledException, self).__init__('All repositories that you are attempting to install have been previously installed.')
-
-
-def fetch_tool_versions(app, tool_shed_repository):
-    """ Fetch a data structure describing tool shed versions from the tool shed
-    corresponding to a tool_shed_repository object.
-    """
-    try:
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, str(tool_shed_repository.tool_shed))
-        params = dict(name=str(tool_shed_repository.name),
-                      owner=str(tool_shed_repository.owner),
-                      changeset_revision=str(tool_shed_repository.changeset_revision))
-        pathspec = ['repository', 'get_tool_versions']
-        url = util.build_url(tool_shed_url, pathspec=pathspec, params=params)
-        text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        if text:
-            return json.loads(text)
-        else:
-            raise Exception("No content returned from Tool Shed repository version request to %s" % url)
-    except Exception:
-        log.exception("Failed to fetch tool version information for Tool Shed repository.")
-        raise

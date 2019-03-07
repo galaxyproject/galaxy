@@ -1,13 +1,16 @@
 """
 API operations on library folders.
 """
-from galaxy import util
-from galaxy import exceptions
+import logging
+
+from galaxy import (
+    exceptions,
+    util
+)
 from galaxy.managers import folders, roles
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -94,7 +97,7 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
         :raises: InsufficientPermissionsException
         """
         current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         decoded_folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
         folder = self.folder_manager.get(trans, decoded_folder_id)
 
@@ -150,7 +153,7 @@ class FoldersController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIte
         """
         if payload:
             kwd.update(payload)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         decoded_folder_id = self.folder_manager.cut_and_decode(trans, encoded_folder_id)
         folder = self.folder_manager.get(trans, decoded_folder_id)

@@ -1,8 +1,6 @@
 """
 Test lib/galaxy/visualization/plugins/plugin.
 """
-import os
-import sys
 import unittest
 
 from six import string_types
@@ -12,13 +10,9 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils as vis_utils
 )
-
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import galaxy_mock, utility
+from ...unittest_utils import galaxy_mock, utility
 
 
-# -----------------------------------------------------------------------------
 class VisualizationsPlugin_TestCase(unittest.TestCase):
     plugin_class = vis_plugin.VisualizationPlugin
 
@@ -40,10 +34,6 @@ class VisualizationsPlugin_TestCase(unittest.TestCase):
         self.assertEqual(plugin.path, vis_dir.root_path)
         self.assertEqual(plugin.config, {})
         self.assertEqual(plugin.base_url, 'myvis')
-        # static
-        self.assertTrue(plugin.serves_static)
-        self.assertEqual(plugin.static_path, vis_dir.root_path + '/static')
-        self.assertEqual(plugin.static_url, 'myvis/static')
         # template
         self.assertTrue(plugin.serves_templates)
         self.assertEqual(plugin.template_path, vis_dir.root_path + '/templates')
@@ -71,9 +61,6 @@ class VisualizationsPlugin_TestCase(unittest.TestCase):
         plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path,
             'myvis', config, context=context)
         self.assertEqual(plugin.base_url, 'u/wot/m8/myvis')
-        # static
-        self.assertEqual(plugin.static_url, 'u/wot/m8/myvis/static')
-        # template
         self.assertEqual(plugin.template_lookup.__class__.__name__, 'TemplateLookup')
 
     def test_init_without_static_or_templates(self):
@@ -87,7 +74,6 @@ class VisualizationsPlugin_TestCase(unittest.TestCase):
         })
         plugin = self.plugin_class(galaxy_mock.MockApp(), vis_dir.root_path,
             'myvis', dict())
-        self.assertFalse(plugin.serves_static)
         self.assertFalse(plugin.serves_templates)
         # not sure what this would do, but...
 

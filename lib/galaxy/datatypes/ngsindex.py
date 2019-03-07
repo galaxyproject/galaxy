@@ -18,7 +18,6 @@ class BowtieIndex(Html):
     MetadataElement(name="base_name", desc="base name for this index set", default='galaxy_generated_bowtie_index', set_in_upload=True, readonly=True)
     MetadataElement(name="sequence_space", desc="sequence_space for this index set", default='unknown', set_in_upload=True, readonly=True)
 
-    is_binary = True
     composite_type = 'auto_primary_file'
     allow_datatype_change = False
 
@@ -55,7 +54,7 @@ class BowtieIndex(Html):
     def display_peek(self, dataset):
         try:
             return dataset.peek
-        except:
+        except Exception:
             return "Bowtie index file"
 
 

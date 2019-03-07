@@ -1,11 +1,15 @@
 import os
 
-from galaxy import exceptions
-from galaxy import web
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_raw as expose_api_raw
-from galaxy.web.base.controller import BaseAPIController
 import galaxy.queue_worker
+from galaxy import (
+    exceptions,
+    web
+)
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_raw as expose_api_raw
+)
+from galaxy.web.base.controller import BaseAPIController
 
 
 class ToolData(BaseAPIController):
@@ -62,7 +66,7 @@ class ToolData(BaseAPIController):
 
         try:
             data_table = trans.app.tool_data_tables.data_tables.get(decoded_tool_data_id)
-        except:
+        except Exception:
             data_table = None
         if not data_table:
             trans.response.status = 400
@@ -106,7 +110,7 @@ class ToolData(BaseAPIController):
         full_path = os.path.join(base_dir, path)
         if full_path not in field_value.get_files():
             raise exceptions.ObjectNotFound("No such path in data table field.")
-        return open(full_path, "r")
+        return open(full_path, "rb")
 
     def _data_table_field(self, id, value):
         out = self._data_table(id).get_field(value)

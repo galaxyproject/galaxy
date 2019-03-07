@@ -4,25 +4,25 @@ Provides factory methods to assemble the Galaxy web application
 import atexit
 import logging
 import os
-import routes
-
-from six.moves.urllib.parse import parse_qs
 from inspect import isclass
-from paste import httpexceptions
-from galaxy.util import asbool
 
+import routes
+from paste import httpexceptions
+from routes.middleware import RoutesMiddleware
+from six.moves.urllib.parse import parse_qs
+
+import galaxy.web.framework.webapp
 import galaxy.webapps.tool_shed.model
 import galaxy.webapps.tool_shed.model.mapping
-import galaxy.web.framework.webapp
+from galaxy import util
+from galaxy.util import asbool
+from galaxy.util.properties import load_app_properties
 from galaxy.webapps.util import (
-    MiddlewareWrapUnsupported,
     build_template_error_formatters,
+    MiddlewareWrapUnsupported,
     wrap_if_allowed,
     wrap_if_allowed_or_fail
 )
-from galaxy import util
-from galaxy.util.properties import load_app_properties
-from routes.middleware import RoutesMiddleware
 
 log = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
         try:
             from galaxy.webapps.tool_shed.app import UniverseApplication
             app = UniverseApplication(global_conf=global_conf, **kwargs)
-        except:
+        except Exception:
             import traceback
             import sys
             traceback.print_exc()
@@ -89,7 +89,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     webapp.add_route('/{action}', controller='repository', action='index')
     # Enable 'hg clone' functionality on repos by letting hgwebapp handle the request
     webapp.add_route('/repos/*path_info', controller='hg', action='handle_request', path_info='/')
-    # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
+    # Add the web API.  # A good resource for RESTful services - https://routes.readthedocs.io/en/latest/restful.html
     webapp.add_api_controllers('galaxy.webapps.tool_shed.api', app)
     webapp.mapper.connect('api_key_retrieval',
                           '/api/authenticate/baseauth/',
@@ -204,7 +204,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # Close any pooled database connections before forking
     try:
         galaxy.webapps.tool_shed.model.mapping.metadata.bind.dispose()
-    except:
+    except Exception:
         log.exception("Unable to dispose of pooled tool_shed model database connections.")
     # Return
     return webapp

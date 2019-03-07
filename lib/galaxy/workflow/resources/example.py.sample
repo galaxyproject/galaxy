@@ -1,0 +1,22 @@
+import logging
+log = logging.getLogger( __name__ )
+
+
+def admin_mapping(trans, stored_workflow, **kwds):
+    """
+    This example workflow resource parameter mapping simply provides admins the ability to
+    specify priorities for workflows. To enable this setup ``workflow_resource_params_file``
+    in the Galaxy configuration with a priority definition input called "priority" (such
+    as in the example), copy this file without the .sample extension, and set 
+    ``workflow_resource_params_mapper`` to ``galaxy.workflow.resources.example:admin_mapping``.
+    """
+    workflow_resource_params = kwds["workflow_resource_params"]
+    if trans.user_is_admin:
+        priority_attrib = workflow_resource_params.get("priority").attrib
+        priority_attrib['data'] = []
+        for child in workflow_resource_params.get('priority').getchildren():
+            priority_attrib['data'].append(child.attrib)
+        time_attrib = workflow_resource_params.get("time").attrib
+        return [priority_attrib, time_attrib]
+
+    return None

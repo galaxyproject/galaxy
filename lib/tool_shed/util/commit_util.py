@@ -10,8 +10,9 @@ from collections import namedtuple
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
-from galaxy.util import checkers, safe_relpath
-from tool_shed.tools import data_table_manager
+from galaxy.util import checkers
+from galaxy.util.path import safe_relpath
+from tool_shed.tools.data_table_manager import ShedToolDataTableManager
 from tool_shed.util import basic_util, hg_util, shed_util_common as suc
 
 if sys.version_info < (3, 3):
@@ -155,7 +156,8 @@ def handle_bz2(repository, uploaded_file_name):
 
 def handle_directory_changes(app, host, username, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar,
                              new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed):
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo_path = repository.repo_path(app)
+    repo = hg_util.get_repo_for_repository(app, repo_path=repo_path)
     content_alert_str = ''
     files_to_remove = []
     filenames_in_archive = [os.path.join(full_path, name) for name in filenames_in_archive]
@@ -180,7 +182,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
             # Remove files in the repository (relative to the upload point) that are not in
             # the uploaded archive.
             try:
-                hg_util.remove_file(repo.ui, repo, repo_file, force=True)
+                hg_util.remove_file(repo_path, repo_file, force=True)
             except Exception as e:
                 log.debug("Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str(e))
                 relative_selected_file = repo_file.split('repo_%d' % repository.id)[1].lstrip('/')
@@ -190,7 +192,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
                 if os.path.isdir(absolute_selected_file):
                     try:
                         os.rmdir(absolute_selected_file)
-                    except OSError as e:
+                    except OSError:
                         # The directory is not empty.
                         pass
                 elif os.path.isfile(absolute_selected_file):
@@ -198,7 +200,7 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
                     dir = os.path.split(absolute_selected_file)[0]
                     try:
                         os.rmdir(dir)
-                    except OSError as e:
+                    except OSError:
                         # The directory is not empty.
                         pass
     # See if any admin users have chosen to receive email alerts when a repository is updated.
@@ -208,17 +210,16 @@ def handle_directory_changes(app, host, username, repository, full_path, filenam
         # Check file content to ensure it is appropriate.
         if check_contents and os.path.isfile(filename_in_archive):
             content_alert_str += check_file_content_for_html_and_images(filename_in_archive)
-        hg_util.add_changeset(repo.ui, repo, filename_in_archive)
+        hg_util.add_changeset(repo_path, filename_in_archive)
         if filename_in_archive.endswith('tool_data_table_conf.xml.sample'):
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
             # by parsing the file and adding new entries to the in-memory app.tool_data_tables
             # dictionary.
-            tdtm = data_table_manager.ToolDataTableManager(app)
-            error, message = tdtm.handle_sample_tool_data_table_conf_file(filename_in_archive, persist=False)
+            stdtm = ShedToolDataTableManager(app)
+            error, message = stdtm.handle_sample_tool_data_table_conf_file(filename_in_archive, persist=False)
             if error:
                 return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
-    hg_util.commit_changeset(repo.ui,
-                             repo,
+    hg_util.commit_changeset(repo_path,
                              full_path_to_changeset=full_path,
                              username=username,
                              message=commit_message)

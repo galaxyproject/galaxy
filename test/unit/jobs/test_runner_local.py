@@ -3,12 +3,13 @@ import threading
 import time
 from unittest import TestCase
 
+import psutil
+
 from galaxy import model
 from galaxy.jobs import metrics
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
-
-from tools_support import (
+from ..tools_support import (
     UsesApp,
     UsesTools
 )
@@ -83,18 +84,33 @@ class TestLocalJobRunner(TestCase, UsesApp, UsesTools):
 
         t = threading.Thread(target=queue)
         t.start()
-        while True:
-            if self.job_wrapper.external_id:
-                break
-            time.sleep(.01)
-        external_id = self.job_wrapper.external_id
-        mock_job = bunch.Bunch(
-            get_external_output_metadata=lambda: None,
-            get_job_runner_external_id=lambda: str(external_id),
-            get_id=lambda: 1
-        )
-        runner.stop_job(mock_job)
+        external_id = self.job_wrapper.wait_for_external_id()
+        assert psutil.pid_exists(external_id)
+        runner.stop_job(self.job_wrapper)
         t.join(1)
+        assert not psutil.pid_exists(external_id)
+
+    def test_shutdown_no_jobs(self):
+        self.app.config.monitor_thread_join_timeout = 5
+        runner = local.LocalJobRunner(self.app, 1)
+        runner.shutdown()
+
+    def test_stopping_job_at_shutdown(self):
+        self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
+        runner = local.LocalJobRunner(self.app, 1)
+        self.app.config.monitor_thread_join_timeout = 15
+
+        def queue():
+            runner.queue_job(self.job_wrapper)
+
+        t = threading.Thread(target=queue)
+        t.start()
+        external_id = self.job_wrapper.wait_for_external_id()
+        assert psutil.pid_exists(external_id)
+        runner.shutdown()
+        t.join(1)
+        assert not psutil.pid_exists(external_id)
+        assert "job terminated by Galaxy shutdown" in self.job_wrapper.fail_message
 
 
 class MockJobWrapper(object):
@@ -118,13 +134,16 @@ class MockJobWrapper(object):
         self.requires_setting_metadata = True
         self.job_destination = bunch.Bunch(id="default", params={})
         self.galaxy_lib_dir = os.path.abspath("lib")
+        self.job = model.Job()
         self.job_id = 1
-        self.external_id = None
+        self.job.id = 1
         self.output_paths = ['/tmp/output1.dat']
         self.mock_metadata_path = os.path.abspath(os.path.join(test_directory, "METADATA_SET"))
         self.metadata_command = "touch %s" % self.mock_metadata_path
         self.galaxy_virtual_env = None
         self.shell = "/bin/bash"
+        self.cleanup_job = "never"
+        self.tmp_dir_creation_statement = ""
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata = bunch.Bunch(
@@ -134,11 +153,24 @@ class MockJobWrapper(object):
             build_dependency_shell_commands=lambda: []
         )
 
+    def check_tool_output(*args, **kwds):
+        return "ok"
+
+    def wait_for_external_id(self):
+        """Test method for waiting until an external id has been registered."""
+        external_id = None
+        for i in range(50):
+            external_id = self.job.job_runner_external_id
+            if external_id:
+                break
+            time.sleep(.1)
+        return external_id
+
     def prepare(self):
         self.prepare_called = True
 
     def set_job_destination(self, job_destination, external_id):
-        self.external_id = external_id
+        self.job.job_runner_external_id = external_id
 
     def get_command_line(self):
         return self.command_line
@@ -156,7 +188,7 @@ class MockJobWrapper(object):
         return []
 
     def get_job(self):
-        return model.Job()
+        return self.job
 
     def setup_external_metadata(self, **kwds):
         return self.metadata_command
@@ -167,7 +199,20 @@ class MockJobWrapper(object):
     def has_limits(self):
         return False
 
-    def finish(self, stdout, stderr, exit_code):
+    def fail(self, message, exception):
+        self.fail_message = message
+        self.fail_exception = exception
+
+    def finish(self, stdout, stderr, exit_code, **kwds):
         self.stdout = stdout
         self.stderr = stderr
         self.exit_code = exit_code
+
+    def tmp_directory(self):
+        return None
+
+    def home_directory(self):
+        return None
+
+    def reclaim_ownership(self):
+        pass

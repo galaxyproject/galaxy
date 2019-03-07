@@ -3,6 +3,7 @@
 import difflib
 import filecmp
 import hashlib
+import io
 import logging
 import os
 import re
@@ -15,7 +16,6 @@ except ImportError:
     pysam = None
 
 from galaxy.util.compression_utils import get_fileobj
-
 from .asserts import verify_assertions
 from .test_data import TestDataResolver
 
@@ -29,16 +29,26 @@ def verify(
     output_content,
     attributes,
     filename=None,
+    get_filecontent=None,
     get_filename=None,
     keep_outputs_dir=None,
     verify_extra_files=None,
+    mode='file',
 ):
     """Verify the content of a test output using test definitions described by attributes.
 
     Throw an informative assertion error if any of these tests fail.
     """
     if get_filename is None:
-        get_filename = DEFAULT_TEST_DATA_RESOLVER.get_filename
+        if get_filecontent is None:
+            get_filecontent = DEFAULT_TEST_DATA_RESOLVER.get_filecontent
+
+        def get_filename(filename):
+            file_content = get_filecontent(filename)
+            local_name = make_temp_fname(fname=filename)
+            with open(local_name, 'wb') as f:
+                f.write(file_content)
+            return local_name
 
     # Check assertions...
     assertions = attributes.get("assert_list", None)
@@ -70,15 +80,23 @@ def verify(
             errmsg += str(err)
             raise AssertionError(errmsg)
 
+    if attributes is None:
+        attributes = {}
+
     if filename is not None:
-        local_name = get_filename(filename)
+        if mode == 'directory':
+            # if verifying a file inside a extra_files_path directory
+            # filename already point to a file that exists on disk
+            local_name = filename
+        else:
+            local_name = get_filename(filename)
         temp_name = make_temp_fname(fname=filename)
         with open(temp_name, 'wb') as f:
             f.write(output_content)
 
         # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
         if keep_outputs_dir:
-            ofn = os.path.join(keep_outputs_dir, os.path.basename(local_name))
+            ofn = os.path.join(keep_outputs_dir, filename)
             log.debug('keep_outputs_dir: %s, ofn: %s', keep_outputs_dir, ofn)
             try:
                 shutil.copy(temp_name, ofn)
@@ -89,10 +107,8 @@ def verify(
             else:
                 log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % (keep_outputs_dir, ofn))
         try:
-            if attributes is None:
-                attributes = {}
             compare = attributes.get('compare', 'diff')
-            if attributes.get('ftype', None) == 'bam':
+            if attributes.get('ftype', None) in ['bam', 'qname_sorted.bam', 'qname_input_sorted.bam', 'unsorted.bam']:
                 local_fh, temp_name = _bam_to_sam(local_name, temp_name)
                 local_name = local_fh.name
             if compare == 'diff':
@@ -111,10 +127,6 @@ def verify(
                 files_contains(local_name, temp_name, attributes=attributes)
             else:
                 raise Exception('Unimplemented Compare type: %s' % compare)
-            if verify_extra_files:
-                extra_files = attributes.get('extra_files', None)
-                if extra_files:
-                    verify_extra_files(extra_files)
         except AssertionError as err:
             errmsg = '%s different than expected, difference (using %s):\n' % (item_label, compare)
             errmsg += "( %s v. %s )\n" % (local_name, temp_name)
@@ -123,6 +135,11 @@ def verify(
         finally:
             if 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
                 os.remove(temp_name)
+
+    if verify_extra_files:
+        extra_files = attributes.get('extra_files', None)
+        if extra_files:
+            verify_extra_files(extra_files)
 
 
 def make_temp_fname(fname=None):
@@ -169,84 +186,82 @@ def files_diff(file1, file2, attributes=None):
             if (line.startswith('+') and not line.startswith('+++')) or (line.startswith('-') and not line.startswith('---')):
                 count += 1
         return count
+
     if not filecmp.cmp(file1, file2):
-        files_differ = False
         if attributes is None:
             attributes = {}
         decompress = attributes.get("decompress", None)
-        if not decompress:
-            local_file = open(file1, 'U').readlines()
-            history_data = open(file2, 'U').readlines()
+        if decompress:
+            # None means all compressed formats are allowed
+            compressed_formats = None
         else:
-            local_file = get_fileobj(file1, 'U').readlines()
-            history_data = get_fileobj(file2, 'U').readlines()
+            compressed_formats = []
+        is_pdf = False
+        try:
+            local_file = get_fileobj(file1, compressed_formats=compressed_formats).readlines()
+            history_data = get_fileobj(file2, compressed_formats=compressed_formats).readlines()
+        except UnicodeDecodeError:
+            if file1.endswith('.pdf') or file2.endswith('.pdf'):
+                is_pdf = True
+                local_file = open(file1, 'rb').readlines()
+                history_data = open(file2, 'rb').readlines()
+            else:
+                raise AssertionError("Binary data detected, not displaying diff")
         if attributes.get('sort', False):
+            local_file.sort()
             history_data.sort()
-        # Why even bother with the check loop below, why not just use the diff output? This seems wasteful.
-        if len(local_file) == len(history_data):
-            for i in range(len(history_data)):
-                if local_file[i].rstrip('\r\n') != history_data[i].rstrip('\r\n'):
-                    files_differ = True
-                    break
-        else:
-            files_differ = True
-        if files_differ:
-            allowed_diff_count = int(attributes.get('lines_diff', 0))
-            diff = list(difflib.unified_diff(local_file, history_data, "local_file", "history_data"))
-            diff_lines = get_lines_diff(diff)
-            if diff_lines > allowed_diff_count:
-                if 'GALAXY_TEST_RAW_DIFF' in os.environ:
-                    diff_slice = diff
+        allowed_diff_count = int(attributes.get('lines_diff', 0))
+        diff = list(difflib.unified_diff(local_file, history_data, "local_file", "history_data"))
+        diff_lines = get_lines_diff(diff)
+        if diff_lines > allowed_diff_count:
+            if 'GALAXY_TEST_RAW_DIFF' in os.environ:
+                diff_slice = diff
+            else:
+                if len(diff) < 60:
+                    diff_slice = diff[0:40]
                 else:
-                    if len(diff) < 60:
-                        diff_slice = diff[0:40]
-                    else:
-                        diff_slice = diff[:25] + ["********\n", "*SNIP *\n", "********\n"] + diff[-25:]
-                # FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff
-                # due to unknown desired behavior when used in conjunction with a non-zero lines_diff
-                # PDF forgiveness can probably be handled better by not special casing by __extension__ here
-                # and instead using lines_diff or a regular expression matching
-                # or by creating and using a specialized pdf comparison function
-                if file1.endswith('.pdf') or file2.endswith('.pdf'):
-                    # PDF files contain creation dates, modification dates, ids and descriptions that change with each
-                    # new file, so we need to handle these differences.  As long as the rest of the PDF file does
-                    # not differ we're ok.
-                    valid_diff_strs = ['description', 'createdate', 'creationdate', 'moddate', 'id', 'producer', 'creator']
-                    valid_diff = False
-                    invalid_diff_lines = 0
-                    for line in diff_slice:
-                        # Make sure to lower case strings before checking.
-                        line = line.lower()
-                        # Diff lines will always start with a + or - character, but handle special cases: '--- local_file \n', '+++ history_data \n'
-                        if (line.startswith('+') or line.startswith('-')) and line.find('local_file') < 0 and line.find('history_data') < 0:
-                            for vdf in valid_diff_strs:
-                                if line.find(vdf) < 0:
-                                    valid_diff = False
-                                else:
-                                    valid_diff = True
-                                    # Stop checking as soon as we know we have a valid difference
-                                    break
-                            if not valid_diff:
-                                invalid_diff_lines += 1
-                    log.info('## files diff on %s and %s lines_diff=%d, found diff = %d, found pdf invalid diff = %d' % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
-                    if invalid_diff_lines > allowed_diff_count:
-                        # Print out diff_slice so we can see what failed
-                        log.info("###### diff_slice ######")
-                        raise AssertionError("".join(diff_slice))
-                else:
-                    log.info('## files diff on %s and %s lines_diff=%d, found diff = %d' % (file1, file2, allowed_diff_count, diff_lines))
-                    for line in diff_slice:
-                        for char in line:
-                            if ord(char) > 128:
-                                raise AssertionError("Binary data detected, not displaying diff")
+                    diff_slice = diff[:25] + ["********\n", "*SNIP *\n", "********\n"] + diff[-25:]
+            # FIXME: This pdf stuff is rather special cased and has not been updated to consider lines_diff
+            # due to unknown desired behavior when used in conjunction with a non-zero lines_diff
+            # PDF forgiveness can probably be handled better by not special casing by __extension__ here
+            # and instead using lines_diff or a regular expression matching
+            # or by creating and using a specialized pdf comparison function
+            if is_pdf:
+                # PDF files contain creation dates, modification dates, ids and descriptions that change with each
+                # new file, so we need to handle these differences.  As long as the rest of the PDF file does
+                # not differ we're ok.
+                valid_diff_strs = ['description', 'createdate', 'creationdate', 'moddate', 'id', 'producer', 'creator']
+                valid_diff = False
+                invalid_diff_lines = 0
+                for line in diff_slice:
+                    # Make sure to lower case strings before checking.
+                    line = line.lower()
+                    # Diff lines will always start with a + or - character, but handle special cases: '--- local_file \n', '+++ history_data \n'
+                    if (line.startswith('+') or line.startswith('-')) and line.find('local_file') < 0 and line.find('history_data') < 0:
+                        for vdf in valid_diff_strs:
+                            if line.find(vdf) < 0:
+                                valid_diff = False
+                            else:
+                                valid_diff = True
+                                # Stop checking as soon as we know we have a valid difference
+                                break
+                        if not valid_diff:
+                            invalid_diff_lines += 1
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d, found pdf invalid diff = %d" % (file1, file2, allowed_diff_count, diff_lines, invalid_diff_lines))
+                if invalid_diff_lines > allowed_diff_count:
+                    # Print out diff_slice so we can see what failed
+                    log.info("###### diff_slice ######")
                     raise AssertionError("".join(diff_slice))
+            else:
+                log.info("## files diff on '%s' and '%s': lines_diff = %d, found diff = %d" % (file1, file2, allowed_diff_count, diff_lines))
+                raise AssertionError("".join(diff_slice))
 
 
 def files_re_match(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match."""
-    local_file = open(file1, 'U').readlines()  # regex file
-    history_data = open(file2, 'U').readlines()
-    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%s != %s)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
+    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
+    history_data = io.open(file2, encoding='utf-8').readlines()
+    assert len(local_file) == len(history_data), 'Data File and Regular Expression File contain a different number of lines (%d != %d)\nHistory Data (first 40 lines):\n%s' % (len(local_file), len(history_data), ''.join(history_data[:40]))
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
@@ -264,24 +279,24 @@ def files_re_match(file1, file2, attributes=None):
 
 def files_re_match_multiline(file1, file2, attributes=None):
     """Check the contents of 2 files for differences using re.match in multiline mode."""
-    local_file = open(file1, 'U').read()  # regex file
+    local_file = io.open(file1, encoding='utf-8').read()  # regex file
     if attributes is None:
         attributes = {}
     if attributes.get('sort', False):
-        history_data = open(file2, 'U').readlines()
+        history_data = io.open(file2, encoding='utf-8').readlines()
         history_data.sort()
         history_data = ''.join(history_data)
     else:
-        history_data = open(file2, 'U').read()
+        history_data = io.open(file2, encoding='utf-8').read()
     # lines_diff not applicable to multiline matching
     assert re.match(local_file, history_data, re.MULTILINE), "Multiline Regular expression did not match data file"
 
 
 def files_contains(file1, file2, attributes=None):
     """Check the contents of file2 for substrings found in file1, on a per-line basis."""
-    local_file = open(file1, 'U').readlines()  # regex file
+    local_file = io.open(file1, encoding='utf-8').readlines()  # regex file
     # TODO: allow forcing ordering of contains
-    history_data = open(file2, 'U').read()
+    history_data = io.open(file2, encoding='utf-8').read()
     lines_diff = int(attributes.get('lines_diff', 0))
     line_diff_count = 0
     while local_file:

@@ -25,7 +25,7 @@ def main():
     try:
         maf_reader = bx.align.maf.Reader(open(sys.argv[2], 'r'))
         maf_writer = bx.align.maf.Writer(open(sys.argv[3], 'w'))
-    except:
+    except Exception:
         print("Your MAF file appears to be malformed.", file=sys.stderr)
         sys.exit()
     allow_partial = False
@@ -46,7 +46,8 @@ def main():
     maf_reader.close()
     maf_writer.close()
 
-    print("Restricted to species: %s." % ", ".join(species))
+    if species:
+        print("Restricted to species: %s." % ", ".join(species))
     print("%i MAF blocks have been kept." % maf_blocks_kept)
 
 

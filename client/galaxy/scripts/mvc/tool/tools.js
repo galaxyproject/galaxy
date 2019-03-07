@@ -1,15 +1,15 @@
 /**
  * Model, view, and controller objects for Galaxy tools and tool panel.
  */
-
- define([
-    "libs/underscore",
-    "viz/trackster/util",
-    "mvc/dataset/data",
-    "mvc/tool/tool-form"
-
-], function(_, util, data, ToolForm) {
-    'use strict';
+/* global ga */
+import _ from "underscore";
+import $ from "jquery";
+import d3 from "d3";
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import { getGalaxyInstance } from "app";
+import util from "viz/trackster/util";
+import { DatasetCollection } from "mvc/dataset/data";
 
 /**
  * Mixin for tracking model visibility.
@@ -32,7 +32,6 @@ var VisibilityMixin = {
     is_visible: function() {
         return !this.attributes.hidden;
     }
-
 };
 
 /**
@@ -57,7 +56,7 @@ var ToolParameter = Backbone.Model.extend({
     },
 
     set_value: function(value) {
-        this.set('value', value || '');
+        this.set("value", value || "");
     }
 });
 
@@ -75,22 +74,23 @@ var DataToolParameter = ToolParameter.extend({});
  */
 var IntegerToolParameter = ToolParameter.extend({
     set_value: function(value) {
-        this.set('value', parseInt(value, 10));
+        this.set("value", parseInt(value, 10));
     },
 
     /**
      * Returns samples from a tool input.
      */
     get_samples: function() {
-        return d3.scale.linear()
-                        .domain([this.get('min'), this.get('max')])
-                        .ticks(this.get('num_samples'));
+        return d3.scale
+            .linear()
+            .domain([this.get("min"), this.get("max")])
+            .ticks(this.get("num_samples"));
     }
 });
 
 var FloatToolParameter = IntegerToolParameter.extend({
     set_value: function(value) {
-        this.set('value', parseFloat(value));
+        this.set("value", parseFloat(value));
     }
 });
 
@@ -102,18 +102,16 @@ var SelectToolParameter = ToolParameter.extend({
      * Returns tool options.
      */
     get_samples: function() {
-        return _.map(this.get('options'), function(option) {
-            return option[0];
-        });
+        return _.map(this.get("options"), option => option[0]);
     }
 });
 
 // Set up dictionary of parameter types.
 ToolParameter.subModelTypes = {
-    'integer': IntegerToolParameter,
-    'float': FloatToolParameter,
-    'data': DataToolParameter,
-    'select': SelectToolParameter
+    integer: IntegerToolParameter,
+    float: FloatToolParameter,
+    data: DataToolParameter,
+    select: SelectToolParameter
 };
 
 /**
@@ -130,15 +128,19 @@ var Tool = Backbone.Model.extend({
         outputs: []
     },
 
-    urlRoot: Galaxy.root + 'api/tools',
+    urlRoot: `${getAppRoot()}api/tools`,
 
     initialize: function(options) {
-
         // Set parameters.
-        this.set('inputs', new ToolParameterCollection(_.map(options.inputs, function(p) {
-            var p_class = ToolParameter.subModelTypes[p.type] || ToolParameter;
-            return new p_class(p);
-        })));
+        this.set(
+            "inputs",
+            new ToolParameterCollection(
+                _.map(options.inputs, p => {
+                    var p_class = ToolParameter.subModelTypes[p.type] || ToolParameter;
+                    return new p_class(p);
+                })
+            )
+        );
     },
 
     /**
@@ -148,7 +150,7 @@ var Tool = Backbone.Model.extend({
         var rval = Backbone.Model.prototype.toJSON.call(this);
 
         // Convert inputs to JSON manually.
-        rval.inputs = this.get('inputs').map(function(i) { return i.toJSON(); });
+        rval.inputs = this.get("inputs").map(i => i.toJSON());
         return rval;
     },
 
@@ -157,11 +159,11 @@ var Tool = Backbone.Model.extend({
      * client and server yet.
      */
     remove_inputs: function(types) {
-        var tool = this,
-            incompatible_inputs = tool.get('inputs').filter( function(input) {
-                return ( types.indexOf( input.get('type') ) !== -1);
-            });
-        tool.get('inputs').remove(incompatible_inputs);
+        var tool = this;
+
+        var incompatible_inputs = tool.get("inputs").filter(input => types.indexOf(input.get("type")) !== -1);
+
+        tool.get("inputs").remove(incompatible_inputs);
     },
 
     /**
@@ -173,19 +175,19 @@ var Tool = Backbone.Model.extend({
         // Return only samplable inputs if flag is set.
         if (only_samplable_inputs) {
             var valid_inputs = new Backbone.Collection();
-            copy.get('inputs').each(function(input) {
+            copy.get("inputs").each(input => {
                 if (input.get_samples()) {
                     valid_inputs.push(input);
                 }
             });
-            copy.set('inputs', valid_inputs);
+            copy.set("inputs", valid_inputs);
         }
 
         return copy;
     },
 
     apply_search_results: function(results) {
-        ( _.indexOf(results, this.attributes.id) !== -1 ? this.show() : this.hide() );
+        _.indexOf(results, this.attributes.id) !== -1 ? this.show() : this.hide();
         return this.is_visible();
     },
 
@@ -193,9 +195,9 @@ var Tool = Backbone.Model.extend({
      * Set a tool input's value.
      */
     set_input_value: function(name, value) {
-        this.get('inputs').find(function(input) {
-            return input.get('name') === name;
-        }).set('value', value);
+        this.get("inputs")
+            .find(input => input.get("name") === name)
+            .set("value", value);
     },
 
     /**
@@ -203,7 +205,7 @@ var Tool = Backbone.Model.extend({
      */
     set_input_values: function(inputs_dict) {
         var self = this;
-        _.each(_.keys(inputs_dict), function(input_name) {
+        _.each(_.keys(inputs_dict), input_name => {
             self.set_input_value(input_name, inputs_dict[input_name]);
         });
     },
@@ -220,7 +222,7 @@ var Tool = Backbone.Model.extend({
      */
     rerun: function(target_dataset, regions) {
         return this._run({
-            action: 'rerun',
+            action: "rerun",
             target_dataset_id: target_dataset.id,
             regions: regions
         });
@@ -231,8 +233,8 @@ var Tool = Backbone.Model.extend({
      */
     get_inputs_dict: function() {
         var input_dict = {};
-        this.get('inputs').each(function(input) {
-            input_dict[input.get('name')] = input.get('value');
+        this.get("inputs").each(input => {
+            input_dict[input.get("name")] = input.get("value");
         });
         return input_dict;
     },
@@ -243,21 +245,25 @@ var Tool = Backbone.Model.extend({
      */
     _run: function(additional_params) {
         // Create payload.
-        var payload = _.extend({
+        var payload = _.extend(
+            {
                 tool_id: this.id,
                 inputs: this.get_inputs_dict()
-            }, additional_params);
+            },
+            additional_params
+        );
 
         // Because job may require indexing datasets, use server-side
         // deferred to ensure that job is run. Also use deferred that
         // resolves to outputs from tool.
-        var run_deferred = $.Deferred(),
-            ss_deferred = new util.ServerStateDeferred({
+        var run_deferred = $.Deferred();
+
+        var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
                 url: this.urlRoot,
                 data: JSON.stringify(payload),
                 dataType: "json",
-                contentType: 'application/json',
+                contentType: "application/json",
                 type: "POST"
             },
             interval: 2000,
@@ -267,20 +273,13 @@ var Tool = Backbone.Model.extend({
         });
 
         // Run job and resolve run_deferred to tool outputs.
-        $.when(ss_deferred.go()).then(function(result) {
-            run_deferred.resolve(new data.DatasetCollection(result));
+        $.when(ss_deferred.go()).then(result => {
+            run_deferred.resolve(new DatasetCollection(result));
         });
         return run_deferred;
     }
 });
 _.extend(Tool.prototype, VisibilityMixin);
-
-/**
- * Tool view.
- */
-var ToolView = Backbone.View.extend({
-
-});
 
 /**
  * Wrap collection of tools for fast access/manipulation.
@@ -304,7 +303,7 @@ var ToolSection = Backbone.Model.extend({
     },
 
     clear_search_results: function() {
-        _.each(this.attributes.elems, function(elt) {
+        _.each(this.attributes.elems, elt => {
             elt.show();
         });
 
@@ -313,14 +312,13 @@ var ToolSection = Backbone.Model.extend({
     },
 
     apply_search_results: function(results) {
-        var all_hidden = true,
-            cur_label;
-        _.each(this.attributes.elems, function(elt) {
+        var all_hidden = true;
+        var cur_label;
+        _.each(this.attributes.elems, elt => {
             if (elt instanceof ToolSectionLabel) {
                 cur_label = elt;
                 cur_label.hide();
-            }
-            else if (elt instanceof Tool) {
+            } else if (elt instanceof Tool) {
                 if (elt.apply_search_results(results)) {
                     all_hidden = false;
                     if (cur_label) {
@@ -332,8 +330,7 @@ var ToolSection = Backbone.Model.extend({
 
         if (all_hidden) {
             this.hide();
-        }
-        else {
+        } else {
             this.show();
             this.set("open", true);
         }
@@ -347,6 +344,8 @@ _.extend(ToolSection.prototype, VisibilityMixin);
  * query.
  */
 var ToolSearch = Backbone.Model.extend({
+    SEARCH_RESERVED_TERMS_FAVORITES: ["#favs", "#favorites", "#favourites"],
+
     defaults: {
         search_hint_string: "search tools",
         min_chars_for_search: 3,
@@ -358,7 +357,7 @@ var ToolSearch = Backbone.Model.extend({
         clear_key: 27
     },
 
-    urlRoot: Galaxy.root + 'api/tools',
+    urlRoot: `${getAppRoot()}api/tools`,
 
     initialize: function() {
         this.on("change:query", this.do_search);
@@ -368,6 +367,7 @@ var ToolSearch = Backbone.Model.extend({
      * Do the search and update the results.
      */
     do_search: function() {
+        let Galaxy = getGalaxyInstance();
         var query = this.attributes.query;
 
         // If query is too short, do not search.
@@ -382,28 +382,37 @@ var ToolSearch = Backbone.Model.extend({
         if (this.timer) {
             clearTimeout(this.timer);
         }
-        // Start a new ajax-request in X ms
-        $("#search-clear-btn").hide();
-        $("#search-spinner").show();
-        var self = this;
-        this.timer = setTimeout(function () {
-            // log the search to analytics if present
-            if ( typeof ga !== 'undefined' ) {
-                ga( 'send', 'pageview', Galaxy.root + '?q=' + q );
-            }
-            $.get( self.urlRoot, { q: q }, function (data) {
-                self.set("results", data);
-                $("#search-spinner").hide();
-                $("#search-clear-btn").show();
-            }, "json" );
-        }, 400 );
+        // Catch reserved words
+        if (this.SEARCH_RESERVED_TERMS_FAVORITES.indexOf(q) >= 0) {
+            this.set("results", Galaxy.user.getFavorites().tools);
+        } else {
+            // Start a new ajax-request in X ms
+            $("#search-clear-btn").hide();
+            $("#search-spinner").show();
+            var self = this;
+            this.timer = setTimeout(() => {
+                // log the search to analytics if present
+                if (typeof ga !== "undefined") {
+                    ga("send", "pageview", `${getAppRoot()}?q=${q}`);
+                }
+                $.get(
+                    self.urlRoot,
+                    { q: q },
+                    data => {
+                        self.set("results", data);
+                        $("#search-spinner").hide();
+                        $("#search-clear-btn").show();
+                    },
+                    "json"
+                );
+            }, 400);
+        }
     },
 
     clear_search: function() {
         this.set("query", "");
         this.set("results", null);
     }
-
 });
 _.extend(ToolSearch.prototype, VisibilityMixin);
 
@@ -411,12 +420,11 @@ _.extend(ToolSearch.prototype, VisibilityMixin);
  * Tool Panel.
  */
 var ToolPanel = Backbone.Model.extend({
-
     initialize: function(options) {
         this.attributes.tool_search = options.tool_search;
         this.attributes.tool_search.on("change:results", this.apply_search_results, this);
         this.attributes.tools = options.tools;
-        this.attributes.layout = new Backbone.Collection( this.parse(options.layout) );
+        this.attributes.layout = new Backbone.Collection(this.parse(options.layout));
     },
 
     /**
@@ -424,22 +432,21 @@ var ToolPanel = Backbone.Model.extend({
      */
     parse: function(response) {
         // Recursive function to parse tool panel elements.
-        var self = this,
-            // Helper to recursively parse tool panel.
-            parse_elt = function(elt_dict) {
+        var self = this;
+
+        var // Helper to recursively parse tool panel.
+            parse_elt = elt_dict => {
                 var type = elt_dict.model_class;
                 // There are many types of tools; for now, anything that ends in 'Tool'
                 // is treated as a generic tool.
-                if ( type.indexOf('Tool') === type.length - 4 ) {
+                if (type.indexOf("Tool") === type.length - 4) {
                     return self.attributes.tools.get(elt_dict.id);
-                }
-                else if (type === 'ToolSection') {
+                } else if (type === "ToolSection") {
                     // Parse elements.
                     var elems = _.map(elt_dict.elems, parse_elt);
                     elt_dict.elems = elems;
                     return new ToolSection(elt_dict);
-                }
-                else if (type === 'ToolSectionLabel') {
+                } else if (type === "ToolSectionLabel") {
                     return new ToolSectionLabel(elt_dict);
                 }
             };
@@ -448,11 +455,10 @@ var ToolPanel = Backbone.Model.extend({
     },
 
     clear_search_results: function() {
-        this.get('layout').each(function(panel_elt) {
+        this.get("layout").each(panel_elt => {
             if (panel_elt instanceof ToolSection) {
                 panel_elt.clear_search_results();
-            }
-            else {
+            } else {
                 // Label or tool, so just show.
                 panel_elt.show();
             }
@@ -460,26 +466,24 @@ var ToolPanel = Backbone.Model.extend({
     },
 
     apply_search_results: function() {
-        var results = this.get('tool_search').get('results');
+        var results = this.get("tool_search").get("results");
         if (results === null) {
             this.clear_search_results();
             return;
         }
 
         var cur_label = null;
-        this.get('layout').each(function(panel_elt) {
+        this.get("layout").each(panel_elt => {
             if (panel_elt instanceof ToolSectionLabel) {
                 cur_label = panel_elt;
                 cur_label.hide();
-            }
-            else if (panel_elt instanceof Tool) {
+            } else if (panel_elt instanceof Tool) {
                 if (panel_elt.apply_search_results(results)) {
                     if (cur_label) {
                         cur_label.show();
                     }
                 }
-            }
-            else {
+            } else {
                 // Starting new section, so clear current label.
                 cur_label = null;
                 panel_elt.apply_search_results(results);
@@ -505,7 +509,7 @@ var BaseView = Backbone.View.extend({
         this.update_visible();
     },
     update_visible: function() {
-        ( this.model.attributes.hidden ? this.$el.hide() : this.$el.show() );
+        this.model.attributes.hidden ? this.$el.hide() : this.$el.show();
     }
 });
 
@@ -513,26 +517,31 @@ var BaseView = Backbone.View.extend({
  * Link to a tool.
  */
 var ToolLinkView = BaseView.extend({
-    tagName: 'div',
+    tagName: "div",
 
     render: function() {
         // create element
-        var $link = $('<div/>');
+        var $link = $("<div/>");
         $link.append(templates.tool_link(this.model.toJSON()));
 
-        var formStyle = this.model.get( 'form_style', null );
+        var formStyle = this.model.get("form_style", null);
         // open upload dialog for upload tool
-        if (this.model.id === 'upload1') {
-            $link.find('a').on('click', function(e) {
+        if (this.model.id === "upload1") {
+            $link.find("a").on("click", e => {
                 e.preventDefault();
+                let Galaxy = getGalaxyInstance();
                 Galaxy.upload.show();
             });
-        }
-        else if ( formStyle === 'regular' ) { // regular tools
+        } else if (formStyle === "regular") {
+            // regular tools
             var self = this;
-            $link.find('a').on('click', function(e) {
+            $link.find("a").on("click", e => {
                 e.preventDefault();
-                Galaxy.router.push( '/', { tool_id : self.model.id, version : self.model.get('version') } );
+                let Galaxy = getGalaxyInstance();
+                Galaxy.router.push("/", {
+                    tool_id: self.model.id,
+                    version: self.model.get("version")
+                });
             });
         }
 
@@ -546,11 +555,11 @@ var ToolLinkView = BaseView.extend({
  * Panel label/section header.
  */
 var ToolSectionLabelView = BaseView.extend({
-    tagName: 'div',
-    className: 'toolPanelLabel',
+    tagName: "div",
+    className: "toolPanelLabel",
 
     render: function() {
-        this.$el.append( $("<span/>").text(this.model.attributes.text) );
+        this.$el.append($("<span/>").text(this.model.attributes.text));
         return this;
     }
 });
@@ -559,8 +568,8 @@ var ToolSectionLabelView = BaseView.extend({
  * Panel section.
  */
 var ToolSectionView = BaseView.extend({
-    tagName: 'div',
-    className: 'toolSectionWrapper',
+    tagName: "div",
+    className: "toolSectionWrapper",
 
     initialize: function() {
         BaseView.prototype.initialize.call(this);
@@ -569,22 +578,25 @@ var ToolSectionView = BaseView.extend({
 
     render: function() {
         // Build using template.
-        this.$el.append( templates.panel_section(this.model.toJSON()) );
+        this.$el.append(templates.panel_section(this.model.toJSON()));
 
         // Add tools to section.
         var section_body = this.$el.find(".toolSectionBody");
-        _.each(this.model.attributes.elems, function(elt) {
+        _.each(this.model.attributes.elems, elt => {
             if (elt instanceof Tool) {
-                var tool_view = new ToolLinkView({model: elt, className: "toolTitle"});
+                var tool_view = new ToolLinkView({
+                    model: elt,
+                    className: "toolTitle"
+                });
                 tool_view.render();
                 section_body.append(tool_view.$el);
-            }
-            else if (elt instanceof ToolSectionLabel) {
-                var label_view = new ToolSectionLabelView({model: elt});
+            } else if (elt instanceof ToolSectionLabel) {
+                var label_view = new ToolSectionLabelView({
+                    model: elt
+                });
                 label_view.render();
                 section_body.append(label_view.$el);
-            }
-            else {
+            } else {
                 // TODO: handle nested section bodies?
             }
         });
@@ -592,7 +604,7 @@ var ToolSectionView = BaseView.extend({
     },
 
     events: {
-        'click .toolSectionTitle > a': 'toggle'
+        "click .toolSectionTitle > a": "toggle"
     },
 
     /**
@@ -606,55 +618,51 @@ var ToolSectionView = BaseView.extend({
      * Update whether section is open or close.
      */
     update_open: function() {
-        (this.model.attributes.open ?
-            this.$el.children(".toolSectionBody").slideDown("fast") :
-            this.$el.children(".toolSectionBody").slideUp("fast")
-        );
+        this.model.attributes.open
+            ? this.$el.children(".toolSectionBody").slideDown("fast")
+            : this.$el.children(".toolSectionBody").slideUp("fast");
     }
 });
 
 var ToolSearchView = Backbone.View.extend({
-    tagName: 'div',
-    id: 'tool-search',
-    className: 'bar',
+    tagName: "div",
+    id: "tool-search",
+    className: "bar",
 
     events: {
-        'click': 'focus_and_select',
-        'keyup :input': 'query_changed',
-        'change :input': 'query_changed',
-        'click #search-clear-btn': 'clear'
+        click: "focus_and_select",
+        "keyup :input": "query_changed",
+        "change :input": "query_changed",
+        "click #search-clear-btn": "clear"
     },
 
     render: function() {
-        this.$el.append( templates.tool_search(this.model.toJSON()) );
+        this.$el.append(templates.tool_search(this.model.toJSON()));
         if (!this.model.is_visible()) {
             this.$el.hide();
         }
 
-        // Adjust top for issue 2907 depending on whether the messagebox is visible.
-        if ($("#messagebox").is(":visible")) {
-            this.$el.css("top","95px");
-        }
-
-        this.$el.find('[title]').tooltip();
+        this.$el.find("[title]").tooltip();
         return this;
     },
 
     focus_and_select: function() {
-        this.$el.find(":input").focus().select();
+        this.$el
+            .find(":input")
+            .focus()
+            .select();
     },
 
     clear: function() {
         this.model.clear_search();
-        this.$el.find(":input").val('');
+        this.$el.find(":input").val("");
         this.focus_and_select();
         return false;
     },
 
-    query_changed: function( evData ) {
+    query_changed: function(evData) {
         // check for the 'clear key' (ESC) first
-        if( ( this.model.attributes.clear_key ) &&
-            ( this.model.attributes.clear_key === evData.which ) ){
+        if (this.model.attributes.clear_key && this.model.attributes.clear_key === evData.which) {
             this.clear();
             return false;
         }
@@ -667,38 +675,50 @@ var ToolSearchView = Backbone.View.extend({
  * tool_link_click(click event, tool_model)
  */
 var ToolPanelView = Backbone.View.extend({
-    tagName: 'div',
-    className: 'toolMenu',
+    tagName: "div",
+    className: "toolMenu",
 
     /**
      * Set up view.
      */
     initialize: function() {
-        this.model.get('tool_search').on("change:results", this.handle_search_results, this);
+        this.model.get("tool_search").on("change:results", this.handle_search_results, this);
     },
 
     render: function() {
         var self = this;
 
         // Render search.
-        var search_view = new ToolSearchView( { model: this.model.get('tool_search') } );
+        var search_view = new ToolSearchView({
+            model: this.model.get("tool_search")
+        });
         search_view.render();
-        self.$el.append(search_view.$el);
+        // FIXME: This is a little ugly because it navigates through the parent
+        //        element, but good enough until this is all `.vue`
+        self.$el
+            .closest(".unified-panel")
+            .find(".unified-panel-controls")
+            .append(search_view.$el);
 
         // Render panel.
-        this.model.get('layout').each(function(panel_elt) {
+        this.model.get("layout").each(panel_elt => {
             if (panel_elt instanceof ToolSection) {
-                var section_title_view = new ToolSectionView({model: panel_elt});
+                var section_title_view = new ToolSectionView({
+                    model: panel_elt
+                });
                 section_title_view.render();
                 self.$el.append(section_title_view.$el);
-            }
-            else if (panel_elt instanceof Tool) {
-                var tool_view = new ToolLinkView({model: panel_elt, className: "toolTitleNoSection"});
+            } else if (panel_elt instanceof Tool) {
+                var tool_view = new ToolLinkView({
+                    model: panel_elt,
+                    className: "toolTitleNoSection"
+                });
                 tool_view.render();
                 self.$el.append(tool_view.$el);
-            }
-            else if (panel_elt instanceof ToolSectionLabel) {
-                var label_view = new ToolSectionLabelView({model: panel_elt});
+            } else if (panel_elt instanceof ToolSectionLabel) {
+                var label_view = new ToolSectionLabelView({
+                    model: panel_elt
+                });
                 label_view.render();
                 self.$el.append(label_view.$el);
             }
@@ -707,9 +727,11 @@ var ToolPanelView = Backbone.View.extend({
         // Setup tool link click eventing.
         self.$el.find("a.tool-link").click(function(e) {
             // Tool id is always the first class.
-            var
-                tool_id = $(this).attr('class').split(/\s+/)[0],
-                tool = self.model.get('tools').get(tool_id);
+            var tool_id = $(this)
+                .attr("class")
+                .split(/\s+/)[0];
+
+            var tool = self.model.get("tools").get(tool_id);
 
             self.trigger("tool_link_click", e, tool);
         });
@@ -718,11 +740,10 @@ var ToolPanelView = Backbone.View.extend({
     },
 
     handle_search_results: function() {
-        var results = this.model.get('tool_search').get('results');
+        var results = this.model.get("tool_search").get("results");
         if (results && results.length === 0) {
             $("#search-no-results").show();
-        }
-        else {
+        } else {
             $("#search-no-results").hide();
         }
     }
@@ -732,129 +753,90 @@ var ToolPanelView = Backbone.View.extend({
  * View for working with a tool: setting parameters and inputs and executing the tool.
  */
 var ToolFormView = Backbone.View.extend({
-    className: 'toolForm',
+    className: "toolForm",
 
     render: function() {
         this.$el.children().remove();
-        this.$el.append( templates.tool_form(this.model.toJSON()) );
-    }
-});
-
-/**
- * Integrated tool menu + tool execution.
- */
-var IntegratedToolMenuAndView = Backbone.View.extend({
-    className: 'toolMenuAndView',
-
-    initialize: function() {
-        this.tool_panel_view = new ToolPanelView({collection: this.collection});
-        this.tool_form_view = new ToolFormView();
-    },
-
-    render: function() {
-        // Render and append tool panel.
-        this.tool_panel_view.render();
-        this.tool_panel_view.$el.css("float", "left");
-        this.$el.append(this.tool_panel_view.$el);
-
-        // Append tool form view.
-        this.tool_form_view.$el.hide();
-        this.$el.append(this.tool_form_view.$el);
-
-        // On tool link click, show tool.
-        var self = this;
-        this.tool_panel_view.on("tool_link_click", function(e, tool) {
-            // Prevents click from activating link:
-            e.preventDefault();
-            // Show tool that was clicked on:
-            self.show_tool(tool);
-        });
-    },
-
-    /**
-     * Fetch and display tool.
-     */
-    show_tool: function(tool) {
-        var self = this;
-        tool.fetch().done( function() {
-            self.tool_form_view.model = tool;
-            self.tool_form_view.render();
-            self.tool_form_view.$el.show();
-            $('#left').width("650px");
-        });
+        this.$el.append(templates.tool_form(this.model.toJSON()));
     }
 });
 
 // TODO: move into relevant views
 var templates = {
     // the search bar at the top of the tool panel
-    tool_search : _.template([
-        '<input id="tool-search-query" class="search-query parent-width" name="query" ',
-                'placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />',
-        '<a id="search-clear-btn" title="clear search (esc)"> </a>',
-        //TODO: replace with icon
-        '<span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>',
-    ].join('')),
+    tool_search: _.template(
+        `<input id="tool-search-query" class="search-query parent-width" name="query"
+                placeholder="<%- search_hint_string %>" autocomplete="off" type="text" />
+         <a id="search-clear-btn" title="clear search (esc)"> </a>
+         <span id="search-spinner" class="search-spinner fa fa-spinner fa-spin"></span>
+    `
+    ),
 
     // the category level container in the tool panel (e.g. 'Get Data', 'Text Manipulation')
-    panel_section : _.template([
-        '<div class="toolSectionTitle" id="title_<%- id %>">',
+    panel_section: _.template(
+        [
+            '<div class="toolSectionTitle" id="title_<%- id %>">',
             '<a href="javascript:void(0)"><span><%- name %></span></a>',
-        '</div>',
-        '<div id="<%- id %>" class="toolSectionBody" style="display: none;">',
+            "</div>",
+            '<div id="<%- id %>" class="toolSectionBody" style="display: none;">',
             '<div class="toolSectionBg"></div>',
-        '<div>'
-    ].join('')),
+            "<div>"
+        ].join("")
+    ),
 
     // a single tool's link in the tool panel; will load the tool form in the center panel
-    tool_link : _.template([
-        '<a class="<%- id %> tool-link" href="<%= link %>" target="<%- target %>" minsizehint="<%- min_width %>">',
+    tool_link: _.template(
+        [
+            '<a class="<%- id %> tool-link" href="<%= link %>" target="<%- target %>" minsizehint="<%- min_width %>">',
             '<span class="labels">',
-                '<% _.each( labels, function( label ){ %>',
-                '<span class="label label-default label-<%- label %>">',
-                    '<%- label %>',
-                '</span>',
-                '<% }); %>',
-            '</span>',
+            "<% _.each( labels, function( label ){ %>",
+            '<span class="badge badge-primary badge-<%- label %>">',
+            "<%- label %>",
+            "</span>",
+            "<% }); %>",
+            "</span>",
             '<span class="tool-old-link">',
-                '<%- name %>',
-            '</span>',
-            ' <%- description %>',
-        '</a>'
-    ].join('')),
+            "<%- name %>",
+            "</span>",
+            " <%- description %>",
+            "</a>"
+        ].join("")
+    ),
 
     // the tool form for entering tool parameters, viewing help and executing the tool
     // loaded when a tool link is clicked in the tool panel
-    tool_form : _.template([
-        '<div class="toolFormTitle"><%- tool.name %> (version <%- tool.version %>)</div>',
-        '<div class="toolFormBody">',
-            '<% _.each( tool.inputs, function( input ){ %>',
+    tool_form: _.template(
+        [
+            '<div class="toolFormTitle"><%- tool.name %> (version <%- tool.version %>)</div>',
+            '<div class="toolFormBody">',
+            "<% _.each( tool.inputs, function( input ){ %>",
             '<div class="form-row">',
-                '<label for="<%- input.name %>"><%- input.label %>:</label>',
-                '<div class="form-row-input">',
-                    '<%= input.html %>',
-                '</div>',
-                '<div class="toolParamHelp" style="clear: both;">',
-                    '<%- input.help %>',
-                '</div>',
-                '<div style="clear: both;"></div>',
-            '</div>',
-            '<% }); %>',
-        '</div>',
-        '<div class="form-row form-actions">',
+            '<label for="<%- input.name %>"><%- input.label %>:</label>',
+            '<div class="form-row-input">',
+            "<%= input.html %>",
+            "</div>",
+            '<div class="toolParamHelp" style="clear: both;">',
+            "<%- input.help %>",
+            "</div>",
+            '<div style="clear: both;"></div>',
+            "</div>",
+            "<% }); %>",
+            "</div>",
+            '<div class="form-row form-actions">',
             '<input type="submit" class="btn btn-primary" name="runtool_btn" value="Execute" />',
-        '</div>',
-        '<div class="toolHelp">',
+            "</div>",
+            '<div class="toolHelp">',
             '<div class="toolHelpBody"><% tool.help %></div>',
-        '</div>',
-    // TODO: we need scoping here because 'help' is the dom for the help menu in the masthead
-    // which implies a leaky variable that I can't find
-    ].join(''), { variable: 'tool' }),
+            "</div>"
+            // TODO: we need scoping here because 'help' is the dom for the help menu in the masthead
+            // which implies a leaky variable that I can't find
+        ].join(""),
+        { variable: "tool" }
+    )
 };
 
-
 // Exports
-return {
+export default {
     ToolParameter: ToolParameter,
     IntegerToolParameter: IntegerToolParameter,
     SelectToolParameter: SelectToolParameter,
@@ -865,5 +847,3 @@ return {
     ToolPanelView: ToolPanelView,
     ToolFormView: ToolFormView
 };
-
-});

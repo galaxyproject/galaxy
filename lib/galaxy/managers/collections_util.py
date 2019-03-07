@@ -1,4 +1,5 @@
 import logging
+import math
 
 from galaxy import exceptions, model, web
 from galaxy.util import string_as_bool
@@ -27,7 +28,8 @@ def api_payload_to_create_params(payload):
         collection_type=payload.get("collection_type"),
         element_identifiers=payload.get("element_identifiers"),
         name=payload.get("name", None),
-        hide_source_items=string_as_bool(payload.get("hide_source_items", False))
+        hide_source_items=string_as_bool(payload.get("hide_source_items", False)),
+        copy_elements=string_as_bool(payload.get("copy_elements", False))
     )
     return params
 
@@ -67,12 +69,16 @@ def validate_input_element_identifiers(element_identifiers):
 
 def get_hda_and_element_identifiers(dataset_collection_instance):
     name = dataset_collection_instance.name
+    collection = dataset_collection_instance.collection
+    return get_collection(collection, name=name)
+
+
+def get_collection(collection, name=""):
     names = []
     hdas = []
-    collection = dataset_collection_instance.collection
     if collection.has_subcollections:
         for element in collection.elements:
-            subnames, subhdas = get_subcollections(element.child_collection, name="%s/%s" % (name, element.element_identifier))
+            subnames, subhdas = get_collection_elements(element.child_collection, name="%s/%s" % (name, element.element_identifier))
             names.extend(subnames)
             hdas.extend(subhdas)
     else:
@@ -82,17 +88,24 @@ def get_hda_and_element_identifiers(dataset_collection_instance):
     return names, hdas
 
 
-def get_subcollections(collection, name=""):
+def get_collection_elements(collection, name=""):
     names = []
     hdas = []
     for element in collection.elements:
-        names.append("%s/%s" % (name, element.element_identifier))
-        hdas.append(element.dataset_instance)
+        full_element_name = "%s/%s" % (name, element.element_identifier)
+        if element.is_collection:
+            subnames, subhdas = get_collection(element.child_collection, name=full_element_name)
+            names.extend(subnames)
+            hdas.extend(subhdas)
+        else:
+            names.append(full_element_name)
+            hdas.append(element.dataset_instance)
     return names, hdas
 
 
-def dictify_dataset_collection_instance(dataset_collection_instance, parent, security, view="element"):
-    dict_value = dataset_collection_instance.to_dict(view=view)
+def dictify_dataset_collection_instance(dataset_collection_instance, parent, security, view="element", fuzzy_count=None):
+    hdca_view = "element" if view in ["element", "element-reference"] else "collection"
+    dict_value = dataset_collection_instance.to_dict(view=hdca_view)
     encoded_id = security.encode_id(dataset_collection_instance.id)
     if isinstance(parent, model.History):
         encoded_history_id = security.encode_id(parent.id)
@@ -102,25 +115,160 @@ def dictify_dataset_collection_instance(dataset_collection_instance, parent, sec
         encoded_folder_id = security.encode_id(parent.id)
         # TODO: Work in progress - this end-point is not right yet...
         dict_value['url'] = web.url_for('library_content', library_id=encoded_library_id, id=encoded_id, folder_id=encoded_folder_id)
-    if view == "element":
+
+    if view in ["element", "element-reference"]:
         collection = dataset_collection_instance.collection
-        dict_value['elements'] = [dictify_element(_) for _ in collection.elements]
-        dict_value['populated'] = collection.populated
+        rank_fuzzy_counts = gen_rank_fuzzy_counts(collection.collection_type, fuzzy_count)
+        elements, rest_fuzzy_counts = get_fuzzy_count_elements(collection, rank_fuzzy_counts)
+        if view == "element":
+            dict_value['populated'] = collection.populated
+            element_func = dictify_element
+        else:
+            element_func = dictify_element_reference
+        dict_value['elements'] = [element_func(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+
     security.encode_all_ids(dict_value, recursive=True)  # TODO: Use Kyle's recursive formulation of this.
     return dict_value
 
 
-def dictify_element(element):
-    dictified = element.to_dict(view="element")
-    object_detials = element.element_object.to_dict()
-    if element.child_collection:
-        # Recursively yield elements for each nested collection...
-        child_collection = element.child_collection
-        object_detials["elements"] = [dictify_element(_) for _ in child_collection.elements]
-        object_detials["populated"] = child_collection.populated
+def dictify_element_reference(element, rank_fuzzy_counts=None):
+    """Load minimal details of elements required to show outline of contents in history panel.
 
-    dictified["object"] = object_detials
+    History panel can use this reference to expand to full details if individual dataset elements
+    are clicked.
+    """
+    dictified = element.to_dict(view="element")
+    element_object = element.element_object
+    if element_object is not None:
+        object_details = dict(
+            id=element_object.id,
+            model_class=element_object.__class__.__name__,
+        )
+        if element.child_collection:
+            object_details["collection_type"] = element_object.collection_type
+            child_collection = element.child_collection
+            elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
+            # Recursively yield elements for each nested collection...
+            object_details["elements"] = [dictify_element_reference(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+            object_details["element_count"] = child_collection.element_count
+        else:
+            object_details["state"] = element_object.state
+            object_details["hda_ldda"] = 'hda'
+            object_details["history_id"] = element_object.history_id
+
+    else:
+        object_details = None
+
+    dictified["object"] = object_details
     return dictified
+
+
+def dictify_element(element, rank_fuzzy_counts=None):
+    dictified = element.to_dict(view="element")
+    element_object = element.element_object
+    if element_object is not None:
+        object_details = element.element_object.to_dict()
+        if element.child_collection:
+            child_collection = element.child_collection
+            elements, rest_fuzzy_counts = get_fuzzy_count_elements(child_collection, rank_fuzzy_counts)
+
+            # Recursively yield elements for each nested collection...
+            child_collection = element.child_collection
+            object_details["elements"] = [dictify_element(_, rank_fuzzy_counts=rest_fuzzy_counts) for _ in elements]
+            object_details["populated"] = child_collection.populated
+            object_details["element_count"] = child_collection.element_count
+    else:
+        object_details = None
+
+    dictified["object"] = object_details
+    return dictified
+
+
+def get_fuzzy_count_elements(collection, rank_fuzzy_counts):
+    if rank_fuzzy_counts and rank_fuzzy_counts[0]:
+        rank_fuzzy_count = rank_fuzzy_counts[0]
+        elements = collection.elements[0:rank_fuzzy_count]
+    else:
+        elements = collection.elements
+
+    if rank_fuzzy_counts is not None:
+        rest_fuzzy_counts = rank_fuzzy_counts[1:]
+    else:
+        rest_fuzzy_counts = None
+
+    return elements, rest_fuzzy_counts
+
+
+def gen_rank_fuzzy_counts(collection_type, fuzzy_count=None):
+    """Turn a global estimate on elements to return to per nested level based on collection type.
+
+    This takes an arbitrary constant and generates an arbitrary constant and is quite messy.
+    None of this should be relied on as a stable API - it is more of a general guideline to
+    restrict within broad ranges the amount of objects returned.
+
+    >>> def is_around(x, y):
+    ...     return y - 1 < x and y + 1 > y
+    ...
+    >>> gen_rank_fuzzy_counts("list", None)
+    [None]
+    >>> gen_rank_fuzzy_counts("list", 500)
+    [500]
+    >>> gen_rank_fuzzy_counts("paired", 500)
+    [2]
+    >>> gen_rank_fuzzy_counts("list:paired", None)
+    [None, None]
+    >>> gen_rank_fuzzy_counts("list:list", 101)  # 100 would be edge case at 10 so bump to ensure 11
+    [11, 11]
+    >>> ll, pl = gen_rank_fuzzy_counts("list:paired", 100)
+    >>> pl
+    2
+    >>> is_around(ll, 50)
+    True
+    >>> pl, ll = gen_rank_fuzzy_counts("paired:list", 100)
+    >>> pl
+    2
+    >>> is_around(ll, 50)
+    True
+    >>> gen_rank_fuzzy_counts("list:list:list", 1001)
+    [11, 11, 11]
+    >>> l1l, l2l, l3l, pl = gen_rank_fuzzy_counts("list:list:list:paired", 2000)
+    >>> pl
+    2
+    >>> is_around(10, l1l)
+    True
+    >>> gen_rank_fuzzy_counts("list:list:list", 1)
+    [1, 1, 1]
+    >>> gen_rank_fuzzy_counts("list:list:list", 2)
+    [2, 2, 2]
+    >>> gen_rank_fuzzy_counts("paired:paired", 400)
+    [2, 2]
+    >>> gen_rank_fuzzy_counts("paired:paired", 5)
+    [2, 2]
+    >>> gen_rank_fuzzy_counts("paired:paired", 3)
+    [2, 2]
+    >>> gen_rank_fuzzy_counts("paired:paired", 1)
+    [1, 1]
+    >>> gen_rank_fuzzy_counts("paired:paired", 2)
+    [2, 2]
+    """
+    rank_collection_types = collection_type.split(":")
+    if fuzzy_count is None:
+        return [None for rt in rank_collection_types]
+    else:
+        # This is a list...
+        paired_count = sum([1 if rt == "paired" else 0 for rt in rank_collection_types])
+        list_count = len(rank_collection_types) - paired_count
+        paired_fuzzy_count_mult = 1 if paired_count == 0 else 2 << (paired_count - 1)
+        list_fuzzy_count_mult = math.floor((fuzzy_count * 1.0) / paired_fuzzy_count_mult)
+        list_rank_fuzzy_count = int(math.floor(math.pow(list_fuzzy_count_mult, 1.0 / list_count)) + 1) if list_count > 0 else 1.0
+        pair_rank_fuzzy_count = 2
+        if list_rank_fuzzy_count > fuzzy_count:
+            list_rank_fuzzy_count = fuzzy_count
+        if pair_rank_fuzzy_count > fuzzy_count:
+            pair_rank_fuzzy_count = fuzzy_count
+        rank_fuzzy_counts = [pair_rank_fuzzy_count if rt == "paired" else list_rank_fuzzy_count for rt in rank_collection_types]
+
+        return rank_fuzzy_counts
 
 
 __all__ = ('api_payload_to_create_params', 'dictify_dataset_collection_instance')

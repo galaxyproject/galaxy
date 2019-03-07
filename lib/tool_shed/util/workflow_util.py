@@ -7,6 +7,7 @@ import os
 
 import galaxy.tools
 import galaxy.tools.parameters
+from galaxy.tools.repositories import ValidationContext
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.workflow.modules import (
     module_types,
@@ -36,17 +37,18 @@ class RepoToolModule(ToolModule):
         self.tool = None
         self.errors = None
         self.tool_version = None
-        self.tv = tool_validator.ToolValidator(trans.app)
         if trans.webapp.name == 'tool_shed':
             # We're in the tool shed.
-            for tool_dict in tools_metadata:
-                if self.tool_id in [tool_dict['id'], tool_dict['guid']]:
-                    repository, self.tool, message = self.tv.load_tool_from_changeset_revision(repository_id,
-                                                                                               changeset_revision,
-                                                                                               tool_dict['tool_config'])
-                    if message and self.tool is None:
-                        self.errors = 'unavailable'
-                    break
+            with ValidationContext.from_app(trans.app) as validation_context:
+                tv = tool_validator.ToolValidator(validation_context)
+                for tool_dict in tools_metadata:
+                    if self.tool_id in [tool_dict['id'], tool_dict['guid']]:
+                        repository, self.tool, valid, message = tv.load_tool_from_changeset_revision(repository_id,
+                                                                                                     changeset_revision,
+                                                                                                     tool_dict['tool_config'])
+                        if self.tool is None and message or not valid:
+                            self.errors = 'unavailable'
+                        break
         else:
             # We're in Galaxy.
             self.tool = trans.app.toolbox.get_tool(self.tool_id, tool_version=self.tool_version)
@@ -85,7 +87,7 @@ class RepoToolModule(ToolModule):
         if self.tool:
             try:
                 galaxy.tools.parameters.visit_input_values(self.tool.inputs, self.state.inputs, callback)
-            except:
+            except Exception:
                 # TODO have this actually use default parameters?  Fix at
                 # refactor, needs to be discussed wrt: reproducibility though.
                 log.exception("Tool parse failed for %s -- this indicates incompatibility of local tool version with expected version by the workflow.", self.tool.id)
@@ -285,7 +287,7 @@ def get_workflow_from_dict(trans, workflow_dict, tools_metadata, repository_id, 
         if trans.webapp.name == 'galaxy':
             annotation = step_dict.get('annotation', '')
             if annotation:
-                annotation = sanitize_html(annotation, 'utf-8', 'text/html')
+                annotation = sanitize_html(annotation)
                 new_step_annotation = trans.model.WorkflowStepAnnotationAssociation()
                 new_step_annotation.annotation = annotation
                 new_step_annotation.user = trans.user
@@ -304,13 +306,12 @@ def get_workflow_from_dict(trans, workflow_dict, tools_metadata, repository_id, 
         # Input connections.
         for input_name, conn_dict in step.temp_input_connections.items():
             if conn_dict:
+                step_input = step.get_or_add_input(input_name)
                 output_step = steps_by_external_id[conn_dict['id']]
                 conn = trans.model.WorkflowStepConnection()
-                conn.input_step = step
-                conn.input_name = input_name
+                conn.input_step_input = step_input
                 conn.output_step = output_step
                 conn.output_name = conn_dict['output_name']
-                step.input_connections.append(conn)
         del step.temp_input_connections
     # Order the steps if possible.
     attach_ordered_steps(workflow, steps)
@@ -396,7 +397,7 @@ def save_workflow(trans, workflow, workflow_dict=None):
     stored.latest_workflow = workflow
     stored.user = trans.user
     if workflow_dict and workflow_dict.get('annotation', ''):
-        annotation = sanitize_html(workflow_dict['annotation'], 'utf-8', 'text/html')
+        annotation = sanitize_html(workflow_dict['annotation'])
         new_annotation = trans.model.StoredWorkflowAnnotationAssociation()
         new_annotation.annotation = annotation
         new_annotation.user = trans.user

@@ -4,6 +4,8 @@
 Updates metadata in the database to match rev 1891.
 
 Remember to backup your database before running.
+
+Deprecated - this doesn't work with modern Galaxy configurations options.
 """
 from __future__ import print_function
 
@@ -17,7 +19,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 import galaxy.app
 import galaxy.datatypes.tabular
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def usage(prog):

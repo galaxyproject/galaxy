@@ -123,9 +123,8 @@ def getfnl(startdir):
             if fn.endswith('.xml'):
                 try:
                     doc = ET.parse(fullfn)
-                except:
-                    print "Oops, bad xml in: ", fullfn
-                    raise
+                except Exception as e:
+                    raise Exception("Oops, bad XML in '%s': %s" % (fullfn, e))
                 rootelement = doc.getroot()
                 # here we check if this xml file actually is a tool conf xml!
                 if rootelement.tag == 'tool':

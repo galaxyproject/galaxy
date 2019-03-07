@@ -3,9 +3,8 @@ import logging
 import re
 
 from galaxy import util
-
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+from . import InstrumentPlugin
+from .. import formatting
 
 log = logging.getLogger(__name__)
 

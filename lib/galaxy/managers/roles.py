@@ -1,6 +1,7 @@
 """
 Manager and Serializer for Roles.
 """
+import logging
 
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
@@ -8,7 +9,6 @@ import galaxy.exceptions
 from galaxy import model
 from galaxy.managers import base
 
-import logging
 log = logging.getLogger(__name__)
 
 

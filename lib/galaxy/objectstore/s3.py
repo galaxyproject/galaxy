@@ -1,7 +1,6 @@
 """
 Object Store plugin for the Amazon Simple Storage Service (S3)
 """
-
 import logging
 import multiprocessing
 import os
@@ -9,30 +8,28 @@ import shutil
 import subprocess
 import threading
 import time
-
 from datetime import datetime
-
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import (
-    directory_hash_id,
-    safe_relpath,
-    string_as_bool,
-    umask_fix_perms,
-)
-from galaxy.util.sleeper import Sleeper
-
-from .s3_multipart_upload import multipart_upload
-from ..objectstore import convert_bytes, ObjectStore
 
 try:
     # Imports are done this way to allow objectstore code to be used outside of Galaxy.
     import boto
-
     from boto.exception import S3ResponseError
-    from boto.s3.key import Key
     from boto.s3.connection import S3Connection
+    from boto.s3.key import Key
 except ImportError:
     boto = None
+
+from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.util import (
+    directory_hash_id,
+    string_as_bool,
+    umask_fix_perms,
+    which,
+)
+from galaxy.util.path import safe_relpath
+from galaxy.util.sleeper import Sleeper
+from .s3_multipart_upload import multipart_upload
+from ..objectstore import convert_bytes, ObjectStore
 
 NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependency available."
                          "Please install and properly configure boto or modify object store configuration.")
@@ -41,20 +38,154 @@ log = logging.getLogger(__name__)
 logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
-class S3ObjectStore(ObjectStore):
+def parse_config_xml(config_xml):
+    try:
+        a_xml = config_xml.findall('auth')[0]
+        access_key = a_xml.get('access_key')
+        secret_key = a_xml.get('secret_key')
+
+        b_xml = config_xml.findall('bucket')[0]
+        bucket_name = b_xml.get('name')
+        use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
+        max_chunk_size = int(b_xml.get('max_chunk_size', 250))
+
+        cn_xml = config_xml.findall('connection')
+        if not cn_xml:
+            cn_xml = {}
+        else:
+            cn_xml = cn_xml[0]
+
+        host = cn_xml.get('host', None)
+        port = int(cn_xml.get('port', 6000))
+        multipart = string_as_bool(cn_xml.get('multipart', 'True'))
+        is_secure = string_as_bool(cn_xml.get('is_secure', 'True'))
+        conn_path = cn_xml.get('conn_path', '/')
+
+        c_xml = config_xml.findall('cache')[0]
+        cache_size = float(c_xml.get('size', -1))
+
+        staging_path = c_xml.get('path', None)
+
+        tag, attrs = 'extra_dir', ('type', 'path')
+        extra_dirs = config_xml.findall(tag)
+        if not extra_dirs:
+            msg = 'No {tag} element in XML tree'.format(tag=tag)
+            log.error(msg)
+            raise Exception(msg)
+        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+
+        return {
+            'auth': {
+                'access_key': access_key,
+                'secret_key': secret_key,
+            },
+            'bucket': {
+                'name': bucket_name,
+                'use_reduced_redundancy': use_rr,
+                'max_chunk_size': max_chunk_size,
+            },
+            'connection': {
+                'host': host,
+                'port': port,
+                'multipart': multipart,
+                'is_secure': is_secure,
+                'conn_path': conn_path,
+            },
+            'cache': {
+                'size': cache_size,
+                'path': staging_path,
+            },
+            'extra_dirs': extra_dirs,
+        }
+    except Exception:
+        # Toss it back up after logging, we can't continue loading at this point.
+        log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
+        raise
+
+
+class CloudConfigMixin(object):
+
+    def _config_to_dict(self):
+        return {
+            'auth': {
+                'access_key': self.access_key,
+                'secret_key': self.secret_key,
+            },
+            'bucket': {
+                'name': self.bucket,
+                'use_reduced_redundancy': self.use_rr,
+            },
+            'connection': {
+                'host': self.host,
+                'port': self.port,
+                'multipart': self.multipart,
+                'is_secure': self.is_secure,
+                'conn_path': self.conn_path,
+            },
+            'cache': {
+                'size': self.cache_size,
+                'path': self.staging_path,
+            }
+        }
+
+
+class S3ObjectStore(ObjectStore, CloudConfigMixin):
     """
     Object store that stores objects as items in an AWS S3 bucket. A local
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
+    store_type = 's3'
 
-    def __init__(self, config, config_xml):
+    def __init__(self, config, config_dict):
+        super(S3ObjectStore, self).__init__(config)
+
+        self.transfer_progress = 0
+
+        auth_dict = config_dict['auth']
+        bucket_dict = config_dict['bucket']
+        connection_dict = config_dict.get('connection', {})
+        cache_dict = config_dict['cache']
+
+        self.access_key = auth_dict.get('access_key')
+        self.secret_key = auth_dict.get('secret_key')
+
+        self.bucket = bucket_dict.get('name')
+        self.use_rr = bucket_dict.get('use_reduced_redundancy', False)
+        self.max_chunk_size = bucket_dict.get('max_chunk_size', 250)
+
+        self.host = connection_dict.get('host', None)
+        self.port = connection_dict.get('port', 6000)
+        self.multipart = connection_dict.get('multipart', True)
+        self.is_secure = connection_dict.get('is_secure', True)
+        self.conn_path = connection_dict.get('conn_path', '/')
+
+        self.cache_size = cache_dict.get('size', -1)
+        self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
+
+        extra_dirs = dict(
+            (e['type'], e['path']) for e in config_dict.get('extra_dirs', []))
+        self.extra_dirs.update(extra_dirs)
+
+        log.debug("Object cache dir:    %s", self.staging_path)
+        log.debug("       job work dir: %s", self.extra_dirs['job_work'])
+
+        self._initialize()
+
+    def _initialize(self):
         if boto is None:
             raise Exception(NO_BOTO_ERROR_MESSAGE)
-        super(S3ObjectStore, self).__init__(config)
-        self.staging_path = self.config.file_path
-        self.transfer_progress = 0
-        self._parse_config_xml(config_xml)
+
+        # for multipart upload
+        self.s3server = {'access_key': self.access_key,
+                         'secret_key': self.secret_key,
+                         'is_secure': self.is_secure,
+                         'max_chunk_size': self.max_chunk_size,
+                         'host': self.host,
+                         'port': self.port,
+                         'use_rr': self.use_rr,
+                         'conn_path': self.conn_path}
+
         self._configure_connection()
         self.bucket = self._get_bucket(self.bucket)
         # Clean cache only if value is set in galaxy.ini
@@ -67,58 +198,23 @@ class S3ObjectStore(ObjectStore):
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
         # Test if 'axel' is available for parallel download and pull the key into cache
-        try:
-            subprocess.call('axel')
+        if which('axel'):
             self.use_axel = True
-        except OSError:
+        else:
             self.use_axel = False
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
         self.conn = S3Connection(self.access_key, self.secret_key)
 
-    def _parse_config_xml(self, config_xml):
-        try:
-            a_xml = config_xml.findall('auth')[0]
-            self.access_key = a_xml.get('access_key')
-            self.secret_key = a_xml.get('secret_key')
-            b_xml = config_xml.findall('bucket')[0]
-            self.bucket = b_xml.get('name')
-            self.use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
-            self.max_chunk_size = int(b_xml.get('max_chunk_size', 250))
-            cn_xml = config_xml.findall('connection')
-            if not cn_xml:
-                cn_xml = {}
-            else:
-                cn_xml = cn_xml[0]
-            self.host = cn_xml.get('host', None)
-            self.port = int(cn_xml.get('port', 6000))
-            self.multipart = string_as_bool(cn_xml.get('multipart', 'True'))
-            self.is_secure = string_as_bool(cn_xml.get('is_secure', 'True'))
-            self.conn_path = cn_xml.get('conn_path', '/')
-            c_xml = config_xml.findall('cache')[0]
-            self.cache_size = float(c_xml.get('size', -1))
-            self.staging_path = c_xml.get('path', self.config.object_store_cache_path)
+    @classmethod
+    def parse_xml(clazz, config_xml):
+        return parse_config_xml(config_xml)
 
-            for d_xml in config_xml.findall('extra_dir'):
-                self.extra_dirs[d_xml.get('type')] = d_xml.get('path')
-
-            log.debug("Object cache dir:    %s", self.staging_path)
-            log.debug("       job work dir: %s", self.extra_dirs['job_work'])
-
-            # for multipart upload
-            self.s3server = {'access_key': self.access_key,
-                             'secret_key': self.secret_key,
-                             'is_secure': self.is_secure,
-                             'max_chunk_size': self.max_chunk_size,
-                             'host': self.host,
-                             'port': self.port,
-                             'use_rr': self.use_rr,
-                             'conn_path': self.conn_path}
-        except Exception:
-            # Toss it back up after logging, we can't continue loading at this point.
-            log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
-            raise
+    def to_dict(self):
+        as_dict = super(S3ObjectStore, self).to_dict()
+        as_dict.update(self._config_to_dict())
+        return as_dict
 
     def __cache_monitor(self):
         time.sleep(2)  # Wait for things to load before starting the monitor
@@ -296,21 +392,21 @@ class S3ObjectStore(ObjectStore):
         # creates, this check sould be implemented- in the mean time, it's not
         # looking likely to be implementable reliably.
         # if os.path.exists(cache_path):
-        #     # print "***1 %s exists" % cache_path
+        #     # print("***1 %s exists" % cache_path)
         #     if self._key_exists(rel_path):
-        #         # print "***2 %s exists in S3" % rel_path
+        #         # print("***2 %s exists in S3" % rel_path)
         #         # Make sure the size in cache is available in its entirety
-        #         # print "File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_size_in_s3(rel_path))
+        #         # print("File '%s' cache size: %s, S3 size: %s" % (cache_path, os.path.getsize(cache_path), self._get_size_in_s3(rel_path)))
         #         if os.path.getsize(cache_path) == self._get_size_in_s3(rel_path):
-        #             # print "***2.1 %s exists in S3 and the size is the same as in cache (in_cache=True)" % rel_path
+        #             # print("***2.1 %s exists in S3 and the size is the same as in cache (in_cache=True)" % rel_path)
         #             exists = True
         #         else:
-        #             # print "***2.2 %s exists but differs in size from cache (in_cache=False)" % cache_path
+        #             # print("***2.2 %s exists but differs in size from cache (in_cache=False)" % cache_path)
         #             exists = False
         #     else:
         #         # Although not perfect decision making, this most likely means
         #         # that the file is currently being uploaded
-        #         # print "***3 %s found in cache but not in S3 (in_cache=True)" % cache_path
+        #         # print("***3 %s found in cache but not in S3 (in_cache=True)" % cache_path)
         #         exists = True
         # else:
         #     return False
@@ -341,7 +437,7 @@ class S3ObjectStore(ObjectStore):
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call("axel -a -n %s '%s'" % (ncores, url))
+                ret_code = subprocess.call(['axel', '-a', '-n', ncores, url])
                 if ret_code == 0:
                     return True
             else:
@@ -627,6 +723,7 @@ class SwiftObjectStore(S3ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Swift.
     """
+    store_type = 'swift'
 
     def _configure_connection(self):
         log.debug("Configuring Swift Connection")

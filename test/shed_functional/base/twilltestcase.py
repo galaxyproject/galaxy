@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import logging
 import os
 import re
@@ -7,26 +9,46 @@ import tarfile
 import tempfile
 import time
 from json import loads
+from xml.etree import ElementTree
 
+# Be sure to use Galaxy's vanilla pyparsing instead of the older version
+# imported by twill.
+import pyparsing  # noqa: F401
+import twill
 import twill.commands as tc
 from mercurial import commands, hg, ui
-from six.moves.urllib.parse import quote_plus, urlencode
+from six import string_types, StringIO
+from six.moves.urllib.parse import (
+    quote_plus,
+    urlencode,
+    urlparse
+)
+from twill.other_packages._mechanize_dist import ClientForm
 
 import galaxy.model.tool_shed_install as galaxy_model
 import galaxy.util
 import galaxy.webapps.tool_shed.util.hgweb_config
-from base.tool_shed_util import repository_installation_timeout
-from functional.twilltestcase import TwillTestCase
-from galaxy.web import security
+from base.testcase import FunctionalTestCase  # noqa: I100,I201,I202
+from galaxy.util import unicodify  # noqa: I201
+from galaxy.web import security  # noqa: I201
 from tool_shed.util import hg_util, xml_util
 from tool_shed.util.encoding_util import tool_shed_encode
-
 from . import common, test_db_util
 
+# Set a 10 minute timeout for repository installation.
+repository_installation_timeout = 600
+
+# Force twill to log to a buffer -- FIXME: Should this go to stdout and be captured by nose?
+buffer = StringIO()
+twill.set_output(buffer)
+tc.config('use_tidy', 0)
+
+# Dial ClientCookie logging down (very noisy)
+logging.getLogger("ClientCookie.cookies").setLevel(logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-class ShedTwillTestCase(TwillTestCase):
+class ShedTwillTestCase(FunctionalTestCase):
 
     def setUp(self):
         # Security helper
@@ -50,28 +72,437 @@ class ShedTwillTestCase(TwillTestCase):
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = os.environ.get('GALAXY_TEST_TOOL_DEPENDENCY_DIR')
 
+    """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
+
+    def check_for_strings(self, strings_displayed=[], strings_not_displayed=[]):
+        if strings_displayed:
+            for check_str in strings_displayed:
+                self.check_page_for_string(check_str)
+        if strings_not_displayed:
+            for check_str in strings_not_displayed:
+                self.check_string_not_in_page(check_str)
+
+    def check_history_for_exact_string(self, check_str, show_deleted=False):
+        """Looks for exact match to 'check_str' in history page"""
+        params = dict()
+        if show_deleted:
+            params['show_deleted'] = True
+        self.visit_url("/history", params=params)
+        try:
+            tc.find(check_str)
+        except Exception:
+            fname = self.write_temp_file(tc.browser.get_html())
+            errmsg = "no match to '%s'\npage content written to '%s'" % (check_str, fname)
+            raise AssertionError(errmsg)
+
+    def check_page(self, strings_displayed, strings_displayed_count, strings_not_displayed):
+        """Checks a page for strings displayed, not displayed and number of occurrences of a string"""
+        for check_str in strings_displayed:
+            self.check_page_for_string(check_str)
+        for check_str, count in strings_displayed_count:
+            self.check_string_count_in_page(check_str, count)
+        for check_str in strings_not_displayed:
+            self.check_string_not_in_page(check_str)
+
+    def check_page_for_string(self, patt):
+        """Looks for 'patt' in the current browser page"""
+        page = unicodify(self.last_page())
+        if page.find(patt) == -1:
+            fname = self.write_temp_file(page)
+            errmsg = "no match to '%s'\npage content written to '%s'\npage: [[%s]]" % (patt, fname, page)
+            raise AssertionError(errmsg)
+
+    def check_string_not_in_page(self, patt):
+        """Checks to make sure 'patt' is NOT in the page."""
+        page = self.last_page()
+        if page.find(patt) != -1:
+            fname = self.write_temp_file(page)
+            errmsg = "string (%s) incorrectly displayed in page.\npage content written to '%s'" % (patt, fname)
+            raise AssertionError(errmsg)
+
+    # Functions associated with user accounts
+
+    def create(self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect=''):
+        # HACK: don't use panels because late_javascripts() messes up the twill browser and it
+        # can't find form fields (and hence user can't be logged in).
+        params = dict(cntrller=cntrller, use_panels=False)
+        self.visit_url("/user/create", params)
+        tc.fv('registration', 'email', email)
+        tc.fv('registration', 'redirect', redirect)
+        tc.fv('registration', 'password', password)
+        tc.fv('registration', 'confirm', password)
+        tc.fv('registration', 'username', username)
+        tc.submit('create_user_button')
+        previously_created = False
+        username_taken = False
+        invalid_username = False
+        try:
+            self.check_page_for_string("Created new user account")
+        except Exception:
+            try:
+                # May have created the account in a previous test run...
+                self.check_page_for_string("User with that email already exists")
+                previously_created = True
+            except Exception:
+                try:
+                    self.check_page_for_string('Public name is taken; please choose another')
+                    username_taken = True
+                except Exception:
+                    try:
+                        # Note that we're only checking if the usr name is >< 4 chars here...
+                        self.check_page_for_string('Public name must be at least 4 characters in length')
+                        invalid_username = True
+                    except Exception:
+                        pass
+        return previously_created, username_taken, invalid_username
+
+    def get_all_history_ids_from_api(self):
+        return [history['id'] for history in self.json_from_url('/api/histories')]
+
+    def get_form_controls(self, form):
+        formcontrols = []
+        for i, control in enumerate(form.controls):
+            formcontrols.append("control %d: %s" % (i, str(control)))
+        return formcontrols
+
+    def get_hids_in_history(self, history_id):
+        """Returns the list of hid values for items in a history"""
+        hids = []
+        api_url = '/api/histories/%s/contents' % history_id
+        hids = [history_item['hid'] for history_item in self.json_from_url(api_url)]
+        return hids
+
+    def get_history_as_data_list(self, show_deleted=False):
+        """Returns the data elements of a history"""
+        tree = self.history_as_xml_tree(show_deleted=show_deleted)
+        data_list = [elem for elem in tree.findall("data")]
+        return data_list
+
+    def get_history_from_api(self, encoded_history_id=None, show_deleted=None, show_details=False):
+        if encoded_history_id is None:
+            history = self.get_latest_history()
+            encoded_history_id = history['id']
+        params = dict()
+        if show_deleted is not None:
+            params['deleted'] = show_deleted
+        api_url = '/api/histories/%s/contents' % encoded_history_id
+        json_data = self.json_from_url(api_url, params=params)
+        if show_deleted is not None:
+            hdas = []
+            for hda in json_data:
+                if show_deleted:
+                    hdas.append(hda)
+                else:
+                    if not hda['deleted']:
+                        hdas.append(hda)
+            json_data = hdas
+        if show_details:
+            params['details'] = ','.join([hda['id'] for hda in json_data])
+            api_url = '/api/histories/%s/contents' % encoded_history_id
+            json_data = self.json_from_url(api_url, params=params)
+        return json_data
+
+    def get_latest_history(self):
+        return self.json_from_url('/api/histories')[0]
+
+    def get_running_datasets(self):
+        self.visit_url('/api/histories')
+        history_id = loads(self.last_page())[0]['id']
+        self.visit_url('/api/histories/%s' % history_id)
+        jsondata = loads(self.last_page())
+        return jsondata['state'] in ['queued', 'running']
+
+    def history_as_xml_tree(self, show_deleted=False):
+        """Returns a parsed xml object of a history"""
+        params = {
+            'as_xml': True,
+            'show_deleted': show_deleted
+        }
+        self.visit_url('/history', params=params)
+        xml = self.last_page()
+        tree = ElementTree.fromstring(xml)
+        return tree
+
+    def is_history_empty(self):
+        """
+        Uses history page JSON to determine whether this history is empty
+        (i.e. has no undeleted datasets).
+        """
+        return len(self.get_history_from_api()) == 0
+
+    def json_from_url(self, url, params={}):
+        self.visit_url(url, params)
+        return loads(self.last_page())
+
+    def last_page(self):
+        """
+        Return the last visited page (usually HTML, but can binary data as
+        well).
+        """
+        return tc.browser.get_html()
+
+    def last_url(self):
+        return tc.browser.get_url()
+
+    def login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
+        # Clear cookies.
+        if logout_first:
+            self.logout()
+        # test@bx.psu.edu is configured as an admin user
+        previously_created, username_taken, invalid_username = \
+            self.create(email=email, password=password, username=username, redirect=redirect)
+        if previously_created:
+            # The acount has previously been created, so just login.
+            # HACK: don't use panels because late_javascripts() messes up the twill browser and it
+            # can't find form fields (and hence user can't be logged in).
+            params = {
+                'use_panels': False
+            }
+            self.visit_url('/user/login', params=params)
+            self.submit_form('login', 'login_button', login=email, redirect=redirect, password=password)
+
+    def logout(self):
+        self.visit_url("%s/user/logout" % self.url)
+        self.check_page_for_string("You have been logged out")
+        tc.browser.cj.clear()
+
+    def new_history(self, name=None):
+        """Creates a new, empty history"""
+        params = dict()
+        if name:
+            params['name'] = name
+        self.visit_url("%s/history_new" % self.url, params=params)
+        self.check_page_for_string('New history created')
+        assert self.is_history_empty(), 'Creating new history did not result in an empty history.'
+
+    def refresh_form(self, control_name, value, form_no=0, form_id=None, form_name=None, **kwd):
+        """Handles Galaxy's refresh_on_change for forms without ultimately submitting the form"""
+        # control_name is the name of the form field that requires refresh_on_change, and value is
+        # the value to which that field is being set.
+        for i, f in enumerate(self.showforms()):
+            if i == form_no or (form_id is not None and f.id == form_id) or (form_name is not None and f.name == form_name):
+                break
+        formcontrols = self.get_form_controls(f)
+        try:
+            control = f.find_control(name=control_name)
+        except Exception:
+            log.debug('\n'.join(formcontrols))
+            # This assumes we always want the first control of the given name, which may not be ideal...
+            control = f.find_control(name=control_name, nr=0)
+        # Check for refresh_on_change attribute, submit a change if required
+        if 'refresh_on_change' in control.attrs.keys():
+            # Clear Control and set to proper value
+            control.clear()
+            tc.fv(f.name, control.name, value)
+            # Create a new submit control, allows form to refresh, instead of going to next page
+            control = ClientForm.SubmitControl('SubmitControl', '___refresh_grouping___', {'name': 'refresh_grouping'})
+            control.add_to_form(f)
+            control.fixup()
+            # Submit for refresh
+            tc.submit('___refresh_grouping___')
+
+    def showforms(self):
+        """Shows form, helpful for debugging new tests"""
+        return tc.showforms()
+
+    def submit_form(self, form_no=0, button="runtool_btn", **kwd):
+        """Populates and submits a form from the keyword arguments."""
+        # An HTMLForm contains a sequence of Controls.  Supported control classes are:
+        # TextControl, FileControl, ListControl, RadioControl, CheckboxControl, SelectControl,
+        # SubmitControl, ImageControl
+        for i, f in enumerate(self.showforms()):
+            if i == form_no:
+                break
+        # To help with debugging a tool, print out the form controls when the test fails
+        print("form '%s' contains the following controls ( note the values )" % f.name)
+        controls = {}
+        formcontrols = self.get_form_controls(f)
+        hc_prefix = '<HiddenControl('
+        for i, control in enumerate(f.controls):
+            if hc_prefix not in str(control):
+                try:
+                    # check if a repeat element needs to be added
+                    if control.name is not None:
+                        if control.name not in kwd and control.name.endswith('_add'):
+                            # control name doesn't exist, could be repeat
+                            repeat_startswith = control.name[0:-4]
+                            if repeat_startswith and not [c_name for c_name in controls.keys() if c_name.startswith(repeat_startswith)] and [c_name for c_name in kwd.keys() if c_name.startswith(repeat_startswith)]:
+                                tc.browser.clicked(f, control)
+                                tc.submit(control.name)
+                                return self.submit_form(form_no=form_no, button=button, **kwd)
+                    # Check for refresh_on_change attribute, submit a change if required
+                    if hasattr(control, 'attrs') and 'refresh_on_change' in control.attrs.keys():
+                        changed = False
+                        # For DataToolParameter, control.value is the HDA id, but kwd contains the filename.
+                        # This loop gets the filename/label for the selected values.
+                        item_labels = [item.attrs['label'] for item in control.get_items() if item.selected]
+                        for value in kwd[control.name]:
+                            if value not in control.value and True not in [value in item_label for item_label in item_labels]:
+                                changed = True
+                                break
+                        if changed:
+                            # Clear Control and set to proper value
+                            control.clear()
+                            # kwd[control.name] should be a singlelist
+                            for elem in kwd[control.name]:
+                                tc.fv(f.name, control.name, str(elem))
+                            # Create a new submit control, allows form to refresh, instead of going to next page
+                            control = ClientForm.SubmitControl('SubmitControl', '___refresh_grouping___', {'name': 'refresh_grouping'})
+                            control.add_to_form(f)
+                            control.fixup()
+                            # Submit for refresh
+                            tc.submit('___refresh_grouping___')
+                            return self.submit_form(form_no=form_no, button=button, **kwd)
+                except Exception:
+                    log.exception("In submit_form, continuing, but caught exception.")
+                    for formcontrol in formcontrols:
+                        log.debug(formcontrol)
+                    continue
+                controls[control.name] = control
+        # No refresh_on_change attribute found in current form, so process as usual
+        for control_name, control_value in kwd.items():
+            if control_name not in controls:
+                continue  # these cannot be handled safely - cause the test to barf out
+            if not isinstance(control_value, list):
+                control_value = [control_value]
+            control = controls[control_name]
+            control.clear()
+            if control.is_of_kind("text"):
+                tc.fv(f.name, control.name, ",".join(control_value))
+            elif control.is_of_kind("list"):
+                try:
+                    if control.is_of_kind("multilist"):
+                        if control.type == "checkbox":
+                            def is_checked(value):
+                                # Copied from form_builder.CheckboxField
+                                if value is True:
+                                    return True
+                                if isinstance(value, list):
+                                    value = value[0]
+                                return isinstance(value, string_types) and value.lower() in ("yes", "true", "on")
+                            try:
+                                checkbox = control.get()
+                                checkbox.selected = is_checked(control_value)
+                            except Exception as e1:
+                                print("Attempting to set checkbox selected value threw exception: ", e1)
+                                # if there's more than one checkbox, probably should use the behaviour for
+                                # ClientForm.ListControl ( see twill code ), but this works for now...
+                                for elem in control_value:
+                                    control.get(name=elem).selected = True
+                        else:
+                            for elem in control_value:
+                                try:
+                                    # Doubt this case would ever work, but want
+                                    # to preserve backward compat.
+                                    control.get(name=elem).selected = True
+                                except Exception:
+                                    # ... anyway this is really what we want to
+                                    # do, probably even want to try the len(
+                                    # elem ) > 30 check below.
+                                    control.get(label=elem).selected = True
+                    else:  # control.is_of_kind( "singlelist" )
+                        for elem in control_value:
+                            try:
+                                tc.fv(f.name, control.name, str(elem))
+                            except Exception:
+                                try:
+                                    # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
+                                    if len(elem) > 30:
+                                        elem_name = '%s..%s' % (elem[:17], elem[-11:])
+                                        tc.fv(f.name, control.name, str(elem_name))
+                                        pass
+                                    else:
+                                        raise
+                                except Exception:
+                                    raise
+                            except Exception:
+                                for formcontrol in formcontrols:
+                                    log.debug(formcontrol)
+                                log.exception("Attempting to set control '%s' to value '%s' (also tried '%s') threw exception.", control.name, elem, elem_name)
+                                pass
+                except Exception as exc:
+                    for formcontrol in formcontrols:
+                        log.debug(formcontrol)
+                    errmsg = "Attempting to set field '%s' to value '%s' in form '%s' threw exception: %s\n" % (control_name, str(control_value), f.name, str(exc))
+                    errmsg += "control: %s\n" % str(control)
+                    errmsg += "If the above control is a DataToolparameter whose data type class does not include a sniff() method,\n"
+                    errmsg += "make sure to include a proper 'ftype' attribute to the tag for the control within the <test> tag set.\n"
+                    raise AssertionError(errmsg)
+            else:
+                # Add conditions for other control types here when necessary.
+                pass
+        tc.submit(button)
+
+    def switch_history(self, id='', name=''):
+        """Switches to a history in the current list of histories"""
+        params = dict(operation='switch', id=id)
+        self.visit_url("/history/list", params)
+        if name:
+            self.check_history_for_exact_string(name)
+
+    def visit_url(self, url, params=None, doseq=False, allowed_codes=[200]):
+        if params is None:
+            params = dict()
+        parsed_url = urlparse(url)
+        if len(parsed_url.netloc) == 0:
+            url = 'http://%s:%s%s' % (self.host, self.port, parsed_url.path)
+        else:
+            url = '%s://%s%s' % (parsed_url.scheme, parsed_url.netloc, parsed_url.path)
+        if parsed_url.query:
+            for query_parameter in parsed_url.query.split('&'):
+                key, value = query_parameter.split('=')
+                params[key] = value
+        if params:
+            url += '?%s' % urlencode(params, doseq=doseq)
+        new_url = tc.go(url)
+        return_code = tc.browser.get_code()
+        assert return_code in allowed_codes, 'Invalid HTTP return code %s, allowed codes: %s' % \
+            (return_code, ', '.join(str(code) for code in allowed_codes))
+        return new_url
+
+    def wait(self, **kwds):
+        """Waits for the tools to finish"""
+        return self.wait_for(lambda: self.get_running_datasets(), **kwds)
+
+    def write_temp_file(self, content, suffix='.html'):
+        fd, fname = tempfile.mkstemp(suffix=suffix, prefix='twilltestcase-')
+        f = os.fdopen(fd, "w")
+        f.write(content)
+        f.close()
+        return fname
+
     def add_repository_review_component(self, **kwd):
-        url = '/repository_review/create_component?operation=create'
-        self.visit_url(url)
+        params = {
+            'operation': 'create'
+        }
+        self.visit_url('/repository_review/create_component', params=params)
         self.submit_form(1, 'create_component_button', **kwd)
 
     def assign_admin_role(self, repository, user):
         # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
         # attached to the role selection form. Visit the action url directly with the necessary parameters.
-        url = '/repository/manage_repository_admins?id=%s&in_users=%d&manage_role_associations_button=Save' % \
-            (self.security.encode_id(repository.id), user.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id),
+            'in_users': user.id,
+            'manage_role_associations_button': 'Save'
+        }
+        self.visit_url('/repository/manage_repository_admins', params=params)
         self.check_for_strings(strings_displayed=['Role', 'has been associated'])
 
     def browse_category(self, category, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/browse_valid_categories?sort=name&operation=valid_repositories_by_category&id=%s' % \
-              self.security.encode_id(category.id)
-        self.visit_url(url)
+        params = {
+            'sort': 'name',
+            'operation': 'valid_repositories_by_category',
+            'id': self.security.encode_id(category.id)
+        }
+        self.visit_url('/repository/browse_valid_categories', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_component_review(self, review, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository_review/browse_review?id=%s' % self.security.encode_id(review.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(review.id)
+        }
+        self.visit_url('/repository_review/browse_review', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_custom_datatypes(self, strings_displayed=None, strings_not_displayed=None):
@@ -80,8 +511,10 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_repository(self, repository, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/browse_repository?id=%s' % self.security.encode_id(repository.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/repository/browse_repository', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_repository_dependencies(self, strings_displayed=None, strings_not_displayed=None):
@@ -90,7 +523,10 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_tool_shed(self, url, strings_displayed=None, strings_not_displayed=None):
-        self.visit_galaxy_url('/admin_toolshed/browse_tool_shed?tool_shed_url=%s' % url)
+        params = {
+            'tool_shed_url': url
+        }
+        self.visit_galaxy_url('/admin_toolshed/browse_tool_shed', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def browse_tool_dependencies(self, strings_displayed=None, strings_not_displayed=None):
@@ -157,8 +593,10 @@ class ShedTwillTestCase(TwillTestCase):
             strings_displayed.append('Installed')
         else:
             strings_displayed.append('Never installed')
-        url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id(installed_repository.id)
-        self.visit_galaxy_url(url)
+        params = {
+            'id': self.security.encode_id(installed_repository.id)
+        }
+        self.visit_galaxy_url('/admin_toolshed/manage_repository', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def check_manifest(self, manifest_filepath, owner=None):
@@ -180,8 +618,10 @@ class ShedTwillTestCase(TwillTestCase):
             self.verify_repository_in_capsule(repository_path, repository_name, owner)
 
     def check_repository_changelog(self, repository, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/view_changelog?id=%s' % self.security.encode_id(repository.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/repository/view_changelog', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def check_repository_dependency(self, repository, depends_on_repository, depends_on_changeset_revision=None, changeset_revision=None):
@@ -212,9 +652,12 @@ class ShedTwillTestCase(TwillTestCase):
         for tool_dict in metadata['tools']:
             tool_id = tool_dict['id']
             tool_xml = tool_dict['tool_config']
-            url = '/repository/view_tool_metadata?repository_id=%s&changeset_revision=%s&tool_id=%s' % \
-                  (self.security.encode_id(repository.id), changeset_revision, tool_id)
-            self.visit_url(url)
+            params = {
+                'repository_id': self.security.encode_id(repository.id),
+                'changeset_revision': changeset_revision,
+                'tool_id': tool_id
+            }
+            self.visit_url('/repository/view_tool_metadata', params=params)
             self.check_for_strings(tool_metadata_strings_displayed)
             self.load_display_tool_page(repository, tool_xml_path=tool_xml,
                                         changeset_revision=changeset_revision,
@@ -271,7 +714,10 @@ class ShedTwillTestCase(TwillTestCase):
     def create_category(self, **kwd):
         category = test_db_util.get_category_by_name(kwd['name'])
         if category is None:
-            self.visit_url('/admin/manage_categories?operation=create')
+            params = {
+                'operation': 'create'
+            }
+            self.visit_url('/admin/manage_categories', params=params)
             self.submit_form(form_no=1, button="create_category_button", **kwd)
             category = test_db_util.get_category_by_name(kwd['name'])
         return category
@@ -317,8 +763,11 @@ class ShedTwillTestCase(TwillTestCase):
         strings_not_displayed = []
         if not changeset_revision:
             changeset_revision = self.get_repository_tip(repository)
-        url = '/repository_review/create_review?changeset_revision=%s&id=%s' % (changeset_revision, self.security.encode_id(repository.id))
-        self.visit_url(url)
+        params = {
+            'changeset_revision': changeset_revision,
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/repository_review/create_review', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         strings_displayed = []
         if copy_from:
@@ -326,40 +775,29 @@ class ShedTwillTestCase(TwillTestCase):
             strings_displayed = ['You have elected to create a new review', 'Select previous revision', changeset_revision]
             self.check_for_strings(strings_displayed)
             strings_displayed = []
-            url = '/repository_review/create_review?changeset_revision=%s&id=%s&previous_review_id=%s' % \
-                (self.get_repository_tip(repository), self.security.encode_id(repository.id), self.security.encode_id(review_id))
-            self.visit_url(url)
+            params = {
+                'changeset_revision': self.get_repository_tip(repository),
+                'id': self.security.encode_id(repository.id),
+                'previous_review_id': self.security.encode_id(review_id)
+            }
+            self.visit_url('/repository_review/create_review', params=params)
         self.fill_review_form(review_contents_dict, strings_displayed, strings_not_displayed)
 
     def create_user_in_galaxy(self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect=''):
-        self.visit_galaxy_url("/user/create?cntrller=%s&use_panels=False" % cntrller)
-        self.submit_form('1', 'create_user_button', email=email, password=password, confirm=password, username=username, redirect=redirect)
-        previously_created = False
-        username_taken = False
-        invalid_username = False
-        try:
-            self.check_page_for_string("Created new user account")
-        except:
-            try:
-                # May have created the account in a previous test run...
-                self.check_page_for_string("User with that email already exists")
-                previously_created = True
-            except:
-                try:
-                    self.check_page_for_string('Public name is taken; please choose another')
-                    username_taken = True
-                except:
-                    try:
-                        # Note that we're only checking if the usr name is >< 4 chars here...
-                        self.check_page_for_string('Public name must be at least 4 characters in length')
-                        invalid_username = True
-                    except:
-                        pass
-        return previously_created, username_taken, invalid_username
+        params = {
+            'username': username,
+            'email': email,
+            'password': password,
+            'confirm': password,
+            'session_csrf_token': self.galaxy_token()
+        }
+        self.visit_galaxy_url('/user/create', params=params, allowed_codes=[200, 400])
 
     def deactivate_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id(installed_repository.id)
-        self.visit_galaxy_url(url)
+        params = {
+            'id': self.security.encode_id(installed_repository.id)
+        }
+        self.visit_galaxy_url('/admin_toolshed/deactivate_or_uninstall_repository', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         form = tc.browser.get_form('deactivate_or_uninstall_repository')
         self.set_form_value(form, {}, 'remove_from_disk', False)
@@ -386,14 +824,17 @@ class ShedTwillTestCase(TwillTestCase):
     def delete_repository(self, repository):
         repository_id = self.security.encode_id(repository.id)
         self.visit_url('/admin/browse_repositories')
-        url = '/admin/browse_repositories?operation=Delete&id=%s' % repository_id
+        params = {
+            'operation': 'Delete',
+            'id': repository_id
+        }
+        self.visit_url('/admin/browse_repositories', params=params)
         strings_displayed = ['Deleted 1 repository', repository.name]
         strings_not_displayed = []
-        self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_all_workflows(self, strings_displayed=None, strings_not_displayed=None):
-        url = '/workflow'
+        url = '/workflows/list'
         self.visit_galaxy_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
@@ -402,7 +843,7 @@ class ShedTwillTestCase(TwillTestCase):
         self.visit_galaxy_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_installed_manage_data_manager_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
+    def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None):
         data_managers = installed_repository.metadata.get('data_manager', {}).get('data_managers', {})
         if data_manager_names:
             if not isinstance(data_manager_names, list):
@@ -412,8 +853,10 @@ class ShedTwillTestCase(TwillTestCase):
         else:
             data_manager_name = list(data_managers.keys())
         for data_manager_name in data_manager_names:
-            url = '/data_manager/manage_data_manager?id=%s' % data_managers[data_manager_name]['guid']
-            self.visit_galaxy_url(url)
+            params = {
+                'id': data_managers[data_manager_name]['guid']
+            }
+            self.visit_galaxy_url('/data_manager/jobs_list', params=params)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_repository_manage_page(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
@@ -421,27 +864,30 @@ class ShedTwillTestCase(TwillTestCase):
             strings_displayed = []
         if strings_not_displayed is None:
             strings_not_displayed = []
-        url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id(installed_repository.id)
-        self.visit_galaxy_url(url)
+        params = {
+            'id': self.security.encode_id(installed_repository.id)
+        }
+        self.visit_galaxy_url('/admin_toolshed/manage_repository', params=params)
         strings_displayed.append(str(installed_repository.installed_changeset_revision))
         # Every place Galaxy's XXXX tool appears in attribute - need to quote.
         strings_displayed = [x.replace("'", "&#39;") for x in strings_displayed]
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_workflow_image(self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None):
-        url = '/admin_toolshed/generate_workflow_image?repository_id=%s&workflow_name=%s' % \
-              (self.security.encode_id(repository.id), tool_shed_encode(workflow_name))
-        self.visit_galaxy_url(url)
+        params = {
+            'repository_id': self.security.encode_id(repository.id),
+            'workflow_name': tool_shed_encode(workflow_name)
+        }
+        self.visit_galaxy_url('/admin_toolshed/generate_workflow_image', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_manage_repository_page(self, repository, changeset_revision=None, strings_displayed=None, strings_not_displayed=None):
-        base_url = '/repository/manage_repository?id=%s' % self.security.encode_id(repository.id)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
         if changeset_revision:
-            url = '%s&changeset_revision=%s' % (base_url, changeset_revision)
-        else:
-            changeset_revision = self.get_repository_tip(repository)
-            url = base_url
-        self.visit_url(url)
+            params['changeset_revision'] = changeset_revision
+        self.visit_url('/repository/manage_repository', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_repository_clone_page(self, owner_name, repository_name, strings_displayed=None, strings_not_displayed=None):
@@ -470,13 +916,17 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_repository_reviews_by_user(self, user, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository_review/repository_reviews_by_user?id=%s' % self.security.encode_id(user.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(user.id)
+        }
+        self.visit_url('/repository_review/repository_reviews_by_user', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def edit_repository_categories(self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True):
-        url = '/repository/manage_repository?id=%s' % self.security.encode_id(repository.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/repository/manage_repository', params=params)
         strings_displayed = []
         strings_not_displayed = []
         for category in categories_to_add:
@@ -500,8 +950,10 @@ class ShedTwillTestCase(TwillTestCase):
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def edit_repository_information(self, repository, revert=True, **kwd):
-        url = '/repository/manage_repository?id=%s' % self.security.encode_id(repository.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/repository/manage_repository', params=params)
         original_information = dict(repo_name=repository.name, description=repository.description, long_description=repository.long_description)
         strings_displayed = []
         for input_elem_name in ['repo_name', 'description', 'long_description', 'repository_type']:
@@ -554,10 +1006,11 @@ class ShedTwillTestCase(TwillTestCase):
                 return self._export_capsule(repository, includes_dependencies=includes_dependencies)
 
     def _export_capsule(self, repository, includes_dependencies=None):
-        url = '/repository/export?repository_id=%s&changeset_revision=%s' % \
-            (self.security.encode_id(repository.id), self.get_repository_tip(repository))
-        self.visit_url(url)
-        log.info("Visited url %s looking for export capsule button" % url)
+        params = {
+            'repository_id': self.security.encode_id(repository.id),
+            'changeset_revision': self.get_repository_tip(repository)
+        }
+        self.visit_url('/repository/export', params=params)
         self.check_page_for_string("Repository '")
         self.check_page_for_string("Export")
         # Explicit check for True/False since None means we don't know if this
@@ -597,16 +1050,7 @@ class ShedTwillTestCase(TwillTestCase):
             strings_displayed.append('Reviews were saved')
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def galaxy_login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
-        if logout_first:
-            self.galaxy_logout()
-        previously_created, username_taken, invalid_username = \
-            self.create_user_in_galaxy(email=email, password=password, username=username, redirect=redirect)
-        if previously_created:
-            self.visit_galaxy_url("/user/login?use_panels=False")
-            self.submit_form('1', 'login_button', login=email, redirect=redirect, password=password)
-
-    def galaxy_logout(self):
+    def galaxy_token(self):
         self.visit_galaxy_url("/")
         html = self.last_page()
         token_def_index = html.find("session_csrf_token")
@@ -614,8 +1058,21 @@ class ShedTwillTestCase(TwillTestCase):
         token_quote_start_index = html.find('"', token_sep_index)
         token_quote_end_index = html.find('"', token_quote_start_index + 1)
         token = html[(token_quote_start_index + 1):token_quote_end_index]
-        self.visit_galaxy_url("/user/logout", dict(session_csrf_token=token))
-        self.check_page_for_string("You have been logged out")
+        return token
+
+    def galaxy_login(self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='', logout_first=True):
+        if logout_first:
+            self.galaxy_logout()
+        self.create_user_in_galaxy(email=email, password=password, username=username, redirect=redirect)
+        params = {
+            "login": email,
+            "password": password,
+            "session_csrf_token": self.galaxy_token()
+        }
+        self.visit_galaxy_url('/user/login', params=params)
+
+    def galaxy_logout(self):
+        self.visit_galaxy_url("/user/logout", params=dict(session_csrf_token=self.galaxy_token()))
         tc.browser.cj.clear()
 
     def generate_complex_dependency_xml(self, filename, filepath, repository_tuples, package, version):
@@ -675,8 +1132,10 @@ class ShedTwillTestCase(TwillTestCase):
         return temp_path
 
     def get_datatypes_count(self):
-        url = '/api/datatypes?upload_only=false'
-        self.visit_galaxy_url(url)
+        params = {
+            'upload_only': False
+        }
+        self.visit_galaxy_url('/api/datatypes', params=params)
         html = self.last_page()
         datatypes = loads(html)
         return len(datatypes)
@@ -740,7 +1199,7 @@ class ShedTwillTestCase(TwillTestCase):
         lhs = "repos/%s/%s" % (repository.user.username, repository.name)
         try:
             return self.hgweb_config_manager.get_entry(lhs)
-        except:
+        except Exception:
             raise Exception("Entry for repository %s missing in hgweb config file %s." % (lhs, self.hgweb_config_manager.hgweb_config))
 
     def get_repository_changelog_tuples(self, repository):
@@ -893,9 +1352,11 @@ class ShedTwillTestCase(TwillTestCase):
             strings_displayed = []
         if strings_not_displayed is None:
             strings_not_displayed = []
-        url = '/admin_toolshed/import_workflow?repository_id=%s&workflow_name=%s' % \
-            (self.security.encode_id(repository.id), tool_shed_encode(workflow_name))
-        self.visit_galaxy_url(url)
+        params = {
+            'repository_id': self.security.encode_id(repository.id),
+            'workflow_name': tool_shed_encode(workflow_name)
+        }
+        self.visit_galaxy_url('/admin_toolshed/import_workflow', params=params)
         if workflow_name not in strings_displayed:
             strings_displayed.append(workflow_name)
         self.check_for_strings(strings_displayed, strings_not_displayed)
@@ -910,7 +1371,7 @@ class ShedTwillTestCase(TwillTestCase):
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in
         # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy
         # admin_toolshed controller.
-        install_parameters = re.search('initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html)
+        install_parameters = re.search(r'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html)
         if install_parameters:
             iri_ids = install_parameters.group(1)
             # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
@@ -921,9 +1382,12 @@ class ShedTwillTestCase(TwillTestCase):
             repository_ids = re.sub('[^a-fA-F0-9,]+', '', repository_ids)
             encoded_kwd = install_parameters.group(2)
             reinstalling = install_parameters.group(3)
-            url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-                (','.join(galaxy.util.listify(repository_ids)), encoded_kwd, reinstalling)
-            self.visit_galaxy_url(url)
+            params = {
+                'tool_shed_repository_ids': ','.join(galaxy.util.listify(repository_ids)),
+                'encoded_kwd': encoded_kwd,
+                'reinstalling': reinstalling
+            }
+            self.visit_galaxy_url('/admin_toolshed/install_repositories', params=params)
             return galaxy.util.listify(repository_ids)
 
     def install_repositories_from_search_results(self, repositories, install_tool_dependencies=False,
@@ -933,10 +1397,12 @@ class ShedTwillTestCase(TwillTestCase):
         in a browser, but Twill manages to lose the 'toolshedgalaxyurl' cookie between one page and the next, so it's necessary to work
         around this by explicitly visiting the prepare_for_install method on the Galaxy side.
         '''
-        url = '/admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
-            (self.url, ','.join(self.security.encode_id(repository.id) for repository in repositories),
-              ','.join(self.get_repository_tip(repository) for repository in repositories))
-        self.visit_galaxy_url(url)
+        params = {
+            'tool_shed_url': self.url,
+            'repository_ids': ','.join(self.security.encode_id(repository.id) for repository in repositories),
+            'changeset_revisions': ','.join(self.get_repository_tip(repository) for repository in repositories)
+        }
+        self.visit_galaxy_url('/admin_toolshed/prepare_for_install', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         if 'install_tool_dependencies' in self.last_page():
             form = tc.browser.get_form('select_tool_panel_section')
@@ -964,9 +1430,12 @@ class ShedTwillTestCase(TwillTestCase):
         repository_id = self.security.encode_id(repository.id)
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip(repository)
-        url = '/repository/install_repositories_by_revision?changeset_revisions=%s&repository_ids=%s&galaxy_url=%s' % \
-              (changeset_revision, repository_id, self.galaxy_url)
-        self.visit_url(url)
+        params = {
+            'changeset_revisions': changeset_revision,
+            'repository_ids': repository_id,
+            'galaxy_url': self.galaxy_url
+        }
+        self.visit_url('/repository/install_repositories_by_revision', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to
         # be hacked in through tc.browser, putting the form field in kwd doesn't work.
@@ -1010,36 +1479,49 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
         # Now load the page that should be displayed inside the iframe and check for strings.
         if encoded_repository_id:
-            url = '/repository/view_repository?id=%s&operation=view_or_manage_repository' % encoded_repository_id
+            params = {
+                'id': encoded_repository_id,
+                'operation': 'view_or_manage_repository'
+            }
             if changeset_revision:
-                url += '&changeset_revision=%s' % changeset_revision
-            self.visit_url(url)
+                params['changeset_revision'] = changeset_revision
+            self.visit_url('/repository/view_repository', params=params)
             self.check_for_strings(strings_displayed_in_iframe, strings_not_displayed_in_iframe)
         elif encoded_user_id:
-            url = '/repository/browse_repositories?user_id=%s&operation=repositories_by_user' % encoded_user_id
-            self.visit_url(url)
+            params = {
+                'user_id': encoded_user_id,
+                'operation': 'repositories_by_user'
+            }
+            self.visit_url('/repository/browse_repositories', params=params)
             self.check_for_strings(strings_displayed_in_iframe, strings_not_displayed_in_iframe)
 
     def load_changeset_in_tool_shed(self, repository_id, changeset_revision, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/view_changeset?ctx_str=%s&id=%s' % (changeset_revision, repository_id)
-        self.visit_url(url)
+        params = {
+            'ctx_str': changeset_revision,
+            'id': repository_id
+        }
+        self.visit_url('/repository/view_changeset', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def load_checkable_revisions(self, strings_displayed=None, strings_not_displayed=None):
-        params = urlencode(dict(do_not_test='false',
-                                downloadable='true',
-                                includes_tools='true',
-                                malicious='false',
-                                missing_test_components='false',
-                                skip_tool_test='false'))
-        api_url = '%s?%s' % ('/'.join([self.url, 'api', 'repository_revisions']), params)
-        self.visit_url(api_url)
+        params = {
+            'do_not_test': 'false',
+            'downloadable': 'true',
+            'includes_tools': 'true',
+            'malicious': 'false',
+            'missing_test_components': 'false',
+            'skip_tool_test': 'false'
+        }
+        self.visit_url('/api/repository_revisions', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def load_display_tool_page(self, repository, tool_xml_path, changeset_revision, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
-              (self.security.encode_id(repository.id), tool_xml_path, changeset_revision)
-        self.visit_url(url)
+        params = {
+            'repository_id': self.security.encode_id(repository.id),
+            'tool_config': tool_xml_path,
+            'changeset_revision': changeset_revision
+        }
+        self.visit_url('/repository/display_tool', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def load_galaxy_tool_migrations_page(self, strings_displayed=None, strings_not_displayed=None):
@@ -1048,14 +1530,19 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def load_invalid_tool_page(self, repository, tool_xml, changeset_revision, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
-              (self.security.encode_id(repository.id), tool_xml, changeset_revision)
-        self.visit_url(url)
+        params = {
+            'repository_id': self.security.encode_id(repository.id),
+            'tool_config': tool_xml,
+            'changeset_revision': changeset_revision
+        }
+        self.visit_url('/repository/load_invalid_tool', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def load_page_for_installed_tool(self, tool_guid, strings_displayed=None, strings_not_displayed=None):
-        url = '/tool_runner?tool_id=%s' % tool_guid
-        self.visit_galaxy_url(url)
+        params = {
+            'tool_id': tool_guid
+        }
+        self.visit_galaxy_url('/tool_runner', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def load_workflow_image_in_tool_shed(self, repository, workflow_name, changeset_revision=None, strings_displayed=None, strings_not_displayed=None):
@@ -1064,9 +1551,11 @@ class ShedTwillTestCase(TwillTestCase):
         metadata = self.get_repository_metadata_by_changeset_revision(repository, changeset_revision)
         if not metadata:
             raise AssertionError('Metadata not found for changeset revision %s.' % changeset_revision)
-        url = '/repository/generate_workflow_image?repository_metadata_id=%s&workflow_name=%s' % \
-              (self.security.encode_id(metadata.id), tool_shed_encode(workflow_name))
-        self.visit_url(url)
+        params = {
+            'repository_metadata_id': self.security.encode_id(metadata.id),
+            'workflow_name': tool_shed_encode(workflow_name)
+        }
+        self.visit_url('/repository/generate_workflow_image', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def manage_review_components(self, strings_displayed=None, strings_not_displayed=None):
@@ -1078,24 +1567,27 @@ class ShedTwillTestCase(TwillTestCase):
         repository = test_db_util.get_repository_by_name_and_owner(name, owner)
         if not changeset_revision:
             changeset_revision = self.get_repository_tip(repository)
-        self.visit_url('/repository/preview_tools_in_changeset?repository_id=%s&changeset_revision=%s' %
-                       (self.security.encode_id(repository.id), changeset_revision))
+        params = {
+            'repository_id': self.security.encode_id(repository.id),
+            'changeset_revision': changeset_revision
+        }
+        self.visit_url('/repository/preview_tools_in_changeset', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def preview_workflow_in_tool_shed(self, repository_name, owner, workflow_name, strings_displayed=None, strings_not_displayed=None):
         repository = test_db_util.get_repository_by_name_and_owner(repository_name, owner)
         metadata = self.get_repository_metadata(repository)
-        url = '/repository/view_workflow?workflow_name=%s&repository_metadata_id=%s' % \
-              (tool_shed_encode(workflow_name), self.security.encode_id(metadata[0].id))
-        self.visit_url(url)
+        params = {
+            'workflow_name': tool_shed_encode(workflow_name),
+            'repository_metadata_id': self.security.encode_id(metadata[0].id)
+        }
+        self.visit_url('/repository/view_workflow', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def reactivate_repository(self, installed_repository):
-        params = dict(operation='activate or reinstall', id=self.security.encode_id(installed_repository.id))
-        url = '/admin_toolshed/browse_repositories'
-        self.visit_galaxy_url(url, params)
-        strings_displayed = [installed_repository.name, 'repository has been activated']
-        self.check_for_strings(strings_displayed, [])
+        params = dict(id=self.security.encode_id(installed_repository.id))
+        url = '/admin_toolshed/restore_repository'
+        self.visit_galaxy_url(url, params=params)
 
     def reinstall_repository(self,
                              installed_repository,
@@ -1105,8 +1597,10 @@ class ShedTwillTestCase(TwillTestCase):
                              new_tool_panel_section_label='',
                              strings_displayed=None,
                              strings_not_displayed=None):
-        url = '/admin_toolshed/reselect_tool_panel_section?id=%s' % self.security.encode_id(installed_repository.id)
-        self.visit_galaxy_url(url)
+        params = {
+            'id': self.security.encode_id(installed_repository.id)
+        }
+        self.visit_galaxy_url('/admin_toolshed/reselect_tool_panel_section', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed=None)
         # Build the url that will simulate a filled-out form being submitted. Due to a limitation in twill, the reselect_tool_panel_section
         # form doesn't get parsed correctly.
@@ -1114,12 +1608,12 @@ class ShedTwillTestCase(TwillTestCase):
         params = dict(id=encoded_repository_id, no_changes=no_changes, new_tool_panel_section_label=new_tool_panel_section_label)
         doseq = False
         if install_repository_dependencies:
-            params['install_repository_dependencies'] = ['True', 'True']
+            params['install_repository_dependencies'] = True
             doseq = True
         else:
             params['install_repository_dependencies'] = False
         if install_tool_dependencies:
-            params['install_tool_dependencies'] = ['True', 'True']
+            params['install_tool_dependencies'] = True
             doseq = True
         else:
             params['install_tool_dependencies'] = False
@@ -1140,8 +1634,10 @@ class ShedTwillTestCase(TwillTestCase):
         return tip_ctx.rev() < 0
 
     def reset_installed_repository_metadata(self, repository):
-        url = '/admin_toolshed/reset_repository_metadata?id=%s' % self.security.encode_id(repository.id)
-        self.visit_galaxy_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_galaxy_url('/admin_toolshed/reset_repository_metadata', params=params)
         self.check_for_strings(['Metadata has been reset'])
 
     def reset_metadata_on_selected_repositories(self, repository_ids):
@@ -1155,15 +1651,11 @@ class ShedTwillTestCase(TwillTestCase):
         self.submit_form(form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd)
 
     def reset_repository_metadata(self, repository):
-        url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id(repository.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/repository/reset_all_metadata', params=params)
         self.check_for_strings(['All repository metadata has been reset.'])
-
-    def repair_installed_repository(self, repository):
-        repository_id = self.security.encode_id(repository.id)
-        url = '/admin_toolshed/repair_repository?id=%s' % repository_id
-        self.visit_galaxy_url(url)
-        self.submit_form('repair_repository', 'repair_repository_button')
 
     def review_repository(self, repository, review_contents_dict, user=None, changeset_revision=None):
         strings_displayed = []
@@ -1172,23 +1664,26 @@ class ShedTwillTestCase(TwillTestCase):
             changeset_revision = self.get_repository_tip(repository)
         if user:
             review = test_db_util.get_repository_review_by_user_id_changeset_revision(user.id, repository.id, changeset_revision)
-        url = '/repository_review/edit_review?id=%s' % self.security.encode_id(review.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(review.id)
+        }
+        self.visit_url('/repository_review/edit_review', params=params)
         self.fill_review_form(review_contents_dict, strings_displayed, strings_not_displayed)
 
     def revoke_write_access(self, repository, username):
-        url = '/repository/manage_repository?user_access_button=Remove&id=%s&remove_auth=%s' % \
-            (self.security.encode_id(repository.id), username)
-        self.visit_url(url)
+        params = {
+            'user_access_button': 'Remove',
+            'id': self.security.encode_id(repository.id),
+            'remove_auth': username
+        }
+        self.visit_url('/repository/manage_repository', params=params)
 
     def search_for_valid_tools(self, search_fields={}, exact_matches=False, strings_displayed=None, strings_not_displayed=None, from_galaxy=False):
+        params = {}
         if from_galaxy:
-            galaxy_url = '?galaxy_url=%s' % self.galaxy_url
-        else:
-            galaxy_url = ''
+            params['galaxy_url'] = self.galaxy_url
         for field_name, search_string in search_fields.items():
-            url = '/repository/find_tools%s' % galaxy_url
-            self.visit_url(url)
+            self.visit_url('/repository/find_tools', params=params)
             tc.fv("1", "exact_matches", exact_matches)
             tc.fv("1", field_name, search_string)
             tc.submit()
@@ -1201,8 +1696,10 @@ class ShedTwillTestCase(TwillTestCase):
                                          strings_not_displayed=None,
                                          post_submit_strings_displayed=None,
                                          post_submit_strings_not_displayed=None):
-        url = '/repository/contact_owner?id=%s' % self.security.encode_id(repository.id)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/repository/contact_owner', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         tc.fv(1, 'message', message)
         tc.submit()
@@ -1226,8 +1723,11 @@ class ShedTwillTestCase(TwillTestCase):
         return kwd
 
     def set_repository_deprecated(self, repository, set_deprecated=True, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/deprecate?id=%s&mark_deprecated=%s' % (self.security.encode_id(repository.id), set_deprecated)
-        self.visit_url(url)
+        params = {
+            'id': self.security.encode_id(repository.id),
+            'mark_deprecated': set_deprecated
+        }
+        self.visit_url('/repository/deprecate', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def set_repository_malicious(self, repository, set_malicious=True, strings_displayed=None, strings_not_displayed=None):
@@ -1262,16 +1762,20 @@ class ShedTwillTestCase(TwillTestCase):
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(repository.id, tip)
 
     def undelete_repository(self, repository):
-        repository_id = self.security.encode_id(repository.id)
-        url = '/admin/browse_repositories?operation=Undelete&id=%s' % repository_id
+        params = {
+            'operation': 'Undelete',
+            'id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/admin/browse_repositories', params=params)
         strings_displayed = ['Undeleted 1 repository', repository.name]
         strings_not_displayed = []
-        self.visit_url(url)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
-        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id(installed_repository.id)
-        self.visit_galaxy_url(url)
+        params = {
+            'id': self.security.encode_id(installed_repository.id)
+        }
+        self.visit_galaxy_url('/admin_toolshed/deactivate_or_uninstall_repository', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
         form = tc.browser.get_form('deactivate_or_uninstall_repository')
         self.set_form_value(form, {}, 'remove_from_disk', True)
@@ -1280,14 +1784,20 @@ class ShedTwillTestCase(TwillTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed=None)
 
     def update_installed_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
-        url = '/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&galaxy_url=%s' % (installed_repository.name,
-            installed_repository.owner, installed_repository.installed_changeset_revision, self.galaxy_url)
-        self.visit_url(url)
+        params = {
+            'name': installed_repository.name,
+            'owner': installed_repository.owner,
+            'changeset_revision': installed_repository.installed_changeset_revision,
+            'galaxy_url': self.galaxy_url
+        }
+        self.visit_url('/repository/check_for_updates', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def update_tool_shed_status(self):
-        url = '/admin_toolshed/update_tool_shed_status_for_installed_repository?all_installed_repositories=True'
-        self.visit_galaxy_url(url)
+        params = {
+            'all_installed_repositories': True
+        }
+        self.visit_galaxy_url('/admin_toolshed/update_tool_shed_status_for_installed_repository', params=params)
 
     def upload_file(self,
                     repository,
@@ -1311,7 +1821,10 @@ class ShedTwillTestCase(TwillTestCase):
         else:
             if removed_message not in strings_not_displayed:
                 strings_not_displayed.append(removed_message)
-        self.visit_url('/upload/upload?repository_id=%s' % self.security.encode_id(repository.id))
+        params = {
+            'repository_id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/upload/upload', params=params)
         if valid_tools_only:
             strings_displayed.extend(['has been successfully', 'uploaded to the repository.'])
         tc.formfile("1", "file_data", self.get_filename(filename, filepath))
@@ -1357,7 +1870,10 @@ class ShedTwillTestCase(TwillTestCase):
         else:
             if removed_message not in strings_not_displayed:
                 strings_not_displayed.append(removed_message)
-        self.visit_url('/upload/upload?repository_id=%s' % self.security.encode_id(repository.id))
+        params = {
+            'repository_id': self.security.encode_id(repository.id)
+        }
+        self.visit_url('/upload/upload', params=params)
         if valid_tools_only:
             strings_displayed.extend(['has been successfully', 'uploaded to the repository.'])
         tc.fv("1", "url", url)
@@ -1506,14 +2022,16 @@ class ShedTwillTestCase(TwillTestCase):
         assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name
 
     def view_installed_workflow(self, repository, workflow_name, strings_displayed=None, strings_not_displayed=None):
-        url = '/admin_toolshed/view_workflow?repository_id=%s&workflow_name=%s' % \
-            (self.security.encode_id(repository.id), tool_shed_encode(workflow_name))
-        self.visit_galaxy_url(url)
+        params = {
+            'repository_id': self.security.encode_id(repository.id),
+            'workflow_name': tool_shed_encode(workflow_name)
+        }
+        self.visit_galaxy_url('/admin_toolshed/view_workflow', params=params)
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def visit_galaxy_url(self, url, params=None, doseq=False):
+    def visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=[200]):
         url = '%s%s' % (self.galaxy_url, url)
-        self.visit_url(url, params=params, doseq=doseq)
+        self.visit_url(url, params=params, doseq=doseq, allowed_codes=allowed_codes)
 
     def wait_for_repository_installation(self, repository_ids):
         final_states = [galaxy_model.ToolShedRepository.installation_status.ERROR,

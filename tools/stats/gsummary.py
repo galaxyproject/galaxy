@@ -6,7 +6,7 @@ import sys
 import tempfile
 try:
     from rpy2.rpy_classic import BASIC_CONVERSION, NO_CONVERSION, r, RException, set_default_mode
-except:
+except ImportError:
     # RPy isn't maintained, and doesn't work with R>3.0, use it as a fallback
     from rpy import BASIC_CONVERSION, NO_CONVERSION, r, RException, set_default_mode
 
@@ -22,7 +22,7 @@ def S3_METHODS(all="key"):
         "acosh", "asinh", "atanh", "lgamma", "gamma", "gammaCody", "digamma", "trigamma",
         "cumsum", "cumprod", "cummax", "cummin", "c"]
     Group_Ops = ["+", "-", "*", "/", "^", "%%", "%/%", "&", "|", "!", "==", "!=", "<", "<=", ">=", ">", "(", ")", "~", ","]
-    if all is "key":
+    if all == "key":
         return {'Math': Group_Math, 'Ops': Group_Ops}
 
 
@@ -31,7 +31,7 @@ def main():
         datafile = sys.argv[1]
         outfile_name = sys.argv[2]
         expression = sys.argv[3]
-    except:
+    except Exception:
         stop_err('Usage: python gsummary.py input_file ouput_file expression')
 
     math_allowed = S3_METHODS()['Math']
@@ -42,7 +42,7 @@ def main():
         if word and word not in math_allowed:
             stop_err("Invalid expression '%s': term '%s' is not recognized or allowed" % (expression, word))
     symbols = set()
-    for symbol in re.compile('[^a-z0-9\s]+').findall(expression):
+    for symbol in re.compile(r'[^a-z0-9\s]+').findall(expression):
         if symbol and symbol not in ops_allowed:
             stop_err("Invalid expression '%s': operator '%s' is not recognized or allowed" % (expression, symbol))
         else:
@@ -56,10 +56,10 @@ def main():
     for col in re.compile('c[0-9]+').findall(expression):
         try:
             cols.append(int(col[1:]) - 1)
-        except:
+        except Exception:
             pass
 
-    tmp_file = tempfile.NamedTemporaryFile('w+b')
+    tmp_file = tempfile.NamedTemporaryFile('w+')
     # Write the R header row to the temporary file
     hdr_str = "\t".join("c%s" % str(col + 1) for col in cols)
     tmp_file.write("%s\n" % hdr_str)
@@ -75,7 +75,7 @@ def main():
             for col in cols:
                 try:
                     float(fields[col])
-                except:
+                except Exception:
                     skipped_lines += 1
                     if not first_invalid_line:
                         first_invalid_line = i + 1

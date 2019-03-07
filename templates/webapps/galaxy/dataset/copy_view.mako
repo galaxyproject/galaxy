@@ -4,27 +4,28 @@
 <%def name="title()">Copy History Items</%def>
 
 <%def name="javascripts()">
-
     ${parent.javascripts()}
+</%def>
 
+<%def name="javascript_app()">
+    ${parent.javascript_app()}
     ${handle_refresh_frames()}
-    
     <script type="text/javascript">
-        $(function() {
+        config.addInitialization(function() {
+            console.log("copy_view.mako, javascript_app", "hardcoded jquery initialization");
+ 
             $("#select-multiple").click(function() {
                 $("#single-dest-select").val("");
                 $("#single-destination").hide();
                 $("#multiple-destination").show();
             });
-        });
-        $(function() {
+
             $("#source-content-all").click(function() {
                 $("input[name='source_content_ids']").each(function() {
                     this.checked = true;
                 });
             });
-        });
-        $(function() {
+ 
             $("#source-content-none").click(function() {
                 $("input[name='source_content_ids']").each(function() {
                     this.checked = false;
@@ -32,7 +33,6 @@
             });
         });
     </script>
-    
 </%def>
 
 %if error_msg:
@@ -78,8 +78,8 @@
                     %if not has_source_contents:
                         <div class="form-row">
                             <div class="btn-group">
-                                <span class="select-all btn btn-default" name="source-content-all" id="source-content-all">All</span>
-                                <span class="deselect-all btn btn-default" name="source-content-none" id="source-content-none">None</span>
+                                <span class="select-all btn btn-secondary" name="source-content-all" id="source-content-all">All</span>
+                                <span class="deselect-all btn btn-secondary" name="source-content-none" id="source-content-none">None</span>
                             </div>
                         </div>
                     %endif

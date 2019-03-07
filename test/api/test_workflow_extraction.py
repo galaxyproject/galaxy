@@ -5,7 +5,7 @@ import operator
 from collections import namedtuple
 from json import dumps, loads
 
-from base.populators import skip_without_tool
+from base.populators import skip_without_tool, summarize_instance_history_on_error
 
 from .test_workflows import BaseWorkflowsApiTestCase
 
@@ -17,6 +17,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         self.history_id = self.dataset_populator.new_history()
 
     @skip_without_tool("cat1")
+    @summarize_instance_history_on_error
     def test_extract_from_history(self):
         # Run the simple test workflow and extract it back out from history
         cat1_job_id = self.__setup_and_run_cat1_workflow(history_id=self.history_id)
@@ -29,6 +30,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         self.assertEqual(downloaded_workflow["name"], "test import from history")
         self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
 
+    @summarize_instance_history_on_error
     def test_extract_with_copied_inputs(self):
         old_history_id = self.dataset_populator.new_history()
         # Run the simple test workflow and extract it back out from history
@@ -54,6 +56,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
 
     @skip_without_tool("random_lines1")
+    @summarize_instance_history_on_error
     def test_extract_mapping_workflow_from_history(self):
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(self.history_id)
         downloaded_workflow = self._extract_and_download_workflow(
@@ -130,7 +133,7 @@ test_data:
 """)
         job_id = self._job_id_for_tool(jobs_summary.jobs, "collection_paired_test")
         downloaded_workflow = self._extract_and_download_workflow(
-            dataset_collection_ids=[jobs_summary.inputs["text_input1"]["hid"]],
+            dataset_collection_ids=["1"],
             job_ids=[job_id],
         )
         self.__check_workflow(
@@ -169,7 +172,7 @@ test_data:
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat1")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "cat_collection")
         downloaded_workflow = self._extract_and_download_workflow(
-            dataset_collection_ids=[jobs_summary.inputs["text_input1"]["hid"]],
+            dataset_collection_ids=["1"],
             job_ids=[job1_id, job2_id],
         )
         print(jobs_summary.inputs["text_input1"])
@@ -232,6 +235,7 @@ test_data:
         )
 
     @skip_without_tool("collection_creates_pair")
+    @summarize_instance_history_on_error
     def test_extract_with_mapped_output_collections(self):
         jobs_summary = self._run_jobs("""
 class: GalaxyWorkflow
@@ -269,7 +273,7 @@ test_data:
         tool_ids = ["cat1", "collection_creates_pair", "cat_collection", "cat_list"]
         job_ids = [functools.partial(self._job_id_for_tool, jobs_summary.jobs)(_) for _ in tool_ids]
         downloaded_workflow = self._extract_and_download_workflow(
-            dataset_collection_ids=["3"],
+            dataset_collection_ids=["1"],
             job_ids=job_ids,
         )
         self.__check_workflow(
@@ -463,7 +467,7 @@ test_data:
                     disconnected_inputs.append(value)
 
         if disconnected_inputs:
-            template = "%d step(s_ disconnected in extracted workflow - disconnectect steps are %s - workflow is %s"
+            template = "%d steps disconnected in extracted workflow - disconnectect steps are %s - workflow is %s"
             message = template % (len(disconnected_inputs), disconnected_inputs, workflow)
             raise AssertionError(message)
 

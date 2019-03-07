@@ -1,6 +1,8 @@
 """
 Migration script to add the repository_review, component_review and component tables and the Repository Reviewer group and role.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -83,25 +85,22 @@ Component_table = Table("component", metadata,
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Create new review tables.
     try:
         Component_table.create()
-    except Exception as e:
-        print str(e)
-        log.debug("Creating component table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating component table failed.")
     try:
         RepositoryReview_table.create()
-    except Exception as e:
-        print str(e)
-        log.debug("Creating repository_review table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating repository_review table failed.")
     try:
         ComponentReview_table.create()
-    except Exception as e:
-        print str(e)
-        log.debug("Creating component_review table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating component_review table failed.")
     # Insert default Component values.
     names = ['Data types', 'Functional tests', 'README', 'Tool dependencies', 'Tools', 'Workflows']
     descriptions = ['Proprietary datatypes defined in a file named datatypes_conf.xml included in the repository',
@@ -170,19 +169,16 @@ def downgrade(migrate_engine):
     # Drop review tables.
     try:
         ComponentReview_table.drop()
-    except Exception as e:
-        print str(e)
-        log.debug("Dropping component_review table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping component_review table failed.")
     try:
         RepositoryReview_table.drop()
-    except Exception as e:
-        print str(e)
-        log.debug("Dropping repository_review table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping repository_review table failed.")
     try:
         Component_table.drop()
-    except Exception as e:
-        print str(e)
-        log.debug("Dropping component table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping component table failed.")
     # Get the id of the REVIEWER group.
     cmd = "SELECT id FROM galaxy_group WHERE name = '%s';" % (IUC)
     row = migrate_engine.execute(cmd).fetchone()

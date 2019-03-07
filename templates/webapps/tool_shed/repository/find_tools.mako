@@ -1,5 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_galaxy_repository_actions" />
 
 <%!
@@ -47,7 +48,7 @@
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Exact matches only:</label>
-                ${exact_matches_check_box.get_html()}
+                ${render_checkbox(exact_matches_check_box)}
                 <div class="toolParamHelp" style="clear: both;">
                     Check the box to match text exactly (text case doesn't matter as all strings are forced to lower case).
                 </div>

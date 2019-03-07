@@ -8,7 +8,8 @@
     ##data = list( hda.datatype.dataset_column_dataprovider( hda, limit=10000 ) )
 
     # Use root for resource loading.
-    root = h.url_for( '/' )
+    root = h.url_for( '/static/' )
+    root_api = h.url_for( '/' )
 %>
 ## ----------------------------------------------------------------------------
 
@@ -24,33 +25,21 @@ ${h.stylesheet_link( root + 'plugins/visualizations/scatterplot/static/scatterpl
 
 ## ----------------------------------------------------------------------------
 <script type="text/javascript">
-// TODO: blah
-window.Galaxy = { root: '${ root }' };
+window.Galaxy = { root: '${ root }', root_api: '${ root_api }' };
 </script>
-${h.js( 'libs/jquery/jquery',
-        'libs/jquery/jquery.migrate',
-        'libs/jquery/jquery-ui',
-        'libs/bootstrap',
-        'libs/underscore',
-        'libs/backbone',
-        'libs/d3',
-        'ui/peek-column-selector',
-        'ui/pagination',
-        'mvc/visualization/visualization-model' )}
-
-${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot-edit.js' )}
+${h.javascript_link( root + 'plugins/visualizations/scatterplot/static/scatterplot.js' )}
 
 <script type="text/javascript">
-function getModel(){
-    return new ScatterplotModel({
-        id      : ${h.dumps( visualization_id )} || undefined,
-        title   : "${title or default_title}",
-        config  : ${h.dumps( config, indent=2 )}
-    });
-}
-function getHDAJSON(){
-    return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
-}
+    function getModel(){
+        return new ScatterplotModel({
+            id      : ${h.dumps( visualization_id )} || undefined,
+            title   : "${title or default_title}",
+            config  : ${h.dumps( config, indent=2 )}
+        });
+    }
+    function getHDAJSON(){
+        return ${h.dumps( trans.security.encode_dict_ids( hda.to_dict() ), indent=2 )};
+    }
 </script>
 
 </head>
@@ -73,8 +62,6 @@ function getHDAJSON(){
                     embedded: "${embedded}"
                 }).render();
             display.fetchData();
-            //window.model = model;
-            //window.display = display;
         });
         </script>
 

@@ -1,5 +1,4 @@
 from galaxy.model import DatasetCollectionElement
-
 from ..types import BaseDatasetCollectionType
 
 

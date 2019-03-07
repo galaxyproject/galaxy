@@ -6,6 +6,8 @@ first.
 Maybe this doesn't make sense and maybe much of this stuff could be replaced
 with itertools product and permutations. These are open questions.
 """
+from collections import OrderedDict
+
 from galaxy.exceptions import MessageException
 from galaxy.util.bunch import Bunch
 
@@ -39,13 +41,12 @@ def expand_multi_inputs(inputs, classifier, key_filter=None):
 
 def __split_inputs(inputs, classifier, key_filter):
     key_filter = key_filter or (lambda x: True)
-    input_keys = filter(key_filter, inputs)
 
-    single_inputs = {}
-    matched_multi_inputs = {}
-    multiplied_multi_inputs = {}
+    single_inputs = OrderedDict()
+    matched_multi_inputs = OrderedDict()
+    multiplied_multi_inputs = OrderedDict()
 
-    for input_key in input_keys:
+    for input_key in filter(key_filter, inputs):
         input_type, expanded_val = classifier(input_key)
         if input_type == input_classification.SINGLE:
             single_inputs[input_key] = expanded_val
@@ -73,18 +74,19 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
 
     matched_multi_inputs = []
 
-    first_multi_input_key = multi_inputs.keys()[0]
+    first_multi_input_key = next(iter(multi_inputs.keys()))
     first_multi_value = multi_inputs.get(first_multi_input_key)
 
     for value in first_multi_value:
         new_inputs = __copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
         matched_multi_inputs.append(new_inputs)
 
-    for multi_input_key, multi_input_values in multi_inputs.iteritems():
+    for multi_input_key, multi_input_values in multi_inputs.items():
         if multi_input_key == first_multi_input_key:
             continue
         if len(multi_input_values) != len(first_multi_value):
-            raise InputMatchedException()
+            raise InputMatchedException("Received %d inputs for '%s' and %d inputs for '%s', these should be of equal length" %
+                                        (len(multi_input_values), multi_input_key, len(first_multi_value), first_multi_input_key))
 
         for index, value in enumerate(multi_input_values):
             matched_multi_inputs[index][multi_input_key] = value
@@ -95,7 +97,7 @@ def __extend_with_matched_combos(single_inputs, multi_inputs):
 def __extend_with_multiplied_combos(input_combos, multi_inputs):
     combos = input_combos
 
-    for multi_input_key, multi_input_value in multi_inputs.iteritems():
+    for multi_input_key, multi_input_value in multi_inputs.items():
         iter_combos = []
 
         for combo in combos:

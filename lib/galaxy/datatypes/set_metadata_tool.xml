@@ -1,11 +1,12 @@
 <tool id="__SET_METADATA__" name="Set External Metadata" version="1.0.1" tool_type="set_metadata">
     <type class="SetMetadataTool" module="galaxy.tools"/>
     <requirements>
-        <requirement type="package">samtools</requirement>
         <requirement type="package" version="1.5">bcftools</requirement>
     </requirements>
     <action module="galaxy.tools.actions.metadata" class="SetMetadataToolAction"/>
-    <command>"\${GALAXY_PYTHON:-python}" "${set_metadata}" ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}</command>
+    <command detect_errors="exit_code">
+"\${GALAXY_PYTHON:-python}" '${set_metadata}' ${__SET_EXTERNAL_METADATA_COMMAND_LINE__}
+    </command>
     <configfiles>
         <configfile name="set_metadata">from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()</configfile>
     </configfiles>

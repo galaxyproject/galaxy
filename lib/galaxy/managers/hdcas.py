@@ -4,18 +4,18 @@ Manager and Serializer for HDCAs.
 HistoryDatasetCollectionAssociations (HDCAs) are datasets contained or created in a
 history.
 """
+import logging
 
 from galaxy import model
+from galaxy.managers import (
+    annotatable,
+    base,
+    deletable,
+    hdas,
+    secured,
+    taggable
+)
 
-from galaxy.managers import base
-from galaxy.managers import secured
-from galaxy.managers import deletable
-from galaxy.managers import taggable
-from galaxy.managers import annotatable
-
-from galaxy.managers import hdas
-
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -34,7 +34,7 @@ class HDCAManager(
     foreign_key_name = 'history_dataset_collection_association'
 
     tag_assoc = model.HistoryDatasetCollectionTagAssociation
-    annotation_assoc = model.HistoryDatasetCollectionAnnotationAssociation
+    annotation_assoc = model.HistoryDatasetCollectionAssociationAnnotationAssociation
 
     def __init__(self, app):
         """
@@ -117,12 +117,13 @@ class DCSerializer(base.ModelSerializer):
             'create_time',
             'update_time',
             'collection_type',
-            'populated',
             'populated_state',
             'populated_state_message',
+            'element_count',
         ])
         self.add_view('detailed', [
-            'elements'
+            'populated',
+            'elements',
         ], include_keys_from='summary')
 
     def add_serializers(self):
@@ -130,7 +131,6 @@ class DCSerializer(base.ModelSerializer):
         self.serializers.update({
             'model_class'   : lambda *a, **c: 'DatasetCollection',
             'elements'      : self.serialize_elements,
-            'element_count' : self.serialize_element_count
         })
 
     def serialize_elements(self, item, key, **context):
@@ -139,14 +139,6 @@ class DCSerializer(base.ModelSerializer):
             serialized = self.dce_serializer.serialize_to_view(element, view='summary', **context)
             returned.append(serialized)
         return returned
-
-    def serialize_element_count(self, item, key, **context):
-        """Return the count of elements for this collection."""
-        # TODO: app.model.context -> session
-        # TODO: to the container interface (dataset_collection_contents)
-        return (self.app.model.context.query(model.DatasetCollectionElement)
-            .filter(model.DatasetCollectionElement.dataset_collection_id == item.id)
-            .count())
 
 
 class DCASerializer(base.ModelSerializer):
@@ -163,12 +155,13 @@ class DCASerializer(base.ModelSerializer):
             'id',
             'create_time', 'update_time',
             'collection_type',
-            'populated',
             'populated_state',
             'populated_state_message',
+            'element_count',
         ])
         self.add_view('detailed', [
-            'elements'
+            'populated',
+            'elements',
         ], include_keys_from='summary')
 
     def add_serializers(self):
@@ -184,7 +177,7 @@ class DCASerializer(base.ModelSerializer):
             'populated_state',
             'populated_state_message',
             'elements',
-            'element_count'
+            'element_count',
         ]
         for key in collection_keys:
             self.serializers[key] = self._proxy_to_dataset_collection(key=key)
@@ -221,15 +214,15 @@ class HDCASerializer(
             'history_content_type',
 
             'collection_type',
-            'populated',
             'populated_state',
             'populated_state_message',
+            'element_count',
+
+            'job_source_id',
+            'job_source_type',
 
             'name',
             'type_id',
-            'history_id',
-            'hid',
-            'history_content_type',
             'deleted',
             # 'purged',
             'visible',
@@ -238,6 +231,7 @@ class HDCASerializer(
             'tags',  # TODO: detail view only (maybe)
         ])
         self.add_view('detailed', [
+            'populated',
             'elements'
         ], include_keys_from='summary')
 
@@ -254,6 +248,7 @@ class HDCASerializer(
             'history_id'                : self.serialize_id,
             'history_content_type'      : lambda *a, **c: self.hdca_manager.model_class.content_type,
             'type_id'                   : self.serialize_type_id,
+            'job_source_id'             : self.serialize_id,
 
             'url'   : lambda i, k, **c: self.url_for('history_content_typed',
                                                      history_id=self.app.security.encode_id(i.history_id),

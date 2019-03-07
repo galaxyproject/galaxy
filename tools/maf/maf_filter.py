@@ -30,7 +30,7 @@ def main():
             num_species = len(species)
         else:
             num_species = len(sys.argv.pop(1).split(','))
-    except:
+    except Exception:
         print("One or more arguments is missing.\nUsage: maf_filter.py maf_filter_file input_maf output_maf path_to_save_debug species_to_keep", file=sys.stderr)
         sys.exit()
 
@@ -38,7 +38,7 @@ def main():
     try:
         maf_reader = bx.align.maf.Reader(open(maf_file, 'r'))
         maf_writer = bx.align.maf.Writer(open(out_file, 'w'))
-    except:
+    except Exception:
         print("Your MAF file appears to be malformed.", file=sys.stderr)
         sys.exit()
 

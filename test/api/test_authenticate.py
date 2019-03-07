@@ -2,7 +2,7 @@ import base64
 
 from requests import get
 
-from base import api
+from base import api  # noqa: I100,I202
 
 TEST_USER_EMAIL = "auth_user_test@bx.psu.edu"
 TEST_USER_PASSWORD = "testpassword1"
@@ -14,7 +14,7 @@ class AuthenticationApiTestCase(api.ApiTestCase):
         self._setup_user(TEST_USER_EMAIL, TEST_USER_PASSWORD)
         baseauth_url = self._api_url("authenticate/baseauth", use_key=False)
         unencoded_credentials = "%s:%s" % (TEST_USER_EMAIL, TEST_USER_PASSWORD)
-        authorization = base64.b64encode(unencoded_credentials)
+        authorization = base64.b64encode(unencoded_credentials.encode("utf-8"))
         headers = {
             "Authorization": authorization,
         }

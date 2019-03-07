@@ -1,5 +1,4 @@
 from galaxy.exceptions import error_codes
-
 from .test_pages import BasePageApiTestCase
 
 

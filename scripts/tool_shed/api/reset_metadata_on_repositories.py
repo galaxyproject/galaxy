@@ -11,6 +11,8 @@ usage: reset_metadata_on_repositories.py key <my_writable>
 Here is a working example of how to use this script to reset metadata on certain repositories in a specified Tool Shed.
 python ./reset_metadata_on_repositories.py -a 22be3b -m True -u http://localhost:9009/
 """
+from __future__ import print_function
+
 import argparse
 import logging
 import os
@@ -56,16 +58,16 @@ def main(options):
         repository_ids = get(url, api_key)
         for repository_id in repository_ids:
             if repository_id in encoded_ids_to_skip:
-                print "--------"
-                print "Skipping repository with id %s because it is in skip file %s" % (str(repository_id), str(skip_file))
-                print "--------"
+                print("--------")
+                print("Skipping repository with id %s because it is in skip file %s" % (repository_id, skip_file))
+                print("--------")
             else:
                 data = dict(repository_id=repository_id)
                 url = '%s/api/repositories/reset_metadata_on_repository' % base_tool_shed_url
                 try:
                     submit(url, data, options.api)
-                except Exception as e:
-                    log.exception(">>>>>>>>>>>>>>>Blew up on data: %s, exception: %s" % (str(data), str(e)))
+                except Exception:
+                    log.exception(">>>>>>>>>>>>>>>Blew up on data: %s", data)
                     # An nginx timeout undoubtedly occurred.
                     sys.exit(1)
     else:
@@ -74,8 +76,8 @@ def main(options):
         url = '%s/api/repositories/reset_metadata_on_repositories' % base_tool_shed_url
         try:
             submit(url, data, options.api)
-        except Exception as e:
-            log.exception(str(e))
+        except Exception:
+            log.exception(">>>>>>>>>>>>>>>Blew up on data: %s", data)
             # An nginx timeout undoubtedly occurred.
             sys.exit(1)
 

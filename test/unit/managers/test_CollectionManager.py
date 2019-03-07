@@ -8,7 +8,6 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
-
 from .base import BaseTestCase, CreatesCollectionsMixin
 
 # =============================================================================
@@ -49,10 +48,6 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
         self.assertFalse(hdca.deleted)
         self.assertTrue(hdca.visible)
 
-        # print 'hdca dir:'
-        # for k in dir( hdca ):
-        #     print k, getattr( hdca, k, '(?)' )
-
         self.log("should contain an underlying, well-formed DatasetCollection")
         self.assertIsInstance(hdca.collection, model.DatasetCollection)
         collection = hdca.collection
@@ -60,15 +55,6 @@ class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
         self.assertEqual(collection.state, 'ok')
         self.assertEqual(len(collection.dataset_instances), 3)
         self.assertEqual(len(collection.elements), 3)
-
-        # print 'hdca.collection dir:'
-        # for k in dir( hdca.collection ):
-        #     print k, getattr( hdca.collection, k, '(?)' )
-
-        # elements = collection.elements
-        # print 'hdca.collection element dir:'
-        # for k in dir( elements[0] ):
-        #     print k, getattr( elements[0], k, '(?)' )
 
         self.log("and that collection should have three well-formed Elements")
         self.assertIsInstance(collection.elements[0], model.DatasetCollectionElement)

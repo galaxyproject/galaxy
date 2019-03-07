@@ -5,12 +5,11 @@ API operations for for querying and recording user metrics from some client
 # TODO: facade or adapter to fluentd
 
 import datetime
+import logging
 
 from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
-
 from galaxy.web.base.controller import BaseAPIController
 
-import logging
 log = logging.getLogger(__name__)
 
 

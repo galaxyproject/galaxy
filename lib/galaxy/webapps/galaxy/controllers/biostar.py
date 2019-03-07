@@ -1,9 +1,12 @@
 """
 Controller for integration with the Biostar application
 """
-
-from galaxy.web.base.controller import BaseUIController, error, web
 from galaxy.util import biostar
+from galaxy.web.base.controller import (
+    BaseUIController,
+    error,
+    web
+)
 
 
 class BiostarController(BaseUIController):

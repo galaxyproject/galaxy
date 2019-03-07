@@ -1,6 +1,6 @@
 import os
+import subprocess
 from platform import system
-from subprocess import Popen
 from time import sleep
 
 try:
@@ -23,7 +23,7 @@ def _psutil_kill_pid(pid):
     """
     try:
         parent = Process(pid)
-        for child in parent.get_children(recursive=True):
+        for child in parent.children(recursive=True):
             child.kill()
         parent.kill()
     except NoSuchProcess:
@@ -41,8 +41,8 @@ def _stock_kill_pid(pid):
 
 def __kill_windows(pid):
     try:
-        Popen("taskkill /F /T /PID %i" % pid, shell=True)
-    except Exception:
+        subprocess.check_call(['taskkill', '/F', '/T', '/PID', pid])
+    except subprocess.CalledProcessError:
         pass
 
 

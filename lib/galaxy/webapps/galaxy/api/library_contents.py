@@ -1,23 +1,40 @@
 """
 API operations on the contents of a data library.
 """
-from galaxy import util
-from galaxy import web
-from galaxy import exceptions
-from galaxy import managers
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems
-from galaxy.web.base.controller import HTTPBadRequest, url_for
-from galaxy.managers.collections_util import api_payload_to_create_params, dictify_dataset_collection_instance
-from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
-
 import logging
+
+from sqlalchemy.orm.exc import (
+    MultipleResultsFound,
+    NoResultFound,
+)
+
+from galaxy import (
+    exceptions,
+    managers,
+    util,
+)
+from galaxy.actions.library import LibraryActions, validate_path_upload
+from galaxy.managers.collections_util import (
+    api_payload_to_create_params,
+    dictify_dataset_collection_instance
+)
+from galaxy.model import (
+    ExtendedMetadata,
+    ExtendedMetadataIndex
+)
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    HTTPBadRequest,
+    url_for,
+    UsesFormDefinitionsMixin,
+    UsesLibraryMixin,
+    UsesLibraryMixinItems
+)
 log = logging.getLogger(__name__)
 
 
-class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems):
+class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems, UsesFormDefinitionsMixin, LibraryActions):
 
     def __init__(self, app):
         super(LibraryContentsController, self).__init__(app)
@@ -50,7 +67,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         current_user_roles = trans.get_current_user_roles()
 
         def traverse(folder):
-            admin = trans.user_is_admin()
+            admin = trans.user_is_admin
             rval = []
             for subfolder in folder.active_folders:
                 if not admin:
@@ -83,7 +100,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         except Exception as e:
             raise exceptions.InternalServerError('Error loading from the database.' + str(e))
-        if not (trans.user_is_admin() or trans.app.security_agent.can_access_library(current_user_roles, library)):
+        if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException('No library found with the id provided.')
         encoded_id = 'F' + trans.security.encode_id(library.root_folder.id)
         # appending root folder
@@ -123,7 +140,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             :func:`galaxy.model.LibraryDataset.to_dict` and
             :attr:`galaxy.model.LibraryFolder.dict_element_visible_keys`
         """
-        class_name, content_id = self.__decode_library_content_id(id)
+        class_name, content_id = self._decode_library_content_id(id)
         if class_name == 'LibraryFolder':
             content = self.get_library_folder(trans, content_id, check_ownership=False, check_accessible=True)
             rval = content.to_dict(view='element', value_mapper={'id': trans.security.encode_id})
@@ -140,7 +157,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval['parent_library_id'] = trans.security.encode_id(rval['parent_library_id'])
         return rval
 
-    @web.expose_api
+    @expose_api
     def create(self, trans, library_id, payload, **kwd):
         """
         create( self, trans, library_id, payload, **kwd )
@@ -168,7 +185,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             * upload_option: (optional) one of 'upload_file' (default), 'upload_directory' or 'upload_paths'
             * server_dir: (optional, only if upload_option is
                 'upload_directory') relative path of the subdirectory of Galaxy
-                ``library_import_dir`` to upload. All and only the files (i.e.
+                ``library_import_dir`` (if admin) or ``user_library_import_dir``
+                (if non-admin) to upload. All and only the files (i.e.
                 no subdirectories) contained in the specified directory will be
                 uploaded.
             * filesystem_paths: (optional, only if upload_option is
@@ -203,7 +221,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return "Missing required 'folder_id' parameter."
         else:
             folder_id = payload.pop('folder_id')
-            class_name, folder_id = self.__decode_library_content_id(folder_id)
+            class_name, folder_id = self._decode_library_content_id(folder_id)
         try:
             # security is checked in the downstream controller
             parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
@@ -211,6 +229,8 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             return str(e)
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id(parent.id)
+
+        payload['tag_using_filenames'] = util.string_as_bool(payload.get('tag_using_filenames', None))
 
         # are we copying an HDA to the library folder?
         #   we'll need the id and any message to attach, then branch to that private function
@@ -227,9 +247,9 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         # Now create the desired content object, either file or folder.
         if create_type == 'file':
-            status, output = trans.webapp.controllers['library_common'].upload_library_dataset(trans, 'api', library_id, real_folder_id, **payload)
+            status, output = self._upload_library_dataset(trans, library_id, real_folder_id, **payload)
         elif create_type == 'folder':
-            status, output = trans.webapp.controllers['library_common'].create_folder(trans, 'api', real_folder_id, library_id, **payload)
+            status, output = self._create_folder(trans, real_folder_id, library_id, **payload)
         elif create_type == 'collection':
             # Not delegating to library_common, so need to check access to parent
             # folder here.
@@ -266,6 +286,64 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                                  url=url_for('library_content', library_id=library_id, id=encoded_id)))
             return rval
 
+    def _upload_library_dataset(self, trans, library_id, folder_id, **kwd):
+        replace_id = kwd.get('replace_id', None)
+        replace_dataset = None
+        upload_option = kwd.get('upload_option', 'upload_file')
+        dbkey = kwd.get('dbkey', '?')
+        if isinstance(dbkey, list):
+            last_used_build = dbkey[0]
+        else:
+            last_used_build = dbkey
+        roles = kwd.get('roles', '')
+        is_admin = trans.user_is_admin
+        current_user_roles = trans.get_current_user_roles()
+        if replace_id not in ['', None, 'None']:
+            replace_dataset = trans.sa_session.query(trans.app.model.LibraryDataset).get(trans.security.decode_id(replace_id))
+            self._check_access(trans, is_admin, replace_dataset, current_user_roles)
+            self._check_modify(trans, is_admin, replace_dataset, current_user_roles)
+            library = replace_dataset.folder.parent_library
+            folder = replace_dataset.folder
+            # The name is stored - by the time the new ldda is created, replace_dataset.name
+            # will point to the new ldda, not the one it's replacing.
+            if not last_used_build:
+                last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
+        else:
+            folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
+            self._check_access(trans, is_admin, folder, current_user_roles)
+            self._check_add(trans, is_admin, folder, current_user_roles)
+            library = folder.parent_library
+        if folder and last_used_build in ['None', None, '?']:
+            last_used_build = folder.genome_build
+        error = False
+        if upload_option == 'upload_paths':
+            validate_path_upload(trans)  # Duplicate check made in _upload_dataset.
+        elif upload_option not in ('upload_file', 'upload_directory', 'upload_paths'):
+            error = True
+            message = 'Invalid upload_option'
+        elif roles:
+            # Check to see if the user selected roles to associate with the DATASET_ACCESS permission
+            # on the dataset that would cause accessibility issues.
+            vars = dict(DATASET_ACCESS_in=roles)
+            permissions, in_roles, error, message = \
+                trans.app.security_agent.derive_roles_from_access(trans, library.id, 'api', library=True, **vars)
+        if error:
+            return 400, message
+        else:
+            created_outputs_dict = self._upload_dataset(trans,
+                                                        library_id=trans.security.encode_id(library.id),
+                                                        folder_id=trans.security.encode_id(folder.id),
+                                                        replace_dataset=replace_dataset,
+                                                        **kwd)
+            if created_outputs_dict:
+                if type(created_outputs_dict) == str:
+                    return 400, created_outputs_dict
+                elif type(created_outputs_dict) == tuple:
+                    return created_outputs_dict[0], created_outputs_dict[1]
+                return 200, created_outputs_dict
+            else:
+                return 400, "Upload failed"
+
     def _scan_json_block(self, meta, prefix=""):
         """
         Scan a json style data structure, and emit all fields and their values.
@@ -293,7 +371,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             # for cross type comparisions, ie "True" == True
             yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
 
-    @web.expose_api
+    @expose_api
     def update(self, trans, id, library_id, payload, **kwd):
         """
         update( self, trans, id, library_id, payload, **kwd )
@@ -323,7 +401,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
             trans.sa_session.add(assoc)
             trans.sa_session.flush()
 
-    def __decode_library_content_id(self, content_id):
+    def _decode_library_content_id(self, content_id):
         if len(content_id) % 16 == 0:
             return 'LibraryDataset', content_id
         elif content_id.startswith('F'):
@@ -331,7 +409,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         else:
             raise HTTPBadRequest('Malformed library content id ( %s ) specified, unable to decode.' % str(content_id))
 
-    @web.expose_api
+    @expose_api
     def delete(self, trans, library_id, id, **kwd):
         """
         delete( self, trans, library_id, id, **kwd )
@@ -360,7 +438,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
         rval = {'id': id}
         try:
             ld = self.get_library_dataset(trans, id, check_ownership=False, check_accessible=True)
-            user_is_admin = trans.user_is_admin()
+            user_is_admin = trans.user_is_admin
             can_modify = trans.app.security_agent.can_modify_library_item(trans.user.all_roles(), ld)
             log.debug('is_admin: %s, can_modify: %s', user_is_admin, can_modify)
             if not (user_is_admin or can_modify):
@@ -384,7 +462,7 @@ class LibraryContentsController(BaseAPIController, UsesLibraryMixin, UsesLibrary
                     try:
                         ld.library_dataset_dataset_association.dataset.full_delete()
                         trans.sa_session.add(ld.dataset)
-                    except:
+                    except Exception:
                         pass
                     # flush now to preserve deleted state in case of later interruption
                     trans.sa_session.flush()

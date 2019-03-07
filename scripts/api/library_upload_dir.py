@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+
 import argparse
 import os
 import sys
@@ -6,7 +8,7 @@ import sys
 from bioblend import galaxy
 
 
-class Uploader:
+class Uploader(object):
 
     def __init__(self, url, api, library_id, folder_id, should_link,
                  non_local):
@@ -66,14 +68,11 @@ class Uploader:
 
         fk = '/'.join(path_parts)
         if fk in self.memo_path:
-            # print "Cache hit %s" % fk
             return self.memo_path[fk]
         else:
-            # print "Cache miss %s" % fk
             for i in reversed(range(len(path_parts))):
                 fk = '/'.join(path_parts[0:i + 1])
                 if fk in self.memo_path:
-                    # print "Parent folder hit %s" % fk
                     dropped_prefix = path_parts[0:i + 1]
                     path_parts = path_parts[i + 1:]
                     base_folder = self.memo_path[fk]
@@ -84,7 +83,7 @@ class Uploader:
             nfk.append('/'.join(list(dropped_prefix) + list(path_parts[0:i + 1])))
 
         # Recursively create the path from our base_folder starting points,
-        # gettting the IDs of each folder per path component
+        # getting the IDs of each folder per path component
         ids = self.recursively_build_path(path_parts, base_folder)
 
         # These are then associated with the paths.
@@ -102,7 +101,6 @@ class Uploader:
         else:
             pf = self.gi.libraries.create_folder(self.library_id, path_parts[0], base_folder_id=parent_folder_id)
             ids.append(pf[0]['id'])
-            # print "create_folder(%s, %s, %s) = %s" % (self.library_id, path_parts[0], parent_folder_id, pf[0]['id'])
             return self.recursively_build_path(path_parts[1:], pf[0]['id'], ids=ids)
 
     # http://stackoverflow.com/questions/13505819/python-split-path-recursively/13505966#13505966

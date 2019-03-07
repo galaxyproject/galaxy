@@ -6,7 +6,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.model.metadata import MetadataCollection
 
 
-class RecursiveNone:
+class RecursiveNone(object):
     def __str__(self):
         return "None"
 
@@ -18,8 +18,9 @@ class RecursiveNone:
         setattr(self, name, value)
         return value
 
-    def __nonzero__(self):
+    def __bool__(self):
         return False
+    __nonzero__ = __bool__
 
 
 class NoneDataset(RecursiveNone):

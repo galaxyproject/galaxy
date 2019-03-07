@@ -6,6 +6,6 @@
 # appropriate files.
 ---
 -
-    image: bgruening/docker-hicbrowser
+    image: quay.io/bgruening/hicbrowser
     description: |
         A simple web browser to visualize Hi-C and other genomic tracks

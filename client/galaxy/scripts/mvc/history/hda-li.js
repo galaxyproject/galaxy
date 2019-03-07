@@ -1,10 +1,8 @@
-define([
-    "mvc/dataset/dataset-li",
-    "mvc/base-mvc",
-    "utils/localization"
-], function( DATASET_LI, BASE_MVC, _l ){
-
-'use strict';
+import _ from "underscore";
+import DATASET_LI from "mvc/dataset/dataset-li";
+import BASE_MVC from "mvc/base-mvc";
+import HISTORY_ITEM_LI from "mvc/history/history-item-li";
+import _l from "utils/localization";
 
 //==============================================================================
 var _super = DATASET_LI.DatasetListItemView;
@@ -14,67 +12,58 @@ var _super = DATASET_LI.DatasetListItemView;
  *      to render the HID.
  */
 var HDAListItemView = _super.extend(
-/** @lends HDAListItemView.prototype */{
+    /** @lends HDAListItemView.prototype */ {
+        className: `${_super.prototype.className} history-content`,
 
-    className : _super.prototype.className + " history-content",
+        initialize: function(attributes, options) {
+            _super.prototype.initialize.call(this, attributes, options);
+        },
 
-    initialize : function( attributes, options ){
-        _super.prototype.initialize.call( this, attributes, options );
-    },
-
-    // ......................................................................... misc
-    /** String representation */
-    toString : function(){
-        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
-        return 'HDAListItemView(' + modelString + ')';
+        // ......................................................................... misc
+        /** String representation */
+        toString: function() {
+            var modelString = this.model ? `${this.model}` : "(no model)";
+            return `HDAListItemView(${modelString})`;
+        }
     }
-});
+);
 
 // ............................................................................ TEMPLATES
 /** underscore templates */
-HDAListItemView.prototype.templates = (function(){
+HDAListItemView.prototype.templates = (() => {
+    var titleBarTemplate = dataset => `
+        <div class="title-bar clear" tabindex="0">
+            <span class="state-icon"></span>
+            <div class="title">
+                <span class="hid">${dataset.hid}</span>
+                <span class="name">${_.escape(dataset.name)}</span>
+            </div>
+            </br>
+            ${HISTORY_ITEM_LI.nametagTemplate(dataset)}
+        </div>
+    `;
 
-    var titleBarTemplate = BASE_MVC.wrapTemplate([
-        // adding the hid display to the title
-        '<div class="title-bar clear" tabindex="0">',
-            '<span class="state-icon"></span>',
-            '<div class="title">',
-                //TODO: remove whitespace and use margin-right
-                '<span class="hid"><%- dataset.hid %></span> ',
-                '<span class="name"><%- dataset.name %></span>',
-            '</div>',
-            '</br>',
-            '<span class="nametags">',
-                '<% _.each(_.sortBy(_.uniq(dataset.tags), function(x) { return x }), function(tag){ %>',
-                    '<% if (tag.indexOf("name:") == 0){ %>',
-                        '<span class="label label-info"><%- tag.slice(5) %></span>',
-                    '<% } %>',
-                '<% }); %>',
-            '</span>',
-        '</div>'
-    ], 'dataset' );
-
-    var warnings = _.extend( {}, _super.prototype.templates.warnings, {
-        hidden : BASE_MVC.wrapTemplate([
-            // add a warning when hidden
-            '<% if( !dataset.visible ){ %>',
+    var warnings = _.extend({}, _super.prototype.templates.warnings, {
+        hidden: BASE_MVC.wrapTemplate(
+            [
+                // add a warning when hidden
+                "<% if( !dataset.visible ){ %>",
                 '<div class="hidden-msg warningmessagesmall">',
-                    _l( 'This dataset has been hidden' ),
-                '</div>',
-            '<% } %>'
-        ], 'dataset' )
+                _l("This dataset has been hidden"),
+                "</div>",
+                "<% } %>"
+            ],
+            "dataset"
+        )
     });
 
-    return _.extend( {}, _super.prototype.templates, {
-        titleBar : titleBarTemplate,
-        warnings : warnings
+    return _.extend({}, _super.prototype.templates, {
+        titleBar: titleBarTemplate,
+        warnings: warnings
     });
-}());
-
-
+})();
 
 //==============================================================================
-    return {
-        HDAListItemView  : HDAListItemView
-    };
-});
+export default {
+    HDAListItemView: HDAListItemView
+};

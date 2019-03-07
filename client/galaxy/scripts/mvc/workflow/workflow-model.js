@@ -1,25 +1,24 @@
-define([
-    "mvc/base-mvc",
-], function( baseMVC ){
-/* global Backbone */
+import Backbone from "backbone";
+import { getAppRoot } from "onload/loadConfig";
+import baseMVC from "mvc/base-mvc";
+
 // workflow model
 
-var logNamespace = 'workflow';
+var logNamespace = "workflow";
 //==============================================================================
 /** @class model for a single workflow.
  *  @name WorkflowItem
  *  @augments Backbone.Model
  */
-var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
-    _logNamespace : logNamespace,
+var WorkflowItem = Backbone.Model.extend(baseMVC.LoggableMixin).extend({
+    _logNamespace: logNamespace,
 
-    urlRoot: '/api/workflows',
+    urlRoot: `${getAppRoot()}api/workflows`,
 
-    toJSON: function(){
-    // need to overwrite this as endpoint expects the 'workflow' key in payload
-    return {workflow : this.attributes};
-    },
-
+    toJSON: function() {
+        // need to overwrite this as endpoint expects the 'workflow' key in payload
+        return { workflow: this.attributes };
+    }
 });
 
 //==============================================================================
@@ -29,16 +28,12 @@ var WorkflowItem = Backbone.Model.extend( baseMVC.LoggableMixin ).extend({
  */
 var WorkflowCollection = Backbone.Collection.extend({
     model: WorkflowItem,
-    url: '/api/workflows',
-
-  });
+    url: `${getAppRoot()}api/workflows`
+});
 
 //==============================================================================
 
-return {
+export default {
     WorkflowItem: WorkflowItem,
-    WorkflowCollection: WorkflowCollection,
+    WorkflowCollection: WorkflowCollection
 };
-
-
-});

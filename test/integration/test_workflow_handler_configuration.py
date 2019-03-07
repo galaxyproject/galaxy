@@ -2,7 +2,6 @@
 
 import os
 import re
-
 from json import dumps
 
 from base import integration_util

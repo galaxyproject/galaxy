@@ -2,17 +2,12 @@
 Unit tests for ``galaxy.web.framework.webapp``
 """
 import logging
-import os
 import re
-import sys
 import unittest
 
 import galaxy.config
 from galaxy.web.framework import webapp as Webapp
-
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import galaxy_mock
+from ...unittest_utils import galaxy_mock
 
 log = logging.getLogger(__name__)
 
@@ -23,13 +18,13 @@ class StubGalaxyWebTransaction(Webapp.GalaxyWebTransaction):
 
 
 class CORSParsingMockConfig(galaxy_mock.MockAppConfig):
-    # we can't use the actual Configuration for parsing*, so steal the parser for the mock instead
-    # *It causes problems when it's change to tempfile.tempdir persists across tests
-    _parse_allowed_origin_hostnames = galaxy.config.Configuration._parse_allowed_origin_hostnames.__func__
-
     def __init__(self, **kwargs):
         super(CORSParsingMockConfig, self).__init__(**kwargs)
         self.allowed_origin_hostnames = self._parse_allowed_origin_hostnames(kwargs)
+
+    @staticmethod
+    def _parse_allowed_origin_hostnames(kwargs):
+        return galaxy.config.Configuration._parse_allowed_origin_hostnames(kwargs)
 
 
 class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
@@ -61,7 +56,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
 
         # should parse regex if using fwd slashes, string otherwise
         hostnames = config._parse_allowed_origin_hostnames({
-            "allowed_origin_hostnames": "/host\d{2}/,geocities.com,miskatonic.edu"
+            "allowed_origin_hostnames": r"/host\d{2}/,geocities.com,miskatonic.edu"
         })
         self.assertTrue(isinstance(hostnames[0], re._pattern_type))
         self.assertTrue(isinstance(hostnames[1], str))
@@ -85,13 +80,13 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         self.assert_cors_header_equals(trans.response.headers, 'http://xxdarkhackerxx.disney.com')
 
         # subdomains should pass
-        trans = self._new_trans(allowed_origin_hostnames='something.com,/^[\w\.]*beep\.com/')
+        trans = self._new_trans(allowed_origin_hostnames=r'something.com,/^[\w\.]*beep\.com/')
         trans.request.headers['Origin'] = 'http://boop.beep.com'
         trans.set_cors_headers()
         self.assert_cors_header_equals(trans.response.headers, 'http://boop.beep.com')
 
         # ports should work
-        trans = self._new_trans(allowed_origin_hostnames='somethingelse.com,/^[\w\.]*beep\.com/')
+        trans = self._new_trans(allowed_origin_hostnames=r'somethingelse.com,/^[\w\.]*beep\.com/')
         trans.request.headers['Origin'] = 'http://boop.beep.com:8080'
         trans.set_cors_headers()
         self.assert_cors_header_equals(trans.response.headers, 'http://boop.beep.com:8080')
@@ -109,7 +104,7 @@ class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
         self.assert_cors_header_missing(trans.response.headers)
 
         # unicode should work
-        trans = self._new_trans(allowed_origin_hostnames='/öbb\.at/')
+        trans = self._new_trans(allowed_origin_hostnames=r'/öbb\.at/')
         trans.request.headers['Origin'] = 'http://öbb.at'
         trans.set_cors_headers()
         self.assertEqual(

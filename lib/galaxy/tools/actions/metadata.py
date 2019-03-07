@@ -2,10 +2,9 @@ import logging
 import os
 from json import dumps
 
-from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.jobs.datasets import DatasetPath
+from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.util.odict import odict
-
 from . import ToolAction
 
 log = logging.getLogger(__name__)
@@ -18,6 +17,7 @@ class SetMetadataToolAction(ToolAction):
         """
         Execute using a web transaction.
         """
+        trans.check_user_activation()
         job, odict = self.execute_via_app(tool, trans.app, trans.get_galaxy_session().id,
                                           trans.history.id, trans.user, incoming, set_output_hid,
                                           overwrite, history, job_params)
@@ -60,10 +60,9 @@ class SetMetadataToolAction(ToolAction):
         try:
             # For backward compatibility, some tools may not have versions yet.
             job.tool_version = tool.version
-        except:
+        except AttributeError:
             job.tool_version = "1.0.1"
         job.state = job.states.WAITING  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
-        job.set_handler(tool.get_job_handler(job_params))
         sa_session.add(job)
         sa_session.flush()  # ensure job.id is available
 
@@ -75,8 +74,11 @@ class SetMetadataToolAction(ToolAction):
         job_working_dir = app.object_store.get_filename(job, base_dir='job_work', dir_only=True, extra_dir=str(job.id))
         datatypes_config = os.path.join(job_working_dir, 'registry.xml')
         app.datatypes_registry.to_xml_file(path=datatypes_config)
-        external_metadata_wrapper = JobExternalOutputMetadataWrapper(job)
-        cmd_line = external_metadata_wrapper.setup_external_metadata(dataset,
+        external_metadata_wrapper = get_metadata_compute_strategy(app, job.id)
+        output_datatasets_dict = {
+            dataset_name: dataset,
+        }
+        cmd_line = external_metadata_wrapper.setup_external_metadata(output_datatasets_dict,
                                                                      sa_session,
                                                                      exec_dir=None,
                                                                      tmp_dir=job_working_dir,
@@ -104,7 +106,7 @@ class SetMetadataToolAction(ToolAction):
         sa_session.flush()
 
         # Queue the job for execution
-        app.job_queue.put(job.id, tool.id)
+        app.job_manager.enqueue(job, tool=tool)
         # FIXME: need to add event logging to app and log events there rather than trans.
         # trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
 

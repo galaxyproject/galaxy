@@ -1,15 +1,18 @@
 """
 Code to support database helper scripts (create_db.py, manage_db.py, etc...).
 """
+import argparse
 import logging
+import os.path
 
-from galaxy.util import listify
+from galaxy.util.path import get_ext
 from galaxy.util.properties import find_config_file, load_app_properties
+from galaxy.util.script import populate_config_args
 
 
 log = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_FILE = 'config/galaxy.ini'
+DEFAULT_CONFIG_NAMES = ['galaxy', 'universe_wsgi']
 DEFAULT_CONFIG_PREFIX = ''
 DEFAULT_DATABASE = 'galaxy'
 
@@ -17,15 +20,19 @@ DATABASE = {
     "galaxy":
         {
             'repo': 'lib/galaxy/model/migrate',
-            'old_config_files': ['universe_wsgi.ini'],
+            'default_sqlite_file': './database/universe.sqlite',
+            'config_override': 'GALAXY_CONFIG_',
+        },
+    "tools":
+        {
+            'repo': 'lib/tool_shed/galaxy_install/migrate',
             'default_sqlite_file': './database/universe.sqlite',
             'config_override': 'GALAXY_CONFIG_',
         },
     "tool_shed":
         {
             'repo': 'lib/galaxy/webapps/tool_shed/model/migrate',
-            'config_file': 'config/tool_shed.yml',
-            'old_config_files': ['config/tool_shed.ini', 'tool_shed_wsgi.ini'],
+            'config_names': ['tool_shed', 'tool_shed_wsgi'],
             'default_sqlite_file': './database/community.sqlite',
             'config_override': 'TOOL_SHED_CONFIG_',
             'config_section': 'tool_shed',
@@ -33,7 +40,6 @@ DATABASE = {
     "install":
         {
             'repo': 'lib/galaxy/model/tool_shed_install/migrate',
-            'old_config_files': ['universe_wsgi.ini'],
             'config_prefix': 'install_',
             'default_sqlite_file': './database/install.sqlite',
             'config_override': 'GALAXY_INSTALL_CONFIG_',
@@ -41,22 +47,42 @@ DATABASE = {
 }
 
 
-def read_config_file_arg(argv, default, old_defaults, cwd=None):
-    config_file = None
-    if '-c' in argv:
-        pos = argv.index('-c')
-        argv.pop(pos)
-        config_file = argv.pop(pos)
-    old_defaults = listify(old_defaults)
-    return find_config_file(default, old_defaults, config_file, cwd=cwd)
+def _read_model_arguments(argv, use_argparse=False):
+    if use_argparse:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('database', metavar='DATABASE', type=str,
+                            default="galaxy",
+                            nargs='?',
+                            help='database to target (galaxy, tool_shed, install)')
+        populate_config_args(parser)
+        args = parser.parse_args(argv[1:] if argv else [])
+        return args.config_file, args.config_section, args.database
+    else:
+        config_file = None
+        for arg in ["-c", "--config", "--config-file"]:
+            if arg in argv:
+                pos = argv.index(arg)
+                argv.pop(pos)
+                config_file = argv.pop(pos)
+        config_section = None
+        if "--config-section" in argv:
+            pos = argv.index("--config-section")
+            argv.pop(pos)
+            config_section = argv.pop(pos)
+        if argv and (argv[-1] in DATABASE):
+            database = argv.pop()  # database name tool_shed, galaxy, or install.
+        else:
+            database = 'galaxy'
+        return config_file, config_section, database
 
 
-def get_config(argv, cwd=None):
+def get_config(argv, use_argparse=True, cwd=None):
     """
     Read sys.argv and parse out repository of migrations and database url.
 
     >>> import os
-    >>> from ConfigParser import SafeConfigParser
+    >>> from six.moves.configparser import SafeConfigParser
+    >>> from shutil import rmtree
     >>> from tempfile import mkdtemp
     >>> config_dir = mkdtemp()
     >>> os.makedirs(os.path.join(config_dir, 'config'))
@@ -77,25 +103,26 @@ def get_config(argv, cwd=None):
     'sqlite:///moo.sqlite?isolation_level=IMMEDIATE'
     >>> config['repo']
     'lib/galaxy/model/migrate'
+    >>> rmtree(config_dir)
     """
-    if argv and (argv[-1] in DATABASE):
-        database = argv.pop()  # database name tool_shed, galaxy, or install.
-    else:
-        database = 'galaxy'
+    config_file, config_section, database = _read_model_arguments(argv, use_argparse=use_argparse)
     database_defaults = DATABASE[database]
+    if config_file is None:
+        config_names = database_defaults.get('config_names', DEFAULT_CONFIG_NAMES)
+        if cwd:
+            cwd = [cwd, os.path.join(cwd, 'config')]
+        config_file = find_config_file(config_names, dirs=cwd)
 
-    default = database_defaults.get('config_file', DEFAULT_CONFIG_FILE)
-    old_defaults = database_defaults.get('old_config_files')
-    config_file = read_config_file_arg(argv, default, old_defaults, cwd=cwd)
     repo = database_defaults['repo']
     config_prefix = database_defaults.get('config_prefix', DEFAULT_CONFIG_PREFIX)
     config_override = database_defaults.get('config_override', 'GALAXY_CONFIG_')
     default_sqlite_file = database_defaults['default_sqlite_file']
-    if config_file.endswith(".yml") or config_file.endswith(".yml.sample"):
-        config_section = database_defaults.get('config_section', None)
-    else:
-        # An .ini file - just let load_app_properties find app:main.
-        config_section = None
+    if config_section is None:
+        if not config_file or get_ext(config_file, ignore='sample') == 'yaml':
+            config_section = database_defaults.get('config_section', None)
+        else:
+            # Just use the default found by load_app_properties.
+            config_section = None
     properties = load_app_properties(config_file=config_file, config_prefix=config_override, config_section=config_section)
 
     if ("%sdatabase_connection" % config_prefix) in properties:

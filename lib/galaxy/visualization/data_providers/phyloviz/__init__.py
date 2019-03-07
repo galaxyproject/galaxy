@@ -2,8 +2,8 @@
 """ Data providers code for PhyloViz """
 
 from galaxy.visualization.data_providers.basic import BaseDataProvider
-from galaxy.visualization.data_providers.phyloviz.nexusparser import Nexus_Parser
 from galaxy.visualization.data_providers.phyloviz.newickparser import Newick_Parser
+from galaxy.visualization.data_providers.phyloviz.nexusparser import Nexus_Parser
 from galaxy.visualization.data_providers.phyloviz.phyloxmlparser import Phyloxml_Parser
 
 
@@ -26,7 +26,7 @@ class PhylovizDataProvider(BaseDataProvider):
         jsonDicts = []
         rval = {'dataset_type': self.dataset_type}
 
-        if file_ext == "nhx":  # parses newick files
+        if file_ext in ["newick", "nhx"]:  # parses newick files
             newickParser = Newick_Parser()
             jsonDicts, parseMsg = newickParser.parseFile(file_name)
         elif file_ext == "phyloxml":  # parses phyloXML files

@@ -1,6 +1,8 @@
 """
 Migration script to add the skip_tool_test table and add the test_install_error column to the repository_metadata table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -33,7 +35,7 @@ SkipToolTest_table = Table("skip_tool_test", metadata,
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     # Initialize.
@@ -55,14 +57,14 @@ def upgrade(migrate_engine):
             c.create(RepositoryMetadata_table, index_name="ix_repository_metadata_ttie")
             assert c is RepositoryMetadata_table.c.test_install_error
             migrate_engine.execute("UPDATE repository_metadata SET test_install_error=%s" % default_false)
-        except Exception as e:
-            print "Adding test_install_error column to the repository_metadata table failed: %s" % str(e)
+        except Exception:
+            log.exception("Adding test_install_error column to the repository_metadata table failed.")
 
     # Create skip_tool_test table.
     try:
         SkipToolTest_table.create()
-    except Exception as e:
-        print "Creating the skip_tool_test table failed: %s" % str(e)
+    except Exception:
+        log.exception("Creating the skip_tool_test table failed.")
 
 
 def downgrade(migrate_engine):
@@ -72,12 +74,12 @@ def downgrade(migrate_engine):
     # Drop the skip_tool_test table.
     try:
         SkipToolTest_table.drop()
-    except Exception as e:
-        print "Dropping the skip_tool_test table failed: %s" % str(e)
+    except Exception:
+        log.exception("Dropping the skip_tool_test table failed.")
 
     # Drop test_install_error column from the repository_metadata table.
     RepositoryMetadata_table = Table("repository_metadata", metadata, autoload=True)
     try:
         RepositoryMetadata_table.c.test_install_error.drop()
-    except Exception as e:
-        print "Dropping column test_install_error from the repository_metadata table failed: %s" % str(e)
+    except Exception:
+        log.exception("Dropping column test_install_error from the repository_metadata table failed.")

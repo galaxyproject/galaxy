@@ -25,7 +25,7 @@ def solid2sanger(quality_string, min_qual=0):
                 return False
                 break
             sanger += chr(int(qv) + 33)
-        except:
+        except Exception:
             pass
     return sanger
 
@@ -178,7 +178,7 @@ def main():
         try:
             con = sqlite3.connect(db.name)
             cur = con.cursor()
-        except:
+        except Exception:
             stop_err('Cannot connect to %s\n') % db.name
 
         merge_reads_qual(fr, fq, con, trim_name=options.trim_name, out='db', double_encode=options.de, trim_first_base=options.trim_first_base, min_qual=options.min_qual, table_name="f3")

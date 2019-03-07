@@ -6,8 +6,7 @@ import logging
 from galaxy.util import biostar
 from galaxy.util import string_as_bool
 from galaxy.web.base.controller import url_for
-
-from ..plugins import ErrorPlugin
+from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 
@@ -25,6 +24,12 @@ class BiostarsPlugin(ErrorPlugin):
     def submit_report(self, dataset, job, tool, **kwargs):
         """Doesn't do anything, just shows a link to submit on biostars.
         """
+        # This class specifically does nothing special for compliance purposes
+        # because the user is willingly posting their data on a public
+        # first/third-party site. Maybe should do something about the dialog
+        # linking to the biostars privacy policy during the "submit to
+        # biostars" dialog?
+
         try:
             assert biostar.biostar_enabled(self.app), ValueError("Biostar is not configured for this galaxy instance")
             assert self.app.config.biostar_enable_bug_reports, ValueError("Biostar is not configured to allow bug reporting for this galaxy instance")

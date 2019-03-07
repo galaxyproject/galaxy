@@ -50,7 +50,7 @@ import re
 import sys
 import tempfile
 
-assert sys.version_info[:2] >= (2.4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def stop_err(msg):
@@ -442,10 +442,10 @@ def convert_fastqsolexa_to_fasta_qual(infile_name, query_fasta, query_qual):
             fastq_integer = True
             # peek: ascii or digits?
             val = line.split()[0]
+            fastq_integer = True
             try:
                 int(val)
-                fastq_integer = True
-            except:
+            except ValueError:
                 fastq_integer = False
 
             if fastq_integer:
@@ -529,7 +529,7 @@ def __main__():
                 spaced_seed = sys.argv[5]
             else:
                 stop_err('Error in assigning parameter: Spaced seed.')
-        except:
+        except Exception:
             stop_err('Spaced seed must be a combination of 1s and 0s.')
 
         seed_matches_per_window = sys.argv[6]

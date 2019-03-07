@@ -4,7 +4,6 @@ Graph content classes.
 import logging
 
 from galaxy.util import simplegraph
-
 from . import (
     data,
     dataproviders,
@@ -28,7 +27,7 @@ class Xgmml(xml.GenericXml):
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'XGMML data'
         else:
             dataset.peek = 'file does not exist'
@@ -74,7 +73,7 @@ class Sif(tabular.Tabular):
         Set the peek and blurb text
         """
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name, is_multi_byte=is_multi_byte)
+            dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = 'SIF data'
         else:
             dataset.peek = 'file does not exist'

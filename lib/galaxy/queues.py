@@ -4,7 +4,11 @@ All message queues used by Galaxy
 
 """
 
-from kombu import Exchange, Queue, Connection
+from kombu import (
+    Connection,
+    Exchange,
+    Queue
+)
 
 ALL_CONTROL = "control.*"
 galaxy_exchange = Exchange('galaxy_core_exchange', type='topic')

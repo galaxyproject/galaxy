@@ -1,4 +1,6 @@
 """Migration script to add the type column to the repository table."""
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -19,7 +21,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     Repository_table = Table("repository", metadata, autoload=True)
@@ -28,8 +30,8 @@ def upgrade(migrate_engine):
         # Create
         c.create(Repository_table, index_name="ix_repository_type")
         assert c is Repository_table.c.type
-    except Exception as e:
-        print "Adding type column to the repository table failed: %s" % str(e)
+    except Exception:
+        log.exception("Adding type column to the repository table failed.")
     # Update the type column to have the default unrestricted value.
     cmd = "UPDATE repository SET type = 'unrestricted'"
     migrate_engine.execute(cmd)
@@ -42,5 +44,5 @@ def downgrade(migrate_engine):
     Repository_table = Table("repository", metadata, autoload=True)
     try:
         Repository_table.c.type.drop()
-    except Exception as e:
-        print "Dropping column type from the repository table failed: %s" % str(e)
+    except Exception:
+        log.exception("Dropping column type from the repository table failed.")

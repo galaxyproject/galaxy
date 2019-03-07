@@ -5,11 +5,11 @@ Pages are markup created and saved by users that can contain Galaxy objects
 (such as datasets) and are often used to describe or present an analysis
 from within Galaxy.
 """
+import logging
 
 from galaxy import model
 from galaxy.managers import sharable
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -40,6 +40,7 @@ class PageSerializer(sharable.SharableModelSerializer):
     """
     Interface/service object for serializing pages into dictionaries.
     """
+    model_manager_class = PageManager
     SINGLE_CHAR_ABBR = 'p'
 
     def __init__(self, app):

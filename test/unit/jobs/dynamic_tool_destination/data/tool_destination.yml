@@ -22,7 +22,7 @@ tools:
         lower_bound: 5
         upper_bound: Infinity
         destination: Destination3
-    default_destination: waffles_default
+    default_destination: cluster_default
 
   test_overlap:
     rules:
@@ -46,7 +46,7 @@ tools:
         lower_bound: 5
         upper_bound: Infinity
         destination: Destination5
-    default_destination: waffles_default
+    default_destination: cluster_default
 
   test_db:
     rules:
@@ -61,7 +61,7 @@ tools:
         lower_bound: 0
         upper_bound: 1 KB
         destination: Destination4
-    default_destination: waffles_default
+    default_destination: cluster_default
 
   test_db_high:
     rules:
@@ -70,7 +70,7 @@ tools:
         lower_bound: 0
         upper_bound: Infinity
         destination: Destination5
-    default_destination: waffles_default
+    default_destination: cluster_default
 
   test_arguments:
     rules:
@@ -79,7 +79,7 @@ tools:
         arguments:
           careful: true
         destination: Destination6
-    default_destination: waffles_default
+    default_destination: cluster_default
 
-default_destination: waffles_default
+default_destination: cluster_default
 verbose: True

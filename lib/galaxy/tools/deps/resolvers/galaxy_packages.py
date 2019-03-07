@@ -1,5 +1,4 @@
 import logging
-
 from os import listdir
 from os.path import (
     basename,
@@ -10,15 +9,14 @@ from os.path import (
     realpath,
 )
 
-from .resolver_mixins import UsesToolDependencyDirMixin
-
-from ..resolvers import (
+from . import (
     Dependency,
     DependencyResolver,
     ListableDependencyResolver,
     MappableDependencyResolver,
     NullDependency,
 )
+from .resolver_mixins import UsesToolDependencyDirMixin
 
 log = logging.getLogger(__name__)
 
@@ -27,23 +25,22 @@ class GalaxyPackageDependency(Dependency):
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['script', 'path', 'version', 'name']
     dependency_type = 'galaxy_package'
 
-    def __init__(self, script, path, version, name, exact=True):
+    def __init__(self, script, path, name, type, version, exact=True):
         self.script = script
         self.path = path
-        self.version = version
         self.name = name
+        self.type = type
+        self.version = version
         self._exact = exact
+        assert self.script is not None or self.path is not None
 
     @property
     def exact(self):
         return self._exact
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         base_path = self.path
-        if self.script is None and base_path is None:
-            log.warning("Failed to resolve dependency on '%s', ignoring", requirement.name)
-            commands = None
-        elif requirement.type == 'package' and self.script is None:
+        if self.type == 'package' and self.script is None:
             commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; PATH="%s/bin:$PATH"; export PATH' % (base_path, base_path)
         else:
             commands = 'PACKAGE_BASE=%s; export PACKAGE_BASE; . %s' % (base_path, self.script)
@@ -83,7 +80,7 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
     def _find_dep_versioned(self, name, version, type='package', **kwds):
         base_path = self.base_path
         path = join(base_path, name, version)
-        return self._galaxy_package_dep(path, version, name, True)
+        return self._galaxy_package_dep(path, version, name, type, True)
 
     def _find_dep_default(self, name, type='package', exact=True, **kwds):
         base_path = self.base_path
@@ -91,16 +88,16 @@ class BaseGalaxyPackageDependencyResolver(DependencyResolver, UsesToolDependency
         if islink(path):
             real_path = realpath(path)
             real_version = basename(real_path)
-            return self._galaxy_package_dep(real_path, real_version, name, exact)
+            return self._galaxy_package_dep(real_path, real_version, name, type, exact)
         else:
             return NullDependency(version=None, name=name)
 
-    def _galaxy_package_dep(self, path, version, name, exact):
+    def _galaxy_package_dep(self, path, version, name, type, exact):
         script = join(path, 'env.sh')
         if exists(script):
-            return self.dependency_type(script, path, version, name, exact)
+            return self.dependency_type(script, path, name, type, version, exact)
         elif exists(join(path, 'bin')):
-            return self.dependency_type(None, path, version, name, exact)
+            return self.dependency_type(None, path, name, type, version, exact)
         return NullDependency(version=version, name=name)
 
 

@@ -1,39 +1,15 @@
-# Location of your galaxy config file. The radio telescope will need to
-# partially initialize a copy of galaxy.
-galaxy_config: config/galaxy.ini
-
 grt:
-    # Go to https://telescope.galaxyproject.org to obtain an Instance ID and API key
-    instance_id: 
-    api_key: 
+    # Register at https://telescope.galaxyproject.org to obtain an Instance ID and API key
+    instance_id:
+    api_key:
+
     # Galaxy Project offers a public galactic-radio-telescope instance, however
     # you are free to run your own if you need. We would love it if you were
     # willing and able to contribute your data publicly.
-    url: http://localhost:8080
-    # Are you willing to share your toolbox? I.e. what tools are installed.
-    # If your instance is public, this can help us direct users to your
-    # instance. If you elect to not send your entire toolbox, we will still
-    # (necessarily) receive a list of tools that have been run, just not the
-    # complete list. WARNING: This may not work on production instances, currently.
-    share_toolbox: False
-
+    url: https://telescope.galaxyproject.org/grt-admin/
 
 sanitization:
     # Blacklist the entire tool from appearing
     tools:
         - __SET_METADATA__
         - upload1
-    # Or you can blacklist individual parameters from being submitted, e.g. if
-    # you have API keys as a tool parameter.
-    tool_params:
-        # Or to blacklist under a specific tool, just specify the ID
-        some_tool_id:
-            - dbkey
-            # If you need to specify a parameter multiple levels deep, you can
-            # do that as well. Currently we only support blacklisting via the
-            # full path, rather than just a path component. So everything under
-            # `path.to.parameter` will be blacklisted.
-            - path.to.parameter
-            # However you could not do "parameter" and have everything under
-            # `path.to.parameter` be removed.
-            # Repeats are rendered as an *, e.g.: repeat_name.*.values

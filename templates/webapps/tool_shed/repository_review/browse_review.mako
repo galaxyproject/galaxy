@@ -10,12 +10,11 @@
 %>
 
 <%def name="stylesheets()">
-    ${h.css('base','jquery.rating')}
+    ${h.css('base')}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
 ${render_tool_shed_repository_actions( repository=repository, changeset_revision=review.changeset_revision )}
@@ -57,7 +56,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                             if can_browse:
                                 # Initialize Private check box.
                                 private_check_box_name = '%s%sprivate' % ( component.name, STRSEP )
-                                private_check_box = CheckboxField( name=private_check_box_name, checked=component_review.private )
+                                private_check_box = CheckboxField( name=private_check_box_name, value=component_review.private )
                                 
                                 # Initialize star rating.
                                 rating_name = '%s%srating' % ( component.name, STRSEP )
@@ -73,7 +72,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                                         <tr>
                                             <td>
                                                 <label>Private:</label>
-                                                ${private_check_box.get_html( disabled=True )}
+                                                ${render_checkbox(private_check_box, disabled=True)}
                                                 <div class="toolParamHelp" style="clear: both;">
                                                     A private review can be accessed only by the owner of the repository and authorized repository reviewers.
                                                 </div>

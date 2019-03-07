@@ -59,7 +59,7 @@ class YamlToolConfSource(ToolConfSource):
 
     def __init__(self, config_filename):
         with open(config_filename, "r") as f:
-            as_dict = yaml.load(f)
+            as_dict = yaml.safe_load(f)
         self.as_dict = as_dict
 
     def parse_tool_path(self):

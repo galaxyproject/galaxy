@@ -1,6 +1,7 @@
 <%inherit file="/webapps/reports/base_panels.mako"/>
 
 <%def name="init()">
+    ${parent.init()}
     <%
         self.has_left_panel=True
         self.has_right_panel=False
@@ -11,17 +12,11 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ## Include "base.css" for styling tool menu and forms (details)
-    ${h.css( "base", "autocomplete_tagging" )}
+    ${h.css( "base" )}
 
     ## But make sure styles for the layout take precedence
     ${parent.stylesheets()}
 
-    <style type="text/css">
-        body { margin: 0; padding: 0; overflow: hidden; }
-        #left {
-            background: #C1C9E5 url("${h.url_for('/static/style/menu_bg.png')}") top repeat-x;
-        }
-    </style>
 </%def>
 
 <%def name="javascripts()">
@@ -36,7 +31,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'><span>Reports</span>
             <a target="galaxy_main" href="${h.url_for( controller='home', action='run_stats' )}">
-                <button id="reports_home" data-toggle="tooltip" data-placement="top" title="Dashboard" class="btn btn-default primary-button" type="button"><span class="fa fa-home"></span></button>
+                <button id="reports_home" data-toggle="tooltip" data-placement="top" title="Dashboard" class="btn btn-secondary primary-button" type="button"><span class="fa fa-home"></span></button>
             </a>
         </div>
     </div>
@@ -115,17 +110,6 @@
                   <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='system', action='index' )}">Disk space maintenance</a></div>
-                    </div>
-                </div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle">
-                    <span>Sample Tracking</span>
-                </div>
-                <div class="toolSectionBody">
-                    <div class="toolSectionBg">
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_month_all' )}">Sequencing requests per month</a></div>
-                        <div class="toolTitle"><a target="galaxy_main" href="${h.url_for( controller='sample_tracking', action='per_user' )}">Sequencing requests per user</a></div>
                     </div>
                 </div>
             </div>

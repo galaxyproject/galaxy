@@ -1,0 +1,104 @@
+.navbar-fixed-top .navbar-brand {
+    font-family: Verdana;
+    font-weight: bold;
+    font-size: 160%;
+}
+
+// Don't wrap text inside pre
+pre {
+    overflow: auto;
+    word-wrap: normal;
+    white-space: pre;
+}
+
+.alert {
+    word-wrap: break-word;
+}
+
+.btn.hover {
+    $btn: hover();
+}
+
+// Allow text in buttons to wrap
+.btn {
+    white-space: normal;
+}
+
+.btn-secondary {
+    border: 1px solid $border-default-color;
+}
+
+.popover .popover-body {
+    font-size: $font-size-base;
+}
+
+.dropdown-menu {
+    max-width: auto;
+    .dropdown-item {
+        text-decoration: none;
+    }
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    margin-left: 0.5ex;
+    margin-right: 0.5ex;
+    float: left;
+}
+
+// Override badge's few default CSS
+.badge-tags {
+    background-color: #3189a3;
+    padding: 0.2em 0.6em 0.3em;
+    border-radius: 0.15rem;
+}
+
+// Modal -- wider by default, scroll like Trello
+
+.modal-dialog {
+    width: 690px;
+    max-width: 900px; // BS4 sets this to 500px now, so width not respected.
+}
+
+.pagination {
+    > .active > a {
+        background-color: #ebd9b2;
+        color: black;
+        &:hover {
+            color: black;
+            background-color: #ebd9b2;
+        }
+    }
+}
+
+// Scroll modal body.
+.modal-body {
+    overflow: auto;
+}
+
+// Tabs -- border color is hardcoded in navs.scss, change to $btnBorder here
+
+.nav-tabs {
+    @extend .mb-2;
+}
+
+// Don't make blockquotes very large since they're often used in the toolform
+// and this does not look nice to have a quoted portion of a tool's help
+// documentation be rendered 150% larger.
+div.ui-form-help {
+    blockquote {
+        p {
+            font-size: inherit;
+            font-weight: inherit;
+            line-height: inherit;
+        }
+    }
+}
+
+// pre styling
+pre.code {
+    white-space: pre-wrap;
+    background: #1d1f21;
+    color: white;
+    padding: 1em;
+}

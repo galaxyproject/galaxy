@@ -3,7 +3,7 @@ import logging
 from markupsafe import escape
 from sqlalchemy import and_, false, null, or_, true
 
-from galaxy.web.framework.helpers import grids
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.grids.repository_grids import RepositoryGrid
 from tool_shed.util import hg_util, metadata_util
@@ -45,7 +45,6 @@ class ComponentGrid(grids.Grid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -57,7 +56,7 @@ class RepositoriesWithReviewsGrid(RepositoryGrid):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
                 rval = ''
-                repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+                repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = hg_util.get_rev_label_from_changeset_revision(repo, changeset_revision)
@@ -349,7 +348,6 @@ class RepositoryReviewsByUserGrid(grids.Grid):
     ]
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):

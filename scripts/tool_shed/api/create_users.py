@@ -18,6 +18,7 @@ are available in the test public Tool Shed and create each of them in a local de
 
 ./create_users.py -a <api key> -f http://testtoolshed.g2.bx.psu.edu -t http://localhost:9009
 """
+from __future__ import print_function
 
 import argparse
 
@@ -45,7 +46,7 @@ def main(options):
                 response = submit(url, data, api_key)
             except Exception as e:
                 response = str(e)
-                print "Error attempting to create user using URL: ", url, " exception: ", str(e)
+                print("Error attempting to create user using URL: ", url, " exception: ", e)
             create_response_dict = dict(response=response)
             create_response_dicts.append(create_response_dict)
 

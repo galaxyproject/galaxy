@@ -1,30 +1,31 @@
 """
-If the current installed python version is not 2.7, prints an error
+If the current installed Python version is not supported, prints an error
 message to stderr and returns 1
 """
 from __future__ import print_function
 
 import sys
 
+version_string = '.'.join(str(_) for _ in sys.version_info[:3])
+
 msg = """ERROR: Your Python version is: %s
-Galaxy is currently supported on Python 2.7 only.  To run Galaxy,
-please download and install a supported version from python.org.  If a
-supported version is installed but is not your default, getgalaxy.org
-contains instructions on how to force Galaxy to use a different version.""" % sys.version[:3]
+Galaxy is currently supported on Python 2.7 and >=3.5 . To run Galaxy, please
+install a supported Python version. If a supported version is already
+installed but is not your default, https://galaxyproject.org/admin/python/
+contains instructions on how to force Galaxy to use a different version.""" % version_string
 
 
 def check_python():
-    try:
-        assert sys.version_info[:2] == (2, 7)
-    except AssertionError:
+    if sys.version_info[:2] == (2, 7) or sys.version_info[:2] >= (3, 5):
+        # supported
+        return
+    else:
         print(msg, file=sys.stderr)
-        raise
+        raise Exception(msg)
 
 
 if __name__ == '__main__':
-    rval = 0
     try:
         check_python()
     except Exception:
-        rval = 1
-    sys.exit(rval)
+        sys.exit(1)

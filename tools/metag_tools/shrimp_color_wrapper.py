@@ -52,7 +52,7 @@ def __main__():
                 spaced_seed = sys.argv[4]
             else:
                 stop_err('Error in assigning parameter: Spaced seed.')
-        except:
+        except Exception:
             stop_err('Spaced seed must be a combination of 1s and 0s.')
 
         seed_matches_per_window = sys.argv[5]

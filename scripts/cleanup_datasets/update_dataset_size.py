@@ -2,6 +2,8 @@
 """
 Updates dataset.size column.
 Remember to backup your database before running.
+
+Deprecated - this doesn't work with modern Galaxy configurations options.
 """
 from __future__ import print_function
 
@@ -10,9 +12,11 @@ import sys
 
 from six.moves import configparser
 
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, 'lib')))
+
 import galaxy.app
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def usage(prog):
@@ -24,7 +28,7 @@ running.
 
 
 def main():
-    if len(sys.argv) != 1 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
+    if len(sys.argv) != 2 or sys.argv[1] == "-h" or sys.argv[1] == "--help":
         usage(sys.argv[0])
         sys.exit()
     ini_file = sys.argv.pop(1)

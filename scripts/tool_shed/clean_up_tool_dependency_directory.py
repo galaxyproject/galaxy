@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import argparse
 import os
 import shutil
@@ -6,12 +8,12 @@ import sys
 
 def main(args):
     if not os.path.exists(args.tool_dependency_dir):
-        print 'Tool dependency base path %s does not exist, creating.' % str(args.tool_dependency_dir)
+        print('Tool dependency base path "%s" does not exist, creating.' % args.tool_dependency_dir)
         os.mkdir(args.tool_dependency_dir)
         return 0
     else:
         for content in os.listdir(args.tool_dependency_dir):
-            print 'Deleting directory %s from %s.' % (content, args.tool_dependency_dir)
+            print('Deleting directory "%s" from "%s" .' % (content, args.tool_dependency_dir))
             full_path = os.path.join(args.tool_dependency_dir, content)
             if os.path.isdir(full_path):
                 shutil.rmtree(full_path)

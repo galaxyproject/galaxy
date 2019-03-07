@@ -13,7 +13,7 @@ from xml.etree.ElementTree import Element
 import yaml
 
 import galaxy.util
-
+from galaxy.util.bunch import Bunch
 from . import (
     binary,
     coverage,
@@ -71,6 +71,7 @@ class Registry(object):
         # Keep a list of imported proprietary datatype class modules.
         self.imported_modules = []
         self.datatype_elems = []
+        self.datatype_info_dicts = []
         self.sniffer_elems = []
         self._registry_xml_string = None
         self._edam_formats_mapping = None
@@ -103,6 +104,7 @@ class Registry(object):
             #           proprietary_datatype_module="blast"
             #           proprietary_path="[cloned repository path]"
             #           type="galaxy.datatypes.blast:BlastXml" />
+            compressed_sniffers = {}
             handling_proprietary_datatypes = False
             if not isinstance(config, Element):
                 # Parse datatypes_conf.xml
@@ -136,6 +138,13 @@ class Registry(object):
                 extension = self.get_extension(elem)
                 dtype = elem.get('type', None)
                 type_extension = elem.get('type_extension', None)
+                auto_compressed_types = galaxy.util.listify(elem.get('auto_compressed_types', ''))
+                sniff_compressed_types = galaxy.util.string_as_bool_or_none(elem.get("sniff_compressed_types", "None"))
+                if sniff_compressed_types is None:
+                    sniff_compressed_types = getattr(self.config, "sniff_compressed_dynamic_datatypes_default", True)
+                    # Make sure this is set in the elems we write out so the config option is passed to the upload
+                    # tool which does not have a config object.
+                    elem.set("sniff_compressed_types", str(sniff_compressed_types))
                 mimetype = elem.get('mimetype', None)
                 display_in_upload = galaxy.util.string_as_bool(elem.get('display_in_upload', False))
                 # If make_subclass is True, it does not necessarily imply that we are subclassing a datatype that is contained
@@ -195,7 +204,7 @@ class Registry(object):
                                 fields = dtype.split(':')
                                 datatype_module = fields[0]
                                 datatype_class_name = fields[1]
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception('Error parsing datatype definition for dtype %s', str(dtype))
                                 ok = False
                             if ok:
@@ -225,13 +234,13 @@ class Registry(object):
                                             module = getattr(module, mod)
                                         datatype_class = getattr(module, datatype_class_name)
                                         self.log.debug('Retrieved datatype module %s:%s from the datatype registry.' % (str(datatype_module), datatype_class_name))
-                                    except Exception as e:
+                                    except Exception:
                                         self.log.exception('Error importing datatype module %s', str(datatype_module))
                                         ok = False
                         elif type_extension is not None:
                             try:
                                 datatype_class = self.datatypes_by_extension[type_extension].__class__
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception('Error determining datatype_class for type_extension %s', str(type_extension))
                                 ok = False
                         if ok:
@@ -250,7 +259,11 @@ class Registry(object):
                                         datatype_class.edam_format = edam_format
                                     if edam_data:
                                         datatype_class.edam_data = edam_data
-                                self.datatypes_by_extension[extension] = datatype_class()
+                                datatype_class.is_subclass = make_subclass
+                                description = elem.get("description", None)
+                                description_url = elem.get("description_url", None)
+                                datatype_instance = datatype_class()
+                                self.datatypes_by_extension[extension] = datatype_instance
                                 if mimetype is None:
                                     # Use default mimetype per datatype specification.
                                     mimetype = self.datatypes_by_extension[extension].get_mime()
@@ -290,6 +303,50 @@ class Registry(object):
                                     else:
                                         if elem not in self.display_app_containers:
                                             self.display_app_containers.append(elem)
+                                datatype_info_dict = {
+                                    "display_in_upload": display_in_upload,
+                                    "extension": extension,
+                                    "description": description,
+                                    "description_url": description_url,
+                                }
+                                composite_files = datatype_instance.composite_files
+                                if composite_files:
+                                    datatype_info_dict['composite_files'] = [_.dict() for _ in composite_files.values()]
+                                self.datatype_info_dicts.append(datatype_info_dict)
+
+                                for auto_compressed_type in auto_compressed_types:
+                                    compressed_extension = "%s.%s" % (extension, auto_compressed_type)
+                                    upper_compressed_type = auto_compressed_type[0].upper() + auto_compressed_type[1:]
+                                    auto_compressed_type_name = datatype_class_name + upper_compressed_type
+                                    attributes = {}
+                                    if auto_compressed_type == "gz":
+                                        dynamic_parent = binary.GzDynamicCompressedArchive
+                                    elif auto_compressed_type == "bz2":
+                                        dynamic_parent = binary.Bz2DynamicCompressedArchive
+                                    else:
+                                        raise Exception("Unknown auto compression type [%s]" % auto_compressed_type)
+                                    attributes["file_ext"] = compressed_extension
+                                    attributes["uncompressed_datatype_instance"] = datatype_instance
+                                    compressed_datatype_class = type(auto_compressed_type_name, (datatype_class, dynamic_parent, ), attributes)
+                                    if edam_format:
+                                        compressed_datatype_class.edam_format = edam_format
+                                    if edam_data:
+                                        compressed_datatype_class.edam_data = edam_data
+                                    compressed_datatype_instance = compressed_datatype_class()
+                                    self.datatypes_by_extension[compressed_extension] = compressed_datatype_instance
+                                    if display_in_upload and compressed_extension not in self.upload_file_formats:
+                                        self.upload_file_formats.append(compressed_extension)
+                                    self.datatype_info_dicts.append({
+                                        "display_in_upload": display_in_upload,
+                                        "extension": compressed_extension,
+                                        "description": description,
+                                        "description_url": description_url,
+                                    })
+                                    self.converters.append(("%s_to_uncompressed.xml" % auto_compressed_type, compressed_extension, extension))
+                                    if datatype_class not in compressed_sniffers:
+                                        compressed_sniffers[datatype_class] = []
+                                    if sniff_compressed_types:
+                                        compressed_sniffers[datatype_class].append(compressed_datatype_instance)
                                 # Processing the new datatype elem is now complete, so make sure the element defining it is retained by appending
                                 # the new datatype to the in-memory list of datatype elems to enable persistence.
                                 self.datatype_elems.append(elem)
@@ -306,22 +363,25 @@ class Registry(object):
             self.load_datatype_sniffers(root,
                                         deactivate=deactivate,
                                         handling_proprietary_datatypes=handling_proprietary_datatypes,
-                                        override=override)
+                                        override=override,
+                                        compressed_sniffers=compressed_sniffers)
             self.upload_file_formats.sort()
             # Load build sites
             self._load_build_sites(root)
         self.set_default_values()
 
         def append_to_sniff_order():
-            # Just in case any supported data types are not included in the config's sniff_order section.
-            for ext, datatype in self.datatypes_by_extension.items():
-                included = False
-                for atype in self.sniff_order:
-                    if isinstance(atype, datatype.__class__):
-                        included = True
-                        break
-                if not included:
+            sniff_order_classes = set(type(_) for _ in self.sniff_order)
+            for datatype in self.datatypes_by_extension.values():
+                # Add a datatype only if it is not already in sniff_order, it
+                # has a sniff() method and was not defined with subclass="true".
+                # Do not add dynamic compressed types - these were carefully added or not
+                # to the sniff order in the proper position above.
+                if type(datatype) not in sniff_order_classes and \
+                        hasattr(datatype, 'sniff') and not datatype.is_subclass and \
+                        not hasattr(datatype, "uncompressed_datatype_instance"):
                     self.sniff_order.append(datatype)
+
         append_to_sniff_order()
 
     def _load_build_sites(self, root):
@@ -359,7 +419,7 @@ class Registry(object):
             build_sites_config_file = getattr(self.config, "build_sites_config_file", None)
             if build_sites_config_file and os.path.exists(build_sites_config_file):
                 with open(build_sites_config_file, "r") as f:
-                    build_sites_config = yaml.load(f)
+                    build_sites_config = yaml.safe_load(f)
                 if not isinstance(build_sites_config, list):
                     self.log.exception("Build sites configuration YAML file does not declare list of sites.")
                     return
@@ -379,7 +439,7 @@ class Registry(object):
     def get_display_sites(self, site_type):
         return self.display_sites.get(site_type, [])
 
-    def load_datatype_sniffers(self, root, deactivate=False, handling_proprietary_datatypes=False, override=False):
+    def load_datatype_sniffers(self, root, deactivate=False, handling_proprietary_datatypes=False, override=False, compressed_sniffers=None):
         """
         Process the sniffers element from a parsed a datatypes XML file located at root_dir/config (if processing the Galaxy
         distributed config) or contained within an installed Tool Shed repository.  If deactivate is True, an installed Tool
@@ -401,7 +461,7 @@ class Registry(object):
                         datatype_module = fields[0]
                         datatype_class_name = fields[1]
                         module = None
-                    except Exception as e:
+                    except Exception:
                         self.log.exception('Error determining datatype class or module for dtype %s', str(dtype))
                         ok = False
                     if ok:
@@ -417,13 +477,13 @@ class Registry(object):
                                 module = __import__(datatype_module)
                                 for comp in datatype_module.split('.')[1:]:
                                     module = getattr(module, comp)
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception("Error importing datatype class for '%s'", str(dtype))
                                 ok = False
                         if ok:
                             try:
                                 aclass = getattr(module, datatype_class_name)()
-                            except Exception as e:
+                            except Exception:
                                 self.log.exception('Error calling method %s from class %s', str(datatype_class_name), str(module))
                                 ok = False
                             if ok:
@@ -453,11 +513,10 @@ class Registry(object):
                                                 del self.sniff_order[conflict_loc]
                                                 self.log.debug("Removed conflicting sniffer for datatype '%s'" % dtype)
                                             break
-                                    if conflict:
-                                        if override:
-                                            self.sniff_order.append(aclass)
-                                            self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
-                                    else:
+                                    if not conflict or override:
+                                        if compressed_sniffers and aclass.__class__ in compressed_sniffers:
+                                            for compressed_sniffer in compressed_sniffers[aclass.__class__]:
+                                                self.sniff_order.append(compressed_sniffer)
                                         self.sniff_order.append(aclass)
                                         self.log.debug("Loaded sniffer for datatype '%s'" % dtype)
                                     # Processing the new sniffer elem is now complete, so make sure the element defining it is loaded if necessary.
@@ -465,6 +524,10 @@ class Registry(object):
                                     if sniffer_class is not None:
                                         if sniffer_class not in sniffer_elem_classes:
                                             self.sniffer_elems.append(elem)
+
+    def is_extension_unsniffable_binary(self, ext):
+        datatype = self.get_datatype_by_extension(ext)
+        return datatype is not None and isinstance(datatype, binary.Binary) and not hasattr(datatype, 'sniff')
 
     def get_datatype_class_by_name(self, name):
         """
@@ -499,11 +562,7 @@ class Registry(object):
 
     def get_datatype_by_extension(self, ext):
         """Returns a datatype object based on an extension"""
-        try:
-            builder = self.datatypes_by_extension[ext]
-        except KeyError:
-            builder = None
-        return builder
+        return self.datatypes_by_extension.get(ext, None)
 
     def change_datatype(self, data, ext):
         data.extension = ext
@@ -723,6 +782,7 @@ class Registry(object):
                 'axt'           : 'text/plain',
                 'bam'           : 'application/octet-stream',
                 'bed'           : 'text/plain',
+                'blib'          : 'application/octet-stream',
                 'customtrack'   : 'text/plain',
                 'csfasta'       : 'text/plain',
                 'db3'           : 'application/octet-stream',
@@ -779,6 +839,7 @@ class Registry(object):
                 qualityscore.QualityScore454(),
                 sequence.Fasta(),
                 sequence.FastqSanger(),
+                sequence.FastqCSSanger(),
                 sequence.Fastq(),
                 interval.Wiggle(),
                 text.Html(),
@@ -817,14 +878,21 @@ class Registry(object):
             return converters[target_ext]
         return None
 
-    def find_conversion_destination_for_dataset_by_extensions(self, dataset, accepted_formats, converter_safe=True):
+    def find_conversion_destination_for_dataset_by_extensions(self, dataset_or_ext, accepted_formats, converter_safe=True):
         """Returns ( target_ext, existing converted dataset )"""
-        for convert_ext in self.get_converters_by_datatype(dataset.ext):
+        if hasattr(dataset_or_ext, "ext"):
+            ext = dataset_or_ext.ext
+            dataset = dataset_or_ext
+        else:
+            ext = dataset_or_ext
+            dataset = None
+
+        for convert_ext in self.get_converters_by_datatype(ext):
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning("Datatype class not found for extension '%s', which is used as target for conversion from datatype '%s'" % (convert_ext, dataset.ext))
             elif convert_ext_datatype.matches_any(accepted_formats):
-                converted_dataset = dataset.get_converted_files_by_type(convert_ext)
+                converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
                 if converted_dataset:
                     ret_data = converted_dataset
                 elif not converter_safe:
@@ -906,3 +974,12 @@ class Registry(object):
             Please change it to lower case" % extension)
             extension = extension.lower()
         return extension
+
+
+def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
+    galaxy_dir = galaxy.util.galaxy_directory()
+    sample_conf = os.path.join(galaxy_dir, "config", "datatypes_conf.xml.sample")
+    config = Bunch(sniff_compressed_dynamic_datatypes_default=sniff_compressed_dynamic_datatypes_default)
+    datatypes_registry = Registry(config)
+    datatypes_registry.load_datatypes(root_dir=galaxy_dir, config=sample_conf)
+    return datatypes_registry

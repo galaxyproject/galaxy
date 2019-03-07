@@ -2,18 +2,22 @@
 import logging
 
 from galaxy import util
-
-from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.managers import tags
+from galaxy.exceptions import (
+    InsufficientPermissionsException,
+    InternalServerError,
+    ObjectNotFound,
+    RequestParameterInvalidException
+)
+from galaxy.managers import (
+    datasets,
+    tags
+)
 from galaxy.util import validation
 
 log = logging.getLogger(__name__)
 
 
-class LibraryDatasetsManager(object):
+class LibraryDatasetsManager(datasets.DatasetAssociationManager):
     """Interface/service object for interacting with library datasets."""
 
     def __init__(self, app):
@@ -77,6 +81,10 @@ class LibraryDatasetsManager(object):
         if new_misc_info is not None and new_misc_info != ldda.info:
             ldda.info = new_misc_info
             changed = True
+        new_message = new_data.get('message', None)
+        if new_message is not None and new_message != ldda.message:
+            ldda.message = new_message
+            changed = True
         new_file_ext = new_data.get('file_ext', None)
         if new_file_ext is not None and new_file_ext != ldda.extension:
             ldda.extension = new_file_ext
@@ -102,7 +110,7 @@ class LibraryDatasetsManager(object):
                     raise RequestParameterInvalidException('%s must have at least length of %s' % (key, MINIMUM_STRING_LENGTH))
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
-            if key in ('misc_info'):
+            if key in ('misc_info', 'message'):
                 val = validation.validate_and_sanitize_basestring(key, val)
                 validated_payload[key] = val
             if key in ('file_ext'):
@@ -129,7 +137,7 @@ class LibraryDatasetsManager(object):
         :returns:   the original library dataset
         :rtype:     galaxy.model.LibraryDataset
         """
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             # all operations are available to an admin
             return ld
         if check_accessible:
@@ -169,7 +177,7 @@ class LibraryDatasetsManager(object):
         """
         if ld.deleted:
             raise ObjectNotFound('Library dataset with the id provided is deleted.')
-        elif trans.user_is_admin():
+        elif trans.user_is_admin:
             return ld
         if not trans.app.security_agent.can_modify_library_item(trans.get_current_user_roles(), ld):
             raise InsufficientPermissionsException('You do not have proper permission to modify this library dataset.')
@@ -195,17 +203,26 @@ class LibraryDatasetsManager(object):
         if len(expired_ldda_versions) > 0:
             rval['has_versions'] = True
             rval['expired_versions'] = expired_ldda_versions
+
+        ldda = ld.library_dataset_dataset_association
+        if ldda.creating_job_associations:
+            if ldda.creating_job_associations[0].job.stdout:
+                rval['job_stdout'] = ldda.creating_job_associations[0].job.stdout.strip()
+            if ldda.creating_job_associations[0].job.stderr:
+                rval['job_stderr'] = ldda.creating_job_associations[0].job.stderr.strip()
+        if ldda.dataset.uuid:
+            rval['uuid'] = str(ldda.dataset.uuid)
         rval['deleted'] = ld.deleted
         rval['folder_id'] = 'F' + rval['folder_id']
         rval['full_path'] = full_path
-        rval['file_size'] = util.nice_size(int(ld.library_dataset_dataset_association.get_size()))
-        rval['date_uploaded'] = ld.library_dataset_dataset_association.create_time.strftime("%Y-%m-%d %I:%M %p")
-        rval['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, ld) or trans.user_is_admin()
-        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ld.library_dataset_dataset_association.dataset)
-        rval['tags'] = self.tag_manager.get_tags_str(ld.library_dataset_dataset_association.tags)
+        rval['file_size'] = util.nice_size(int(ldda.get_size()))
+        rval['date_uploaded'] = ldda.create_time.strftime("%Y-%m-%d %I:%M %p")
+        rval['can_user_modify'] = trans.user_is_admin or trans.app.security_agent.can_modify_library_item(current_user_roles, ld)
+        rval['is_unrestricted'] = trans.app.security_agent.dataset_is_public(ldda.dataset)
+        rval['tags'] = self.tag_manager.get_tags_str(ldda.tags)
 
         #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
-        rval['can_user_manage'] = trans.app.security_agent.can_manage_dataset(current_user_roles, ld.library_dataset_dataset_association.dataset) or trans.user_is_admin()
+        rval['can_user_manage'] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(current_user_roles, ldda.dataset)
         return rval
 
     def _build_path(self, trans, folder):

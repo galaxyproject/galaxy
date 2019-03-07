@@ -7,7 +7,7 @@ assert sys.version_info[:2] >= (2, 4)
 
 
 # genbank_to_bed
-class Region:
+class Region(object):
     def __init__(self):
         self.qualifiers = {}
         self.start = None
@@ -37,7 +37,7 @@ class Region:
                     self.end = end
 
 
-class GenBankFeatureParser:
+class GenBankFeatureParser(object):
     """Parses Features from Single Locus GenBank file"""
     def __init__(self, fh, features_list=[]):
         self.fh = fh
@@ -137,7 +137,7 @@ def get_bed_from_GeneMark(geneMark_filename, chr):
     for block in orfs.split("\n\n"):
         if block.startswith("List of Regions of interest"):
             break
-        best_block = {'start': 0, 'end': 0, 'strand': '+', 'avg_prob': -sys.maxint, 'start_prob': -sys.maxint, 'name': 'DNE'}
+        best_block = {'start': 0, 'end': 0, 'strand': '+', 'avg_prob': -sys.maxsize, 'start_prob': -sys.maxsize, 'name': 'DNE'}
         ctr += 1
         ctr2 = 0
         for line in block.split("\n"):
@@ -155,12 +155,11 @@ def get_bed_from_GeneMark(geneMark_filename, chr):
             avg_prob = float(fields.pop(0))
             try:
                 start_prob = float(fields.pop(0))
-            except:
+            except Exception:
                 start_prob = 0
             name = "orf_" + str(ctr) + "_" + str(ctr2)
-            if avg_prob >= best_block['avg_prob']:
-                if start_prob > best_block['start_prob']:
-                    best_block = {'start': start, 'end': end, 'strand': strand, 'avg_prob': avg_prob, 'start_prob': start_prob, 'name': name}
+            if avg_prob >= best_block['avg_prob'] and start_prob > best_block['start_prob']:
+                best_block = {'start': start, 'end': end, 'strand': strand, 'avg_prob': avg_prob, 'start_prob': start_prob, 'name': name}
         regions.append(chr + "\t" + str(best_block['start']) + "\t" + str(best_block['end']) + "\t" + best_block['name'] + "\t" + str(int(best_block['avg_prob'] * 1000)) + "\t" + best_block['strand'])
     return regions
 
@@ -198,8 +197,8 @@ def get_bed_from_GeneMarkHMM(geneMarkHMM_filename, chr):
 # converts glimmer3 to bed, doing some linear scaling (probably not correct?) on scores
 # returns an array of bed regions
 def get_bed_from_glimmer3(glimmer3_filename, chr):
-    max_score = -sys.maxint
-    min_score = sys.maxint
+    max_score = -sys.maxsize
+    min_score = sys.maxsize
     orfs = []
     for line in open(glimmer3_filename).readlines():
         if line.startswith(">"):

@@ -29,7 +29,8 @@
 #   directory: /tmp/reports/
 
 # Submit error reports to sentry. If a sentry_dsn is configured in your
-# galaxy.ini, then Galaxy will submit the job error to Sentry.
+# galaxy.ini, then Galaxy will submit the job error to Sentry. You may supply a
+# separate DSN for tool reports by supplying a ``custom_dsn`` parameter.
 - type: sentry
   user_submission: false
 
@@ -46,8 +47,20 @@
 # errors InfluxDB allowing you to notice relationships between tool errors and
 # other infrastructure issues.
 # - type: influxdb
-#   # All arguments prefixed with `influxdb_` are per http://influxdb-python.readthedocs.io/en/latest/api-documentation.html#influxdbclient
+#   # All arguments prefixed with `influxdb_` are per https://influxdb-python.readthedocs.io/en/latest/api-documentation.html#influxdbclient
 #   influxdb_host: 127.0.0.1
 #   influxdb_port: 8086
 #   influxdb_database: galaxy
 #   influxdb_timeout: 2
+
+# Github error reporting backend. You will need to `pip install pygithub` in
+# the galaxy virtualenv. This will create a new issue if none exists, and
+# comment on existing, open issues. The issues are labelled based on tool ID /
+# version and include all of the information the normal emailed bug reports
+# include. If you use a private Github Enterprise deployment, you can set
+# github_base_url='https://...'
+# - type: github
+#   user_submission: true
+#   github_oauth_token: 00000000000
+#   github_repo_owner: galaxyproject
+#   github_repo_name: galaxy

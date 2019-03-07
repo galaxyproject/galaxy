@@ -196,7 +196,7 @@ class ContainerDescription(object):
 def parse_requirements_from_dict(root_dict):
     requirements = root_dict.get("requirements", [])
     containers = root_dict.get("containers", [])
-    return ToolRequirements.from_list(requirements), map(ContainerDescription.from_dict, containers)
+    return ToolRequirements.from_list(requirements), [ContainerDescription.from_dict(c) for c in containers]
 
 
 def parse_requirements_from_xml(xml_root):
@@ -240,7 +240,7 @@ def parse_requirements_from_xml(xml_root):
     if requirements_elem is not None:
         container_elems = requirements_elem.findall('container')
 
-    containers = map(container_from_element, container_elems)
+    containers = [container_from_element(c) for c in container_elems]
 
     return requirements, containers
 

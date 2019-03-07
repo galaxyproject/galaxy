@@ -1,23 +1,36 @@
 import logging
 import os
-import urllib
-import json
 
-from markupsafe import escape
 import paste.httpexceptions
+from markupsafe import escape
 from six import string_types, text_type
+from six.moves.urllib.parse import (
+    quote_plus,
+    unquote_plus
+)
 from sqlalchemy import false, true
 
-from galaxy import datatypes, model, util, web
-from galaxy import managers
+from galaxy import (
+    datatypes,
+    managers,
+    model,
+    util,
+    web
+)
+from galaxy.datatypes import sniff
 from galaxy.datatypes.display_applications.util import decode_dataset_user, encode_dataset_user
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.util import inflector, smart_str
+from galaxy.util import (
+    inflector,
+    sanitize_text,
+    smart_str
+)
+from galaxy.util.checkers import check_binary
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import form_builder
 from galaxy.web.base.controller import BaseUIController, ERROR, SUCCESS, url_for, UsesExtendedMetadataMixin
-from galaxy.web.framework.helpers import grids, iff, time_ago, to_unicode
+from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +72,7 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
         grids.TextColumn("Name", key="name",
                          # Link name to dataset's history.
                          link=(lambda item: iff(item.history.deleted, None, dict(operation="switch", id=item.id))), filterable="advanced", attach_popup=True),
-        HistoryColumn("History", key="history", sortable=False, target="inbound",
+        HistoryColumn("History", key="history", sortable=False,
                       link=(lambda item: iff(item.history.deleted, None, dict(operation="switch_history", id=item.id)))),
         grids.IndividualTagsColumn("Tags", key="tags", model_tag_association_class=model.HistoryDatasetAssociationTagAssociation, filterable="advanced", grid_name="HistoryDatasetAssocationListGrid"),
         StatusColumn("Status", key="deleted", attach_popup=False),
@@ -76,8 +89,6 @@ class HistoryDatasetAssociationListGrid(grids.Grid):
     ]
     standard_filters = []
     default_filter = dict(name="All", deleted="False", tags="All")
-    preserve_state = False
-    use_async = True
     use_paging = True
     num_rows_per_page = 50
 
@@ -115,7 +126,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         roles = trans.get_current_user_roles()
         if additional_roles:
             roles = roles + additional_roles
-        return (allow_admin and trans.user_is_admin()) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
+        return (allow_admin and trans.user_is_admin) or trans.app.security_agent.can_access_dataset(roles, dataset_association.dataset)
 
     @web.expose
     def errors(self, trans, id):
@@ -132,7 +143,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             job = self._get_job_for_dataset(trans, dataset_id)
             stdout = job.stdout
-        except:
+        except Exception:
             stdout = "Invalid dataset ID or you are not allowed to access this dataset"
         return smart_str(stdout)
 
@@ -144,7 +155,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             job = self._get_job_for_dataset(trans, dataset_id)
             stderr = job.stderr
-        except:
+        except Exception:
             stderr = "Invalid dataset ID or you are not allowed to access this dataset"
         return smart_str(stderr)
 
@@ -155,7 +166,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         try:
             job = self._get_job_for_dataset(trans, dataset_id)
             exit_code = job.exit_code
-        except:
+        except Exception:
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
         return exit_code
 
@@ -175,7 +186,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         file_ext = data.metadata.spec.get(metadata_name).get("file_ext", metadata_name)
         trans.response.headers["Content-Type"] = "application/octet-stream"
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy%s-[%s].%s"' % (data.hid, fname, file_ext)
-        return open(data.metadata.get(metadata_name).file_name)
+        return open(data.metadata.get(metadata_name).file_name, 'rb')
 
     def _check_dataset(self, trans, hda_id):
         # DEPRECATION: We still support unencoded ids for backward compatibility
@@ -183,10 +194,10 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(self.decode_id(hda_id))
             if data is None:
                 raise ValueError('Invalid reference dataset id: %s.' % hda_id)
-        except:
+        except Exception:
             try:
                 data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(hda_id))
-            except:
+            except Exception:
                 data = None
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable("Invalid reference dataset id: %s." % str(hda_id))
@@ -194,7 +205,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return trans.show_error_message("You are not allowed to access this dataset")
         if data.purged:
             return trans.show_error_message("The dataset you are attempting to view has been purged.")
-        if data.deleted and not (trans.user_is_admin() or (data.history and trans.get_user() == data.history.user)):
+        if data.deleted and not (trans.user_is_admin or (data.history and trans.get_user() == data.history.user)):
             return trans.show_error_message("The dataset you are attempting to view has been deleted.")
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message("Please wait until this dataset finishes uploading before attempting to view it.")
@@ -239,55 +250,283 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             ck_size = int(ck_size)
         return data.datatype.display_data(trans, data, preview, filename, to_ext, offset=offset, ck_size=ck_size, **kwd)
 
-    @web.expose
-    @web.json
-    def edit(self, trans, dataset_id=None, filename=None, hid=None, **kwd):
-        """Allows user to modify parameters of an HDA."""
-        message = None
-        status = 'done'
-        error = False
+    @web.expose_api_anonymous
+    def get_edit(self, trans, dataset_id=None, **kwd):
+        """Produces the input definitions available to modify dataset attributes"""
+        status = None
+        data, message = self._get_dataset_for_edit(trans, dataset_id)
+        if message:
+            return message
 
+        if self._can_access_dataset(trans, data):
+            if data.state == trans.model.Dataset.states.UPLOAD:
+                return self.message_exception(trans, 'Please wait until this dataset finishes uploading before attempting to edit its metadata.')
+            # let's not overwrite the imported datatypes module with the variable datatypes?
+            # the built-in 'id' is overwritten in lots of places as well
+            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.items() if dtype_value.allow_datatype_change]
+            ldatatypes.sort()
+            all_roles = [(r.name, trans.security.encode_id(r.id)) for r in trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')]
+            data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
+            converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
+            can_manage_dataset = trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset)
+            # attribute editing
+            attribute_inputs = [{
+                'name' : 'name',
+                'type' : 'text',
+                'label': 'Name',
+                'value': data.get_display_name()
+            }, {
+                'name' : 'info',
+                'type' : 'text',
+                'area' : True,
+                'label': 'Info',
+                'value': data.info
+            }, {
+                'name' : 'annotation',
+                'type' : 'text',
+                'area' : True,
+                'label': 'Annotation',
+                'value': self.get_item_annotation_str(trans.sa_session, trans.user, data),
+                'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
+            }]
+            for name, spec in data_metadata:
+                if spec.visible:
+                    attributes = data.metadata.get_metadata_parameter(name, trans=trans)
+                    if type(attributes) is form_builder.SelectField:
+                        attribute_inputs.append({
+                            'type'      : 'select',
+                            'multiple'  : attributes.multiple,
+                            'optional'  : spec.get('optional'),
+                            'name'      : name,
+                            'label'     : spec.desc,
+                            'options'   : attributes.options,
+                            'value'     : attributes.value if attributes.multiple else [attributes.value]
+                        })
+                    elif type(attributes) is form_builder.TextField:
+                        attribute_inputs.append({
+                            'type'      : 'text',
+                            'name'      : name,
+                            'label'     : spec.desc,
+                            'value'     : attributes.value,
+                            'readonly'  : spec.get('readonly')
+                        })
+            if data.missing_meta():
+                message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
+                status = 'warning'
+            # datatype conversion
+            conversion_options = [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
+            conversion_disable = len(conversion_options) == 0
+            conversion_inputs = [{
+                'type'      : 'select',
+                'name'      : 'target_type',
+                'label'     : 'Name',
+                'help'      : 'This will create a new dataset with the contents of this dataset converted to a new format.',
+                'options'   : conversion_options
+            }]
+            # datatype changeing
+            datatype_options = [(ext_name, ext_id) for ext_id, ext_name in ldatatypes]
+            datatype_disable = len(datatype_options) == 0
+            datatype_inputs = [{
+                'type'      : 'select',
+                'name'      : 'datatype',
+                'label'     : 'New Type',
+                'options'   : datatype_options,
+                'value'     : [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
+                'help'      : 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
+            }]
+            # permissions
+            permission_disable = True
+            permission_inputs = list()
+            if trans.user:
+                if data.dataset.actions:
+                    in_roles = {}
+                    for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
+                        in_roles[action.action] = [trans.security.encode_id(role.id) for role in roles]
+                    for index, action in trans.app.model.Dataset.permitted_actions.items():
+                        if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
+                            help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
+                        else:
+                            help_text = action.description
+                        permission_inputs.append({
+                            'type'      : 'select',
+                            'multiple'  : True,
+                            'optional'  : True,
+                            'name'      : index,
+                            'label'     : action.action,
+                            'help'      : help_text,
+                            'options'   : all_roles,
+                            'value'     : in_roles.get(action.action),
+                            'readonly'  : not can_manage_dataset
+                        })
+                    permission_disable = not can_manage_dataset
+                else:
+                    permission_inputs.append({
+                        'name'      : 'access_public',
+                        'type'      : 'hidden',
+                        'label'     : 'This dataset is accessible by everyone (it is public).',
+                        'readonly'  : True
+                    })
+            else:
+                permission_inputs.append({
+                    'name'      : 'no_access',
+                    'type'      : 'hidden',
+                    'label'     : 'Permissions not available (not logged in).',
+                    'readonly'  : True
+                })
+            return {
+                'display_name'      : data.get_display_name(),
+                'message'           : message,
+                'status'            : status,
+                'dataset_id'        : dataset_id,
+                'attribute_inputs'  : attribute_inputs,
+                'conversion_inputs' : conversion_inputs,
+                'conversion_disable': conversion_disable,
+                'datatype_inputs'   : datatype_inputs,
+                'datatype_disable'  : datatype_disable,
+                'permission_inputs' : permission_inputs,
+                'permission_disable': permission_disable
+            }
+        else:
+            return self.message_exception(trans, 'You do not have permission to edit this dataset\'s ( id: %s ) information.' % str(dataset_id))
+
+    @web.expose_api_anonymous
+    def set_edit(self, trans, payload=None, **kwd):
+        """Allows user to modify parameters of an HDA."""
         def __ok_to_edit_metadata(dataset_id):
             # prevent modifying metadata when dataset is queued or running as input/output
             # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
             for job_to_dataset_association in trans.sa_session.query(
-                    self.app.model.JobToInputDatasetAssociation) \
-                    .filter_by(dataset_id=dataset_id) \
-                    .all() \
-                    + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation) \
-                    .filter_by(dataset_id=dataset_id) \
-                    .all():
+                    self.app.model.JobToInputDatasetAssociation).filter_by(dataset_id=dataset_id).all() \
+                    + trans.sa_session.query(self.app.model.JobToOutputDatasetAssociation).filter_by(dataset_id=dataset_id).all():
                 if job_to_dataset_association.job.state not in [job_to_dataset_association.job.states.OK, job_to_dataset_association.job.states.ERROR, job_to_dataset_association.job.states.DELETED]:
                     return False
             return True
-        if hid is not None:
-            history = trans.get_history()
-            # TODO: hid handling
-            data = history.datasets[int(hid) - 1]
-            id = None
-        elif dataset_id is not None:
+
+        status = 'success'
+        operation = payload.get('operation')
+        dataset_id = payload.get('dataset_id')
+        data, message = self._get_dataset_for_edit(trans, dataset_id)
+        if message:
+            return message
+
+        if operation == 'attributes':
+            # The user clicked the Save button on the 'Edit Attributes' form
+            data.name = payload.get('name')
+            data.info = payload.get('info')
+            if __ok_to_edit_metadata(data.id):
+                # The following for loop will save all metadata_spec items
+                for name, spec in data.datatype.metadata_spec.items():
+                    if not spec.get('readonly'):
+                        setattr(data.metadata, name, spec.unwrap(payload.get(name) or None))
+                data.datatype.after_setting_metadata(data)
+                # Sanitize annotation before adding it.
+                if payload.get('annotation'):
+                    annotation = sanitize_html(payload.get('annotation'))
+                    self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
+                # if setting metadata previously failed and all required elements have now been set, clear the failed state.
+                if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
+                    data._state = None
+                message = 'Attributes updated. %s' % message if message else 'Attributes updated.'
+            else:
+                message = 'Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata.'
+                status = 'warning'
+            trans.sa_session.flush()
+        elif operation == 'datatype':
+            # The user clicked the Save button on the 'Change data type' form
+            datatype = payload.get('datatype')
+            if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(datatype).allow_datatype_change:
+                # prevent modifying datatype when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata(data.id):
+                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
+                else:
+                    trans.app.datatypes_registry.change_datatype(data, datatype)
+                    trans.sa_session.flush()
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
+                    message = 'Changed the type to %s.' % datatype
+            else:
+                return self.message_exception(trans, 'You are unable to change datatypes in this manner. Changing %s to %s is not allowed.' % (data.extension, datatype))
+        elif operation == 'datatype_detect':
+            # The user clicked the 'Detect datatype' button on the 'Change data type' form
+            if data.datatype.allow_datatype_change:
+                # prevent modifying datatype when dataset is queued or running as input/output
+                if not __ok_to_edit_metadata(data.id):
+                    return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.')
+                else:
+                    path = data.dataset.file_name
+                    is_binary = check_binary(path)
+                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order, is_binary=is_binary)
+                    trans.app.datatypes_registry.change_datatype(data, datatype)
+                    trans.sa_session.flush()
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(
+                        trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data},
+                        overwrite=False)  # overwrite is False as per existing behavior
+                    message = 'Detection was finished and changed the datatype to %s.' % datatype
+            else:
+                return self.message_exception(trans, 'Changing datatype "%s" is not allowed.' % (data.extension))
+        elif operation == 'autodetect':
+            # The user clicked the Auto-detect button on the 'Edit Attributes' form
+            # prevent modifying metadata when dataset is queued or running as input/output
+            if not __ok_to_edit_metadata(data.id):
+                return self.message_exception(trans, 'This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them.')
+            else:
+                for name, spec in data.metadata.spec.items():
+                    # We need to be careful about the attributes we are resetting
+                    if name not in ['name', 'info', 'dbkey', 'base_name']:
+                        if spec.get('default'):
+                            setattr(data.metadata, name, spec.unwrap(spec.get('default')))
+                message = 'Attributes have been queued to be updated.'
+                trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
+                trans.sa_session.flush()
+        elif operation == 'conversion':
+            target_type = payload.get('target_type')
+            if target_type:
+                try:
+                    message = data.datatype.convert_dataset(trans, data, target_type)
+                except Exception as e:
+                    return self.message_exception(trans, str(e))
+        elif operation == 'permission':
+            if not trans.user:
+                return self.message_exception(trans, 'You must be logged in if you want to change permissions.')
+            if trans.app.security_agent.can_manage_dataset(trans.get_current_user_roles(), data.dataset):
+                payload_permissions = {}
+                for action in trans.app.model.Dataset.permitted_actions.keys():
+                    payload_permissions[action] = [trans.security.decode_id(role_id) for role_id in util.listify(payload.get(action))]
+                # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
+                # need to ensure that they did not associate roles that would cause accessibility problems.
+                permissions, in_roles, error, message = \
+                    trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
+                if error:
+                    # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
+                    access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
+                    permissions[access_action] = data.dataset.get_access_roles(trans)
+                    trans.sa_session.refresh(data.dataset)
+                    return self.message_exception(trans, message)
+                else:
+                    error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
+                    trans.sa_session.refresh(data.dataset)
+                    if error:
+                        return self.message_exception(trans, error)
+                    else:
+                        message = 'Your changes completed successfully.'
+            else:
+                return self.message_exception(trans, 'You are not authorized to change this dataset\'s permissions.')
+        else:
+            return self.message_exception(trans, 'Invalid operation identifier (%s).' % operation)
+        return {'status': status, 'message': sanitize_text(message)}
+
+    def _get_dataset_for_edit(self, trans, dataset_id):
+        if dataset_id is not None:
             id = self.decode_id(dataset_id)
             data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
         else:
-            trans.log_event("dataset_id and hid are both None, cannot load a dataset to edit")
-            return {
-                status: 'error',
-                message: 'You must provide a history dataset id to edit.'
-            }
+            trans.log_event("dataset_id is None, cannot load a dataset to edit.")
+            return None, self.message_exception(trans, 'You must provide a dataset id to edit attributes.')
         if data is None:
-            trans.log_event("Problem retrieving dataset (encoded: %s, decoded: %s) with history id %s." % (str(dataset_id), str(id), str(hid)))
-            return {
-                status: 'error',
-                message: "History dataset id is invalid."
-            }
+            trans.log_event("Problem retrieving dataset id (%s)." % dataset_id)
+            return None, self.message_exception(trans, 'The dataset id is invalid.')
         if dataset_id is not None and data.history.user is not None and data.history.user != trans.user:
-            trans.log_event("User attempted to edit an HDA they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
-            # Do not reveal the dataset's existence
-            return {
-                status: 'error',
-                message: "History dataset id is invalid."
-            }
-        current_user_roles = trans.get_current_user_roles()
+            trans.log_event("User attempted to edit a dataset they do not own (encoded: %s, decoded: %s)." % (dataset_id, id))
+            return None, self.message_exception(trans, 'The dataset id is invalid.')
         if data.history.user and not data.dataset.has_manage_permissions_roles(trans):
             # Permission setting related to DATASET_MANAGE_PERMISSIONS was broken for a period of time,
             # so it is possible that some Datasets have no roles associated with the DATASET_MANAGE_PERMISSIONS
@@ -295,302 +534,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             manage_permissions_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action)
             permissions = {manage_permissions_action : [trans.app.security_agent.get_private_user_role(data.history.user)]}
             trans.app.security_agent.set_dataset_permission(data.dataset, permissions)
-        if self._can_access_dataset(trans, data):
-            if data.state == trans.model.Dataset.states.UPLOAD:
-                return {
-                    status: 'error',
-                    message: "Please wait until this dataset finishes uploading before attempting to edit its metadata."
-                }
-            params = util.Params(kwd, sanitize=False)
-            if params.change:
-                # The user clicked the Save button on the 'Change data type' form
-                if data.datatype.allow_datatype_change and trans.app.datatypes_registry.get_datatype_by_extension(params.datatype).allow_datatype_change:
-                    # prevent modifying datatype when dataset is queued or running as input/output
-                    if not __ok_to_edit_metadata(data.id):
-                        message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
-                        error = True
-                    else:
-                        trans.app.datatypes_registry.change_datatype(data, params.datatype)
-                        trans.sa_session.flush()
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data}, overwrite=False)  # overwrite is False as per existing behavior
-                        message = "Changed the type of dataset %s to %s." % (to_unicode(data.name), params.datatype)
-                else:
-                    message = "You are unable to change datatypes in this manner. Changing %s to %s is not allowed." % (data.extension, params.datatype)
-                    error = True
-            elif params.save:
-                # The user clicked the Save button on the 'Edit Attributes' form
-                data.name = params.name if params.name else ''
-                data.info = params.info if params.info else ''
-                message = ''
-                if __ok_to_edit_metadata(data.id):
-                    # The following for loop will save all metadata_spec items
-                    for name, spec in data.datatype.metadata_spec.items():
-                        if spec.get("readonly"):
-                            continue
-                        setattr(data.metadata, name, spec.unwrap(params.get(name, None)))
-                    data.datatype.after_setting_metadata(data)
-                    # Sanitize annotation before adding it.
-                    if params.annotation:
-                        annotation = sanitize_html(params.annotation, 'utf-8', 'text/html')
-                        self.add_item_annotation(trans.sa_session, trans.get_user(), data, annotation)
-                    # This block on controller code is inactive until the 'extended_metadata' edit box is added back into the UI
-                    # Add or delete extended metadata
-#                    if params.extended_metadata:
-#                        em_string = params.extended_metadata
-#                        if len(em_string):
-#                            em_payload = None
-#                            try:
-#                                em_payload = loads(em_string)
-#                            except Exception as e:
-#                                message = 'Invalid JSON input'
-#                                error = True
-#                            if em_payload is not None:
-#                                if data is not None:
-#                                    ex_obj = self.get_item_extended_metadata_obj(trans, data)
-#                                    if ex_obj is not None:
-#                                        self.unset_item_extended_metadata_obj(trans, data)
-#                                        self.delete_extended_metadata(trans, ex_obj)
-#                                    ex_obj = self.create_extended_metadata(trans, em_payload)
-#                                    self.set_item_extended_metadata_obj(trans, data, ex_obj)
-#                                    message = "Updated Extended metadata '%s'." % data.name
-#                                    status = 'done'
-#                                else:
-#                                    message = "data not found"
-#                                    error = True
-#                    else:
-#                        if data is not None:
-#                            ex_obj = self.get_item_extended_metadata_obj(trans, data)
-#                            if ex_obj is not None:
-#                                self.unset_item_extended_metadata_obj(trans, data)
-#                                self.delete_extended_metadata(trans, ex_obj)
-#                        message = "Deleted Extended metadata '%s'." % data.name
-#                        status = 'done'
-
-                    # If setting metadata previously failed and all required elements have now been set, clear the failed state.
-                    if data._state == trans.model.Dataset.states.FAILED_METADATA and not data.missing_meta():
-                        data._state = None
-                    trans.sa_session.flush()
-                    if message:
-                        message = "Attributes updated. %s" % message
-                    else:
-                        message = "Attributes updated."
-                else:
-                    trans.sa_session.flush()
-                    message = "Attributes updated, but metadata could not be changed because this dataset is currently being used as input or output. You must cancel or wait for these jobs to complete before changing metadata."
-                    status = "warning"
-            elif params.detect:
-                # The user clicked the Auto-detect button on the 'Edit Attributes' form
-                # prevent modifying metadata when dataset is queued or running as input/output
-                if not __ok_to_edit_metadata(data.id):
-                    message = "This dataset is currently being used as input or output.  You cannot change metadata until the jobs have completed or you have canceled them."
-                    error = True
-                else:
-                    for name, spec in data.metadata.spec.items():
-                        # We need to be careful about the attributes we are resetting
-                        if name not in ['name', 'info', 'dbkey', 'base_name']:
-                            if spec.get('default'):
-                                setattr(data.metadata, name, spec.unwrap(spec.get('default')))
-                    message = 'Attributes have been queued to be updated.'
-                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming={'input1': data})
-                    trans.sa_session.flush()
-            elif params.convert_data:
-                target_type = kwd.get("target_type", None)
-                if target_type:
-                    message = data.datatype.convert_dataset(trans, data, target_type)
-            elif params.update_roles_button:
-                if not trans.user:
-                    return {
-                        status: 'error',
-                        message: "You must be logged in if you want to change permissions."
-                    }
-                if trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset):
-                    permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-                    payload_permissions = json.loads(params.permissions)
-                    # The user associated the DATASET_ACCESS permission on the dataset with 1 or more roles.  We
-                    # need to ensure that they did not associate roles that would cause accessibility problems.
-                    permissions, in_roles, error, message = \
-                        trans.app.security_agent.derive_roles_from_access(trans, data.dataset.id, 'root', **payload_permissions)
-                    if error:
-                        # Keep the original role associations for the DATASET_ACCESS permission on the dataset.
-                        access_action = trans.app.security_agent.get_action(trans.app.security_agent.permitted_actions.DATASET_ACCESS.action)
-                        permissions[access_action] = data.dataset.get_access_roles(trans)
-                        status = 'error'
-                    else:
-                        error = trans.app.security_agent.set_all_dataset_permissions(data.dataset, permissions)
-                        if error:
-                            message += error
-                            status = 'error'
-                        else:
-                            message = 'Your changes completed successfully.'
-                    trans.sa_session.refresh(data.dataset)
-                else:
-                    message = "You are not authorized to change this dataset's permissions."
-                    error = True
-            else:
-                if "dbkey" in data.datatype.metadata_spec and not data.metadata.dbkey:
-                    # Copy dbkey into metadata, for backwards compatability
-                    # This looks like it does nothing, but getting the dbkey
-                    # returns the metadata dbkey unless it is None, in which
-                    # case it resorts to the old dbkey.  Setting the dbkey
-                    # sets it properly in the metadata
-                    # This is likely no longer required, since the dbkey exists entirely within metadata (the old_dbkey field is gone): REMOVE ME?
-                    data.metadata.dbkey = data.dbkey
-            # let's not overwrite the imported datatypes module with the variable datatypes?
-            # the built-in 'id' is overwritten in lots of places as well
-            ldatatypes = [(dtype_name, dtype_name) for dtype_name, dtype_value in trans.app.datatypes_registry.datatypes_by_extension.iteritems() if dtype_value.allow_datatype_change]
-            ldatatypes.sort()
-            all_roles = trans.app.security_agent.get_legitimate_roles(trans, data.dataset, 'root')
-            data_metadata = [(name, spec) for name, spec in data.metadata.spec.items()]
-            converters_collection = [(key, value.name) for key, value in data.get_converter_types().items()]
-            can_manage_dataset = trans.app.security_agent.can_manage_dataset(current_user_roles, data.dataset)
-            if error:
-                status = 'error'
-            edit_attributes_inputs = list()
-            convert_inputs = list()
-            convert_datatype_inputs = list()
-            permission_inputs = list()
-
-            edit_attributes_inputs.append({
-                'name' : 'name',
-                'type' : 'text',
-                'label': 'Name:',
-                'value': data.get_display_name()
-            })
-
-            edit_attributes_inputs.append({
-                'name' : 'info',
-                'type' : 'text',
-                'label': 'Info:',
-                'value': data.info
-            })
-
-            edit_attributes_inputs.append({
-                'name' : 'annotation',
-                'type' : 'text',
-                'label': 'Annotation',
-                'value': self.get_item_annotation_str(trans.sa_session, trans.user, data),
-                'help' : 'Add an annotation or notes to a dataset; annotations are available when a history is viewed.'
-            })
-
-            for name, spec in data_metadata:
-                if spec.visible:
-                    attributes = data.metadata.get_metadata_parameter(name, trans=trans)
-                    if type(attributes) is form_builder.SelectField:
-                        edit_attributes_inputs.append({
-                            'type': 'select',
-                            'multiple': attributes.multiple,
-                            'optional': attributes.optional,
-                            'name': name,
-                            'label': spec.desc,
-                            'options': attributes.options,
-                            'value': attributes.value if attributes.multiple else [attributes.value]
-                        })
-                    elif type(attributes) is form_builder.TextField:
-                        edit_attributes_inputs.append({
-                            'type': 'text',
-                            'name': name,
-                            'label': spec.desc,
-                            'value': attributes.value,
-                            'readonly': spec.get('readonly')
-                        })
-
-            if data.missing_meta():
-                edit_attributes_inputs.append({
-                    'name' : 'errormsg',
-                    'type' : 'text',
-                    'label': 'Error Message',
-                    'value': 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.',
-                    'class'  : 'errormessagesmall',
-                    'readonly' : True
-                })
-
-            convert_inputs.append({
-                'type': 'select',
-                'name': 'target_type',
-                'label': 'Name:',
-                'help': 'This will create a new dataset with the contents of this dataset converted to a new format.',
-                'options': [(convert_name, convert_id) for convert_id, convert_name in converters_collection]
-            })
-
-            convert_datatype_inputs.append({
-                'type': 'select',
-                'name': 'datatype',
-                'label': 'New Type:',
-                'help': 'This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.',
-                'options': [(ext_name, ext_id) for ext_id, ext_name in ldatatypes],
-                'value': [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext]
-            })
-
-            if can_manage_dataset:
-                permitted_actions = trans.app.model.Dataset.permitted_actions.items()
-                saved_role_ids = {}
-                for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
-                    for role in roles:
-                        saved_role_ids[action.action] = role.id
-
-                for index, action in permitted_actions:
-                    if action == trans.app.security_agent.permitted_actions.DATASET_ACCESS:
-                        help_text = action.description + '<br/>NOTE: Users must have every role associated with this dataset in order to access it.'
-                    else:
-                        help_text = action.description
-                    permission_inputs.append({
-                        'type': 'select',
-                        'multiple': True,
-                        'optional': True,
-                        'name': index,
-                        'label': action.action,
-                        'help': help_text,
-                        'options': [(r.name, r.id) for r in all_roles],
-                        'value': saved_role_ids[action.action] if action.action in saved_role_ids else []
-                    })
-            elif trans.user:
-                if data.dataset.actions:
-                    for action, roles in trans.app.security_agent.get_permissions(data.dataset).items():
-                        if roles:
-                            role_inputs = list()
-                            for role in roles:
-                                role_inputs.append({
-                                    'name': role.name + action.action,
-                                    'type': 'text',
-                                    'label': action.description,
-                                    'value': role.name,
-                                    'readonly': True
-                                })
-                            view_permissions = {'name': action.action, 'label': action.action, 'type': 'section', 'inputs': role_inputs}
-                            permission_inputs.append(view_permissions)
-                else:
-                    permission_inputs.append({
-                        'name': 'access_public',
-                        'type': 'text',
-                        'label': 'Public access',
-                        'value': 'This dataset is accessible by everyone (it is public).',
-                        'readonly': True
-                    })
-            else:
-                permission_inputs.append({
-                    'name': 'no_access',
-                    'type': 'text',
-                    'label': 'No access',
-                    'value': 'Permissions not available (not logged in).',
-                    'readonly': True
-                })
-
-            return {
-                'display_name': data.get_display_name(),
-                'message': message,
-                'status': status,
-                'dataset_id': dataset_id,
-                'can_manage_dataset': can_manage_dataset,
-                'edit_attributes_inputs': edit_attributes_inputs,
-                'convert_inputs': convert_inputs,
-                'convert_datatype_inputs': convert_datatype_inputs,
-                'permission_inputs': permission_inputs
-            }
-        else:
-            return {
-                status: 'error',
-                message: "You do not have permission to edit this dataset's ( id: %s ) information." % str(dataset_id)
-            }
+        return data, None
 
     @web.expose
     @web.json
@@ -652,7 +596,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     kwargs['refresh_frames'] = ['history']
 
         # Render the list view
-        kwargs['dict_format'] = True
         return self.stored_list_grid(trans, status=status, message=message, **kwargs)
 
     @web.expose
@@ -740,7 +683,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image) or isinstance(dataset.datatype, datatypes.text.Html):
                 trans.response.set_content_type(dataset.get_mime())
-                return open(dataset.file_name)
+                return open(dataset.file_name, 'rb')
             else:
                 # Get rating data.
                 user_item_rating = 0
@@ -783,7 +726,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             web.httpexceptions.HTTPNotFound()
         if dataset and new_annotation:
             # Sanitize annotation before adding it.
-            new_annotation = sanitize_html(new_annotation, 'utf-8', 'text/html')
+            new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), dataset, new_annotation)
             trans.sa_session.flush()
             return new_annotation
@@ -812,8 +755,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         if 'display_url' not in kwd or 'redirect_url' not in kwd:
             return trans.show_error_message('Invalid parameters specified for "display at" link, please contact a Galaxy administrator')
         try:
-            redirect_url = kwd['redirect_url'] % urllib.quote_plus(kwd['display_url'])
-        except:
+            redirect_url = kwd['redirect_url'] % quote_plus(kwd['display_url'])
+        except Exception:
             redirect_url = kwd['redirect_url']  # not all will need custom text
         if trans.app.security_agent.dataset_is_public(data.dataset):
             return trans.response.send_redirect(redirect_url)  # anon access already permitted by rbac
@@ -828,7 +771,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         """Access to external display applications"""
         # Build list of parameters to pass in to display application logic (app_kwds)
         app_kwds = {}
-        for name, value in dict(kwds).iteritems():  # clone kwds because we remove stuff as we go.
+        for name, value in dict(kwds).items():  # clone kwds because we remove stuff as we go.
             if name.startswith("app_"):
                 app_kwds[name[len("app_"):]] = value
                 del kwds[name]
@@ -845,8 +788,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         else:
             user_roles = []
         # Decode application name and link name
-        app_name = urllib.unquote_plus(app_name)
-        link_name = urllib.unquote_plus(link_name)
+        app_name = unquote_plus(app_name)
+        link_name = unquote_plus(link_name)
         if None in [app_name, link_name]:
             return trans.show_error_message("A display application name and link name must be provided.")
         if self._can_access_dataset(trans, data, additional_roles=user_roles):
@@ -955,9 +898,9 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.log_event("Dataset id %s marked as deleted" % str(id))
             self.hda_manager.stop_creating_job(hda)
             trans.sa_session.flush()
-        except Exception as e:
+        except Exception:
             msg = 'HDA deletion failed (encoded: %s, decoded: %s)' % (dataset_id, id)
-            log.exception(msg + ': ' + str(e))
+            log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset deletion failed'
             status = 'error'
@@ -992,7 +935,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
     def _unhide(self, trans, dataset_id):
         try:
             id = self.decode_id(dataset_id)
-        except:
+        except Exception:
             return False
         history = trans.get_history()
         hda = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
@@ -1019,17 +962,13 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # Invalid HDA
             assert hda, 'Invalid history dataset ID'
 
-            # Walk up parent datasets to find the containing history
-            topmost_parent = hda
-            while topmost_parent.parent:
-                topmost_parent = topmost_parent.parent
             # If the user is anonymous, make sure the HDA is owned by the current session.
             if not user:
                 current_history_id = trans.galaxy_session.current_history_id
-                assert topmost_parent.history.id == current_history_id, 'Data does not belong to current user'
+                assert hda.history.id == current_history_id, 'Data does not belong to current user'
             # If the user is known, make sure the HDA is owned by the current user.
             else:
-                assert topmost_parent.history.user == user, 'Data does not belong to current user'
+                assert hda.history.user == user, 'Data does not belong to current user'
 
             # Ensure HDA is deleted
             hda.deleted = True
@@ -1050,11 +989,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     hda.dataset.full_delete()
                     trans.log_event("Dataset id %s has been purged upon the the purge of HDA id %s" % (hda.dataset.id, hda.id))
                     trans.sa_session.add(hda.dataset)
-                except:
+                except Exception:
                     log.exception('Unable to purge dataset (%s) on purge of HDA (%s):' % (hda.dataset.id, hda.id))
             trans.sa_session.flush()
-        except Exception as exc:
-            msg = 'HDA purge failed (encoded: %s, decoded: %s): %s' % (dataset_id, id, exc)
+        except Exception:
+            msg = 'HDA purge failed (encoded: %s, decoded: %s)' % (dataset_id, id)
             log.exception(msg)
             trans.log_event(msg)
             message = 'Dataset removal from disk failed'
@@ -1152,14 +1091,14 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     # Load parameter objects, if a parameter type has changed, it's possible for the value to no longer be valid
                     try:
                         params_objects = job.get_param_values(trans.app, ignore_errors=False)
-                    except:
+                    except Exception:
                         params_objects = job.get_param_values(trans.app, ignore_errors=True)
                         # use different param_objects in the following line, since we want to display original values as much as possible
                         upgrade_messages = tool.check_and_update_param_values(job.get_param_values(trans.app, ignore_errors=True),
                                                                               trans,
                                                                               update_values=False)
                         has_parameter_errors = True
-                except:
+                except Exception:
                     pass
         if job is None:
             return trans.show_error_message("Job information is not available for this dataset.")
@@ -1225,7 +1164,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     target_histories = [history]
                 if len(target_histories) != len(target_history_ids):
                     error_msg = error_msg + "You do not have permission to add datasets to %i requested histories.  " % (len(target_history_ids) - len(target_histories))
-                source_contents = map(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get, decoded_dataset_ids)
+                source_contents = list(map(trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get, decoded_dataset_ids))
                 source_contents.extend(map(trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get, decoded_dataset_collection_ids))
                 source_contents.sort(key=lambda content: content.hid)
                 for content in source_contents:
@@ -1238,13 +1177,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     else:
                         for hist in target_histories:
                             if content.history_content_type == "dataset":
-                                hist.add_dataset(content.copy(copy_children=True))
+                                copy = content.copy()
+                                hist.add_dataset(copy)
                             else:
                                 copy_collected_datasets = True
                                 copy_kwds = {}
                                 if copy_collected_datasets:
                                     copy_kwds["element_destination"] = hist
-                                hist.add_dataset_collection(content.copy(**copy_kwds))
+                                copy = content.copy(**copy_kwds)
+                                hist.add_dataset_collection(copy)
+                            if user:
+                                copy.copy_tags_from(user, content)
                 if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
@@ -1296,7 +1239,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     invalid_datasets += 1
                 else:
                     for hist in target_histories:
-                        dataset_copy = data.copy(copy_children=True)
+                        dataset_copy = data.copy()
                         if imported:
                             dataset_copy.name = "imported: " + dataset_copy.name
                         hist.add_dataset(dataset_copy)

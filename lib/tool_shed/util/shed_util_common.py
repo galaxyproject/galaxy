@@ -9,7 +9,6 @@ import sqlalchemy.orm.exc
 from sqlalchemy import and_, false, true
 
 import galaxy.tools.deps.requirements
-
 from galaxy import util
 from galaxy.util import checkers
 from galaxy.web import url_for
@@ -302,7 +301,7 @@ def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
         return '<br/>gzip compressed file<br/>'
     elif checkers.is_bz2(file_path):
         return '<br/>bz2 compressed file<br/>'
-    elif checkers.check_zip(file_path):
+    elif checkers.is_zip(file_path):
         return '<br/>zip compressed file<br/>'
     elif checkers.check_binary(file_path):
         return '<br/>Binary file<br/>'
@@ -457,7 +456,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
        that was included in the change set.
     """
     sa_session = app.model.context.current
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
+    repo = hg_util.get_repo_for_repository(app, repository=repository)
     sharable_link = repository_util.generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None)
     smtp_server = app.config.smtp_server
     if smtp_server and (new_repo_alert or repository.email_alerts):
@@ -472,7 +471,7 @@ def handle_email_alerts(app, host, repository, content_alert_str='', new_repo_al
         ctx = repo.changectx(tip_changeset)
         try:
             username = ctx.user().split()[0]
-        except:
+        except Exception:
             username = ctx.user()
         # We'll use 2 template bodies because we only want to send content
         # alerts to tool shed admin users.
@@ -602,7 +601,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
     return folder_contents
 
 
-def set_image_paths(app, encoded_repository_id, text):
+def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=None, tool_id=None, tool_version=None):
     """
     Handle tool help image display for tools that are contained in repositories in
     the tool shed or installed into Galaxy as well as image display in repository
@@ -610,11 +609,21 @@ def set_image_paths(app, encoded_repository_id, text):
     return the path to it that will enable the caller to open the file.
     """
     if text:
-        if repository_util.is_tool_shed_client(app):
+        if repository_util.is_tool_shed_client(app) and encoded_repository_id:
             route_to_images = 'admin_toolshed/static/images/%s' % encoded_repository_id
-        else:
+        elif encoded_repository_id:
             # We're in the tool shed.
             route_to_images = '/repository/static/images/%s' % encoded_repository_id
+        elif tool_shed_repository and tool_id and tool_version:
+            route_to_images = 'shed_tool_static/{shed}/{owner}/{repo}/{tool}/{version}'.format(
+                shed=tool_shed_repository.tool_shed,
+                owner=tool_shed_repository.owner,
+                repo=tool_shed_repository.name,
+                tool=tool_id,
+                version=tool_version,
+            )
+        else:
+            raise Exception("encoded_repository_id or tool_shed_repository and tool_id and tool_version must be provided")
         # We used to require $PATH_TO_IMAGES and ${static_path}, but
         # we now eliminate it if it's used.
         text = text.replace('$PATH_TO_IMAGES', '')

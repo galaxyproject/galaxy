@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import and_, or_
+from sqlalchemy import and_
 
 from tool_shed.util import hg_util
 from tool_shed.util import metadata_util
@@ -38,7 +38,7 @@ class ToolVersionManager(object):
         is called only from the Tool Shed.
         """
         repository = repository_util.get_repository_by_id(self.app, repository_id)
-        repo = hg_util.get_repo_for_repository(self.app, repository=repository, repo_path=None, create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repository=repository)
         # Initialize the tool lineage
         version_lineage = [guid]
         # Get all ancestor guids of the received guid.
@@ -66,48 +66,3 @@ class ToolVersionManager(object):
                         current_parent_guid = child_guid
                         break
         return version_lineage
-
-    def handle_tool_versions(self, tool_version_dicts, tool_shed_repository):
-        """
-        Using the list of tool_version_dicts retrieved from the Tool Shed (one per changeset
-        revision up to the currently installed changeset revision), create the parent / child
-        pairs of tool versions.  Each dictionary contains { tool id : parent tool id } pairs.
-        This function is called only from Galaxy.
-        """
-        context = self.app.install_model.context
-        for tool_version_dict in tool_version_dicts:
-            for tool_guid, parent_id in tool_version_dict.items():
-                tool_version_using_tool_guid = self.get_tool_version(tool_guid)
-                tool_version_using_parent_id = self.get_tool_version(parent_id)
-                if not tool_version_using_tool_guid:
-                    tool_version_using_tool_guid = \
-                        self.app.install_model.ToolVersion(tool_id=tool_guid,
-                                                           tool_shed_repository=tool_shed_repository)
-                    context.add(tool_version_using_tool_guid)
-                    context.flush()
-                if not tool_version_using_parent_id:
-                    tool_version_using_parent_id = \
-                        self.app.install_model.ToolVersion(tool_id=parent_id,
-                                                           tool_shed_repository=tool_shed_repository)
-                    context.add(tool_version_using_parent_id)
-                    context.flush()
-                # Remove existing wrong tool version associations having
-                # tool_version_using_parent_id as parent or
-                # tool_version_using_tool_guid as child.
-                context.query(self.app.install_model.ToolVersionAssociation) \
-                       .filter(or_(and_(self.app.install_model.ToolVersionAssociation.table.c.parent_id == tool_version_using_parent_id.id,
-                                        self.app.install_model.ToolVersionAssociation.table.c.tool_id != tool_version_using_tool_guid.id),
-                                   and_(self.app.install_model.ToolVersionAssociation.table.c.parent_id != tool_version_using_parent_id.id,
-                                        self.app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version_using_tool_guid.id))) \
-                       .delete()
-                context.flush()
-                tool_version_association = \
-                    self.get_tool_version_association(tool_version_using_parent_id,
-                                                      tool_version_using_tool_guid)
-                if not tool_version_association:
-                    # Associate the two versions as parent / child.
-                    tool_version_association = \
-                        self.app.install_model.ToolVersionAssociation(tool_id=tool_version_using_tool_guid.id,
-                                                                      parent_id=tool_version_using_parent_id.id)
-                    context.add(tool_version_association)
-                    context.flush()

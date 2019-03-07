@@ -3,19 +3,18 @@
 Downloads files to temp locations.  This script is invoked by the Transfer
 Manager (galaxy.jobs.transfer_manager) and should not normally be invoked by
 hand.
+
+This is deprecated - it only works with older ini configurations of Galaxy.
 """
-import ConfigParser
 import json
 import logging
 import optparse
 import os
 import random
-import SocketServer
 import sys
 import tempfile
 import threading
 import time
-import urllib2
 
 try:
     import pexpect
@@ -23,6 +22,12 @@ except ImportError:
     pexpect = None
 
 from daemon import DaemonContext
+from six.moves import (
+    configparser,
+    socketserver
+)
+from six.moves.urllib.error import URLError
+from six.moves.urllib.request import urlopen
 from sqlalchemy import create_engine, MetaData, Table
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -82,7 +87,7 @@ class GalaxyApp(object):
     model/database.
     """
     def __init__(self, config_file):
-        self.config = ConfigParser.ConfigParser(dict(database_file='database/universe.sqlite',
+        self.config = configparser.ConfigParser(dict(database_file='database/universe.sqlite',
                                                      file_path='database/files',
                                                      transfer_worker_port_range='12275-12675',
                                                      transfer_worker_log=None))
@@ -95,7 +100,7 @@ class GalaxyApp(object):
         default_dburl = 'sqlite:///%s?isolation_level=IMMEDIATE' % self.config.get('app:main', 'database_file')
         try:
             dburl = self.config.get('app:main', 'database_connection')
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             dburl = default_dburl
         engine = create_engine(dburl)
         metadata = MetaData(engine)
@@ -107,7 +112,7 @@ class GalaxyApp(object):
         return self.sa_session.query(self.model.TransferJob).get(int(id))
 
 
-class ListenerServer(SocketServer.ThreadingTCPServer):
+class ListenerServer(socketserver.ThreadingTCPServer):
     """
     The listener will accept state requests and new transfers for as long as
     the manager is running.
@@ -118,7 +123,7 @@ class ListenerServer(SocketServer.ThreadingTCPServer):
         while True:
             random_port = random.choice(port_range)
             try:
-                SocketServer.ThreadingTCPServer.__init__(self, ('localhost', random_port), RequestHandlerClass)
+                super(ListenerServer, self).__init__(('localhost', random_port), RequestHandlerClass)
                 log.info('Listening on port %s' % random_port)
                 break
             except Exception as e:
@@ -128,7 +133,7 @@ class ListenerServer(SocketServer.ThreadingTCPServer):
         app.sa_session.flush()
 
 
-class ListenerRequestHandler(SocketServer.BaseRequestHandler):
+class ListenerRequestHandler(socketserver.BaseRequestHandler):
     """
     Handle state or transfer requests received on the socket.
     """
@@ -215,9 +220,10 @@ def transfer(app, transfer_job_id):
 def http_transfer(transfer_job):
     """Plugin" for handling http(s) transfers."""
     url = transfer_job.params['url']
+    assert url.startswith('http://') or url.startswith('https://')
     try:
-        f = urllib2.urlopen(url)
-    except urllib2.URLError as e:
+        f = urlopen(url)
+    except URLError as e:
         yield dict(state=transfer_job.states.ERROR, info='Unable to open URL: %s' % str(e))
         return
     size = f.info().getheader('Content-Length')
@@ -276,7 +282,7 @@ def scp_transfer(transfer_job):
         # TODO: add the ability to determine progress of the copy here like we do in the http_transfer above.
         cmd = "scp %s@%s:'%s' '%s'" % (user_name,
                                        host,
-                                       file_path.replace(' ', '\ '),
+                                       file_path.replace(' ', r'\ '),
                                        fn)
         pexpect.run(cmd, events={'.ssword:*': password + '\r\n',
                                  pexpect.TIMEOUT: print_ticks},

@@ -1,3 +1,4 @@
+import io
 import json
 import logging
 import os
@@ -26,10 +27,15 @@ from galaxy.tools.wrappers import (
     DatasetCollectionWrapper,
     DatasetFilenameWrapper,
     DatasetListWrapper,
+    ElementIdentifierMapper,
     InputValueWrapper,
     RawObjectWrapper,
     SelectToolParameterWrapper,
     ToolParameterValueWrapper,
+)
+from galaxy.util import (
+    find_instance_nested,
+    unicodify,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.none_like import NoneDataset
@@ -91,7 +97,6 @@ class ToolEvaluator(object):
                     self.dataset = dataset
                     self.file_name = dataset.file_name
                     self.metadata = dict()
-                    self.children = []
 
             special = get_special()
             if special:
@@ -234,11 +239,9 @@ class ToolEvaluator(object):
                     real_path = dataset.file_name
                     if real_path in input_dataset_paths:
                         wrapper_kwds["dataset_path"] = input_dataset_paths[real_path]
-                identifier_key = identifier_key_dict.get(dataset, None)
-                if identifier_key:
-                    element_identifier = param_dict.get(identifier_key, None)
-                    if element_identifier:
-                        wrapper_kwds["identifier"] = element_identifier
+                element_identifier = element_identifier_mapper.identifier(dataset, param_dict)
+                if element_identifier:
+                    wrapper_kwds["identifier"] = element_identifier
                 input_values[input.name] = \
                     DatasetFilenameWrapper(dataset, **wrapper_kwds)
             elif isinstance(input, DataCollectionToolParameter):
@@ -266,7 +269,7 @@ class ToolEvaluator(object):
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.tool.check_values:
-            identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())  # allows lookup of identifier through HDA.
+            element_identifier_mapper = ElementIdentifierMapper(input_datasets)
             self.__walk_inputs(self.tool.inputs, param_dict, wrap_input)
 
     def __populate_input_dataset_wrappers(self, param_dict, input_datasets, input_dataset_paths):
@@ -280,17 +283,20 @@ class ToolEvaluator(object):
         #        another reason for this?
         # - Only necessary when self.check_values is False (==external dataset
         #   tool?: can this be abstracted out as part of being a datasouce tool?)
-        # - But we still want (ALWAYS) to wrap input datasets (this should be
-        #   checked to prevent overhead of creating a new object?)
-        # Additionally, datasets go in the param dict. We wrap them such that
-        # if the bare variable name is used it returns the filename (for
-        # backwards compatibility). We also add any child datasets to the
-        # the param dict encoded as:
-        #   "_CHILD___{dataset_name}___{child_designation}",
-        # but this should be considered DEPRECATED, instead use:
-        #   $dataset.get_child( 'name' ).filename
+        # For now we try to not wrap unnecessarily, but this should be untangled at some point.
         for name, data in input_datasets.items():
             param_dict_value = param_dict.get(name, None)
+            if data and param_dict_value is None:
+                # We may have a nested parameter that is not fully prefixed.
+                # We try recovering from param_dict, but tool authors should really use fully-qualified
+                # variables
+                wrappers = find_instance_nested(param_dict,
+                                                instances=(DatasetFilenameWrapper, DatasetListWrapper),
+                                                match_key=name)
+                if len(wrappers) == 1:
+                    wrapper = wrappers[0]
+                    param_dict[name] = wrapper
+                    continue
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
@@ -303,9 +309,6 @@ class ToolEvaluator(object):
                         dataset_path = input_dataset_paths[real_path]
                         wrapper_kwds['dataset_path'] = dataset_path
                 param_dict[name] = DatasetFilenameWrapper(data, **wrapper_kwds)
-            if data:
-                for child in data.children:
-                    param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
 
     def __populate_output_collection_wrappers(self, param_dict, output_collections, output_paths, job_working_directory):
         output_dataset_paths = dataset_path_rewrites(output_paths)
@@ -355,8 +358,6 @@ class ToolEvaluator(object):
             # Provide access to a path to store additional files
             # TODO: path munging for cluster/dataset server relocatability
             param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "dataset_%s_files" % (hda.dataset.id)))
-            for child in hda.children:
-                param_dict["_CHILD___%s___%s" % (name, child.designation)] = DatasetFilenameWrapper(child)
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter
@@ -528,6 +529,15 @@ class ToolEvaluator(object):
             environment_variable["raw"] = True
             environment_variables.append(environment_variable)
 
+        home_dir = self.compute_environment.home_directory()
+        tmp_dir = self.compute_environment.tmp_directory()
+        if home_dir:
+            environment_variable = dict(name="HOME", value='"%s"' % home_dir, raw=True)
+            environment_variables.append(environment_variable)
+        if tmp_dir:
+            for tmp_directory_var in self.tool.tmp_directory_vars:
+                environment_variable = dict(name=tmp_directory_var, value='"%s"' % tmp_dir, raw=True)
+                environment_variables.append(environment_variable)
         self.environment_variables = environment_variables
         return environment_variables
 
@@ -559,19 +569,20 @@ class ToolEvaluator(object):
             return content, True
 
         content_format = content["format"]
+        handle_files = content["handle_files"]
         if content_format != "json":
             template = "Galaxy can only currently convert inputs to json, format [%s] is unhandled"
             message = template % content_format
             raise Exception(message)
 
-        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict)), False
+        return json.dumps(wrapped_json.json_wrap(self.tool.inputs, self.param_dict, handle_files=handle_files)), False
 
     def __write_workdir_file(self, config_filename, content, context, is_template=True):
         if is_template:
             value = fill_template(content, context=context)
         else:
-            value = content
-        with open(config_filename, "w") as f:
+            value = unicodify(content)
+        with io.open(config_filename, "w", encoding='utf-8') as f:
             f.write(value)
         # For running jobs as the actual user, ensure the config file is globally readable
         os.chmod(config_filename, 0o644)

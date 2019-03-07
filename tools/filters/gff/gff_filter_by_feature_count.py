@@ -8,7 +8,6 @@ Usage:
 from __future__ import print_function
 
 import sys
-
 from ast import Module, parse, walk
 
 from bx.intervals.io import GenomicInterval
@@ -137,7 +136,7 @@ def __main__():
             empty, number_str = condition.split(op)
             try:
                 number = float(number_str)
-            except:
+            except ValueError:
                 number = None
             if empty != "" or not number:
                 print("Invalid condition: %s, cannot filter." % condition, file=sys.stderr)

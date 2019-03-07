@@ -4,16 +4,16 @@ import os
 import shutil
 import tarfile
 import tempfile
-import threading
 from time import gmtime, strftime
 
-from six.moves.urllib.request import urlopen
+import requests
 from sqlalchemy import and_, false
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import web
-from galaxy.util import asbool, build_url, CHUNK_SIZE, safe_relpath
+from galaxy.util import asbool, build_url, CHUNK_SIZE
 from galaxy.util.odict import odict
+from galaxy.util.path import safe_relpath
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.dependencies.repository.relation_builder import RelationBuilder
 from tool_shed.galaxy_install.repository_dependencies.repository_dependency_manager import RepositoryDependencyInstallManager
@@ -65,48 +65,44 @@ class ExportRepositoryManager(object):
                     ordered_repository_ids = [self.repository_id]
                     ordered_repositories = [self.repository]
                     ordered_changeset_revisions = [repository_metadata.changeset_revision]
-        repositories_archive = None
         error_messages = ''
-        lock = threading.Lock()
-        lock.acquire(True)
+        repositories_archive = tarfile.open(repositories_archive_filename, "w:%s" % self.file_type)
+        exported_repository_registry = ExportedRepositoryRegistry()
+        for repository_id, ordered_repository, ordered_changeset_revision in zip(ordered_repository_ids,
+                                                                                 ordered_repositories,
+                                                                                 ordered_changeset_revisions):
+            with self.__tempdir(prefix='tmp-toolshed-export-er') as work_dir:
+                repository_archive, error_message = self.generate_repository_archive(ordered_repository,
+                                                                                     ordered_changeset_revision,
+                                                                                     work_dir)
+                if error_message:
+                    error_messages = '%s  %s' % (error_messages, error_message)
+                else:
+                    archive_name = str(os.path.basename(repository_archive.name))
+                    repositories_archive.add(repository_archive.name, arcname=archive_name)
+                    attributes, sub_elements = self.get_repository_attributes_and_sub_elements(ordered_repository,
+                                                                                               archive_name)
+                    elem = xml_util.create_element('repository', attributes=attributes, sub_elements=sub_elements)
+                    exported_repository_registry.exported_repository_elems.append(elem)
+        # Keep information about the export in a file named export_info.xml in the archive.
+        sub_elements = self.generate_export_elem()
+        export_elem = xml_util.create_element('export_info', attributes=None, sub_elements=sub_elements)
+        tmp_export_info = xml_util.create_and_write_tmp_file(export_elem)
         try:
-            repositories_archive = tarfile.open(repositories_archive_filename, "w:%s" % self.file_type)
-            exported_repository_registry = ExportedRepositoryRegistry()
-            for repository_id, ordered_repository, ordered_changeset_revision in zip(ordered_repository_ids,
-                                                                                     ordered_repositories,
-                                                                                     ordered_changeset_revisions):
-                with self.__tempdir(prefix='tmp-toolshed-export-er') as work_dir:
-                    repository_archive, error_message = self.generate_repository_archive(ordered_repository,
-                                                                                         ordered_changeset_revision,
-                                                                                         work_dir)
-                    if error_message:
-                        error_messages = '%s  %s' % (error_messages, error_message)
-                    else:
-                        archive_name = str(os.path.basename(repository_archive.name))
-                        repositories_archive.add(repository_archive.name, arcname=archive_name)
-                        attributes, sub_elements = self.get_repository_attributes_and_sub_elements(ordered_repository,
-                                                                                                   archive_name)
-                        elem = xml_util.create_element('repository', attributes=attributes, sub_elements=sub_elements)
-                        exported_repository_registry.exported_repository_elems.append(elem)
-            # Keep information about the export in a file named export_info.xml in the archive.
-            sub_elements = self.generate_export_elem()
-            export_elem = xml_util.create_element('export_info', attributes=None, sub_elements=sub_elements)
-            tmp_export_info = xml_util.create_and_write_tmp_file(export_elem, use_indent=True)
             repositories_archive.add(tmp_export_info, arcname='export_info.xml')
-            # Write the manifest, which must preserve the order in which the repositories should be imported.
-            exported_repository_root = xml_util.create_element('repositories')
-            for exported_repository_elem in exported_repository_registry.exported_repository_elems:
-                exported_repository_root.append(exported_repository_elem)
-            tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root, use_indent=True)
-            repositories_archive.add(tmp_manifest, arcname='manifest.xml')
-        except Exception as e:
-            log.exception(str(e))
         finally:
             if os.path.exists(tmp_export_info):
                 os.remove(tmp_export_info)
+        # Write the manifest, which must preserve the order in which the repositories should be imported.
+        exported_repository_root = xml_util.create_element('repositories', attributes=None, sub_elements=None)
+        for elem in exported_repository_registry.exported_repository_elems:
+            exported_repository_root.append(elem)
+        tmp_manifest = xml_util.create_and_write_tmp_file(exported_repository_root)
+        try:
+            repositories_archive.add(tmp_manifest, arcname='manifest.xml')
+        finally:
             if os.path.exists(tmp_manifest):
                 os.remove(tmp_manifest)
-            lock.release()
         if repositories_archive is not None:
             repositories_archive.close()
         if self.using_api:
@@ -134,15 +130,14 @@ class ExportRepositoryManager(object):
         tdah = attribute_handlers.ToolDependencyAttributeHandler(self.app, unpopulate=True)
         file_type_str = basic_util.get_file_type_str(changeset_revision, self.file_type)
         file_name = '%s-%s' % (repository.name, file_type_str)
-        return_code, error_message = hg_util.archive_repository_revision(self.app,
-                                                                         repository,
-                                                                         work_dir,
-                                                                         changeset_revision)
-        if return_code:
-            return None, error_message
+        try:
+            hg_util.archive_repository_revision(self.app, repository, work_dir, changeset_revision)
+        except Exception as e:
+            return None, str(e)
         repository_archive_name = os.path.join(work_dir, file_name)
         # Create a compressed tar archive that will contain only valid files and possibly altered dependency definition files.
         repository_archive = tarfile.open(repository_archive_name, "w:%s" % self.file_type)
+        error_message = ''
         for root, dirs, files in os.walk(work_dir):
             if root.find('.hg') < 0 and root.find('hgrc') < 0:
                 for dir in dirs:
@@ -161,7 +156,7 @@ class ExportRepositoryManager(object):
                         if error_message:
                             return None, error_message
                         if altered:
-                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem, use_indent=True)
+                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                             shutil.move(tmp_filename, full_path)
                     elif name == rt_util.TOOL_DEPENDENCY_DEFINITION_FILENAME:
                         # Eliminate the toolshed, and changeset_revision attributes from all <repository> tags.
@@ -169,7 +164,7 @@ class ExportRepositoryManager(object):
                         if error_message:
                             return None, error_message
                         if altered:
-                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem, use_indent=True)
+                            tmp_filename = xml_util.create_and_write_tmp_file(root_elem)
                             shutil.move(tmp_filename, full_path)
                     repository_archive.add(full_path, arcname=relative_path)
         repository_archive.close()
@@ -244,10 +239,7 @@ class ExportRepositoryManager(object):
         # a dependent package are included in the capsule.
         rb.set_filter_dependencies_needed_for_compiling(False)
         repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-        repo = hg_util.get_repo_for_repository(self.app,
-                                               repository=self.repository,
-                                               repo_path=None,
-                                               create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repository=self.repository)
         ctx = hg_util.get_changectx_for_changeset(repo, self.changeset_revision)
         repo_info_dict = {}
         # Cast unicode to string.
@@ -586,14 +578,8 @@ class ImportRepositoryManager(object):
                                             # The defined changeset_revision is not associated with a repository_metadata
                                             # record, so updates must be necessary.
                                             defined_repository = repository_util.get_repository_by_name_and_owner(self.app, name, owner)
-                                            defined_repo = hg_util.get_repo_for_repository(self.app,
-                                                                                           repository=defined_repository,
-                                                                                           repo_path=None,
-                                                                                           create=False)
                                             updated_changeset_revision = \
-                                                metadata_util.get_next_downloadable_changeset_revision(defined_repository,
-                                                                                                       defined_repo,
-                                                                                                       changeset_revision)
+                                                metadata_util.get_next_downloadable_changeset_revision(self.app, defined_repository, changeset_revision)
                                             if updated_changeset_revision == rm_changeset_revision and updated_changeset_revision != changeset_revision:
                                                 dependent_downloadable_revisions.append(downloadable_revision)
         return dependent_downloadable_revisions
@@ -716,7 +702,7 @@ class ImportRepositoryManager(object):
         archive_file_path = os.path.join(file_path, archive_file_name)
         archive = tarfile.open(archive_file_path, 'r:*')
         repo_dir = repository.repo_path(self.app)
-        hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_dir, create=False)
+        hg_util.get_repo_for_repository(self.app, repo_path=repo_dir)
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
         check_results = commit_util.check_archive(repository, archive)
@@ -809,24 +795,20 @@ class ImportRepositoryManager(object):
                            uploaded_file=None,
                            capsule_file_name=None)
         if url:
-            valid_url = True
             try:
-                stream = urlopen(url)
+                stream = requests.get(url, stream=True)
             except Exception as e:
-                valid_url = False
                 return_dict['error_message'] = 'Error importing file via http: %s' % str(e)
                 return_dict['status'] = 'error'
                 return return_dict
-            if valid_url:
-                fd, uploaded_file_name = tempfile.mkstemp()
-                uploaded_file = open(uploaded_file_name, 'wb')
-                while 1:
-                    chunk = stream.read(CHUNK_SIZE)
-                    if not chunk:
-                        break
+
+            fd, uploaded_file_name = tempfile.mkstemp()
+            uploaded_file = open(uploaded_file_name, 'wb')
+            for chunk in stream.iter_content(chunk_size=CHUNK_SIZE):
+                if chunk:
                     uploaded_file.write(chunk)
-                uploaded_file.flush()
-                uploaded_file_filename = url.split('/')[-1]
+            uploaded_file.flush()
+            uploaded_file_filename = url.split('/')[-1]
         elif file_data not in ('', None):
             uploaded_file = file_data.file
             uploaded_file_name = uploaded_file.name

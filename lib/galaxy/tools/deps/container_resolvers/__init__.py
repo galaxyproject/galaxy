@@ -12,31 +12,29 @@ from galaxy.util.dictifiable import Dictifiable
 
 @six.python_2_unicode_compatible
 @six.add_metaclass(ABCMeta)
-class ContainerResolver(Dictifiable, object):
+class ContainerResolver(Dictifiable):
     """Description of a technique for resolving container images for tool execution."""
 
     # Keys for dictification.
-    dict_collection_visible_keys = ['resolver_type']
+    dict_collection_visible_keys = ['resolver_type', 'can_uninstall_dependencies']
+    can_uninstall_dependencies = False
 
     def __init__(self, app_info=None, **kwds):
         """Default initializer for ``ContainerResolver`` subclasses."""
         self.app_info = app_info
         self.resolver_kwds = kwds
 
-    def _get_config_option(self, key, default=None, config_prefix=None, **kwds):
+    def _get_config_option(self, key, default=None):
         """Look in resolver-specific settings for option and then fallback to
         global settings.
         """
-        global_key = "%s_%s" % (config_prefix, key)
-        if key in kwds:
-            return kwds.get(key)
-        elif self.app_info and hasattr(self.app_info, global_key):
-            return getattr(self.app_info, global_key)
+        if self.app_info and hasattr(self.app_info, key):
+            return getattr(self.app_info, key)
         else:
             return default
 
     @abstractmethod
-    def resolve(self, tool_info):
+    def resolve(self, enabled_container_types, tool_info, **kwds):
         """Find a container matching all supplied requirements for tool.
 
         The supplied argument is a :class:`galaxy.tools.deps.containers.ToolInfo` description

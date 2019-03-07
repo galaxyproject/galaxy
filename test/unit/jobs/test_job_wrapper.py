@@ -13,8 +13,7 @@ from galaxy.model import (
 )
 from galaxy.tools import evaluation
 from galaxy.util.bunch import Bunch
-
-from tools_support import UsesApp
+from ..tools_support import UsesApp
 
 TEST_TOOL_ID = "cufftest"
 TEST_VERSION_COMMAND = "bwa --version"
@@ -30,6 +29,7 @@ class BaseWrapperTestCase(UsesApp):
         job.id = 345
         job.tool_id = TEST_TOOL_ID
         job.user = User()
+        job.object_store_id = "foo"
         self.model_objects = {Job: {345: job}}
         self.app.model.context = MockContext(self.model_objects)
 
@@ -52,9 +52,9 @@ class BaseWrapperTestCase(UsesApp):
 
     def test_version_path(self):
         wrapper = self._wrapper()
-        version_path = wrapper.get_version_string_path()
+        version_path = wrapper.get_version_string_path_legacy()
         expected_path = os.path.join(self.test_directory, "new_files", "GALAXY_VERSION_STRING_345")
-        self.assertEquals(version_path, expected_path)
+        self.assertEqual(version_path, expected_path)
 
     def test_prepare_sets_command_line(self):
         with self._prepared_wrapper() as wrapper:
@@ -162,6 +162,7 @@ class MockTool(object):
         self.version_string_cmd = TEST_VERSION_COMMAND
         self.tool_dir = "/path/to/tools"
         self.dependencies = []
+        self.requires_galaxy_python_environment = False
 
     def build_dependency_shell_commands(self, job_directory):
         return TEST_DEPENDENCIES_COMMANDS

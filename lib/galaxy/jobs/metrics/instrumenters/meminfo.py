@@ -3,9 +3,8 @@ import re
 import sys
 
 from galaxy import util
-
-from ..instrumenters import InstrumentPlugin
-from ...metrics import formatting
+from . import InstrumentPlugin
+from .. import formatting
 
 if sys.version_info > (3,):
     long = int

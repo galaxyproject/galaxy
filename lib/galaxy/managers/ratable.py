@@ -1,11 +1,12 @@
 """
 Mixins for Ratable model managers and serializers.
 """
+import logging
 
 from sqlalchemy.sql.expression import func
+
 from . import base
 
-import logging
 log = logging.getLogger(__name__)
 
 

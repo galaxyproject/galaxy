@@ -1,0 +1,319 @@
+.upload-button {
+    @extend .ml-2;
+    float: right;
+    width: 32px;
+    height: 24px;
+    font-size: inherit;
+    cursor: pointer;
+    -moz-border-radius: $border-radius-base;
+    border-radius: $border-radius-base;
+    .upload-button-link {
+        @extend .panel-header-button;
+        position: absolute;
+        width: inherit;
+    }
+    .progress {
+        position: absolute;
+        height: inherit;
+        width: inherit;
+        font-size: inherit;
+        background-color: $panel-bg-color;
+    }
+    .progress-bar-danger {
+        background: $state-danger-bg;
+    }
+    .progress-bar-success {
+        background: $state-success-bg;
+    }
+    .progress-bar-info {
+        background: $state-running-bg;
+    }
+    .progress-bar-notransition {
+        -webkit-transition: none;
+        -moz-transition: none;
+        -ms-transition: none;
+        -o-transition: none;
+        transition: none;
+    }
+}
+
+.upload-input {
+    font-size: $font-size-base;
+    height: 20px;
+    line-height: 18px;
+}
+
+.upload-select2 {
+    .select2-arrow b {
+        position: absolute;
+        top: -3px;
+    }
+    .select2-choice {
+        @extend .upload-input;
+        background: transparent;
+    }
+    .select2-container-disabled {
+        .select2-arrow {
+            background: transparent;
+        }
+    }
+    .select2-choice {
+        background: transparent;
+        text-align: center;
+        font-weight: normal;
+    }
+}
+
+.upload-view-default {
+    .upload-box.highlight {
+        border-color: $table-border-color;
+        border-width: 2px;
+        padding: 7px !important;
+        .upload-helper {
+            color: $table-border-color;
+        }
+    }
+    .upload-icon {
+        position: relative;
+        cursor: default;
+        font-size: $font-size-base;
+        width: $font-size-base;
+    }
+    .upload-icon-button {
+        @extend .upload-icon;
+        cursor: pointer;
+    }
+    .upload-box {
+        @extend .mt-2;
+        @extend .p-2;
+        width: 100%;
+        height: 300px;
+        text-align: center;
+        overflow: scroll;
+        font-size: $font-size-base;
+        -moz-border-radius: $border-radius-large;
+        border-radius: $border-radius-large;
+        border: 1px dashed $btn-default-border;
+        overflow-x: hidden;
+        -ms-overflow-style: none;
+        .upload-helper {
+            @extend h3;
+            padding: 120px;
+            color: $btn-default-border;
+            i {
+                @extend .mr-2;
+                font-size: inherit;
+            }
+        }
+        .upload-row {
+            @extend .upload-select2;
+            .upload-title {
+                width: 130px;
+                word-wrap: break-word;
+                background: inherit;
+            }
+            input.upload-title {
+                @extend .upload-input;
+            }
+            .upload-title-extended {
+                width: 580px;
+                word-wrap: break-word;
+            }
+            .upload-size {
+                width: 60px;
+                white-space: nowrap;
+            }
+            .upload-extension {
+                width: 100px;
+            }
+            .upload-genome {
+                width: 150px;
+            }
+            .upload-mode {
+                @extend .upload-icon;
+                @extend .m-1;
+                float: left;
+            }
+            .upload-text-column {
+                position: relative;
+                .upload-text {
+                    position: absolute;
+                    display: none;
+                    .upload-text-content {
+                        width: 100%;
+                        height: 80px;
+                        resize: none;
+                        background: inherit;
+                        color: $text-color;
+                        white-space: pre;
+                        overflow: auto;
+                    }
+                    .upload-text-info {
+                        @extend .text-primary;
+                    }
+                }
+            }
+            .upload-info {
+                width: 130px;
+                line-height: $font-size-base;
+                .progress {
+                    @extend .upload-input;
+                    width: 100%;
+                    position: relative;
+                    line-height: 1.6em;
+                    .progress-bar {
+                        border-radius: inherit;
+                        -moz-border-radius: inherit;
+                    }
+                    .upload-percentage {
+                        position: absolute;
+                        text-align: center;
+                        width: 100%;
+                        color: $white;
+                    }
+                }
+            }
+        }
+    }
+    .upload-rule-option {
+        padding-top: 20px;
+        .upload-rule-option-title {
+            font-weight: bold;
+            padding-bottom: 5px;
+        }
+    }
+    .upload-box-solid {
+        border: 1px solid $btn-default-border;
+    }
+    .upload-buttons {
+        padding-top: 30px;
+        button {
+            @extend .ml-1;
+        }
+    }
+}
+
+.upload-view-composite {
+    @extend .upload-view-default;
+    .upload-box {
+        .upload-row {
+            .upload-title {
+                width: 175px;
+            }
+            .upload-source {
+                width: 80px;
+                .btn {
+                    padding: 0px 10px;
+                }
+            }
+        }
+    }
+}
+
+.upload-ftp {
+    height: 250px;
+    width: 550px;
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden;
+    .upload-ftp-row {
+        cursor: pointer;
+        .ftp-name {
+            width: 290px;
+        }
+        .ftp-size {
+            width: 60px;
+        }
+        .ftp-time {
+            width: 165px;
+        }
+    }
+    .upload-ftp-wait {
+        font-size: $font-size-base;
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+    }
+    .upload-ftp-help {
+        margin-bottom: 10px;
+    }
+    .upload-ftp-warning {
+        text-align: center;
+        margin-top: 50px;
+    }
+    .upload-ftp-row {
+        cursor: pointer;
+        .ftp-name {
+            position: relative;
+            word-wrap: break-word;
+        }
+        .ftp-size {
+            white-space: nowrap;
+        }
+        .ftp-time {
+            white-space: nowrap;
+        }
+    }
+    .upload-ftp-row:hover {
+        @extend .current;
+    }
+    th {
+        padding: 5px !important;
+    }
+    td {
+        padding: 8px 5px !important;
+    }
+}
+
+.upload-table {
+    @extend .table;
+    @extend .table-striped;
+    td {
+        padding: 0.5rem;
+    }
+    .alert-success {
+        background: $brand-success !important;
+    }
+}
+
+.upload-settings {
+    position: relative;
+    .upload-settings-cover {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0px;
+        left: 0px;
+        background: $white;
+        opacity: 0.4;
+        cursor: no-drop;
+    }
+    tr {
+        cursor: pointer;
+    }
+    tr:hover {
+        @extend .current;
+    }
+}
+
+.upload-footer {
+    @extend .mt-2;
+    height: 20px;
+    text-align: center;
+    .upload-footer-title {
+        @extend .ml-2;
+        font-weight: bold;
+    }
+    @extend .upload-select2;
+    .select2-choice {
+        width: 150px;
+    }
+}
+
+.upload-top {
+    text-align: center;
+    .upload-top-info {
+        font-weight: $font-size-base;
+        text-align: center;
+    }
+}

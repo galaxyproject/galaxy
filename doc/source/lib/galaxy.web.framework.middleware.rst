@@ -25,14 +25,6 @@ galaxy\.web\.framework\.middleware\.error module
     :undoc-members:
     :show-inheritance:
 
-galaxy\.web\.framework\.middleware\.graphite module
----------------------------------------------------
-
-.. automodule:: galaxy.web.framework.middleware.graphite
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 galaxy\.web\.framework\.middleware\.profile module
 --------------------------------------------------
 
@@ -61,6 +53,14 @@ galaxy\.web\.framework\.middleware\.sentry module
 -------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.sentry
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.web\.framework\.middleware\.sqldebug module
+---------------------------------------------------
+
+.. automodule:: galaxy.web.framework.middleware.sqldebug
     :members:
     :undoc-members:
     :show-inheritance:

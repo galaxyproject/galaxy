@@ -16,13 +16,14 @@ from __future__ import print_function
 
 import os
 import sys
-import urllib2
 from xml import etree
+
+import requests
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
 
-import galaxy.model
 import galaxy.datatypes.registry
+import galaxy.model
 
 SCRIPTS_DIR = os.path.dirname(__file__)
 PROJECT_DIR = os.path.abspath(os.path.join(SCRIPTS_DIR, os.pardir))
@@ -35,7 +36,7 @@ EDAM_OWL_URL = "http://data.bioontology.org/ontologies/EDAM/submissions/25/downl
 
 
 if not os.path.exists("/tmp/edam.owl"):
-    open("/tmp/edam.owl", "w").write(urllib2.urlopen(EDAM_OWL_URL).read())
+    open("/tmp/edam.owl", "w").write(requests.get(EDAM_OWL_URL).text)
 
 
 owl_xml_tree = etree.ElementTree.parse("/tmp/edam.owl")

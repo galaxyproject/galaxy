@@ -83,7 +83,7 @@ def __main__():
         GALAXY_DATA_INDEX_DIR = options.GALAXY_DATA_INDEX_DIR
         fasta_file = options.fasta
         input_filename, output_filename = args
-    except:
+    except Exception:
         doc_optparse.exception()
 
     includes_strand_col = strand_col >= 0
@@ -180,7 +180,7 @@ def __main__():
                         start, end = gff_util.convert_gff_coords_to_bed([start, end])
                     if includes_strand_col:
                         strand = fields[strand_col]
-                except:
+                except Exception:
                     warning = "Invalid chrom, start or end column values. "
                     warnings.append(warning)
                     if not invalid_lines:
@@ -212,7 +212,7 @@ def __main__():
                 nibs[chrom] = nib = bx.seq.nib.NibFile(open("%s/%s.nib" % (seq_path, chrom)))
             try:
                 sequence = nib.get(start, end - start)
-            except Exception as e:
+            except Exception:
                 warning = "Unable to fetch the sequence from '%d' to '%d' for build '%s'. " % (start, end - start, dbkey)
                 warnings.append(warning)
                 if not invalid_lines:
@@ -231,7 +231,7 @@ def __main__():
                         sequence += twobitfile[interval.chrom][interval.start:interval.end]
                 else:
                     sequence = twobitfile[chrom][start:end]
-            except:
+            except Exception:
                 warning = "Unable to fetch the sequence from '%d' to '%d' for chrom '%s'. " % (start, end - start, chrom)
                 warnings.append(warning)
                 if not invalid_lines:

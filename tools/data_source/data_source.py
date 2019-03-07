@@ -6,7 +6,7 @@ import socket
 import sys
 from json import dumps, loads
 
-from six.moves.urllib.parse import urlencode
+from six.moves.urllib.parse import urlencode, urlparse
 from six.moves.urllib.request import urlopen
 
 from galaxy.datatypes import sniff
@@ -29,14 +29,14 @@ def load_input_parameters(filename, erase_file=True):
     try:
         json_params = loads(open(filename, 'r').read())
         datasource_params = json_params.get('param_dict')
-    except:
+    except Exception:
         json_params = None
         for line in open(filename, 'r'):
             try:
                 line = line.strip()
                 fields = line.split('\t')
                 datasource_params[fields[0]] = fields[1]
-            except:
+            except Exception:
                 continue
     if erase_file:
         open(filename, 'w').close()  # open file for writing, then close, removes params from file
@@ -47,7 +47,7 @@ def __main__():
     filename = sys.argv[1]
     try:
         max_file_size = int(sys.argv[2])
-    except:
+    except Exception:
         max_file_size = 0
 
     job_params, params = load_input_parameters(filename)
@@ -80,7 +80,7 @@ def __main__():
     for data_dict in job_params['output_data']:
         cur_filename = data_dict.get('file_name', filename)
         cur_URL = params.get('%s|%s|URL' % (GALAXY_PARAM_PREFIX, data_dict['out_data_name']), URL)
-        if not cur_URL:
+        if not cur_URL or urlparse(cur_URL).scheme not in ('http', 'https', 'ftp'):
             open(cur_filename, 'w').write("")
             stop_err('The remote data source application has not sent back a URL parameter in the request.')
 
@@ -89,23 +89,22 @@ def __main__():
             if not URL_method or URL_method == 'get':
                 page = urlopen(cur_URL)
             elif URL_method == 'post':
-                page = urlopen(cur_URL, urlencode(params))
+                page = urlopen(cur_URL, urlencode(params).encode("utf-8"))
         except Exception as e:
             stop_err('The remote data source application may be off line, please try again later. Error: %s' % str(e))
         if max_file_size:
             file_size = int(page.info().get('Content-Length', 0))
             if file_size > max_file_size:
                 stop_err('The size of the data (%d bytes) you have requested exceeds the maximum allowed (%d bytes) on this server.' % (file_size, max_file_size))
-        # do sniff stream for multi_byte
         try:
-            cur_filename, is_multi_byte = sniff.stream_to_open_named_file(page, os.open(cur_filename, os.O_WRONLY | os.O_CREAT), cur_filename, source_encoding=get_charset_from_http_headers(page.headers))
+            cur_filename = sniff.stream_to_open_named_file(page, os.open(cur_filename, os.O_WRONLY | os.O_CREAT), cur_filename, source_encoding=get_charset_from_http_headers(page.headers))
         except Exception as e:
             stop_err('Unable to fetch %s:\n%s' % (cur_URL, e))
 
         # here import checks that upload tool performs
         if enhanced_handling:
             try:
-                ext = sniff.handle_uploaded_dataset_file(filename, datatypes_registry, ext=data_dict['ext'], is_multi_byte=is_multi_byte)
+                ext = sniff.handle_uploaded_dataset_file(filename, datatypes_registry, ext=data_dict['ext'])
             except Exception as e:
                 stop_err(str(e))
             info = dict(type='dataset',

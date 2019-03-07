@@ -20,7 +20,7 @@
                 <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='import_workflow', workflow_name=tool_shed_encode( workflow_name ), repository_id=trans.security.encode_id( repository.id ) )}">Import workflow to Galaxy</a></li>
             %endif
             %if repository.can_reinstall_or_activate:
-                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repositories', operation='activate or reinstall', id=trans.security.encode_id( repository.id ) )}">Activate or reinstall repository</a>
+                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='restore_repository', id=trans.security.encode_id( repository.id ) )}">Activate or reinstall repository</a>
             %endif
             %if in_error_state:
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='reset_to_install', id=trans.security.encode_id( repository.id ), reset_repository=True )}">Reset to install</a>
@@ -33,15 +33,11 @@
                 %if repository.can_reset_metadata:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='reset_repository_metadata', id=trans.security.encode_id( repository.id ) )}">Reset repository metadata</a>
                 %endif
-                %if repository.includes_tools:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='set_tool_versions', id=trans.security.encode_id( repository.id ) )}">Set tool versions</a>
-                %endif
                 %if tool_dependency_ids:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='manage_repository_tool_dependencies', tool_dependency_ids=tool_dependency_ids, repository_id=trans.security.encode_id( repository.id ) )}">Manage tool dependencies</a>
                 %endif
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
             %endif
-            <a class="action-button" target="galaxy_main" href="${h.url_for( controller='admin_toolshed', action='repair_repository', id=trans.security.encode_id( repository.id ) )}">Repair repository</a>
         </div>
     </ul>
 </%def>

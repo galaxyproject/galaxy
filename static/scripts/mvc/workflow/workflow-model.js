@@ -1,2 +1,0 @@
-define(["mvc/base-mvc"],function(a){var b="workflow",c=Backbone.Model.extend(a.LoggableMixin).extend({_logNamespace:b,urlRoot:"/api/workflows",toJSON:function(){return{workflow:this.attributes}}}),d=Backbone.Collection.extend({model:c,url:"/api/workflows"});return{WorkflowItem:c,WorkflowCollection:d}});
-//# sourceMappingURL=../../../maps/mvc/workflow/workflow-model.js.map

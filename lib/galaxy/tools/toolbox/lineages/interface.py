@@ -1,6 +1,6 @@
 import threading
 
-from distutils.version import LooseVersion
+import packaging.version
 
 from galaxy.util.tool_version import remove_version_from_guid
 
@@ -30,9 +30,9 @@ class ToolLineageVersion(object):
         )
 
 
-class ToolLineage:
+class ToolLineage(object):
     """ Simple tool's loaded directly from file system with lineage
-    determined solely by distutil's LooseVersion naming scheme.
+    determined solely by PEP 440 versioning scheme.
     """
     lineages_by_id = {}
     lock = threading.Lock()
@@ -43,7 +43,7 @@ class ToolLineage:
 
     @property
     def tool_versions(self):
-        return sorted(self._tool_versions, key=LooseVersion)
+        return sorted(self._tool_versions, key=packaging.version.parse)
 
     @property
     def tool_ids(self):

@@ -1,6 +1,6 @@
 <tool id="gene2exon1" name="Gene BED To Exon/Intron/Codon BED" version="1.0.0">
 <description>expander</description>
-  <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region "--exons"</command>
+  <command interpreter="python">ucsc_gene_bed_to_exon_bed.py --input=$input1 --output=$out_file1 --region=$region --exons</command>
   <inputs>
     <param name="region" type="select">
       <label>Extract</label>

@@ -19,6 +19,7 @@ PATH_AND_RECURSIVE_ERROR = "Cannot specify a single file and recursive."
 LOAD_FAILURE_ERROR = "Failed to load tool with path %s."
 TOOL_LOAD_ERROR = object()
 TOOL_REGEX = re.compile(r"<tool\s")
+DATA_MANAGER_REGEX = re.compile(r"\stool_type=\"manage_data\"")
 
 YAML_EXTENSIONS = [".yaml", ".yml", ".json"]
 CWL_EXTENSIONS = YAML_EXTENSIONS + [".cwl"]
@@ -153,8 +154,7 @@ def looks_like_a_tool(path_or_uri_like, invalid_names=[], enable_beta_formats=Fa
     return looks
 
 
-def looks_like_a_tool_xml(path):
-    """Quick check to see if a file looks like it may be a Galaxy XML tool file."""
+def looks_like_xml(path, regex=TOOL_REGEX):
     full_path = os.path.abspath(path)
 
     if not full_path.endswith(".xml"):
@@ -165,17 +165,27 @@ def looks_like_a_tool_xml(path):
 
     if(checkers.check_binary(full_path) or
        checkers.check_image(full_path) or
-       checkers.check_gzip(full_path)[0] or
-       checkers.check_bz2(full_path)[0] or
-       checkers.check_zip(full_path)):
+       checkers.is_gzip(full_path) or
+       checkers.is_bz2(full_path) or
+       checkers.is_zip(full_path)):
         return False
 
     with open(path, "r") as f:
         start_contents = f.read(5 * 1024)
-        if TOOL_REGEX.search(start_contents):
+        if regex.search(start_contents):
             return True
 
     return False
+
+
+def looks_like_a_tool_xml(path):
+    """Quick check to see if a file looks like it may be a Galaxy XML tool file."""
+    return looks_like_xml(path=path, regex=TOOL_REGEX)
+
+
+def looks_like_a_data_manager_xml(path):
+    """Quick check to see if a file looks like it may be a Galaxy data manager XML file."""
+    return looks_like_xml(path=path, regex=DATA_MANAGER_REGEX)
 
 
 def is_a_yaml_with_class(path, classes):

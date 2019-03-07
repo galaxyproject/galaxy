@@ -2,6 +2,8 @@
 Migration script to add the remote_repository_url and homepage_url
 columns to the repository table.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -21,7 +23,7 @@ metadata = MetaData()
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     Repository_table = Table("repository", metadata, autoload=True)
@@ -33,8 +35,8 @@ def upgrade(migrate_engine):
         c_homepage.create(Repository_table)
         assert c_remote is Repository_table.c.remote_repository_url
         assert c_homepage is Repository_table.c.homepage_url
-    except Exception as e:
-        print "Adding remote_repository_url and homepage_url columns to the repository table failed: %s" % str(e)
+    except Exception:
+        log.exception("Adding remote_repository_url and homepage_url columns to the repository table failed.")
 
 
 def downgrade(migrate_engine):
@@ -45,5 +47,5 @@ def downgrade(migrate_engine):
     try:
         Repository_table.c.remote_repository_url.drop()
         Repository_table.c.homepage_url.drop()
-    except Exception as e:
-        print "Dropping columns remote_repository_url and homepage_url from the repository table failed: %s" % str(e)
+    except Exception:
+        log.exception("Dropping columns remote_repository_url and homepage_url from the repository table failed.")

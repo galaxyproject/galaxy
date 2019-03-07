@@ -12,7 +12,7 @@ def __main__():
     try:
         infile = open(sys.argv[1], 'r')
         outfile = open(sys.argv[2], 'w')
-    except:
+    except Exception:
         stop_err('Cannot open or create a file\n')
 
     if len(sys.argv) < 4:
@@ -30,7 +30,7 @@ def __main__():
             for col in cols:
                 try:
                     line += fields[int(col) - 1]
-                except:
+                except Exception:
                     skipped_lines += 1
 
             print(line, file=outfile)

@@ -1,31 +1,42 @@
 """
 Galaxy web framework helpers
-"""
 
-from ..base import server_starttime
+The functions in this module should be considered part of the API used by
+visualizations in their mako files through the `$h` object, see
+GalaxyWebTransaction in galaxy/web/framework/webapp.py
+"""
 from datetime import datetime, timedelta
 
-from galaxy.util import hash_util
-from galaxy.util import unicodify
-from galaxy.util.json import safe_dumps as dumps  # Used by mako templates # noqa: F401
-from webhelpers import date
-from webhelpers.html.tags import stylesheet_link, javascript_link
-
+from babel import default_locale
+from babel.dates import format_timedelta
 from routes import url_for
+
+from galaxy.util import (
+    hash_util,
+    smart_str,
+    unicodify,
+)
+from galaxy.util.json import safe_dumps as dumps  # noqa: F401
+from .tags import (
+    javascript_link,
+    stylesheet_link
+)
+from ..base import server_starttime
 
 
 def time_ago(x):
     """
     Convert a datetime to a string.
     """
-    delta = timedelta(weeks=1)
-
     # If the date is more than one week ago, then display the actual date instead of in words
-    if (datetime.utcnow() - x) > delta:  # Greater than a week difference
+    if datetime.utcnow() - x > timedelta(weeks=1):  # Greater than a week difference
         return x.strftime("%b %d, %Y")
     else:
-        date_array = date.distance_of_time_in_words(x, datetime.utcnow()).replace(",", "").split(" ")
-        return "~%s %s ago" % (date_array[0], date_array[1])
+        # Workaround https://github.com/python-babel/babel/issues/137
+        kwargs = dict()
+        if not default_locale('LC_TIME'):
+            kwargs['locale'] = 'en_US_POSIX'
+        return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)
 
 
 def iff(a, b, c):
@@ -47,9 +58,8 @@ def truncate(content, length=100, suffix='...'):
     else:
         return content[:length].rsplit(' ', 1)[0] + suffix
 
+
 # Quick helpers for static content
-
-
 def css(*args):
     """
     Take a list of stylesheet names (no extension) and return appropriate string
@@ -57,7 +67,8 @@ def css(*args):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join([stylesheet_link(url_for("/static/style/%s.css?v=%s" % (name, server_starttime))) for name in args])
+    urls = (url_for("/static/style/%s.css?v=%s" % (name, server_starttime)) for name in args)
+    return stylesheet_link(*urls)
 
 
 def js_helper(prefix, *args):
@@ -67,7 +78,8 @@ def js_helper(prefix, *args):
 
     Cache-bust with time that server started running on
     """
-    return "\n".join([javascript_link(url_for("/%s%s.js?v=%s" % (prefix, name, server_starttime))) for name in args])
+    urls = (url_for("/%s%s.js?v=%s" % (prefix, name, server_starttime)) for name in args)
+    return javascript_link(*urls)
 
 
 def js(*args):
@@ -93,7 +105,7 @@ def md5(s):
     Return hex encoded md5 hash of string s
     """
     m = hash_util.md5()
-    m.update(s)
+    m.update(smart_str(s))
     return m.hexdigest()
 
 
@@ -111,3 +123,21 @@ def is_true(val):
     Returns true if input is a boolean and true or is a string and looks like a true value.
     """
     return val is True or val in ['True', 'true', 'T', 't']
+
+
+def to_js_bool(val):
+    """
+    Prints javascript boolean for passed value.
+    TODO: isn't there a standard python JSON parser we should
+    be using instead of all these manual conversions?
+    """
+    return iff(is_true(val), "true", "false")
+
+
+def js_nullable(val):
+    """
+    Prints javascript null instead of python None
+    TODO: isn't there a standard python JSON parser we should
+    be using instead of all these manual conversions?
+    """
+    return iff(val is None, "null", val)

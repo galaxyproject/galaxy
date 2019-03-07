@@ -1,6 +1,8 @@
 """
 Migration script to add the suite column to the tool table.
 """
+from __future__ import print_function
+
 import logging
 import sys
 
@@ -19,7 +21,7 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    print __doc__
+    print(__doc__)
     metadata.reflect()
     # Create and initialize imported column in job table.
     Tool_table = Table("tool", metadata, autoload=True)
@@ -34,9 +36,8 @@ def upgrade(migrate_engine):
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
         migrate_engine.execute("UPDATE tool SET suite=%s" % default_false)
-    except Exception as e:
-        print "Adding suite column to the tool table failed: %s" % str(e)
-        log.debug("Adding suite column to the tool table failed: %s" % str(e))
+    except Exception:
+        log.exception("Adding suite column to the tool table failed.")
 
 
 def downgrade(migrate_engine):
@@ -46,6 +47,5 @@ def downgrade(migrate_engine):
     Tool_table = Table("tool", metadata, autoload=True)
     try:
         Tool_table.c.suite.drop()
-    except Exception as e:
-        print "Dropping column suite from the tool table failed: %s" % str(e)
-        log.debug("Dropping column suite from the tool table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping column suite from the tool table failed.")

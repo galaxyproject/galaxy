@@ -1,17 +1,21 @@
 import calendar
 import logging
 import operator
-import galaxy.model
-import sqlalchemy as sa
+from datetime import (
+    date,
+    datetime,
+    timedelta
+)
 
+import sqlalchemy as sa
+from markupsafe import escape
+from sqlalchemy import false
+
+import galaxy.model
 from galaxy import util
 from galaxy.web.base.controller import BaseUIController, web
 from galaxy.webapps.reports.controllers.jobs import sorter
 from galaxy.webapps.reports.controllers.query import ReportQueryBuilder
-
-from datetime import datetime, date, timedelta
-from markupsafe import escape
-from sqlalchemy import false
 
 log = logging.getLogger(__name__)
 
@@ -191,9 +195,11 @@ class Users(BaseUIController, ReportQueryBuilder):
         user_cutoff = int(kwd.get('user_cutoff', 60))
         sorting = 0 if kwd.get('sorting', 'User') == 'User' else 1
         descending = 1 if kwd.get('descending', 'desc') == 'desc' else -1
-        sorting_functions = [
-            lambda first, second: descending if first[0].lower() > second[0].lower() else -descending,
-            lambda first, second: descending if first[1] < second[1] else -descending]
+        reverse = descending == 1
+        sort_keys = (
+            lambda v: v[0].lower(),
+            lambda v: v[1]
+        )
 
         req = sa.select(
             (sa.func.count(galaxy.model.History.table.c.id).label('history'),
@@ -204,7 +210,7 @@ class Users(BaseUIController, ReportQueryBuilder):
             order_by=[sa.desc('username'), 'history'])
 
         histories = [(_.username if _.username is not None else "Unknown", _.history) for _ in req.execute()]
-        histories.sort(sorting_functions[sorting])
+        histories.sort(key=sort_keys[sorting], reverse=reverse)
         if user_cutoff != 0:
             histories = histories[:user_cutoff]
 

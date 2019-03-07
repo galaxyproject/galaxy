@@ -6,21 +6,28 @@ except ImportError:
     Display = None
 
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 DEFAULT_BROWSER = "auto"
+LOGGING_PREFS = {
+    "browser": "ALL",
+}
 
 
-def get_local_driver(browser=DEFAULT_BROWSER):
+def get_local_browser(browser):
     if browser == "auto":
         if _which("chromedriver"):
-            browser = "CHROME"
+            return "CHROME"
         elif _which("geckodriver"):
-            browser = "FIREFOX"
+            return "FIREFOX"
         else:
             raise Exception("Selenium browser is 'auto' but neither geckodriver or chromedriver are found on PATH.")
 
+
+def get_local_driver(browser=DEFAULT_BROWSER, headless=False):
+    browser = get_local_browser(browser)
     assert browser in ["CHROME", "FIREFOX", "OPERA", "PHANTOMJS"]
     driver_to_class = {
         "CHROME": webdriver.Chrome,
@@ -29,7 +36,12 @@ def get_local_driver(browser=DEFAULT_BROWSER):
         "PHANTOMJS": webdriver.PhantomJS,
     }
     driver_class = driver_to_class[browser]
-    return driver_class()
+    if browser == 'CHROME' and headless:
+        options = ChromeOptions()
+        options.add_argument('--headless')
+        return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS}, chrome_options=options)
+    else:
+        return driver_class(desired_capabilities={"loggingPrefs": LOGGING_PREFS})
 
 
 def get_remote_driver(
@@ -42,9 +54,7 @@ def get_remote_driver(
         browser = "CHROME"
     assert browser in ["CHROME", "EDGE", "ANDROID", "FIREFOX", "INTERNETEXPLORER", "IPAD", "IPHONE", "OPERA", "PHANTOMJS", "SAFARI"]
     desired_capabilities = getattr(DesiredCapabilities, browser)
-    desired_capabilities["loggingPrefs"] = {
-        "browser": "ALL",
-    }
+    desired_capabilities["loggingPrefs"] = LOGGING_PREFS
     executor = 'http://%s:%s/wd/hub' % (host, port)
     driver = webdriver.Remote(
         command_executor=executor,

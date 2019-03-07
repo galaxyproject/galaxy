@@ -1,8 +1,7 @@
 import logging
-import os
 import tempfile
 
-from six import string_types
+from six import string_types, text_type
 from six.moves import shlex_quote
 
 from galaxy import exceptions
@@ -60,7 +59,7 @@ class RawObjectWrapper(ToolParameterValueWrapper):
     def __str__(self):
         try:
             return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
-        except:
+        except Exception:
             # Most likely None, which lacks __module__.
             return str(self.obj)
 
@@ -121,7 +120,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
     attributes are accessible.
     """
 
-    class SelectToolParameterFieldWrapper:
+    class SelectToolParameterFieldWrapper(object):
         """
         Provide access to any field by name or index for this particular value.
         Only applicable for dynamic_options selects, which have more than simple 'options' defined (name, value, selected).
@@ -171,6 +170,11 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
     def __getattr__(self, key):
         return getattr(self.input, key)
 
+    def __iter__(self):
+        if not self.input.multiple:
+            raise Exception("Tried to iterate over a non-multiple parameter.")
+        return self.value.__iter__()
+
 
 class DatasetFilenameWrapper(ToolParameterValueWrapper):
     """
@@ -178,7 +182,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     attributes are accessible.
     """
 
-    class MetadataWrapper:
+    class MetadataWrapper(object):
         """
         Wraps a Metadata Collection to return MetadataParameters wrapped
         according to the metadata spec. Methods implemented to match behavior
@@ -212,7 +216,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         def get(self, key, default=None):
             try:
                 return getattr(self, key)
-            except:
+            except Exception:
                 return default
 
         def items(self):
@@ -223,7 +227,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             try:
                 # TODO: allow this to work when working with grouping
                 ext = tool.inputs[name].extensions[0]
-            except:
+            except Exception:
                 ext = 'data'
             self.dataset = wrap_with_safe_string(NoneDataset(datatypes_registry=datatypes_registry, ext=ext), no_wrap_classes=ToolParameterValueWrapper)
         else:
@@ -233,6 +237,11 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             self.unsanitized = dataset
             self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
             self.metadata = self.MetadataWrapper(dataset.metadata)
+            if hasattr(dataset, 'tags'):
+                self.groups = {tag.user_value.lower() for tag in dataset.tags if tag.user_tname == 'group'}
+            else:
+                # May be a 'FakeDatasetAssociation'
+                self.groups = set()
         self.datatypes_registry = datatypes_registry
         self.false_path = getattr(dataset_path, "false_path", None)
         self.false_extra_files_path = getattr(dataset_path, "false_extra_files_path", None)
@@ -297,7 +306,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     __nonzero__ = __bool__
 
 
-class HasDatasets:
+class HasDatasets(object):
 
     def _dataset_wrapper(self, dataset, dataset_paths, **kwargs):
         wrapper_kwds = kwargs.copy()
@@ -308,10 +317,10 @@ class HasDatasets:
         return DatasetFilenameWrapper(dataset, **wrapper_kwds)
 
     def paths_as_file(self, sep="\n"):
-        handle, filepath = tempfile.mkstemp(prefix="gx_file_list", dir=self.job_working_directory)
         contents = sep.join(map(str, self))
-        os.write(handle, contents)
-        os.close(handle)
+        with tempfile.NamedTemporaryFile(mode='w+', prefix="gx_file_list", dir=self.job_working_directory, delete=False) as fh:
+            fh.write(contents)
+            filepath = fh.name
         return filepath
 
 
@@ -320,6 +329,7 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
     """
 
     def __init__(self, job_working_directory, datasets, dataset_paths=[], **kwargs):
+        self._dataset_elements_cache = {}
         if not isinstance(datasets, list):
             datasets = [datasets]
 
@@ -341,14 +351,31 @@ class DatasetListWrapper(list, ToolParameterValueWrapper, HasDatasets):
         for dataset_instance_source in dataset_instance_sources:
             if dataset_instance_source is None:
                 dataset_instances.append(dataset_instance_source)
-            elif dataset_instance_source.history_content_type == "dataset":
+            elif getattr(dataset_instance_source, "history_content_type", None) == "dataset":
                 dataset_instances.append(dataset_instance_source)
+            elif hasattr(dataset_instance_source, "child_collection"):
+                dataset_instances.extend(dataset_instance_source.child_collection.dataset_elements)
             else:
                 dataset_instances.extend(dataset_instance_source.collection.dataset_elements)
         return dataset_instances
 
+    def get_datasets_for_group(self, group):
+        group = text_type(group).lower()
+        if not self._dataset_elements_cache.get(group):
+            wrappers = []
+            for element in self:
+                if any([t for t in element.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                    wrappers.append(element)
+            self._dataset_elements_cache[group] = wrappers
+        return self._dataset_elements_cache[group]
+
     def __str__(self):
         return ','.join(map(str, self))
+
+    def __bool__(self):
+        # Fail `#if $param` checks in cheetah if optional input is not provided
+        return any(self)
+    __nonzero__ = __bool__
 
 
 class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
@@ -356,6 +383,9 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def __init__(self, job_working_directory, has_collection, dataset_paths=[], **kwargs):
         super(DatasetCollectionWrapper, self).__init__()
         self.job_working_directory = job_working_directory
+        self._dataset_elements_cache = {}
+        self.dataset_paths = dataset_paths
+        self.kwargs = kwargs
 
         if has_collection is None:
             self.__input_supplied = False
@@ -374,6 +404,7 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         else:
             collection = has_collection
             self.name = None
+        self.collection = collection
 
         elements = collection.elements
         element_instances = odict.odict()
@@ -394,6 +425,16 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         self.__element_instances = element_instances
         self.__element_instance_list = element_instance_list
 
+    def get_datasets_for_group(self, group):
+        group = text_type(group).lower()
+        if not self._dataset_elements_cache.get(group):
+            wrappers = []
+            for element in self.collection.dataset_elements:
+                if any([t for t in element.dataset_instance.tags if t.user_tname.lower() == 'group' and t.value.lower() == group]):
+                    wrappers.append(self._dataset_wrapper(element.element_object, self.dataset_paths, identifier=element.element_identifier, **self.kwargs))
+            self._dataset_elements_cache[group] = wrappers
+        return self._dataset_elements_cache[group]
+
     def keys(self):
         if not self.__input_supplied:
             return []
@@ -402,6 +443,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     @property
     def is_collection(self):
         return True
+
+    @property
+    def element_identifier(self):
+        return self.name
 
     @property
     def is_input_supplied(self):
@@ -418,7 +463,10 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
     def __getattr__(self, key):
         if not self.__input_supplied:
             return None
-        return self.__element_instances[key]
+        try:
+            return self.__element_instances[key]
+        except KeyError:
+            raise AttributeError()
 
     def __iter__(self):
         if not self.__input_supplied:
@@ -430,3 +478,21 @@ class DatasetCollectionWrapper(ToolParameterValueWrapper, HasDatasets):
         # not specified or if resulting collection is empty.
         return self.__input_supplied and bool(self.__element_instance_list)
     __nonzero__ = __bool__
+
+
+class ElementIdentifierMapper(object):
+    """Track mapping of dataset collection elements datasets to element identifiers."""
+
+    def __init__(self, input_datasets=None):
+        if input_datasets is not None:
+            self.identifier_key_dict = dict((v, "%s|__identifier__" % k) for k, v in input_datasets.items())
+        else:
+            self.identifier_key_dict = {}
+
+    def identifier(self, dataset_value, input_values):
+        identifier_key = self.identifier_key_dict.get(dataset_value, None)
+        element_identifier = None
+        if identifier_key:
+            element_identifier = input_values.get(identifier_key, None)
+
+        return element_identifier

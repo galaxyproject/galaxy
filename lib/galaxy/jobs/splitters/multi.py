@@ -1,7 +1,7 @@
-import os
-import logging
-import shutil
 import inspect
+import logging
+import os
+import shutil
 
 from galaxy import model, util
 
@@ -83,7 +83,7 @@ def do_split(job_wrapper):
                 raise Exception(log_error)
             input_datasets.append(input.dataset)
 
-    input_type = type_to_input_map.keys()[0]
+    input_type = next(iter(type_to_input_map.keys()))
     # DBTODO execute an external task to do the splitting, this should happen at refactor.
     # If the number of tasks is sufficiently high, we can use it to calculate job completion % and give a running status.
     try:

@@ -25,12 +25,11 @@
 <%inherit file="${inherit(context)}"/>
 
 <%def name="stylesheets()">
-    ${h.css('base','jquery.rating')}
+    ${h.css('base')}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
     ${common_javascripts(repository)}
 </%def>
 
@@ -90,7 +89,7 @@ ${render_tool_shed_repository_actions( repository=repository, changeset_revision
                             <td>${render_star_rating( repository_rating_name, review.rating, disabled=True )}</td>
                             %if review.user == trans.user:
                                 <form name="approve_repository_review" action="${h.url_for( controller='repository_review', action='approve_repository_review', id=encoded_review_id ) }" method="post" >
-                                    <td>${approved_select_field.get_html()}</td>
+                                    <td>${render_select(approved_select_field)}</td>
                                     <td><input type="submit" name="approve_repository_review_button" value="Save"/></td>
                                 </form>
                             %else:

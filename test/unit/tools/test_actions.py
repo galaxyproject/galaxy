@@ -2,16 +2,15 @@ import string
 import unittest
 from xml.etree.ElementTree import XML
 
-import tools_support
 from galaxy import model
+from galaxy.exceptions import UserActivationRequiredException
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
     on_text_for_names
 )
 from galaxy.tools.parser.output_objects import ToolOutput
-
-TEST_HANDLER_NAME = "test_handler_1"
+from .. import tools_support
 
 
 # I cannot think of a saner way to test if data is being wrapped than use a
@@ -72,7 +71,6 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
         self.app.model.context.flush()
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
-        self.app.job_config["get_handler"] = lambda h: TEST_HANDLER_NAME
         self.app.object_store = MockObjectStore()
 
     def test_output_created(self):
@@ -82,7 +80,7 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
 
     def test_output_label(self):
         _, output = self._simple_execute()
-        self.assertEquals(output["out1"].name, "Output (moo)")
+        self.assertEqual(output["out1"].name, "Output (moo)")
 
     def test_output_label_data(self):
         hda1 = self.__add_dataset()
@@ -97,12 +95,12 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
             tools_support.SIMPLE_CAT_TOOL_CONTENTS,
             incoming,
         )
-        self.assertEquals(output["out1"].name, "Test Tool on data 2 and data 1")
+        self.assertEqual(output["out1"].name, "Test Tool on data 2 and data 1")
 
     def test_object_store_ids(self):
         _, output = self._simple_execute(contents=TWO_OUTPUTS)
-        self.assertEquals(output["out1"].name, "Output (moo)")
-        self.assertEquals(output["out2"].name, "Output 2 (moo)")
+        self.assertEqual(output["out1"].name, "Output (moo)")
+        self.assertEqual(output["out2"].name, "Output 2 (moo)")
 
     def test_params_wrapped(self):
         hda1 = self.__add_dataset()
@@ -111,11 +109,15 @@ class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesApp, tools_
             incoming=dict(repeat1=[dict(param1=hda1)]),
         )
         # Again this is a stupid way to ensure data parameters are wrapped.
-        self.assertEquals(output["out1"].name, "Output (%s)" % hda1.dataset.get_file_name())
+        self.assertEqual(output["out1"].name, "Output (%s)" % hda1.dataset.get_file_name())
 
-    def test_handler_set(self):
-        job, _ = self._simple_execute()
-        assert job.handler == TEST_HANDLER_NAME
+    def test_inactive_user_job_create_failure(self):
+        self.trans.user_is_active = False
+        try:
+            self._simple_execute()
+        except UserActivationRequiredException:
+            return
+        assert False, "Tool execution succeeded for inactive user!"
 
     def __add_dataset(self, state='ok'):
         hda = model.HistoryDatasetAssociation()
@@ -237,6 +239,20 @@ class MockTrans(object):
         self.user = user
         self.sa_session = self.app.model.context
         self.model = app.model
+        self._user_is_active = True
+
+    def get_user_is_active(self):
+        # NOTE: the real user_is_active also checks whether activation is enabled in the config
+        return self._user_is_active
+
+    def set_user_is_active(self, active):
+        self._user_is_active = active
+
+    user_is_active = property(get_user_is_active, set_user_is_active)
+
+    def check_user_activation(self):
+        if not self.user_is_active:
+            raise UserActivationRequiredException()
 
     def db_dataset_for(self, input_db_key):
         return None

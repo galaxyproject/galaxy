@@ -1,26 +1,24 @@
 """
 Provides factory methods to assemble the Galaxy web application
 """
-
-import logging
 import atexit
+import logging
 import os
-
 from inspect import isclass
 
 from paste import httpexceptions
 
-from galaxy.util import asbool
-from galaxy.webapps.util import (
-    MiddlewareWrapUnsupported,
-    build_template_error_formatters,
-    wrap_if_allowed,
-    wrap_if_allowed_or_fail
-)
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework.webapp
+from galaxy.util import asbool
 from galaxy.util.properties import load_app_properties
+from galaxy.webapps.util import (
+    build_template_error_formatters,
+    MiddlewareWrapUnsupported,
+    wrap_if_allowed,
+    wrap_if_allowed_or_fail
+)
 
 log = logging.getLogger(__name__)
 
@@ -81,7 +79,7 @@ def app_factory(global_conf, load_app_kwds={}, **kwargs):
     # Close any pooled database connections before forking
     try:
         galaxy.model.mapping.metadata.bind.dispose()
-    except:
+    except Exception:
         log.exception("Unable to dispose of pooled galaxy model database connections.")
     # Return
     return webapp

@@ -4,11 +4,11 @@ Manager and Serializers for Visualizations.
 Visualizations are saved configurations/variables used to
 reproduce a specific view in a Galaxy visualization.
 """
+import logging
 
 from galaxy import model
 from galaxy.managers import sharable
 
-import logging
 log = logging.getLogger(__name__)
 
 

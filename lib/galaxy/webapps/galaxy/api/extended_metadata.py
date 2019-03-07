@@ -2,10 +2,18 @@
 API operations on annotations.
 """
 import logging
-from galaxy import web
-from galaxy import managers
 
-from galaxy.web.base.controller import BaseAPIController, UsesLibraryMixinItems, UsesStoredWorkflowMixin, UsesExtendedMetadataMixin, HTTPNotImplemented
+from galaxy import (
+    managers,
+    web
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    HTTPNotImplemented,
+    UsesExtendedMetadataMixin,
+    UsesLibraryMixinItems,
+    UsesStoredWorkflowMixin
+)
 
 log = logging.getLogger(__name__)
 

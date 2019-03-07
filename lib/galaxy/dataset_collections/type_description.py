@@ -8,6 +8,7 @@ class CollectionTypeDescriptionFactory(object):
         self.type_registry = type_registry
 
     def for_collection_type(self, collection_type):
+        assert collection_type is not None
         return CollectionTypeDescription(collection_type, self)
 
 
@@ -15,35 +16,45 @@ class CollectionTypeDescription(object):
     """ Abstraction over dataset collection type that ties together string
     reprentation in database/model with type registry.
 
-    >>> factory = CollectionTypeDescriptionFactory( None )
-    >>> nested_type_description = factory.for_collection_type( "list:paired" )
-    >>> paired_type_description = factory.for_collection_type( "paired" )
-    >>> nested_type_description.has_subcollections_of_type( "list" )
+    >>> factory = CollectionTypeDescriptionFactory(None)
+    >>> nested_type_description = factory.for_collection_type("list:paired")
+    >>> paired_type_description = factory.for_collection_type("paired")
+    >>> nested_type_description.has_subcollections_of_type("list")
     False
-    >>> nested_type_description.has_subcollections_of_type( "list:paired" )
+    >>> nested_type_description.has_subcollections_of_type("list:paired")
     False
-    >>> nested_type_description.has_subcollections_of_type( "paired" )
+    >>> nested_type_description.has_subcollections_of_type("paired")
     True
-    >>> nested_type_description.has_subcollections_of_type( paired_type_description )
+    >>> nested_type_description.has_subcollections_of_type(paired_type_description)
     True
-    >>> nested_type_description.has_subcollections( )
+    >>> nested_type_description.has_subcollections()
     True
-    >>> paired_type_description.has_subcollections( )
+    >>> paired_type_description.has_subcollections()
     False
     >>> paired_type_description.rank_collection_type()
     'paired'
     >>> nested_type_description.rank_collection_type()
     'list'
-    >>> nested_type_description.effective_collection_type( paired_type_description )
+    >>> nested_type_description.effective_collection_type(paired_type_description)
     'list'
-    >>> nested_type_description.effective_collection_type_description( paired_type_description ).collection_type
+    >>> nested_type_description.effective_collection_type_description(paired_type_description).collection_type
     'list'
+    >>> nested_type_description.child_collection_type()
+    'paired'
     """
 
     def __init__(self, collection_type, collection_type_description_factory):
         self.collection_type = collection_type
         self.collection_type_description_factory = collection_type_description_factory
         self.__has_subcollections = self.collection_type.find(":") > 0
+
+    def child_collection_type(self):
+        rank_collection_type = self.rank_collection_type()
+        return self.collection_type[len(rank_collection_type) + 1:]
+
+    def child_collection_type_description(self):
+        child_collection_type = self.child_collection_type()
+        return self.collection_type_description_factory.for_collection_type(child_collection_type)
 
     def effective_collection_type_description(self, subcollection_type):
         effective_collection_type = self.effective_collection_type(subcollection_type)

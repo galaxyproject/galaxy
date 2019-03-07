@@ -51,7 +51,7 @@ def security_check(trans, item, check_ownership=False, check_accessible=False):
     """
 
     # all items are accessible to an admin
-    if trans.user_is_admin():
+    if trans.user_is_admin:
         return item
 
     # Verify ownership: there is a current user and that user is the same as the item's
@@ -79,40 +79,12 @@ def get_class(class_name):
     Returns the class object that a string denotes. Without this method, we'd have
     to do eval(<class_name>).
     """
-    if class_name == 'History':
-        item_class = model.History
-    elif class_name == 'HistoryDatasetAssociation':
-        item_class = model.HistoryDatasetAssociation
-    elif class_name == 'Page':
-        item_class = model.Page
-    elif class_name == 'StoredWorkflow':
-        item_class = model.StoredWorkflow
-    elif class_name == 'Visualization':
-        item_class = model.Visualization
-    elif class_name == 'Tool':
-        item_class = model.Tool
-    elif class_name == 'Job':
-        item_class = model.Job
-    elif class_name == 'User':
-        item_class = model.User
-    elif class_name == 'Group':
-        item_class = model.Group
-    elif class_name == 'Role':
-        item_class = model.Role
-    elif class_name == 'Quota':
-        item_class = model.Quota
-    elif class_name == 'Library':
-        item_class = model.Library
-    elif class_name == 'LibraryFolder':
-        item_class = model.LibraryFolder
-    elif class_name == 'LibraryDatasetDatasetAssociation':
-        item_class = model.LibraryDatasetDatasetAssociation
-    elif class_name == 'LibraryDataset':
-        item_class = model.LibraryDataset
-    elif class_name == 'ToolShedRepository':
+    if class_name == 'ToolShedRepository':
         item_class = tool_shed_install.ToolShedRepository
     else:
-        item_class = None
+        if not hasattr(model, class_name):
+            raise exceptions.MessageException("Item class '%s' not available." % class_name)
+        item_class = getattr(model, class_name)
     return item_class
 
 

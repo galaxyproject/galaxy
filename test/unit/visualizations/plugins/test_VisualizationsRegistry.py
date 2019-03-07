@@ -3,20 +3,15 @@ Test lib/galaxy/visualization/plugins/registry.
 """
 import os
 import re
-import sys
 import unittest
 
-from six import string_types
+from six import text_type
 
 from galaxy import model
 from galaxy.visualization.plugins import plugin
 from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from ...unittest_utils import galaxy_mock, utility
 
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import galaxy_mock, utility
-
-# -----------------------------------------------------------------------------
 glx_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir))
 template_cache_dir = os.path.join(glx_dir, 'database', 'compiled_templates')
 addtional_templates_dir = os.path.join(glx_dir, 'config', 'plugins', 'visualizations', 'common', 'templates')
@@ -41,7 +36,6 @@ config1 = """\
 """
 
 
-# -----------------------------------------------------------------------------
 class VisualizationsRegistry_TestCase(unittest.TestCase):
 
     def test_plugin_load_from_repo(self):
@@ -59,9 +53,6 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         self.assertEqual(scatterplot.name, 'scatterplot')
         self.assertEqual(scatterplot.path, os.path.join(expected_plugins_path, 'scatterplot'))
         self.assertEqual(scatterplot.base_url, '/'.join([plugin_mgr.base_url, scatterplot.name]))
-        self.assertTrue(scatterplot.serves_static)
-        self.assertEqual(scatterplot.static_path, os.path.join(scatterplot.path, 'static'))
-        self.assertEqual(scatterplot.static_url, '/'.join([scatterplot.base_url, 'static']))
         self.assertTrue(scatterplot.serves_templates)
         self.assertEqual(scatterplot.template_path, os.path.join(scatterplot.path, 'templates'))
         self.assertEqual(scatterplot.template_lookup.__class__.__name__, 'TemplateLookup')
@@ -70,7 +61,6 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         self.assertEqual(trackster.name, 'trackster')
         self.assertEqual(trackster.path, os.path.join(expected_plugins_path, 'trackster'))
         self.assertEqual(trackster.base_url, '/'.join([plugin_mgr.base_url, trackster.name]))
-        self.assertFalse(trackster.serves_static)
         self.assertFalse(trackster.serves_templates)
 
     def test_plugin_load(self):
@@ -126,9 +116,6 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         self.assertEqual(vis1.name, 'vis1')
         self.assertEqual(vis1.path, os.path.join(expected_plugins_path, 'vis1'))
         self.assertEqual(vis1.base_url, '/'.join([plugin_mgr.base_url, vis1.name]))
-        self.assertTrue(vis1.serves_static)
-        self.assertEqual(vis1.static_path, os.path.join(vis1.path, 'static'))
-        self.assertEqual(vis1.static_url, '/'.join([vis1.base_url, 'static']))
         self.assertTrue(vis1.serves_templates)
         self.assertEqual(vis1.template_path, os.path.join(vis1.path, 'templates'))
         self.assertEqual(vis1.template_lookup.__class__.__name__, 'TemplateLookup')
@@ -137,7 +124,6 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         self.assertEqual(vis2.name, 'vis2')
         self.assertEqual(vis2.path, os.path.join(expected_plugins_path, 'vis2'))
         self.assertEqual(vis2.base_url, '/'.join([plugin_mgr.base_url, vis2.name]))
-        self.assertFalse(vis2.serves_static)
         self.assertFalse(vis2.serves_templates)
 
         mock_app_dir.remove()
@@ -212,7 +198,7 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
         # should return the (new) api key for the above user (see the template above)
         response = jupyter._render({}, trans=trans)
         response.strip()
-        self.assertIsInstance(response, string_types)
+        self.assertIsInstance(response, text_type)
         self.assertTrue('-' in response)
         ie_request, api_key = response.split('-')
 
@@ -256,14 +242,11 @@ class VisualizationsRegistry_TestCase(unittest.TestCase):
 
         self.assertIsInstance(script_entry, plugin.ScriptVisualizationPlugin)
         self.assertEqual(script_entry.name, 'jstest')
-        self.assertTrue(script_entry.serves_static)
         self.assertTrue(script_entry.serves_templates)
-        self.assertEqual(script_entry.static_path, os.path.join(script_entry.path, 'static'))
 
         trans = galaxy_mock.MockTrans()
         script_entry._set_up_template_plugin(mock_app_dir.root_path, [addtional_templates_dir])
         response = script_entry._render({}, trans=trans, embedded=True)
-        # print response
         self.assertTrue('src="bler"' in response)
         self.assertTrue('type="text/javascript"' in response)
         self.assertTrue('data-main="one"' in response)

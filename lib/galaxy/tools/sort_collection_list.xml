@@ -8,10 +8,16 @@
             class="ModelOperationToolAction"/>
     <inputs>
         <param type="data_collection" collection_type="list" name="input" label="Input Collection" />
-        <param type="select" name="sort_type" label="Sort collection identifiers" help="">
-            <option value="alpha">alphabetically</option>
-            <option value="numeric">numerically (strips all characters except numbers)</option>
-        </param>
+        <conditional name="sort_type">
+            <param type="select" name="sort_type" label="Sort collection identifiers" help="All element identifiers must be present once.">
+                <option value="alpha">alphabetically</option>
+                <option value="numeric">numerically (strips all characters except numbers)</option>
+                <option value="file">Sort collection using order of identifiers in text file</option>
+            </param>
+            <when value="file">
+                <param name="sort_file" type="data" format="txt" label="Select file that contains the new order of collection elements" help="Lines in text file must match collection"></param>
+            </when>
+        </conditional>
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type="list" label="${on_string} (sorted)" >
@@ -19,45 +25,68 @@
     </outputs>
     <tests>
         <test>
+            <!-- test that we can reorder a collection using a file with element identifiers-->
             <param name="input">
                 <collection type="list">
-		    <element name="def" value="simple_line_alternative.txt" />
-		    <element name="abc" value="simple_line.txt" />
+                    <element name="element_1" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line.txt" />
                 </collection>
             </param>
-	    <param name="sort_type" value="alpha" />
+            <param name="sort_type" value="file"/>
+            <param name="sort_file" value="new_element_sort_order.txt"/>
             <output_collection name="output" type="list">
-              <element name="abc">
-                <assert_contents>
-                  <has_text_matching expression="^This is a line of text.\n$" />
-                </assert_contents>
-              </element>
-              <element name="def">
-                <assert_contents>
-                  <has_text_matching expression="^This is a different line of text.\n$" />
-                </assert_contents>
-              </element>
+                <element name="element_2">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="element_1">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
             </output_collection>
         </test>
         <test>
             <param name="input">
                 <collection type="list">
-		    <element name="def0123400" value="simple_line_alternative.txt" />
-		    <element name="abc5678" value="simple_line.txt" />
+                    <element name="def" value="simple_line_alternative.txt" />
+                    <element name="abc" value="simple_line.txt" />
                 </collection>
             </param>
-	    <param name="sort_type" value="numeric" />
+            <param name="sort_type" value="alpha" />
             <output_collection name="output" type="list">
-              <element name="abc5678">
-                <assert_contents>
-                  <has_text_matching expression="^This is a line of text.\n$" />
-                </assert_contents>
-              </element>
-              <element name="def0123400">
-                <assert_contents>
-                  <has_text_matching expression="^This is a different line of text.\n$" />
-                </assert_contents>
-              </element>
+                <element name="abc">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="def">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
+            </output_collection>
+        </test>
+        <test>
+            <param name="input">
+                <collection type="list">
+                    <element name="def0123400" value="simple_line_alternative.txt" />
+                    <element name="abc5678" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="sort_type" value="numeric" />
+            <output_collection name="output" type="list">
+                <element name="abc5678">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                </element>
+                <element name="def0123400">
+                    <assert_contents>
+                        <has_text_matching expression="^This is a different line of text.\n$" />
+                    </assert_contents>
+                </element>
             </output_collection>
         </test>
     </tests>

@@ -1,22 +1,22 @@
-import config
+import logging
 import sys
 import time
+
 import galaxy.datatypes.registry
 import galaxy.quota
 import galaxy.tools.data
 import galaxy.webapps.tool_shed.model
+import tool_shed.repository_registry
+import tool_shed.repository_types.registry
 from galaxy import tools
 from galaxy.config import configure_logging
 from galaxy.managers.tags import CommunityTagManager
-from galaxy.openid.providers import OpenIDProviders
 from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web import security
 from galaxy.web.stack import application_stack_instance
-import tool_shed.repository_registry
-import tool_shed.repository_types.registry
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
+from . import config
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -70,8 +70,6 @@ class UniverseApplication(object):
         self.security_agent = self.model.security_agent
         # The Tool Shed makes no use of a quota, but this attribute is still required.
         self.quota_agent = galaxy.quota.NoQuotaAgent(self.model)
-        # TODO: Add OpenID support
-        self.openid_providers = OpenIDProviders()
         # Initialize the baseline Tool Shed statistics component.
         self.shed_counter = self.model.shed_counter
         # Let the Tool Shed's HgwebConfigManager know where the hgweb.config file is located.

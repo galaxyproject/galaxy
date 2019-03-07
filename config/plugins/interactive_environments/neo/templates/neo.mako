@@ -7,7 +7,7 @@
     # if the user knows ahead of time that they will need it.
     import os
     mount_path = str(os.path.dirname(hda.file_name)) + '/dataset_{}_files'.format( hda.dataset.id )
-    data_vol = ie_request.volume(mount_path, '/data', how='rw')
+    data_vol = ie_request.volume(mount_path, '/data', mode='rw')
     # data_vol = ie_request.volume('${HOME}/neo4j/data', '/data/', how='rw')
     # Add all environment variables collected from Galaxy's IE infrastructure
     # Launch the IE.
@@ -32,8 +32,9 @@
         ${ ie.plugin_require_config() }
 
 
-    requirejs(['interactive_environments', 'plugin/neo'], function () {
-        load_when_ready(ie_readiness_url, function(){
+    requirejs(['galaxy.interactive_environments', 'plugin/neo'], function (IES) {
+        window.IES = IES;
+        IES.load_when_ready(ie_readiness_url, function(){
             load_notebook(url);
         });
     });

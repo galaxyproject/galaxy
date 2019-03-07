@@ -1,11 +1,12 @@
-import config
+import logging
 import sys
 import time
 
 import galaxy.model
 from galaxy.web import security
 from galaxy.web.stack import application_stack_instance
-import logging
+from . import config
+
 log = logging.getLogger(__name__)
 
 

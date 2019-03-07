@@ -15,7 +15,7 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
-GENERATED_RST = source/api/api.rst source/api/ts_api.rst source/dev/schema.rst
+GENERATED_RST = source/api/api.rst source/api/ts_api.rst source/dev/schema.md source/admin/config_logging_default_yaml.rst
 
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext updaterst
 
@@ -42,7 +42,7 @@ help:
 	@echo "  doctest    to run all doctests embedded in the documentation (if enabled)"
 	@echo "  updaterst  to update Sphinx RST files for lib/ to reflect code structure changes"
 
-schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects libxml in environment)
+source/dev/schema.md: parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd ## Build Github-flavored Markdown from Galaxy Tool XSD (expects lxml in environment)
 	python parse_gx_xsd.py schema_template.md ../lib/galaxy/tools/xsd/galaxy.xsd > $@
 
 source/api/api.rst: source/lib/galaxy.webapps.galaxy.api.rst
@@ -57,14 +57,16 @@ source/api/ts_api.rst: source/lib/galaxy.webapps.tool_shed.api.rst
 	sed -i.bak -e 's/^galaxy\\\.webapps\\\.tool\\_shed\\\.api\\\.//' $@
 	rm -f $@.bak
 
-source/dev/schema.rst: schema.md ## Convert Galaxy Tool XSD Markdown docs into reStructuredText (expects pandoc in environment)
-	pandoc schema.md -f markdown_github-hard_line_breaks -s -o $@
-	./fix_schema_rst.sh $@
+source/admin/config_logging_default_yaml.rst: ../lib/galaxy/config.py
+	printf '.. code-block:: yaml\n\n' > $@
+	printf '    galaxy:\n' >> $@
+	printf '      logging:\n        ' >> $@
+	PYTHONPATH=../lib python -c 'from __future__ import print_function; import yaml, galaxy.config; print("\n        ".join(yaml.dump(galaxy.config.LOGGING_CONFIG_DEFAULT, indent=2, default_flow_style=False).splitlines()))' >> $@
 
 # might also want to do
 # cd source/lib; hg revert; rm *.rst.orig;  or not.
 clean:
-	-rm -rf $(BUILDDIR)/* schema.md $(GENERATED_RST)
+	-rm -rf $(BUILDDIR)/* $(GENERATED_RST)
 
 html: $(GENERATED_RST)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html

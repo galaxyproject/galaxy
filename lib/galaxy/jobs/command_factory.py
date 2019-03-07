@@ -17,19 +17,7 @@ log = getLogger(__name__)
 CAPTURE_RETURN_CODE = "return_code=$?"
 YIELD_CAPTURED_CODE = 'sh -c "exit $return_code"'
 SETUP_GALAXY_FOR_METADATA = """
-if [ "$GALAXY_LIB" != "None" ]; then
-    if [ -n "$PYTHONPATH" ]; then
-        PYTHONPATH="$GALAXY_LIB:$PYTHONPATH"
-    else
-        PYTHONPATH="$GALAXY_LIB"
-    fi
-    export PYTHONPATH
-fi
-if [ "$GALAXY_VIRTUAL_ENV" != "None" -a -z "$VIRTUAL_ENV" \
-     -a -f "$GALAXY_VIRTUAL_ENV/bin/activate" ]; then
-    . "$GALAXY_VIRTUAL_ENV/bin/activate"
-fi
-GALAXY_PYTHON=`command -v python`
+[ "$GALAXY_VIRTUAL_ENV" = "None" ] && GALAXY_VIRTUAL_ENV="$_GALAXY_VIRTUAL_ENV"; _galaxy_setup_environment True
 """
 
 
@@ -43,6 +31,8 @@ def build_command(
     create_tool_working_directory=True,
     remote_command_params={},
     metadata_directory=None,
+    stdout_file=None,
+    stderr_file=None,
 ):
     """
     Compose the sequence of commands necessary to execute a job. This will
@@ -116,6 +106,8 @@ def build_command(
     if include_work_dir_outputs:
         __handle_work_dir_outputs(commands_builder, job_wrapper, runner, remote_command_params)
 
+    if stdout_file and stderr_file:
+        commands_builder.capture_stdout_stderr(stdout_file, stderr_file)
     commands_builder.capture_return_code()
 
     if include_metadata and job_wrapper.requires_setting_metadata:
@@ -151,6 +143,7 @@ def __externalize_commands(job_wrapper, shell, commands_builder, remote_command_
     commands = local_container_script
     if 'working_directory' in remote_command_params:
         commands = "%s %s" % (shell, join(remote_command_params['working_directory'], script_name))
+    commands += " > ../tool_stdout 2> ../tool_stderr"
     log.info("Built script [%s] for tool command [%s]" % (local_container_script, tool_commands))
     return commands
 
@@ -170,9 +163,8 @@ def __handle_task_splitting(commands_builder, job_wrapper):
 
 def __handle_dependency_resolution(commands_builder, job_wrapper, remote_command_params):
     local_dependency_resolution = remote_command_params.get("dependency_resolution", "local") == "local"
-
     # Prepend dependency injection
-    if job_wrapper.dependency_shell_commands and local_dependency_resolution:
+    if local_dependency_resolution and job_wrapper.dependency_shell_commands:
         commands_builder.prepend_commands(job_wrapper.dependency_shell_commands)
 
 
@@ -198,6 +190,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
     output_fnames = metadata_kwds.get('output_fnames', job_wrapper.get_output_fnames())
     config_root = metadata_kwds.get('config_root', None)
     config_file = metadata_kwds.get('config_file', None)
+    datatypes_config = metadata_kwds.get('datatypes_config', None)
     compute_tmp_dir = metadata_kwds.get('compute_tmp_dir', None)
     resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = job_wrapper.setup_external_metadata(
@@ -208,6 +201,7 @@ def __handle_metadata(commands_builder, job_wrapper, runner, remote_command_para
         set_extension=False,
         config_root=config_root,
         config_file=config_file,
+        datatypes_config=datatypes_config,
         compute_tmp_dir=compute_tmp_dir,
         resolve_metadata_dependencies=resolve_metadata_dependencies,
         kwds={'overwrite': False}
@@ -239,23 +233,36 @@ class CommandsBuilder(object):
         # the last thing that happens is an exit with return code.
         self.return_code_captured = False
 
-    def prepend_command(self, command):
+    def prepend_command(self, command, sep=";"):
         if command:
-            self.commands = u"%s; %s" % (command,
+            self.commands = u"%s%s %s" % (command,
+                                         sep,
                                          self.commands)
         return self
 
     def prepend_commands(self, commands):
         return self.prepend_command(u"; ".join(c for c in commands if c))
 
-    def append_command(self, command):
+    def append_command(self, command, sep=';'):
         if command:
-            self.commands = u"%s; %s" % (self.commands,
-                                         command)
+            self.commands = u"%s%s %s" % (self.commands,
+                                          sep,
+                                          command)
         return self
 
     def append_commands(self, commands):
         self.append_command(u"; ".join(c for c in commands if c))
+
+    def capture_stdout_stderr(self, stdout_file, stderr_file):
+        self.prepend_command("""out="${TMPDIR:-/tmp}/out.$$" err="${TMPDIR:-/tmp}/err.$$"
+mkfifo "$out" "$err"
+trap 'rm "$out" "$err"' EXIT
+tee -a stdout.log < "$out" &
+tee -a stderr.log < "$err" >&2 &""",
+                             sep="")
+        self.append_command("> '{stdout_file}' 2> '{stderr_file}'".format(stdout_file=stdout_file,
+                                                                          stderr_file=stderr_file),
+                            sep="")
 
     def capture_return_code(self):
         if not self.return_code_captured:

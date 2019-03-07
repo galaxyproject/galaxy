@@ -1,6 +1,8 @@
 """
 Migration script to add the api_keys table.
 """
+from __future__ import print_function
+
 import datetime
 import logging
 import sys
@@ -30,13 +32,13 @@ APIKeys_table = Table("api_keys", metadata,
 
 
 def upgrade(migrate_engine):
-    print __doc__
+    print(__doc__)
     metadata.bind = migrate_engine
     metadata.reflect()
     try:
         APIKeys_table.create()
-    except Exception as e:
-        log.debug("Creating api_keys table failed: %s" % str(e))
+    except Exception:
+        log.exception("Creating api_keys table failed.")
 
 
 def downgrade(migrate_engine):
@@ -45,5 +47,5 @@ def downgrade(migrate_engine):
     metadata.reflect()
     try:
         APIKeys_table.drop()
-    except Exception as e:
-        log.debug("Dropping api_keys table failed: %s" % str(e))
+    except Exception:
+        log.exception("Dropping api_keys table failed.")

@@ -127,25 +127,25 @@ if __name__ == "__main__":
         chr_col_1, start_col_1, end_col_1, strand_col_1 = [int(x) - 1 for x in options.cols1.split(',')]
         chr_col_2, position_col_2, forward_col_2, reverse_col_2 = [int(x) - 1 for x in options.cols2.split(',')]
         in_fname, out_fname = args
-    except:
+    except Exception:
         doc_optparse.exception()
 
     # Sort through a tempfile first
-    temp_file = tempfile.NamedTemporaryFile(mode="r")
-    environ['LC_ALL'] = 'POSIX'
-    commandline = "sort -f -n -k %d -k %d -k %d -o %s %s" % (chr_col_1 + 1, start_col_1 + 1, end_col_1 + 1, temp_file.name, in_fname)
-    subprocess.check_call(commandline, shell=True)
+    with tempfile.NamedTemporaryFile(mode="r") as temp_file:
+        environ['LC_ALL'] = 'POSIX'
+        subprocess.check_call([
+            'sort', '-f', '-n', '-k', chr_col_1 + 1, '-k', start_col_1 + 1, '-k', end_col_1 + 1, '-o', temp_file.name, in_fname
+        ])
 
-    coverage = CoverageWriter(out_stream=open(out_fname, "a"),
-                              chromCol=chr_col_2, positionCol=position_col_2,
-                              forwardCol=forward_col_2, reverseCol=reverse_col_2, )
-    temp_file.seek(0)
-    interval = io.NiceReaderWrapper(temp_file,
-                                    chrom_col=chr_col_1,
-                                    start_col=start_col_1,
-                                    end_col=end_col_1,
-                                    strand_col=strand_col_1,
-                                    fix_strand=True)
-    main(interval, coverage)
-    temp_file.close()
+        coverage = CoverageWriter(out_stream=open(out_fname, "a"),
+                                  chromCol=chr_col_2, positionCol=position_col_2,
+                                  forwardCol=forward_col_2, reverseCol=reverse_col_2, )
+        temp_file.seek(0)
+        interval = io.NiceReaderWrapper(temp_file,
+                                        chrom_col=chr_col_1,
+                                        start_col=start_col_1,
+                                        end_col=end_col_1,
+                                        strand_col=strand_col_1,
+                                        fix_strand=True)
+        main(interval, coverage)
     coverage.close()

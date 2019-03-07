@@ -60,7 +60,7 @@ if multiple:
 
 try:
     assert float(minMatch)
-except:
+except Exception:
     minMatch = 0.1
 # ensure dbkey is set
 if in_dbkey == "?":

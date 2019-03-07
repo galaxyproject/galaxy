@@ -19,7 +19,7 @@ def lint_tsts(tool_xml, lint_ctx):
             has_test = True
         if len(test.findall("assert_stdout")) > 0:
             has_test = True
-        if len(test.findall("assert_stdout")) > 0:
+        if len(test.findall("assert_stderr")) > 0:
             has_test = True
         if len(test.findall("assert_command")) > 0:
             has_test = True
@@ -33,7 +33,7 @@ def lint_tsts(tool_xml, lint_ctx):
                 lint_ctx.warn("Found output tag without a name defined.")
             else:
                 if name not in output_data_names:
-                    lint_ctx.warn("Found output tag with unknown name [%s], valid names [%s]" % (name, output_data_names))
+                    lint_ctx.error("Found output tag with unknown name [%s], valid names [%s]" % (name, output_data_names))
 
         for output_collection in test.findall("output_collection"):
             found_output_test = True

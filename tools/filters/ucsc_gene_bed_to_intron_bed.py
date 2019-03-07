@@ -18,7 +18,7 @@ from __future__ import print_function
 import optparse
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+assert sys.version_info[:2] >= (2, 6)
 
 
 def main():
@@ -33,13 +33,13 @@ def main():
 
     try:
         out_file = open(options.output, "w")
-    except:
+    except Exception:
         print("Bad output file.", file=sys.stderr)
         sys.exit(0)
 
     try:
         in_file = open(options.input)
-    except:
+    except Exception:
         print("Bad input file.", file=sys.stderr)
         sys.exit(0)
 
@@ -72,7 +72,7 @@ def main():
                 else:
                     print_tab_sep(out_file, chrom, intron_starts, intron_ends)
                 i += 1
-        except:
+        except Exception:
             continue
 
 

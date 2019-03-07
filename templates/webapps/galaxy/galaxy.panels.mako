@@ -25,131 +25,6 @@
     self.galaxy_config.update(config)
 %>
 
-<%def name="stylesheets()">
-    ## load default style
-    ${h.css("base")}
-
-    ## modify default style
-    <style type="text/css">
-    #center {
-        %if not self.galaxy_config['left_panel']:
-            left: 0 !important;
-        %endif
-        %if not self.galaxy_config['right_panel']:
-            right: 0 !important;
-        %endif
-    }
-    </style>
-
-    <style type="text/css">
-        %if self.galaxy_config['message_box']:
-            #left, #left-border, #center, #right-border, #right {
-                top: 64px;
-            }
-        %endif
-    </style>
-
-</%def>
-
-<%def name="javascripts()">
-    ## Send errors to Sentry server if configured
-    %if app.config.sentry_dsn:
-        ${h.js( "libs/raven" )}
-        <script>
-            Raven.config('${app.config.sentry_dsn_public}').install();
-            %if trans.user:
-                Raven.setUser( { email: "${trans.user.email | h}" } );
-            %endif
-        </script>
-    %endif
-
-    ## load jscript libraries
-    ${h.js(
-        ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
-        'libs/jquery/jquery-ui',
-        'libs/d3',
-        'libs/require',
-    )}
-
-    <script type="text/javascript">
-        // configure require
-        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        define( 'jquery', [], function(){ return jQuery; })
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts')}",
-            // cache buster based on templated server (re)start time
-            urlArgs: 'v=${app.server_starttime}',
-            shim: {
-                "libs/underscore": { exports: "_" },
-                "libs/backbone": {
-                    deps: [ 'jquery', 'libs/underscore' ],
-                    exports: "Backbone"
-                },
-                "libs/d3": { exports: "d3" },
-            },
-        });
-
-        // console protection
-        // TODO: Only needed for IE <9 which I believe we dropped
-        window.console = window.console || {
-            log     : function(){},
-            debug   : function(){},
-            info    : function(){},
-            warn    : function(){},
-            error   : function(){},
-            assert  : function(){}
-        };
-
-        // extra configuration global
-        var galaxy_config = ${ h.dumps( self.galaxy_config ) };
-    </script>
-
-</%def>
-
-<%def name="javascript_app()">
-    <script type="text/javascript">
-        // load any app configured
-        define( 'app', function(){
-            var jscript = galaxy_config.app.jscript;
-            if( jscript ){
-                require([ jscript ], function( js_lib ){
-                    $( function(){
-                        // load galaxy module application
-                        var module = new js_lib.GalaxyApp();
-                    });
-                });
-            } else {
-                console.error("'galaxy_config.app.jscript' missing.");
-            }
-        });
-    </script>
-
-    ## load the Galaxy global js var and run 'app' from above
-    ${ galaxy_client.load( app='app' ) }
-</%def>
-
-## default late-load javascripts
-<%def name="late_javascripts()">
-    ## Scripts can be loaded later since they progressively add features to
-    ## the panels, but do not change layout
-    <script type="text/javascript">
-        ## configure left panel
-        %if self.galaxy_config['left_panel']:
-            var lp = new panels.LeftPanel({ el: '#left' });
-            force_left_panel = function( x ) { lp.force_panel( x ) };
-        %endif
-
-        ## configure right panel
-        %if self.galaxy_config['right_panel']:
-            var rp = new panels.RightPanel({ el: '#right' });
-            window.handle_minwidth_hint = function( x ) { rp.handle_minwidth_hint( x ) };
-            force_right_panel = function( x ) { rp.force_panel( x ) };
-        %endif
-    </script>
-</%def>
-
-## document
 <html>
     <head>
         <meta charset="UTF-8">
@@ -171,71 +46,187 @@
         ${self.stylesheets()}
         ${self.javascripts()}
         ${self.javascript_app()}
+
     </head>
 
     <body scroll="no" class="full-content">
-        <div id="everything" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-            ## background displays first
+        <div id="everything">
+            
             <div id="background"></div>
 
-            ## master header
             %if self.galaxy_config['master']:
                 <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
                 ${masthead.load()}
             %endif
 
-            ## message box
-            %if self.galaxy_config['message_box']:
-                <div id="messagebox" class="panel-message"></div>
-            %endif
-            ## left panel
-            %if self.galaxy_config['left_panel']:
-                <div id="left">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <div class="unified-panel-icons" style="float: right"></div>
-                            <div class="unified-panel-title"></div>
-                        </div>
-                    </div>
-                    <div class="unified-panel-body" style="overflow: auto;"></div>
-                    <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
-                    </div>
-                </div>
-            %endif
+            ${self.message_box()}
 
-            ## center panel
-            <div id="center">
-                <div class="unified-panel-header" unselectable="on">
-                    <div class="unified-panel-header-inner">
-                        <div class="unified-panel-title" style="float:left;"></div>
-                    </div>
-                    <div style="clear: both"></div>
-                </div>
-                <div class="unified-panel-body"></div>
+            <div id="columns">
+                ${self.left_panel()}
+                ${self.center_panel()}
+                ${self.right_panel()}
             </div>
 
-            ## right panel
-            %if self.galaxy_config['right_panel']:
-                <div id="right">
-                    <div class="unified-panel-header" unselectable="on">
-                        <div class="unified-panel-header-inner">
-                            <div class="unified-panel-icons" style="float: right"></div>
-                            <div class="unified-panel-title"></div>
-                        </div>
-                    </div>
-                    <div class="unified-panel-body" style="overflow: auto;"></div>
-                    <div class="unified-panel-footer">
-                        <div class="panel-collapse right"></span></div>
-                        <div class="drag"></div>
-                    </div>
-                </div>
-            %endif
         </div>
+
         <div id='dd-helper' style="display: none;"></div>
-        ## Scripts can be loaded later since they progressively add features to
-        ## the panels, but do not change layout
+
         ${self.late_javascripts()}
+
     </body>
 </html>
+
+<%def name="message_box()">
+    %if self.galaxy_config['message_box']:
+        <div id="messagebox" class="panel-message"></div>
+        <style>
+            #left, #left-border, #center, #right-border, #right {
+                top: 64px;
+            }
+        </style>
+    %endif
+</%def>
+
+<%def name="left_panel()">
+    %if self.galaxy_config['left_panel']:
+        <div id="left">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <div class="unified-panel-icons"></div>
+                    <div class="unified-panel-title"></div>
+                </div>
+            </div>
+            <div class="unified-panel-body"></div>
+            <div class="unified-panel-footer">
+                <div id="left-panel-collapse" class="panel-collapse right"></span></div>
+                <div id="left-panel-drag" class="drag"></div>
+            </div>
+        </div>
+    %endif
+</%def>
+
+<%def name="right_panel()">
+    %if self.galaxy_config['right_panel']:
+        <div id="right">
+            <div class="unified-panel-header" unselectable="on">
+                <div class="unified-panel-header-inner">
+                    <div class="unified-panel-icons"></div>
+                    <div class="unified-panel-title"></div>
+                </div>
+            </div>
+            <div class="unified-panel-body"></div>
+            <div class="unified-panel-footer">
+                <div id="right-panel-collapse" class="panel-collapse right"></span></div>
+                <div id="right-panel-drag" class="drag"></div>
+            </div>
+        </div>
+    %endif
+</%def>
+
+<%def name="center_panel()">
+    <div id="center">
+        <div class="unified-panel-header" unselectable="on">
+            <div class="unified-panel-header-inner">
+                <div class="unified-panel-title"></div>
+            </div>
+            <div style="clear: both"></div>
+        </div>
+        <div class="unified-panel-body"></div>
+    </div>
+</%def>
+
+<%def name="stylesheets()">
+
+    <!-- galaxy.panels.mako stylesheets -->
+
+    ## load default style
+    ${h.css("base")}
+
+    <style type="text/css">
+
+        #everything {
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%;
+        }
+
+        #left .unified-panel-icons,
+        #right .unified-panel-icons {
+            float: right;
+        }
+
+        #left .unified-panel-body,
+        #right .unified-panel-body {
+            overflow: auto;
+        }
+
+        #center .unified-panel-title {
+            float: left;
+        }
+
+    </style>
+
+</%def>
+
+## TODO: remove when all libs are required directly in modules
+<%def name="javascripts()">
+    <!-- galaxy.panels.mako javascripts -->
+    ${h.js(
+        'libs/d3',
+        'bundled/libs.chunk',
+        'bundled/base.chunk'
+    )}
+    ${self.javascript_entry()}
+</%def>
+
+<%def name="javascript_entry()">
+    <!-- galaxy.panels.mako javascript_entry -->
+    ${h.js('bundled/generic.bundled')}
+</%def>
+
+<%def name="javascript_app()">
+    <!-- galaxy.panels.mako javascript_app -->
+    <script type="text/javascript">
+    
+        var galaxyConfig = ${ h.dumps( self.galaxy_config ) };
+
+        ## TODO: Some visualizations (and more?) currently use this config, should be refactored.
+        window.galaxy_config = galaxyConfig;
+
+        var panelConfig = Object.assign(galaxyConfig, {
+            rightPanelSelector: '#right',
+            leftPanelSelector: '#left'
+        });
+
+        config.addInitialization(function() {
+            console.log("base/base_panels.mako, panel init");
+            window.bundleEntries.panelManagement(panelConfig);
+        });
+
+        config.addInitialization(function() {
+            console.log("base/base_panels.mako, panelConfig init");
+            console.log("runs an init function named in python config", panelConfig);
+            try {
+                var initFn = panelConfig.app.jscript;
+                if (initFn in window.bundleEntries) {
+                    window.bundleEntries[initFn]();
+                } else {
+                    console.warn("Requested initialization function missing", initFn);
+                }
+            } catch(err) {
+                console.error("Unable to init panels", err);
+                console.trace();
+            }
+        });
+
+    </script>
+
+    ${ galaxy_client.load() }
+    ## ${ galaxy_client.config_sentry(app) }
+
+</%def>
+
+## default late-load javascripts
+<%def name="late_javascripts()"></%def>

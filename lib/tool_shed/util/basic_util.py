@@ -107,7 +107,7 @@ def remove_dir(dir):
         if os.path.exists(dir):
             try:
                 shutil.rmtree(dir)
-            except:
+            except Exception:
                 pass
 
 
@@ -131,7 +131,7 @@ def strip_path(fpath):
         return fpath
     try:
         file_path, file_name = os.path.split(fpath)
-    except:
+    except Exception:
         file_name = fpath
     return file_name
 

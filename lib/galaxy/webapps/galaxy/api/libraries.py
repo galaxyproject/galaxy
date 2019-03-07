@@ -1,14 +1,23 @@
 """
 API operations on a data library.
 """
-from galaxy import util
-from galaxy import exceptions
-from galaxy.managers import libraries, folders, roles
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous as expose_api_anonymous
+import logging
+
+from galaxy import (
+    exceptions,
+    util
+)
+from galaxy.managers import (
+    folders,
+    libraries,
+    roles
+)
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous as expose_api_anonymous
+)
 from galaxy.web.base.controller import BaseAPIController
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -37,10 +46,10 @@ class LibrariesController(BaseAPIController):
 
         """
         deleted = util.string_as_bool_or_none(kwd.get('deleted', None))
-        query, restricted_library_ids = self.library_manager.list(trans, deleted)
+        query, prefetched_ids = self.library_manager.list(trans, deleted)
         libraries = []
         for library in query:
-            libraries.append(self.library_manager.get_library_dict(trans, library, restricted_library_ids))
+            libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
         return libraries
 
     def __decode_id(self, trans, encoded_id, object_name=None):
@@ -199,7 +208,7 @@ class LibrariesController(BaseAPIController):
         :raises: InsufficientPermissionsException
         """
         current_user_roles = trans.get_current_user_roles()
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
         if not (is_admin or trans.app.security_agent.can_manage_library_item(current_user_roles, library)):
             raise exceptions.InsufficientPermissionsException('You do not have proper permission to access permissions of this library.')
@@ -265,7 +274,7 @@ class LibrariesController(BaseAPIController):
         """
         if payload:
             kwd.update(payload)
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
         library = self.library_manager.get(trans, self.__decode_id(trans, encoded_library_id, 'library'))
 
@@ -286,7 +295,7 @@ class LibrariesController(BaseAPIController):
         elif action == 'remove_restrictions':
             is_public = self.library_manager.make_public(trans, library)
             if not is_public:
-                raise exceptions.InternalServerError('An error occured while making library public.')
+                raise exceptions.InternalServerError('An error occurred while making library public.')
         elif action == 'set_permissions':
 
             # ACCESS LIBRARY ROLES

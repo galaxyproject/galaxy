@@ -1,17 +1,23 @@
 """
 Manager and Serializer for Library Folders.
 """
-
-from galaxy.exceptions import ItemAccessibilityException
-from galaxy.exceptions import InconsistentDatabase
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import InternalServerError
-from galaxy.exceptions import AuthenticationRequired
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.exceptions import MalformedId
-from sqlalchemy.orm.exc import MultipleResultsFound
-from sqlalchemy.orm.exc import NoResultFound
 import logging
+
+from sqlalchemy.orm.exc import (
+    MultipleResultsFound,
+    NoResultFound
+)
+
+from galaxy.exceptions import (
+    AuthenticationRequired,
+    InconsistentDatabase,
+    InsufficientPermissionsException,
+    InternalServerError,
+    ItemAccessibilityException,
+    MalformedId,
+    RequestParameterInvalidException
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -63,7 +69,7 @@ class FolderManager(object):
         :rtype:     LibraryFolder
         """
         # all folders are accessible to an admin
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return folder
         if check_manageable:
             folder = self.check_manageable(trans, folder)
@@ -163,7 +169,7 @@ class FolderManager(object):
         :raises: ItemAccessibilityException, InsufficientPermissionsException
         """
         changed = False
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             if not self.check_manageable(trans, folder):
                 raise InsufficientPermissionsException("You do not have proper permission to update the library folder.")
         if folder.deleted is True:
@@ -193,7 +199,7 @@ class FolderManager(object):
 
         :raises: ItemAccessibilityException
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             folder = self.check_manageable(trans, folder)
         if undelete:
             folder.deleted = False

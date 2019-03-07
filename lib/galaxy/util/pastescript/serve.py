@@ -16,6 +16,7 @@
 # code here, stripping out uneeded functionality.
 
 # All top level imports from each package moved here and organized
+from __future__ import absolute_import
 from __future__ import print_function
 
 import atexit
@@ -1059,6 +1060,6 @@ def invoke(command, command_name, options, args):
         runner = command(command_name)
         exit_code = runner.run(args)
     except BadCommand as e:
-        print(e.message)
+        print(e)
         exit_code = e.exit_code
     sys.exit(exit_code)

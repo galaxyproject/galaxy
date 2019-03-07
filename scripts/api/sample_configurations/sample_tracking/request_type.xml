@@ -1,9 +1,0 @@
-<sequencer name="Sample Sequencer configuration" description="Sample Sequencer configuration description">
-    <sample_states>
-        <state name="New" description="Sample entered into the system"/>
-        <state name="Received" description="Sample tube received"/>
-        <state name="Library Started" description="Sample library preparation"/>
-        <state name="Run Started" description="Sequence run in progress"/>
-        <state name="Done" description="Sequence run complete"/>
-    </sample_states>
-</sequencer>

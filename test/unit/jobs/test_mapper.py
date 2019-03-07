@@ -10,8 +10,8 @@ from galaxy.jobs.mapper import (
     JobRunnerMapper,
 )
 from galaxy.util import bunch
-
 from . import test_rules
+from . import test_rules_override
 
 WORKFLOW_UUID = uuid.uuid1().hex
 TOOL_JOB_DESTINATION = JobDestination()
@@ -36,6 +36,12 @@ def test_dynamic_mapping():
     assert mapper.job_config.rule_response == "local_runner"
 
 
+def test_chained_dynamic_mapping():
+    mapper = __mapper(__dynamic_destination(dict(function="dynamic_chain_1")))
+    assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
+    assert mapper.job_config.rule_response == "final_destination"
+
+
 def test_dynamic_mapping_priorities():
     mapper = __mapper(__dynamic_destination(dict(function="tophat")))
     assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
@@ -57,7 +63,7 @@ def test_dynamic_mapping_job_conf_params():
 
 
 def test_dynamic_mapping_function_parameters():
-    mapper = __mapper(__dynamic_destination(dict(function="check_rule_params")))
+    mapper = __mapper(__dynamic_destination(dict(function="check_rule_params", param1="referrer_param")))
     assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
     assert mapper.job_config.rule_response == "all_passed"
 
@@ -88,6 +94,30 @@ def test_dynamic_mapping_missing_function():
     mapper.job_wrapper.tool.all_ids = ["no_such_function"]
     error_message = ERROR_MESSAGE_RULE_FUNCTION_NOT_FOUND % ("missing_func")
     __assert_mapper_errors_with_message(mapper, error_message)
+
+
+def test_dynamic_mapping_rule_module_override():
+    mapper = __mapper(__dynamic_destination(dict(function="rule_module_override",
+                                                 rules_module=test_rules_override.__name__)))
+    assert mapper.get_job_destination({}) is DYNAMICALLY_GENERATED_DESTINATION
+    assert mapper.job_config.rule_response == "new_rules_package"
+
+
+def test_dynamic_mapping_externally_set_job_destination():
+    mapper = __mapper(__dynamic_destination(dict(function="upload")))
+    # Initially, the mapper should not have a cached destination
+    assert not hasattr(mapper, 'cached_job_destination')
+    # Overwrite with an externally set job destination
+    manually_set_destination = JobDestination(runner="dynamic")
+    mapper.cached_job_destination = manually_set_destination
+    destination = mapper.get_job_destination({})
+    assert destination == manually_set_destination
+    assert mapper.cached_job_destination == manually_set_destination
+    # Force overwrite with mapper determined destination
+    mapper.cache_job_destination(None)
+    assert mapper.cached_job_destination is not None
+    assert mapper.cached_job_destination != manually_set_destination
+    assert mapper.job_config.rule_response == "local_runner"
 
 
 def __assert_mapper_errors_with_message(mapper, message):
@@ -130,7 +160,7 @@ class MockJobConfig(object):
         return DYNAMICALLY_GENERATED_DESTINATION
 
 
-class MockJobWrapper(object, HasResourceParameters):
+class MockJobWrapper(HasResourceParameters):
 
     def __init__(self, tool_job_destination):
         self.tool = MockTool(tool_job_destination)

@@ -1,47 +1,54 @@
 from __future__ import absolute_import
+
 import logging
 import signal
 import sys
 import time
 
-from galaxy import config, jobs
 import galaxy.model
-import galaxy.security
 import galaxy.queues
-from galaxy.managers.collections import DatasetCollectionManager
 import galaxy.quota
+import galaxy.security
+from galaxy import config, jobs
+from galaxy.containers import build_container_interfaces
+from galaxy.jobs import metrics as job_metrics
+from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.folders import FolderManager
+from galaxy.managers.histories import HistoryManager
+from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.tags import GalaxyTagManager
-from galaxy.visualization.genomes import Genomes
-from galaxy.visualization.data_providers.registry import DataProviderRegistry
-from galaxy.visualization.plugins.registry import VisualizationsRegistry
-from galaxy.tools.special_tools import load_lib_tools
-from galaxy.tours import ToursRegistry
-from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
-from galaxy.webhooks import WebhooksRegistry
-from galaxy.sample_tracking import external_service_types
-from galaxy.openid.providers import OpenIDProviders
-from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.tools.cache import (
     ToolCache,
     ToolShedRepositoryCache
 )
-from galaxy.jobs import metrics as job_metrics
+from galaxy.tools.data_manager.manager import DataManagers
+from galaxy.tools.deps.views import DependencyResolversView
 from galaxy.tools.error_reports import ErrorReports
-from galaxy.web.proxy import ProxyManager
-from galaxy.web.stack import application_stack_instance
-from galaxy.queue_worker import GalaxyQueueWorker
+from galaxy.tools.special_tools import load_lib_tools
+from galaxy.tools.verify import test_data
+from galaxy.tours import ToursRegistry
 from galaxy.util import (
     ExecutionTimer,
     heartbeat
 )
-from tool_shed.galaxy_install import update_repository_manager
-
+from galaxy.visualization.data_providers.registry import DataProviderRegistry
+from galaxy.visualization.genomes import Genomes
+from galaxy.visualization.plugins.registry import VisualizationsRegistry
+from galaxy.web.proxy import ProxyManager
+from galaxy.web.stack import application_stack_instance
+from galaxy.webapps.galaxy.config_watchers import ConfigWatchers
+from galaxy.webhooks import WebhooksRegistry
+from tool_shed.galaxy_install import (
+    installed_repository_manager,
+    update_repository_manager
+)
 
 log = logging.getLogger(__name__)
 app = None
 
 
-class UniverseApplication(object, config.ConfiguresGalaxyMixin):
+class UniverseApplication(config.ConfiguresGalaxyMixin):
     """Encapsulates the state of a Universe application"""
 
     def __init__(self, **kwargs):
@@ -54,12 +61,14 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self.name = 'galaxy'
         self.startup_timer = ExecutionTimer()
         self.new_installation = False
-        self.application_stack = application_stack_instance()
         # Read config file and check for errors
         self.config = config.Configuration(**kwargs)
         self.config.check()
         config.configure_logging(self.config)
         self.configure_fluent_log()
+        # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
+        self.application_stack = application_stack_instance(app=self)
+        self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_whitelist(explicit='sanitize_whitelist_file' in kwargs)
         self.amqp_internal_connection_obj = galaxy.queues.connection_from_config(self.config)
         # control_worker *can* be initialized with a queue, but here we don't
@@ -76,7 +85,6 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self._configure_models(check_migrate_databases=True, check_migrate_tools=check_migrate_tools, config_file=config_file)
 
         # Manage installed tool shed repositories.
-        from tool_shed.galaxy_install import installed_repository_manager
         self.installed_repository_manager = installed_repository_manager.InstalledRepositoryManager(self)
 
         self._configure_datatypes_registry(self.installed_repository_manager)
@@ -86,8 +94,12 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         self._configure_security()
         # Tag handler
         self.tag_handler = GalaxyTagManager(self.model.context)
-        # Dataset Collection Plugins
         self.dataset_collections_service = DatasetCollectionManager(self)
+        self.history_manager = HistoryManager(self)
+        self.dependency_resolvers_view = DependencyResolversView(self)
+        self.test_data_resolver = test_data.TestDataResolver(file_dirs=self.config.tool_test_data_directories)
+        self.library_folder_manager = FolderManager()
+        self.library_manager = LibraryManager()
 
         # Tool Data Tables
         self._configure_tool_data_tables(from_shed_config=False)
@@ -151,13 +163,6 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             self.quota_agent = galaxy.quota.NoQuotaAgent(self.model)
         # Heartbeat for thread profiling
         self.heartbeat = None
-        # Container for OpenID authentication routines
-        if self.config.enable_openid:
-            from galaxy.web.framework import openid_manager
-            self.openid_manager = openid_manager.OpenIDManager(self.config.openid_consumer_cache_path)
-            self.openid_providers = OpenIDProviders.from_file(self.config.openid_config_file)
-        else:
-            self.openid_providers = OpenIDProviders()
         from galaxy import auth
         self.auth_manager = auth.AuthManager(self)
         # Start the heartbeat process if configured and available (wait until
@@ -171,12 +176,17 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
                 )
                 self.heartbeat.daemon = True
                 self.application_stack.register_postfork_function(self.heartbeat.start)
+
+        if self.config.enable_oidc:
+            from galaxy.authnz import managers
+            self.authnz_manager = managers.AuthnzManager(self, self.config.oidc_config, self.config.oidc_backends_config)
+
         self.sentry_client = None
         if self.config.sentry_dsn:
 
             def postfork_sentry_client():
                 import raven
-                self.sentry_client = raven.Client(self.config.sentry_dsn)
+                self.sentry_client = raven.Client(self.config.sentry_dsn, transport=raven.transport.HTTPTransport)
 
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
@@ -187,19 +197,24 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
         # Start the job manager
         from galaxy.jobs import manager
         self.job_manager = manager.JobManager(self)
-        self.job_manager.start()
-        # FIXME: These are exposed directly for backward compatibility
-        self.job_queue = self.job_manager.job_queue
-        self.job_stop_queue = self.job_manager.job_stop_queue
+        self.application_stack.register_postfork_function(self.job_manager.start)
         self.proxy_manager = ProxyManager(self.config)
-        # Initialize the external service types
-        self.external_service_types = external_service_types.ExternalServiceTypesCollection(
-            self.config.external_service_type_config_file,
-            self.config.external_service_type_path, self)
 
         from galaxy.workflow import scheduling_manager
         # Must be initialized after job_config.
         self.workflow_scheduling_manager = scheduling_manager.WorkflowSchedulingManager(self)
+
+        # Must be initialized after any component that might make use of stack messaging is configured. Alternatively if
+        # it becomes more commonly needed we could create a prefork function registration method like we do with
+        # postfork functions.
+        self.application_stack.init_late_prefork()
+
+        self.containers = {}
+        if self.config.enable_beta_containers_interface:
+            self.containers = build_container_interfaces(
+                self.config.containers_config_file,
+                containers_conf=self.config.containers_conf
+            )
 
         # Configure handling of signals
         handlers = {}
@@ -207,29 +222,78 @@ class UniverseApplication(object, config.ConfiguresGalaxyMixin):
             handlers[signal.SIGUSR1] = self.heartbeat.dump_signal_handler
         self._configure_signal_handlers(handlers)
 
+        # Start web stack message handling
+        self.application_stack.register_postfork_function(self.application_stack.start)
+
         self.model.engine.dispose()
         self.server_starttime = int(time.time())  # used for cachebusting
         log.info("Galaxy app startup finished %s" % self.startup_timer)
 
     def shutdown(self):
-        self.workflow_scheduling_manager.shutdown()
-        self.job_manager.shutdown()
-        self.object_store.shutdown()
-        if self.heartbeat:
-            self.heartbeat.shutdown()
-        self.update_repository_manager.shutdown()
+        log.debug('Shutting down')
+        exception = None
+        try:
+            self.watchers.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown configuration watchers cleanly")
+        try:
+            self.workflow_scheduling_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown workflow scheduling manager cleanly")
+        try:
+            self.job_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown job manager cleanly")
+        try:
+            self.object_store.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown object store cleanly")
+        try:
+            if self.heartbeat:
+                self.heartbeat.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown heartbeat cleanly")
+        try:
+            self.update_repository_manager.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown update repository manager cleanly")
+
         try:
             self.control_worker.shutdown()
-        except AttributeError:
-            # There is no control_worker
-            pass
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown control worker cleanly")
+
+        try:
+            self.model.engine.dispose()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown SA database engine cleanly")
+
+        try:
+            self.application_stack.shutdown()
+        except Exception as e:
+            exception = exception or e
+            log.exception("Failed to shutdown application stack interface cleanly")
+
+        if exception:
+            raise exception
+        else:
+            log.debug('Finished shutting down')
 
     def configure_fluent_log(self):
         if self.config.fluent_log:
-            from galaxy.util.log.fluent_log import FluentTraceLogger
+            from galaxy.util.logging.fluent_log import FluentTraceLogger
             self.trace_logger = FluentTraceLogger('galaxy', self.config.fluent_host, self.config.fluent_port)
         else:
             self.trace_logger = None
 
+    @property
     def is_job_handler(self):
-        return (self.config.track_jobs_in_database and self.job_config.is_handler(self.config.server_name)) or not self.config.track_jobs_in_database
+        return (self.config.track_jobs_in_database and self.job_config.is_handler) or not self.config.track_jobs_in_database

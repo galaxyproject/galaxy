@@ -3,6 +3,7 @@
 # The tool will skip over invalid lines within the file, informing the user about the number of lines skipped.
 from __future__ import division, print_function
 
+import json
 import re
 import sys
 from ast import Module, parse, walk
@@ -142,12 +143,14 @@ def stop_err(msg):
 
 in_fname = sys.argv[1]
 out_fname = sys.argv[2]
-cond_text = sys.argv[3]
+with open(sys.argv[3], "r") as f:
+    inputs = json.load(f)
+cond_text = inputs["cond"]
 try:
     in_columns = int(sys.argv[4])
     assert sys.argv[5]  # check to see that the column types variable isn't null
     in_column_types = sys.argv[5].split(',')
-except:
+except Exception:
     stop_err("Data does not appear to be tabular.  This tool can only be used with tab-delimited data.")
 num_header_lines = int(sys.argv[6])
 
@@ -173,7 +176,7 @@ operands = get_operands(cond_text)
 for operand in operands:
     try:
         check = int(operand)
-    except:
+    except ValueError:
         if operand in secured:
             stop_err("Illegal value '%s' in condition '%s'" % (operand, cond_text))
 
@@ -182,7 +185,7 @@ if not check_expression(cond_text):
 
 # Work out which columns are used in the filter (save using 1 based counting)
 used_cols = sorted(set(int(match.group()[1:])
-                   for match in re.finditer('c(\d)+', cond_text)))
+                   for match in re.finditer(r'c(\d)+', cond_text)))
 largest_col_index = max(used_cols)
 
 # Prepare the column variable names and wrappers for column data types. Only
@@ -232,7 +235,7 @@ for i, line in enumerate( open( in_fname ) ):
         if %s:
             lines_kept += 1
             print( line, file=out )
-    except:
+    except Exception:
         invalid_lines += 1
         if not invalid_line:
             first_invalid_line = i + 1

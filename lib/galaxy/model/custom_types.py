@@ -7,6 +7,8 @@ from collections import deque
 from itertools import chain
 from sys import getsizeof
 
+import numpy
+import six
 import sqlalchemy
 from sqlalchemy.ext.mutable import Mutable
 from sqlalchemy.types import (
@@ -16,14 +18,32 @@ from sqlalchemy.types import (
     TypeDecorator
 )
 
-from galaxy import app
+from galaxy.util import (
+    smart_str,
+    unicodify
+)
 from galaxy.util.aliaspickler import AliasPickleModule
 
 log = logging.getLogger(__name__)
 
-# Default JSON encoder and decoder
-json_encoder = json.JSONEncoder(sort_keys=True)
+
+class SafeJsonEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, numpy.int_):
+            return int(obj)
+        elif isinstance(obj, numpy.float_):
+            return float(obj)
+        elif isinstance(obj, six.binary_type):
+            return unicodify(obj)
+        # Let the base class default method raise the TypeError
+        return json.JSONEncoder.default(self, obj)
+
+
+json_encoder = SafeJsonEncoder(sort_keys=True)
 json_decoder = json.JSONDecoder()
+
+# Galaxy app will set this if configured to avoid circular dependency
+MAX_METADATA_VALUE_SIZE = None
 
 
 def _sniffnfix_pg9_hex(value):
@@ -33,12 +53,30 @@ def _sniffnfix_pg9_hex(value):
     try:
         if value[0] == 'x':
             return binascii.unhexlify(value[1:])
-        elif value.startswith('\\x'):
+        elif smart_str(value).startswith(b'\\x'):
             return binascii.unhexlify(value[2:])
         else:
             return value
     except Exception:
         return value
+
+
+class GalaxyLargeBinary(LargeBinary):
+
+    # This hack is necessary because the LargeBinary result processor
+    # does not specify an encoding in the `bytes` call ,
+    # likely because `result` should be binary.
+    # This doesn't seem to be the case in galaxy.
+    if six.PY3:
+        def result_processor(self, dialect, coltype):
+            def process(value):
+                if value is not None:
+                    if isinstance(value, str):
+                        value = bytes(value, encoding='utf-8')
+                    else:
+                        value = bytes(value)
+                return value
+            return process
 
 
 class JSONType(sqlalchemy.types.TypeDecorator):
@@ -52,16 +90,16 @@ class JSONType(sqlalchemy.types.TypeDecorator):
     # TODO: Figure out why this is a large binary, and provide a migratino to
     # something like sqlalchemy.String, or even better, when applicable, native
     # sqlalchemy.dialects.postgresql.JSON
-    impl = LargeBinary
+    impl = GalaxyLargeBinary
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            value = json_encoder.encode(value)
+            value = json_encoder.encode(value).encode()
         return value
 
     def process_result_value(self, value, dialect):
         if value is not None:
-            value = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
+            value = json_decoder.decode(unicodify(_sniffnfix_pg9_hex(value)))
         return value
 
     def load_dialect_impl(self, dialect):
@@ -272,13 +310,13 @@ class MetadataType(JSONType):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            if app.app and app.app.config.max_metadata_value_size:
+            if MAX_METADATA_VALUE_SIZE is not None:
                 for k, v in list(value.items()):
                     sz = total_size(v)
-                    if sz > app.app.config.max_metadata_value_size:
+                    if sz > MAX_METADATA_VALUE_SIZE:
                         del value[k]
                         log.warning('Refusing to bind metadata key %s due to size (%s)' % (k, sz))
-            value = json_encoder.encode(value)
+            value = json_encoder.encode(value).encode()
         return value
 
     def process_result_value(self, value, dialect):
@@ -286,13 +324,13 @@ class MetadataType(JSONType):
             return None
         ret = None
         try:
-            ret = metadata_pickler.loads(str(value))
+            ret = metadata_pickler.loads(unicodify(value))
             if ret:
                 ret = dict(ret.__dict__)
-        except:
+        except Exception:
             try:
-                ret = json_decoder.decode(str(_sniffnfix_pg9_hex(value)))
-            except:
+                ret = json_decoder.decode(unicodify(_sniffnfix_pg9_hex(value)))
+            except Exception:
                 ret = None
         return ret
 
@@ -316,10 +354,8 @@ class UUIDType(TypeDecorator):
             return value
         else:
             if not isinstance(value, uuid.UUID):
-                return "%.32x" % uuid.UUID(value)
-            else:
-                # hexstring
-                return "%.32x" % value
+                value = uuid.UUID(value)
+            return value.hex
 
     def process_result_value(self, value, dialect):
         if value is None:

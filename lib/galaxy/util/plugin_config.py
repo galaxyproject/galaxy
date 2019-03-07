@@ -5,7 +5,7 @@ try:
 except ImportError:
     yaml = None
 
-from galaxy.util.submodules import submodules
+from galaxy.util.submodules import import_submodules
 
 
 def plugins_dict(module, plugin_type_identifier):
@@ -15,7 +15,7 @@ def plugins_dict(module, plugin_type_identifier):
     """
     plugin_dict = {}
 
-    for plugin_module in submodules(module):
+    for plugin_module in import_submodules(module, ordered=True):
         # FIXME: this is not how one is suppose to use __all__ why did you do
         # this past John?
         for clazz in getattr(plugin_module, "__all__", []):
@@ -83,4 +83,4 @@ def __read_yaml(path):
         raise ImportError("Attempting to read YAML configuration file - but PyYAML dependency unavailable.")
 
     with open(path, "rb") as f:
-        return yaml.load(f)
+        return yaml.safe_load(f)

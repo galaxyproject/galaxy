@@ -1,6 +1,8 @@
 from __future__ import absolute_import
+
 import functools
 import logging
+
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobRunner, AsynchronousJobState
 
@@ -10,9 +12,15 @@ CHRONOS_IMPORT_MSG = ('The Python \'chronos\' package is required to use '
 
 try:
     import chronos
+    chronos_exceptions = (
+        chronos.ChronosAPIError,
+        chronos.UnauthorizedError,
+        chronos.MissingFieldError,
+        chronos.OneOfViolationError,
+    )
 except ImportError as e:
     chronos = None
-    CHRONOS_IMPORT_MSG.format(msg=e.message)
+    CHRONOS_IMPORT_MSG.format(msg=str(e))
 
 
 __all__ = ('ChronosJobRunner',)
@@ -26,19 +34,13 @@ class ChronosRunnerException(Exception):
 def handle_exception_call(func):
     # Catch chronos exceptions. The latest version of chronos-python does
     # support a hierarchy over the exceptions.
-    chronos_exceptions = (
-        chronos.ChronosAPIError,
-        chronos.UnauthorizedError,
-        chronos.MissingFieldError,
-        chronos.OneOfViolationError,
-    )
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         except chronos_exceptions as e:
-            LOGGER.error(e.message)
+            LOGGER.error(str(e))
 
     return wrapper
 
@@ -140,11 +142,10 @@ class ChronosJobRunner(AsynchronousJobRunner):
                                    job_id=job_name,
                                    job_destination=job_destination)
         self.monitor_queue.put(ajs)
-        return None
 
     @handle_exception_call
-    def stop_job(self, job):
-        job_id = job.get_id_tag()
+    def stop_job(self, job_wrapper):
+        job_id = job_wrapper.get_id_tag()
         job_name = self.JOB_NAME_PREFIX + job_id
         job = self._retrieve_job(job_name)
         if job:
@@ -230,7 +231,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     def parse_destination_params(self, params):
         parsed_params = {}
-        for k, spec in self.DESTINATION_PARAMS_SPEC.iteritems():
+        for k, spec in self.DESTINATION_PARAMS_SPEC.items():
             value = params.get(k, spec.get('default'))
             map_to = spec.get('map_name')
             mapper = spec.get('map')
@@ -262,7 +263,7 @@ class ChronosJobRunner(AsynchronousJobRunner):
 
     def _retrieve_job(self, job_id):
         jobs = self._chronos_client.list()
-        job = filter((lambda x: x['name'] == job_id), jobs)
+        job = [x for x in jobs if x['name'] == job_id]
         if len(job) > 1:
             msg = 'Multiple jobs found with name {name!r}'.format(name=job_id)
             LOGGER.error(msg)

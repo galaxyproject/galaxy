@@ -7,15 +7,13 @@ import logging
 import os
 import subprocess
 import tempfile
+import threading
 from time import sleep
 
 from galaxy import model
 from galaxy.util import (
     asbool,
-    DATABASE_MAX_STRING_SIZE,
-    shrink_stream_by_size
 )
-
 from ..runners import (
     BaseJobRunner,
     JobState
@@ -42,6 +40,8 @@ class LocalJobRunner(BaseJobRunner):
 
         # create a local copy of os.environ to use as env for subprocess.Popen
         self._environ = os.environ.copy()
+        self._proc_lock = threading.Lock()
+        self._procs = []
 
         # Set TEMP if a valid temp value is not already set
         if not ('TMPDIR' in self._environ or 'TEMP' in self._environ or 'TMP' in self._environ):
@@ -71,6 +71,7 @@ class LocalJobRunner(BaseJobRunner):
             'command': command_line,
             'exit_code_path': exit_code_path,
             'working_directory': job_wrapper.working_directory,
+            'shell': job_wrapper.shell,
         }
         job_file_contents = self.get_job_file(job_wrapper, **job_script_props)
         self.write_executable_script(job_file, job_file_contents)
@@ -81,15 +82,14 @@ class LocalJobRunner(BaseJobRunner):
             return
 
         stderr = stdout = ''
-        exit_code = 0
 
         # command line has been added to the wrapper by prepare_job()
         command_line, exit_code_path = self.__command_line(job_wrapper)
         job_id = job_wrapper.get_id_tag()
 
         try:
-            stdout_file = tempfile.NamedTemporaryFile(suffix='_stdout', dir=job_wrapper.working_directory)
-            stderr_file = tempfile.NamedTemporaryFile(suffix='_stderr', dir=job_wrapper.working_directory)
+            stdout_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stdout', dir=job_wrapper.working_directory)
+            stderr_file = tempfile.NamedTemporaryFile(mode='wb+', suffix='_stderr', dir=job_wrapper.working_directory)
             log.debug('(%s) executing job script: %s' % (job_id, command_line))
             proc = subprocess.Popen(args=command_line,
                                     shell=True,
@@ -98,24 +98,33 @@ class LocalJobRunner(BaseJobRunner):
                                     stderr=stderr_file,
                                     env=self._environ,
                                     preexec_fn=os.setpgrp)
-            job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
-            job_wrapper.change_state(model.Job.states.RUNNING)
 
-            terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
-            if terminated:
+            proc.terminated_by_shutdown = False
+            with self._proc_lock:
+                self._procs.append(proc)
+
+            try:
+                job_wrapper.set_job_destination(job_wrapper.job_destination, proc.pid)
+                job_wrapper.change_state(model.Job.states.RUNNING)
+
+                terminated = self.__poll_if_needed(proc, job_wrapper, job_id)
+                if terminated:
+                    return
+
+                proc.wait()
+
+            finally:
+                with self._proc_lock:
+                    self._procs.remove(proc)
+
+            if proc.terminated_by_shutdown:
+                self._fail_job_local(job_wrapper, "job terminated by Galaxy shutdown")
                 return
 
-            # Reap the process and get the exit code.
-            exit_code = proc.wait()
-            try:
-                exit_code = int(open(exit_code_path, 'r').read())
-            except Exception:
-                log.warning("Failed to read exit code from path %s" % exit_code_path)
-                pass
             stdout_file.seek(0)
             stderr_file.seek(0)
-            stdout = shrink_stream_by_size(stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-            stderr = shrink_stream_by_size(stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            stdout = self._job_io_for_db(stdout_file)
+            stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
             stderr_file.close()
             log.debug('execution finished: %s' % command_line)
@@ -125,15 +134,16 @@ class LocalJobRunner(BaseJobRunner):
             return
 
         self._handle_metadata_if_needed(job_wrapper)
-        # Finish the job!
-        try:
-            job_wrapper.finish(stdout, stderr, exit_code)
-        except:
-            log.exception("Job wrapper finish method failed")
-            self._fail_job_local(job_wrapper, "Unable to finish job")
 
-    def stop_job(self, job):
+        job_destination = job_wrapper.job_destination
+        job_state = JobState(job_wrapper, job_destination)
+        job_state.exit_code_file = JobState.default_exit_code_file(job_wrapper.working_directory, job_id)
+        job_state.stop_job = False
+        self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=job_id)
+
+    def stop_job(self, job_wrapper):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
+        job = job_wrapper.get_job()
         job_ext_output_metadata = job.get_external_output_metadata()
         try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
@@ -142,28 +152,35 @@ class LocalJobRunner(BaseJobRunner):
             # metadata internal or job not complete yet
             pid = job.get_job_runner_external_id()
         if pid in [None, '']:
-            log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.get_id())
+            log.warning("stop_job(): %s: no PID in database for job, unable to stop" % job.id)
             return
         pid = int(pid)
         if not self._check_pid(pid):
-            log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.get_id(), pid))
+            log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
             return
         for sig in [15, 9]:
             try:
                 os.killpg(pid, sig)
             except OSError as e:
-                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job.get_id(), errno.errorcode[e.errno], sig, pid, e.strerror))
+                log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s" % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror))
                 return  # give up
             sleep(2)
             if not self._check_pid(pid):
-                log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.get_id(), pid, sig))
+                log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
                 return
         else:
-            log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.get_id(), pid))
+            log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
 
     def recover(self, job, job_wrapper):
         # local jobs can't be recovered
         job_wrapper.change_state(model.Job.states.ERROR, info="This job was killed when Galaxy was restarted.  Please retry the job.")
+
+    def shutdown(self):
+        super(LocalJobRunner, self).shutdown()
+        with self._proc_lock:
+            for proc in self._procs:
+                proc.terminated_by_shutdown = True
+                self._terminate(proc)
 
     def _fail_job_local(self, job_wrapper, message):
         job_destination = job_wrapper.job_destination

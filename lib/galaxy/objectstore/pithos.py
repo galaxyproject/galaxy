@@ -5,19 +5,28 @@
 import logging
 import os
 import shutil
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import (
-    directory_hash_id,
-    safe_relpath,
-    umask_fix_perms,
-)
-from ..objectstore import ObjectStore
 
 try:
     from kamaki.clients import (
-        astakos, pithos, utils, ClientError, Client as KamakiClient)
+        astakos,
+        Client as KamakiClient,
+        ClientError,
+        pithos,
+        utils
+    )
 except ImportError:
     KamakiClient = None
+
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound
+)
+from galaxy.util import (
+    directory_hash_id,
+    umask_fix_perms,
+)
+from galaxy.util.path import safe_relpath
+from ..objectstore import ObjectStore
 
 NO_KAMAKI_ERROR_MESSAGE = (
     "ObjectStore configured, but no kamaki.clients dependency available."
@@ -75,25 +84,34 @@ class PithosObjectStore(ObjectStore):
     Object store that stores objects as items in a Pithos+ container.
     Cache is ignored for the time being.
     """
+    store_type = 'pithos'
 
-    def __init__(self, config, config_xml):
+    def __init__(self, config, config_dict):
+        super(PithosObjectStore, self).__init__(config, config_dict)
+        self.staging_path = self.config.file_path
+        log.info('Parse config_xml for pithos object store')
+        self.config_dict = config_dict
+        log.debug(self.config_dict)
+
+        self._initialize()
+
+    def _initialize(self):
         if KamakiClient is None:
             raise Exception(NO_KAMAKI_ERROR_MESSAGE)
-        super(PithosObjectStore, self).__init__(config)
-        self.staging_path = self.config.file_path
-        self.transfer_progress = 0
-        log.info('Parse config_xml for pithos object store')
-        self.config_dict = parse_config_xml(config_xml)
-        log.debug(self.config_dict)
 
         log.info('Authenticate Synnefo account')
         self._authenticate()
         log.info('Initialize Pithos+ client')
         self._init_pithos()
 
-        log.info('Define extra_dirs')
-        self.extra_dirs = dict(
-            (e['type'], e['path']) for e in self.config_dict['extra_dirs'])
+    @classmethod
+    def parse_xml(clazz, config_xml):
+        return parse_config_xml(config_xml)
+
+    def to_dict(self):
+        as_dict = super(PithosObjectStore, self).to_dict()
+        as_dict.update(self.config_dict)
+        return as_dict
 
     def _authenticate(self):
         auth = self.config_dict['auth']

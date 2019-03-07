@@ -25,7 +25,7 @@ def get_dataset_filename(name, ext, hid):
 
 
 def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out_file, gzip=False):
-    """ Create archive from the given attribute/metadata files and save it to out_file. """
+    """Create archive from the given attribute/metadata files and save it to out_file."""
     tarfile_mode = "w"
     if gzip:
         tarfile_mode += ":gz"
@@ -34,17 +34,16 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
         history_archive = tarfile.open(out_file, tarfile_mode)
 
         # Read datasets attributes from file.
-        datasets_attr_in = open(datasets_attrs_file, 'rb')
-        datasets_attr_str = ''
-        buffsize = 1048576
-        try:
-            while True:
-                datasets_attr_str += datasets_attr_in.read(buffsize)
-                if not datasets_attr_str or len(datasets_attr_str) % buffsize != 0:
-                    break
-        except OverflowError:
-            pass
-        datasets_attr_in.close()
+        with open(datasets_attrs_file) as datasets_attr_in:
+            datasets_attr_str = ''
+            buffsize = 1048576
+            try:
+                while True:
+                    datasets_attr_str += datasets_attr_in.read(buffsize)
+                    if not datasets_attr_str or len(datasets_attr_str) % buffsize != 0:
+                        break
+            except OverflowError:
+                pass
         datasets_attrs = loads(datasets_attr_str)
 
         # Add datasets to archive and update dataset attributes.
@@ -78,9 +77,8 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
                 dataset_attrs['file_name'] = dataset_archive_name
 
         # Rewrite dataset attributes file.
-        datasets_attrs_out = open(datasets_attrs_file, 'w')
-        datasets_attrs_out.write(dumps(datasets_attrs))
-        datasets_attrs_out.close()
+        with open(datasets_attrs_file, 'w') as datasets_attrs_out:
+            datasets_attrs_out.write(dumps(datasets_attrs))
 
         # Finish archive.
         history_archive.add(history_attrs_file, arcname="history_attrs.txt")
@@ -91,22 +89,36 @@ def create_archive(history_attrs_file, datasets_attrs_file, jobs_attrs_file, out
         history_archive.close()
 
         # Status.
-        return 'Created history archive.'
+        print('Created history archive.')
     except Exception as e:
-        return 'Error creating history archive: %s' % str(e), sys.stderr
+        print('Error creating history archive: %s' % str(e), file=sys.stderr)
 
 
 def main():
     # Parse command line.
     parser = optparse.OptionParser()
     parser.add_option('-G', '--gzip', dest='gzip', action="store_true", help='Compress archive using gzip.')
+    parser.add_option('--galaxy-version', dest='galaxy_version', help='Galaxy version that initiated the command.', default=None)
     (options, args) = parser.parse_args()
+    galaxy_version = options.galaxy_version
+    if galaxy_version is None:
+        galaxy_version = "19.01" if len(args) == 4 else "19.05"
+
     gzip = bool(options.gzip)
-    history_attrs, dataset_attrs, job_attrs, out_file = args
+    if galaxy_version == "19.01":
+        # This job was created pre 18.0X with old argument style.
+        history_attrs, dataset_attrs, job_attrs, out_file = args
+    else:
+        assert len(args) >= 2
+        # We have a 19.0X directory argument instead of individual arguments.
+        temp_directory = args[0]
+        out_file = args[1]
+        history_attrs = os.path.join(temp_directory, 'history_attrs.txt')
+        dataset_attrs = os.path.join(temp_directory, 'datasets_attrs.txt')
+        job_attrs = os.path.join(temp_directory, 'jobs_attrs.txt')
 
     # Create archive.
-    status = create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
-    print(status)
+    create_archive(history_attrs, dataset_attrs, job_attrs, out_file, gzip)
 
 
 if __name__ == "__main__":

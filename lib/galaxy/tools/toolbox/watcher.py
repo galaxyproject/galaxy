@@ -100,21 +100,36 @@ class ToolConfWatcher(object):
             with self._lock:
                 paths = list(self.paths.keys())
             for path in paths:
-                if not os.path.exists(path):
-                    continue
-                mod_time = self.paths[path]
-                if not hashes.get(path, None):
-                    hashes[path] = md5_hash_file(path)
-                new_mod_time = None
-                if os.path.exists(path):
+                try:
+                    if not os.path.exists(path):
+                        continue
+                    mod_time = self.paths[path]
+                    if not hashes.get(path, None):
+                        hash = md5_hash_file(path)
+                        if hash:
+                            hashes[path] = md5_hash_file(path)
+                        else:
+                            continue
                     new_mod_time = os.path.getmtime(path)
-                if new_mod_time > mod_time:
-                    new_hash = md5_hash_file(path)
-                    if hashes[path] != new_hash:
-                        self.paths[path] = new_mod_time
-                        hashes[path] = new_hash
-                        log.debug("The file '%s' has changes.", path)
-                        do_reload = True
+                    if new_mod_time > mod_time:
+                        new_hash = md5_hash_file(path)
+                        if hashes[path] != new_hash:
+                            self.paths[path] = new_mod_time
+                            hashes[path] = new_hash
+                            log.debug("The file '%s' has changes.", path)
+                            do_reload = True
+                except IOError:
+                    # in rare cases `path` may be deleted between `os.path.exists` calls
+                    # and reading the file from the filesystem. We do not want the watcher
+                    # thread to die in these cases.
+                    try:
+                        del hashes[path]
+                        del paths[path]
+                    except KeyError:
+                        pass
+                    if self.cache:
+                        self.cache.cleanup()
+                    do_reload = True
             if not do_reload and self.cache:
                 removed_ids = self.cache.cleanup()
                 if removed_ids:
@@ -233,11 +248,16 @@ class LocFileEventHandler(FileSystemEventHandler):
         path = os.path.abspath(path)
         if path.endswith(".loc"):
             cur_hash = md5_hash_file(path)
-            if self.loc_watcher.path_hash.get(path) == cur_hash:
-                return
-            else:
-                self.loc_watcher.path_hash[path] = cur_hash
-                self.loc_watcher.tool_data_tables.reload_tables(path=path)
+            if cur_hash:
+                if self.loc_watcher.path_hash.get(path) == cur_hash:
+                    return
+                else:
+                    time.sleep(0.5)
+                    if cur_hash != md5_hash_file(path):
+                        # We're still modifying the file, it'll be picked up later
+                        return
+                    self.loc_watcher.path_hash[path] = cur_hash
+                    self.loc_watcher.tool_data_tables.reload_tables(path=path)
 
 
 class ToolFileEventHandler(FileSystemEventHandler):

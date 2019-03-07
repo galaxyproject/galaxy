@@ -11,9 +11,9 @@
     "url": "https://bitbucket.org/galaxy/galaxy-central"
   },
   "dependencies": {
-    "eventemitter3": "0.1.6",
-    "http-proxy": "1.6.0",
-    "commander": "~2.2",
-    "sqlite3": "3.1.8"
+    "commander": "~2.19.0",
+    "eventemitter3": "3.1.0",
+    "http-proxy": "1.17.0",
+    "sqlite3": "4.0.4"
   }
 }

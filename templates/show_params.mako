@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<% from galaxy.util import listify, nice_size, unicodify %>
+<% from galaxy.util import nice_size, unicodify %>
 
 <style>
     .inherit {
@@ -22,10 +22,11 @@
 
 <%def name="inputs_recursive( input_params, param_values, depth=1, upgrade_messages=None )">
     <%
+        from galaxy.util import listify
         if upgrade_messages is None:
             upgrade_messages = {}
     %>
-    %for input_index, input in enumerate( input_params.itervalues() ):
+    %for input_index, input in enumerate( input_params.values() ):
         %if input.name in param_values:
             %if input.type == "repeat":
                 %for i in range( len(param_values[input.name]) ):
@@ -172,16 +173,38 @@
         <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr', dataset_id=encoded_hda_id )}">stderr</a></td></tr>
         %if job:
             <tr><td>Tool Exit Code:</td><td>${ job.exit_code | h }</td></tr>
+            %if job.job_messages:
+            <tr><td>Job Messages</td><td><ul style="padding-left: 15px; margin-bottom: 0px">
+            %for job_message in job.job_messages:
+            <li>${ job_message['desc'] |h }</li>
+            %endfor
+            <ul></td></tr>
+            %endif
         %endif
-        <tr><td>History Content API ID:</td><td>${encoded_hda_id}</td></tr>
+        <tr><td>History Content API ID:</td>
+        <td>${encoded_hda_id}
+            %if trans.user_is_admin:
+                (${hda.id})
+            %endif
+        </td></tr>
         %if job:
-            <tr><td>Job API ID:</td><td>${trans.security.encode_id( job.id )}</td></tr>
+            <tr><td>Job API ID:</td>
+            <td>${trans.security.encode_id( job.id )}
+                %if trans.user_is_admin:
+                    (${job.id})
+                %endif
+            </td></tr>
         %endif
-        <tr><td>History API ID:</td><td>${encoded_history_id}</td></tr>
+        <tr><td>History API ID:</td>
+        <td>${encoded_history_id}
+            %if trans.user_is_admin:
+                (${hda.history_id})
+            %endif
+        </td></tr>
         %if hda.dataset.uuid:
         <tr><td>UUID:</td><td>${hda.dataset.uuid}</td></tr>
         %endif
-        %if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+        %if trans.user_is_admin or trans.app.config.expose_dataset_path:
             %if not hda.purged:
                 <tr><td>Full Path:</td><td>${hda.file_name | h}</td></tr>
             %endif
@@ -226,18 +249,18 @@
 
 
 
-%if job and job.command_line and (trans.user_is_admin() or trans.app.config.expose_dataset_path):
+%if job and job.command_line and (trans.user_is_admin or trans.app.config.expose_dataset_path):
 <h3>Command Line</h3>
 <pre class="code">
 ${ job.command_line | h }</pre>
 %endif
 
-%if job and (trans.user_is_admin() or trans.app.config.expose_potentially_sensitive_job_metrics):
+%if job and (trans.user_is_admin or trans.app.config.expose_potentially_sensitive_job_metrics):
 <h3>Job Metrics</h3>
 <% job_metrics = trans.app.job_metrics %>
 <% plugins = set([metric.plugin for metric in job.metrics]) %>
     %for plugin in sorted(plugins):
-    %if trans.user_is_admin() or plugin != 'env':
+    %if trans.user_is_admin or plugin != 'env':
     <h4>${ plugin | h }</h4>
     <table class="tabletip info_data_table">
         <tbody>
@@ -255,6 +278,30 @@ ${ job.command_line | h }</pre>
     %endfor
 %endif
 
+%if trans.user_is_admin:
+<h3>Destination Parameters</h3>
+    <table class="tabletip">
+        <tbody>
+            <tr><th scope="row">Runner</th><td>${ job.job_runner_name }</td></tr>
+            <tr><th scope="row">Runner Job ID</th><td>${ job.job_runner_external_id }</td></tr>
+            <tr><th scope="row">Handler</th><td>${ job.handler }</td></tr>
+            %if job.destination_params:
+            %for (k, v) in job.destination_params.items():
+                <tr><th scope="row">${ k | h }</th>
+                    <td>
+                        %if str(k) in ('nativeSpecification', 'rank', 'requirements'):
+                        <pre style="white-space: pre-wrap; word-wrap: break-word;">${ v | h }</pre>
+                        %else:
+                        ${ v | h }
+                        %endif
+                    </td>
+                </tr>
+            %endfor
+            %endif
+        </tbody>
+    </table>
+%endif
+
 %if job and job.dependencies:
 <h3>Job Dependencies</h3>
     <table class="tabletip">
@@ -263,6 +310,9 @@ ${ job.command_line | h }</pre>
             <th>Dependency</th>
             <th>Dependency Type</th>
             <th>Version</th>
+            %if trans.user_is_admin:
+            <th>Path</th>
+            %endif
         </tr>
         </thead>
         <tbody>
@@ -271,6 +321,15 @@ ${ job.command_line | h }</pre>
                 <tr><td>${ dependency['name'] | h }</td>
                     <td>${ dependency['dependency_type'] | h }</td>
                     <td>${ dependency['version'] | h }</td>
+                    %if trans.user_is_admin:
+                        %if 'environment_path' in dependency:
+                        <td>${ dependency['environment_path'] | h }</td>
+                        %elif 'path' in dependency:
+                        <td>${ dependency['path'] | h }</td>
+                        %else:
+                        <td></td>
+                        %endif
+                    %endif
                 </tr>
             %endfor
 
@@ -278,6 +337,11 @@ ${ job.command_line | h }</pre>
     </table>
 %endif
 
+%if hda.peek:
+    <h3>Dataset peek</h3>
+    <pre class="dataset-peek">${hda.peek}
+    </pre>
+%endif
 
 
 <script type="text/javascript">

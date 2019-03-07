@@ -23,7 +23,7 @@ This service will need to be deployed on a host that has:
 
 - Access to the Galaxy database
 - A port exposed
-- A non-default ``id_secret`` set in your ``galaxy.ini``
+- A non-default ``id_secret`` set in your ``galaxy.yml``
 
 We say "access to galaxy database", this service could run on an NFS mounted
 copy of Galaxy, if the host it is deployed on can access the database of the
@@ -36,16 +36,16 @@ Deploying the Server
 The chat server is a very new feature in Galaxy and has been disabled by
 default at a number of levels, as not all users may wish to use this feature.
 
-Configuration is managed in ``galaxy.ini``:
+Configuration is managed in ``galaxy.yml``:
 
-.. code-block::  ini
+.. code-block::  yaml
 
     # Galaxy real time communication server settings
-    enable_communication_server = True
-    communication_server_host = http://localhost
-    communication_server_port = 7070
+    enable_communication_server: True
+    communication_server_host: http://localhost
+    communication_server_port: 7070
     # persistent_communication_rooms is a comma-separated list of rooms that should be always available.
-    persistent_communication_rooms = NGS,RNA-Seq,Genome Annotation
+    persistent_communication_rooms: NGS,RNA-Seq,Genome Annotation
 
 As you can see in this configuration, it is pointing at a service running on
 the same host as Galaxy, talking to port 7070.

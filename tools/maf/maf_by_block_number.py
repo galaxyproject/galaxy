@@ -29,7 +29,7 @@ def __main__():
     for ctr, line in enumerate(open(input_block_filename, 'r')):
         try:
             block_wanted = int(line.split("\t")[block_col].strip())
-        except:
+        except Exception:
             failed_lines.append(str(ctr))
             continue
         try:
@@ -39,7 +39,7 @@ def __main__():
                         block = block.limit_to_species(species)
                     maf_writer.write(block)
                     break
-        except:
+        except Exception:
             print("Your MAF file appears to be malformed.", file=sys.stderr)
             sys.exit()
     if len(failed_lines) > 0:

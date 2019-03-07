@@ -1,8 +1,6 @@
 import logging
 import os
 
-from six.moves.urllib.parse import urljoin
-
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -12,10 +10,10 @@ log = logging.getLogger(__name__)
 
 
 class ToolShedRepository(object):
-    dict_collection_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message')
-    dict_element_visible_keys = ('id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
-                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message')
+    dict_collection_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                    'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
+    dict_element_visible_keys = ['id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                 'tool_shed_status', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message']
     installation_status = Bunch(NEW='New',
                                 CLONING='Cloning',
                                 SETTING_TOOL_VERSIONS='Setting tool versions',
@@ -79,13 +77,7 @@ class ToolShedRepository(object):
         return self.deleted
 
     def get_sharable_url(self, app):
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, self.tool_shed)
-        if tool_shed_url:
-            # Append a slash to the tool shed URL, because urlparse.urljoin will eliminate
-            # the last part of a URL if it does not end with a forward slash.
-            tool_shed_url = '%s/' % tool_shed_url
-            return urljoin(tool_shed_url, 'view/%s/%s' % (self.owner, self.name))
-        return tool_shed_url
+        return common_util.get_tool_shed_repository_url(app, self.tool_shed, self.owner, self.name)
 
     def get_shed_config_filename(self):
         shed_config_filename = None
@@ -143,7 +135,7 @@ class ToolShedRepository(object):
                             if tool_id in tool_ids:
                                 self.shed_config_filename = name
                                 return shed_tool_conf_dict
-        if self.includes_datatypes:
+        if self.includes_datatypes or self.includes_data_managers:
             # We need to search by file paths here, which is less desirable.
             tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
             for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
@@ -582,8 +574,8 @@ class ToolDependency(object):
         return self.status == self.installation_status.INSTALLED
 
 
-class ToolVersion(object, Dictifiable):
-    dict_element_visible_keys = ('id', 'tool_shed_repository')
+class ToolVersion(Dictifiable):
+    dict_element_visible_keys = ['id', 'tool_shed_repository']
 
     def __init__(self, id=None, create_time=None, tool_id=None, tool_shed_repository=None):
         self.id = id

@@ -7,13 +7,7 @@ import os
 import shutil
 import threading
 import time
-
 from datetime import datetime
-
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
-from galaxy.util import directory_hash_id, safe_relpath, umask_fix_perms
-from galaxy.util.sleeper import Sleeper
-from ..objectstore import convert_bytes, ObjectStore
 
 try:
     from azure.common import AzureHttpError
@@ -23,10 +17,68 @@ try:
 except ImportError:
     BlockBlobService = None
 
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound
+)
+from galaxy.util import (
+    directory_hash_id,
+    umask_fix_perms
+)
+from galaxy.util.path import safe_relpath
+from galaxy.util.sleeper import Sleeper
+from ..objectstore import (
+    convert_bytes,
+    ObjectStore
+)
+
 NO_BLOBSERVICE_ERROR_MESSAGE = ("ObjectStore configured, but no azure.storage.blob dependency available."
                                 "Please install and properly configure azure.storage.blob or modify Object Store configuration.")
 
 log = logging.getLogger(__name__)
+
+
+def parse_config_xml(config_xml):
+    try:
+        auth_xml = config_xml.findall('auth')[0]
+
+        account_name = auth_xml.get('account_name')
+        account_key = auth_xml.get('account_key')
+
+        container_xml = config_xml.find('container')
+        container_name = container_xml.get('name')
+        max_chunk_size = int(container_xml.get('max_chunk_size', 250))  # currently unused
+
+        c_xml = config_xml.findall('cache')[0]
+        cache_size = float(c_xml.get('size', -1))
+        staging_path = c_xml.get('path', None)
+
+        tag, attrs = 'extra_dir', ('type', 'path')
+        extra_dirs = config_xml.findall(tag)
+        if not extra_dirs:
+            msg = 'No {tag} element in XML tree'.format(tag=tag)
+            log.error(msg)
+            raise Exception(msg)
+        extra_dirs = [dict(((k, e.get(k)) for k in attrs)) for e in extra_dirs]
+        return {
+            'auth': {
+                'account_name': account_name,
+                'account_key': account_key,
+            },
+            'container': {
+                'name': container_name,
+                'max_chunk_size': max_chunk_size,
+            },
+            'cache': {
+                'size': cache_size,
+                'path': staging_path,
+            },
+            'extra_dirs': extra_dirs,
+        }
+    except Exception:
+        # Toss it back up after logging, we can't continue loading at this point.
+        log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
+        raise
 
 
 class AzureBlobObjectStore(ObjectStore):
@@ -35,15 +87,32 @@ class AzureBlobObjectStore(ObjectStore):
     cache exists that is used as an intermediate location for files between
     Galaxy and Azure.
     """
+    store_type = 'azure_blob'
 
-    def __init__(self, config, config_xml):
+    def __init__(self, config, config_dict):
+        super(AzureBlobObjectStore, self).__init__(config, config_dict)
+
+        self.transfer_progress = 0
+
+        auth_dict = config_dict["auth"]
+        container_dict = config_dict["container"]
+        cache_dict = config_dict["cache"]
+
+        self.account_name = auth_dict.get('account_name')
+        self.account_key = auth_dict.get('account_key')
+
+        self.container_name = container_dict.get('name')
+        self.max_chunk_size = container_dict.get('max_chunk_size', 250)  # currently unused
+
+        self.cache_size = cache_dict.get('size', -1)
+        self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
+
+        self._initialize()
+
+    def _initialize(self):
         if BlockBlobService is None:
             raise Exception(NO_BLOBSERVICE_ERROR_MESSAGE)
-        super(AzureBlobObjectStore, self).__init__(config)
 
-        self.staging_path = self.config.file_path
-        self.transfer_progress = 0
-        self._parse_config_xml(config_xml)
         self._configure_connection()
 
         # Clean cache only if value is set in galaxy.ini
@@ -56,33 +125,32 @@ class AzureBlobObjectStore(ObjectStore):
             self.cache_monitor_thread.start()
             log.info("Cache cleaner manager started")
 
+    def to_dict(self):
+        as_dict = super(AzureBlobObjectStore, self).to_dict()
+        as_dict.update({
+            'auth': {
+                'account_name': self.account_name,
+                'account_key': self.account_key,
+            },
+            'container': {
+                'name': self.container_name,
+                'max_chunk_size': self.max_chunk_size,
+            },
+            'cache': {
+                'size': self.cache_size,
+                'path': self.staging_path,
+            }
+        })
+        return as_dict
+
     ###################
     # Private Methods #
     ###################
 
     # config_xml is an ElementTree object.
-    def _parse_config_xml(self, config_xml):
-        try:
-            auth_xml = config_xml.find('auth')
-            self.account_name = auth_xml.get('account_name')
-            self.account_key = auth_xml.get('account_key')
-            container_xml = config_xml.find('container')
-            self.container_name = container_xml.get('name')
-            self.max_chunk_size = int(container_xml.get('max_chunk_size', 250))  # currently unused
-            cache_xml = config_xml.find('cache')
-            self.cache_size = float(cache_xml.get('size', -1))
-            self.staging_path = cache_xml.get('path', self.config.object_store_cache_path)
-
-            for d_xml in config_xml.findall('extra_dir'):
-                self.extra_dirs[d_xml.get('type')] = d_xml.get('path')
-
-            log.debug("Object cache dir:    %s", self.staging_path)
-            log.debug("       job work dir: %s", self.extra_dirs['job_work'])
-
-        except Exception:
-            # Toss it back up after logging, we can't continue loading at this point.
-            log.exception("Malformed ObjectStore Configuration XML -- unable to continue")
-            raise
+    @classmethod
+    def parse_xml(clazz, config_xml):
+        return parse_config_xml(config_xml)
 
     def _configure_connection(self):
         log.debug("Configuring Connection")

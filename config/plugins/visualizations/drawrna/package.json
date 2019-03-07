@@ -1,0 +1,20 @@
+{
+    "name": "visualization",
+    "version": "0.1.0",
+    "keywords": [
+        "galaxy",
+        "visualization"
+    ],
+    "license": "AFL-3.0",
+    "dependencies": {
+        "babel-preset-env": "^1.6.1",
+        "backbone": "^1.3.3",
+        "bootstrap": "^3.3.7",
+        "drawrnajs": "^1.2.6",
+        "jquery": "^3.1.1",
+        "parcel-bundler": "^1.4.1"
+    },
+    "scripts": {
+        "build": "parcel build src/script.js -d static"
+    }
+}

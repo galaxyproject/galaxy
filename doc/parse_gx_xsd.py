@@ -11,9 +11,6 @@ import sys
 from lxml import etree
 from six import StringIO
 
-with open(sys.argv[1], "r") as f:
-    MARKDOWN_TEMPLATE = f.read()
-
 with open(sys.argv[2], "r") as f:
     xmlschema_doc = etree.parse(f)
 
@@ -22,11 +19,26 @@ markdown_buffer = StringIO()
 
 def main():
     """Entry point for the function that builds Markdown help for the Galaxy XSD."""
-    for line in MARKDOWN_TEMPLATE.splitlines():
-        if line.startswith("$tag:"):
-            print(Tag(line).build_help())
-        else:
-            print(line)
+    toc_list = []
+    content_list = []
+    found_tag = False
+    with open(sys.argv[1], "r") as markdown_template:
+        for line in markdown_template:
+            if line.startswith("$tag:"):
+                found_tag = True
+                tag = Tag(line.rstrip())
+                toc_list.append(tag.build_toc_entry())
+                content_list.append(tag.build_help())
+            elif not found_tag:
+                print(line, end='')
+            else:
+                raise Exception("No normal text allowed after the first $tag")
+    print("## Contents\n")
+    for el in toc_list:
+        print(el)
+    print("\n")
+    for el in content_list:
+        print(el, end='')
 
 
 class Tag(object):
@@ -47,15 +59,28 @@ class Tag(object):
         self.hide_attributes = hide_attributes
         self.title = title
 
+    @property
+    def _anchor(self):
+        anchor = self.title
+        for _ in ['|', '_']:
+            anchor = anchor.replace(_, '-')
+        return '#' + anchor
+
+    @property
+    def _pretty_title(self):
+        return " > ".join(["``%s``" % p for p in self.title.split("|")])
+
+    def build_toc_entry(self):
+        return "* [%s](%s)" % (self._pretty_title, self._anchor)
+
     def build_help(self):
         tag = xmlschema_doc.find(self.xpath)
         if tag is None:
             raise Exception("Could not find xpath for %s" % self.xpath)
 
-        title = self.title
         tag_help = StringIO()
-        tag_help.write("## " + " > ".join(["``%s``" % p for p in title.split("|")]))
-        tag_help.write("\n")
+        tag_help.write("## " + self._pretty_title)
+        tag_help.write("\n\n")
         tag_help.write(_build_tag(tag, self.hide_attributes))
         tag_help.write("\n\n")
         return tag_help.getvalue()
@@ -83,7 +108,11 @@ def _build_tag(tag, hide_attributes):
             assertions_buffer.write("--- | ---\n")
             elements = assertion_tag.findall("{http://www.w3.org/2001/XMLSchema}choice/{http://www.w3.org/2001/XMLSchema}element")
             for element in elements:
-                doc = _doc_or_none(element).strip()
+                doc = _doc_or_none(element)
+                if doc is None:
+                    doc = _doc_or_none(_type_el(element))
+                assert doc is not None, "Documentation for %s is empty" % element.attrib["name"]
+                doc = doc.strip()
                 assertions_buffer.write("``%s`` | %s\n" % (element.attrib["name"], doc))
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
@@ -111,7 +140,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
     attribute_table.write("\n\n")
     if attributes and not hide_attributes:
         header_prefix = '#' * header_level
-        attribute_table.write("\n%s Attributes\n" % header_prefix)
+        attribute_table.write("\n%s Attributes\n\n" % header_prefix)
         attribute_table.write("Attribute | Details | Required\n")
         attribute_table.write("--- | --- | ---\n")
         for attribute in attributes:
@@ -121,6 +150,7 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
             details = _doc_or_none(attribute)
             if details is None:
                 type_el = _type_el(attribute)
+                assert type_el is not None, "No details or type found for %s" % name
                 details = _doc_or_none(type_el)
                 annotation_el = type_el.find("{http://www.w3.org/2001/XMLSchema}annotation")
             else:
@@ -128,7 +158,8 @@ def _build_attributes_table(tag, attributes, hide_attributes=False, attribute_na
 
             use = attribute.attrib.get("use", "optional") == "required"
             if "|" in details:
-                raise Exception("Cannot build Markdown table")
+                # This seems to work fine for now, but potentially can cause problems.
+                pass
             details = details.replace("\n", " ").strip()
             best_practices = _get_bp_link(annotation_el)
             if best_practices:

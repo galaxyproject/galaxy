@@ -16,6 +16,7 @@ Subpackages
     galaxy.tools.data
     galaxy.tools.data_manager
     galaxy.tools.deps
+    galaxy.tools.error_reports
     galaxy.tools.filters
     galaxy.tools.imp_exp
     galaxy.tools.linters
@@ -29,6 +30,22 @@ Subpackages
 
 Submodules
 ----------
+
+galaxy\.tools\.cache module
+---------------------------
+
+.. automodule:: galaxy.tools.cache
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.tools\.data\_fetch module
+---------------------------------
+
+.. automodule:: galaxy.tools.data_fetch
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 galaxy\.tools\.errors module
 ----------------------------
@@ -98,6 +115,22 @@ galaxy\.tools\.loader\_directory module
 ---------------------------------------
 
 .. automodule:: galaxy.tools.loader_directory
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.tools\.provided\_metadata module
+----------------------------------------
+
+.. automodule:: galaxy.tools.provided_metadata
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+galaxy\.tools\.repositories module
+----------------------------------
+
+.. automodule:: galaxy.tools.repositories
     :members:
     :undoc-members:
     :show-inheritance:

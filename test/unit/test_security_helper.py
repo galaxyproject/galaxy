@@ -1,8 +1,68 @@
+# -*- coding: utf-8 -*-
+
 from galaxy.web import security
 
 
-test_helper_1 = security.SecurityHelper(id_secret="sec1")
-test_helper_2 = security.SecurityHelper(id_secret="sec2")
+test_helper_1 = security.SecurityHelper(id_secret="secu1")
+test_helper_2 = security.SecurityHelper(id_secret="secu2")
+
+
+def test_maximum_length_handling_ascii():
+    # Test that id secrets can be up to 56 characters long.
+    longest_id_secret = "m" * security.MAXIMUM_ID_SECRET_LENGTH
+    helper = security.SecurityHelper(id_secret=longest_id_secret)
+    helper.encode_id(1)
+
+    # Test that security helper will catch if the id secret is too long.
+    threw_exception = False
+    longer_id_secret = "m" * (security.MAXIMUM_ID_SECRET_LENGTH + 1)
+    try:
+        security.SecurityHelper(id_secret=longer_id_secret)
+    except Exception:
+        threw_exception = True
+
+    assert threw_exception
+
+    # Test that different kinds produce different keys even when id secret
+    # is very long.
+    e11 = helper.encode_id(1, kind="moo")
+    e12 = helper.encode_id(1, kind="moo2")
+
+    assert e11 != e12
+
+    # Test that long kinds are rejected because it uses up "too much" randomness
+    # from id_secret values. This isn't a strict requirement up but lets just enforce
+    # the best practice.
+    assertion_error_raised = False
+    try:
+        helper.encode_id(1, kind="this is a really long kind")
+    except AssertionError:
+        assertion_error_raised = True
+
+    assert assertion_error_raised
+
+
+def test_maximum_length_handling_nonascii():
+    longest_id_secret = "◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎"
+    helper = security.SecurityHelper(id_secret=longest_id_secret)
+    helper.encode_id(1)
+
+    # Test that security helper will catch if the id secret is too long.
+    threw_exception = False
+    longer_id_secret = "◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎◎"
+    try:
+        security.SecurityHelper(id_secret=longer_id_secret)
+    except Exception:
+        threw_exception = True
+
+    assert threw_exception
+
+    # Test that different kinds produce different keys even when id secret
+    # is very long.
+    e11 = helper.encode_id(1, kind="moo")
+    e12 = helper.encode_id(1, kind="moo2")
+
+    assert e11 != e12
 
 
 def test_encode_decode():
@@ -69,5 +129,5 @@ def test_guid_generation():
 def test_encode_decode_guid():
     session_key = test_helper_1.get_new_guid()
     encoded_key = test_helper_1.encode_guid(session_key)
-    decoded_key = test_helper_1.decode_guid(encoded_key).encode("utf-8")
+    decoded_key = test_helper_1.decode_guid(encoded_key)
     assert session_key == decoded_key, "%s != %s" % (session_key, decoded_key)

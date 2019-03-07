@@ -1,5 +1,3 @@
-import time
-
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -9,19 +7,19 @@ from .framework import (
 
 class CustomBuildsTestcase(SharedStateSeleniumTestCase):
 
-    def setUp(self):
-        super(CustomBuildsTestcase, self).setUp()
-        self.home()  # ensure Galaxy is loaded
-        self.submit_login(self.user_email)
-
     @selenium_test
     def test_build_add(self):
+        self._login()
+
         self.navigate_to_custom_builds_page()
+
         self.add_custom_build(self.build_name1, self.build_key1)
         self.assert_custom_builds_in_grid([self.build_name1])
 
     @selenium_test
     def test_build_delete(self):
+        self._login()
+
         self.navigate_to_custom_builds_page()
 
         self.add_custom_build(self.build_name2, self.build_key2)
@@ -38,6 +36,10 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
             self.assertEqual(intersection, set(expected_builds))
         else:
             self.assertEqual(intersection, set())
+
+    def _login(self):
+        self.home()  # ensure Galaxy is loaded
+        self.submit_login(self.user_email, retries=2)
 
     def add_custom_build(self, build_name, build_key):
         name_div = self.wait_for_selector('div[tour_id="name"')
@@ -77,7 +79,7 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         delete_button.click()
 
     def get_custom_builds(self):
-        time.sleep(1)
+        self.sleep_for(self.wait_types.UX_RENDER)
         builds = []
         grid = self.wait_for_selector('table.grid > tbody')
         for row in grid.find_elements_by_tag_name('tr'):
@@ -88,9 +90,7 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
     def navigate_to_custom_builds_page(self):
         self.home()
         self.click_masthead_user()  # Open masthead menu
-        label = self.navigation_data['labels']['masthead']['menus']['user']
-        self.click_label(label)
-        self.wait_for_and_click_selector('a[href="/custom_builds"]')
+        self.components.masthead.custom_builds.wait_for_and_click()
 
     def setup_shared_state(self):
         CustomBuildsTestcase.user_email = self._get_random_email()

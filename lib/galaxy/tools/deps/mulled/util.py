@@ -3,13 +3,17 @@ from __future__ import print_function
 
 import collections
 import hashlib
+import sys
+import threading
+import time
 
-from distutils.version import LooseVersion
-
+import packaging.version
 try:
     import requests
 except ImportError:
     requests = None
+
+MULLED_TAG_CACHE = collections.defaultdict(dict)
 
 
 def create_repository(namespace, repo_name, oauth_token):
@@ -54,7 +58,19 @@ def mulled_tags_for(namespace, image, tag_prefix=None):
 
     The result will be sorted so newest tags are first.
     """
-    tags = quay_versions(namespace, image)
+    tags_cached = False
+    if namespace in MULLED_TAG_CACHE:
+        if image in MULLED_TAG_CACHE[namespace]:
+            tags, last_checked = MULLED_TAG_CACHE[namespace][image]
+            if not tags and time.time() - last_checked < 300:
+                # it's possible we haven't seen the tags before, we check every 5 minutes
+                tags_cached = False
+            else:
+                tags_cached = True
+    if not tags_cached:
+        tags = quay_versions(namespace, image)
+        last_checked = time.time()
+        MULLED_TAG_CACHE[namespace][image] = (tags, last_checked)
     if tag_prefix is not None:
         tags = [t for t in tags if t.startswith(tag_prefix)]
     tags = version_sorted(tags)
@@ -70,7 +86,7 @@ def split_tag(tag):
 
 def version_sorted(elements):
     """Sort iterable based on loose description of "version" from newest to oldest."""
-    return sorted(elements, key=LooseVersion, reverse=True)
+    return sorted(elements, key=packaging.version.parse, reverse=True)
 
 
 Target = collections.namedtuple("Target", ["package_name", "version", "build"])
@@ -205,6 +221,27 @@ def v2_image_name(targets, image_build=None, name_override=None):
         if version_hash_str or build_suffix:
             suffix = ":%s%s" % (version_hash_str, build_suffix)
         return "mulled-v2-%s%s" % (package_hash.hexdigest(), suffix)
+
+
+class PrintProgress(object):
+    def __init__(self):
+        self.thread = threading.Thread(target=self.progress)
+        self.stop = False
+
+    def progress(self):
+        while not self.stop:
+            print(".", end="")
+            sys.stdout.flush()
+            time.sleep(60)
+        print("")
+
+    def __enter__(self):
+        self.thread.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop = True
+        self.thread.join()
 
 
 image_name = v1_image_name  # deprecated

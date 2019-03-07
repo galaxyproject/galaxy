@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Unipept Taxonomy Viewer">
+    <description>Interactive Unipept Tree viewer.</description>
     <data_sources>
         <data_source>
            <model_class>HistoryDatasetAssociation</model_class>

@@ -11,22 +11,30 @@ class HistoryQuery(object):
         self.collection_type_descriptions = kwargs.get("collection_type_descriptions", None)
 
     @staticmethod
-    def from_parameter(param, collection_type_descriptions):
-        """ Take in a tool parameter element.
-        """
-        collection_types = param.collection_types
+    def from_collection_type(collection_type, collection_type_descriptions):
+        kwargs = dict(collection_type_descriptions=[collection_type_descriptions.for_collection_type(collection_type)])
+        return HistoryQuery(**kwargs)
+
+    @staticmethod
+    def from_collection_types(collection_types, collection_type_descriptions):
         if collection_types:
             collection_type_descriptions = [collection_type_descriptions.for_collection_type(t) for t in collection_types]
             # Place higher dimension descriptions first so subcollection mapping
             # (until we expose it to the user) will default to providing tool as much
             # data as possible. So a list:list:paired mapped to a tool that takes
             # list,paired,list:paired - will map over list:paired and create a flat list.
-            collection_type_descriptions = sorted(collection_type_descriptions, lambda t: t.dimension, reverse=True)
+            collection_type_descriptions = sorted(collection_type_descriptions, key=lambda t: t.dimension, reverse=True)
         else:
             collection_type_descriptions = None
-
         kwargs = dict(collection_type_descriptions=collection_type_descriptions)
         return HistoryQuery(**kwargs)
+
+    @staticmethod
+    def from_parameter(param, collection_type_descriptions):
+        """ Take in a tool parameter element.
+        """
+        collection_types = param.collection_types
+        return HistoryQuery.from_collection_types(collection_types, collection_type_descriptions)
 
     def direct_match(self, hdca):
         collection_type_descriptions = self.collection_type_descriptions
@@ -48,4 +56,4 @@ class HistoryQuery(object):
             # See note about the way this is sorted above.
             if collection_type_description.is_subcollection_of_type(hdca_collection_type):
                 return collection_type_description
-            return False
+        return False

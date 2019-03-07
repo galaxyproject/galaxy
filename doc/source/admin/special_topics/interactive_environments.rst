@@ -9,7 +9,7 @@ How GIEs Work
 -------------
 
 A GIE is primarily composed of a Docker container, and the Galaxy visualization
-component. Galaxy vizualisation plugins are rendered using Mako templates and
+component. Galaxy visualization plugins are rendered using Mako templates and
 Mako templates in turn can run Python code. GIEs build upon visualization plugins,
 adding features to allow for container management and proxying. This Python code
 in the Mako templates is used to launch the Docker container within which a GIE
@@ -41,6 +41,7 @@ Currently the Galaxy proxy is a NodeJS+Sqlite3 proxy.
 - Node has recently upgraded, and our proxy is pinned to an old version of
   sqlite3. As such you'll currently need to have an older version of Node
   available (0.10.X - 0.11.X vintage).
+- One can use `NVM <https://github.com/creationix/nvm>`__ to install and manage multiple versions of Node.
 - We're working on solutions in this space to provide a better deployment
   mechanism here and fewer dependencies.
 - Please note that if you have NodeJS installed under Ubuntu, it often
@@ -102,26 +103,26 @@ Galaxy runs as.
 Configuring the Proxy
 ^^^^^^^^^^^^^^^^^^^^^
 
-Configuration is all managed in ``galaxy.ini``. The default arguments used
+Configuration is all managed in ``galaxy.yml``. The default arguments used
 for the proxy are:
 
-.. code-block::  ini
+.. code-block::  yaml
 
-    dynamic_proxy_manage=True
-    dynamic_proxy_session_map=database/session_map.sqlite
-    dynamic_proxy_bind_port=8800
-    dynamic_proxy_bind_ip=0.0.0.0
-    dynamic_proxy_debug=True
+    dynamic_proxy_manage: true
+    dynamic_proxy_session_map: database/session_map.sqlite
+    dynamic_proxy_bind_port: 8800
+    dynamic_proxy_bind_ip: 0.0.0.0
+    dynamic_proxy_debug: true
 
 As you can see most of these variables map directly to the command line
 arguments to the NodeJS script. There are a few extra parameters which will
 be needed if you run Galaxy behind an upstream proxy like nginx or
 Apache:
 
-.. code-block:: ini
+.. code-block:: yaml
 
-    dynamic_proxy_external_proxy=True
-    dynamic_proxy_prefix=gie_proxy
+    dynamic_proxy_external_proxy: true
+    dynamic_proxy_prefix: gie_proxy
 
 The first option says that you have Galaxy and the Galaxy NodeJS proxy wrapped
 in an upstream proxy like Apache or NGINX. This will cause Galaxy to connect
@@ -139,7 +140,7 @@ second (``dynamic_proxy_prefix``) option sets the URL path that's used to
 differentiate requests that should go through the proxy to those that should go
 to Galaxy. You will need to add special upstream proxy configuration to handle
 this, and you'll need to use the same ``dynamic_proxy_prefix`` in your
-``galaxy.ini`` that you use in your URL routes.
+``galaxy.yml`` that you use in your URL routes.
 
 In the examples below, we assume that your Galaxy installation is available
 at a URL such as ``https://f.q.d.n/galaxy``. If instead it is available at a
@@ -190,7 +191,7 @@ proxying to GIE and other visualization plugin static content.
 
 .. code-block:: nginx
 
-    location ~ ^/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
+    location ~ ^/static/plugins/(?<plug_type>.+?)/(?<vis_name>.+?)/static/(?<static_file>.*?)$ {
         alias /path/to/galaxy-dist/config/plugins/$plug_type/$vis_name/static/$static_file;
     }
 
@@ -296,10 +297,10 @@ configuration file:
     swarm_mode = True
 
 You can also enable swarm mode for *all* GIE plugins by setting
-``interactive_environment_swarm_mode`` in ``galaxy.ini`` to ``True``. If using
+``interactive_environment_swarm_mode`` in ``galaxy.yml`` to ``True``. If using
 this setting, you must still set ``docker_connect_port`` in each GIE plugin's
 ini configuration file. The ``swarm_mode`` setting in individual GIE plugin
-config files will override the value set in ``galaxy.ini``.
+config files will override the value set in ``galaxy.yml``.
 
 Note that your Galaxy server does not need to be a member of the swarm itself.
 It can use the method outlined above in the `Docker on Another Host`_ section

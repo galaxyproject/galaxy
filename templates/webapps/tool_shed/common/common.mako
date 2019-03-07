@@ -1,3 +1,37 @@
+<%def name="render_checkbox(checkbox, disabled=False, refresh_on_change=False)">
+    <% from galaxy.web.form_builder import CheckboxField %>
+    <input type="checkbox" id="${checkbox.name}" name="${checkbox.name}" value="true"
+        ${"refresh_on_change='true'" if refresh_on_change else ""}
+        ${"checked" if CheckboxField.is_checked(checkbox.value) else ""}
+        ${"disabled" if disabled else ""}
+    >
+</%def>
+
+<%def name="render_select(select)">
+    <% from markupsafe import escape %>
+    <% from galaxy.util import listify %>
+    %if select.display == "checkboxes":
+        %for o in select.options:
+            <div>
+                <% selected = o[1] in listify(select.value) or o[2] %>
+                <input type="checkbox" name="${select.name}" value="${escape(o[1])}"
+                ${'refresh_on_change="true"' if select.refresh_on_change else ""}"
+                ${"checked" if selected else ""} ${"disabled" if disabled else ""}>
+                ${escape(o[0])}
+            </div>
+        %endfor
+    %else:
+        <select id="${select.field_id}" name="${select.name}"
+            ${"multiple" if select.multiple else ""}
+            ${'refresh_on_change="true"' if select.refresh_on_change else ""}>
+            %for o in select.options:
+                <% selected = o[1] in listify(select.value) or o[2] %>
+                <option value="${escape(o[1])}" ${"selected" if selected else ""}>${escape(o[0])}</option>
+            %endfor
+        </select>
+    %endif
+</%def>
+
 <%def name="common_misc_javascripts()">
     <script type="text/javascript">
         function checkAllFields( chkAll, name )

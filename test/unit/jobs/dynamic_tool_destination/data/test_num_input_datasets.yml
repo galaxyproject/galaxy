@@ -1,6 +1,6 @@
 tools:
   spades:
-    default_destination: waffles_default
+    default_destination: cluster_default
   smalt:
     rules:
       - rule_type: num_input_datasets
@@ -13,5 +13,5 @@ tools:
         lower_bound: 200
         upper_bound: Infinity
         destination: cluster_high_32
-default_destination: waffles_low
+default_destination: cluster_low
 verbose: True

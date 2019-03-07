@@ -15,15 +15,17 @@ import tempfile
 from cgi import escape
 from json import dumps
 
+import pysam
+
 from galaxy import util
 from galaxy.datatypes import binary, data, metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
     get_headers,
     iter_headers
 )
 from galaxy.util import compression_utils
-
 from . import dataproviders
 
 if sys.version_info > (3,):
@@ -52,7 +54,7 @@ class TabularData(data.Text):
         raise NotImplementedError
 
     def set_peek(self, dataset, line_count=None, is_multi_byte=False, WIDTH=256, skipchars=None):
-        super(TabularData, self).set_peek(dataset, line_count=line_count, is_multi_byte=is_multi_byte, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
+        super(TabularData, self).set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=False)
         if dataset.metadata.comment_lines:
             dataset.blurb = "%s, %s comments" % (dataset.blurb, util.commaify(str(dataset.metadata.comment_lines)))
 
@@ -62,7 +64,7 @@ class TabularData(data.Text):
                 and dataset.state == dataset.states.OK \
                 and dataset.metadata.columns > 0 \
                 and dataset.metadata.data_lines != 0
-        except:
+        except Exception:
             return False
 
     def get_chunk(self, trans, dataset, offset=0, ck_size=None):
@@ -92,11 +94,11 @@ class TabularData(data.Text):
             max_peek_size = 1000000  # 1 MB
             if os.stat(dataset.file_name).st_size < max_peek_size:
                 self._clean_and_set_mime_type(trans, dataset.get_mime())
-                return open(dataset.file_name)
+                return open(dataset.file_name, mode='rb')
             else:
                 trans.response.set_content_type("text/html")
                 return trans.stream_template_mako("/dataset/large_file.mako",
-                                                  truncated_data=open(dataset.file_name).read(max_peek_size),
+                                                  truncated_data=open(dataset.file_name, mode='r').read(max_peek_size),
                                                   data=dataset)
         else:
             column_names = 'null'
@@ -156,7 +158,7 @@ class TabularData(data.Text):
                 if isinstance(spec.param, metadata.ColumnParameter):
                     try:
                         i = int(getattr(dataset.metadata, name)) - 1
-                    except:
+                    except Exception:
                         i = -1
                     if 0 <= i < columns and column_headers[i] is None:
                         column_headers[i] = column_parameter_alias.get(name, name)
@@ -294,14 +296,14 @@ class Tabular(TabularData):
             try:
                 int(column_text)
                 return True
-            except:
+            except ValueError:
                 return False
 
         def is_float(column_text):
             try:
                 float(column_text)
                 return True
-            except:
+            except ValueError:
                 if column_text.strip().lower() == 'na':
                     return True  # na is special cased to be a float
                 return False
@@ -392,10 +394,10 @@ class Tabular(TabularData):
         dataset.metadata.delimiter = '\t'
 
     def as_gbrowse_display_file(self, dataset, **kwd):
-        return open(dataset.file_name)
+        return open(dataset.file_name, 'rb')
 
     def as_ucsc_display_file(self, dataset, **kwd):
-        return open(dataset.file_name)
+        return open(dataset.file_name, 'rb')
 
 
 class Taxonomy(Tabular):
@@ -414,6 +416,7 @@ class Taxonomy(Tabular):
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Sam(Tabular):
     edam_format = "format_2573"
     edam_data = "data_0863"
@@ -422,7 +425,7 @@ class Sam(Tabular):
     data_sources = {"data": "bam", "index": "bigwig"}
 
     def __init__(self, **kwd):
-        """Initialize taxonomy datatype"""
+        """Initialize sam datatype"""
         super(Sam, self).__init__(**kwd)
         self.column_names = ['QNAME', 'FLAG', 'RNAME', 'POS', 'MAPQ', 'CIGAR',
                              'MRNM', 'MPOS', 'ISIZE', 'SEQ', 'QUAL', 'OPT'
@@ -432,7 +435,7 @@ class Sam(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in SAM format
 
@@ -461,57 +464,52 @@ class Sam(Tabular):
         >>> Sam().sniff( fname )
         True
         """
-        try:
-            fh = open(filename)
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break  # EOF
-                if line:
-                    if line[0] != '@':
-                        line_pieces = line.split('\t')
-                        if len(line_pieces) < 11:
-                            return False
-                        try:
-                            int(line_pieces[1])
-                            int(line_pieces[3])
-                            int(line_pieces[4])
-                            int(line_pieces[7])
-                            int(line_pieces[8])
-                        except ValueError:
-                            return False
-                        count += 1
-                        if count == 5:
-                            return True
-            fh.close()
-            if count < 5 and count > 0:
-                return True
-        except:
-            pass
+        fh = file_prefix.string_io()
+        count = 0
+        while True:
+            line = fh.readline()
+            line = line.strip()
+            if not line:
+                break  # EOF
+            if line:
+                if line[0] != '@':
+                    line_pieces = line.split('\t')
+                    if len(line_pieces) < 11:
+                        return False
+                    try:
+                        int(line_pieces[1])
+                        int(line_pieces[3])
+                        int(line_pieces[4])
+                        int(line_pieces[7])
+                        int(line_pieces[8])
+                    except ValueError:
+                        return False
+                    count += 1
+                    if count == 5:
+                        return True
+        if count < 5 and count > 0:
+            return True
         return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
-            dataset_fh = open(dataset.file_name)
-            comment_lines = 0
-            if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
-                # If the dataset is larger than optional_metadata, just count comment lines.
-                for i, l in enumerate(dataset_fh):
-                    if l.startswith('@'):
-                        comment_lines += 1
-                    else:
-                        # No more comments, and the file is too big to look at the whole thing.  Give up.
-                        dataset.metadata.data_lines = None
-                        break
-            else:
-                # Otherwise, read the whole thing and set num data lines.
-                for i, l in enumerate(dataset_fh):
-                    if l.startswith('@'):
-                        comment_lines += 1
-                dataset.metadata.data_lines = i + 1 - comment_lines
-            dataset_fh.close()
+            with open(dataset.file_name) as dataset_fh:
+                comment_lines = 0
+                if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
+                    # If the dataset is larger than optional_metadata, just count comment lines.
+                    for i, l in enumerate(dataset_fh):
+                        if l.startswith('@'):
+                            comment_lines += 1
+                        else:
+                            # No more comments, and the file is too big to look at the whole thing.  Give up.
+                            dataset.metadata.data_lines = None
+                            break
+                else:
+                    # Otherwise, read the whole thing and set num data lines.
+                    for i, l in enumerate(dataset_fh):
+                        if l.startswith('@'):
+                            comment_lines += 1
+                    dataset.metadata.data_lines = i + 1 - comment_lines
             dataset.metadata.comment_lines = comment_lines
             dataset.metadata.columns = 12
             dataset.metadata.column_types = ['str', 'int', 'str', 'int', 'int', 'str', 'str', 'int', 'int', 'str', 'str', 'str']
@@ -521,15 +519,12 @@ class Sam(Tabular):
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
         """
-        cmd = 'mv %s %s' % (split_files[0], output_file)
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+        shutil.move(split_files[0], output_file)
+
         if len(split_files) > 1:
-            cmd = 'egrep -v -h "^@" %s >> %s' % (' '.join(split_files[1:]), output_file)
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+            cmd = ['egrep', '-v', '-h', '^@'] + split_files[1:] + ['>>', output_file]
+            subprocess.check_call(cmd, shell=True)
+
     merge = staticmethod(merge)
 
     # Dataproviders
@@ -598,6 +593,7 @@ class Sam(Tabular):
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Pileup(Tabular):
     """Tab delimited data in pileup (6- or 10-column) format"""
     edam_format = "format_3015"
@@ -622,7 +618,7 @@ class Pileup(Tabular):
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checks for 'pileup-ness'
 
@@ -640,24 +636,32 @@ class Pileup(Tabular):
         >>> fname = get_test_fname( '10col.pileup' )
         >>> Pileup().sniff( fname )
         True
+        >>> fname = get_test_fname( '1.excel.xls' )
+        >>> Pileup().sniff( fname )
+        False
+        >>> fname = get_test_fname( '2.txt' )
+        >>> Pileup().sniff( fname )  # 2.txt
+        False
+        >>> fname = get_test_fname( '2.tabular' )
+        >>> Pileup().sniff( fname )
+        False
         """
-        headers = iter_headers(filename, '\t')
+        found_non_comment_lines = False
         try:
+            headers = iter_headers(file_prefix, '\t')
             for hdr in headers:
                 if hdr and not hdr[0].startswith('#'):
                     if len(hdr) < 5:
                         return False
-                    try:
-                        # chrom start in column 1 (with 0-based columns)
-                        # and reference base is in column 2
-                        chrom = int(hdr[1])
-                        assert chrom >= 0
-                        assert hdr[2] in ['A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n']
-                    except:
-                        return False
-            return True
-        except:
+                    # chrom start in column 1 (with 0-based columns)
+                    # and reference base is in column 2
+                    chrom = int(hdr[1])
+                    assert chrom >= 0
+                    assert hdr[2] in ['A', 'C', 'G', 'T', 'N', 'a', 'c', 'g', 't', 'n']
+                    found_non_comment_lines = True
+        except Exception:
             return False
+        return found_non_comment_lines
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory('genomic-region',
@@ -673,6 +677,7 @@ class Pileup(Tabular):
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class BaseVcf(Tabular):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
     edam_format = "format_3016"
@@ -686,8 +691,11 @@ class BaseVcf(Tabular):
     MetadataElement(name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, optional=True, multiple=True, visible=False)
     MetadataElement(name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[])
 
-    def sniff(self, filename):
-        headers = get_headers(filename, '\n', count=1)
+    def sniff_prefix(self, file_prefix):
+        # Because this sniffer is run on compressed files that might be BGZF (due to the VcfGz subclass), we should
+        # handle unicode decode errors. This should ultimately be done in get_headers(), but guess_ext() currently
+        # relies on get_headers() raising this exception.
+        headers = get_headers(file_prefix, '\n', count=1)
         return headers[0][0].startswith("##fileformat=VCF")
 
     def display_peek(self, dataset):
@@ -741,6 +749,7 @@ class Vcf(BaseVcf):
 class VcfGz(BaseVcf, binary.Binary):
     file_ext = 'vcf_bgzip'
     compressed = True
+    compressed_format = "gzip"
 
     MetadataElement(name="tabix_index", desc="Vcf Index File", param=metadata.FileParameter, file_ext="tbi", readonly=True, no_value=None, visible=False, optional=True)
 
@@ -748,34 +757,22 @@ class VcfGz(BaseVcf, binary.Binary):
         super(BaseVcf, self).set_meta(dataset, **kwd)
         """ Creates the index for the VCF file. """
         # These metadata values are not accessible by users, always overwrite
-        index_file = dataset.metadata.bcf_index
+        index_file = dataset.metadata.tabix_index
         if not index_file:
             index_file = dataset.metadata.spec['tabix_index'].param.new_file(dataset=dataset)
-        # Create the bcf index
-        # $ bcftools index
-        # Usage: bcftools index <in.bcf>
 
-        dataset_symlink = os.path.join(os.path.dirname(index_file.file_name),
-                                       '__dataset_%d_%s' % (dataset.id, os.path.basename(index_file.file_name))) + ".vcf.gz"
-        os.symlink(dataset.file_name, dataset_symlink)
-
-        stderr_name = tempfile.NamedTemporaryFile(prefix="bcf_index_stderr").name
-        command = ['bcftools', 'index', '-t', dataset_symlink]
         try:
-            subprocess.check_call(args=command, stderr=open(stderr_name, 'wb'))
-            shutil.move(dataset_symlink + '.tbi', index_file.file_name)  # this will fail if bcftools < 1.0 is used, because it creates a .bci index file instead of .csi
+            pysam.tabix_index(dataset.file_name, index=index_file.file_name, preset='vcf', force=True)
         except Exception as e:
-            stderr = open(stderr_name).read().strip()
-            raise Exception('Error setting BCF metadata: %s' % (stderr or str(e)))
-        finally:
-            # Remove temp file and symlink
-            os.remove(stderr_name)
-            os.remove(dataset_symlink)
+            raise Exception('Error setting VCF.gz metadata: %s' % (str(e)))
         dataset.metadata.tabix_index = index_file
 
 
+@build_sniff_from_prefix
 class Eland(Tabular):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""
+    compressed = True
+    compressed_format = "gzip"
     file_ext = '_export.txt.gz'
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=False)
     MetadataElement(name="column_types", default=[], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False, no_value=[])
@@ -786,7 +783,7 @@ class Eland(Tabular):
     MetadataElement(name="barcodes", default=[], param=metadata.ListParameter, desc="Set of barcodes", readonly=True, visible=False, no_value=[])
 
     def __init__(self, **kwd):
-        """Initialize taxonomy datatype"""
+        """Initialize eland datatype"""
         super(Eland, self).__init__(**kwd)
         self.column_names = ['MACHINE', 'RUN_NO', 'LANE', 'TILE', 'X', 'Y',
                              'INDEX', 'READ_NO', 'SEQ', 'QUAL', 'CHROM', 'CONTIG',
@@ -816,7 +813,7 @@ class Eland(Tabular):
             out = "Can't create peek %s" % exc
         return out
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in ELAND export format
 
@@ -829,36 +826,35 @@ class Eland(Tabular):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        with compression_utils.get_fileobj(filename, gzip_only=True) as fh:
-            count = 0
-            while True:
-                line = fh.readline()
-                line = line.strip()
-                if not line:
-                    break  # EOF
-                if line:
-                    line_pieces = line.split('\t')
-                    if len(line_pieces) != 22:
-                        return False
-                    if long(line_pieces[1]) < 0:
-                        raise Exception('Out of range')
-                    if long(line_pieces[2]) < 0:
-                        raise Exception('Out of range')
-                    if long(line_pieces[3]) < 0:
-                        raise Exception('Out of range')
-                    int(line_pieces[4])
-                    int(line_pieces[5])
-                    # can get a lot more specific
-                    count += 1
-                    if count == 5:
-                        break
-            if count > 0:
-                return True
-        return False
+        fh = file_prefix.string_io()
+        count = 0
+        while True:
+            line = fh.readline()
+            line = line.strip()
+            if not line:
+                break  # EOF
+            if line:
+                line_pieces = line.split('\t')
+                if len(line_pieces) != 22:
+                    return False
+                if long(line_pieces[1]) < 0:
+                    raise Exception('Out of range')
+                if long(line_pieces[2]) < 0:
+                    raise Exception('Out of range')
+                if long(line_pieces[3]) < 0:
+                    raise Exception('Out of range')
+                int(line_pieces[4])
+                int(line_pieces[5])
+                # can get a lot more specific
+                count += 1
+                if count == 5:
+                    break
+        if count > 0:
+            return True
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
-            with compression_utils.get_fileobj(dataset.file_name, gzip_only=True) as dataset_fh:
+            with compression_utils.get_fileobj(dataset.file_name, compressed_formats=['gzip']) as dataset_fh:
                 lanes = {}
                 tiles = {}
                 barcodes = {}
@@ -889,10 +885,11 @@ class Eland(Tabular):
             dataset.metadata.reads = list(reads.keys())
 
 
+@build_sniff_from_prefix
 class ElandMulti(Tabular):
     file_ext = 'elandmulti'
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         return False
 
 
@@ -922,14 +919,14 @@ class BaseCSV(TabularData):
         try:
             int(column_text)
             return True
-        except:
+        except ValueError:
             return False
 
     def is_float(self, column_text):
         try:
             float(column_text)
             return True
-        except:
+        except ValueError:
             if column_text.strip().lower() == 'na':
                 return True  # na is special cased to be a float
             return False
@@ -993,7 +990,7 @@ class BaseCSV(TabularData):
             if not csv.Sniffer().has_header(open(filename, 'r').read(self.big_peek_size)):
                 return False
             return True
-        except:
+        except Exception:
             # Not readable by Python's csv using this dialect
             return False
 
@@ -1061,6 +1058,7 @@ class TSV(BaseCSV):
     strict_width = True  # Leave files with different width to tabular
 
 
+@build_sniff_from_prefix
 class ConnectivityTable(Tabular):
     edam_format = "format_3309"
     file_ext = "ct"
@@ -1082,7 +1080,7 @@ class ConnectivityTable(Tabular):
 
         dataset.metadata.data_lines = data_lines
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
@@ -1117,31 +1115,28 @@ class ConnectivityTable(Tabular):
         i = 0
         j = 1
 
-        try:
-            with open(filename) as handle:
-                for line in handle:
-                    line = line.strip()
+        handle = file_prefix.string_io()
+        for line in handle:
+            line = line.strip()
 
-                    if len(line) > 0:
-                        if i == 0:
-                            if not self.header_regexp.match(line):
-                                return False
-                            else:
-                                length = int(re.split('\W+', line, 1)[0])
+            if len(line) > 0:
+                if i == 0:
+                    if not self.header_regexp.match(line):
+                        return False
+                    else:
+                        length = int(re.split(r'\W+', line, 1)[0])
+                else:
+                    if not self.structure_regexp.match(line.upper()):
+                        return False
+                    else:
+                        if j != int(re.split(r'\W+', line, 1)[0]):
+                            return False
+                        elif j == length:  # Last line of first sequence has been recheached
+                            return True
                         else:
-                            if not self.structure_regexp.match(line.upper()):
-                                return False
-                            else:
-                                if j != int(re.split('\W+', line, 1)[0]):
-                                    return False
-                                elif j == length:                       # Last line of first sequence has been recheached
-                                    return True
-                                else:
-                                    j += 1
-                        i += 1
-            return False
-        except:
-            return False
+                            j += 1
+                i += 1
+        return False
 
     def get_chunk(self, trans, dataset, chunk):
         ck_index = int(chunk)

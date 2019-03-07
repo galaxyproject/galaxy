@@ -51,12 +51,11 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css('base','library','jquery.rating')}
+    ${h.css('base','library')}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
     ${container_javascripts()}
 </%def>
 
@@ -88,7 +87,7 @@
         <div class="toolFormBody">
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
-                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    ${render_select(changeset_revision_select_field)} <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
                         Select a revision to inspect and download versions of Galaxy utilities from this repository.
                     </div>
@@ -137,13 +136,13 @@
         <div class="form-row">
             <b>${sharable_link_label}</b>
             <a href="${ repository.share_url }" target="_blank">${ repository.share_url }</a>
-            <button title="to clipboard" class="btn btn-default btn-xs" id="share_clipboard"><span class="fa fa-clipboard"></span></button>
+            <button title="to clipboard" class="btn btn-secondary btn-sm" id="share_clipboard"><span class="fa fa-clipboard"></span></button>
         </div>
         %if can_download or can_push:
             <div class="form-row">
                 <b>Clone this repository:</b>
                 <code>hg clone <a title="Show in mercurial browser" href="${ repository.clone_url }">${ repository.clone_url }</a></code>
-                <button title="to clipboard" class="btn btn-default btn-xs" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
+                <button title="to clipboard" class="btn btn-secondary btn-sm" id="clone_clipboard"><span class="fa fa-clipboard"></span></button>
             </div>
         %endif
         <div class="form-row">
@@ -167,7 +166,7 @@
             <b>Times cloned / installed:</b>
             ${repository.times_downloaded}
         </div>
-        %if trans.user_is_admin():
+        %if trans.user_is_admin:
             <div class="form-row">
                 <b>Location:</b>
                 ${repository.repo_path( trans.app ) | h}
@@ -202,7 +201,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=False, re
             <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <label>Receive email alerts:</label>
-                    ${alerts_check_box.get_html()}
+                    ${render_checkbox(alerts_check_box)}
                     <div class="toolParamHelp" style="clear: both;">
                         Check the box and click <b>Save</b> to receive email alerts when updates to this repository occur.
                     </div>

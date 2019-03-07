@@ -7,7 +7,7 @@ from sqlalchemy import and_, false, or_, true
 import tool_shed.grids.util as grids_util
 import tool_shed.repository_types.util as rt_util
 import tool_shed.util.shed_util_common as suc
-from galaxy.web.framework.helpers import grids
+from galaxy.webapps.reports.framework import grids
 from galaxy.webapps.tool_shed import model
 from tool_shed.util import hg_util, metadata_util, repository_util
 
@@ -62,7 +62,6 @@ class CategoryGrid(grids.Grid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -86,7 +85,7 @@ class RepositoryGrid(grids.Grid):
 
         def get_value(self, trans, grid, repository):
             """Display the current repository heads."""
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
+            repo = hg_util.get_repo_for_repository(trans.app, repository=repository)
             heads = hg_util.get_repository_heads(repo)
             multiple_heads = len(heads) > 1
             if multiple_heads:
@@ -110,7 +109,11 @@ class RepositoryGrid(grids.Grid):
             # A repository's metadata revisions may not all be installable, as some may contain only invalid tools.
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=False)
             if len(select_field.options) > 1:
-                return select_field.get_html()
+                tmpl = "<select name='%s'>" % select_field.name
+                for o in select_field.options:
+                    tmpl += "<option value='%s'>%s</option>" % (o[1], o[0])
+                tmpl += "</select>"
+                return tmpl
             elif len(select_field.options) == 1:
                 option_items = select_field.options[0][0]
                 rev_label, rev_date = option_items.split(' ')
@@ -232,7 +235,6 @@ class RepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -354,7 +356,6 @@ class MatchedRepositoryGrid(grids.Grid):
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -453,7 +454,6 @@ class RepositoriesByUserGrid(RepositoryGrid):
     standard_filters = []
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -974,7 +974,6 @@ class RepositoryMetadataGrid(grids.Grid):
     standard_filters = []
     default_filter = dict(malicious="False")
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
@@ -1011,14 +1010,8 @@ class RepositoryDependenciesGrid(RepositoryMetadataGrid):
                                                                                                               required_repository_id,
                                                                                                               changeset_revision)
                                 if not required_repository_metadata:
-                                    repo = hg_util.get_repo_for_repository(trans.app,
-                                                                           repository=required_repository,
-                                                                           repo_path=None,
-                                                                           create=False)
                                     updated_changeset_revision = \
-                                        metadata_util.get_next_downloadable_changeset_revision(required_repository,
-                                                                                               repo,
-                                                                                               changeset_revision)
+                                        metadata_util.get_next_downloadable_changeset_revision(trans.app, required_repository, changeset_revision)
                                     required_repository_metadata = \
                                         metadata_util.get_repository_metadata_by_repository_id_changeset_revision(trans.app,
                                                                                                                   required_repository_id,
@@ -1294,7 +1287,6 @@ class ValidCategoryGrid(CategoryGrid):
     operations = []
     standard_filters = []
     num_rows_per_page = 50
-    preserve_state = False
     use_paging = False
 
 
@@ -1331,7 +1323,11 @@ class ValidRepositoryGrid(RepositoryGrid):
             """Display a SelectField whose options are the changeset_revision strings of all download-able revisions of this repository."""
             select_field = grids_util.build_changeset_revision_select_field(trans, repository, downloadable=True)
             if len(select_field.options) > 1:
-                return select_field.get_html()
+                tmpl = "<select name='%s'>" % select_field.name
+                for o in select_field.options:
+                    tmpl += "<option value='%s'>%s</option>" % (o[1], o[0])
+                tmpl += "</select>"
+                return tmpl
             elif len(select_field.options) == 1:
                 return select_field.options[0][0]
             return ''

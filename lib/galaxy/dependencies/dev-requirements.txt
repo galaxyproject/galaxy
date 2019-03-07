@@ -1,16 +1,1 @@
-# For tests
-nose
-NoseHTML
-twill==0.9.1
-mock
-selenium
-watchdog
-
-# For relase process
-pygithub3
-
-# For documentation building
-sphinx
-sphinx_rtd_theme
-lxml
-recommonmark
+pipfiles/default/pinned-dev-requirements.txt

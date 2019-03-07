@@ -1,0 +1,225 @@
+
+===========================================================
+January 2018 Galaxy Release (v 18.01)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**Performance and User Experience Improvements**
+  We made Galaxy more lively and responsive. Homepage, published workflows, published/saved histories, and data libraries should all load much faster now. Importing data from FTP will also take less of your time.
+  We achieved this by optimizing database queries, implementing cache, rethinking presentation, and adding progress bars and loading indicators where needed. See the `list of related performance pull requests`_.
+
+**Web Server and Configuration**
+  The default web server used by Galaxy has changed from Paste to `uWSGI <https://uwsgi-docs.readthedocs.io/>`__ and the default configuration file for Galaxy is now ``config/galaxy.yml`` instead of ``config/galaxy.ini``.
+  To minimize the impact of this change on existing Galaxy instances, if a Galaxy has a ``galaxy.ini`` file configured, it will continue to use Paste by default unless additional steps are taken by the administrator.
+  uWSGI is more production ready and allows Galaxy to scale better in its default configuration. Read more about the server, configuration, and documentation changes in the `uWSGI details`_ section of this document.
+
+**Dataset Collection Usability**
+  This release has significantly improved the usability of Galaxy dataset collections. Dozens of improvements
+  to collections have been made, some of the key highlights include:
+
+  - Data library folders can now be sent to histories as a dataset collection. `Pull Request 4998`_, `Pull Request 5080`_
+  - Failed dataset collection elements can now be fixed using job re-running (thanks to `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 5321`_, `Pull Request 5247`_, `Pull Request 5270`_
+  - Collections now appear with state and progress bars in the history panel and contained datasets
+    are hidden by default (with help from `@mvdbeek <https://github.com/mvdbeek>`__).
+    `Pull Request 5013`_, `Pull Request 5078`_
+  - We added intuitive workflow post job actions for dataset collections. `Pull Request 5416`_, `Pull Request 5418`_, `Pull Request 5414`_
+  - The web interface now supports collections with arbitrary nesting and size (with help
+    from `@mvdbeek <https://github.com/mvdbeek>`__). `Pull Request 4942`_, `Pull Request 4934`_, `Pull Request 5091`_
+  - More robust nametag discovery and propagation when using collections. `Pull Request 5403`_
+
+**Client Architecture**
+  The architecture for the client code that powers the Galaxy user interface has been significantly
+  overhauled. The code base has been converted to `ES6 <http://es6-features.org/>`__,
+  `Yarn <https://github.com/yarnpkg/yarn>`__ now powers the build and dependency management of the code,
+  `Prettier <https://prettier.io/>`__ is now used to ensure consistent code formatting,
+  and the `VueJS <https://vuejs.org/>`__ framework has been integrated. Taken together, these changes are
+  enabling Galaxy developers to write usable, responsive client code more quickly and concisely than
+  previously possible. A big thanks goes out to community contributions from
+  `@anuprulez <https://github.com/anuprulez>`__ and `@anatskiy <https://github.com/anatskiy>`__ that are
+  already converting existing Galaxy components to reactive VueJS ones. See the `list of related client pull requests`_.
+
+**New BAM datatypes**
+  Previously Galaxy only supported coordinate sorted BAM files by default (the ``bam`` datatype). In addition, this
+  release of Galaxy now supports three new types of BAM:
+
+  - ``qname_sorted.bam``, that ensures that the file is queryname sorted (e.g. ``SO:queryname``);
+  - ``qname_input_sorted.bam``, that can be used to describe the output of aligners which generally keep mate pairs adjacent
+  - ``unsorted.bam``, that makes no assumptions about the sort order of the file.
+
+  A huge thanks goes out to `@bgruening <https://github.com/bgruening>`__ and `@mvdbeek <https://github.com/mvdbeek>`__ who
+  implemented these datatypes.
+
+  `Pull Request 5180`_, `Pull Request 5589`_, `Pull Request 5532`_, `Pull Request 5644`_, `Pull Request 5674`_
+
+**Experimental Job Caching**
+  Galaxy can now be configured to allow users the option of skipping duplicated jobs if one with
+  identical parameters has been previously executed and simply reuse the previously generated outputs.
+  This contribution is thanks to `@mvdbeek <https://github.com/mvdbeek>`__.
+
+  `Pull Request 4690`_
+
+
+Get Galaxy
+==========
+
+The code lives at `Github <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_18.01 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_18.01 && git pull --ff-only origin release_18.01
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details regarding the source code locations.
+
+
+Security
+========
+
+Unsecure GenomeSpace token exposure
+-----------------------------------
+Tracked as ``GX-2018-0002``.
+
+We have found and fixed a medium-level security issue concering the GenomeSpace importer/exporter tools that were updated in the Galaxy release 17.09. These tools did not handle the GenomeSpace access token securely and stored it as a job parameter which made it accessible to anybody with access to the datasets created by these tools.
+This means that any user that used a GenomeSpace token to access these tools and subsequently shared the output dataset (or history that contains it) with another user shared their GenomeSpace token also.
+
+These tools are both included in the ``tool_conf.xml.sample`` and are therefore *enabled on every new Galaxy by default*.
+
+Administrators please see the `GenomeSpace security sanitization`_ section of this document for the details on how to sanitize the tokens stored in the Galaxy database created prior to this fix.
+
+The vulnerability has been resolved by removing the token functionality until a proper implementation is in place. The GenomeSpace tools continue to work using the OpenID authentication as before.
+
+The fix for this issue has been applied back to Galaxy release 17.09 and can be found in this `pull request <https://github.com/galaxyproject/galaxy/pull/5631>`__.
+
+Breaking Changes
+================
+
+We have reworked the **Galaxy Webhook** interface so if you have custom webhooks at your instance
+you need to take the following steps in order to make them work:
+
+1. Rename the main config file: <name>.yml -> config.yml
+2. In the config file, rename the name attribute: name -> id
+3. Put all files into the plugin's root folder, which should contain only four files: ``config.yml`` (mandatory), ``__init__.py`` (optional), ``script.js`` (optional), ``styles.css`` (optional)
+
+Deprecation Notices
+===================
+
+* This is the last release we are shipping JavaScript source maps for Galaxy client.
+
+Removal Notices
+===============
+The following features that have been deprecated in the past releases are being removed in 18.01:
+
+* Sample tracking
+* Sample request and external services management
+* Legacy library interface for Administrators
+
+In addition to that, the PlantTribes datatypes have been commented out in the source code. Uncomment them if you want to re-enable it.
+
+uWSGI details
+=============
+Galaxy can be forced to start under uWSGI even with an older configuration file
+by setting ``APP_WEBSERVER=uwsgi`` in the environment. As part of the transition to YAML-based
+configuration files, we have implemented a schema to validate Galaxy configuration files. Run
+``make config-validate`` from Galaxy's root directory to validate a schema and ``make config-lint`` to
+check for best practices. While there is no need to convert your configuration file (``galaxy.ini`` hasn't
+been deprecated), you can run ``make config-convert-dry-run`` and ``make config-convert``
+to respectively test and perform the conversion of an ``ini`` configuration file to a YAML one.
+
+In the future uWSGI will allow Galaxy to setup GIE proxies without additional configuration and use modern web technologies such as web sockets.
+
+These are big changes that affect many parts of Galaxy's administration documentation and makes
+this documentation very dependent on which Galaxy version they are targeting. To address this, we have
+moved a significant amount of administration documentation into Galaxy's code
+base and made it available on a per-release basis. The latest administration documentation for
+the previous release of Galaxy (17.09) which reference ``galaxy.ini`` files and Paste servers can
+be found `here <https://docs.galaxyproject.org/en/release_17.09/admin/index.html>`__, while documentation for this release can be found `here <https://docs.galaxyproject.org/en/release_18.01/admin/index.html>`__.
+
+`Pull Request 4475`_, `Pull Request 5135`_, `Pull Request 5390`_, `Pull Request 5373`_,
+`Pull Request 5105`_, `Pull Request 5441`_
+
+Release Notes
+=============
+
+.. include:: 18.01.rst
+   :start-after: announce_start
+
+GenomeSpace security sanitization
+=================================
+
+Outputs of these tools may require sanitization: ``genomespace_importer`` and ``genomespace_exporter``
+
+The following SQL commands will help you **identify** the datasets in your Galaxy's database.
+
+Finding bad GenomeSpace importer params:
+
+.. code-block:: sql
+
+  SELECT j.id,
+         j.create_time,
+         j.user_id,
+         jp.value
+  FROM job_parameter jp
+  JOIN job j ON j.id = jp.job_id
+  WHERE jp.job_id IN
+      (SELECT id
+       FROM job
+       WHERE tool_id = 'genomespace_importer')
+    AND jp.name = 'URL'
+    AND jp.value LIKE '%^%'
+  ORDER BY j.id DESC;
+
+Finding bad GenomeSpace exporter params:
+
+.. code-block:: sql
+
+  SELECT j.id,
+         j.create_time,
+         j.user_id,
+         jp.value
+  FROM job_parameter jp
+  JOIN job j ON j.id = jp.job_id
+  WHERE jp.job_id IN
+      (SELECT id
+       FROM job
+       WHERE tool_id = 'genomespace_exporter')
+    AND jp.name = 'genomespace_browser'
+    AND jp.value LIKE '%^%'
+  ORDER BY j.id DESC;
+
+The following SQL commands will help you **sanitize** the datasets in your Galaxy's database.
+
+Sanitizing GenomeSpace importer params:
+
+.. code-block:: sql
+
+  UPDATE job_parameter jp
+  SET value = split_part(jp.value, '^', 1) || '"'
+  FROM job j
+  WHERE jp.job_id = j.id
+    AND j.tool_id = 'genomespace_importer'
+    AND jp.name = 'URL'
+    AND jp.value LIKE '%^%';
+
+Sanitizing GenomeSpace exporter params:
+
+.. code-block:: sql
+
+  UPDATE job_parameter jp
+  SET value = split_part(jp.value, '^', 1) || '"'
+  FROM job j
+  WHERE jp.job_id = j.id
+    AND j.tool_id = 'genomespace_exporter'
+    AND jp.name = 'genomespace_browser'
+    AND jp.value LIKE '%^%';
+
+.. include:: _thanks.rst
+

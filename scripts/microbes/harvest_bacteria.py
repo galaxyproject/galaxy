@@ -4,17 +4,28 @@
 # Harvest Bacteria
 # Connects to NCBI's Microbial Genome Projects website and scrapes it for information.
 # Downloads and converts annotations for each Genome
+from __future__ import print_function
+
 import os
 import sys
 import time
 from ftplib import FTP
-from urllib2 import urlopen
-from urllib import urlretrieve
 
-from BeautifulSoup import BeautifulSoup
-from util import get_bed_from_genbank, get_bed_from_glimmer3, get_bed_from_GeneMarkHMM, get_bed_from_GeneMark
+import requests
+try:
+    from bs4 import BeautifulSoup
+except ImportError:
+    raise Exception("BeautifulSoup4 library not found, please install it, e.g. with 'pip install BeautifulSoup4'")
+from six.moves.urllib.request import urlretrieve
 
-assert sys.version_info[:2] >= (2, 4)
+from util import (  # noqa: I202
+    get_bed_from_genbank,
+    get_bed_from_GeneMark,
+    get_bed_from_GeneMarkHMM,
+    get_bed_from_glimmer3
+)
+
+assert sys.version_info[:2] >= (2, 6)
 
 # this defines the types of ftp files we are interested in, and how to process/convert them to a form for our use
 desired_ftp_files = {'GeneMark': {'ext': 'GeneMark-2.5f', 'parser': 'process_GeneMark'},
@@ -26,7 +37,7 @@ desired_ftp_files = {'GeneMark': {'ext': 'GeneMark-2.5f', 'parser': 'process_Gen
 
 # number, name, chroms, kingdom, group, genbank, refseq, info_url, ftp_url
 def iter_genome_projects(url="http://www.ncbi.nlm.nih.gov/genomes/lproks.cgi?view=1", info_url_base="http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids="):
-    for row in BeautifulSoup(urlopen(url)).findAll(name='tr', bgcolor=["#EEFFDD", "#E8E8DD"]):
+    for row in BeautifulSoup(requests.get(url).text).findAll(name='tr', bgcolor=["#EEFFDD", "#E8E8DD"]):
         row = str(row).replace("\n", "").replace("\r", "")
 
         fields = row.split("</td>")
@@ -49,8 +60,8 @@ def iter_genome_projects(url="http://www.ncbi.nlm.nih.gov/genomes/lproks.cgi?vie
         # seems some things donot have an ftp url, try and except it here:
         try:
             ftp_url = fields[22].split("href=\"")[1].split("\"")[0]
-        except:
-            print "FAILED TO AQUIRE FTP ADDRESS:", org_num, info_url
+        except Exception:
+            print("FAILED TO AQUIRE FTP ADDRESS:", org_num, info_url)
             ftp_url = None
 
         chroms = get_chroms_by_project_id(org_num)
@@ -65,9 +76,9 @@ def get_chroms_by_project_id(org_num, base_url="http://www.ncbi.nlm.nih.gov/entr
         html_count += 1
         url = "%s%s" % (base_url, org_num)
         try:
-            html = urlopen(url)
-        except:
-            print "GENOME PROJECT FAILED:", html_count, "org:", org_num, url
+            html = requests.get(url).text
+        except Exception:
+            print("GENOME PROJECT FAILED:", html_count, "org:", org_num, url)
             html = None
             time.sleep(1)  # Throttle Connection
     if html is None:
@@ -96,7 +107,7 @@ def get_ftp_contents(ftp_url):
             ftp.cwd(ftp_url.split(ftp_url.split("/")[2])[-1])
             ftp_contents = ftp.nlst()
             ftp.close()
-        except:
+        except Exception:
             ftp_contents = None
             time.sleep(1)  # Throttle Connection
     return ftp_contents
@@ -115,7 +126,7 @@ def scrape_ftp(ftp_contents, org_dir, org_num, refseq, ftp_url):
                 url_count += 1
                 try:
                     results = urlretrieve(url, target_filename)
-                except:
+                except Exception:
                     results = None
                     time.sleep(1)  # Throttle Connection
             if results is None:
@@ -126,7 +137,7 @@ def scrape_ftp(ftp_contents, org_dir, org_num, refseq, ftp_url):
             if items['parser'] is not None:
                 globals()[items['parser']](target_filename, org_num, refseq)
         else:
-            print "FTP filetype:", file_type, "not found for", org_num, refseq
+            print("FTP filetype:", file_type, "not found for", org_num, refseq)
     # FTP Files have been Loaded
 
 
@@ -144,15 +155,15 @@ def process_FASTA(filename, org_num, refseq):
     chrom_info_file.write("chromosome=%s\nname=%s\nlength=%s\norganism=%s\n" % (refseq, chr_name, len(fasta), org_num))
     try:
         chrom_info_file.write("gi=%s\n" % accesions['gi'])
-    except:
+    except Exception:
         chrom_info_file.write("gi=None\n")
     try:
         chrom_info_file.write("gb=%s\n" % accesions['gb'])
-    except:
+    except Exception:
         chrom_info_file.write("gb=None\n")
     try:
         chrom_info_file.write("refseq=%s\n" % refseq)
-    except:
+    except Exception:
         chrom_info_file.write("refseq=None\n")
     chrom_info_file.close()
 
@@ -160,18 +171,18 @@ def process_FASTA(filename, org_num, refseq):
 def process_Genbank(filename, org_num, refseq):
     # extracts 'CDS', 'tRNA', 'rRNA' features from genbank file
     features = get_bed_from_genbank(filename, refseq, ['CDS', 'tRNA', 'rRNA'])
-    for feature in features.keys():
+    for feature, values in features.items():
         feature_file = open(os.path.join(os.path.split(filename)[0], "%s.%s.bed" % (refseq, feature)), 'wb+')
-        feature_file.write('\n'.join(features[feature]))
+        feature_file.write('\n'.join(values))
         feature_file.close()
-    print "Genbank extraction finished for chrom:", refseq, "file:", filename
+    print("Genbank extraction finished for chrom:", refseq, "file:", filename)
 
 
 def process_Glimmer3(filename, org_num, refseq):
     try:
         glimmer3_bed = get_bed_from_glimmer3(filename, refseq)
     except Exception as e:
-        print "Converting Glimmer3 to bed FAILED! For chrom:", refseq, "file:", filename, e
+        print("Converting Glimmer3 to bed FAILED! For chrom:", refseq, "file:", filename, e)
         glimmer3_bed = []
     glimmer3_bed_file = open(os.path.join(os.path.split(filename)[0], "%s.Glimmer3.bed" % refseq), 'wb+')
     glimmer3_bed_file.write('\n'.join(glimmer3_bed))
@@ -182,7 +193,7 @@ def process_GeneMarkHMM(filename, org_num, refseq):
     try:
         geneMarkHMM_bed = get_bed_from_GeneMarkHMM(filename, refseq)
     except Exception as e:
-        print "Converting GeneMarkHMM to bed FAILED! For chrom:", refseq, "file:", filename, e
+        print("Converting GeneMarkHMM to bed FAILED! For chrom:", refseq, "file:", filename, e)
         geneMarkHMM_bed = []
     geneMarkHMM_bed_bed_file = open(os.path.join(os.path.split(filename)[0], "%s.GeneMarkHMM.bed" % refseq), 'wb+')
     geneMarkHMM_bed_bed_file.write('\n'.join(geneMarkHMM_bed))
@@ -193,7 +204,7 @@ def process_GeneMark(filename, org_num, refseq):
     try:
         geneMark_bed = get_bed_from_GeneMark(filename, refseq)
     except Exception as e:
-        print "Converting GeneMark to bed FAILED! For chrom:", refseq, "file:", filename, e
+        print("Converting GeneMark to bed FAILED! For chrom:", refseq, "file:", filename, e)
         geneMark_bed = []
     geneMark_bed_bed_file = open(os.path.join(os.path.split(filename)[0], "%s.GeneMark.bed" % refseq), 'wb+')
     geneMark_bed_bed_file.write('\n'.join(geneMark_bed))
@@ -205,14 +216,14 @@ def __main__():
     base_dir = os.path.join(os.getcwd(), "bacteria")
     try:
         base_dir = sys.argv[1]
-    except:
-        print "using default base_dir:", base_dir
+    except IndexError:
+        print("using default base_dir:", base_dir)
 
     try:
         os.mkdir(base_dir)
-        print "path '%s' has been created" % base_dir
-    except:
-        print "path '%s' seems to already exist" % base_dir
+        print("path '%s' has been created" % base_dir)
+    except Exception:
+        print("path '%s' seems to already exist" % base_dir)
 
     for org_num, name, chroms, kingdom, group, org_genbank, org_refseq, info_url, ftp_url in iter_genome_projects():
         if chroms is None:
@@ -221,8 +232,8 @@ def __main__():
         try:
             org_dir = os.path.join(base_dir, org_num)
             os.mkdir(org_dir)
-        except:
-            print "Organism %s already exists on disk, skipping" % org_num
+        except Exception:
+            print("Organism %s already exists on disk, skipping" % org_num)
             continue
 
         # get ftp contents
@@ -233,7 +244,7 @@ def __main__():
             for refseq in chroms:
                 scrape_ftp(ftp_contents, org_dir, org_num, refseq, ftp_url)
                 # FTP Files have been Loaded
-                print "Org:", org_num, "chrom:", refseq, "[", time.time() - start_time, "seconds elapsed. ]"
+                print("Org:", org_num, "chrom:", refseq, "[", time.time() - start_time, "seconds elapsed. ]")
 
         # Create org info file
         info_file = open(os.path.join(org_dir, "%s.info" % org_num), 'wb+')
@@ -246,9 +257,9 @@ def __main__():
         info_file.write("ftp url=%s\n" % ftp_url)
         info_file.close()
 
-    print "Finished Harvesting", "[", time.time() - start_time, "seconds elapsed. ]"
-    print "[", (time.time() - start_time) / 60, "minutes. ]"
-    print "[", (time.time() - start_time) / 60 / 60, "hours. ]"
+    print("Finished Harvesting", "[", time.time() - start_time, "seconds elapsed. ]")
+    print("[", (time.time() - start_time) / 60, "minutes. ]")
+    print("[", (time.time() - start_time) / 60 / 60, "hours. ]")
 
 
 if __name__ == "__main__":

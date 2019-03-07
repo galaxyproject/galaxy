@@ -1,6 +1,5 @@
 import os.path
 import tempfile
-
 from contextlib import contextmanager
 from os import (
     chmod,
@@ -36,7 +35,7 @@ def test_tool_dependencies():
                 p = os.path.join(base_path, name, version)
             try:
                 makedirs(p)
-            except:
+            except Exception:
                 pass
             if sub == "env.sh":
                 __touch(os.path.join(p, "env.sh"))
@@ -287,7 +286,7 @@ echo 'FOO="bar"'
 ''')
         resolver = Bunch(modulecmd=mock_modulecmd, modulepath='/something')
         dependency = ModuleDependency(resolver, "foomodule", "1.0")
-        __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
+        __assert_foo_exported(dependency.shell_commands())
 
 
 def test_lmod_dependency_resolver():
@@ -420,7 +419,7 @@ echo 'FOO="bar"'
 ''')
         resolver = Bunch(lmodexec=mock_lmodexec, settargexec=None, modulepath='/path/to/modulefiles')
         dependency = LmodDependency(resolver, "foomodule", "1.0")
-        __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
+        __assert_foo_exported(dependency.shell_commands())
 
 
 def __write_script(path, contents):
@@ -435,8 +434,8 @@ def test_galaxy_dependency_object_script():
         # Create env.sh file that just exports variable FOO and verify it
         # shell_commands export it correctly.
         env_path = __setup_galaxy_package_dep(base_path, TEST_REPO_NAME, TEST_VERSION, "export FOO=\"bar\"")
-        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_REPO_NAME, TEST_VERSION)
-        __assert_foo_exported(dependency.shell_commands(Bunch(type="package")))
+        dependency = GalaxyPackageDependency(env_path, os.path.dirname(env_path), TEST_REPO_NAME, 'package', TEST_VERSION)
+        __assert_foo_exported(dependency.shell_commands())
 
 
 def test_shell_commands_built():
@@ -454,7 +453,7 @@ def __assert_foo_exported(commands):
     command = ["bash", "-c", "%s; echo \"$FOO\"" % "".join(commands)]
     process = Popen(command, stdout=PIPE)
     output = process.communicate()[0].strip()
-    assert output == 'bar', "Command %s exports FOO as %s, not bar" % (command, output)
+    assert output == b'bar', "Command %s exports FOO as %s, not bar" % (command, output)
 
 
 def __setup_galaxy_package_dep(base_path, name, version, contents=""):
@@ -632,11 +631,11 @@ def __parse_resolvers(xml_content):
 @contextmanager
 def __dependency_manager(xml_content):
     with __test_base_path() as base_path:
-        f = tempfile.NamedTemporaryFile()
-        f.write(xml_content)
-        f.flush()
-        dm = __dependency_manager_for_base_path(default_base_path=base_path, conf_file=f.name)
-        yield dm
+        with tempfile.NamedTemporaryFile('w+') as tmp:
+            tmp.write(xml_content)
+            tmp.flush()
+            dm = __dependency_manager_for_base_path(default_base_path=base_path, conf_file=tmp.name)
+            yield dm
 
 
 def __dependency_manager_for_base_path(default_base_path, conf_file=None):

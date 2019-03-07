@@ -14,12 +14,11 @@
 <%inherit file="${inherit(context)}"/>
 
 <%def name="stylesheets()">
-    ${h.css('base','jquery.rating')}
+    ${h.css('base')}
 </%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
     ${common_javascripts(repository)}
 </%def>
 

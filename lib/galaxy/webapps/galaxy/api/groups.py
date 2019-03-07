@@ -2,11 +2,11 @@
 API operations on Group objects.
 """
 import logging
+
 from sqlalchemy import false
 
-from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy import web
-
+from galaxy.web.base.controller import BaseAPIController, url_for
 
 log = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class GroupAPIController(BaseAPIController):
         """
         rval = []
         for group in trans.sa_session.query(trans.app.model.Group).filter(trans.app.model.Group.table.c.deleted == false()):
-            if trans.user_is_admin():
+            if trans.user_is_admin:
                 item = group.to_dict(value_mapper={'id': trans.security.encode_id})
                 encoded_id = trans.security.encode_id(group.id)
                 item['url'] = url_for('group', id=encoded_id)
@@ -36,7 +36,7 @@ class GroupAPIController(BaseAPIController):
         Creates a new group.
         """
         log.info("groups payload%s\n" % (payload))
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             trans.response.status = 403
             return "You are not authorized to create a new group."
         name = payload.get('name', None)
@@ -86,7 +86,7 @@ class GroupAPIController(BaseAPIController):
             return "Malformed group id ( %s ) specified, unable to decode." % str(group_id)
         try:
             group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except:
+        except Exception:
             group = None
         if not group:
             trans.response.status = 400
@@ -112,7 +112,7 @@ class GroupAPIController(BaseAPIController):
             return "Malformed group id ( %s ) specified, unable to decode." % str(group_id)
         try:
             group = trans.sa_session.query(trans.app.model.Group).get(decoded_group_id)
-        except:
+        except Exception:
             group = None
         if not group:
             trans.response.status = 400

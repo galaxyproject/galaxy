@@ -6,28 +6,28 @@ steps:
   - type: "data_input"
     order_index: 0
     tool_inputs: {"name": "input1"}
-    input_connections: []
     position: {"top": 3, "left": 3}
   - type: "data_input"
     order_index: 1
     tool_inputs: {"name": "input2"}
-    input_connections: []
     position: {"top": 6, "left": 4}
   - type: "tool"
     tool_id: "cat1"
     order_index: 2
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "di1"
+    inputs:
+      input1:
+        connection:
+        - "@output_step": 0
+          output_name: "di1"
     position: {"top": 13, "left": 10}
   - type: "tool"
     tool_id: "cat1"
     order_index: 3
-    input_connections:
-    -  input_name: "input1"
-       "@output_step": 0
-       output_name: "di1"
+    inputs:
+      input1:
+        connection:
+        - "@output_step": 0
+          output_name: "di1"
     position: {"top": 33, "left": 103}
 """
 

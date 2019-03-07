@@ -8,9 +8,11 @@ import weakref
 
 import galaxy.exceptions
 import galaxy.util
+from galaxy.managers import (
+    hdas as hda_manager,
+    visualizations as visualization_manager
+)
 from galaxy.util import bunch
-from galaxy.managers import visualizations as visualization_manager
-from galaxy.managers import hdas as hda_manager
 
 log = logging.getLogger(__name__)
 
@@ -27,7 +29,7 @@ class ResourceParser(object):
     new keys (e.g. dataset_id="NNN" -> hda=<HistoryDatasetAssociation>).
     """
     primitive_parsers = {
-        'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html(param, 'utf-8'),
+        'str'   : lambda param: galaxy.util.sanitize_html.sanitize_html(param),
         'bool'  : lambda param: galaxy.util.string_as_bool(param),
         'int'   : int,
         'float' : float,
@@ -215,7 +217,7 @@ class ResourceParser(object):
         # TODO: ideally this would check v. a list of valid dbkeys
         elif param_type == 'dbkey':
             dbkey = query_param
-            parsed_param = galaxy.util.sanitize_html.sanitize_html(dbkey, 'utf-8')
+            parsed_param = galaxy.util.sanitize_html.sanitize_html(dbkey)
 
         return parsed_param
 

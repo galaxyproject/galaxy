@@ -7,8 +7,7 @@ import os
 import tempfile
 
 from galaxy.util import string_as_bool
-
-from ..plugins import ErrorPlugin
+from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 
@@ -21,6 +20,7 @@ class JsonPlugin(ErrorPlugin):
     def __init__(self, **kwargs):
         self.app = kwargs['app']
         self.verbose = string_as_bool(kwargs.get('verbose', False))
+        self.redact_user_details_in_bugreport = self.app.config.redact_user_details_in_bugreport
         self.user_submission = string_as_bool(kwargs.get('user_submission', False))
         self.report_directory = kwargs.get("directory", tempfile.gettempdir())
         if not os.path.exists(self.report_directory):
@@ -41,12 +41,17 @@ class JsonPlugin(ErrorPlugin):
                 'exit_code': job.exit_code,
                 'stdout': job.stdout,
                 'handler': job.handler,
-                'user': job.get_user().to_dict(),
                 'tool_version': job.tool_version,
                 'tool_xml': str(tool.config_file) if tool else None
             }
-            if 'email' in kwargs:
-                data['email'] = kwargs['email']
+            if self.redact_user_details_in_bugreport:
+                data['user'] = {
+                    'id': job.get_user().id
+                }
+            else:
+                data['user'] = job.get_user().to_dict()
+                if 'email' in kwargs:
+                    data['email'] = kwargs['email']
 
             if 'message' in kwargs:
                 data['message'] = kwargs['message']

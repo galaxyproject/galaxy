@@ -3,28 +3,32 @@ import logging
 import re
 from time import strftime
 
-from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
-
+from paste.httpexceptions import (
+    HTTPBadRequest,
+    HTTPForbidden
+)
 from sqlalchemy import and_
-import tool_shed.util.shed_util_common as suc
-from galaxy import util
-from galaxy import web
-from galaxy import exceptions
 
+import tool_shed.util.shed_util_common as suc
+from galaxy import (
+    exceptions,
+    util,
+    web
+)
 from galaxy.web import _future_expose_api as expose_api
 from galaxy.web.base.controller import BaseAPIController
-
 from tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import InstalledRepositoryMetadataManager
 from tool_shed.galaxy_install.repair_repository_manager import RepairRepositoryManager
-from tool_shed.util import common_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import repository_util
-from tool_shed.util import tool_util
-from tool_shed.util import workflow_util
-
+from tool_shed.util import (
+    common_util,
+    encoding_util,
+    hg_util,
+    repository_util,
+    tool_util,
+    workflow_util
+)
 
 log = logging.getLogger(__name__)
 
@@ -34,8 +38,8 @@ def get_message_for_no_shed_tool_config():
     message = 'The tool_config_file setting in galaxy.ini must include at least one shed tool configuration file name with a <toolbox> '
     message += 'tag that includes a tool_path attribute value which is a directory relative to the Galaxy installation directory in order to '
     message += 'automatically install tools from a tool shed into Galaxy (e.g., the file name shed_tool_conf.xml whose <toolbox> tag is '
-    message += '<toolbox tool_path="../shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a local '
-    message += 'Galaxy instance" section of the Galaxy tool shed wiki at https://galaxyproject.org/installing-repositories-to-galaxy/'
+    message += '<toolbox tool_path="database/shed_tools">).  For details, see the "Installation of Galaxy tool shed repository tools into a '
+    message += 'local Galaxy instance" section of the Galaxy tool shed wiki at https://galaxyproject.org/installing-repositories-to-galaxy/'
     return message
 
 
@@ -49,7 +53,7 @@ class ToolShedRepositoriesController(BaseAPIController):
             log.debug(message)
             return dict(status='error', error=message)
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.AdminRequiredException('You are not authorized to request the latest installable revision for a repository in this Galaxy instance.')
 
     def __flatten_repository_dependency_list(self, trans, tool_shed_repository):
@@ -76,7 +80,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         params = dict(repository_ids=str(','.join(repo_ids)), changeset_revisions=str(','.join(changesets)))
         pathspec = ['repository', 'get_repository_information']
         raw_text = util.url_get(tool_shed_url, password_mgr=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
-        return json.loads(raw_text)
+        return json.loads(util.unicodify(raw_text))
 
     def __get_value_mapper(self, trans, tool_shed_repository):
         value_mapper = {'id': trans.security.encode_id(tool_shed_repository.id),
@@ -174,7 +178,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner = self.__parse_repository_from_payload(payload)
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.AdminRequiredException('You are not authorized to request the latest installable revision for a repository in this Galaxy instance.')
         params = dict(name=name, owner=owner)
         pathspec = ['api', 'repositories', 'get_ordered_installable_revisions']
@@ -249,8 +253,8 @@ class ToolShedRepositoriesController(BaseAPIController):
                 # this is ever not the case, this code will need to be updated.
                 tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_ids[0].split('/')[0])
             found_repository = json.loads(util.url_get(tool_shed_url, params=dict(tool_ids=','.join(tool_ids)), pathspec=['api', 'repositories']))
-            fr_keys = found_repository.keys()
-            tsr_id = found_repository[fr_keys[0]]['repository_id']
+            fr_first_key = next(iter(found_repository.keys()))
+            tsr_id = found_repository[fr_first_key]['repository_id']
             repository_data['current_changeset'] = found_repository['current_changeset']
             repository_data['repository'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', tsr_id]))
             del found_repository['current_changeset']
@@ -259,8 +263,7 @@ class ToolShedRepositoriesController(BaseAPIController):
         else:
             repository_data['repository'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', tsr_id]))
             repository_data['repository']['metadata'] = json.loads(util.url_get(tool_shed_url, pathspec=['api', 'repositories', tsr_id, 'metadata']))
-        repository_data['shed_conf'] = tool_util.build_shed_tool_conf_select_field(trans.app).get_html().replace('\n', '')
-        repository_data['panel_section_html'] = tool_panel_section_select_field.get_html(extra_attr={'style': 'width: 30em;'}).replace('\n', '')
+        repository_data['shed_conf'] = tool_util.build_shed_tool_conf_select_field(trans.app).to_dict()
         repository_data['panel_section_dict'] = tool_panel_section_dict
         for changeset, metadata in repository_data['repository']['metadata'].items():
             if changeset not in tool_dependencies:
@@ -514,8 +517,8 @@ class ToolShedRepositoriesController(BaseAPIController):
                                           (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
-                                          (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
-                                          file will be selected automatically.
+                                          (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
+                                          configuration file will be selected automatically.
         """
         # Get the information about the repository to be installed from the payload.
         tool_shed_url, name, owner, changeset_revision = self.__parse_repository_from_payload(payload, include_changeset=True)
@@ -534,7 +537,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                                                            id=trans.security.encode_id(tool_shed_repository.id))
             return tool_shed_repository_dict
         if installed_tool_shed_repositories:
-            return map(to_dict, installed_tool_shed_repositories)
+            return list(map(to_dict, installed_tool_shed_repositories))
         message = "No repositories were installed, possibly because the selected repository has already been installed."
         return dict(status="ok", message=message)
 
@@ -570,8 +573,8 @@ class ToolShedRepositoriesController(BaseAPIController):
                                           (e.g., galaxy.ini).  At least one shed-related tool panel config file is required to be configured. Setting
                                           this parameter to a specific file enables you to choose where the specified repository will be installed because
                                           the tool_path attribute of the <toolbox> from the specified file is used as the installation location
-                                          (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
-                                          file will be selected automatically.
+                                          (e.g., <toolbox tool_path="database/shed_tools">).  If this parameter is not set, a shed-related tool panel
+                                          configuration file will be selected automatically.
         """
         self.__ensure_can_install_repos(trans)
         # Get the information about all of the repositories to be installed.
@@ -736,7 +739,7 @@ class ToolShedRepositoriesController(BaseAPIController):
                        unsuccessful_count=0,
                        repository_status=[])
         # Make sure the current user's API key proves he is an admin user in this Galaxy instance.
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise HTTPForbidden(detail='You are not authorized to reset metadata on repositories installed into this Galaxy instance.')
         irmm = InstalledRepositoryMetadataManager(self.app)
         query = irmm.get_query_for_setting_metadata_on_repositories(order=False)

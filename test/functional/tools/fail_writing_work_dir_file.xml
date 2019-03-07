@@ -1,0 +1,16 @@
+<tool id="fail_writing_work_dir_file" name="fail_writing_work_dir_file" version="0.1.0">
+    <command><![CDATA[
+        echo 'Some output' ;
+        #if not $failbool
+            echo 'Hello World' > 'foo.txt'
+        #end if
+    ]]></command>
+    <inputs>
+        <param name="failbool" type="boolean" label="The failure property" checked="false" />
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" from_work_dir="foo.txt" />
+    </outputs>
+    <help>
+    </help>
+</tool>

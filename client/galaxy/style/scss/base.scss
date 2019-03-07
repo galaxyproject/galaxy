@@ -1,0 +1,1989 @@
+// Bootstrap variables and core framework
+@import "../../../node_modules/bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
+@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+
+// Bootstrap-related style overrides
+@import "overrides.scss";
+
+// Fontawesome configuration.
+$fa-font-path: "../../../node_modules/font-awesome/fonts/";
+@import "../../../node_modules/font-awesome/scss/font-awesome.scss";
+
+.fa-icon {
+    // TODO: remove fa-icon and replace with fa
+    @extend .fa;
+}
+
+@import "select2.scss";
+@import "jquery.rating.scss";
+
+/* fix for zero width select2 - remove when fixed there */
+.select2-minwidth {
+    min-width: 256px;
+}
+
+// galaxy sub-components
+@import "reports";
+@import "frame.scss";
+@import "upload.scss";
+@import "ui.scss";
+@import "library.scss";
+@import "trackster.scss";
+@import "toastr.scss";
+@import "jstree.scss";
+@import "tour.scss";
+@import "flex.scss";
+@import "charts.scss";
+@import "message.scss";
+
+// Mixins
+@mixin user-select($select) {
+    -webkit-touch-callout: #{$select};
+    @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
+        #{$pre + user-select}: #{$select};
+    }
+    #{user-select}: #{$select};
+}
+
+.unselectable {
+    @include user-select(none);
+}
+
+.parent-width {
+    //TODO: check out box-sizing w/ bs4
+    //@include box-sizing(border-box);
+    width: 100%;
+    *width: 90%;
+}
+
+@mixin border-radius($radius) {
+    // from font-awesome 3.0
+    -webkit-border-radius: $radius;
+    -moz-border-radius: $radius;
+    border-radius: $radius;
+}
+
+// ==== Real (basic) styles ====
+
+.clear {
+    @include clearfix();
+}
+
+body {
+    background: $body-bg;
+    color: $text-color;
+    margin: 10px;
+
+    // For panel layout pages
+    &.full-content {
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+    }
+}
+
+// ==== Panel layout styles ====
+
+// Layout the paneled UI using flexbox.
+
+#everything {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#columns {
+    // Fill extra space in parent
+    flex: 1;
+    // Allow columns to be absolutely positioned inside
+    position: relative;
+}
+
+#background {
+    position: absolute;
+    background: #fff;
+    z-index: -1;
+    top: 0;
+    left: 0;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#messagebox {
+    width: 100%;
+    height: $panel-message-height !important;
+    overflow: hidden;
+    border-bottom: solid $border-default-color 1px;
+    font-size: 90%;
+    display: none;
+}
+
+#inactivebox {
+    width: 100%;
+    height: $panel-message-height !important;
+    overflow: hidden;
+    border-bottom: solid $border-default-color 1px;
+    font-size: 90%;
+    display: none;
+}
+
+// Panels
+
+#left,
+#center,
+#right {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    overflow: hidden;
+    background: #fff;
+}
+#left {
+    left: 0px;
+    width: $panel-width;
+    z-index: 200;
+    border-right: $layout-border;
+}
+#center {
+    left: $panel-width;
+    right: $panel-width;
+    overflow: hidden;
+    z-index: 1;
+    .center-container {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        .center-panel {
+            display: none;
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: $margin-h $margin-v;
+            overflow: auto;
+            background: $brand-white;
+        }
+        .center-frame {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+    }
+    // Replaces unnecessary if/then logic in base_panels.mako
+    &:first-child {
+        left: 0;
+    }
+    &:last-child {
+        right: 0;
+    }
+}
+
+#right {
+    width: $panel-width;
+    right: 0px;
+    z-index: 200;
+    border-left: $layout-border;
+}
+
+#left,
+#right,
+.unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
+}
+
+#left,
+#right,
+.unified-panel {
+    background: $panel-bg-color;
+    display: flex;
+    flex-direction: column;
+}
+
+.unified-panel-header {
+    @extend .unselectable;
+    @extend .mx-3;
+    height: $panel_header_height;
+    z-index: 1000;
+    font-size: 1rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    color: $panel-header-text-color;
+    a {
+        color: $panel-header-text-color;
+    }
+    .unified-panel-header-inner {
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .panel-header-buttons {
+        order: 9999;
+        float: right;
+        .panel-header-button {
+            text-align: center;
+            &:not(:last-child) {
+                @extend .mr-2;
+            }
+            &:hover {
+                color: $brand-info;
+            }
+        }
+    }
+}
+
+.unified-panel-controls {
+    @extend .px-3;
+}
+
+.unified-panel-footer {
+    @extend .unselectable;
+    position: relative;
+    height: $panel_footer_height;
+    line-height: $panel_footer_height;
+    width: 100%;
+    z-index: 1000; // Above #dd-helper
+    border-top: $layout-border;
+    background: $panel-footer-bg-color;
+    color: $panel-header-text-color;
+    a {
+        color: $panel-header-text-color;
+    }
+    .drag {
+        position: absolute;
+        top: 0;
+        right: 0;
+        padding: 0 5px;
+        text-align: center;
+        height: $panel_footer_height;
+        width: $panel_footer_height - 5;
+        background-image: url(../../images/visualization/draggable_horizontal.png);
+        background-repeat: no-repeat;
+        background-position: 50% 50%;
+        cursor: col-resize;
+    }
+}
+
+#right > .unified-panel-footer {
+    .drag {
+        left: 0;
+    }
+}
+
+// Needs to be outside panel to show when hidden
+.panel-collapse {
+    @extend .unified-panel-footer;
+    font-size: 4/3em;
+    @extend .fa-icon;
+    &:before {
+        content: "\f053";
+    }
+    &.hidden:before {
+        content: "\f054";
+    }
+    z-index: 201;
+    cursor: pointer;
+    display: block;
+    position: fixed;
+    left: 0;
+    top: inherit;
+    bottom: 0;
+    padding: 0 5px;
+    text-align: center;
+    height: $panel_footer_height;
+    line-height: $panel_footer_height;
+    width: $panel_footer_height - 5;
+    background: none;
+    border-right: $layout-border;
+    border-top: $layout-border;
+    background: $panel-footer-bg-color;
+    &.right {
+        left: inherit;
+        right: 0;
+        border-right: none;
+        border-left: $layout_border;
+        &.right:before {
+            content: "\f054";
+        }
+        &.right.hidden:before {
+            content: "\f053";
+        }
+    }
+}
+
+.menu-bg {
+    background: whiteSmoke top repeat-x;
+}
+
+div.unified-panel-body {
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    flex: 1;
+    overflow: auto;
+}
+
+div.unified-panel-body-background {
+    background: none repeat scroll 0 0 $panel-bg-color;
+}
+
+// Used for dragging panels, popup menus, to deal with capturing clicks in iframes
+#dd-helper {
+    background: white;
+    opacity: 0;
+    z-index: 900; // Bootstrap elements start at 1000
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: none;
+}
+
+// Messages for message box, slightly different style
+
+.panel-error-message,
+.panel-warning-message,
+.panel-done-message,
+.panel-info-message {
+    height: $panel-message-height;
+    line-height: $panel-message-height;
+    padding: 0px;
+    padding-left: 2.5rem;
+    background-color: $state-danger-bg;
+    background-image: url(../../images/error_small.png);
+    background-repeat: no-repeat;
+    background-position: 0.5rem 50%;
+}
+
+.panel-warning-message {
+    background-image: url(../../images/warn_small.png);
+    background-color: $state-warning-bg;
+}
+
+.panel-done-message {
+    background-image: url(../../images/ok_small.png);
+    background-color: $state-success-bg;
+}
+
+.panel-info-message {
+    background-image: url(../../images/info_icon.svg);
+    background-size: 1.5rem;
+    background-color: $state-info-bg;
+    svg:path {
+        fill: black;
+    }
+}
+
+// Masthead
+#masthead {
+    padding: 0;
+    margin-bottom: 0px;
+    background-color: $brand-dark;
+    height: $masthead-height;
+    .navbar-nav {
+        min-height: 100%;
+        > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
+            &.active {
+                background: darken($brand-dark, 10%);
+            }
+            .nav-link {
+                cursor: pointer;
+                text-decoration: none;
+                &:hover {
+                    color: $dropdown-link-active-color;
+                }
+                &.nav-icon {
+                    font-size: 1.7em;
+                }
+                &.toggle {
+                    color: $dropdown-link-active-color;
+                }
+            }
+            .nav-note {
+                font-weight: bold;
+                font-size: 10px;
+                position: relative;
+                right: 5px;
+                top: 10px;
+                color: $dropdown-link-active-color;
+                width: 0px;
+            }
+        }
+    }
+    .navbar-brand {
+        position: absolute;
+        left: 0;
+        // top: 0;
+        font-family: verdana;
+        font-weight: bold;
+        font-size: 20px;
+        // line-height: 1;
+        color: $white;
+        // Override margin and padding due to shorter navbar height
+        padding: 5px 20px 12px;
+        margin-left: -15px;
+        text-decoration: none;
+        .navbar-brand-image {
+            display: inline;
+            width: 26px;
+            // vertical-align: top;
+            margin-left: 0.35em;
+            border: none;
+        }
+        .navbar-brand-title {
+            color: $white;
+        }
+    }
+}
+
+.quota-meter-container {
+    position: absolute;
+    // top: 0;
+    right: 0;
+    height: 32px;
+}
+
+.quota-meter {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    height: 16px;
+    width: 100px;
+}
+
+.quota-meter-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 16px;
+    background-color: $brand-primary;
+}
+
+.quota-meter-bar-warn {
+    background-color: $brand-warning;
+}
+
+.quota-meter-bar-error {
+    background-color: $brand-danger;
+}
+
+.quota-meter-text {
+    @extend .text-light;
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100px;
+    height: 16px;
+    margin-top: -7px;
+    text-align: center;
+    z-index: 9001;
+    white-space: nowrap;
+    a {
+        @extend .text-dark;
+        font-size: 12px;
+        text-decoration: none;
+    }
+}
+
+// ==== Tool form styles ====
+
+div.metadataForm {
+    border: solid #aaaaaa 1px;
+}
+
+div.metadataFormTitle {
+    font-weight: bold;
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: #cccccc;
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid #aaaaaa 1px;
+}
+
+div.metadataFormBody {
+    background: #ffffff;
+    padding: 5px 0;
+}
+
+div.metadataFormBody div.metadataFormTitle {
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid #dcb790 1px;
+    margin-bottom: 5px;
+}
+
+div.metadataFormDisabled div.metadataFormTitle {
+    background: #eee;
+    border-color: $border-default-color;
+}
+
+div.metadataFormDisabled {
+    border-color: $border-default-color;
+}
+
+div.metadataHelpBody {
+    width: 100%;
+    overflow: auto;
+}
+
+// Forms
+
+div.toolFormBody div.toolFormTitle {
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid $form-border 1px;
+    margin-bottom: 5px;
+}
+
+div.toolFormDisabled div.toolFormTitle {
+    background: #f5f5f5;
+    border-color: $border-default-color;
+}
+
+div.toolFormDisabled {
+    border-color: $border-default-color;
+}
+
+div.toolHelp {
+    margin-top: 15px;
+    padding: 5px;
+}
+
+div.toolHelpBody {
+    width: 100%;
+}
+
+div.toolFormRow {
+    position: relative;
+}
+
+.toolForm.toolFormInCanvas {
+    @extend .card;
+    z-index: 100;
+    position: absolute;
+    border-color: $brand-primary;
+    &.toolForm-active {
+        z-index: 1001;
+        box-shadow: 0 0 0 2px $brand-primary;
+    }
+    .toolFormTitle {
+        @extend .card-header;
+        @extend .py-1;
+        @extend .px-2;
+        cursor: move;
+        background: $brand-secondary;
+    }
+    .toolFormBody {
+        @extend .card-body;
+        @extend .p-0;
+        @extend .mx-2;
+        .rule {
+            height: 0;
+            border: none;
+            border-bottom: dotted black 1px;
+            margin: 0 5px;
+        }
+    }
+}
+
+.toolForm.toolFormInCanvas.tool-node-error {
+    border-color: $state-danger-border;
+    .toolFormTitle {
+        background: $state-danger-bg;
+        border-color: $state-danger-border;
+    }
+}
+
+div.form,
+div.toolForm {
+    border: solid $form-border 1px;
+    @include border-radius($border-radius-base);
+}
+
+div.form-title,
+div.toolFormTitle {
+    // font-size: $font-size-base * 1.25;
+    // line-height: $line-height-base * 1.5;
+    padding: 5px 10px;
+    background: $form-heading-bg;
+    border-bottom: solid $form-border 1px;
+    word-wrap: break-word;
+}
+
+div.form-body {
+    padding: 5px 0;
+}
+
+div.form-row {
+    position: relative;
+    padding: 5px 10px;
+}
+
+div.form-title-row {
+    padding: 5px 10px;
+}
+
+div.repeat-group-item {
+    border-left: solid $form-border 5px;
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+
+div.form-row-error {
+    background: $state-danger-bg;
+}
+
+div.form-row label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.2em;
+}
+
+div.form-row label.inline {
+    display: inline;
+}
+
+div.form-row-input {
+    width: 90%;
+    float: left;
+}
+
+div.form-row-input label {
+    font-weight: normal;
+    display: inline;
+}
+
+.form-row.form-actions {
+    background: whiteSmoke;
+    border-top: solid #ddd 1px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 5px;
+}
+
+.workflow-right {
+    background: $white;
+}
+
+.workflow-right .right-content {
+    margin: 3px;
+}
+
+.workflow-right .right-content .section-row {
+    margin-bottom: 10px;
+}
+
+// Selects
+select {
+    padding: 2px;
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+}
+
+select,
+input,
+textarea {
+    font: inherit;
+}
+
+.form-row {
+    select,
+    textarea,
+    input[type="text"],
+    input[type="file"],
+    input[type="password"] {
+        // -webkit-box-sizing: border-box;
+        max-width: 90%;
+    }
+    display: block;
+}
+
+textarea,
+input[type="text"],
+input[type="password"] {
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+}
+
+// Always style buttons and submits as bootstrap buttons
+input[type="submit"],
+button {
+    @extend .btn;
+    @extend .btn-secondary;
+    &.btn-primary {
+        @extend .btn-primary;
+    }
+}
+
+.search-query {
+    display: inline-block;
+    padding: 4px;
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+    color: $text-color;
+    border: 1px solid $border-default-color;
+    padding-left: 14px !important;
+    padding-right: 14px;
+    margin-bottom: 0;
+    @include border-radius(14px);
+    max-width: auto;
+    background: $brand-white;
+}
+.search-query:focus {
+    border-color: darken(rgba(82, 168, 236, 0.8), 15%);
+    $shadow: inset 0 1px 1px rgba(0, 0, 0, 0.075), 0 0 8px rgba(82, 168, 236, 0.6);
+    @include box-shadow($shadow);
+    outline: 0;
+    outline: thin dotted \9; /* IE6-8 */
+}
+
+.search-spinner {
+    position: absolute;
+    display: none;
+    right: 6px;
+    top: 5px;
+    font-size: 1.4em;
+    color: #888;
+}
+
+#tool-search {
+    position: relative;
+    @extend .mb-2;
+    #search-clear-btn {
+        position: absolute;
+        right: 6px;
+        top: 6px;
+        display: block;
+        font-size: 1.4em !important;
+        text-decoration: none;
+        color: #888;
+        @extend .fa-icon;
+        &:before {
+            content: "\f057";
+        }
+    }
+}
+
+// Messages
+
+.errormessagelarge,
+.warningmessagelarge,
+.donemessagelarge,
+.infomessagelarge,
+.ui-form-help .error,
+.ui-form-help .warning,
+.ui-form-help .note {
+    @extend .alert;
+    min-height: 36px;
+    padding-left: 52px;
+    background-image: url(../../images/error_large.png);
+    background-repeat: no-repeat;
+    background-position: 10px 5px;
+    .messagerow {
+        padding: 10px 20px;
+    }
+}
+
+.errormessagelarge {
+    @extend .alert-danger;
+    padding-left: 52px;
+}
+
+.warningmessagelarge {
+    @extend .alert-warning;
+    padding-left: 52px;
+    background-image: url(../../images/warn_large.png);
+}
+
+.donemessagelarge {
+    @extend .alert-success;
+    padding-left: 52px;
+    background-image: url(../../images/ok_large.png);
+}
+
+.infomessagelarge {
+    @extend .alert-info;
+    background-image: url(../../images/info_large.png);
+}
+
+.errormessage,
+.warningmessage,
+.donemessage,
+.infomessage,
+.errormessagesmall,
+.warningmessagesmall,
+.donemessagesmall,
+.infomessagesmall,
+.ui-form-help .error,
+.ui-form-help .warning,
+.ui-form-help .note {
+    @extend .alert;
+    padding: 5px;
+    padding-left: 25px;
+    min-height: 15px;
+    //border: 1px solid $error_message_border;
+    //background-color: $error_message_bg;
+    background-image: url(../../images/error_small.png);
+    background-repeat: no-repeat;
+    background-position: 5px 6px;
+}
+
+.errormessage,
+.errormessagesmall,
+.ui-form-help .error {
+    @extend .alert-danger;
+}
+
+.warningmessage,
+.warningmessagesmall,
+.ui-form-help .warning {
+    @extend .alert-warning;
+    background-image: url(../../images/warn_small.png);
+}
+
+.donemessage,
+.donemessagesmall {
+    @extend .alert-success;
+    background-image: url(../../images/ok_small.png);
+}
+
+.infomessage,
+.infomessagesmall,
+.ui-form-help .note {
+    @extend .alert-info;
+    background-image: url(../../images/info_small.png);
+}
+
+.errormark,
+.warningmark,
+.donemark,
+.infomark,
+.ok_bgr,
+.err_bgr {
+    padding-left: 20px;
+    min-height: 15px;
+    background: url(../../images/error_small.png) no-repeat;
+}
+
+.warningmark {
+    background-image: url(../../images/warn_small.png);
+}
+
+.donemark {
+    background-image: url(../../images/ok_small.png);
+}
+
+.infomark,
+.ok_bgr {
+    background-image: url(../../images/info_small.png);
+}
+
+/* I think this is only used in view details */
+table.simple {
+    font-size: 12px;
+    background: #fff;
+    margin: 1em;
+    border-collapse: collapse;
+    text-align: left;
+}
+table.simple th {
+    font-size: 14px;
+    font-weight: normal;
+    padding: 10px 8px;
+    border-bottom: 2px solid #333;
+}
+table.simple td {
+    padding: 10px 8px 0px 8px;
+}
+table.simple tbody tr:hover td {
+    color: #333;
+}
+table.tabletip {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+table.tabletip th {
+    white-space: nowrap;
+    border-bottom: 1px solid #444;
+    padding-right: 3px;
+}
+table.tabletip td {
+    border-bottom: 1px solid #ddd;
+}
+table.tabletip tbody tr:hover td {
+    background-color: #eee;
+}
+
+table.colored {
+    border-top: solid $table-border-color 1px;
+    border-bottom: solid $table-border-color 1px;
+}
+
+table.colored td,
+table.colored th {
+    text-align: left;
+    padding: 5px;
+    line-height: $line-height-base;
+}
+
+table.colored tr.header {
+    background: $table-heading-bg;
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid $table-border-color 1px;
+    font-weight: bold;
+}
+
+table.colored tr {
+    background: $white;
+}
+
+table.colored tr.odd_row {
+    background: $table-bg-accent;
+}
+
+div.debug {
+    margin: 10px;
+    padding: 5px;
+    background: #ffff99;
+    border: solid #ffff33 1px;
+    color: black;
+}
+
+// Data grid style
+
+.grid-table {
+    width: 100%;
+}
+.grid-header {
+    padding-bottom: 1em;
+}
+.grid-header h2 {
+    margin: 0;
+    margin-bottom: 0.5em;
+}
+.grid-header .title {
+    font-weight: bold;
+}
+.grid {
+    padding-top: 1em;
+    border-collapse: collapse;
+    width: 100%;
+}
+.grid tbody td {
+    line-height: $line-height-base;
+    border-top: solid #dddddd 1px;
+    border-bottom: solid #dddddd 1px;
+    padding: 5px;
+}
+.grid tbody td:empty {
+    padding: 0;
+}
+.grid thead tr {
+    height: 2em;
+}
+.grid thead th {
+    line-height: $line-height-base;
+    background: $table-heading-bg;
+    color: contrast($table-heading-bg);
+    border-top: solid $table-border-color 1px;
+    border-bottom: solid $table-border-color 1px;
+    padding: 5px;
+    text-align: left;
+    white-space: nowrap;
+}
+.grid tfoot td {
+    background-color: #f8f8f8;
+    border-top: solid #dddddd 1px;
+    border-bottom: solid #dddddd 1px;
+    padding: 5px;
+}
+.grid .current {
+    background-color: #eeeeff;
+}
+
+// Pulled out of grid base
+.count-box {
+    min-width: 1.1em;
+    padding: 5px;
+    border-width: 1px;
+    border-style: solid;
+    text-align: center;
+    display: inline-block;
+}
+.text-filter-val {
+    border: solid 1px #aaaaaa;
+    padding: 1px 2px 1px 3px;
+    margin-right: 5px;
+    -moz-border-radius: 0.5em;
+    -webkit-border-radius: 0.5em;
+    font-style: italic;
+}
+.page-link-grid a,
+.inactive-link {
+    padding: 0px 7px 0px 7px;
+    color: #555;
+}
+.inactive-link,
+.current-filter {
+    font-weight: bold;
+    color: #000;
+}
+#advanced-search td {
+    padding: 3px;
+}
+#advanced-search table {
+    border-collapse: separate;
+}
+.delete-search-icon {
+    background: url(../../images/delete_tag_icon_gray.png) center no-repeat;
+    display: inline-block;
+    width: 10px;
+    cursor: pointer;
+    height: 18px;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+.search-box-input {
+    @extend .ui-input;
+    float: left;
+}
+.search-box {
+    vertical-align: bottom;
+    display: inline-block;
+    padding: 0;
+    white-space: nowrap;
+}
+.gray-background {
+    background-color: #dddddd;
+}
+.loading-elt-overlay {
+    background-color: white;
+    opacity: 0.5;
+    width: 100%;
+    height: 100%;
+    z-index: 14000;
+    position: fixed;
+    display: none;
+}
+
+div.odd_row {
+    background: $table-bg-accent;
+}
+
+#footer {
+    display: none;
+}
+
+// Tool panel stuff
+
+// Extra label colors
+.badge-beta {
+    @extend .badge-warning;
+}
+
+.badge-new {
+    @extend .badge-info;
+}
+
+span.toolParameterExpandableCollapsable {
+    font-weight: bold;
+    cursor: pointer;
+}
+ul.toolParameterExpandableCollapsable {
+    list-style: none;
+}
+
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
+}
+
+.state-progress {
+    border: 1px solid gray;
+    position: relative;
+
+    margin-top: 2px;
+    margin-bottom: 1px;
+
+    .info {
+        color: $black;
+        background: $white;
+    }
+
+    .new {
+        background: $state-default-bg;
+    }
+
+    .running {
+        background: $state-running-bg;
+    }
+
+    .ok {
+        background: $state-success-bg;
+    }
+
+    .note {
+        margin-left: 1em;
+        position: absolute;
+    }
+}
+
+// State colors
+
+.state-color-new {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-upload {
+    border-color: $state-info-border;
+    background: $state-info-bg;
+}
+
+.state-color-waiting {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-queued {
+    border-color: $state-default-border;
+    background: $state-default-bg;
+}
+
+.state-color-running {
+    border-color: $state-running-border;
+    background: $state-running-bg;
+}
+
+.state-color-ok {
+    border-color: $state-success-border;
+    background: $state-success-bg;
+}
+
+.state-color-error {
+    border-color: $state-danger-border;
+    background: $state-danger-bg;
+}
+
+.state-color-deleted {
+    border-color: darken($state-default-border, 30%);
+    border-style: dotted;
+    background: darken($state-default-bg, 30%);
+}
+
+.state-color-hidden {
+    border-color: $state-default-border;
+    border-style: dotted;
+    background: $state-default-bg;
+}
+
+// Button styles
+
+button {
+    @extend .btn;
+    @extend .btn-secondary;
+}
+a.btn {
+    text-decoration: none;
+}
+.action-button {
+    @extend .btn;
+    @extend .btn-secondary;
+}
+a.action-button {
+    color: $btn-default-color;
+    text-decoration: none;
+}
+.action-button > img {
+    vertical-align: middle;
+}
+
+.btn-xs {
+    // The 'new' bootstrap 4 btn-sm is about the same size as the old btn-xs,
+    // should serve as a replacement for anything expecting this.
+    @extend .btn-sm;
+}
+
+.btn-default {
+    // A hopefully temporary alias (as with above) to provide backwards
+    // compatibility for external stuff using .btn-default, which is now
+    // .btn-secondary.
+    @extend .btn-secondary;
+}
+
+.action-button:hover {
+    @extend .btn:hover;
+}
+.action-button:active {
+    @extend .btn.active;
+}
+
+// A menu button is a button that has an attached popup menu
+
+.menubutton {
+    @extend .btn;
+    @extend .btn-secondary;
+
+    &:hover {
+        @extend .btn:hover;
+    }
+    &:active {
+        @extend .btn.active;
+    }
+
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    @extend .unselectable;
+
+    a {
+        text-decoration: none;
+    }
+
+    .menubutton-label,
+    > label {
+        position: relative;
+        display: inline-block;
+        border-right: none;
+        text-decoration: none;
+        text-align: left;
+        // The following properties truncate the text and force the button to have one line
+        max-height: 2 * $line-height-base;
+        line-height: $line-height-base;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &.popup .menubutton-label {
+        margin: -5px 0;
+        border-right: solid $btn-default-border 1px;
+        padding-right: 6px;
+    }
+
+    &.popup,
+    &.popup.split {
+        padding-right: 18px;
+        @include caret();
+        &:after {
+            margin-left: 0.5rem;
+            // top: 45%;
+            // position: absolute;
+            // right: 6px;
+        }
+    }
+}
+
+.menubutton.background-none {
+    background: none;
+}
+
+// A split menu button, the main button has an action, the arrow causes the
+// popup menu to appear
+
+.menubutton.popup.split {
+    // padding-right: 2em;
+}
+
+.menubutton.popup.split:hover {
+    //background: url(../../images/ddarrowsplit.png) no-repeat right -39px;
+}
+
+// Popup menu styles
+div.popmenu-wrapper {
+    position: absolute;
+    top: 100%;
+    z-index: 20000;
+
+    ul.dropdown-menu {
+        // Since our menus are contained in a positioned div, need to override some styles
+        display: block;
+        position: relative;
+        float: none;
+    }
+}
+
+// For all dropdowns, define some additional item types
+ul.dropdown-menu {
+    a {
+        text-decoration: none;
+    }
+    li.head > a {
+        // From nav-list nav-header
+        text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+        font-size: 11px;
+        font-weight: bold;
+        line-height: $line-height-base;
+        color: $text-color;
+        text-transform: uppercase;
+    }
+    li.head > a:hover {
+        background: inherit;
+        border-color: transparent;
+    }
+    li > a {
+        @extend .dropdown-item;
+    }
+}
+
+.popup-arrow {
+    cursor: pointer;
+    text-decoration: none;
+    color: #555;
+}
+
+.popup-arrow:hover {
+    color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
+}
+
+// Styles for areas of text content
+
+.text-content {
+    hr {
+        display: block;
+        background: black;
+        color: black;
+        width: 100%;
+        height: 1px;
+        border: none;
+        background: #aaa;
+        color: #aaa;
+    }
+
+    table {
+        border-collapse: collapse;
+        border-top: 1px solid #ccc;
+        border-left: 1px solid #ccc;
+    }
+
+    blockquote {
+        color: #666;
+    }
+
+    fieldset {
+        border-color: #ccc;
+        border: 1px solid #ccc;
+    }
+
+    th,
+    td {
+        border-bottom: 1px solid #ddd;
+        border-right: 1px solid #ccc;
+    }
+
+    th,
+    td {
+        padding: 0.8em;
+    }
+}
+
+.preserve-text-breaks {
+    white-space: pre-line;
+}
+
+// Icon buttons.
+
+.icon-button {
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-left: 2px;
+    // Allow alt text for screen readers
+    text-indent: 20px;
+    background-repeat: no-repeat;
+    background-position: 0px 0px;
+    padding: 0;
+}
+
+.fa-icon-button {
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    &:hover {
+        color: $brand-info;
+    }
+}
+
+.editable-text {
+    cursor: pointer;
+}
+
+.editable-text:hover {
+    cursor: text;
+    border: dotted $border-default-color 1px;
+}
+
+.icon-button.multiinput {
+    background: url(../../images/documents-stack.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.icon-button.multiinput.disabled {
+    background: url(../../images/documents-stack-faded.png) no-repeat;
+    cursor: pointer;
+}
+
+.icon-button.link {
+    background: url(../../images/silk/link.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.icon-button.link-broken {
+    background: url(../../images/silk/link_break.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.workflow-invocation-complete {
+    border: solid 1px #6a6;
+    border-left-width: 5px;
+    margin: 10px 0;
+    padding-left: 5px;
+}
+
+// ============================================================================ History
+@import "ui/icon-btn.scss";
+@import "list-item.scss";
+@import "dataset.scss";
+@import "history.scss";
+@import "collection.scss";
+@import "job.scss";
+
+@import "ui/paired-collection-creator.scss";
+
+@import "ui/search-input.scss";
+@import "ui/dataset-choice.scss";
+@import "ui/peek-column-selector.scss";
+@import "ui/pagination.scss";
+@import "ui/error-modal.scss";
+
+// ==== Tool menu styles
+
+.toolMenuContainer {
+    color: $panel-text-color;
+    a {
+        color: $panel-text-color;
+        // text-decoration: none;
+    }
+    background: $panel-bg-color;
+    min-height: 100%;
+    @extend .m-3;
+}
+
+div.toolSectionPad {
+    margin: 0;
+    padding: 0;
+    height: 5px;
+    font-size: 0px;
+}
+
+div.toolSectionWrapper {
+    margin-bottom: 5px;
+}
+
+div.toolSectionDetailsInner {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+div.toolSectionTitle {
+    font-weight: 500;
+    font-size: 1rem;
+}
+
+div.toolPanelLabel {
+    padding-top: 10px;
+    padding-bottom: 5px;
+    font-weight: bold;
+    color: gray;
+    text-transform: uppercase;
+}
+
+div.toolTitle {
+    margin-left: 10px;
+    margin-right: 10px;
+    display: block;
+    .labels {
+        float: right;
+        margin-left: 2px;
+    }
+}
+
+div a.tool-link {
+    text-decoration: none;
+    display: block;
+    padding-top: 5px;
+    padding-bottom: 5px;
+
+    span.tool-old-link {
+        text-decoration: underline;
+    }
+
+    &:hover {
+        background: darken($panel-bg-color, 5%);
+    }
+}
+
+div.toolSectionBody div.toolPanelLabel {
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin-left: 16px;
+    margin-right: 10px;
+    display: list-item;
+    list-style: none outside;
+}
+
+div.toolTitleNoSection {
+    padding-bottom: 5px;
+    font-weight: bold;
+}
+
+// Dataset Display Styles
+
+#loading_indicator {
+    position: fixed;
+    right: 10px;
+    top: 10px;
+    height: 32px;
+    width: 32px;
+    display: none;
+    background: url(../../images/largespinner.gif);
+}
+
+#content_table td {
+    text-align: right;
+    white-space: nowrap;
+    padding: 2px 10px;
+}
+
+#content_table th {
+    white-space: nowrap;
+    padding: 2px 10px;
+}
+
+#content_table td.stringalign {
+    text-align: left;
+}
+
+#content_table .dark_row {
+    background-color: #ddd;
+}
+
+#content_table th {
+    background-color: #aaa;
+}
+
+// ==== Integrated tool form styles
+
+.toolMenuAndView .toolForm {
+    float: left;
+    background-color: $white;
+    margin: 10px;
+}
+
+// @import "base_sprites";
+
+.text-and-autocomplete-select {
+    // -sprite-group: fugue;
+    // -sprite-image: fugue/control-270@extend png;
+    // -sprite-horiz-position: right;
+    background: none;
+    position: relative;
+    padding-right: 18px;
+    &:after {
+        margin-top: 6px;
+        position: absolute;
+        top: 2px;
+        right: 6px;
+        width: 10px;
+        height: 10px;
+        @include caret();
+        @include opacity(80);
+    }
+}
+
+.icon-button.general-question {
+    background: url(../../images/question-octagon-frame.png) no-repeat;
+    float: right;
+    margin-top: 3px;
+    margin-right: 4px;
+}
+
+.icon-button.tag-question {
+    background: url(../../images/question-balloon.png) no-repeat;
+    float: right;
+    margin-top: 3px;
+    margin-right: 4px;
+}
+
+// ==== General Sprites ====
+
+@import "sprite-fugue.scss";
+
+.icon-button.tag {
+    @include sprite($tag-label);
+}
+.icon-button.tags {
+    @include sprite($tags);
+}
+.icon-button.tag--plus {
+    @include sprite($tag-plus);
+}
+.icon-button.toggle-expand {
+    @include sprite($toggle-expand);
+}
+.icon-button.toggle {
+    @include sprite($toggle-bw);
+}
+.icon-button.toggle:hover {
+    @include sprite($toggle);
+}
+.icon-button.arrow-circle {
+    @include sprite($arrow-circle);
+}
+.icon-button.chevron {
+    @include sprite($chevron);
+}
+.icon-button.bug {
+    @include sprite($bug);
+}
+.icon-button.disk {
+    @include sprite($disk);
+}
+.icon-button.information {
+    @include sprite($information-white);
+}
+.icon-button.annotate {
+    @include sprite($sticky-note-text);
+}
+.icon-button.go-to-full-screen {
+    @include sprite($external);
+}
+.icon-button.import {
+    @include sprite($plus-circle);
+}
+.icon-button.plus-button {
+    @include sprite($plus-button-bw);
+}
+.icon-button.plus-button:hover {
+    @include sprite($plus-button);
+}
+.icon-button.gear {
+    @include sprite($gear);
+}
+.icon-button.chart_curve {
+    @include sprite($chart);
+}
+.icon-button.disk--arrow {
+    @include sprite($disk-arrow-bw);
+}
+.icon-button.disk--arrow:hover {
+    @include sprite($disk-arrow);
+}
+.icon-button.cross-circle {
+    @include sprite($cross-circle-bw);
+}
+.icon-button.cross-circle:hover {
+    @include sprite($cross-circle);
+}
+.icon-button.arrow-split {
+    @include sprite($arrow-split-bw);
+}
+.icon-button.arrow-split:hover {
+    @include sprite($arrow-split);
+}
+.icon-button.chevron-expand:hover {
+    @include sprite($chevron-expand);
+}
+.icon-button.chevron-expand {
+    @include sprite($chevron-expand-bw);
+}
+
+// noscript overlay - displayed when javascript is disabled
+.noscript-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 10000;
+    & > div {
+        margin: 64px 0px 0px 64px;
+    }
+}
+
+// honeypot for registration form
+#for_bears {
+    display: none;
+}
+
+// communication channel bootstrap modal
+.chat-modal {
+    overflow: hidden;
+}
+
+.modal-header-body {
+    padding: 2px;
+}
+
+.close-modal {
+    float: right;
+    cursor: pointer;
+}
+
+.expand-compress-modal {
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 93.2%;
+}
+
+// password complexity monitor
+#change_password,
+#registrationForm {
+    .progress {
+        width: 200px;
+        margin-left: 20px;
+    }
+    .progress-bar {
+        color: black;
+        text-align: left;
+    }
+}
+
+// workflow
+.wf {
+    overflow: auto;
+    th {
+        white-space: nowrap;
+    }
+    td:first-child {
+        white-space: nowrap;
+    }
+}
+
+.wf-action span {
+    padding-left: 3px;
+    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
+}
+
+.wf-nodata {
+    padding-left: 1%;
+}
+
+.wf-back {
+    margin-left: 0.5%;
+}
+
+.other-options {
+    margin-bottom: 2%;
+}
+
+.hidden_description_layer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(200, 200, 200, 0.6);
+    visibility: hidden;
+    opacity: 0;
+    font-size: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* transition effect. not necessary */
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.hidden_description_layer.dragover {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Temporary tag editor display; will be moved to a scoped Vue SFC upon refactoring */
+.tags-display {
+    @extend %vertical-spacing;
+    .select2-container {
+        max-height: 80px;
+        overflow: auto;
+        min-width: 0px;
+        .select2-choices {
+            border-radius: 3px;
+        }
+    }
+}
+
+/* TEMPORARY, REFACTOR THIS -- This is only image-related styles from the
+ * workflow editor; everything should be moved out of the mako and into its own
+ * file */
+
+#canvas-viewport {
+    background: $workflow-editor-bg url("../../images/light_gray_grid.gif");
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    overflow: hidden;
+}
+
+.base-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    @extend .mt-1;
+    color: $white;
+    position: absolute;
+    z-index: 1500;
+    > icon {
+        @extend .fa;
+        @extend .fa-chevron-circle-right;
+        color: $brand-primary;
+        position: absolute;
+        left: 0px;
+        top: 0px;
+    }
+}
+.input-terminal {
+    @extend .base-terminal;
+    left: -9px;
+}
+.output-terminal {
+    @extend .base-terminal;
+    right: -9px;
+    &:hover > icon {
+        color: $brand-success;
+    }
+}
+.input-terminal-active > icon {
+    color: $brand-success;
+}
+.drag-terminal {
+    @extend .fa;
+    @extend .fa-circle;
+    color: $brand-success;
+    position: absolute;
+    z-index: 1500;
+}
+.mark-terminal {
+    cursor: pointer;
+    color: darken($border-default-color, 20%);
+    &.mark-terminal-active {
+        color: $brand-success;
+    }
+}
+.delete-terminal {
+    @extend .btn;
+    @extend .btn-sm;
+    @extend .btn-primary;
+    @extend .fa;
+    @extend .fa-minus-circle;
+    @extend .p-1;
+    @extend .mt-1;
+    position: absolute;
+    z-index: 2500;
+    top: 0px;
+    left: -15px;
+}
+.callout-terminal {
+    position: absolute;
+}
+.workflow-overview {
+    position: absolute;
+    width: 150px;
+    height: 150px;
+    right: 0px;
+    bottom: 0px;
+    border-top: solid gray 1px;
+    border-left: solid grey 1px;
+    padding: 7px 0 0 7px;
+    background: $workflow-overview-bg no-repeat url("../../images/resizable.png");
+    z-index: 20000;
+    overflow: hidden;
+    max-width: 300px;
+    max-height: 300px;
+    min-width: 50px;
+    min-height: 50px;
+}
+
+/* For Vue */
+[v-cloak] {
+    display: none;
+}
+
+/* Toolshed, reports custom styles from mako templates */
+body.toolshed {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    #left {
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
+    }
+    .unified-panel-body {
+        overflow: auto;
+    }
+    .toolMenu {
+        margin-left: 10px;
+    }
+}
+
+body.reports {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    #left {
+        background: #c1c9e5 url(../../images/menu_bg.png) top repeat-x;
+    }
+}
+
+/* Used in Galaxy IE for spinner loading TODO: Remove in IE entrypoint refactoring */
+#ie-loading-spinner {
+    position: absolute;
+    margin: auto;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url(../../images/largespinner.gif) no-repeat center center fixed;
+}

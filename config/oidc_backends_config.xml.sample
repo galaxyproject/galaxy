@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<OIDC>
+    <provider name="Google">
+        <client_id> ... </client_id>
+        <client_secret> ... </client_secret>
+        <redirect_uri>http://localhost:8080/authnz/google/callback</redirect_uri>
+
+        <prompt>consent</prompt>
+        <!--The value of this parameter (i.e., prompt) specifies whether the Google authorization server should prompt
+         a galaxy user for (re)authorization and consent. The possible values are: `none`, `consent`, and
+         `select_account`. HOWEVER, DO NOT USE `none`, because it will cause authentication failure for new users.
+         see the following page for more information:
+         https://developers.google.com/identity/protocols/OpenIDConnect#prompt
+
+         If you want the consent screen to be shown to the new users only, and re-authorization happen without
+         asking for user's consent, then remove this attribute.
+
+         NOTE: Galaxy sets OIDC 'scope' (requested scope of access to user's account) to `openid`. This is the
+         minimum scope value that request only user's email address and profile name. For login process Galaxy
+         does not need any more information, hence we request minimum possible information. By design, Google
+         does NOT show consent screen for this scope, hence user will only see a login page when they try to
+         login to Galaxy using their Google account.
+        -->
+    </provider>
+</OIDC>

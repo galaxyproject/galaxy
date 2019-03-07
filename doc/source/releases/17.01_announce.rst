@@ -14,7 +14,7 @@ Highlights
   such as `BioConda <https://bioconda.github.io/>`__. Such channels are already being used for new and updated tools by IUC
   and we suggest adopting this tool dependency resolution method to all tool developers instead of Tool Shed package
   recipes - which are now considered deprecated.
-  Please see the details at the admin `documentation <https://docs.galaxyproject.org/en/master/admin/conda_faq.html>`__
+  Please see the details at the admin :doc:`documentation <../admin/conda_faq>`.
 
 **New interface for user preferences**
   User preferences menu has been reworked for clarity and consistency.
@@ -27,7 +27,7 @@ Highlights
   or ``fastqsanger.bz2`` for compressed files).
   Existing tools will work as before and future tools will be able to consume archives and save space in your quota.
   Thanks to `@abretaud <https://github.com/abretaud>`__, `@ashvark <https://github.com/ashvark>`__, `@jvolkening <https://github.com/jvolkening>`__, and `@mvdbeek <https://github.com/mvdbeek>`__.
-  Implemented in `Pull Request 3145`_, `PullRequest 3510`_ and `PullRequest 3514`_.
+  Implemented in `Pull Request 3145`_, `Pull Request 3510`_ and `Pull Request 3514`_.
 
 Get Galaxy
 ==========

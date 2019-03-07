@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import time
 
 from requests import (
     get,
@@ -6,9 +7,12 @@ from requests import (
     put
 )
 
-from base import api
-
-from base.populators import DatasetPopulator, DatasetCollectionPopulator, wait_on
+from base import api  # noqa: I100,I202
+from base.populators import (  # noqa: I100
+    DatasetCollectionPopulator,
+    DatasetPopulator,
+    wait_on
+)
 
 
 class HistoriesApiTestCase(api.ApiTestCase):
@@ -26,7 +30,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         # Make sure new history appears in index of user's histories.
         index_response = self._get("histories").json()
         indexed_history = [h for h in index_response if h["id"] == created_id][0]
-        self.assertEquals(indexed_history["name"], "TestHistory1")
+        self.assertEqual(indexed_history["name"], "TestHistory1")
 
     def test_show_history(self):
         history_id = self._create_history("TestHistoryForShow")["id"]
@@ -180,16 +184,37 @@ class HistoriesApiTestCase(api.ApiTestCase):
         history_id = self.dataset_populator.new_history(name=history_name)
         self.dataset_populator.new_dataset(history_id, content="1 2 3")
         imported_history_id = self._reimport_history(history_id, history_name)
-
-        contents_response = self._get("histories/%s/contents" % imported_history_id)
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
-        assert len(contents) == 1
+        self._assert_history_length(imported_history_id, 1)
         imported_content = self.dataset_populator.get_history_dataset_content(
             history_id=imported_history_id,
-            dataset_id=contents[0]["id"]
+            hid=1,
         )
         assert imported_content == "1 2 3\n"
+
+    def test_import_metadata_regeneration(self):
+        history_name = "for_import_metadata_regeneration"
+        history_id = self.dataset_populator.new_history(name=history_name)
+        self.dataset_populator.new_dataset(history_id, content=open(self.test_data_resolver.get_filename("1.bam"), 'rb'), file_type='bam', wait=True)
+        imported_history_id = self._reimport_history(history_id, history_name)
+        self._assert_history_length(imported_history_id, 1)
+        import_bam_metadata = self.dataset_populator.get_history_dataset_details(
+            history_id=imported_history_id,
+            hid=1,
+        )
+        # The cleanup() method of the __IMPORT_HISTORY__ job (which is executed
+        # after the job has entered its final state):
+        # - creates a new dataset with 'ok' state and adds it to the history
+        # - starts a __SET_METADATA__ job to regerenate the dataset metadata, if
+        #   needed
+        # We need to wait a bit for the creation of the __SET_METADATA__ job.
+        time.sleep(1)
+        self.dataset_populator.wait_for_history_jobs(imported_history_id, assert_ok=True)
+        bai_metadata = import_bam_metadata["meta_files"][0]
+        assert bai_metadata["file_type"] == "bam_index"
+        api_url = bai_metadata["download_url"].split("api/", 1)[1]
+        bai_response = self._get(api_url)
+        self._assert_status_code_is(bai_response, 200)
+        assert len(bai_response.content) > 4
 
     def test_import_export_collection(self):
         from nose.plugins.skip import SkipTest
@@ -201,10 +226,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
 
         imported_history_id = self._reimport_history(history_id, history_name)
 
-        contents_response = self._get("histories/%s/contents" % imported_history_id)
-        self._assert_status_code_is(contents_response, 200)
-        contents = contents_response.json()
-        assert len(contents) == 3
+        self._assert_history_length(imported_history_id, 3)
 
     def _reimport_history(self, history_id, history_name):
         # Ensure the history is ready to go...
@@ -239,6 +261,12 @@ class HistoriesApiTestCase(api.ApiTestCase):
         self.dataset_populator.wait_for_history(imported_history_id)
 
         return imported_history_id
+
+    def _assert_history_length(self, history_id, n):
+        contents_response = self._get("histories/%s/contents" % history_id)
+        self._assert_status_code_is(contents_response, 200)
+        contents = contents_response.json()
+        assert len(contents) == n, contents
 
     def test_create_tag(self):
         post_data = dict(name="TestHistoryForTag")
@@ -278,7 +306,7 @@ class HistoriesApiTestCase(api.ApiTestCase):
         post_data = dict(name=name)
         create_response = self._post("histories", data=post_data).json()
         self._assert_has_keys(create_response, "name", "id")
-        self.assertEquals(create_response["name"], name)
+        self.assertEqual(create_response["name"], name)
         return create_response
 
     # TODO: (CE) test_create_from_copy

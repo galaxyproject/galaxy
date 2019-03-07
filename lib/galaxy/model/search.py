@@ -122,7 +122,6 @@ class ViewQueryBaseClass(object):
                     clazz, attribute = field.sqlalchemy_field
                     sqlalchemy_field_value = getattr(clazz, attribute)
                     if operator == "=":
-                        # print field.sqlalchemy_field == right, field.sqlalchemy_field, right
                         self.query = self.query.filter(sqlalchemy_field_value == right)
                     elif operator == "!=":
                         self.query = self.query.filter(sqlalchemy_field_value != right)
@@ -166,7 +165,6 @@ def library_extended_metadata_filter(view, left, operator, right):
         view.state['extended_metadata_joined'] = True
     alias = aliased(ExtendedMetadataIndex)
     field = "/%s" % ("/".join(left.split(".")[1:]))
-    # print "FIELD", field
     view.query = view.query.filter(
         and_(
             ExtendedMetadata.id == alias.extended_metadata_id,
@@ -313,7 +311,6 @@ def history_dataset_extended_metadata_filter(view, left, operator, right):
         view.state['extended_metadata_joined'] = True
     alias = aliased(ExtendedMetadataIndex)
     field = "/%s" % ("/".join(left.split(".")[1:]))
-    # print "FIELD", field
     view.query = view.query.filter(
         and_(
             ExtendedMetadata.id == alias.extended_metadata_id,
@@ -554,9 +551,9 @@ view_mapping = {
     'page_revision': PageRevisionView,
 }
 
-# The GQL gramar is defined in Parsley syntax ( http://parsley.readthedocs.org/en/latest/ )
+# The GQL gramar is defined in Parsley syntax ( https://parsley.readthedocs.io/ )
 
-gqlGrammar = """
+gqlGrammar = r"""
 expr = 'select' bs field_desc:f bs 'from' bs word:t (
     bs 'where' bs conditional:c ws -> GalaxyQuery(f,t,c)
     | ws -> GalaxyQuery(f, t, None) )

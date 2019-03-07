@@ -18,20 +18,20 @@ import subprocess
 import sys
 from sys import platform as _platform
 
+from six.moves import shlex_quote
 try:
     import yaml
 except ImportError:
     yaml = None
 
 from galaxy.tools.deps import commands, installable
-
 from galaxy.util import safe_makedirs
-
 from ._cli import arg_parser
 from .util import (
     build_target,
     conda_build_target_str,
     create_repository,
+    PrintProgress,
     quay_repository,
     v1_image_name,
     v2_image_name,
@@ -39,15 +39,14 @@ from .util import (
 from ..conda_compat import MetaData
 
 DIRNAME = os.path.dirname(__file__)
-DEFAULT_CHANNEL = "bioconda"
-DEFAULT_EXTRA_CHANNELS = ["conda-forge", "r"]
-DEFAULT_CHANNELS = [DEFAULT_CHANNEL] + DEFAULT_EXTRA_CHANNELS
+DEFAULT_CHANNELS = ["conda-forge", "bioconda"]
 DEFAULT_REPOSITORY_TEMPLATE = "quay.io/${namespace}/${image}"
 DEFAULT_BINDS = ["build/dist:/usr/local/"]
 DEFAULT_WORKING_DIR = '/source/'
 IS_OS_X = _platform == "darwin"
 INVOLUCRO_VERSION = "1.1.2"
 DEST_BASE_IMAGE = os.environ.get('DEST_BASE_IMAGE', None)
+CONDA_IMAGE = os.environ.get('CONDA_IMAGE', None)
 
 SINGULARITY_TEMPLATE = """Bootstrap: docker
 From: bgruening/busybox-bash:0.1
@@ -69,7 +68,7 @@ From: bgruening/busybox-bash:0.1
 
 def involucro_link():
     if IS_OS_X:
-        url = "https://github.com/involucro/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
+        url = "https://github.com/mvdbeek/involucro/releases/download/v%s/involucro.darwin" % INVOLUCRO_VERSION
     else:
         url = "https://github.com/involucro/involucro/releases/download/v%s/involucro" % INVOLUCRO_VERSION
     return url
@@ -116,17 +115,12 @@ def get_affected_packages(args):
     """
     recipes_dir = args.recipes_dir
     hours = args.diff_hours
-    cmd = """cd '%s' && git log --diff-filter=ACMRTUXB --name-only --pretty="" --since="%s hours ago" | grep -E '^recipes/.*/meta.yaml' | sort | uniq""" % (recipes_dir, hours)
-    pkg_list = check_output(cmd, shell=True)
-    ret = list()
-    for pkg in pkg_list.strip().split('\n'):
+    cmd = ['git', 'log', '--diff-filter=ACMRTUXB', '--name-only', '--pretty=""', '--since="%s hours ago"' % hours]
+    changed_files = subprocess.check_output(cmd, cwd=recipes_dir).strip().split('\n')
+    pkg_list = set([x for x in changed_files if x.startswith('recipes/') and x.endswith('meta.yaml')])
+    for pkg in pkg_list:
         if pkg and os.path.exists(os.path.join(recipes_dir, pkg)):
-            ret.append((get_pkg_name(args, pkg), get_tests(args, pkg)))
-    return ret
-
-
-def check_output(cmd, shell=True):
-    return subprocess.check_output(cmd, shell=shell)
+            yield (get_pkg_name(args, pkg), get_tests(args, pkg))
 
 
 def conda_versions(pkg_name, file_name):
@@ -201,7 +195,6 @@ def mull_targets(
     involucro_args = [
         '-f', '%s/invfile.lua' % DIRNAME,
         '-set', "CHANNELS='%s'" % channels,
-        '-set', "TEST='%s'" % test,
         '-set', "TARGETS='%s'" % target_str,
         '-set', "REPO='%s'" % repo,
         '-set', "BINDS='%s'" % bind_str,
@@ -209,6 +202,8 @@ def mull_targets(
 
     if DEST_BASE_IMAGE:
         involucro_args.extend(["-set", "DEST_BASE_IMAGE='%s'" % DEST_BASE_IMAGE])
+    if CONDA_IMAGE:
+        involucro_args.extend(["-set", "CONDA_IMAGE='%s'" % CONDA_IMAGE])
     if verbose:
         involucro_args.extend(["-set", "VERBOSE='1'"])
     if singularity:
@@ -217,6 +212,8 @@ def mull_targets(
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_NAME='%s'" % singularity_image_name])
         involucro_args.extend(["-set", "SINGULARITY_IMAGE_DIR='%s'" % singularity_image_dir])
         involucro_args.extend(["-set", "USER_ID='%s:%s'" % (os.getuid(), os.getgid())])
+    if test:
+        involucro_args.extend(["-set", "TEST=%s" % shlex_quote(test)])
     if conda_version is not None:
         verbose = "--verbose" if verbose else "--quiet"
         involucro_args.extend(["-set", "PREINSTALL='conda install %s --yes conda=%s'" % (verbose, conda_version)])
@@ -239,10 +236,11 @@ def mull_targets(
         if singularity:
             if not os.path.exists(singularity_image_dir):
                 safe_makedirs(singularity_image_dir)
-            with open(os.path.join(singularity_image_dir, 'Singularity'), 'w+') as sin_def:
+            with open(os.path.join(singularity_image_dir, 'Singularity.def'), 'w+') as sin_def:
                 fill_template = SINGULARITY_TEMPLATE % {'container_test': test}
                 sin_def.write(fill_template)
-        ret = involucro_context.exec_command(involucro_args)
+        with PrintProgress():
+            ret = involucro_context.exec_command(involucro_args)
         if singularity:
             # we can not remove this folder as it contains the image wich is owned by root
             pass
@@ -277,12 +275,16 @@ class InvolucroContext(installable.InstallableContext):
     def exec_command(self, involucro_args):
         cmd = self.build_command(involucro_args)
         # Create ./build dir manually, otherwise Docker will do it as root
-        os.mkdir('./build')
+        created_build_dir = False
+        if not os.path.exists('build'):
+            created_build_dir = True
+            os.mkdir('./build')
         try:
             res = self.shell_exec(" ".join(cmd))
         finally:
             # delete build directory in any case
-            shutil.rmtree('./build')
+            if created_build_dir:
+                shutil.rmtree('./build')
         return res
 
     def is_installed(self):
@@ -324,10 +326,8 @@ def add_build_arguments(parser):
                         help='quay.io namespace.')
     parser.add_argument('-r', '--repository_template', dest='repository_template', default=DEFAULT_REPOSITORY_TEMPLATE,
                         help='Docker repository target for publication (only quay.io or compat. API is currently supported).')
-    parser.add_argument('-c', '--channel', dest='channel', default=DEFAULT_CHANNEL,
-                        help='Target conda channel')
-    parser.add_argument('--extra-channels', dest='extra_channels', default=",".join(DEFAULT_EXTRA_CHANNELS),
-                        help='Dependent conda channels.')
+    parser.add_argument('-c', '--channels', dest='channels', default=",".join(DEFAULT_CHANNELS),
+                        help='Comma separated list of target conda channels.')
     parser.add_argument('--conda-version', dest="conda_version", default=None,
                         help="Change to specified version of Conda before installing packages.")
     parser.add_argument('--oauth-token', dest="oauth_token", default=None,
@@ -376,11 +376,8 @@ def args_to_mull_targets_kwds(args):
     if hasattr(args, "test_files"):
         if args.test_files:
             kwds["test_files"] = args.test_files.split(",")
-    if hasattr(args, "channel"):
-        channels = [args.channel]
-        if hasattr(args, "extra_channels"):
-            channels += args.extra_channels.split(",")
-        kwds["channels"] = channels
+    if hasattr(args, "channels"):
+        kwds["channels"] = args.channels.split(',')
     if hasattr(args, "command"):
         kwds["command"] = args.command
     if hasattr(args, "repository_template"):

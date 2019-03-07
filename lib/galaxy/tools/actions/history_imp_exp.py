@@ -16,6 +16,7 @@ class ImportHistoryToolAction(ToolAction):
         #
         # Create job.
         #
+        trans.check_user_activation()
         job = trans.app.model.Job()
         session = trans.get_galaxy_session()
         job.session_id = session and session.id
@@ -55,11 +56,9 @@ class ImportHistoryToolAction(ToolAction):
             job.add_parameter(name, value)
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-        job.set_handler(tool.get_job_handler(None))
-        trans.sa_session.flush()
 
         # Queue the job for execution
-        trans.app.job_queue.put(job.id, tool.id)
+        trans.app.job_manager.enqueue(job, tool=tool)
         trans.log_event("Added import history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
         return job, odict()
@@ -69,6 +68,7 @@ class ExportHistoryToolAction(ToolAction):
     """Tool action used for exporting a history to an archive. """
 
     def execute(self, tool, trans, incoming={}, set_output_hid=False, overwrite=True, history=None, **kwargs):
+        trans.check_user_activation()
         #
         # Get history to export.
         #
@@ -134,11 +134,9 @@ class ExportHistoryToolAction(ToolAction):
             job.add_parameter(name, value)
 
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-        job.set_handler(tool.get_job_handler(None))
-        trans.sa_session.flush()
 
         # Queue the job for execution
-        trans.app.job_queue.put(job.id, tool.id)
+        trans.app.job_manager.enqueue(job, tool=tool)
         trans.log_event("Added export history job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id)
 
         return job, odict()

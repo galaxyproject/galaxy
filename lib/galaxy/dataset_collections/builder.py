@@ -24,6 +24,7 @@ def set_collection_elements(dataset_collection, type, dataset_instances):
         element_index += 1
 
     dataset_collection.elements = elements
+    dataset_collection.element_count = element_index
     return dataset_collection
 
 

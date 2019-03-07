@@ -84,7 +84,6 @@ class ToolShedTestDriver(driver_util.TestDriver):
                       datatype_converters_config_file='datatype_converters_conf.xml.sample',
                       file_path=shed_file_path,
                       hgweb_config_dir=hgweb_config_dir,
-                      job_queue_workers=5,
                       id_secret='changethisinproductiontoo',
                       log_destination="stdout",
                       new_file_path=new_repos_path,

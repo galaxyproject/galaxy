@@ -10,26 +10,26 @@ import re
 log = logging.getLogger(__name__)
 
 # Email validity parameters
-VALID_EMAIL_RE = re.compile("[^@]+@[^@]+\.[^@]+")
+VALID_EMAIL_RE = re.compile(r"[^@]+@[^@]+\.[^@]+")
 EMAIL_MAX_LEN = 255
 
 # Public name validity parameters
 PUBLICNAME_MIN_LEN = 3
 PUBLICNAME_MAX_LEN = 255
-VALID_PUBLICNAME_RE = re.compile("^[a-z0-9._\-]+$")
-VALID_PUBLICNAME_SUB = re.compile("[^a-z0-9._\-]")
+VALID_PUBLICNAME_RE = re.compile(r"^[a-z0-9._\-]+$")
+VALID_PUBLICNAME_SUB = re.compile(r"[^a-z0-9._\-]")
 FILL_CHAR = '-'
 
 # Password validity parameters
 PASSWORD_MIN_LEN = 6
 
 
-def validate_email(trans, email, user=None, check_dup=True):
+def validate_email(trans, email, user=None, check_dup=True, allow_empty=False):
     """
     Validates the email format, also checks whether the domain is blacklisted in the disposable domains configuration.
     """
     message = ''
-    if user and user.email == email:
+    if (user and user.email == email) or (email == "" and allow_empty):
         return message
     if not(VALID_EMAIL_RE.match(email)):
         message = "The format of the email address is not correct."
@@ -82,5 +82,5 @@ def validate_password(trans, password, confirm):
     if len(password) < PASSWORD_MIN_LEN:
         return "Use a password of at least %d characters." % PASSWORD_MIN_LEN
     elif password != confirm:
-        return "Passwords don't match."
-    return ''
+        return "Passwords do not match."
+    return ""

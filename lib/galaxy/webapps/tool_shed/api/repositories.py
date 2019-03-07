@@ -2,41 +2,51 @@ import json
 import logging
 import os
 import tarfile
-import StringIO
-from cgi import FieldStorage
 from collections import namedtuple
 from time import strftime
 
+from six import StringIO
 from sqlalchemy import and_, false
+from webob.compat import cgi_FieldStorage
 
-from galaxy import util
-from galaxy import web
+from galaxy import (
+    util,
+    web
+)
+from galaxy.exceptions import (
+    ActionInputError,
+    ConfigDoesNotAllowException,
+    InsufficientPermissionsException,
+    MalformedId,
+    ObjectNotFound,
+    RequestParameterInvalidException,
+    RequestParameterMissingException
+)
 from galaxy.util import checkers
-from galaxy.exceptions import ActionInputError
-from galaxy.exceptions import ConfigDoesNotAllowException
-from galaxy.exceptions import InsufficientPermissionsException
-from galaxy.exceptions import MalformedId
-from galaxy.exceptions import ObjectNotFound
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import RequestParameterMissingException
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web import _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless
-from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import HTTPBadRequest
+from galaxy.web import (
+    _future_expose_api as expose_api,
+    _future_expose_api_anonymous_and_sessionless as expose_api_anonymous_and_sessionless,
+    _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
+)
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    HTTPBadRequest
+)
 from galaxy.webapps.tool_shed.search.repo_search import RepoSearch
 from tool_shed.capsule import capsule_manager
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
-from tool_shed.util import basic_util
-from tool_shed.util import commit_util
-from tool_shed.util import encoding_util
-from tool_shed.util import hg_util
-from tool_shed.util import metadata_util
-from tool_shed.util import repository_content_util
-from tool_shed.util import repository_util
-from tool_shed.util import tool_util
+from tool_shed.util import (
+    basic_util,
+    commit_util,
+    encoding_util,
+    hg_util,
+    metadata_util,
+    repository_content_util,
+    repository_util,
+    tool_util
+)
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +68,7 @@ class RepositoriesController(BaseAPIController):
         :param owner (required): the owner of the Repository
         """
         response_dict = {}
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             response_dict['status'] = 'error'
             response_dict['message'] = "You are not authorized to add entries to this Tool Shed's repository registry."
             return response_dict
@@ -206,8 +216,7 @@ class RepositoriesController(BaseAPIController):
             if repository_metadata is None:
                 # The changeset_revision column in the repository_metadata table has been updated with a new
                 # value value, so find the changeset_revision to which we need to update.
-                repo = hg_util.get_repo_for_repository(self.app, repository=repository, repo_path=None, create=False)
-                new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+                new_changeset_revision = metadata_util.get_next_downloadable_changeset_revision(self.app, repository, changeset_revision)
                 repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(self.app,
                                                                                                   encoded_repository_id,
                                                                                                   new_changeset_revision)
@@ -308,7 +317,7 @@ class RepositoriesController(BaseAPIController):
         irm = capsule_manager.ImportRepositoryManager(self.app,
                                                       trans.request.host,
                                                       trans.user,
-                                                      trans.user_is_admin())
+                                                      trans.user_is_admin)
         capsule_dict['tar_archive'] = tar_archive
         capsule_dict['capsule_file_name'] = capsule_file_name
         capsule_dict = irm.extract_capsule_files(**capsule_dict)
@@ -523,7 +532,7 @@ class RepositoriesController(BaseAPIController):
         :param owner (required): the owner of the Repository
         """
         response_dict = {}
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             response_dict['status'] = 'error'
             response_dict['message'] = "You are not authorized to remove entries from this Tool Shed's repository registry."
             return response_dict
@@ -564,7 +573,7 @@ class RepositoriesController(BaseAPIController):
                                        in addition to those repositories of type tool_dependency_definition.  This param is ignored
                                        if the current user is not an admin user, in which case this same restriction is automatic.
         """
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             my_writable = util.asbool(my_writable)
         else:
             my_writable = True
@@ -651,7 +660,7 @@ class RepositoriesController(BaseAPIController):
                     # Skip comments.
                     continue
                 encoded_ids_to_skip.append(line.rstrip('\n'))
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             my_writable = util.asbool(payload.get('my_writable', False))
         else:
             my_writable = True
@@ -790,7 +799,6 @@ class RepositoriesController(BaseAPIController):
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app,
                                                                                               trans.security.encode_id(repository.id),
                                                                                               changeset_revision)
-            repo = hg_util.get_repo_for_repository(trans.app, repository=repository, repo_path=None, create=False)
             tool_shed_status_dict = {}
             # Handle repository deprecation.
             tool_shed_status_dict['repository_deprecated'] = str(repository.deprecated)
@@ -798,7 +806,7 @@ class RepositoriesController(BaseAPIController):
             if changeset_revision == repository.tip(trans.app):
                 tool_shed_status_dict['latest_installable_revision'] = 'True'
             else:
-                next_installable_revision = metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+                next_installable_revision = metadata_util.get_next_downloadable_changeset_revision(trans.app, repository, changeset_revision)
                 if repository_metadata is None:
                     if next_installable_revision and next_installable_revision != changeset_revision:
                         tool_shed_status_dict['latest_installable_revision'] = 'True'
@@ -818,7 +826,7 @@ class RepositoriesController(BaseAPIController):
                 else:
                     tool_shed_status_dict['revision_update'] = 'False'
             # Handle revision upgrades.
-            metadata_revisions = [revision[1] for revision in metadata_util.get_metadata_revisions(repository, repo)]
+            metadata_revisions = [revision[1] for revision in metadata_util.get_metadata_revisions(trans.app, repository)]
             num_metadata_revisions = len(metadata_revisions)
             for index, metadata_revision in enumerate(metadata_revisions):
                 if index == num_metadata_revisions:
@@ -1048,7 +1056,7 @@ class RepositoriesController(BaseAPIController):
 
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
 
-        if not (trans.user_is_admin() or
+        if not (trans.user_is_admin or
                 self.app.security_agent.user_can_administer_repository(trans.user, repository) or
                 self.app.security_agent.can_push(self.app, trans.user, repository)):
             trans.response.status = 400
@@ -1057,15 +1065,14 @@ class RepositoriesController(BaseAPIController):
             }
 
         repo_dir = repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_dir, create=False)
 
         upload_point = commit_util.get_upload_point(repository, **kwd)
         tip = repository.tip(self.app)
 
         file_data = payload.get('file')
         # Code stolen from gx's upload_common.py
-        if isinstance(file_data, FieldStorage):
-            assert not isinstance(file_data.file, StringIO.StringIO)
+        if isinstance(file_data, cgi_FieldStorage):
+            assert not isinstance(file_data.file, StringIO)
             assert file_data.file.name != '<fdopen>'
             local_filename = util.mkstemp_ln(file_data.file.name, 'upload_file_data_')
             file_data.file.close()
@@ -1108,7 +1115,7 @@ class RepositoriesController(BaseAPIController):
             )
         if ok:
             # Update the repository files for browsing.
-            hg_util.update_repository(repo)
+            hg_util.update_repository(repo_dir)
             # Get the new repository tip.
             if tip == repository.tip(self.app):
                 trans.response.status = 400

@@ -1,14 +1,6 @@
-import os
-import sys
-
 from galaxy import model
-from galaxy.util import bunch
-
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import galaxy_mock
-
 from .test_parameter_parsing import BaseParameterTestCase
+from ..unittest_utils import galaxy_mock
 
 
 class DataToolParameterTestCase(BaseParameterTestCase):
@@ -35,7 +27,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         # Selection is Optional. may be selected with other stuff,
         # not sure the UI should really allow this but easy enough
         # to just filter it out.
-        self.assertEquals([hda], self.param.to_python('%s,None' % hda.id, self.app))
+        self.assertEqual([hda], self.param.to_python('%s,None' % hda.id, self.app))
 
     def test_field_filter_on_types(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
@@ -46,9 +38,9 @@ class DataToolParameterTestCase(BaseParameterTestCase):
         assert field['options']['hda'][0]['name'] == "hda2"
         assert field['options']['hda'][1]['name'] == "hda1"
 
-        hda2.datatype_matches = False
+        hda2.extension = 'data'
         field = self._simple_field()
-        assert len(field['options']['hda']) == 1
+        assert len(field['options']['hda']) == 1, field
         assert field['options']['hda'][0]['name'] == "hda1"
 
     def test_field_display_hidden_hdas_only_if_selected(self):
@@ -73,7 +65,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
 
     def test_field_implicit_conversion_new(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda1.datatype_matches = False
+        hda1.extension = 'data'
         hda1.conversion_destination = ("tabular", None)
         self.stub_active_datasets(hda1)
         field = self._simple_field()
@@ -83,7 +75,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
 
     def test_field_implicit_conversion_existing(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda1.datatype_matches = False
+        hda1.extension = 'data'
         hda1.conversion_destination = ("tabular", MockHistoryDatasetAssociation(name="hda1converted", id=2))
         self.stub_active_datasets(hda1)
         field = self._simple_field()
@@ -131,7 +123,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
 
     def test_get_initial_with_previously_converted_data(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda1.datatype_matches = False
+        hda1.extension = 'data'
         converted = MockHistoryDatasetAssociation(name="hda1converted", id=2)
         hda1.conversion_destination = ("tabular", converted)
         self.stub_active_datasets(hda1)
@@ -139,10 +131,10 @@ class DataToolParameterTestCase(BaseParameterTestCase):
 
     def test_get_initial_with_to_be_converted_data(self):
         hda1 = MockHistoryDatasetAssociation(name="hda1", id=1)
-        hda1.datatype_matches = False
+        hda1.extension = 'data'
         hda1.conversion_destination = ("tabular", None)
         self.stub_active_datasets(hda1)
-        assert hda1 == self.param.get_initial_value(self.trans, {})
+        assert hda1 == self.param.get_initial_value(self.trans, {}), hda1
 
     def _new_hda(self):
         hda = model.HistoryDatasetAssociation()
@@ -164,6 +156,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
 
     def stub_active_datasets(self, *hdas):
         self.test_history._active_datasets_and_roles = [h for h in hdas if not h.deleted]
+        self.test_history._active_visible_datasets_and_roles = [h for h in hdas if not h.deleted and h.visible]
 
     def _simple_field(self, **kwds):
         return self.param.to_dict(trans=self.trans, **kwds)
@@ -177,7 +170,7 @@ class DataToolParameterTestCase(BaseParameterTestCase):
             optional_text = ""
             if self.optional:
                 optional_text = 'optional="True"'
-            template_xml = '''<param name="data2" type="data" ext="txt" %s %s></param>'''
+            template_xml = '''<param name="data2" type="data" format="txt" %s %s></param>'''
             param_str = template_xml % (multi_text, optional_text)
             self._param = self._parameter_for(tool=self.mock_tool, xml=param_str)
 
@@ -197,11 +190,8 @@ class MockHistoryDatasetAssociation(object):
         self.deleted = False
         self.dataset = test_dataset
         self.visible = True
-        self.datatype_matches = True
         self.conversion_destination = (None, None)
-        self.datatype = bunch.Bunch(
-            matches_any=lambda formats: self.datatype_matches,
-        )
+        self.extension = "txt"
         self.dbkey = "hg19"
         self.implicitly_converted_parent_datasets = False
         self.name = name

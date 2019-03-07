@@ -1,13 +1,19 @@
 """Module for searching the toolshed repositories"""
-from galaxy import exceptions
-from galaxy.exceptions import ObjectNotFound
 import logging
-log = logging.getLogger(__name__)
+import sys
 
 import whoosh.index
 from whoosh import scoring
 from whoosh.fields import Schema, STORED, TEXT
 from whoosh.qparser import MultifieldParser
+
+from galaxy import exceptions
+from galaxy.exceptions import ObjectNotFound
+
+if sys.version_info > (3,):
+    long = int
+
+log = logging.getLogger(__name__)
 
 schema = Schema(
     id=STORED,

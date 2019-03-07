@@ -6,6 +6,7 @@ import logging
 import re
 import tempfile
 
+from bleach import clean
 from whoosh import analysis
 from whoosh.analysis import StandardAnalyzer
 from whoosh.fields import (
@@ -49,7 +50,7 @@ class ToolBoxSearch(object):
         self.storage, self.index = self._index_setup()
         # We keep track of how many times the tool index has been rebuilt.
         # We start at -1, so that after the first index the count is at 0,
-        # which is the same is the toolbox reload count. This way we can skip
+        # which is the same as the toolbox reload count. This way we can skip
         # reindexing if the index count is equal to the toolbox reload count.
         self.index_count = -1
 
@@ -105,7 +106,9 @@ class ToolBoxSearch(object):
             add_doc_kwds['labels'] = to_unicode(" ".join(tool.labels))
         if index_help and tool.help:
             try:
-                add_doc_kwds['help'] = to_unicode(tool.help.render(host_url="", static_path=""))
+                raw_html = tool.help.render(host_url="", static_path="")
+                cleantext = clean(raw_html, tags=[''], strip=True).replace('\n', ' ')
+                add_doc_kwds['help'] = to_unicode(cleantext)
             except Exception:
                 # Don't fail to build index just because a help message
                 # won't render.

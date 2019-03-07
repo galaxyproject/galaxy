@@ -5,6 +5,7 @@
     <tool file="data_source/ucsc_tablebrowser.xml" />
     <tool file="data_source/ucsc_tablebrowser_archaea.xml" />
     <tool file="data_source/ebi_sra.xml" />
+    <tool file="data_source/intermine.xml" />
     <tool file="data_source/flymine.xml" />
     <tool file="data_source/fly_modencode.xml" />
     <tool file="data_source/modmine.xml" />
@@ -19,6 +20,7 @@
     <tool file="genomespace/genomespace_push.xml" />
   </section>
   <section id="send" name="Send Data">
+    <tool file="cloud/send.xml" />
     <tool file="genomespace/genomespace_exporter.xml" />
   </section>
   <section id="liftOver" name="Lift-Over">
@@ -30,6 +32,10 @@
     <tool file="${model_tools_path}/filter_failed_collection.xml" labels="new" />
     <tool file="${model_tools_path}/flatten_collection.xml" labels="new" />
     <tool file="${model_tools_path}/merge_collection.xml" labels="new" />
+    <tool file="${model_tools_path}/relabel_from_file.xml" />
+    <tool file="${model_tools_path}/filter_from_file.xml" />
+    <tool file="${model_tools_path}/sort_collection_list.xml" />
+    <tool file="${model_tools_path}/apply_rules.xml" />
   </section>
   <section id="textutil" name="Text Manipulation">
     <tool file="filters/fixedValueColumn.xml" />
@@ -64,10 +70,10 @@
     <tool file="filters/sorter.xml" />
     <tool file="filters/grep.xml" />
     <label id="gff" text="GFF" />
-        <tool file="filters/gff/extract_GFF_Features.xml" />
-        <tool file="filters/gff/gff_filter_by_attribute.xml" />
-        <tool file="filters/gff/gff_filter_by_feature_count.xml" />
-        <tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
+    <tool file="filters/gff/extract_GFF_Features.xml" />
+    <tool file="filters/gff/gff_filter_by_attribute.xml" />
+    <tool file="filters/gff/gff_filter_by_feature_count.xml" />
+    <tool file="filters/gff/gtf_filter_by_attribute_values_list.xml" />
   </section>
   <section id="group" name="Join, Subtract and Group">
     <tool file="filters/joiner.xml" />

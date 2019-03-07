@@ -8,7 +8,6 @@ import sys
 import tempfile
 
 from galaxy import util
-
 from ..collectl import stats
 
 if sys.version_info > (3,):

@@ -2,8 +2,8 @@
 import argparse
 import datetime
 import os
-import time
 import sys
+import time
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'test')))
 

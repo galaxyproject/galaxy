@@ -12,13 +12,13 @@ from fabric import state
 from fabric.operations import _AttributeString
 from six.moves import queue
 
-from galaxy.util import DATABASE_MAX_STRING_SIZE
-from galaxy.util import DATABASE_MAX_STRING_SIZE_PRETTY
-from galaxy.util import shrink_string_by_size
-from galaxy.util import unicodify
-
+from galaxy.util import (
+    DATABASE_MAX_STRING_SIZE,
+    DATABASE_MAX_STRING_SIZE_PRETTY,
+    shrink_string_by_size,
+    unicodify
+)
 from tool_shed.galaxy_install.tool_dependencies.recipe import asynchronous_reader
-
 from tool_shed.util import basic_util, tool_dependency_util
 
 log = logging.getLogger(__name__)

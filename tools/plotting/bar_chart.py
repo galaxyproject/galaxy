@@ -50,12 +50,12 @@ def main(tmpFileName):
         ymax = sys.argv[7]
         img_file = sys.argv[8]
         img_size = sys.argv[9]
-    except:
+    except Exception:
         stop_err("Check arguments\n")
 
     try:
         int(col_list[0])
-    except:
+    except Exception:
         stop_err('You forgot to set columns for plotting\n')
 
     for i, line in enumerate(in_file):
@@ -67,7 +67,7 @@ def main(tmpFileName):
                 fields = line.split('\t')
                 for col in col_list:
                     row.append(str(float(fields[int(col) - 1])))
-            except:
+            except Exception:
                 valid = False
                 skipped_lines_count += 1
                 skipped_lines_index.append(i)
@@ -123,7 +123,7 @@ def main(tmpFileName):
             g(g_out)
             g('set style data histograms')
             g.plot(g_plot_command)
-        except:
+        except Exception:
             stop_err("Gnuplot error: Data cannot be plotted")
     else:
         sys.stderr.write('Column(s) %s of your dataset do not contain valid numeric data' % sys.argv[3])

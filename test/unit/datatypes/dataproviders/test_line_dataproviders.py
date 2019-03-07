@@ -6,7 +6,6 @@ import logging
 import unittest
 
 from galaxy.datatypes.dataproviders import line
-
 from . import test_base_dataproviders
 
 log = logging.getLogger(__name__)

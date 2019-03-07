@@ -5,6 +5,8 @@ from abc import (
 
 import six
 
+from .error_level import StdioErrorLevel
+
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
 
@@ -90,6 +92,23 @@ class ToolSource(object):
     def parse_environment_variables(self):
         """ Return environment variable templates to expose.
         """
+
+    def parse_home_target(self):
+        """Should be "job_home", "shared_home", "job_tmp", "pwd", or None.
+        """
+        return "pwd"
+
+    def parse_tmp_target(self):
+        """Should be "pwd", "shared_home", "job_tmp", "job_tmp_if_explicit", or None.
+        """
+        return "job_tmp"
+
+    def parse_tmp_directory_vars(self):
+        """Directories to override if a tmp_target is not None."""
+        return ["TMPDIR", "TMP", "TEMP"]
+
+    def parse_docker_env_pass_through(self):
+        return ["GALAXY_SLOTS", "HOME"] + self.parse_tmp_directory_vars()
 
     @abstractmethod
     def parse_interpreter(self):
@@ -193,6 +212,9 @@ class ToolSource(object):
     def parse_profile(self):
         """ Return tool profile version as Galaxy major e.g. 16.01 or 16.04.
         """
+
+    def macro_paths(self):
+        return []
 
     def parse_tests_to_dict(self):
         return {'tests': []}
@@ -320,8 +342,7 @@ class ToolStdioRegex(object):
         self.match = ""
         self.stdout_match = False
         self.stderr_match = False
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
+        self.error_level = StdioErrorLevel.FATAL
         self.desc = ""
 
 
@@ -334,32 +355,82 @@ class ToolStdioExitCode(object):
     def __init__(self):
         self.range_start = float("-inf")
         self.range_end = float("inf")
-        # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal"
+        self.error_level = StdioErrorLevel.FATAL
         self.desc = ""
 
 
 class TestCollectionDef(object):
-    # TODO: do not require XML directly here.
 
-    def __init__(self, elem, parse_param_elem):
-        self.elements = []
+    def __init__(self, attrib, name, collection_type, elements):
+        self.attrib = attrib
+        self.collection_type = collection_type
+        self.elements = elements
+        self.name = name
+
+    @staticmethod
+    def from_xml(elem, parse_param_elem):
+        elements = []
         attrib = dict(elem.attrib)
-        self.collection_type = attrib["type"]
-        self.name = attrib.get("name", "Unnamed Collection")
+        collection_type = attrib["type"]
+        name = attrib.get("name", "Unnamed Collection")
         for element in elem.findall("element"):
             element_attrib = dict(element.attrib)
             element_identifier = element_attrib["name"]
             nested_collection_elem = element.find("collection")
             if nested_collection_elem is not None:
-                self.elements.append((element_identifier, TestCollectionDef(nested_collection_elem, parse_param_elem)))
+                element_definition = TestCollectionDef.from_xml(nested_collection_elem, parse_param_elem)
             else:
-                self.elements.append((element_identifier, parse_param_elem(element)))
+                element_definition = parse_param_elem(element)
+            elements.append({"element_identifier": element_identifier, "element_definition": element_definition})
+
+        return TestCollectionDef(
+            attrib=attrib,
+            collection_type=collection_type,
+            elements=elements,
+            name=name,
+        )
+
+    def to_dict(self):
+        def element_to_dict(element_dict):
+            element_identifier, element_def = element_dict["element_identifier"], element_dict["element_definition"]
+            if isinstance(element_def, TestCollectionDef):
+                element_def = element_def.to_dict()
+            return {
+                "element_identifier": element_identifier,
+                "element_definition": element_def,
+            }
+
+        return {
+            "model_class": "TestCollectionDef",
+            "attributes": self.attrib,
+            "collection_type": self.collection_type,
+            "elements": map(element_to_dict, self.elements or []),
+            "name": self.name,
+        }
+
+    @staticmethod
+    def from_dict(as_dict):
+        assert as_dict["model_class"] == "TestCollectionDef"
+
+        def element_from_dict(element_dict):
+            if "element_definition" not in element_dict:
+                raise Exception("Invalid element_dict %s" % element_dict)
+            element_def = element_dict["element_definition"]
+            if element_def.get("model_class", None) == "TestCollectionDef":
+                element_def = TestCollectionDef.from_dict(element_def)
+            return {"element_identifier": element_dict["element_identifier"], "element_definition": element_def}
+
+        return TestCollectionDef(
+            attrib=as_dict["attributes"],
+            name=as_dict["name"],
+            elements=list(map(element_from_dict, as_dict["elements"] or [])),
+            collection_type=as_dict["collection_type"],
+        )
 
     def collect_inputs(self):
         inputs = []
         for element in self.elements:
-            value = element[1]
+            value = element["element_definition"]
             if isinstance(value, TestCollectionDef):
                 inputs.extend(value.collect_inputs())
             else:
@@ -376,3 +447,18 @@ class TestCollectionOutputDef(object):
         self.count = int(count) if count is not None else None
         self.attrib = attrib
         self.element_tests = element_tests
+
+    @staticmethod
+    def from_dict(as_dict):
+        return TestCollectionOutputDef(
+            name=as_dict["name"],
+            attrib=as_dict["attributes"],
+            element_tests=as_dict["element_tests"],
+        )
+
+    def to_dict(self):
+        return dict(
+            name=self.name,
+            attributes=self.attrib,
+            element_tests=self.element_tests
+        )

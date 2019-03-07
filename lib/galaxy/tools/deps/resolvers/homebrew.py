@@ -12,9 +12,11 @@ This is still an experimental module and there will almost certainly be backward
 incompatible changes coming.
 """
 
-
+from . import (
+    DependencyResolver,
+    NullDependency
+)
 from .resolver_mixins import UsesHomebrewMixin
-from ..resolvers import DependencyResolver, NullDependency
 
 # TODO: Implement prefer version linked...
 PREFER_VERSION_LINKED = 'linked'

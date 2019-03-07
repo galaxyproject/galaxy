@@ -23,6 +23,8 @@ usage: %prog [options]
    -a, --append=a: Append to existing all_fasta.loc file rather than create new
    -p, --sample-text=p: Copy over text from all_fasta.loc.sample file (false if set to append)
 """
+from __future__ import print_function
+
 import optparse
 import os
 import sys
@@ -147,18 +149,6 @@ VARIANT_MAP = {'canon': 'Canonical',
                'male': 'Male'}
 
 
-# alphabetize ignoring case
-def caseless_compare(a, b):
-    au = a.upper()
-    bu = b.upper()
-    if au > bu:
-        return 1
-    elif au == bu:
-        return 0
-    elif au < bu:
-        return -1
-
-
 def __main__():
     # command line variables
     parser = optparse.OptionParser()
@@ -184,7 +174,7 @@ def __main__():
         for ve in options.variant_exclusions.split(';'):
             v, e = ve.split(':')
             variant_exclusions[v] = e.split(',')
-    except:
+    except Exception:
         sys.stderr.write('Problem parsing the variant exclusion parameter (-n/--variant-exclusion). Make sure it follows the expected format\n')
         sys.exit(1)
     if options.append:
@@ -199,27 +189,27 @@ def __main__():
         paths_to_look_in = [os.path.join(options.genome_dir, '%s')]
 
     # say what we're looking in
-    print '\nLooking in:\n\t%s' % '\n\t'.join([p % '<build_name>' for p in paths_to_look_in])
+    print('\nLooking in:\n\t%s' % '\n\t'.join(p % '<build_name>' for p in paths_to_look_in))
     poss_names = ['<build_name>%s' % _ for _ in variants]
-    print 'for files that are named %s' % ', '.join(poss_names[:-1]),
+    print('for files that are named %s' % ', '.join(poss_names[:-1]), end=' ')
     if len(poss_names) > 1:
-        print 'or %s' % poss_names[-1],
+        print('or %s' % poss_names[-1], end=' ')
     if len(options.fasta_exts) == 1:
-        print 'with the extension %s.' % ', '.join(fasta_exts[:-1])
+        print('with the extension %s.' % ', '.join(fasta_exts[:-1]))
     else:
-        print 'with the extension %s or %s.' % (', '.join(fasta_exts[:-1]), fasta_exts[-1])
-    print '\nSkipping the following:\n\t%s' % '\n\t'.join(exemptions)
+        print('with the extension %s or %s.' % (', '.join(fasta_exts[:-1]), fasta_exts[-1]))
+    print('\nSkipping the following:\n\t%s' % '\n\t'.join(exemptions))
 
     # get column names
     col_values = []
     loc_path = None
     tree = parse(options.data_table_xml)
     tables = tree.getroot()
-    for table in tables.getiterator():
+    for table in tables.iter():
         name = table.attrib.get('name')
         if name == options.data_table_name:
             cols = None
-            for node in table.getiterator():
+            for node in table.iter():
                 if node.tag == 'columns':
                     cols = node.text
                 elif node.tag == 'file':
@@ -255,18 +245,17 @@ def __main__():
                         else:
                             unmatching_fasta_paths.append(os.path.join(dirpath, fn))
         # remove redundant fasta files
-        if variant_exclusions.keys():
-            for k in variant_exclusions.keys():
-                leave_in = '%s%s' % (genome_subdir, k)
-                if leave_in in fasta_locs:
-                    to_remove = ['%s%s' % (genome_subdir, k) for k in variant_exclusions[k]]
-                    for tr in to_remove:
-                        if tr in fasta_locs:
-                            del fasta_locs[tr]
+        for k, v in variant_exclusions.items():
+            leave_in = '%s%s' % (genome_subdir, k)
+            if leave_in in fasta_locs:
+                to_remove = ['%s%s' % (genome_subdir, _) for _ in v]
+                for tr in to_remove:
+                    if tr in fasta_locs:
+                        del fasta_locs[tr]
 
     # output results
-    print '\nThere were %s fasta files found that were not included because they did not have the expected file names.' % len(unmatching_fasta_paths)
-    print '%s fasta files were found and listed.\n' % len(fasta_locs.keys())
+    print('\nThere were %s fasta files found that were not included because they did not have the expected file names.' % len(unmatching_fasta_paths))
+    print('%s fasta files were found and listed.\n' % len(fasta_locs.keys()))
 
     # output unmatching fasta files
     if options.unmatching_fasta and unmatching_fasta_paths:
@@ -284,8 +273,8 @@ def __main__():
         else:
             all_fasta_loc.write('%s\n' % open('%s.sample' % loc_path, 'rb').read().strip())
     # output list of fasta files in alphabetical order
-    fasta_bases = fasta_locs.keys()
-    fasta_bases.sort(caseless_compare)
+    fasta_bases = list(fasta_locs.keys())
+    fasta_bases.sort(key=str.upper)
     for fb in fasta_bases:
         out_line = []
         for col in col_values:

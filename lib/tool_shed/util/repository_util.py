@@ -11,27 +11,12 @@ import tool_shed.dependencies.repository
 import tool_shed.util.metadata_util as metadata_util
 from galaxy import util
 from galaxy import web
-from galaxy.web.form_builder import build_select_field
 from tool_shed.util import basic_util, common_util, encoding_util, hg_util
 from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
 
-VALID_REPOSITORYNAME_RE = re.compile("^[a-z0-9\_]+$")
-
-
-def build_allow_push_select_field(trans, current_push_list, selected_value='none'):
-    options = []
-    for user in trans.sa_session.query(trans.model.User):
-        if user.username not in current_push_list:
-            options.append(user)
-    return build_select_field(trans,
-                              objs=options,
-                              label_attr='username',
-                              select_field_name='allow_push',
-                              selected_value=selected_value,
-                              refresh_on_change=False,
-                              multiple=True)
+VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
 
 
 def change_repository_name_in_hgrc_file(hgrc_file, new_name):
@@ -275,7 +260,7 @@ def create_repository(app, name, type, description, long_description, user_id, c
     if not os.path.exists(repository_path):
         os.makedirs(repository_path)
     # Create the local repository.
-    hg_util.get_repo_for_repository(app, repository=None, repo_path=repository_path, create=True)
+    hg_util.init_repository(repo_path=repository_path)
     # Add an entry in the hgweb.config file for the local repository.
     lhs = "repos/%s/%s" % (repository.user.username, repository.name)
     app.hgweb_config_manager.add_entry(lhs, repository_path)
@@ -317,8 +302,7 @@ def extract_components_from_tuple(repository_components_tuple):
 def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None):
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = web.url_for('/', qualified=True).rstrip('/')
-    protocol, base = base_url.split('://')
-    sharable_url = '%s://%s/view/%s/%s' % (protocol, base, repository.user.username, repository.name)
+    sharable_url = '%s/view/%s/%s' % (base_url, repository.user.username, repository.name)
     if changeset_revision:
         sharable_url += '/%s' % changeset_revision
     return sharable_url
@@ -411,7 +395,7 @@ def get_installed_tool_shed_repository(app, id):
         return_list = False
     if hasattr(app, 'tool_shed_repository_cache'):
         app.tool_shed_repository_cache.rebuild()
-    repository_ids = [app.security.decode_id(i)for i in id]
+    repository_ids = [app.security.decode_id(i) for i in id]
     rval = [get_installed_repository(app=app, repository_id=repo_id) for repo_id in repository_ids]
     if return_list:
         return rval
@@ -445,7 +429,6 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
 
 def get_repo_info_dict(app, user, repository_id, changeset_revision):
     repository = get_repository_in_tool_shed(app, repository_id)
-    repo = hg_util.get_repo_for_repository(app, repository=repository, repo_path=None, create=False)
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
     repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
                                                                                       repository_id,
@@ -455,7 +438,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         # in the repository's changelog.  This generally occurs only with repositories of type
         # repository_suite_definition or tool_dependency_definition.
         next_downloadable_changeset_revision = \
-            metadata_util.get_next_downloadable_changeset_revision(repository, repo, changeset_revision)
+            metadata_util.get_next_downloadable_changeset_revision(app, repository, changeset_revision)
         if next_downloadable_changeset_revision and next_downloadable_changeset_revision != changeset_revision:
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(app,
                                                                                               repository_id,
@@ -485,11 +468,12 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         has_repository_dependencies_only_if_compiling_contained_td = False
         includes_tool_dependencies = False
         includes_tools_for_display_in_tool_panel = False
-    ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
+    repo_path = repository.repo_path(app)
+    ctx_rev = hg_util.changeset2rev(repo_path, changeset_revision)
     repo_info_dict = create_repo_info_dict(app=app,
                                            repository_clone_url=repository_clone_url,
                                            changeset_revision=changeset_revision,
-                                           ctx_rev=str(ctx.rev()),
+                                           ctx_rev=ctx_rev,
                                            repository_owner=repository.user.username,
                                            repository_name=repository.name,
                                            repository=repository,
@@ -828,10 +812,10 @@ def get_tool_shed_status_for_installed_repository(app, repository):
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
             text = util.url_get(tool_shed_url, password_mgr=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params)
             return dict(revision_update=text)
-        except Exception as e:
+        except Exception:
             # The required tool shed may be unavailable, so default the revision_update value to 'false'.
             return dict(revision_update='false')
-    except Exception as e:
+    except Exception:
         log.exception("Error attempting to get tool shed status for installed repository %s", str(repository.name))
         return {}
 
@@ -971,7 +955,7 @@ def update_repository(app, trans, id, **kwds):
     if repository is None:
         return None, "Unknown repository ID"
 
-    if not (trans.user_is_admin() or
+    if not (trans.user_is_admin or
             trans.app.security_agent.user_can_administer_repository(trans.user, repository)):
         message = "You are not the owner of this repository, so you cannot administer it."
         return None, message

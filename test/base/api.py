@@ -7,24 +7,29 @@ from .api_asserts import (
     assert_has_keys,
     assert_not_has_keys,
     assert_status_code_is,
+    assert_status_code_is_ok,
 )
-from .api_util import get_master_api_key, get_user_api_key
-from .interactor import GalaxyInteractorApi as BaseInteractor
+from .api_util import (
+    ADMIN_TEST_USER,
+    get_master_api_key,
+    get_user_api_key,
+    OTHER_USER,
+    TEST_USER,
+)
+from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 from .testcase import FunctionalTestCase
 
-TEST_USER = "user@bx.psu.edu"
-ADMIN_TEST_USER = "test@bx.psu.edu"
-DEFAULT_OTHER_USER = "otheruser@bx.psu.edu"  # A second user for API testing.
 
+class UsesApiTestCaseMixin(object):
 
-class UsesApiTestCaseMixin:
-
-    def _api_url(self, path, params=None, use_key=None):
+    def _api_url(self, path, params=None, use_key=None, use_admin_key=None):
         if not params:
             params = {}
         url = "%s/api/%s" % (self.url, path)
         if use_key:
             params["key"] = self.galaxy_interactor.api_key
+        if use_admin_key:
+            params["key"] = self.galaxy_interactor.master_api_key
         query = urlencode(params)
         if query:
             url = "%s?%s" % (url, query)
@@ -48,7 +53,7 @@ class UsesApiTestCaseMixin:
         return self._post("users/%s/api_key" % user["id"], admin=True).json()
 
     @contextmanager
-    def _different_user(self, email=DEFAULT_OTHER_USER):
+    def _different_user(self, email=OTHER_USER):
         """ Use in test cases to switch get/post operations to act as new user,
 
             with self._different_user( "other_user@bx.psu.edu" ):
@@ -74,8 +79,14 @@ class UsesApiTestCaseMixin:
     def _delete(self, *args, **kwds):
         return self.galaxy_interactor.delete(*args, **kwds)
 
+    def _put(self, *args, **kwds):
+        return self.galaxy_interactor.put(*args, **kwds)
+
     def _patch(self, *args, **kwds):
         return self.galaxy_interactor.patch(*args, **kwds)
+
+    def _assert_status_code_is_ok(self, response):
+        assert_status_code_is_ok(response)
 
     def _assert_status_code_is(self, response, expected_status_code):
         assert_status_code_is(response, expected_status_code)
@@ -127,3 +138,6 @@ class ApiTestInteractor(BaseInteractor):
 
     def patch(self, *args, **kwds):
         return self._patch(*args, **kwds)
+
+    def put(self, *args, **kwds):
+        return self._put(*args, **kwds)

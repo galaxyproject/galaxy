@@ -3,7 +3,7 @@ Manager and Serializer for libraries.
 """
 import logging
 
-from sqlalchemy import and_, false, not_, or_, true
+from sqlalchemy import false, not_, or_, true
 from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -65,7 +65,7 @@ class LibraryManager(object):
         Update the given library
         """
         changed = False
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.ItemAccessibilityException('Only administrators can update libraries.')
         if library.deleted:
             raise exceptions.RequestParameterInvalidException('You cannot modify a deleted library. Undelete it first.')
@@ -90,7 +90,7 @@ class LibraryManager(object):
         """
         Mark given library deleted/undeleted based on the flag.
         """
-        if not trans.user_is_admin():
+        if not trans.user_is_admin:
             raise exceptions.ItemAccessibilityException('Only administrators can delete and undelete libraries.')
         if undelete:
             library.deleted = False
@@ -109,16 +109,20 @@ class LibraryManager(object):
 
         :returns: query that will emit all accessible libraries
         :rtype:   sqlalchemy query
-        :returns: set of library ids that have restricted access (not public)
-        :rtype:   set
+        :returns: dict of 3 sets with available actions for user's accessible
+                  libraries and a set of ids of all public libraries. These are
+                  used for limiting the number of queries when dictifying the
+                  libraries later on.
+        :rtype:   dict
         """
-        is_admin = trans.user_is_admin()
+        is_admin = trans.user_is_admin
         query = trans.sa_session.query(trans.app.model.Library)
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
         restricted_library_ids = {lp.library_id for lp in (
             trans.sa_session.query(trans.model.LibraryPermissions).filter(
                 trans.model.LibraryPermissions.table.c.action == library_access_action
             ).distinct())}
+        prefetched_ids = {'restricted_library_ids': restricted_library_ids}
         if is_admin:
             if deleted is None:
                 #  Flag is not specified, do not filter on it.
@@ -129,18 +133,33 @@ class LibraryManager(object):
                 query = query.filter(trans.app.model.Library.table.c.deleted == false())
         else:
             #  Nonadmins can't see deleted libraries
+            query = query.filter(trans.app.model.Library.table.c.deleted == false())
             current_user_role_ids = [role.id for role in trans.get_current_user_roles()]
-            accessible_restricted_library_ids = [lp.library_id for lp in (
-                trans.sa_session.query(trans.model.LibraryPermissions).filter(
-                    and_(
-                        trans.model.LibraryPermissions.table.c.action == library_access_action,
-                        trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids)
-                    )))]
+            all_actions = trans.sa_session.query(trans.model.LibraryPermissions).filter(trans.model.LibraryPermissions.table.c.role_id.in_(current_user_role_ids))
+            library_add_action = trans.app.security_agent.permitted_actions.LIBRARY_ADD.action
+            library_modify_action = trans.app.security_agent.permitted_actions.LIBRARY_MODIFY.action
+            library_manage_action = trans.app.security_agent.permitted_actions.LIBRARY_MANAGE.action
+            accessible_restricted_library_ids = set()
+            allowed_library_add_ids = set()
+            allowed_library_modify_ids = set()
+            allowed_library_manage_ids = set()
+            for action in all_actions:
+                if action.action == library_access_action:
+                    accessible_restricted_library_ids.add(action.library_id)
+                if action.action == library_add_action:
+                    allowed_library_add_ids.add(action.library_id)
+                if action.action == library_modify_action:
+                    allowed_library_modify_ids.add(action.library_id)
+                if action.action == library_manage_action:
+                    allowed_library_manage_ids.add(action.library_id)
             query = query.filter(or_(
                 not_(trans.model.Library.table.c.id.in_(restricted_library_ids)),
                 trans.model.Library.table.c.id.in_(accessible_restricted_library_ids)
             ))
-        return query, restricted_library_ids
+            prefetched_ids['allowed_library_add_ids'] = allowed_library_add_ids
+            prefetched_ids['allowed_library_modify_ids'] = allowed_library_modify_ids
+            prefetched_ids['allowed_library_manage_ids'] = allowed_library_manage_ids
+        return query, prefetched_ids
 
     def secure(self, trans, library, check_accessible=True):
         """
@@ -155,7 +174,7 @@ class LibraryManager(object):
         :rtype:     Library
         """
         # all libraries are accessible to an admin
-        if trans.user_is_admin():
+        if trans.user_is_admin:
             return library
         if check_accessible:
             library = self.check_accessible(trans, library)
@@ -172,30 +191,38 @@ class LibraryManager(object):
         else:
             return library
 
-    def get_library_dict(self, trans, library, restricted_library_ids=None):
+    def get_library_dict(self, trans, library, prefetched_ids=None):
         """
         Return library data in the form of a dictionary.
 
-        :param  library:                    library
-        :type   library:                    galaxy.model.Library
-        :param  restricted_library_ids:     ids of restricted libraries to speed up the
-                                            detection of public libraries
-        :type   restricted_library_ids:     list of ints
+        :param  library:         library
+        :type   library:         galaxy.model.Library
+        :param  prefetched_ids:  dict of 3 sets with available actions for user's accessible
+                                 libraries and a set of ids of all public libraries. These are
+                                 used for limiting the number of queries when dictifying a
+                                 set of libraries.
+        :type   prefetched_ids:  dict
 
         :returns:   dict with data about the library
         :rtype:     dictionary
         """
+        restricted_library_ids = prefetched_ids.get('restricted_library_ids', None) if prefetched_ids else None
+        allowed_library_add_ids = prefetched_ids.get('allowed_library_add_ids', None) if prefetched_ids else None
+        allowed_library_modify_ids = prefetched_ids.get('allowed_library_modify_ids', None) if prefetched_ids else None
+        allowed_library_manage_ids = prefetched_ids.get('allowed_library_manage_ids', None) if prefetched_ids else None
         library_dict = library.to_dict(view='element', value_mapper={'id': trans.security.encode_id, 'root_folder_id': trans.security.encode_id})
-        if restricted_library_ids and library.id in restricted_library_ids:
-            library_dict['public'] = False
-        else:
-            library_dict['public'] = True
+        library_dict['public'] = False if (restricted_library_ids and library.id in restricted_library_ids) else True
         library_dict['create_time_pretty'] = pretty_print_time_interval(library.create_time, precise=True)
-        if not trans.user_is_admin():
-            current_user_roles = trans.get_current_user_roles()
-            library_dict['can_user_add'] = trans.app.security_agent.can_add_library_item(current_user_roles, library)
-            library_dict['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, library)
-            library_dict['can_user_manage'] = trans.app.security_agent.can_manage_library_item(current_user_roles, library)
+        if not trans.user_is_admin:
+            if prefetched_ids:
+                library_dict['can_user_add'] = True if (allowed_library_add_ids and library.id in allowed_library_add_ids) else False
+                library_dict['can_user_modify'] = True if (allowed_library_modify_ids and library.id in allowed_library_modify_ids) else False
+                library_dict['can_user_manage'] = True if (allowed_library_manage_ids and library.id in allowed_library_manage_ids) else False
+            else:
+                current_user_roles = trans.get_current_user_roles()
+                library_dict['can_user_add'] = trans.app.security_agent.can_add_library_item(current_user_roles, library)
+                library_dict['can_user_modify'] = trans.app.security_agent.can_modify_library_item(current_user_roles, library)
+                library_dict['can_user_manage'] = trans.app.security_agent.can_manage_library_item(current_user_roles, library)
         else:
             library_dict['can_user_add'] = True
             library_dict['can_user_modify'] = True

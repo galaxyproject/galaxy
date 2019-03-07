@@ -32,17 +32,19 @@ Examples
 from __future__ import print_function
 
 import argparse
+import os
 import re
 import sys
-
-try:
-    import configparser
-except:
-    import ConfigParser as configparser
 
 import numpy
 import psycopg2
 from sqlalchemy.engine import url
+
+galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+sys.path.insert(1, os.path.join(galaxy_root, 'lib'))
+
+import galaxy.config
+from galaxy.util.script import app_properties_from_args, populate_config_args
 
 
 DATA_SOURCES = ('metrics', 'history')
@@ -82,7 +84,7 @@ def parse_arguments():
                         help='Use SQL `LIKE` operator to find '
                              'a shed-installed tool using the tool\'s '
                              '"short" id')
-    parser.add_argument('-c', '--config', help='Galaxy config file')
+    populate_config_args(parser)
     parser.add_argument('-d', '--debug',
                         action='store_true',
                         default=False,
@@ -114,14 +116,12 @@ def parse_arguments():
         print('ERROR: Data source `%s` unknown, valid source are: %s'
               % (args.source, ', '.join(DATA_SOURCES)))
 
-    if args.config:
-        cp = configparser.ConfigParser()
-        cp.readfp(open(args.config))
-        uri = cp.get('app:main', 'database_connection')
-        names = {'database': 'dbname', 'username': 'user'}
-        args.connect_args = url.make_url(uri).translate_connect_args(**names)
-    else:
-        args.connect_args = {}
+    app_properties = app_properties_from_args(args)
+    config = galaxy.config.Configuration(**app_properties)
+    uri = args.config.get_database_url(config)
+
+    names = {'database': 'dbname', 'username': 'user'}
+    args.connect_args = url.make_url(uri).translate_connect_args(**names)
 
     if args.debug:
         print('Got options:')
@@ -144,7 +144,7 @@ def query(tool_id=None, user=None, like=None, source='metrics',
     if user:
         try:
             user_id = int(user)
-        except:
+        except ValueError:
             if '@' not in user:
                 field = 'username'
             else:
@@ -163,7 +163,7 @@ def query(tool_id=None, user=None, like=None, source='metrics',
 
     if like:
         query_tool_id = '%%/%s/%%' % tool_id
-    elif '/' in tool_id and not re.match('\d+\.\d+', tool_id.split('/')[-1]):
+    elif '/' in tool_id and not re.match(r'\d+\.\d+', tool_id.split('/')[-1]):
         query_tool_id = '%s%%' % tool_id
         like = True
     else:

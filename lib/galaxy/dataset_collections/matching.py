@@ -1,6 +1,5 @@
 from galaxy import exceptions
 from galaxy.util import bunch
-
 from .structure import (
     get_structure,
     leaf
@@ -45,29 +44,47 @@ class MatchingCollections(object):
         self.linked_structure = None
         self.unlinked_structures = []
         self.collections = {}
+        self.subcollection_types = {}
+        self.action_tuples = {}
 
     def __attempt_add_to_linked_match(self, input_name, hdca, collection_type_description, subcollection_type):
         structure = get_structure(hdca, collection_type_description, leaf_subcollection_type=subcollection_type)
         if not self.linked_structure:
             self.linked_structure = structure
             self.collections[input_name] = hdca
+            self.subcollection_types[input_name] = subcollection_type
         else:
             if not self.linked_structure.can_match(structure):
                 raise exceptions.MessageException(CANNOT_MATCH_ERROR_MESSAGE)
             self.collections[input_name] = hdca
+            self.subcollection_types[input_name] = subcollection_type
 
     def slice_collections(self):
         return self.linked_structure.walk_collections(self.collections)
 
+    def subcollection_mapping_type(self, input_name):
+        return self.subcollection_types[input_name]
+
     @property
     def structure(self):
-        """Yield cross product of all unlinked datasets to linked dataset."""
+        """Yield cross product of all unlinked collections structures to linked collection structure."""
         effective_structure = leaf
         for unlinked_structure in self.unlinked_structures:
             effective_structure = effective_structure.multiply(unlinked_structure)
-        linked_structure = self.linked_structure or leaf
+        linked_structure = self.linked_structure
+        if linked_structure is None:
+            linked_structure = leaf
         effective_structure = effective_structure.multiply(linked_structure)
         return None if effective_structure.is_leaf else effective_structure
+
+    def map_over_action_tuples(self, input_name):
+        if input_name not in self.action_tuples:
+            collection_instance = self.collections[input_name]
+            self.action_tuples[input_name] = collection_instance.collection.dataset_action_tuples
+        return self.action_tuples[input_name]
+
+    def is_mapped_over(self, input_name):
+        return input_name in self.collections
 
     @staticmethod
     def for_collections(collections_to_match, collection_type_descriptions):

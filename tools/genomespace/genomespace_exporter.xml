@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
-<tool name="GenomeSpace Exporter" id="genomespace_exporter" version="0.0.5">
+<tool name="GenomeSpace Exporter" id="genomespace_exporter" require_login="True" version="0.0.6">
     <description> - send data to GenomeSpace</description>
     <environment_variables>
         <environment_variable name="GS_TOKEN">
-            #set $token = $genomespace_browser.split('^')[1] or $__user__.preferences.get('genomespace_token', None)
-            #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID or select a valid folder via the GenomeSpace browse dialog.')
+            #set $token = $__user__.preferences.get('genomespace_token', None)
+            #assert $token, Exception('Invalid token. You must be logged into GenomeSpace through OpenID.')
             $token
         </environment_variable>
     </environment_variables>
@@ -31,11 +31,9 @@
         <data format="auto" name="output_log" />
     </outputs>
     <help>
-This Tool allows you to export data to GenomeSpace. Click the Browse button to select a file to export. The tool will automatically
-fetch your GenomeSpace token when you select a file from the export dialog.
+This Tool allows you to export data to GenomeSpace. Click the Browse button to select a file to export.
 
-Alternatively, you can be logged in using your GenomeSpace OpenID, and the tool will use this ID if no token is entered.
-This allows you to simply paste the filepath into the location box and leave the token empty. 
+To use this tool, you must have logged in using your GenomeSpace OpenID.
 You can associate your OpenID credentials under the User Preferences panel.
 Click here_ to refresh your GenomeSpace token.
 

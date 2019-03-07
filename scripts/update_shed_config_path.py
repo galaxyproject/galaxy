@@ -1,8 +1,10 @@
+from __future__ import print_function
+
 import argparse
-import ConfigParser
 import os
 import sys
 
+from six.moves.configparser import SafeConfigParser
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -25,7 +27,7 @@ def main(opts, session, model):
 
 
 def create_database(config_file):
-    parser = ConfigParser.SafeConfigParser()
+    parser = SafeConfigParser()
     parser.read(config_file)
     # Determine which database connection to use.
     database_connection = parser.get('app:main', 'install_database_connection')
@@ -34,7 +36,7 @@ def create_database(config_file):
     if database_connection is None:
         database_connection = 'sqlite:///%s' % parser.get('app:main', 'database_file')
     if database_connection is None:
-        print 'Unable to determine correct database connection.'
+        print('Unable to determine correct database connection.')
         exit(1)
 
     '''Initialize the database file.'''
@@ -54,7 +56,7 @@ if __name__ == '__main__':
     parser.add_argument('--force', dest='force', action='store_true', help="Use this flag to set the new path even if the file does not (yet) exist there.")
     opts = parser.parse_args()
     if not os.path.exists(opts.good_filename) and not opts.force:
-        print 'The file %s does not exist, use the --force option to proceed.' % opts.good_filename
+        print('The file %s does not exist, use the --force option to proceed.' % opts.good_filename)
         exit(1)
     session, model = create_database(opts.config_file)
     exit(main(opts, session, model))

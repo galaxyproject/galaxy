@@ -1,9 +1,10 @@
+import logging
+
 from six import string_types
 
 import galaxy.model
-from galaxy import util
+from galaxy.util.xml_macros import load
 
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -28,7 +29,7 @@ class VisualizationsConfigParser(object):
             -- what information needs to be added to the query string
     """
     #: what are the allowed 'entry_point_type' for entry_point elements
-    ALLOWED_ENTRY_POINT_TYPES = ['mako', 'html', 'script']
+    ALLOWED_ENTRY_POINT_TYPES = ['mako', 'html', 'script', 'chart']
     #: what are the allowed href targets when clicking on a visualization anchor
     VALID_RENDER_TARGETS = ['galaxy_main', '_top', '_blank']
 
@@ -43,7 +44,7 @@ class VisualizationsConfigParser(object):
         Parse the given XML file for visualizations data.
         :returns: visualization config dictionary
         """
-        xml_tree = util.parse_xml(xml_filepath)
+        xml_tree = load(xml_filepath)
         visualization = self.parse_visualization(xml_tree.getroot())
         return visualization
 
@@ -61,7 +62,7 @@ class VisualizationsConfigParser(object):
         # a text display name for end user links
         returned['name'] = xml_tree.attrib.get('name', None)
         if not returned['name']:
-            raise ParsingException('visualization needs a name attribute')
+            raise ParsingException('Visualization needs a name attribute.')
 
         # allow manually turning off a vis by checking for a disabled property
         if 'disabled' in xml_tree.attrib:
@@ -146,6 +147,21 @@ class VisualizationsConfigParser(object):
         else:
             returned['render_target'] = 'galaxy_main'
         # consider unifying the above into its own element and parsing method
+
+        # load optional custom configuration specifiers
+        specs_section = xml_tree.find('specs')
+        if specs_section is not None:
+            returned['specs'] = DictParser(specs_section)
+
+        # load group specifiers
+        groups_section = xml_tree.find('groups')
+        if groups_section is not None:
+            returned['groups'] = ListParser(groups_section)
+
+        # load settings specifiers
+        settings_section = xml_tree.find('settings')
+        if settings_section is not None:
+            returned['settings'] = ListParser(settings_section)
 
         return returned
 
@@ -377,6 +393,47 @@ class DataSourceParser(object):
                 to_param_dict[param_name] = param
 
         return to_param_dict
+
+
+class ListParser(list):
+    """
+    Converts a xml structure into an array
+    See: http://code.activestate.com/recipes/410469-xml-as-dictionary/
+    """
+    def __init__(self, aList):
+        for element in aList:
+            if len(element) > 0:
+                if element.tag == element[0].tag:
+                    self.append(ListParser(element))
+                else:
+                    self.append(DictParser(element))
+            elif element.text:
+                text = element.text.strip()
+                if text:
+                    self.append(text)
+
+
+class DictParser(dict):
+    """
+    Converts a xml structure into a dictionary
+    See: http://code.activestate.com/recipes/410469-xml-as-dictionary/
+    """
+    def __init__(self, parent_element):
+        if parent_element.items():
+            self.update(dict(parent_element.items()))
+        for element in parent_element:
+            if len(element) > 0:
+                if element.tag == element[0].tag:
+                    aDict = ListParser(element)
+                else:
+                    aDict = DictParser(element)
+                if element.items():
+                    aDict.update(dict(element.items()))
+                self.update({element.tag: aDict})
+            elif element.items():
+                self.update({element.tag: dict(element.items())})
+            else:
+                self.update({element.tag: element.text})
 
 
 class ParamParser(object):

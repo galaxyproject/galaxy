@@ -12,7 +12,7 @@
     <param name="foo" type="text" label="Dummy Parameter" />
   </inputs>
   <outputs>
-    <collection name="list_output" type="list:list" label="Duplicate List">
+    <collection name="list_output" type="list:list" label="Failed List">
       <!-- Use named regex group to grab pattern
            <identifier_0>_<identifier_1>.fq. Here identifier_0 is the list
            identifier of the outer list and identifier_1 is the list identifier

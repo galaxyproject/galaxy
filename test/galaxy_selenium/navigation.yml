@@ -1,0 +1,415 @@
+# top_level: {global: <components>, workflows: <components>, histories: <components>}
+# components := {<subcomponent_name>: <components>} | <component>
+# component := {selectors: <selectors_map>, labels: <labels_map>, ids: <id_map>}
+# selectors_map := {<selector_name>: <selector>}
+# selector := <str> | {type: <selector_type>, selector: <str>}
+# selector_type := css|xpath|sizzle|id
+# labels_map := {<label_name>: <label>}
+
+_:  # global stuff
+
+  selectors:
+    editable_text: '.editable-text'
+    tooltip_balloon: '.tooltip'
+    left_panel_drag: '#left-panel-drag'
+    left_panel_collapse: '#left-panel-collapse'
+    right_panel_drag: '#right-panel-drag'
+    right_panel_collapse: '#right-panel-collapse'
+
+  messages:
+    selectors:
+      all: '[class*="alert"]'
+      error: '.alert-danger'
+      warning: '.alert-warning'
+      done: '.alert-success'
+      info: '.alert-info'
+      donelarge: '.donemessagelarge'
+      infolarge: '.infomessagelarge'
+
+masthead:
+
+  selectors:
+    _: '#masthead'
+
+    user:
+      type: xpath
+      selector: '//li[@id="user"]'
+
+    user_menu: 'li#user .dropdown-menu'
+    workflow:
+      type: xpath
+      selector: '//li[@id="workflow"]'
+
+    user_email:
+      type: xpath
+      selector: '//a[contains(text(), "Logged in as")]'
+
+    logged_in_only: 'a.loggedin-only'
+
+  labels:
+    # top-level menus
+    analyze: 'Analyze Data'
+    workflow: 'Workflow'
+    shared_data: 'Shared Data'
+    visualization: 'Visualization'
+    help: 'Help'
+    user: 'User'
+    admin: 'Admin'
+
+    # user menu
+    logout: 'Logout'
+    custom_builds: 'Custom Builds'
+    saved_histories: 'Saved Histories'
+
+    # Shared data
+    libraries: 'Data Libraries'
+    published_histories: 'Histories'
+
+history_panel:
+  menu:
+    labels:
+      new: 'Create New'
+
+  item:
+    selectors:
+      _: '#${history_content_type}-${id}'
+
+      title: '${_} .title'
+      hid: '${_} .hid'
+      name: '${_} .name'
+      details: '${_} .details'
+      title_button_area: '${_} .primary-actions'
+      primary_action_buttons: '${_} .actions .left'
+      secondary_action_buttons: '${_} .actions .right'
+      summary: '${_} .summary'
+      blurb: '${_} .blurb .value'
+      dbkey: '${_} .dbkey .value'
+      info: '${_} .info .value'
+      peek: '${_} .dataset-peek'
+
+      # Title buttons...
+      display_button: '${_} .icon-btn.display-btn'
+      edit_button: '${_} .icon-btn.edit-btn'
+      delete_button: '${_} .icon-btn.delete-btn'
+
+      # Action buttons...
+      download_button: '${_} .icon-btn.download-btn'
+      info_button: '${_} .icon-btn.params-btn'
+      rerun_button: '${_} .icon-btn.rerun-btn'
+      nametags: '${_} .nametags .badge-tags'
+
+  multi_operations:
+    selectors:
+      show_button: '#current-history-panel .actions .show-selectors-btn'
+      action_button: '#current-history-panel .list-action-menu .list-action-menu-btn'
+      action_menu: '.list-action-menu ul.dropdown-menu'
+
+    labels:
+      build_pair: "Build Dataset Pair"
+      build_list: "Build Dataset List"
+      build_list_pairs: "Build List of Dataset Pairs"
+      build_from_rules: "Build Collection from Rules"
+
+  collection_view:
+    selectors:
+      _: '.list-panel.dataset-collection-panel'
+      back: '.navigation .back'
+      title: '.dataset-collection-panel .controls .title .editable-text'
+      title_input: '.dataset-collection-panel .controls .title input'
+      subtitle: '.dataset-collection-panel .controls .title .subtitle'
+      elements_warning: '.dataset-collection-panel .controls .elements-warning'
+      tag_area_input: '.controls .tags-display .tags-input input'
+      list_items: '.dataset-collection-panel .list-items .list-item'
+
+  selectors:
+    _: '#current-history-panel'
+    search: '#current-history-panel input.search-query'
+    refresh_button: '#history-refresh-button'
+    name: '.title .name'
+    name_edit_input: '.name input'
+    contents: '#current-history-panel .list-items div.history-content'
+
+    empty_message: '.empty-message'
+    size: '.history-size'
+    tag_icon: '.actions .history-tag-btn'
+    tag_area: '.controls .tags-display'
+    tag_area_input: '.controls .tags-display .tags-input input'
+    annotation_icon: '.actions .history-annotate-btn'
+    annotation_area: '.controls .annotation-display'
+    annotation_editable_text: '.controls .annotation-display .annotation.editable-text'
+    annotation_edit: '.controls .annotation-display .annotation textarea'
+    annotation_done: '.controls .annotation-display .annotation button'
+
+    options_button: '#history-options-button'
+    options_button_icon: '#history-options-button span.fa-cog'
+    options_menu: '#history-options-button-menu'
+    multi_view_button: '#history-view-multi-button'
+
+    pagination_pages: '.list-pagination .pages'
+    pagination_pages_options: '.list-pagination .pages option'
+    pagination_pages_selected_option: '.list-pagination .pages option:checked'
+    pagination_next: '.list-pagination button.next'
+    pagination_previous: '.list-pagination button.prev'
+
+
+  text:
+    tooltip_name: 'Click to rename history'
+    new_name: 'Unnamed history'
+    new_size: '(empty)'
+
+tool_panel:
+
+  selectors:
+    tool_link: 'a[href$$="tool_runner?tool_id=${tool_id}"]'
+    outer_tool_link: '.toolTitleNoSection a[href$$="tool_runner?tool_id=${tool_id}"]'
+
+multi_history_view:
+
+  selectors:
+    _: '.multi-panel-history'
+    current_label: '.current-label'
+    create_new_button: '.create-new'
+    drag_drop_help: '.history-drop-target-help'
+
+history_copy_elements:
+
+  selectors:
+    # Following two don't really work as CSS would only work as jQuery/sizzle I think
+    # since the page is dynamically generated.
+    # https://stackoverflow.com/questions/10645552/is-it-possible-to-use-an-input-value-attribute-as-a-css-selector
+    dataset_checkbox: "input[id='dataset|${id}']"
+    collection_checkbox: 'input[id="dataset_collection|${id}"]'
+    new_history_name: '#new_history_name'
+    copy_button: "input[type='submit']"
+    done_link: '.donemessage a'
+
+collection_builders:
+
+  selectors:
+
+    clear_filters: "a.clear-filters-link"
+    forward_datasets: ".forward-column .column-datasets"
+    reverse_datasets: ".reverse-column .column-datasets"
+
+histories:
+  sharing:
+    selectors:
+      unshare_user_button: '.unshare_user'
+      share_with_a_user_button: '#share_with_a_user'
+      make_accessible_and_publish: '#make_accessible_and_publish'
+    labels:
+      unshare: 'Unshare'
+
+
+login:
+  selectors:
+    form: 'form#login'
+    submit:
+      type: xpath
+      selector: "//button[@name='login']"
+
+registration:
+  selectors:
+    toggle: '#register-toggle'
+    form: 'form#registration'
+    submit:
+      type: xpath
+      selector: "//button[@name='create']"
+
+tool_form:
+  selectors:
+    options: '#options [data-toggle="dropdown"]'
+    execute: 'button#execute'
+    citations: '.citations-formatted'
+    reference: '.citations-formatted .formatted-reference'
+    show_bibtex: 'button.citations-to-bibtex'
+    bibtex_area: 'code.citations-bibtex'
+    parameter_div: 'div.ui-form-element[tour_id="${parameter}"]'
+
+  labels:
+    generate_tour: 'Generate Tour'
+
+workflows:
+
+  selectors:
+    new_button: '#new-workflow'
+    import_button: '#import-workflow'
+
+workflow_run:
+
+  selectors: 
+    input_div: "[step-label='${label}']"
+    input_data_div: "[step-label='${label}'] .select2-container"
+    # TODO: put step labels in the DOM ideally
+    subworkflow_step_icon: ".portlet-title-icon.fa-sitemap + span"
+
+workflow_editor:
+
+  node:
+    selectors:
+      _: "[node-label='${label}']"
+
+      title: '${_} .nodeTitle'
+      destroy: '${_} .node-destroy'
+      clone: '${_} .node-clone'
+
+      output_terminal: "${_} [output-name='${name}']"
+      input_terminal: "${_} [input-name='${name}']"
+
+      input_mapping_icon: "${_} [name='${name}'] .fa-folder-o"
+
+  selectors:
+    canvas_body: '#workflow-canvas-body'
+    canvas_title: '#workflow-canvas-title'
+    edit_name: '#edit-attributes #workflow-name'
+
+    tool_menu: '#workflow-tool-menu'
+    tool_menu_section_link: '#title___workflow__${section_name}__ a span'
+    tool_menu_item_link: 'a#tool-menu-${section_name}-${item_name}'
+
+    connect_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-connected-icon'
+    collapse_icon: 'div.ui-form-element[tour_id="${name}"] .ui-form-collapsible-icon'
+
+    label_input: "[tour_id='__label'] input"
+    annotation_input: "[tour_id='__annotation'] textarea"
+
+    connector_for: "canvas[handle1-id='${source_id}'][handle2-id='${sink_id}']"
+
+    connector_destroy_callout: '.delete-terminal'
+
+tour:
+  popover:
+    selectors:
+      _: '.popover'
+
+      title: '${_} .popover-header'
+      content: '${_} .popover-body'
+      next: '${_} button[data-role="next"]'
+      previous: '${_} button[data-role="prev"]'
+      end: '${_} button[data-role="end"]'
+
+admin:
+
+  index:
+    selectors:
+      datatypes: '#admin-link-datatypes'
+      data_tables: '#admin-link-data-tables'
+      display_applications: '#admin-link-display-applications'
+      jobs: '#admin-link-jobs'
+      local_data: '#admin-link-local-data'
+      users: '#admin-link-users'
+      quotas: '#admin-link-quotas'
+      groups: '#admin-link-groups'
+      roles: '#admin-link-roles'
+      impersonate: '#admin-link-impersonate'
+
+  selectors:
+    # TODO: place betters IDS or something on this in these grids in the DOM
+    datatypes_grid: '#data-types-grid'
+    data_tables_grid: '#data-tables-grid'
+    display_applications_grid: '#display-applications-grid'
+    update_jobs: 'form[name="jobs"]'
+    dm_title: '#data-managers-title'
+    dm_data_managers_card: '#data-managers-card'
+    dm_jobs_button: '#${data_manager}-jobs'
+    dm_jobs_breadcrumb: '#breadcrumb'
+    dm_jobs_table: '#jobs-table'
+    dm_job: '#job-${job_id}'
+    dm_job_breadcrumb: '#breadcrumb'
+    dm_job_data_manager_card: '#data-manager-card'
+    dm_job_data_card: '#data-card-${hda_index}'
+    dm_table_button: '#${data_table}-table'
+    dm_table_card: '#data-table-card'
+    users_grid: '#users-grid'
+    users_grid_create_button: '.manage-table-actions .action-button'
+    groups_grid_create_button: '.manage-table-actions .action-button'
+    registration_form: 'form#registration'
+    groups_grid: '#groups-grid'
+    roles_grid: '#roles-grid'
+    groups_create_view: '#create-group'
+
+libraries:
+
+  selectors:
+    _: .library_style_container
+
+  folder:
+    selectors:
+      add_items_button: '.add-library-items-datasets'
+      add_items_menu: '.add-library-items-datasets .dropdown-menu'
+      add_items_options: '.add-library-items-datasets .dropdown-menu li a'
+
+      add_folder: '.add-library-items-folder'
+
+      add_to_history: '.add-to-history'
+      add_to_history_datasets: '.add-to-history-datasets'
+      add_to_history_collection: '.add-to-history-collection'
+      # TODO: Most of these aren't very good selectors but the same DOM elements
+      # are reused without adding specific classes, IDs, or roles to anything.
+      import_modal: '.modal'
+      import_datasets_ok_button: '.modal-footer .buttons #button-0'
+      import_datasets_cancel_button: '.modal-footer .buttons #button-1'
+      import_progress_bar: '.progress-bar-import'
+      import_history_content: '.library_selected_history_content'
+      import_history_contents_items: '.library_selected_history_content ul li'
+      import_from_path_textarea: '#import_paths'
+      select_all: '#select-all-checkboxes'
+
+    labels:
+      from_history: 'from History'
+      from_path: 'from Path'
+
+  dataset:
+    selectors:
+      table: '.dataset_table'
+      table_rows: '.dataset_table table tbody tr'
+
+published_grids:
+  selectors:
+    search: '#input-free-text-search-filter'
+
+gies:
+  jupyter:
+    selectors:
+      body: 'body.notebook_app'
+      trusted_notification: '#notification_trusted'
+
+  selectors:
+    spinner: 'img#spinner'
+    iframe: 'body iframe[seamless="seamless"]'
+
+upload:
+  selectors:
+    tab: '#tab-title-link-${tab}'
+    start: '.upload-button'
+    rule_source_content: 'textarea.upload-rule-source-content'
+    rule_select_data_type: '.rule-data-type'
+    rule_select_input_type: '.rule-select-type'
+    rule_dataset_selector: '.upload-rule-option .dataset-selector'
+
+rule_builder:
+  selectors:
+    _: '.rule-collection-creator'
+    menu_button_filter: '.rule-menu-filter-button'
+    menu_button_rules: '.rule-menu-rules-button'
+    menu_button_column: '.rule-menu-column-button'
+    menu_item_rule_type: '.rule-link-${rule_type}'
+    rule_editor: '.rule-edit-${rule_type}'
+    rule_editor_ok: '.rule-editor-ok'
+    add_mapping_menu: '.rule-add-mapping'
+    add_mapping_button: '.rule-add-mapping-${mapping_type}'
+    mapping_edit: '.rule-map-${mapping_type} .select2-container'
+    mapping_remove_column: '.rule-map-${mapping_type} .rule-column-selector-target-remove'
+    mapping_add_column: '.rule-map-${mapping_type} .rule-column-selector-target-add'
+    mapping_ok: '.rule-mapping-ok'
+    main_button_ok: '.rule-btn-okay'
+    collection_name_input: 'input.collection-name'
+    view_source: '.rule-builder-view-source'
+    source: '.rule-source'
+    table: '#hot-table .htCore'
+    extension_select: '.rule-footer-extension-group .extension-select'
+
+charts:
+  selectors:
+    visualize_button: '.ui-portlet .button i.fa-line-chart'  # without icon - it waits on other buttons that aren't visible, need more specific class
+    viewport_canvas: 'svg.charts-viewport-canvas'

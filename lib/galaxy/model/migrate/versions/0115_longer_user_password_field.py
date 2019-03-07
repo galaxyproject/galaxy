@@ -13,7 +13,7 @@ def upgrade(migrate_engine):
     user = Table('galaxy_user', meta, autoload=True)
     try:
         user.c.password.alter(type=String(255))
-    except:
+    except Exception:
         log.exception("Altering password column failed")
 
 

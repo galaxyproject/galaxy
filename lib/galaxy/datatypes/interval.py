@@ -3,7 +3,6 @@ Interval datatypes
 """
 import logging
 import math
-import os
 import sys
 import tempfile
 
@@ -14,13 +13,13 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
     get_headers,
     iter_headers
 )
 from galaxy.datatypes.tabular import Tabular
 from galaxy.datatypes.util.gff_util import parse_gff3_attributes, parse_gff_attributes
 from galaxy.web import url_for
-
 from . import (
     data,
     dataproviders
@@ -52,6 +51,7 @@ VIEWPORT_MAX_READS_PER_LINE = 10
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Interval(Tabular):
     """Tab delimited data containing interval information"""
     edam_data = "data_3002"
@@ -100,42 +100,38 @@ class Interval(Tabular):
                     else:
                         # Header lines in Interval files are optional. For example, BED is Interval but has no header.
                         # We'll make a best guess at the location of the metadata columns.
-                        metadata_is_set = False
                         elems = line.split('\t')
                         if len(elems) > 2:
-                            for str in data.col1_startswith:
-                                if line.lower().startswith(str):
-                                    if overwrite or not dataset.metadata.element_is_set('chromCol'):
-                                        dataset.metadata.chromCol = 1
-                                    try:
-                                        int(elems[1])
-                                        if overwrite or not dataset.metadata.element_is_set('startCol'):
-                                            dataset.metadata.startCol = 2
-                                    except:
-                                        pass  # Metadata default will be used
-                                    try:
-                                        int(elems[2])
-                                        if overwrite or not dataset.metadata.element_is_set('endCol'):
-                                            dataset.metadata.endCol = 3
-                                    except:
-                                        pass  # Metadata default will be used
-                                    # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
-                                    # we will still guess at the strand, as we can make a more educated guess
-                                    # if len( elems ) > 3:
-                                    #    try:
-                                    #        int( elems[3] )
-                                    #    except:
-                                    #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
-                                    #            dataset.metadata.nameCol = 4
-                                    if len(elems) < 6 or elems[5] not in data.valid_strand:
-                                        if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                            dataset.metadata.strandCol = 0
-                                    else:
-                                        if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                            dataset.metadata.strandCol = 6
-                                    metadata_is_set = True
-                                    break
-                        if metadata_is_set or (i - empty_line_count) > num_check_lines:
+                            if overwrite or not dataset.metadata.element_is_set('chromCol'):
+                                dataset.metadata.chromCol = 1
+                            try:
+                                int(elems[1])
+                                if overwrite or not dataset.metadata.element_is_set('startCol'):
+                                    dataset.metadata.startCol = 2
+                            except Exception:
+                                pass  # Metadata default will be used
+                            try:
+                                int(elems[2])
+                                if overwrite or not dataset.metadata.element_is_set('endCol'):
+                                    dataset.metadata.endCol = 3
+                            except Exception:
+                                pass  # Metadata default will be used
+                            # we no longer want to guess that this column is the 'name', name must now be set manually for interval files
+                            # we will still guess at the strand, as we can make a more educated guess
+                            # if len( elems ) > 3:
+                            #    try:
+                            #        int( elems[3] )
+                            #    except Exception:
+                            #        if overwrite or not dataset.metadata.element_is_set( 'nameCol' ):
+                            #            dataset.metadata.nameCol = 4
+                            if len(elems) < 6 or elems[5] not in data.valid_strand:
+                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    dataset.metadata.strandCol = 0
+                            else:
+                                if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                    dataset.metadata.strandCol = 6
+                            break
+                        if (i - empty_line_count) > num_check_lines:
                             break  # Our metadata is set or we examined 100 non-empty lines, so break out of the outer loop
                 else:
                     empty_line_count += 1
@@ -149,7 +145,7 @@ class Interval(Tabular):
                 and dataset.metadata.chromCol \
                 and dataset.metadata.startCol \
                 and dataset.metadata.endCol
-        except:
+        except Exception:
             return False
 
     def get_estimated_display_viewport(self, dataset, chrom_col=None, start_col=None, end_col=None):
@@ -214,32 +210,31 @@ class Interval(Tabular):
 
     def as_ucsc_display_file(self, dataset, **kwd):
         """Returns file contents with only the bed data"""
-        fd, temp_name = tempfile.mkstemp()
-        c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
-        c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
-        if t >= 0:  # strand column (should) exists
-            for i, elems in enumerate(util.file_iter(dataset.file_name)):
-                strand = "+"
-                name = "region_%i" % i
-                if n >= 0 and n < len(elems):
-                    name = elems[n]
-                if t < len(elems):
-                    strand = elems[t]
-                tmp = [elems[c], elems[s], elems[e], name, '0', strand]
-                os.write(fd, '%s\n' % '\t'.join(tmp))
-        elif n >= 0:  # name column (should) exists
-            for i, elems in enumerate(util.file_iter(dataset.file_name)):
-                name = "region_%i" % i
-                if n >= 0 and n < len(elems):
-                    name = elems[n]
-                tmp = [elems[c], elems[s], elems[e], name]
-                os.write(fd, '%s\n' % '\t'.join(tmp))
-        else:
-            for elems in util.file_iter(dataset.file_name):
-                tmp = [elems[c], elems[s], elems[e]]
-                os.write(fd, '%s\n' % '\t'.join(tmp))
-        os.close(fd)
-        return open(temp_name)
+        with tempfile.NamedTemporaryFile(delete=False) as fh:
+            c, s, e, t, n = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol or 0, dataset.metadata.nameCol or 0
+            c, s, e, t, n = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1, int(n) - 1
+            if t >= 0:  # strand column (should) exists
+                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                    strand = "+"
+                    name = "region_%i" % i
+                    if n >= 0 and n < len(elems):
+                        name = elems[n]
+                    if t < len(elems):
+                        strand = elems[t]
+                    tmp = [elems[c], elems[s], elems[e], name, '0', strand]
+                    fh.write('%s\n' % '\t'.join(tmp))
+            elif n >= 0:  # name column (should) exists
+                for i, elems in enumerate(util.file_iter(dataset.file_name)):
+                    name = "region_%i" % i
+                    if n >= 0 and n < len(elems):
+                        name = elems[n]
+                    tmp = [elems[c], elems[s], elems[e], name]
+                    fh.write('%s\n' % '\t'.join(tmp))
+            else:
+                for elems in util.file_iter(dataset.file_name):
+                    tmp = [elems[c], elems[s], elems[e]]
+                    fh.write('%s\n' % '\t'.join(tmp))
+            return open(fh.name, 'rb')
 
     def display_peek(self, dataset):
         """Returns formated html of peek"""
@@ -280,28 +275,27 @@ class Interval(Tabular):
         errors = list()
         c, s, e, t = dataset.metadata.chromCol, dataset.metadata.startCol, dataset.metadata.endCol, dataset.metadata.strandCol
         c, s, e, t = int(c) - 1, int(s) - 1, int(e) - 1, int(t) - 1
-        infile = open(dataset.file_name, "r")
-        reader = GenomicIntervalReader(
-            infile,
-            chrom_col=c,
-            start_col=s,
-            end_col=e,
-            strand_col=t)
+        with open(dataset.file_name, "r") as infile:
+            reader = GenomicIntervalReader(
+                infile,
+                chrom_col=c,
+                start_col=s,
+                end_col=e,
+                strand_col=t)
 
-        while True:
-            try:
-                next(reader)
-            except ParseError as e:
-                errors.append(e)
-            except StopIteration:
-                infile.close()
-                return errors
+            while True:
+                try:
+                    next(reader)
+                except ParseError as e:
+                    errors.append(e)
+                except StopIteration:
+                    return errors
 
     def repair_methods(self, dataset):
         """Return options for removing errors along with a description"""
         return [("lines", "Remove erroneous lines")]
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checks for 'intervalness'
 
@@ -316,26 +310,23 @@ class Interval(Tabular):
         >>> Interval().sniff( fname )
         True
         """
+        found_valid_lines = False
         try:
-            """
-            If we got here, we already know the file is_column_based and is not bed,
-            so we'll just look for some valid data.
-            """
-            headers = iter_headers(filename, '\t', comment_designator='#')
+            headers = iter_headers(file_prefix, '\t', comment_designator='#')
+            # If we got here, we already know the file is_column_based and is not bed,
+            # so we'll just look for some valid data.
             for hdr in headers:
                 if hdr:
                     if len(hdr) < 3:
                         return False
-                    try:
-                        # Assume chrom start and end are in column positions 1 and 2
-                        # respectively ( for 0 based columns )
-                        int(hdr[1])
-                        int(hdr[2])
-                    except:
-                        return False
-            return True
-        except:
+                    # Assume chrom start and end are in column positions 1 and 2
+                    # respectively ( for 0 based columns )
+                    int(hdr[1])
+                    int(hdr[2])
+                    found_valid_lines = True
+        except Exception:
             return False
+        return found_valid_lines
 
     def get_track_resolution(self, dataset, start, end):
         return None
@@ -376,7 +367,7 @@ class BedGraph(Interval):
             Returns file contents as is with no modifications.
             TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
         """
-        return open(dataset.file_name)
+        return open(dataset.file_name, 'rb')
 
     def get_estimated_display_viewport(self, dataset, chrom_col=0, start_col=1, end_col=2):
         """
@@ -408,26 +399,20 @@ class Bed(Interval):
         i = 0
         if dataset.has_data():
             for i, line in enumerate(open(dataset.file_name)):
-                metadata_set = False
                 line = line.rstrip('\r\n')
                 if line and not line.startswith('#'):
                     elems = line.split('\t')
                     if len(elems) > 2:
-                        for startswith in data.col1_startswith:
-                            if line.lower().startswith(startswith):
-                                if len(elems) > 3:
-                                    if overwrite or not dataset.metadata.element_is_set('nameCol'):
-                                        dataset.metadata.nameCol = 4
-                                if len(elems) < 6:
-                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                        dataset.metadata.strandCol = 0
-                                else:
-                                    if overwrite or not dataset.metadata.element_is_set('strandCol'):
-                                        dataset.metadata.strandCol = 6
-                                metadata_set = True
-                                break
-                if metadata_set:
-                    break
+                        if len(elems) > 3:
+                            if overwrite or not dataset.metadata.element_is_set('nameCol'):
+                                dataset.metadata.nameCol = 4
+                        if len(elems) < 6:
+                            if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                dataset.metadata.strandCol = 0
+                        else:
+                            if overwrite or not dataset.metadata.element_is_set('strandCol'):
+                                dataset.metadata.strandCol = 6
+                        break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
     def as_ucsc_display_file(self, dataset, **kwd):
@@ -458,17 +443,17 @@ class Bed(Interval):
                                         fields2 = fields[11].rstrip(",").split(",")  # remove trailing comma and split on comma
                                         for field in fields2:
                                             int(field)
-            except:
+            except Exception:
                 return Interval.as_ucsc_display_file(self, dataset)
             # only check first line for proper form
             break
 
         try:
-            return open(dataset.file_name)
-        except:
+            return open(dataset.file_name, 'rb')
+        except Exception:
             return "This item contains no content"
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checks for 'bedness'
 
@@ -485,92 +470,91 @@ class Bed(Interval):
         >>> fname = get_test_fname( 'test_tab.bed' )
         >>> Bed().sniff( fname )
         True
-        >>> fname = get_test_fname( 'interval1.bed' )
+        >>> fname = get_test_fname( 'interv1.bed' )
         >>> Bed().sniff( fname )
         True
         >>> fname = get_test_fname( 'complete.bed' )
         >>> Bed().sniff( fname )
         True
         """
-        if not get_headers(filename, '\t', comment_designator='#', count=1):
+        if not get_headers(file_prefix, '\t', comment_designator='#', count=1):
             return False
         try:
-            headers = iter_headers(filename, '\t', comment_designator='#')
+            headers = iter_headers(file_prefix, '\t', comment_designator='#')
             for hdr in headers:
                 if hdr[0] == '':
                     continue
-                valid_col1 = False
                 if len(hdr) < 3 or len(hdr) > 12:
                     return False
-                for str in data.col1_startswith:
-                    if hdr[0].lower().startswith(str):
-                        valid_col1 = True
-                        break
-                if valid_col1:
-                    try:
-                        int(hdr[1])
-                        int(hdr[2])
-                    except:
-                        return False
-                    if len(hdr) > 4:
-                        # hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
-                        # hdr[4] is an int, 'score', a score between 0 and 1000.
-                        try:
-                            if int(hdr[4]) < 0 or int(hdr[4]) > 1000:
-                                return False
-                        except:
-                            return False
-                    if len(hdr) > 5:
-                        # hdr[5] is strand
-                        if hdr[5] not in data.valid_strand:
-                            return False
-                    if len(hdr) > 6:
-                        # hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
-                        try:
-                            int(hdr[6])
-                        except:
-                            return False
-                    if len(hdr) > 7:
-                        # hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
-                        try:
-                            int(hdr[7])
-                        except:
-                            return False
-                    if len(hdr) > 8:
-                        # hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
-                        try:
-                            int(hdr[8])
-                        except:
-                            try:
-                                hdr[8].split(',')
-                            except:
-                                return False
-                    if len(hdr) > 9:
-                        # hdr[9] is blockCount, the number of blocks (exons) in the BED line.
-                        try:
-                            block_count = int(hdr[9])
-                        except:
-                            return False
-                    if len(hdr) > 10:
-                        # hdr[10] is blockSizes - A comma-separated list of the block sizes.
-                        # Sometimes the blosck_sizes and block_starts lists end in extra commas
-                        try:
-                            block_sizes = hdr[10].rstrip(',').split(',')
-                        except:
-                            return False
-                    if len(hdr) > 11:
-                        # hdr[11] is blockStarts - A comma-separated list of block starts.
-                        try:
-                            block_starts = hdr[11].rstrip(',').split(',')
-                        except:
-                            return False
-                        if len(block_sizes) != block_count or len(block_starts) != block_count:
-                            return False
-                else:
+                try:
+                    int(hdr[1])
+                    int(hdr[2])
+                except Exception:
                     return False
+                if len(hdr) > 4:
+                    # hdr[3] is a string, 'name', which defines the name of the BED line - difficult to test for this.
+                    # hdr[4] is an int, 'score', a score between 0 and 1000.
+                    try:
+                        if int(hdr[4]) < 0 or int(hdr[4]) > 1000:
+                            return False
+                    except Exception:
+                        return False
+                if len(hdr) > 5:
+                    # hdr[5] is strand
+                    if hdr[5] not in data.valid_strand:
+                        return False
+                if len(hdr) > 6:
+                    # hdr[6] is thickStart, the starting position at which the feature is drawn thickly.
+                    try:
+                        int(hdr[6])
+                    except Exception:
+                        return False
+                if len(hdr) > 7:
+                    # hdr[7] is thickEnd, the ending position at which the feature is drawn thickly
+                    try:
+                        int(hdr[7])
+                    except Exception:
+                        return False
+                if len(hdr) > 8:
+                    # hdr[8] is itemRgb, an RGB value of the form R,G,B (e.g. 255,0,0).  However, this could also be an int (e.g., 0)
+                    try:
+                        int(hdr[8])
+                    except Exception:
+                        try:
+                            hdr[8].split(',')
+                        except Exception:
+                            return False
+                if len(hdr) > 9:
+                    # hdr[9] is blockCount, the number of blocks (exons) in the BED line.
+                    try:
+                        block_count = int(hdr[9])
+                    except Exception:
+                        return False
+                if len(hdr) > 10:
+                    # hdr[10] is blockSizes - A comma-separated list of the block sizes.
+                    # Sometimes the blosck_sizes and block_starts lists end in extra commas
+                    try:
+                        block_sizes = hdr[10].rstrip(',').split(',')
+                    except Exception:
+                        return False
+                if len(hdr) > 11:
+                    # hdr[11] is blockStarts - A comma-separated list of block starts.
+                    try:
+                        block_starts = hdr[11].rstrip(',').split(',')
+                    except Exception:
+                        return False
+                    if len(block_sizes) != block_count or len(block_starts) != block_count:
+                        return False
             return True
-        except:
+        except Exception:
             return False
+
+
+class ProBed(Bed):
+    """Tab delimited data in proBED format - adaptation of BED for proteomics data."""
+    edam_format = "format_3827"
+    file_ext = "probed"
+    column_names = ['Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'ThickStart', 'ThickEnd', 'ItemRGB', 'BlockCount', 'BlockSizes', 'BlockStarts', 'ProteinAccession', 'PeptideSequence', 'Uniqueness', 'GenomeReferenceVersion', 'PsmScore', 'Fdr', 'Modifications', 'Charge', 'ExpMassToCharge', 'CalcMassToCharge', 'PsmRank', 'DatasetID', 'Uri']
 
 
 class BedStrict(Bed):
@@ -616,7 +600,7 @@ class Bed12(BedStrict):
     file_ext = "bed12"
 
 
-class _RemoteCallMixin:
+class _RemoteCallMixin(object):
     def _get_remote_call_url(self, redirect_url, site_name, dataset, type, app, base_url):
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes
@@ -632,6 +616,7 @@ class _RemoteCallMixin:
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Gff(Tabular, _RemoteCallMixin):
     """Tab delimited data in Gff format"""
     edam_data = "data_1255"
@@ -678,15 +663,15 @@ class Gff(Tabular, _RemoteCallMixin):
                                 # Try int.
                                 int(value)
                                 value_type = "int"
-                            except:
+                            except ValueError:
                                 try:
                                     # Try float.
                                     float(value)
                                     value_type = "float"
-                                except:
+                                except ValueError:
                                     pass
                             attribute_types[name] = value_type
-                    except:
+                    except Exception:
                         pass
                 if i + 1 == num_lines:
                     break
@@ -708,7 +693,7 @@ class Gff(Tabular, _RemoteCallMixin):
                         int(elems[3])
                         int(elems[4])
                         break
-                    except:
+                    except Exception:
                         pass
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
@@ -771,7 +756,7 @@ class Gff(Tabular, _RemoteCallMixin):
                                     # Make sure we have not spanned chromosomes
                                     start = min(start, int(elems[3]))
                                     stop = max(stop, int(elems[4]))
-                    except:
+                    except Exception:
                         # most likely start/stop is not an int or not enough fields
                         pass
                     # make sure we are at the next new line
@@ -819,7 +804,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in gff format
 
@@ -828,17 +813,17 @@ class Gff(Tabular, _RemoteCallMixin):
         For complete details see http://genome.ucsc.edu/FAQ/FAQformat#format3
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'gff_version_3.gff' )
+        >>> fname = get_test_fname('gff.gff3')
         >>> Gff().sniff( fname )
         False
-        >>> fname = get_test_fname( 'test.gff' )
+        >>> fname = get_test_fname('test.gff')
         >>> Gff().sniff( fname )
         True
         """
-        if len(get_headers(filename, '\t', count=2)) < 2:
+        if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(filename, '\t')
+            headers = iter_headers(file_prefix, '\t')
             for hdr in headers:
                 if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
                     return False
@@ -848,19 +833,19 @@ class Gff(Tabular, _RemoteCallMixin):
                     try:
                         int(hdr[3])
                         int(hdr[4])
-                    except:
+                    except Exception:
                         return False
                     if hdr[5] != '.':
                         try:
                             float(hdr[5])
-                        except:
+                        except Exception:
                             return False
                     if hdr[6] not in data.valid_strand:
                         return False
                     if hdr[7] not in self.valid_gff_frame:
                         return False
             return True
-        except:
+        except Exception:
             return False
 
     # ------------- Dataproviders
@@ -919,13 +904,13 @@ class Gff3(Gff):
                     try:
                         start = int(elems[3])
                         valid_start = True
-                    except:
+                    except Exception:
                         if elems[3] == '.':
                             valid_start = True
                     try:
                         end = int(elems[4])
                         valid_end = True
-                    except:
+                    except Exception:
                         if elems[4] == '.':
                             valid_end = True
                     strand = elems[6]
@@ -934,7 +919,7 @@ class Gff3(Gff):
                         break
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in GFF version 3 format
 
@@ -963,14 +948,14 @@ class Gff3(Gff):
         >>> fname = get_test_fname( 'test.gtf' )
         >>> Gff3().sniff( fname )
         False
-        >>> fname = get_test_fname('gff_version_3.gff')
+        >>> fname = get_test_fname('gff.gff3')
         >>> Gff3().sniff( fname )
         True
         """
-        if len(get_headers(filename, '\t', count=2)) < 2:
+        if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(filename, '\t')
+            headers = iter_headers(file_prefix, '\t')
             for hdr in headers:
                 if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('3') >= 0:
                     return True
@@ -982,18 +967,18 @@ class Gff3(Gff):
                         return False
                     try:
                         int(hdr[3])
-                    except:
+                    except Exception:
                         if hdr[3] != '.':
                             return False
                     try:
                         int(hdr[4])
-                    except:
+                    except Exception:
                         if hdr[4] != '.':
                             return False
                     if hdr[5] != '.':
                         try:
                             float(hdr[5])
-                        except:
+                        except Exception:
                             return False
                     if hdr[6] not in self.valid_gff3_strand:
                         return False
@@ -1001,7 +986,7 @@ class Gff3(Gff):
                         return False
                     parse_gff3_attributes(hdr[8])
             return True
-        except:
+        except Exception:
             return False
 
 
@@ -1017,7 +1002,7 @@ class Gtf(Gff):
     MetadataElement(name="column_types", default=['str', 'str', 'str', 'int', 'int', 'float', 'str', 'int', 'list'],
                     param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in gtf format
 
@@ -1042,10 +1027,10 @@ class Gtf(Gff):
         >>> Gtf().sniff( fname )
         True
         """
-        if len(get_headers(filename, '\t', count=2)) < 2:
+        if len(get_headers(file_prefix, '\t', count=2)) < 2:
             return False
         try:
-            headers = iter_headers(filename, '\t')
+            headers = iter_headers(file_prefix, '\t')
             for hdr in headers:
                 if hdr and hdr[0].startswith('##gff-version') and hdr[0].find('2') < 0:
                     return False
@@ -1055,12 +1040,12 @@ class Gtf(Gff):
                     try:
                         int(hdr[3])
                         int(hdr[4])
-                    except:
+                    except Exception:
                         return False
                     if hdr[5] != '.':
                         try:
                             float(hdr[5])
-                        except:
+                        except Exception:
                             return False
                     if hdr[6] not in data.valid_strand:
                         return False
@@ -1077,11 +1062,12 @@ class Gtf(Gff):
                     else:
                         return False
             return True
-        except:
+        except Exception:
             return False
 
 
 @dataproviders.decorators.has_dataproviders
+@build_sniff_from_prefix
 class Wiggle(Tabular, _RemoteCallMixin):
     """Tab delimited data in wiggle format"""
     edam_format = "format_3005"
@@ -1140,7 +1126,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                                     start = min(int(fields[0]), start)
                                     end = max(end, int(fields[0]) + span)
                                 viewport_feature_count -= 1
-                    except:
+                    except Exception:
                         pass
                     # make sure we are at the next new line
                     readline_count = VIEWPORT_MAX_READS_PER_LINE
@@ -1197,16 +1183,14 @@ class Wiggle(Tabular, _RemoteCallMixin):
             if line and not line.startswith('#'):
                 elems = line.split('\t')
                 try:
-                    float(elems[0])  # "Wiggle track data values can be integer or real, positive or negative values"
+                    # variableStep format is nucleotide position\tvalue\n,
+                    # fixedStep is value\n
+                    # "Wiggle track data values can be integer or real, positive or negative values"
+                    float(elems[0])
                     break
-                except:
-                    do_break = False
-                    for col_startswith in data.col1_startswith:
-                        if elems[0].lower().startswith(col_startswith):
-                            do_break = True
-                            break
-                    if do_break:
-                        break
+                except Exception:
+                    # We are either in the track definition line or in a declaration line
+                    pass
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             # we'll arbitrarily only use the first 100 data lines in this wig file to calculate tabular attributes (column types)
             # this should be sufficient, except when we have mixed wig track types (bed, variable, fixed),
@@ -1215,7 +1199,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
             max_data_lines = 100
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i, max_data_lines=max_data_lines)
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines wether the file is in wiggle format
 
@@ -1231,7 +1215,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         For complete details see http://genome.ucsc.edu/goldenPath/help/wiggle.html
 
         >>> from galaxy.datatypes.sniff import get_test_fname
-        >>> fname = get_test_fname( 'interval1.bed' )
+        >>> fname = get_test_fname( 'interv1.bed' )
         >>> Wiggle().sniff( fname )
         False
         >>> fname = get_test_fname( 'wiggle.wig' )
@@ -1239,12 +1223,12 @@ class Wiggle(Tabular, _RemoteCallMixin):
         True
         """
         try:
-            headers = iter_headers(filename, None)
+            headers = iter_headers(file_prefix, None)
             for hdr in headers:
                 if len(hdr) > 1 and hdr[0] == 'track' and hdr[1].startswith('type=wiggle'):
                     return True
             return False
-        except:
+        except Exception:
             return False
 
     def get_track_resolution(self, dataset, start, end):
@@ -1269,7 +1253,8 @@ class Wiggle(Tabular, _RemoteCallMixin):
         return dataproviders.dataset.WiggleDataProvider(dataset_source, **settings)
 
 
-class CustomTrack (Tabular):
+@build_sniff_from_prefix
+class CustomTrack(Tabular):
     """UCSC CustomTrack"""
     edam_format = "format_3588"
     file_ext = "customtrack"
@@ -1357,7 +1342,7 @@ class CustomTrack (Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Determines whether the file is in customtrack format.
 
@@ -1374,7 +1359,8 @@ class CustomTrack (Tabular):
         >>> CustomTrack().sniff( fname )
         True
         """
-        headers = iter_headers(filename, None)
+        headers = iter_headers(file_prefix, None)
+        found_at_least_one_track = False
         first_line = True
         for hdr in headers:
             if first_line:
@@ -1394,7 +1380,7 @@ class CustomTrack (Tabular):
                             return False
                     else:
                         return False
-                except:
+                except Exception:
                     return False
             else:
                 try:
@@ -1404,11 +1390,12 @@ class CustomTrack (Tabular):
                         try:
                             int(hdr[1])
                             int(hdr[2])
-                        except:
+                        except Exception:
                             return False
-                except:
+                        found_at_least_one_track = True
+                except Exception:
                     return False
-        return True
+        return found_at_least_one_track
 
 
 class ENCODEPeak(Interval):
@@ -1464,6 +1451,7 @@ class ChromatinInteractions(Interval):
         return False
 
 
+@build_sniff_from_prefix
 class ScIdx(Tabular):
     """
     ScIdx files are 1-based and consist of strand-specific coordinate counts.
@@ -1489,60 +1477,55 @@ class ScIdx(Tabular):
         # line of the dataset displays them.
         self.column_names = ['chrom', 'index', 'forward', 'reverse', 'value']
 
-    def sniff(self, filename):
+    def sniff_prefix(self, file_prefix):
         """
         Checks for 'scidx-ness.'
         """
-        try:
-            count = 0
-            fh = open(filename, "r")
-            while True:
-                line = fh.readline()
-                if not line:
-                    # EOF
-                    if count > 1:
-                        # The second line is always the labels:
-                        # chrom index forward reverse value
-                        # We need at least the column labels and a data line.
-                        return True
-                    return False
-                line = line.strip()
-                # The first line is always a comment like this:
-                # 2015-11-23 20:18:56.51;input.bam;READ1
-                if count == 0:
-                    if line.startswith('#'):
-                        count += 1
-                        continue
-                    else:
-                        return False
-                # Skip first line.
+        count = 0
+        fh = file_prefix.string_io()
+        while True:
+            line = fh.readline()
+            if not line:
+                # EOF
                 if count > 1:
-                    items = line.split('\t')
-                    if len(items) != 5:
-                        return False
-                    index = items[1]
-                    if not index.isdigit():
-                        return False
-                    forward = items[2]
-                    if not forward.isdigit():
-                        return False
-                    reverse = items[3]
-                    if not reverse.isdigit():
-                        return False
-                    value = items[4]
-                    if not value.isdigit():
-                        return False
-                    if int(forward) + int(reverse) != int(value):
-                        return False
-                if count == 100:
+                    # The second line is always the labels:
+                    # chrom index forward reverse value
+                    # We need at least the column labels and a data line.
                     return True
-                count += 1
-            if count < 100 and count > 0:
+                return False
+            line = line.strip()
+            # The first line is always a comment like this:
+            # 2015-11-23 20:18:56.51;input.bam;READ1
+            if count == 0:
+                if line.startswith('#'):
+                    count += 1
+                    continue
+                else:
+                    return False
+            # Skip first line.
+            if count > 1:
+                items = line.split('\t')
+                if len(items) != 5:
+                    return False
+                index = items[1]
+                if not index.isdigit():
+                    return False
+                forward = items[2]
+                if not forward.isdigit():
+                    return False
+                reverse = items[3]
+                if not reverse.isdigit():
+                    return False
+                value = items[4]
+                if not value.isdigit():
+                    return False
+                if int(forward) + int(reverse) != int(value):
+                    return False
+            if count == 100:
                 return True
-        except:
-            return False
-        finally:
-            fh.close()
+            count += 1
+        if count < 100 and count > 0:
+            return True
         return False
 
 

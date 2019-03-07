@@ -23,7 +23,7 @@ def __main__():
         chr_col = int(sys.argv[5].strip()) - 1
         start_col = int(sys.argv[6].strip()) - 1
         end_col = int(sys.argv[7].strip()) - 1
-    except:
+    except Exception:
         print("You appear to be missing metadata. You can specify your metadata by clicking on the pencil icon associated with your interval file.", file=sys.stderr)
         sys.exit()
     summary = sys.argv[8].strip()
@@ -35,7 +35,7 @@ def __main__():
     mafIndexFile = "%s/maf_index.loc" % sys.argv[9]
     try:
         maf_index_filename = sys.argv[10].strip()
-    except:
+    except Exception:
         maf_index_filename = None
     index = index_filename = None
     if maf_source_type == "user":

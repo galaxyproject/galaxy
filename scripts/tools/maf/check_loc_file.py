@@ -1,11 +1,15 @@
 # Dan Blankenberg
 # This script checks maf_index.loc file for inconsistencies between what is listed as available and what is really available.
 # Make sure that required dependencies (e.g. galaxy_root/lib) are included in your PYTHONPATH
-import bx.align.maf
-from galaxy.tools.util import maf_utilities
+from __future__ import print_function
+
 import sys
 
-assert sys.version_info[:2] >= (2, 4)
+import bx.align.maf
+
+from galaxy.tools.util import maf_utilities
+
+assert sys.version_info[:2] >= (2, 6)
 
 
 def __main__():
@@ -37,19 +41,19 @@ def __main__():
             # indexed species
             for spec in indexed_for_species:
                 if spec not in species_indexed_in_maf:
-                    print "Line %i, %s claims to be indexed for %s, but indexes do not exist." % (i, uid, spec)
+                    print("Line %i, %s claims to be indexed for %s, but indexes do not exist." % (i, uid, spec))
             for spec in species_indexed_in_maf:
                 if spec not in indexed_for_species:
-                    print "Line %i, %s is indexed for %s, but is not listed in loc file." % (i, uid, spec)
+                    print("Line %i, %s is indexed for %s, but is not listed in loc file." % (i, uid, spec))
             # existing species
             for spec in species_exist:
                 if spec not in species_found_in_maf:
-                    print "Line %i, %s claims to have blocks for %s, but was not found in MAF files." % (i, uid, spec)
+                    print("Line %i, %s claims to have blocks for %s, but was not found in MAF files." % (i, uid, spec))
             for spec in species_found_in_maf:
                 if spec not in species_exist:
-                    print "Line %i, %s contains %s, but is not listed in loc file." % (i, uid, spec)
+                    print("Line %i, %s contains %s, but is not listed in loc file." % (i, uid, spec))
         except Exception as e:
-            print "Line %i is invalid: %s" % (i, e)
+            print("Line %i is invalid: %s" % (i, e))
 
 
 if __name__ == "__main__":

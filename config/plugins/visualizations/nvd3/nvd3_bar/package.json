@@ -1,0 +1,27 @@
+{
+    "name": "nvd3",
+    "version": "0.1.0",
+    "description": "NVD3 visualization plugin.",
+    "keywords": [
+        "galaxy",
+        "visualization",
+        "d3"
+    ],
+    "license": "AFL-3.0",
+    "dependencies": {
+        "babel-preset-env": "^1.6.1",
+        "backbone": "^1.3.3",
+        "bootstrap": "^3.3.7",
+        "d3": "^3.4.5",
+        "jquery": "^3.3.1",
+        "nvd3": "^1.8.6",
+        "parcel-bundler": "^1.4.1",
+        "underscore": "^1.8.3"
+    },
+    "scripts": {
+        "build": "parcel build src/nvd3.js -d static"
+    },
+    "devDependencies": {
+        "babel-core": "^6.26.3"
+    }
+}

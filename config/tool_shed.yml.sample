@@ -2,21 +2,86 @@ uwsgi:
 
   # The address and port on which to listen.  By default, only listen to
   # localhost (tool_shed will not be accessible over the network).  Use
-  # '0.0.0.0' to listen on all available network interfaces.
+  # ':9009' to listen on all available network interfaces.
   http: 127.0.0.1:9009
 
-  threads: 8
+  # By default uWSGI allocates a very small buffer (4096 bytes) for the
+  # headers of each request. If you start receiving "invalid request
+  # block size" in your logs, it could mean you need a bigger buffer. We
+  # recommend at least 16384.
+  buffer-size: 16384
 
-  http-raw-body: True
+  # Number of web server (worker) processes to fork after the
+  # application has loaded. If this is set to greater than 1, thunder-
+  # lock likely should be enabled below.
+  processes: 1
 
-  offload-threads: 8
+  # Number of threads for each web server process.
+  threads: 4
 
+  # Number of threads for serving static content and handling internal
+  # routing requests.
+  offload-threads: 2
+
+  # Mapping to serve style content.
+  static-map: /static/style=static/style/blue
+
+  # Mapping to serve the remainder of the static content.
+  static-map: /static=static
+
+  # Mapping to serve the favicon.
+  static-map: /favicon.ico=static/favicon.ico
+
+  # Enable the master process manager. Disabled by default for maximum
+  # compatibility with CTRL+C, but should be enabled for use with
+  # --daemon and/or production deployments.
+  master: false
+
+  # Path to the application's Python virtual environment. If using Conda
+  # for Galaxy's framework dependencies (not tools!), do not set this.
+  virtualenv: .venv
+
+  # Path to the application's Python library.
+  pythonpath: lib
+
+  # The entry point which returns the web application (e.g. Galaxy,
+  # Reports, etc.) that you are loading.
   module: galaxy.webapps.tool_shed.buildapp:uwsgi_app()
+
+  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
+  # URL prefix. Cannot be used together with 'module:' above.
+  #mount: /galaxy=galaxy.webapps.galaxy.buildapp:uwsgi_app()
+
+  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to mount-
+  # points. Set this to true if a URL prefix is used.
+  manage-script-name: false
+
+  # It is usually a good idea to set this to ``true`` if processes is
+  # greater than 1.
+  thunder-lock: false
+
+  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
+  # (its default is to brutally reload workers)
+  die-on-term: true
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGINT (its default is to brutally kill workers)
+  hook-master-start: unix_signal:2 gracefully_kill_them_all
+
+  # Cause uWSGI to gracefully reload workers and mules upon receipt of
+  # SIGTERM (its default is to brutally kill workers)
+  hook-master-start: unix_signal:15 gracefully_kill_them_all
+
+  # Feature necessary for proper mule signal handling
+  py-call-osafterfork: true
+
+  # Ensure application threads will run if `threads` is unset.
+  enable-threads: true
 
 tool_shed:
 
   # Verbosity of console log messages.  Acceptable values can be found
-  # here: https://docs.python.org/2/library/logging.html#logging-levels
+  # here: https://docs.python.org/library/logging.html#logging-levels
   #log_level: DEBUG
 
   # By default, the Tool Shed uses a SQLite database at
@@ -24,17 +89,16 @@ tool_shed:
   # string to specify an external database instead.  This string takes
   # many options which are explained in detail in the config file
   # documentation.
-  #database_connection: sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE
+  #database_connection: 'sqlite:///./database/community.sqlite?isolation_level=IMMEDIATE'
 
   # Where the hgweb.config file is stored. The default is the Galaxy
   # installation directory.
-  #hgweb_config_dir: None
+  #hgweb_config_dir: null
 
-  # Where tool shed repositories are stored.
+  # Where Tool Shed repositories are stored.
   #file_path: database/community_files
 
-  # Temporary storage for additional datasets, this should be shared
-  # through the cluster
+  # Where temporary files are stored.
   #new_file_path: database/tmp
 
   # File containing old-style genome builds
@@ -43,10 +107,9 @@ tool_shed:
   # Format string used when showing date and time information. The
   # string may contain: - the directives used by Python time.strftime()
   # function (see
-  # https://docs.python.org/2/library/time.html#time.strftime ), -
-  # $locale (complete format string for the server locale), - $iso8601
-  # (complete format string as specified by ISO 8601 international
-  # standard).
+  # https://docs.python.org/library/time.html#time.strftime ), - $locale
+  # (complete format string for the server locale), - $iso8601 (complete
+  # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
   # -- Repository and Tool search Using the script located at
@@ -54,7 +117,7 @@ tool_shed:
   # allow full text API searching over the repositories and tools within
   # the Tool Shed given that you specify the following two config
   # options.
-  #toolshed_search_on: True
+  #toolshed_search_on: true
 
   # -- Repository and Tool search Using the script located at
   # scripts/build_ts_whoosh_index.py you can generate search index and
@@ -95,7 +158,7 @@ tool_shed:
 
   # You can enter tracking code here to track visitor's behavior through
   # your Google Analytics account. Example: UA-XXXXXXXX-Y
-  #ga_code: None
+  #ga_code: null
 
   # The Tool Shed encodes various internal values when these values will
   # be output in some format (for example, in a URL or cookie).  You
@@ -103,16 +166,17 @@ tool_shed:
   # decodes these values.  It can be any string.  If left unchanged,
   # anyone could construct a cookie that would grant them access to
   # others' sessions. One simple way to generate a value for this is
-  # with the shell command:   python -c 'import time; print time.time()'
-  # | md5sum | cut -f 1 -d ' '
+  # with the shell command:   python -c 'from __future__ import
+  # print_function; import time; print(time.time())' | md5sum | cut -f 1
+  # -d ' '
   #id_secret: changethisinproductiontoo
 
   # User authentication can be delegated to an upstream proxy server
   # (usually Apache).  The upstream proxy should set a REMOTE_USER
   # header in the request. Enabling remote user disables regular logins.
-  # For more information, see:
-  # https://wiki.galaxyproject.org/Admin/Config/ApacheProxy
-  #use_remote_user: False
+  # For more information, see: https://galaxyproject.org/admin/config
+  # /apache-external-user-auth/
+  #use_remote_user: false
 
   # If use_remote_user is enabled, anyone who can log in to the Galaxy
   # host may impersonate any other user by simply sending the
@@ -122,71 +186,100 @@ tool_shed:
   # header 'GX_SECRET' that is identical the one below
   #remote_user_secret: changethisinproductiontoo
 
+  # If use_remote_user is enabled and your external authentication
+  # method just returns bare usernames, set a default mail domain to be
+  # appended to usernames, to become your Galaxy usernames (email
+  # addresses).
+  #remote_user_maildomain: null
+
+  # If use_remote_user is enabled, the header that the upstream proxy
+  # provides the remote username in defaults to HTTP_REMOTE_USER (the
+  # 'HTTP_' is prepended by WSGI).  This option allows you to change the
+  # header.  Note, you still need to prepend 'HTTP_' to the header in
+  # this option, but your proxy server should *not* include 'HTTP_' at
+  # the beginning of the header name.
+  #remote_user_header: HTTP_REMOTE_USER
+
+  # If use_remote_user is enabled, you can set this to a URL that will
+  # log your users out.
+  #remote_user_logout_href: null
+
   # Configuration for debugging middleware
-  #debug: False
+  #debug: false
 
   # Check for WSGI compliance.
-  #use_lint: False
+  #use_lint: false
+
+  # Intercept print statements and show them on the returned page.
+  #use_printdebug: true
 
   # NEVER enable this on a public site (even test or QA)
-  #use_interactive: True
+  #use_interactive: false
 
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
   # the Admin section of the server, and will have access to create
   # users, groups, roles, libraries, and more.
-  #admin_users: None
+  #admin_users: null
 
   # Force everyone to log in (disable anonymous access)
-  #require_login: False
+  #require_login: false
 
-  # For use by email messages sent from the tool shed
+  # Allow unregistered users to create new accounts (otherwise, they
+  # will have to be created by an admin).
+  #allow_user_creation: true
+
+  # Allow administrators to delete accounts.
+  #allow_user_deletion: false
+
+  # For use by email messages sent from the Tool Shed.
   #smtp_server: smtp.your_tool_shed_server
 
-  # For use by email messages sent from the tool shed
+  # For use by email messages sent from the Tool Shed.
   #email_from: your_tool_shed_email@server
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_username: None
+  #smtp_username: null
 
   # If your SMTP server requires a username and password, you can
   # provide them here (password in cleartext here, but if your server
   # supports STARTTLS it will be sent over the network encrypted).
-  #smtp_password: None
+  #smtp_password: null
 
   # If your SMTP server requires SSL from the beginning of the
   # connection
-  #smtp_ssl: False
+  #smtp_ssl: false
 
   # The URL linked by the "Support" link in the "Help" menu.
-  #support_url: https://wiki.galaxyproject.org/Support
+  #support_url: 'https://galaxyproject.org/support/'
 
   # Address to join mailing list
   #mailing_join_addr: galaxy-announce-join@bx.psu.edu
 
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk  space rapidly!)
-  #use_heartbeat: True
+  #use_heartbeat: true
 
   # Profiling middleware (cProfile based)
-  #use_profile: True
+  #use_profile: true
 
   # Enable creation of Galaxy flavor Docker Image
-  #enable_galaxy_flavor_docker_image: False
+  #enable_galaxy_flavor_docker_image: false
 
   # Show a message box under the masthead.
-  #message_box_visible: False
+  #message_box_visible: false
 
   # Show a message box under the masthead.
-  #message_box_content: None
+  #message_box_content: null
 
-  # Show a message box under the masthead.
+  # Class of the message box under the masthead. Possible values are:
+  # 'info' (the default), 'warning', 'error', 'done'.
   #message_box_class: info
 
   # Serving static files (needed if running standalone)
-  #static_enabled: True
+  #static_enabled: true
 
   # Serving static files (needed if running standalone)
   #static_cache_time: 360
@@ -205,4 +298,92 @@ tool_shed:
 
   # Serving static files (needed if running standalone)
   #static_style_dir: static/style/blue
+
+  # Enables GDPR Compliance mode. This makes several changes to the way
+  # Galaxy logs and exposes data externally such as removing
+  # emails/usernames from logs and bug reports.  You are responsible for
+  # removing personal data from backups.  Please read the GDPR section
+  # under the special topics area of the admin documentation.
+  #enable_beta_gdpr: false
+
+  # For help on configuring the Advanced proxy features, see:
+  # https://docs.galaxyproject.org/en/master/admin/production.html
+  # Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.
+  # Set this to True to inform Galaxy that mod_xsendfile is enabled
+  # upstream.
+  #apache_xsendfile: false
+
+  # The same download handling can be done by nginx using X-Accel-
+  # Redirect.  This should be set to the path defined in the nginx
+  # config as an internal redirect with access to Galaxy's data files
+  # (see documentation linked above).
+  #nginx_x_accel_redirect_base: null
+
+  # This value overrides the action set on the file upload form, e.g.
+  # the web path where the nginx_upload_module has been configured to
+  # intercept upload requests.
+  #nginx_upload_path: null
+
+  # E-mail domains blacklist is used for filtering out users that are
+  # using disposable email address during the registration.  If their
+  # address domain matches any domain in the blacklist, they are refused
+  # the registration.
+  #blacklist_file: config/disposable_email_blacklist.conf
+
+  # Append "/{brand}" to the "Galaxy" text in the masthead.
+  #brand: null
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_type: file
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_data_dir: database/citations/data
+
+  # Citation related caching.  Tool citations information maybe fetched
+  # from external sources such as https://doi.org/ by Galaxy - the
+  # following parameters can be used to control the caching used to
+  # store this information.
+  #citation_cache_lock_dir: database/citations/lock
+
+  # When running multiple Tool Shed instances under separate URL
+  # prefixes on a single hostname, you will want to set this to the same
+  # path as the prefix set in the uWSGI "mount" configuration option
+  # above. This value becomes the "path" attribute set in the cookie so
+  # the cookies from one instance will not clobber those from another.
+  #cookie_path: null
+
+  # Turn on logging of user actions to the database.  Actions currently
+  # logged are grid views, tool searches, and use of "recently" used
+  # tools menu.  The log_events and log_actions functionality will
+  # eventually be merged.
+  #log_actions: true
+
+  # Password expiration period (in days). Users are required to change
+  # their password every x days. Users will be redirected to the change
+  # password screen when they log in after their password expires. Enter
+  # 0 to disable password expiration.
+  #password_expiration_period: 0
+
+  # Log to Sentry Sentry is an open source logging and error aggregation
+  # platform.  Setting sentry_dsn will enable the Sentry middleware and
+  # errors will be sent to the indicated sentry instance.  This
+  # connection string is available in your sentry instance under
+  # <project_name> -> Settings -> API Keys.
+  #sentry_dsn: null
+
+  # Galaxy Session Timeout This provides a timeout (in minutes) after
+  # which a user will have to log back in. A duration of 0 disables this
+  # feature.
+  #session_duration: 0
+
+  # The URL linked by the "Terms and Conditions" link in the "Help"
+  # menu, as well as on the user registration and login forms and in the
+  # activation emails.
+  #terms_url: null
 

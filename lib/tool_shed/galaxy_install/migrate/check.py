@@ -55,11 +55,10 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
         if not app.config.running_functional_tests:
             if tool_shed_accessible:
                 # Automatically update the value of the migrate_tools.version database table column.
-                config_arg = ''
+                cmd = ['sh', 'manage_db.sh', 'upgrade', 'tools']
                 if galaxy_config_file:
-                    config_arg = " -c %s" % galaxy_config_file
-                cmd = 'sh manage_tools.sh%s upgrade' % config_arg
-                proc = subprocess.Popen(args=cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                    cmd[2:2] = ['-c', galaxy_config_file]
+                proc = subprocess.Popen(args=cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
                 return_code = proc.wait()
                 output = proc.stdout.read(32768)
                 if return_code != 0:
@@ -80,8 +79,8 @@ def verify_tools(app, url, galaxy_config_file=None, engine_options={}):
                     msg += "be removed from your file%s named %s.\n\n" % (plural, tool_panel_config_file_names)
                     msg += "CRITICAL NOTE IF YOU PLAN TO INSTALL\n"
                     msg += "The location in which the tool repositories will be installed is the value of the 'tool_path' attribute in the <tool>\n"
-                    msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="../shed_tools">).  The default location\n'
-                    msg += "setting is '../shed_tools', which may be problematic for some cluster environments, so make sure to change it before\n"
+                    msg += 'tag of the file named ./migrated_tool_conf.xml (i.e., <toolbox tool_path="database/shed_tools">).  The default location\n'
+                    msg += "setting is 'database/shed_tools', which may be problematic for some cluster environments, so make sure to change it before\n"
                     msg += "you execute the installation process if appropriate.  The configured location must be outside of the Galaxy installation\n"
                     msg += "directory or it must be in a sub-directory protected by a properly configured .hgignore file if the directory is within\n"
                     msg += "the Galaxy installation directory hierarchy.  This is because tool shed repositories will be installed using mercurial's\n"

@@ -9,19 +9,21 @@ A sharable Galaxy object:
     can be published effectively making it available to all other Users
     can be rated
 """
+import logging
+import re
 
 from sqlalchemy import true
-import re
+
 from galaxy import exceptions
+from galaxy.managers import (
+    annotatable,
+    base,
+    ratable,
+    secured,
+    taggable,
+    users
+)
 
-from galaxy.managers import base
-from galaxy.managers import secured
-from galaxy.managers import taggable
-from galaxy.managers import annotatable
-from galaxy.managers import ratable
-from galaxy.managers import users
-
-import logging
 log = logging.getLogger(__name__)
 
 
@@ -57,7 +59,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         Return true if this sharable belongs to `user` (or `user` is an admin).
         """
         # ... effectively a good fit to have this here, but not semantically
-        if self.user_manager.is_admin(user):
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
             return True
         return item.user == user
 
@@ -242,7 +244,7 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
         """
         Returns true if `slug` is valid.
         """
-        VALID_SLUG_RE = re.compile("^[a-z0-9\-]+$")
+        VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
         return VALID_SLUG_RE.match(slug)
 
     def _existing_set_of_slugs(self, user):
@@ -257,9 +259,9 @@ class SharableModelManager(base.ModelManager, secured.OwnableManagerMixin, secur
 
     def _slugify(self, start_with):
         # Replace whitespace with '-'
-        slug_base = re.sub("\s+", "-", start_with)
+        slug_base = re.sub(r"\s+", "-", start_with)
         # Remove all non-alphanumeric characters.
-        slug_base = re.sub("[^a-zA-Z0-9\-]", "", slug_base)
+        slug_base = re.sub(r"[^a-zA-Z0-9\-]", "", slug_base)
         # Remove trailing '-'.
         if slug_base.endswith('-'):
             slug_base = slug_base[:-1]
@@ -316,14 +318,25 @@ class SharableModelSerializer(base.ModelSerializer,
     # TODO: stub
     SINGLE_CHAR_ABBR = None
 
+    def __init__(self, app, **kwargs):
+        super(SharableModelSerializer, self).__init__(app, **kwargs)
+        self.add_view('sharing', [
+            'id',
+            'title',
+            'importable',
+            'published',
+            'username_and_slug',
+            'users_shared_with'
+        ])
+
     def add_serializers(self):
         super(SharableModelSerializer, self).add_serializers()
         taggable.TaggableSerializerMixin.add_serializers(self)
         annotatable.AnnotatableSerializerMixin.add_serializers(self)
         ratable.RatableSerializerMixin.add_serializers(self)
-
         self.serializers.update({
-            'user_id'           : self.serialize_id,
+            'id'                : self.serialize_id,
+            'title'             : self.serialize_title,
             'username_and_slug' : self.serialize_username_and_slug,
             'users_shared_with' : self.serialize_users_shared_with
         })
@@ -332,8 +345,14 @@ class SharableModelSerializer(base.ModelSerializer,
             'importable', 'published', 'slug'
         ])
 
+    def serialize_title(self, item, key, **context):
+        if hasattr(item, "title"):
+            return item.title
+        elif hasattr(item, "name"):
+            return item.name
+
     def serialize_username_and_slug(self, item, key, **context):
-        if not (item.user and item.slug and self.SINGLE_CHAR_ABBR):
+        if not (item.user and item.user.username and item.slug and self.SINGLE_CHAR_ABBR):
             return None
         return ('/').join(('u', item.user.username, self.SINGLE_CHAR_ABBR, item.slug))
 

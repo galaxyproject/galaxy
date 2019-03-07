@@ -735,10 +735,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
     def reset_all_metadata_on_repository_in_tool_shed(self):
         """Reset all metadata on a single repository in a tool shed."""
         log.debug("Resetting all metadata on repository: %s" % self.repository.name)
-        repo = hg_util.get_repo_for_repository(self.app,
-                                               repository=None,
-                                               repo_path=self.repository.repo_path(self.app),
-                                               create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repository=self.repository)
         # The list of changeset_revisions refers to repository_metadata records that have been created
         # or updated.  When the following loop completes, we'll delete all repository_metadata records
         # for this repository that do not have a changeset_revision value in this list.
@@ -809,8 +806,6 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         # Set tool version information for all downloadable changeset revisions.  Get the list of changeset
         # revisions from the changelog.
         self.reset_all_tool_versions(repo)
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        self.app.tool_data_tables.data_tables = {}
 
     def reset_all_tool_versions(self, repo):
         """Reset tool version lineage for those changeset revisions that include valid tools."""
@@ -884,7 +879,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         log.debug("Successfully reset metadata on repository %s owned by %s" %
                             (str(repository.name), str(repository.user.username)))
                         successful_count += 1
-                except:
+                except Exception:
                     log.exception("Error attempting to reset metadata on repository %s", str(repository.name))
                     unsuccessful_count += 1
             message = "Successfully reset metadata on %d %s.  " % \
@@ -910,7 +905,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         status = 'done'
         encoded_id = self.app.security.encode_id(self.repository.id)
         repo_dir = self.repository.repo_path(self.app)
-        repo = hg_util.get_repo_for_repository(self.app, repository=None, repo_path=repo_dir, create=False)
+        repo = hg_util.get_repo_for_repository(self.app, repo_path=repo_dir)
         self.generate_metadata_for_changeset_revision()
         if self.metadata_dict:
             repository_metadata = None
@@ -989,8 +984,6 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                                                                    self.repository,
                                                                    self.metadata_dict)
             status = 'error'
-        # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        self.app.tool_data_tables.data_tables = {}
         return message, status
 
     def set_repository_metadata_due_to_new_tip(self, host, content_alert_str=None, **kwd):

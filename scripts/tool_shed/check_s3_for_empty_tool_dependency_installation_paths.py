@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import argparse
 import os
 import sys
@@ -23,15 +25,15 @@ class BucketList(object):
 
     def display_empty_installation_paths(self):
         for empty_installation_path in self.empty_installation_paths:
-            print empty_installation_path
+            print(empty_installation_path)
 
     def delete_empty_installation_paths(self):
-        print 'Deleting empty installation paths.'
+        print('Deleting empty installation paths.')
         for empty_installation_path in self.empty_installation_paths:
             # Get all keys in the S3 bucket that start with the installation path, and delete each one.
             for path_to_delete in self.bucket.list(prefix=empty_installation_path):
                 self.bucket.delete_key(path_to_delete.key)
-                print 'Deleted empty path %s' % str(empty_installation_path)
+                print('Deleted empty path %s' % empty_installation_path)
 
     def get_tool_dependency_install_paths(self):
         found_paths = []
@@ -92,22 +94,22 @@ def main(args):
         if args.s3passwd is not None and os.path.exists(args.s3passwd):
             awsid, secret = open(args.s3passwd, 'r').read().rstrip('\n').split(':')
         else:
-            print 'Amazon ID and secret not provided, and no s3passwd file found.'
+            print('Amazon ID and secret not provided, and no s3passwd file found.')
             return 1
     else:
         awsid = args.id
         secret = args.secret
     dependency_cleaner = BucketList(awsid, secret, args.bucket)
     if len(dependency_cleaner.empty_installation_paths) == 0:
-        print 'No empty installation paths found, exiting.'
+        print('No empty installation paths found, exiting.')
         return 0
-    print 'The following %d tool dependency installation paths were found to be empty or contain only the file %s.' % \
-        (len(dependency_cleaner.empty_installation_paths), INSTALLATION_LOG)
+    print('The following %d tool dependency installation paths were found to be empty or contain only the file %s.' %
+        (len(dependency_cleaner.empty_installation_paths), INSTALLATION_LOG))
     if asbool(args.delete):
         dependency_cleaner.delete_empty_installation_paths()
     else:
         for empty_installation_path in dependency_cleaner.empty_installation_paths:
-            print empty_installation_path
+            print(empty_installation_path)
     return 0
 
 

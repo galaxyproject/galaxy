@@ -1,18 +1,20 @@
 """
 API operations on annotations.
 """
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesStoredWorkflowMixin
-from galaxy.model.item_attrs import UsesAnnotations
-
-from galaxy import managers
-
-from galaxy import exceptions
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.util import sanitize_html
-
 import logging
+
+from galaxy import (
+    exceptions,
+    managers
+)
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    UsesStoredWorkflowMixin
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -34,7 +36,7 @@ class BaseAnnotationsController(BaseAPIController, UsesStoredWorkflowMixin, Uses
         if item is not None:
             new_annotation = payload.get("text")
             # TODO: sanitize on display not entry
-            new_annotation = sanitize_html.sanitize_html(new_annotation, 'utf-8', 'text/html')
+            new_annotation = sanitize_html(new_annotation)
 
             self.add_item_annotation(trans.sa_session, trans.get_user(), item, new_annotation)
             trans.sa_session.flush()

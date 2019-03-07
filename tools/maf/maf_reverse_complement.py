@@ -23,7 +23,7 @@ def __main__():
 
     try:
         maf_writer = bx.align.maf.Writer(open(output_file, 'w'))
-    except:
+    except Exception:
         print(sys.stderr, "Unable to open output file")
         sys.exit()
     try:
@@ -33,7 +33,7 @@ def __main__():
             if species:
                 maf = maf.limit_to_species(species)
             maf_writer.write(maf)
-    except:
+    except Exception:
         print("Your MAF file appears to be malformed.", file=sys.stderr)
         sys.exit()
     print("%i regions were reverse complemented." % count)

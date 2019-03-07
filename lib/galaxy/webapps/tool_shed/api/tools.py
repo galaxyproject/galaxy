@@ -1,22 +1,26 @@
 import json
 import logging
 from collections import namedtuple
-from galaxy import web
-from galaxy import util
+
+from galaxy import (
+    exceptions,
+    util,
+    web
+)
 from galaxy.tools.parameters import params_to_strings
+from galaxy.tools.repositories import ValidationContext
 from galaxy.web import _future_expose_api_raw_anonymous_and_sessionless as expose_api_raw_anonymous_and_sessionless
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.webapps.tool_shed.search.tool_search import ToolSearch
-from galaxy.exceptions import NotImplemented
-from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.exceptions import ConfigDoesNotAllowException
 from tool_shed.dependencies.repository import relation_builder
 from tool_shed.tools import tool_validator
+from tool_shed.util import (
+    common_util,
+    metadata_util,
+    repository_util,
+    shed_util_common as suc
+)
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
-from tool_shed.util import common_util
-from tool_shed.util import repository_util
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import metadata_util
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +58,7 @@ class ToolsController(BaseAPIController):
         """
         q = kwd.get('q', '')
         if not q:
-            raise NotImplemented('Listing of all the tools is not implemented. Provide parameter "q" to search instead.')
+            raise exceptions.NotImplemented('Listing of all the tools is not implemented. Provide parameter "q" to search instead.')
         else:
             page = kwd.get('page', 1)
             page_size = kwd.get('page_size', 10)
@@ -62,7 +66,7 @@ class ToolsController(BaseAPIController):
                 page = int(page)
                 page_size = int(page_size)
             except ValueError:
-                raise RequestParameterInvalidException('The "page" and "page_size" have to be integers.')
+                raise exceptions.RequestParameterInvalidException('The "page" and "page_size" have to be integers.')
             return_jsonp = util.asbool(kwd.get('jsonp', False))
             callback = kwd.get('callback', 'callback')
             search_results = self._search(trans, q, page, page_size)
@@ -82,12 +86,12 @@ class ToolsController(BaseAPIController):
         """
         conf = self.app.config
         if not conf.toolshed_search_on:
-            raise ConfigDoesNotAllowException('Searching the TS through the API is turned off for this instance.')
+            raise exceptions.ConfigDoesNotAllowException('Searching the TS through the API is turned off for this instance.')
         if not conf.whoosh_index_dir:
-            raise ConfigDoesNotAllowException('There is no directory for the search index specified. Please contact the administrator.')
+            raise exceptions.ConfigDoesNotAllowException('There is no directory for the search index specified. Please contact the administrator.')
         search_term = q.strip()
         if len(search_term) < 3:
-            raise RequestParameterInvalidException('The search term has to be at least 3 characters long.')
+            raise exceptions.RequestParameterInvalidException('The search term has to be at least 3 characters long.')
 
         tool_search = ToolSearch()
 
@@ -156,11 +160,12 @@ class ToolsController(BaseAPIController):
             trans.response.status = 404
             return {'status': 'error', 'message': message}
 
-        tv = tool_validator.ToolValidator(trans.app)
-        repository, tool, message = tv.load_tool_from_changeset_revision(tsr_id,
-                                                                         changeset,
-                                                                         found_tool.tool_config)
-        if message:
+        with ValidationContext.from_app(trans.app) as validation_context:
+            tv = tool_validator.ToolValidator(validation_context)
+            repository, tool, valid, message = tv.load_tool_from_changeset_revision(tsr_id,
+                                                                                    changeset,
+                                                                                    found_tool.tool_config)
+        if message or not valid:
             status = 'error'
             return dict(message=message, status=status)
         tool_help = ''

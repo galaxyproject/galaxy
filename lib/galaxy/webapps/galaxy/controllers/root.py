@@ -1,21 +1,30 @@
 """
 Contains the main interface in the Universe class
 """
-import cgi
-import os
-import urllib
-
-from paste.httpexceptions import HTTPNotFound, HTTPBadGateway
-
-from galaxy import web
-from galaxy import util
-from galaxy.util import listify, Params, string_as_bool, FILENAME_VALID_CHARS
-
-from galaxy.web.base import controller
-from galaxy.model.item_attrs import UsesAnnotations
-from galaxy import managers
+from __future__ import absolute_import
 
 import logging
+import os
+
+import requests
+from webob.compat import cgi_FieldStorage
+from webob.exc import (
+    HTTPBadGateway,
+    HTTPNotFound
+)
+
+from galaxy import (
+    managers,
+    web
+)
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.util import (
+    FILENAME_VALID_CHARS,
+    listify,
+    string_as_bool
+)
+from galaxy.web.base import controller
+
 log = logging.getLogger(__name__)
 
 
@@ -37,33 +46,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         raise HTTPNotFound('This link may not be followed from within Galaxy.')
 
-    def _get_extended_config(self, trans):
-        app = trans.app
-        user_requests = bool(trans.user and (trans.user.requests or app.security_agent.get_accessible_request_types(trans, trans.user)))
-        config = {
-            'active_view'                   : 'analysis',
-            'enable_cloud_launch'           : app.config.get_bool('enable_cloud_launch', False),
-            # TODO: next two should be redundant - why can't we build one from the other?
-            'toolbox'                       : app.toolbox.to_dict(trans, in_panel=False),
-            'toolbox_in_panel'              : app.toolbox.to_dict(trans),
-            'message_box_visible'           : app.config.message_box_visible,
-            'show_inactivity_warning'       : app.config.user_activation_on and trans.user and not trans.user.active,
-            # TODO: move to user
-            'user_requests'                 : user_requests
-        }
-
-        # TODO: move to user
-        stored_workflow_menu_entries = config['stored_workflow_menu_entries'] = []
-        for menu_item in getattr(trans.user, 'stored_workflow_menu_entries', []):
-            stored_workflow_menu_entries.append({
-                'encoded_stored_workflow_id': trans.security.encode_id(menu_item.stored_workflow_id),
-                'stored_workflow': {
-                    'name': util.unicodify(menu_item.stored_workflow.name)
-                }
-            })
-
-        return config
-
     @web.expose
     def index(self, trans, tool_id=None, workflow_id=None, history_id=None, m_c=None, m_a=None, **kwd):
         """
@@ -83,11 +65,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         If m_c and m_a are present, the center panel will be loaded using the
         controller and action as a url: (e.g. 'user/dbkeys').
         """
-        if trans.app.config.require_login and self.user_manager.is_anonymous(trans.user):
-            # TODO: this doesn't properly redirect when login is done
-            # (see webapp __ensure_logged_in_user for the initial redirect - not sure why it doesn't redirect to login?)
-            login_url = web.url_for(controller="root", action="login")
-            trans.response.send_redirect(login_url)
+
+        self._check_require_login(trans)
 
         # if a history_id was sent, attempt to switch to that history
         history = trans.history
@@ -96,12 +75,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             history = self.history_manager.get_owned(unencoded_id, trans.user)
             trans.set_history(history)
 
-        # index/analysis needs an extended configuration
-        js_options = self._get_js_options(trans)
-        config = js_options['config']
-        config.update(self._get_extended_config(trans))
-
-        return self.template(trans, 'analysis', options=js_options)
+        return self._bootstrapped_client(trans)
 
     @web.expose
     def login(self, trans, redirect=None, **kwd):
@@ -110,8 +84,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         return self.template(trans, 'login',
                              redirect=redirect,
-                             # TODO: move into config
-                             openid_providers=[p.name for p in trans.app.openid_providers],
                              # an installation may have it's own welcome_url - show it here if they've set that
                              welcome_url=web.url_for(controller='root', action='welcome'),
                              show_welcome_with_login=trans.app.config.show_welcome_with_login)
@@ -144,7 +116,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if len(query) > 2:
             search_results = trans.app.toolbox_search.search(query)
             if 'tags[]' in kwd:
-                results = filter(lambda x: x in results, search_results)
+                results = [x for x in search_results if x in results]
             else:
                 results = search_results
         return results
@@ -181,7 +153,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         if hid is not None:
             try:
                 hid = int(hid)
-            except:
+            except ValueError:
                 return "hid '%s' is invalid" % str(hid)
             history = trans.get_history()
             for dataset in history.datasets:
@@ -195,7 +167,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 id = self.decode_id(encoded_id)
             try:
                 data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-            except:
+            except Exception:
                 return "Dataset id '%s' is invalid" % str(id)
         if data:
             current_user_roles = trans.get_current_user_roles()
@@ -211,32 +183,13 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     trans.response.headers["Content-Disposition"] = 'attachment; filename="GalaxyHistoryItem-%s-[%s]%s"' % (data.hid, fname, toext)
                 trans.log_event("Display dataset id: %s" % str(id))
                 try:
-                    return open(data.file_name)
-                except:
+                    return open(data.file_name, 'rb')
+                except Exception:
                     return "This dataset contains no content"
             else:
                 return "You are not allowed to access this dataset"
         else:
             return "No dataset with id '%s'" % str(id)
-
-    @web.expose
-    def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
-        """Returns child data directly into the browser, based upon parent_id and designation.
-        """
-        # TODO: unencoded id
-        try:
-            data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(parent_id)
-            if data:
-                child = data.get_child_by_designation(designation)
-                if child:
-                    current_user_roles = trans.get_current_user_roles()
-                    if trans.app.security_agent.can_access_dataset(current_user_roles, child):
-                        return self.display(trans, id=child.id, tofile=tofile, toext=toext)
-                    else:
-                        return "You are not privileged to access this dataset."
-        except Exception:
-            pass
-        return "A child named %s could not be found for data %s" % (designation, parent_id)
 
     @web.expose
     def display_as(self, trans, id=None, display_app=None, **kwd):
@@ -262,20 +215,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 return "You are not allowed to access this dataset."
         else:
             return "No data with id=%d" % id
-
-    @web.expose
-    def peek(self, trans, id=None):
-        """Returns a 'peek' at the data.
-        """
-        # TODO: unused?
-        # TODO: unencoded id
-        data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
-        if data:
-            yield "<html><body><pre>"
-            yield data.peek
-            yield "</pre></body></html>"
-        else:
-            yield "No data with id=%d" % id
 
     # ---- History management -----------------------------------------------
     @web.expose
@@ -320,7 +259,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 association = trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation) \
                                               .filter_by(session_id=galaxy_session.id, history_id=new_history.id) \
                                               .first()
-            except:
+            except Exception:
                 association = None
             new_history.add_galaxy_session(galaxy_session, association=association)
             trans.sa_session.add(new_history)
@@ -340,7 +279,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                 association = trans.sa_session.query(trans.app.model.GalaxySessionToHistoryAssociation) \
                                               .filter_by(session_id=galaxy_session.id, history_id=new_history.id) \
                                               .first()
-            except:
+            except Exception:
                 association = None
             new_history.add_galaxy_session(galaxy_session, association=association)
             trans.sa_session.add(new_history)
@@ -408,42 +347,6 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             return trans.show_error_message("Adding File to History has Failed")
 
     @web.expose
-    def history_set_default_permissions(self, trans, id=None, **kwd):
-        """Sets the permissions on a history.
-        """
-        # TODO: unencoded id
-        if trans.user:
-            if 'update_roles_button' in kwd:
-                history = None
-                if id:
-                    try:
-                        id = int(id)
-                    except:
-                        id = None
-                    if id:
-                        history = trans.sa_session.query(trans.app.model.History).get(id)
-                if not history:
-                    # If we haven't retrieved a history, use the current one
-                    history = trans.get_history()
-                p = Params(kwd)
-                permissions = {}
-                for k, v in trans.app.model.Dataset.permitted_actions.items():
-                    in_roles = p.get(k + '_in', [])
-                    if not isinstance(in_roles, list):
-                        in_roles = [in_roles]
-                    in_roles = [trans.sa_session.query(trans.app.model.Role).get(x) for x in in_roles]
-                    permissions[trans.app.security_agent.get_action(v.action)] = in_roles
-                dataset = 'dataset' in kwd
-                bypass_manage_permission = 'bypass_manage_permission' in kwd
-                trans.app.security_agent.history_set_default_permissions(history, permissions,
-                                                                         dataset=dataset, bypass_manage_permission=bypass_manage_permission)
-                return trans.show_ok_message('Default history permissions have been changed.')
-            return trans.fill_template('history/permissions.mako')
-        else:
-            # user not logged in, history group must be only public
-            return trans.show_error_message("You must be logged in to change a history's default permissions.")
-
-    @web.expose
     def dataset_make_primary(self, trans, id=None):
         """Copies a dataset and makes primary.
         """
@@ -458,7 +361,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             trans.sa_session.add(new_data)
             trans.sa_session.flush()
             return trans.show_message("<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'])
-        except:
+        except Exception:
             return trans.show_error_message("<p>Failed to make secondary dataset primary.</p>")
 
     @web.expose
@@ -470,8 +373,8 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
     def bucket_proxy(self, trans, bucket=None, **kwd):
         if bucket:
             trans.response.set_content_type('text/xml')
-            b_list_xml = urllib.urlopen('http://s3.amazonaws.com/%s/' % bucket)
-            return b_list_xml.read()
+            b_list_xml = requests.get('http://s3.amazonaws.com/%s/' % bucket)
+            return b_list_xml.text
         raise Exception("You must specify a bucket")
 
     # ---- Debug methods ----------------------------------------------------
@@ -484,7 +387,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             rval += "%s: %s <br/>" % (k, trans.request.headers[k])
         for k in kwd:
             rval += "%s: %s <br/>" % (k, kwd[k])
-            if isinstance(kwd[k], cgi.FieldStorage):
+            if isinstance(kwd[k], cgi_FieldStorage):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
 
@@ -504,7 +407,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
                     rval[k] = string_as_bool(rval[k])
                 rval[k] = float(rval[k])
                 rval[k] = int(rval[k])
-            except:
+            except Exception:
                 pass
         return rval
 
@@ -521,7 +424,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
         """
         try:
             code = int(code)
-        except Exception:
+        except ValueError:
             code = 500
 
         if code == 502:

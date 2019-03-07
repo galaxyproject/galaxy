@@ -9,11 +9,14 @@ LMOD @ Github: https://github.com/TACC/Lmod
 import logging
 from os import getenv
 from os.path import exists
-from subprocess import PIPE, Popen
+from subprocess import (
+    PIPE,
+    Popen
+)
 
 from six import StringIO
 
-from ..resolvers import (
+from . import (
     Dependency,
     DependencyResolver,
     MappableDependencyResolver,
@@ -156,7 +159,7 @@ class LmodDependency(Dependency):
     def exact(self):
         return self._exact
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         # Get the full module name in the form "tool_name/tool_version"
         module_to_load = self.module_name
         if self.module_version:

@@ -4,19 +4,28 @@ Visualizations resource control over the API.
 NOTE!: this is a work in progress and functionality and data structures
 may change often.
 """
-from six import string_types
-
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.base.controller import UsesVisualizationMixin
-from galaxy.web.base.controller import SharableMixin
-from galaxy.model.item_attrs import UsesAnnotations
-
-from galaxy.web import _future_expose_api as expose_api
-from galaxy import web
-from galaxy import util
-from galaxy import exceptions
 import json
 import logging
+
+from six import string_types
+
+from galaxy import (
+    exceptions,
+    util,
+    web
+)
+from galaxy.managers.visualizations import (
+    VisualizationManager,
+    VisualizationSerializer
+)
+from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    SharableMixin,
+    UsesVisualizationMixin
+)
+
 log = logging.getLogger(__name__)
 
 
@@ -24,6 +33,11 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
     """
     RESTful controller for interactions with visualizations.
     """
+
+    def __init__(self, app):
+        super(VisualizationsController, self).__init__(app)
+        self.manager = VisualizationManager(app)
+        self.serializer = VisualizationSerializer(app)
 
     @expose_api
     def index(self, trans, **kwargs):
@@ -58,15 +72,12 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
         """
         # TODO: revisions should be a contents/nested controller like viz/xxx/r/xxx)?
         # the important thing is the config
-        rval = {}
         # TODO:?? /api/visualizations/registry -> json of registry.listings?
-
         visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         dictionary = trans.security.encode_dict_ids(self.get_visualization_dict(visualization))
         dictionary['url'] = web.url_for(controller='visualization',
                                         action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug)
         dictionary['annotation'] = self.get_item_annotation_str(trans.sa_session, trans.user, visualization)
-
         # need to encode ids in revisions as well
         encoded_revisions = []
         for revision in dictionary['revisions']:
@@ -74,9 +85,10 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             encoded_revisions.append(trans.security.encode_id(revision))
         dictionary['revisions'] = encoded_revisions
         dictionary['latest_revision'] = trans.security.encode_dict_ids(dictionary['latest_revision'])
-
-        rval = dictionary
-        return rval
+        if trans.app.visualizations_registry:
+            visualization = trans.app.visualizations_registry.get_plugin(dictionary['type'])
+            dictionary['plugin'] = visualization.to_dict()
+        return dictionary
 
     @expose_api
     def create(self, trans, payload, **kwargs):
@@ -173,7 +185,7 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             if key == 'type':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
             elif key == 'config':
                 if not isinstance(val, dict):
                     raise ValidationError('%s must be a dictionary: %s' % (key, str(type(val))))
@@ -181,22 +193,22 @@ class VisualizationsController(BaseAPIController, UsesVisualizationMixin, Sharab
             elif key == 'annotation':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)
             elif key == 'title':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
             elif key == 'slug':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
             elif key == 'dbkey':
                 if not isinstance(val, string_types):
                     raise ValidationError('%s must be a string or unicode: %s' % (key, str(type(val))))
-                val = util.sanitize_html.sanitize_html(val, 'utf-8')
+                val = util.sanitize_html.sanitize_html(val)
 
             elif key not in valid_but_uneditable_keys:
                 continue

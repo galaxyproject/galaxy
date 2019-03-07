@@ -20,8 +20,11 @@
             %endif
             | ${self.title()}
         </title>
+
         ## relative href for site root
+        ## TODO: try <base> tag?
         <link rel="index" href="${ h.url_for( '/' ) }"/>
+
         ${self.metas()}
         ${self.stylesheets()}
         ${self.javascripts()}
@@ -40,64 +43,36 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('base')}
     ${h.css('bootstrap-tour')}
+    ${h.css('base')}
 </%def>
 
 ## Default javascripts
 <%def name="javascripts()">
-    ## Send errors to Sntry server if configured
-    %if app.config.sentry_dsn:
-        ${h.js( "libs/raven" )}
-        <script>
-            Raven.config('${app.config.sentry_dsn_public}').install();
-            %if trans.user:
-                Raven.setUser( { email: "${trans.user.email|h}" } );
-            %endif
-        </script>
-    %endif
-
+    ## TODO: remove when all libs are required directly in modules
     ${h.js(
-        ## TODO: remove when all libs are required directly in modules
-        'bundled/libs.bundled',
         'libs/require',
-        "libs/bootstrap-tour",
+        'bundled/libs.chunk',
+        'bundled/base.chunk'
     )}
+    ${self.javascript_entry()}
+</%def>
 
-    <script type="text/javascript">
-        ## global configuration object
-        ## TODO: remove
-        window.Galaxy = window.Galaxy || {};
-        window.Galaxy.root = '${h.url_for( "/" )}';
-        window.Galaxy.config = {};
+<%def name="javascript_entry()">
+    ${h.js('bundled/generic.bundled')}
+</%def>
 
-        // configure require
-        // due to our using both script tags and require, we need to access the same jq in both for plugin retention
-        // source http://www.manuel-strehl.de/dev/load_jquery_before_requirejs.en.html
-        define( 'jquery', [], function(){ return jQuery; })
-        // TODO: use one system
+<%def name="javascript_app()">
 
-        // shims and paths
-        require.config({
-            baseUrl: "${h.url_for('/static/scripts') }",
-            shim: {
-                "libs/underscore": {
-                    exports: "_"
-                },
-                "libs/backbone": {
-                    deps: [ 'jquery', 'libs/underscore' ],
-                    exports: "Backbone"
-                }
-            },
-            // cache busting using time server was restarted
-            urlArgs: 'v=${app.server_starttime}'
-        });
-    </script>
+    ${ galaxy_client.load( app=self.js_app ) }
+    ${ galaxy_client.config_sentry( app=self.js_app ) }
+    ${ galaxy_client.config_google_analytics( app=self.js_app ) }
 
     %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
         <script type="text/javascript">
-            $(document).ready( function() {
-                // Auto Focus on first item on form
+            // Auto Focus on first item on form
+            config.addInitialization(function() {
+                console.log("base.mako", "auto focus on first item on form");
                 if ( $("*:focus").html() == null ) {
                     $(":input:not([type=hidden]):visible:enabled:first").focus();
                 }
@@ -105,10 +80,6 @@
         </script>
     %endif
 
-</%def>
-
-<%def name="javascript_app()">
-    ${ galaxy_client.load( app=self.js_app ) }
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

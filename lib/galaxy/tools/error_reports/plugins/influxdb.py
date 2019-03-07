@@ -4,15 +4,14 @@ from __future__ import absolute_import
 import datetime
 import logging
 
-from galaxy.util import unicodify
-
-from ..plugins import ErrorPlugin
-
 try:
     import influxdb
 except ImportError:
     # This middleware will never be used without influxdb.
     influxdb = None
+
+from galaxy.util import unicodify
+from . import ErrorPlugin
 
 log = logging.getLogger(__name__)
 

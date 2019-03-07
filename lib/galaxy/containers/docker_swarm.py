@@ -4,21 +4,47 @@ Docker Swarm mode interface
 from __future__ import absolute_import
 
 import logging
+import os.path
+import subprocess
+from functools import partial
 
-from galaxy.containers import docker_swarm_manager
-from galaxy.containers.docker import DockerCLIInterface, DockerInterface
+try:
+    import docker.types
+except ImportError:
+    from galaxy.util.bunch import Bunch
+    docker = Bunch(types=Bunch(
+        ContainerSpec=None,
+        RestartPolicy=None,
+        Resources=None,
+        Placement=None,
+    ))
+
+from galaxy.containers.docker import (
+    DockerAPIInterface,
+    DockerCLIInterface,
+    DockerInterface
+)
 from galaxy.containers.docker_decorators import docker_columns, docker_json
 from galaxy.containers.docker_model import (
     CPUS_CONSTRAINT,
     DockerNode,
     DockerService,
     DockerTask,
-    IMAGE_CONSTRAINT,
+    IMAGE_CONSTRAINT
 )
 from galaxy.exceptions import ContainerRunError
-
+from galaxy.util.json import safe_dumps_formatted
 
 log = logging.getLogger(__name__)
+
+SWARM_MANAGER_PATH = os.path.abspath(
+    os.path.join(
+        os.path.dirname(__file__),
+        os.path.pardir,
+        os.path.pardir,
+        os.path.pardir,
+        'scripts',
+        'docker_swarm_manager.py'))
 
 
 class DockerSwarmInterface(DockerInterface):
@@ -43,7 +69,7 @@ class DockerSwarmInterface(DockerInterface):
     def run_in_container(self, command, image=None, **kwopts):
         """Run a service like a detached container
         """
-        kwopts['replicas'] = '1'
+        kwopts['replicas'] = 1
         kwopts['restart_condition'] = 'none'
         if kwopts.get('publish_all_ports', False):
             # not supported for services
@@ -73,7 +99,6 @@ class DockerSwarmInterface(DockerInterface):
                     "mode, volumes will not be passed (set 'ignore_volumes: "
                     "False' in containers config to fail instead): %s" % kwopts['volumes']
                 )
-                del kwopts['volumes']
             else:
                 raise ContainerRunError(
                     "'volumes' kwopt is set and not supported in Docker swarm "
@@ -82,6 +107,8 @@ class DockerSwarmInterface(DockerInterface):
                     image=image,
                     command=command
                 )
+        # ensure the volumes key is removed from kwopts
+        kwopts.pop('volumes', None)
         service = self.service_create(command, image=image, **kwopts)
         self._run_swarm_manager()
         return service
@@ -92,7 +119,12 @@ class DockerSwarmInterface(DockerInterface):
 
     def _run_swarm_manager(self):
         if self._conf.managed and self._conf.manager_autostart:
-            docker_swarm_manager.main(argv=['--containers-config-file', self.containers_config_file, '--swarm', self.key], fork=True)
+            try:
+                # sys.exectuable would be preferable to using $PATH, but sys.executable is probably uwsgi
+                subprocess.check_call(['python', SWARM_MANAGER_PATH, '--containers-config-file',
+                                      self.containers_config_file, '--swarm', self.key])
+            except subprocess.CalledProcessError as exc:
+                log.error('Failed to launch swarm manager: %s', str(exc))
 
     def _get_image(self, image):
         """Get the image string, either from the argument, or from the
@@ -131,11 +163,9 @@ class DockerSwarmInterface(DockerInterface):
     def services(self, id=None, name=None):
         for service_dict in self.service_ls(id=id, name=name):
             service_id = service_dict['ID']
-            service_name = service_dict['NAME']
-            if not service_name.startswith(self._name_prefix):
-                continue
-            task_list = self.service_ps(service_id)
-            yield DockerService.from_cli(self, service_dict, task_list)
+            service = DockerService(self, service_id, inspect=service_dict)
+            if service.name.startswith(self._name_prefix):
+                yield service
 
     def service(self, id=None, name=None):
         try:
@@ -143,27 +173,24 @@ class DockerSwarmInterface(DockerInterface):
         except StopIteration:
             return None
 
-    def services_in_state(self, desired, current):
+    def services_in_state(self, desired, current, tasks='any'):
         for service in self.services():
-            if service.in_state(desired, current):
+            if service.in_state(desired, current, tasks=tasks):
                 yield service
 
     def service_tasks(self, service):
         for task_dict in self.service_ps(service.id):
-            if task_dict['NAME'].strip().startswith('\_'):
-                continue    # historical task
-            yield DockerTask.from_cli(self, task_dict, service=service)
+            yield DockerTask.from_api(self, task_dict, service=service)
 
     def nodes(self, id=None, name=None):
         for node_dict in self.node_ls(id=id, name=name):
-            node_id = node_dict['ID'].strip(' *')
-            node_name = node_dict['HOSTNAME']
-            if self._node_prefix and not node_name.startswith(self._node_prefix):
+            node_id = node_dict['ID']
+            node = DockerNode(self, node_id, inspect=node_dict)
+            if self._node_prefix and not node.name.startswith(self._node_prefix):
                 continue
-            task_list = filter(lambda x: x['NAME'].startswith(self._name_prefix), self.node_ps(node_id))
-            yield DockerNode.from_cli(self, node_dict, task_list)
+            yield node
 
-    def node(self, name):
+    def node(self, id=None, name=None):
         try:
             return self.nodes(id=id, name=name).next()
         except StopIteration:
@@ -173,6 +200,10 @@ class DockerSwarmInterface(DockerInterface):
         for node in self.nodes():
             if node.in_state(status, availability):
                 yield node
+
+    def node_tasks(self, node):
+        for task_dict in self.node_ps(node.id):
+            yield DockerTask.from_api(self, task_dict, node=node)
 
     #
     # higher level queries
@@ -185,7 +216,10 @@ class DockerSwarmInterface(DockerInterface):
         return self._objects_by_attribute(self.services_waiting(), 'constraints')
 
     def services_completed(self):
-        return self.services_in_state('Shutdown', 'Complete')
+        return self.services_in_state('Shutdown', 'Complete', tasks='all')
+
+    def services_terminal(self):
+        return [s for s in self.services() if s.terminal]
 
     def nodes_active(self):
         return self.nodes_in_state('Ready', 'Active')
@@ -198,12 +232,16 @@ class DockerSwarmInterface(DockerInterface):
     #
 
     def services_clean(self):
-        cleaned_services = []
-        services = [x for x in self.services_completed()]  # returns a generator, should probably fix this
-        if services:
-            cleaned_service_ids = self.service_rm([x.id for x in services]).splitlines()
-            cleaned_services = filter(lambda x: x.id in cleaned_service_ids, services)
-        return cleaned_services
+        cleaned_service_ids = []
+        completed_services = list(self.services_completed())  # returns a generator, should probably fix this
+        if completed_services:
+            cleaned_service_ids.extend(self.service_rm([x.id for x in completed_services]))
+        terminal_services = list(self.services_terminal())
+        for service in terminal_services:
+            log.warning('cleaned service in abnormal terminal state: %s (%s). state: %s', service.name, service.id, service.state)
+        if terminal_services:
+            cleaned_service_ids.extend(self.service_rm([x.id for x in terminal_services]))
+        return filter(lambda x: x.id in cleaned_service_ids, completed_services + terminal_services)
 
 
 class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
@@ -227,12 +265,33 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
         'availability': {'flag': '--availability', 'type': 'string'},
     }
 
-    def _filter_by_id_or_name(self, id, name):
-        if id:
-            return '--filter id={}'.format(id)
-        elif name:
-            return '--filter name={}'.format(name)
-        return None
+    #
+    # docker object generators
+    #
+
+    def services(self, id=None, name=None):
+        for service_dict in self.service_ls(id=id, name=name):
+            service_id = service_dict['ID']
+            service_name = service_dict['NAME']
+            if not service_name.startswith(self._name_prefix):
+                continue
+            task_list = self.service_ps(service_id)
+            yield DockerService.from_cli(self, service_dict, task_list)
+
+    def service_tasks(self, service):
+        for task_dict in self.service_ps(service.id):
+            if task_dict['NAME'].strip().startswith(r'\_'):
+                continue    # historical task
+            yield DockerTask.from_cli(self, task_dict, service=service)
+
+    def nodes(self, id=None, name=None):
+        for node_dict in self.node_ls(id=id, name=name):
+            node_id = node_dict['ID'].strip(' *')
+            node_name = node_dict['HOSTNAME']
+            if self._node_prefix and not node_name.startswith(self._node_prefix):
+                continue
+            task_list = filter(lambda x: x['NAME'].startswith(self._name_prefix), self.node_ps(node_id))
+            yield DockerNode.from_cli(self, node_dict, task_list)
 
     #
     # docker subcommands
@@ -264,7 +323,7 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     @docker_json
     def service_inspect(self, service_id):
-        return self._run_docker(subcommand='service inspect', args=service_id)
+        return self._run_docker(subcommand='service inspect', args=service_id)[0]
 
     @docker_columns
     def service_ls(self, id=None, name=None):
@@ -276,11 +335,11 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
 
     def service_rm(self, service_ids):
         service_ids = ' '.join(service_ids)
-        return self._run_docker(subcommand='service rm', args=service_ids)
+        return self._run_docker(subcommand='service rm', args=service_ids).splitlines()
 
     @docker_json
     def node_inspect(self, node_id):
-        return self._run_docker(subcommand='node inspect', args=node_id)
+        return self._run_docker(subcommand='node inspect', args=node_id)[0]
 
     @docker_columns
     def node_ls(self, id=None, name=None):
@@ -301,6 +360,138 @@ class DockerSwarmCLIInterface(DockerSwarmInterface, DockerCLIInterface):
         return self._run_docker(subcommand="inspect", args=task_id)
 
 
-class DockerSwarmAPIInterface(DockerSwarmCLIInterface):
+class DockerSwarmAPIInterface(DockerSwarmInterface, DockerAPIInterface):
 
     container_type = 'docker_swarm'
+    placement_option_map = {
+        'constraint': {'param': 'constraints'},
+    }
+    service_mode_option_map = {
+        'service_mode': {'param': 0, 'default': 'replicated'},
+        'replicas': {'default': 1},
+    }
+    endpoint_spec_option_map = {
+        'ports': {},
+    }
+    resources_option_map = {
+        'cpus': {'params': ('cpu_limit', 'cpu_reservation'), 'map': lambda x: int(x * 1000000000)},
+        'memory': {'params': ('mem_limit', 'mem_reservation')},
+    }
+    container_spec_option_map = {
+        'image': {'param': 0},
+        'command': {},
+        'environment': {'param': 'env'},
+        'labels': {},
+    }
+    restart_policy_option_map = {
+        'restart_condition': {'param': 'condition', 'default': 'none'},
+        'restart_delay': {'param': 'delay'},
+        'restart_max_attempts': {'param': 'max_attemps'},
+    }
+    task_template_option_map = {
+        '_container_spec': {'spec_class': docker.types.ContainerSpec, 'required': True},
+        '_resources': {'spec_class': docker.types.Resources},
+        '_restart_policy': {'spec_class': docker.types.RestartPolicy},
+        '_placement': {'spec_class': docker.types.Placement},
+    }
+    node_spec_option_map = {
+        'availability': {'param': 'Availability'},
+        'name': {'param': 'Name'},
+        'role': {'param': 'Role'},
+        'labels': {'param': 'Labels'},
+    }
+
+    @staticmethod
+    def create_random_port_spec(port):
+        return {
+            'Protocol': 'tcp',
+            'PublishedPort': None,
+            'TargetPort': port,
+        }
+
+    #
+    # docker subcommands
+    #
+
+    def service_create(self, command, image=None, **kwopts):
+        # TODO: some of this should probably move to run_in_container when the CLI interface is removed
+        log.debug("Creating docker service with image '%s' for command: %s", image, command)
+        # insert run kwopts from config
+        for opt in self.conf_run_kwopts:
+            if self._conf[opt]:
+                kwopts[opt] = self._conf[opt]
+        # image is part of the container spec
+        kwopts['image'] = self._get_image(image)
+        # service constraints
+        kwopts['constraint'] = kwopts.get('constraint', [])
+        if self._conf.service_create_image_constraint:
+            kwopts['constraint'].append((IMAGE_CONSTRAINT + '==' + image))
+        if self._conf.service_create_cpus_constraint:
+            cpus = kwopts.get('reserve_cpus', kwopts.get('limit_cpus', '1'))
+            kwopts['constraint'].append((CPUS_CONSTRAINT + '==' + cpus))
+        # ports
+        if 'publish_port_random' in kwopts:
+            kwopts['ports'] = [DockerSwarmAPIInterface.create_random_port_spec(kwopts.pop('publish_port_random'))]
+        # create specs
+        service_mode = self._create_docker_api_spec('service_mode', docker.types.ServiceMode, kwopts)
+        endpoint_spec = self._create_docker_api_spec('endpoint_spec', docker.types.EndpointSpec, kwopts)
+        task_template = self._create_docker_api_spec('task_template', docker.types.TaskTemplate, kwopts)
+        self.set_kwopts_name(kwopts)
+        log.debug("Docker service task template:\n%s", safe_dumps_formatted(task_template))
+        log.debug("Docker service endpoint specification:\n%s", safe_dumps_formatted(endpoint_spec))
+        log.debug("Docker service mode:\n%s", safe_dumps_formatted(service_mode))
+        log.debug("Docker service creation parameters:\n%s", safe_dumps_formatted(kwopts))
+        success_test = partial(self._first, self.service_ls, name=kwopts['name'])
+        # this can raise exceptions, if necessary we could wrap them in a more generic "creation failed" exception class
+        service = self._client.create_service(
+            task_template,
+            mode=service_mode,
+            endpoint_spec=endpoint_spec,
+            success_test=success_test,
+            max_tries=5,
+            **kwopts)
+        service_id = service.get('ID')
+        log.debug('Created service: %s (%s)', kwopts['name'], service_id)
+        return DockerService.from_id(self, service_id)
+
+    def service_inspect(self, service_id):
+        return self._client.inspect_service(service_id)
+
+    def service_ls(self, id=None, name=None):
+        return self._client.services(filters=self._filter_by_id_or_name(id, name))
+
+    # roughly `docker service ps`
+    def service_ps(self, service_id):
+        return self.task_ls(filters={'service': service_id})
+
+    def service_rm(self, service_ids):
+        r = []
+        for service_id in service_ids:
+            self._client.remove_service(service_id)
+            r.append(service_id)
+        return r
+
+    def node_inspect(self, node_id):
+        return self._client.inspect_node(node_id)
+
+    def node_ls(self, id=None, name=None):
+        return self._client.nodes(filters=self._filter_by_id_or_name(id, name))
+
+    # roughly `docker node ps`
+    def node_ps(self, node_id):
+        return self.task_ls(filters={'node': node_id})
+
+    def node_update(self, node_id, **kwopts):
+        node = DockerNode.from_id(self, node_id)
+        spec = node.inspect['Spec']
+        if 'label_add' in kwopts:
+            kwopts['labels'] = spec.get('Labels', {})
+            kwopts['labels'].update(kwopts.pop('label_add'))
+        spec.update(self._create_docker_api_spec('node_spec', dict, kwopts))
+        return self._client.update_node(node.id, node.version, node_spec=spec)
+
+    def task_inspect(self, task_id):
+        return self._client.inspect_task(task_id)
+
+    def task_ls(self, filters=None):
+        return self._client.tasks(filters=filters)

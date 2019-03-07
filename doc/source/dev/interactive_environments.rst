@@ -14,23 +14,24 @@ plugins, for those familiar with developing those
 
 .. code-block:: console
 
-    $ tree $GALAXY_ROOT/config/plugins/interactive_environments/jupyter
-    config/plugins/interactive_environments/jupyter
+
+    $  tree config/plugins/interactive_environments/jupyter/
+    config/plugins/interactive_environments/jupyter/
     ├── config
-    │   ├── jupyter.ini
+    │   ├── allowed_images.yml.sample
     │   ├── jupyter.ini.sample
     │   └── jupyter.xml
     ├── static
     │   └── js
     │       └── jupyter.js
     └── templates
-        ├── jupyter.mako
-        └── notebook.ipynb
+        └── jupyter.mako
 
 We'll use the variable ``{gie}`` to stand in for the name of your GIE. It
 should match ``[a-z]+``, like ``jupyter`` or ``rstudio``. Here you can see the
 ``config/`` directory with a ``{gie}.ini.sample`` providing docker and image
-configuration, and then ``{gie}.xml`` which outlines that it is a GIE.
+configuration, ``allowed_images.yml.sample`` specifies acceptable images,
+and then ``{gie}.xml`` which outlines that it is a GIE.
 
 The static directory can hold resources such as javascript and css files. If
 you are actively developing a GIE, you'll need to restart Galaxy after adding
@@ -77,7 +78,7 @@ Next, you'll need to create the GIE plugin XML file ``config/helloworld.xml``
         <entry_point entry_point_type="mako">helloworld.mako</entry_point>
     </interactive_environment>
 
-Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` which controlls docker interaction
+Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` which controls docker interaction
 
 .. code-block:: ini
 
@@ -88,8 +89,7 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
     # Command to execute docker. For example `sudo docker` or `docker-lxc`.
     #command = docker {docker_args}
 
-    # The docker image name that should be started.
-    image = hello-ie
+    # The image argument was moved to "allowed_images.yml.sample"
 
     # Additional arguments that are passed to the `docker run` command.
     #command_inject = --sig-proxy=true -e DEBUG=false
@@ -102,6 +102,51 @@ Once this is done, we can set up our INI file, ``config/helloworld.ini.sample`` 
     # The Docker hostname. It can be useful to run the Docker daemon on a different
     # host than Galaxy.
     #docker_hostname = localhost
+
+    # Try to set the temp directory to world execute - this can fix the issue
+    # where 'sudo docker' is not able to mount the folder otherwise.
+    # "finalize namespace chdir to /import permission denied"
+    #wx_tempdir = False
+
+    # Overwrite the IE temp directory. This can be useful if you regular tempdir is
+    # located on an NFS share, which does not work well as Docker volume. In this case
+    # you can have a shared sshfs share which you can use as temporary directory to
+    # share data between the IE and Galaxy.
+    #docker_galaxy_temp_dir = None
+
+    # If your Docker container exposes more then one port, Galaxy needs to know to
+    # which ports it needs to connect. With this option you can specify the port number
+    # inside your container to which Galaxy should connect the UI.
+    #docker_connect_port = None
+
+    # Set the following value to false if Docker volumes between Galaxy server and Docker
+    # container cannot or should not be used.
+    #use_volumes = True
+
+    # To run containers in Docker Swarm mode on (an existing swarm), set the
+    # following option to True *and*:
+    # - set docker_connect_port above. For Nginx the # port should most likely be
+    #   80.
+    # - If command_inject is uncommented and includes `--sig-proxy`, that option should
+    #   be removed.
+    #swarm_mode = False
+
+You'll then need to create the GIE plugin YML file ``allowed_images.yml.sample``
+to specify allowed images
+.. code-block::
+
+    # This file lists acceptable images to allow running.
+    #
+    # This allows you, the admin, to create multiple flavours
+    # for your users to run. E.g. maybe you need a geosciences flavour,
+    # you can create the image based on our default image and add the
+    # appropriate `apt-get/pip install` statements.
+    ---
+    -
+        image: hello-ie
+        description: |
+            hello-ie is for getting you up to speed with
+            IE development.
 
 We've named our image ``hello-ie``, we'll get to creating that in a minute.
 
@@ -133,7 +178,7 @@ Next we'll add the following
     # This is a useful way to provide access to large files in the container,
     # if the user knows ahead of time that they will need it.
     user_file = ie_request.volume(
-        hda.file_name, '/import/file.dat', how='ro')
+        hda.file_name, '/import/file.dat', mode='ro')
 
     # Launch the IE. This builds and runs the docker command in the background.
     ie_request.launch(
@@ -150,7 +195,9 @@ Next we'll add the following
 
 That mako snippet loaded the configuration from the INI files, launched the
 docker container, and then built a URL to the correct endpoint, through the
-Galaxy NodeJS proxy. Additionally we've set an environment variable named ``CUSTOM`` with the value ``42`` to be passed to the container, and we've attached the dataset the user selected (available in ``hda``) to the container as a read-only volume.
+Galaxy NodeJS proxy. Additionally we've set an environment variable named ``CUSTOM``
+with the value ``42`` to be passed to the container, and we've attached the dataset the
+user selected (available in ``hda``) to the container as a read-only volume.
 
 We'll continue appending to our ``helloworld.mako`` the HTML code that's actually displayed to the user, when this template is rendered
 
@@ -177,8 +224,11 @@ We'll continue appending to our ``helloworld.mako`` the HTML code that's actuall
     // This will load code from static/helloworld.js, often used to handle
     // things like Login. The load_notebook function will eventually append
     // an IFrame to the <div id="main" /> below.
-    requirejs(['interactive_environments', 'plugin/helloworld'], function(){
-        load_notebook(notebook_access_url);
+    requirejs(['galaxy.interactive_environments', 'plugin/helloworld'], function(IES){
+        window.IES = IES
+        IES.load_when_ready(ie_readiness_url, function(){
+            load_notebook(notebook_access_url);
+        });
     });
     </script>
     <div id="main" width="100%" height="100%">
@@ -186,7 +236,8 @@ We'll continue appending to our ``helloworld.mako`` the HTML code that's actuall
     </body>
     </html>
 
-We've glossed over some of the features of this file, but most IEs do a significant amount of "magic" in the top half of the mako template. For instance, the Jupyter notebook:
+We've glossed over some of the features of this file, but most IEs do a significant amount
+of "magic" in the top half of the mako template. For instance, the Jupyter notebook:
 
 - If the user is trying to run the Jupyter GIE Visualization on an existing notebook in their history, then that gets loaded into the docker container via the temp directory and set as the default notebook
 - Otherwise a default notebook is built for the user.
@@ -210,37 +261,32 @@ your code according to your desires. Galaxy's NodeJS proxy handles the
 authentication of users, so you don't have to worry about it, and can just
 assume that only the correct user will have access to a given notebook.
 
-In the ``static/`` directory, we generally create a ``js/`` directory below that, and create a ``{gie}.js`` (so, ``static/js/helloworld.js``) file in there. That file will have a function, ``load_notebook`` which will check if the GIE is available, and when it is, display it to the user.
+In the ``static/`` directory, we generally create a ``js/`` directory below that,
+and create a ``{gie}.js`` (so, ``static/js/helloworld.js``) file in there.
+That file will have a function, ``load_notebook`` which will check if the GIE is available,
+and when it is, display it to the user.
 
 We start by writing the load notebook function, which is pretty generic
 
 .. code-block:: javascript
 
+    // Globals
+    var IES = window.IES;
     // Load an interactive environment (IE) from a remote URL
     // @param {String} notebook_access_url: the URL embeded in the page and loaded
     function load_notebook(notebook_access_url){
         // When the page has completely loaded...
-        $( document ).ready(function() {
-            // Test if we can access the GIE, and if so, execute the function
-            // to load the GIE for the user.
-            test_ie_availability(notebook_access_url, function(){
-                _handle_notebook_loading(notebook_access_url);
-            });
+        // Test if we can access the GIE, and if so, execute the function
+        // to load the GIE for the user.
+        IES.test_ie_availability(notebook_access_url, function(){
+            IES.append_notebook(notebook_access_url);
         });
     }
 
-This function will display a spinner to the user to indicate process, and then make multiple requests to ``notebook_access_url``. That MUST return a 200 OK for the ``_handle_notebook_loading`` function to ever be called. 302s do not count!
+This function will display a spinner to the user to indicate process, make multiple requests
+to ``notebook_access_url`` and display the GIE to the user in an iframe. That MUST return a 200 OK for the ``append_notebook`` function to ever be called. 302s do not count!
 
-With that, we've almost completed the Javascript portion, just need to implement the function to display the GIE to the user in an iframe
-
-.. code-block:: javascript
-
-    function _handle_notebook_loading(notebook_access_url){
-        append_notebook(notebook_access_url);
-    }
-
-
-This function is very short. Historically, the GIE process involved a complex dance of:
+Historically, the GIE process involved a complex dance of:
 
 - generating a random password in the mako template
 - setting it as a javascript variable
@@ -250,10 +296,7 @@ This function is very short. Historically, the GIE process involved a complex da
   vulnerability.)
 - hope everything worked
 
-Since the NodeJS proxy takes care of authentication/authorization, we can
-reduce the helloworld ``_handle_notebook_loading`` function to a simple
-``append_notebook`` call. You may wish to look at the Jupyter and RStudio GIEs
-for examples of the complex things that can be done at every step.
+You may wish to look at the Jupyter and RStudio GIEs for examples of the complex things that can be done at every step.
 
 The GIE Container
 -----------------
@@ -270,16 +313,16 @@ GIE Containers (often) consist of:
 - A script to monitor traffic and kill unused containers
 
 We have to monitor the container's traffic and kill off unused containers,
-bceause no one is watching them. The user launches the container in Galaxy, and
+because no one is watching them. The user launches the container in Galaxy, and
 Galaxy immediately forgets the container exists. Thus, we say that if a
 container has no connections to TCP connections to itself, then it should
 commit suicide by killing the root process.
 
-Here's an example Dockerfile for our helloworld container
+Here's an example ``Dockerfile`` for our helloworld container
 
 .. code-block:: dockerfile
 
-    FROM ubuntu:14.04
+    FROM alpine
     # These environment variables are passed from Galaxy to the container
     # and help you enable connectivity to Galaxy from within the container.
     # This means your user can import/export data from/to Galaxy.
@@ -290,24 +333,28 @@ Here's an example Dockerfile for our helloworld container
         GALAXY_URL=none \
         GALAXY_WEB_PORT=10000 \
         HISTORY_ID=none \
-        REMOTE_HOST=none
+        REMOTE_HOST=none \
+        DOCKER_PORT=none \
+        CORS_ORIGIN-none
 
-    RUN apt-get -qq update && \
-        apt-get install --no-install-recommends -y \
-        wget procps nginx python python-pip net-tools nginx
+    RUN apk update && \
+    apk add \
+        wget procps nginx python py2-pip net-tools nginx git patch
 
     # Our very important scripts. Make sure you've run `chmod +x startup.sh
     # monitor_traffic.sh` outside of the container!
     ADD ./startup.sh /startup.sh
     ADD ./monitor_traffic.sh /monitor_traffic.sh
 
-    # /import will be the universal mount-point for Jupyter
+    # /import will be the universal mount-point
     # The Galaxy instance can copy in data that needs to be present to the
     # container
-    RUN mkdir /import
+    RUN mkdir -p /import /web/helloworld /run/nginx
 
     # Nginx configuration
     COPY ./proxy.conf /proxy.conf
+    COPY ./index.html /web/helloworld/
+    RUN chmod ugo+r /web/helloworld/index.html
 
     VOLUME ["/import"]
     WORKDIR /import/
@@ -327,19 +374,55 @@ the file the user selected which was mounted as a volume into
 
 .. code-block:: nginx
 
-    server {
-        listen 80;
-        server_name localhost;
-        access_log /var/log/nginx/localhost.access.log;
+    events {
+        worker_connections  1024;
+    }
 
-        # Note the trailing slash used everywhere!
-        location PROXY_PREFIX/helloworld/ {
-            proxy_buffering off;
-            proxy_pass         http://127.0.0.1:8000/;
-            proxy_redirect     http://127.0.0.1:8000/ PROXY_PREFIX/helloworld/;
+
+    http {
+        include       mime.types;
+        default_type  application/octet-stream;
+
+        sendfile        on;
+        keepalive_timeout  65;
+
+        server {
+            listen 80;
+            server_name localhost;
+            access_log /var/log/nginx/localhost.access.log;
+
+            root /web/;
+
+            location PROXY_PREFIX/ {
+                alias /web/;
+            }
+
+            rewrite ^(.*)/helloworld/(.*\.dat)$ PROXY_PREFIX/helloworld/dir/$2;
+
+            location PROXY_PREFIX/helloworld/dir/ {
+                proxy_buffering off;
+                proxy_pass         http://127.0.0.1:8000/;
+                proxy_redirect     http://127.0.0.1:8000/ PROXY_PREFIX/helloworld/dir/;
+            }
         }
     }
 
+Below is our ``index.html`` file
+
+.. code-block:: html
+
+    <html>
+        <head>
+        </head>
+        <body>
+            <h1>Welcome to Hello-World IE</h1>
+            <p>
+                There is one service running, a <a href="dir/">directory
+                listing</a>. (We originally had more but the github repository
+            for the flask app we were using disappeared.)
+            </p>
+        </body>
+    </html>
 
 And here we'll run that service in our ``startup.sh`` file
 
@@ -441,7 +524,7 @@ As you can see, a LOT is going on! We'll break it down further:
       temporary files, and so on.
     - ``GALAXY_PASTER_PORT`` (deprecated) and ``GALAXY_WEB_PORT`` are the raw
       port that Galaxy is listening on. You can use this to help decide how to
-      takl to Galaxy.
+      talk to Galaxy.
     - ``GALAXY_URL`` is the URL that Galaxy should be accessible at. For
       various reasons this may not be true. We recommend looking at our
       implementation of `galaxy.py
@@ -468,7 +551,7 @@ GIEs. One of the strong points of GIEs is their magic interaction with Galaxy.
 Here we've mounted a volume read-only, but in real life you may wish to provide
 connectivity like Jupyter and RStudio provide, allowing the user to load
 datasets on demand for interactive analysis, and then to store analysis
-artefacts (and a log of what was done inside the container, à la Jupyter's
+artifacts (and a log of what was done inside the container, à la Jupyter's
 "notebooks") back to their current history.
 
 If everything went well, at this point you should see a directory listing show up:

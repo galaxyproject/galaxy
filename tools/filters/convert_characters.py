@@ -18,12 +18,12 @@ def __main__():
 
     char_dict = {
         'T': '\t',
-        's': '\s',
-        'Dt': '\.',
+        's': r'\s',
+        'Dt': r'\.',
         'C': ',',
         'D': '-',
         'U': '_',
-        'P': '\|',
+        'P': r'\|',
         'Co': ':',
         'Sc': ';'
     }
@@ -43,7 +43,7 @@ def __main__():
                     line = line.rstrip('\n')
                 try:
                     fout.write("%s\n" % (re.sub(from_ch, '\t', line)))
-                except:
+                except Exception:
                     skipped += 1
 
     if skipped:

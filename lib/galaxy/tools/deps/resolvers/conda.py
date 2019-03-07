@@ -9,7 +9,17 @@ import re
 
 import galaxy.tools.deps.installable
 import galaxy.tools.deps.requirements
-
+from . import (
+    Dependency,
+    DependencyException,
+    DependencyResolver,
+    InstallableDependencyResolver,
+    ListableDependencyResolver,
+    MappableDependencyResolver,
+    MultipleDependencyResolver,
+    NullDependency,
+    SpecificationPatternDependencyResolver,
+)
 from ..conda_util import (
     build_isolated_environment,
     cleanup_failed_install,
@@ -24,26 +34,14 @@ from ..conda_util import (
     is_conda_target_installed,
     USE_PATH_EXEC_DEFAULT,
 )
-from ..resolvers import (
-    Dependency,
-    DependencyException,
-    DependencyResolver,
-    InstallableDependencyResolver,
-    ListableDependencyResolver,
-    MappableDependencyResolver,
-    MultipleDependencyResolver,
-    NullDependency,
-    SpecificationPatternDependencyResolver,
-)
 
 
 DEFAULT_BASE_PATH_DIRECTORY = "_conda"
 DEFAULT_CONDARC_OVERRIDE = "_condarc"
 # Conda channel order from highest to lowest, following the one used in
 # https://github.com/bioconda/bioconda-recipes/blob/master/config.yml , but
-# adding `iuc` as first channel (for Galaxy-specific packages) and `r` as last
-# (for old R packages)
-DEFAULT_ENSURE_CHANNELS = "iuc,bioconda,conda-forge,defaults,r"
+# adding `iuc` as first channel (for Galaxy-specific packages)
+DEFAULT_ENSURE_CHANNELS = "iuc,conda-forge,bioconda,defaults"
 CONDA_SOURCE_CMD = """[ "$CONDA_DEFAULT_ENV" = "%s" ] ||
 MAX_TRIES=3
 COUNT=0
@@ -398,7 +396,7 @@ class MergedCondaDependency(Dependency):
     def version(self):
         return self._version
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         if self._preserve_python_environment:
             # On explicit testing the only such requirement I am aware of is samtools - and it seems to work
             # fine with just appending the PATH as done below. Other tools may require additional
@@ -464,7 +462,7 @@ class CondaDependency(Dependency):
                                           "You can try to shorten the path to the job_working_directory.")
             raise DependencyException("Conda dependency seemingly installed but failed to build job environment.")
 
-    def shell_commands(self, requirement):
+    def shell_commands(self):
         if not self.cache_path:
             # Build an isolated environment if not using a cached dependency manager
             self.build_environment()

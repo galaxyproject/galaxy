@@ -2,11 +2,16 @@
 API for updating Galaxy Pages
 """
 import logging
-from galaxy.web import _future_expose_api as expose_api
-from galaxy.web.base.controller import SharableItemSecurityMixin, BaseAPIController, SharableMixin
+
 from galaxy import exceptions
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web import _future_expose_api as expose_api
+from galaxy.web.base.controller import (
+    BaseAPIController,
+    SharableItemSecurityMixin,
+    SharableMixin
+)
 
 log = logging.getLogger(__name__)
 
@@ -61,7 +66,7 @@ class PageRevisionsController(BaseAPIController, SharableItemSecurityMixin, Uses
         else:
             title = page.title
 
-        content = sanitize_html(content, 'utf-8', 'text/html')
+        content = sanitize_html(content)
 
         page_revision = trans.app.model.PageRevision()
         page_revision.title = title

@@ -3,17 +3,12 @@ Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
 import logging
-import os.path
-import sys
 import unittest
 
 from six import StringIO
 
 from galaxy.datatypes.dataproviders import base, exceptions
-
-unit_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
-sys.path.insert(1, unit_root)
-from unittest_utils import tempfilecache, utility
+from ...unittest_utils import tempfilecache, utility
 
 log = logging.getLogger(__name__)
 
@@ -103,8 +98,9 @@ class Test_BaseDataProvider(BaseTestCase):
         """
         def non_iterator_dprov(source):
             return self.provider_class(source)
+        # two objects without __iter__ method: build in function and int
         self.assertRaises(exceptions.InvalidDataProviderSource,
-            non_iterator_dprov, 'one two three')
+            non_iterator_dprov, sum)
         self.assertRaises(exceptions.InvalidDataProviderSource,
             non_iterator_dprov, 40)
 

@@ -1,12 +1,27 @@
 """
 Classes for wrapping Objects and Sanitizing string output.
 """
+from __future__ import absolute_import
+
 import collections
 import inspect
 import logging
 import string
 import sys
 from numbers import Number
+from types import (
+    BuiltinFunctionType,
+    BuiltinMethodType,
+    CodeType,
+    FrameType,
+    FunctionType,
+    GeneratorType,
+    GetSetDescriptorType,
+    MemberDescriptorType,
+    MethodType,
+    ModuleType,
+    TracebackType,
+)
 
 try:
     from types import NoneType
@@ -42,20 +57,6 @@ except ImportError:
     # so they are __WRAP_NO_SUBCLASS__.
     BufferType = SliceType
     DictProxyType = SliceType
-
-from types import (
-    BuiltinFunctionType,
-    BuiltinMethodType,
-    CodeType,
-    FrameType,
-    FunctionType,
-    GeneratorType,
-    GetSetDescriptorType,
-    MemberDescriptorType,
-    MethodType,
-    ModuleType,
-    TracebackType,
-)
 
 from six.moves import (
     copyreg as copy_reg,
@@ -153,7 +154,7 @@ def wrap_with_safe_string(value, no_wrap_classes=None):
         try:
             wrapped_class_name = value.__name__
             wrapped_class = value
-        except:
+        except Exception:
             wrapped_class_name = value.__class__.__name__
             wrapped_class = value.__class__
         value_mod = inspect.getmodule(value)
@@ -222,9 +223,11 @@ class SafeStringWrapper(object):
         # We need to define a __new__ since, we are subclassing from e.g. immutable str, which internally sets data
         # that will be used when other + this (this + other is handled by __add__)
         try:
-            return super(SafeStringWrapper, cls).__new__(cls, sanitize_lists_to_string(arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP))
-        except Exception as e:
-            log.warning("Could not provide an argument to %s.__new__: %s; will try without arguments.", cls, e)
+            sanitized_value = sanitize_lists_to_string(arg[0], valid_characters=VALID_CHARACTERS, character_map=CHARACTER_MAP)
+            return super(SafeStringWrapper, cls).__new__(cls, sanitized_value)
+        except TypeError:
+            # Class to be wrapped takes no parameters.
+            # This is pefectly normal for mutable types.
             return super(SafeStringWrapper, cls).__new__(cls)
 
     def __init__(self, value, safe_string_wrapper_function=wrap_with_safe_string):

@@ -1,0 +1,22 @@
+<tool id="CONVERTER_bam_to_coodinate_sorted_bam" name="Convert BAM to coordinate-sorted BAM" version="1.0.0" hidden="true" profile="18.01">
+    <requirements>
+        <requirement type="package" version="1.6">samtools</requirement>
+    </requirements>
+    <command><![CDATA[
+         samtools sort
+            -@ \${GALAXY_SLOTS:-1}
+            -o '${output}'
+            -O bam
+            -T dataset
+            '${input}'
+    ]]>
+    </command>
+    <inputs>
+        <param format="sam,unsorted.bam,qname_sorted.bam" name="input" type="data" label="Choose a BAM native or queryname sortedfile"/>
+    </inputs>
+    <outputs>
+        <data format="bam" name="output"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

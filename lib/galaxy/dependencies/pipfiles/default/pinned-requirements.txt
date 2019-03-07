@@ -1,0 +1,163 @@
+-i https://wheels.galaxyproject.org/simple
+--extra-index-url https://pypi.python.org/simple
+adal==1.2.1
+amqp==2.4.1
+appdirs==1.4.3
+asn1crypto==0.24.0
+azure-common==1.1.14
+azure-cosmosdb-nspkg==2.0.2
+azure-cosmosdb-table==1.0.4
+azure-mgmt-compute==4.0.1
+azure-mgmt-devtestlabs==2.2.0
+azure-mgmt-network==2.1.0
+azure-mgmt-nspkg==3.0.2
+azure-mgmt-resource==2.0.0
+azure-mgmt-storage==2.0.0
+azure-nspkg==3.0.2
+azure-storage-blob==1.3.1
+azure-storage-common==1.4.0
+azure-storage-nspkg==3.1.0
+babel==2.6.0
+bagit==1.6.4
+bcrypt==3.1.6
+bdbag==1.4.1
+beaker==1.10.0
+bioblend==0.12.0
+bleach==3.1.0
+boltons==19.0.1
+boto3==1.7.84
+boto==2.49.0
+botocore==1.10.84
+bunch==1.0.1
+bx-python==0.8.2
+bz2file==0.98 ; python_version < '3.3'
+cachetools==3.1.0
+certifi==2018.11.29
+cffi==1.12.1
+chardet==3.0.4
+cheetah3==3.2.0
+cliff==2.14.0
+cloudauthz==0.2.0
+cloudbridge==1.0.2
+cmd2==0.8.9
+contextlib2==0.5.5 ; python_version < '3.5'
+cryptography==2.5
+debtcollector==1.20.0
+decorator==4.3.2
+deprecation==2.0.6
+dictobj==0.4
+docopt==0.6.2
+docutils==0.14
+dogpile.cache==0.7.1
+enum34==1.1.6 ; python_version < '3.4'
+fabric3==1.14.post1
+funcsigs==1.0.2 ; python_version < '3.3'
+functools32==3.2.3.post2 ; python_version < '3.2'
+future==0.17.1
+futures==3.2.0 ; python_version == '2.6' or python_version == '2.7'
+galaxy-sequence-utils==1.1.3
+gxformat2==0.8.0
+h5py==2.9.0
+idna==2.8
+ipaddress==1.0.22 ; python_version < '3.3'
+isa-rwval==0.10.7
+iso8601==0.1.12
+isodate==0.6.0
+jmespath==0.9.3
+jsonpatch==1.23
+jsonpointer==2.0
+jsonschema==2.6.0
+keystoneauth1==3.11.2
+kombu==4.3.0
+mako==1.0.7
+markupsafe==1.1.0
+mercurial==3.7.3 ; python_version < '3'
+monotonic==1.5
+msgpack==0.6.1
+msrest==0.5.5
+msrestazure==0.5.0
+munch==2.3.2
+netaddr==0.7.19
+netifaces==0.10.9
+networkx==1.11
+nodeenv==1.3.3
+nose==1.3.7
+numpy==1.16.1
+oauthlib==3.0.1
+openstacksdk==0.17.0
+os-client-config==1.31.2
+os-service-types==1.5.0
+osc-lib==1.12.0
+oslo.config==6.8.0
+oslo.context==2.22.0
+oslo.i18n==3.23.0
+oslo.log==3.42.2
+oslo.serialization==2.28.1
+oslo.utils==3.40.2
+packaging==19.0
+paramiko==2.4.2
+parsley==1.3
+paste==3.0.6
+pastedeploy==2.0.1
+pastescript==3.0.0
+pbr==5.1.2
+prettytable==0.7.2
+psutil==5.5.1
+pulsar-galaxy-lib==0.8.3
+pyasn1==0.4.5
+pycparser==2.19
+pycryptodome==3.7.3
+pycryptodomex==3.7.3
+pyinotify==0.9.6 ; sys_platform != 'win32' and sys_platform != 'darwin' and sys_platform != 'sunos5'
+pyjwkest==1.4.0
+pyjwt==1.7.1
+pykwalify==1.7.0
+pynacl==1.3.0
+pyopenssl==19.0.0
+pyparsing==2.3.1
+pyperclip==1.7.0
+pysam==0.15.2
+pysftp==0.2.9
+python-cinderclient==4.0.0
+python-dateutil==2.8.0
+python-genomespaceclient==1.1.0
+python-glanceclient==2.12.0
+python-keystoneclient==3.17.0
+python-neutronclient==6.9.0
+python-novaclient==11.0.0
+python-openid==2.2.5
+python-swiftclient==3.6.0
+pytz==2018.9
+pyyaml==3.13
+repoze.lru==0.7
+requests-oauthlib==1.2.0
+requests-toolbelt==0.9.1
+requests==2.21.0
+requestsexceptions==1.4.0
+rfc3986==1.2.0
+routes==2.4.1
+s3transfer==0.1.13
+simplejson==3.16.0
+six==1.11.0
+social-auth-core[openidconnect]==1.5.0
+sqlalchemy-migrate==0.12.0
+sqlalchemy-utils==0.33.11
+sqlalchemy==1.2.18
+sqlparse==0.2.4
+stevedore==1.30.0
+subprocess32==3.5.3 ; python_version < '3.0'
+svgwrite==1.2.1
+tempita==0.5.2
+tenacity==4.12.0
+typing==3.6.6 ; python_version < '3.5'
+tzlocal==1.5.1
+unicodecsv==0.14.1 ; python_version < '3.0'
+urllib3==1.24.1
+uwsgi==2.0.18
+vine==1.2.0
+warlock==1.3.0
+wcwidth==0.1.7 ; sys_platform != 'win32'
+webencodings==0.5.1
+webob==1.8.5
+whoosh==2.7.4
+wrapt==1.11.1

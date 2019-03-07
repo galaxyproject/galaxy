@@ -4,10 +4,13 @@ import hashlib
 import os
 import re
 import subprocess
-
 from string import Template
 
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    in_directory,
+    smart_str
+)
 
 UPDATE_TEMPLATE = Template(
     "git --work-tree $dir --git-dir $dir/.git fetch && "
@@ -20,37 +23,36 @@ UPDATE_FAILED_TEMPLATE = Template(
 )
 
 
-LIST_SEP = re.compile("\s*,\s*")
+LIST_SEP = re.compile(r"\s*,\s*")
 
 
 class TestDataResolver(object):
 
-    def __init__(self, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
-        file_dirs = environ.get(env_var, None)
+    def __init__(self, file_dirs=None, env_var='GALAXY_TEST_FILE_DIR', environ=os.environ):
+        if file_dirs is None:
+            file_dirs = environ.get(env_var, None)
+        if file_dirs is None:
+            file_dirs = "test-data,https://github.com/galaxyproject/galaxy-test-data.git"
         if file_dirs:
             self.resolvers = [build_resolver(u, environ) for u in LIST_SEP.split(file_dirs)]
         else:
             self.resolvers = []
 
     def get_filename(self, name):
-        if not self.resolvers:
-            filename = None
-        else:
-            resolver = self.resolvers[0]
+        for resolver in self.resolvers or []:
+            if not resolver.exists(name):
+                continue
             filename = resolver.path(name)
-            if not resolver.exists(filename):
-                for resolver in self.resolvers[1:]:
-                    if resolver.exists(name):
-                        filename = resolver.path(name)
-            else:
-                # For backward compat. returning first path if none
-                # exist - though I don't know if this function is ever
-                # actually used in a context where one should return
-                # a file even if it doesn't exist (e.g. a prefix or
-                # or something) - I am pretty sure it is not used in
-                # such a fashion in the context of tool tests.
-                filename = resolver.path(name)
-        return os.path.abspath(filename)
+            if filename:
+                return os.path.abspath(filename)
+
+    def get_filecontent(self, name):
+        filename = self.get_filename(name=name)
+        with open(filename, mode='rb') as f:
+            return f.read()
+
+    def get_directory(self, name):
+        return self.get_filename(name=name)
 
 
 def build_resolver(uri, environ):
@@ -66,7 +68,8 @@ class FileDataResolver(object):
         self.file_dir = file_dir
 
     def exists(self, filename):
-        return os.path.exists(self.path(filename))
+        path = os.path.abspath(self.path(filename))
+        return os.path.exists(path) and in_directory(path, self.file_dir)
 
     def path(self, filename):
         return os.path.join(self.file_dir, filename)
@@ -79,7 +82,7 @@ class GitDataResolver(FileDataResolver):
         self.updated = False
         repo_cache = environ.get("GALAXY_TEST_DATA_REPO_CACHE", "test-data-cache")
         m = hashlib.md5()
-        m.update(repository)
+        m.update(smart_str(repository))
         repo_path = os.path.join(repo_cache, m.hexdigest())
         super(GitDataResolver, self).__init__(repo_path)
         # My preference would be for this to be false, but for backward compat

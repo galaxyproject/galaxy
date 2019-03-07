@@ -112,7 +112,7 @@ def __main__():
                 cur_transcript_strand = strand
                 cur_transcripts_blocks = []
                 cur_transcripts_blocks.append(coords)
-            except:
+            except Exception:
                 skipped_lines += 1
                 if not first_skipped_line:
                     first_skipped_line = i + 1

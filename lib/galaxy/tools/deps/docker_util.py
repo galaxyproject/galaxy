@@ -22,46 +22,6 @@ DEFAULT_SET_USER = "$UID"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
-class DockerVolume(object):
-
-    def __init__(self, path, to_path=None, how=DEFAULT_VOLUME_MOUNT_TYPE):
-        self.from_path = path
-        self.to_path = to_path or path
-        if not DockerVolume.__valid_how(how):
-            raise ValueError("Invalid way to specify Docker volume %s" % how)
-        self.how = how
-
-    @staticmethod
-    def volumes_from_str(volumes_as_str):
-        if not volumes_as_str:
-            return []
-        volume_strs = [v.strip() for v in volumes_as_str.split(",")]
-        return [DockerVolume.volume_from_str(_) for _ in volume_strs]
-
-    @staticmethod
-    def volume_from_str(as_str):
-        if not as_str:
-            raise ValueError("Failed to parse Docker volume from %s" % as_str)
-        parts = as_str.split(":", 2)
-        kwds = dict(path=parts[0])
-        if len(parts) == 2:
-            if DockerVolume.__valid_how(parts[1]):
-                kwds["how"] = parts[1]
-            else:
-                kwds["to_path"] = parts[1]
-        elif len(parts) == 3:
-            kwds["to_path"] = parts[1]
-            kwds["how"] = parts[2]
-        return DockerVolume(**kwds)
-
-    @staticmethod
-    def __valid_how(how):
-        return how in ["ro", "rw"]
-
-    def __str__(self):
-        return ":".join([self.from_path, self.to_path, self.how])
-
-
 def kill_command(
     container,
     signal=None,
@@ -75,7 +35,7 @@ def logs_command(
     container,
     **kwds
 ):
-    return command_list("logs", **kwds)
+    return command_list("logs", [container], **kwds)
 
 
 def build_command(
@@ -155,9 +115,18 @@ def build_docker_run_command(
     if terminal:
         command_parts.append("-t")
     for env_directive in env_directives:
-        command_parts.extend(["-e", shlex_quote(env_directive)])
+        # e.g. -e "GALAXY_SLOTS=$GALAXY_SLOTS"
+        # These are environment variable expansions so we don't quote these.
+        command_parts.extend(["-e", env_directive])
     for volume in volumes:
-        command_parts.extend(["-v", shlex_quote(str(volume))])
+        # These are environment variable expansions so we don't quote these.
+        volume_str = str(volume)
+        if "$" not in volume_str:
+            volume_for_cmd_line = shlex_quote(volume_str)
+        else:
+            # e.g. $_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw so don't single quote.
+            volume_for_cmd_line = '"%s"' % volume_str
+        command_parts.extend(["-v", volume_for_cmd_line])
     if volumes_from:
         command_parts.extend(["--volumes-from", shlex_quote(str(volumes_from))])
     if memory:
@@ -175,8 +144,13 @@ def build_docker_run_command(
     if set_user:
         user = set_user
         if set_user == DEFAULT_SET_USER:
-            user = str(os.geteuid())
-        command_parts.extend(["-u", user])
+            # If future-us is ever in here and fixing this for docker-machine just
+            # use cwltool.docker_id - it takes care of this default nicely.
+            euid = os.geteuid()
+            egid = os.getgid()
+
+            user = "%d:%d" % (euid, egid)
+        command_parts.extend(["--user", user])
     full_image = image
     if tag:
         full_image = "%s:%s" % (full_image, tag)
@@ -194,8 +168,13 @@ def command_list(command, command_args=[], **kwds):
 
 
 def command_shell(command, command_args=[], **kwds):
-    """Return Docker command as a string for a shell."""
-    return argv_to_str(command_list(command, command_args, **kwds))
+    """Return Docker command as a string for a shell or command-list."""
+    cmd = command_list(command, command_args, **kwds)
+    to_str = kwds.get("to_str", True)
+    if to_str:
+        return argv_to_str(cmd)
+    else:
+        return cmd
 
 
 def _docker_prefix(

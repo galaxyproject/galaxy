@@ -3,7 +3,7 @@
 # Activate the virtualenv, if it exists.
 [ -f ./.venv/bin/activate ] && . ./.venv/bin/activate
 
-: ${TOOL_SHED_CONFIG_FILE:=config/tool_shed.ini.sample}
+: ${TOOL_SHED_CONFIG_FILE:=config/tool_shed.yml.sample}
 
 stop_err() {
 	echo $1

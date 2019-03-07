@@ -41,12 +41,9 @@
 </%def>
 
 <%def name="render_item_links( visualization )">
-    <a
-        href="${h.url_for( controller='/visualization', action='imp', id=trans.security.encode_id( visualization.id ) )}"
-        class="icon-button import"
-        ## Needed to overwide initial width so that link is floated left appropriately.
-        style="width: 100%"
-        title="Import visualization">Import visualization</a>
+    <a href="${h.url_for( controller='/visualization', action='imp', id=trans.security.encode_id( visualization.id ) )}"
+        class="btn btn-secondary fa fa-plus float-right"
+        title="Import visualization"></a>
 </%def>
 
 <%def name="render_item( visualization, config )">

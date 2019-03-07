@@ -1,6 +1,11 @@
 name: Scratchbook - Introduction
 title_default: "Scratchbook Introduction"
 description: "An introduction on how to display multiple datasets and visualizations next to each other."
+tags:
+  - "core"
+  - "UI"
+  - "visualization"
+
 steps:
     - content: "This short tour will walk you through <b>Galaxy's Scratchbook</b> feature"
 
@@ -53,11 +58,11 @@ steps:
       postclick:
         - "#btn-close"
 
-    - element: "#enable-scratchbook > .dropdown > .dropdown-toggle"
+    - element: "#enable-scratchbook > .nav-link"
       intro: "Clicking this button will enable Galaxy's Scratchbook mode."
       position: "right"
       postclick:
-        - "#enable-scratchbook > .dropdown > .dropdown-toggle"
+        - "#enable-scratchbook > .nav-link"
 
     - element: "#right"
       intro: "This is your history. It contains all datasets you are currently working with including our uploaded table."

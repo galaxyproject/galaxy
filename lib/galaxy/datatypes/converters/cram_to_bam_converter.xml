@@ -1,0 +1,11 @@
+<tool id="CONVERTER_cram_to_bam_0" name="Convert CRAM to BAM" version="1.0.0" hidden="true">
+    <command><![CDATA[python $__tool_directory__/cram_to_bam.py '$input' '$output']]></command>
+    <inputs>
+        <param format="cram" name="input" type="data" label="Choose CRAM file"/>
+    </inputs>
+    <outputs>
+        <data format="bam" name="output"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

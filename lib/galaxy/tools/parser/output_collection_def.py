@@ -3,6 +3,7 @@ dataset collection after jobs are finished.
 """
 
 from galaxy.util import asbool
+from .util import is_dict
 
 DEFAULT_EXTRA_FILENAME_PATTERN = r"primary_DATASET_ID_(?P<designation>[^_]+)_(?P<visible>[^_]+)_(?P<ext>[^_]+)(_(?P<dbkey>[^_]+))?"
 DEFAULT_SORT_BY = "filename"
@@ -29,8 +30,21 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
     if num_discover_dataset_blocks == 0 and legacy:
         collectors = [DEFAULT_DATASET_COLLECTOR_DESCRIPTION]
     else:
-        collectors = map(lambda elem: dataset_collection_description(**elem.attrib), primary_dataset_elems)
+        collectors = [dataset_collection_description(**e.attrib) for e in primary_dataset_elems]
 
+    return _validate_collectors(collectors)
+
+
+def dataset_collector_descriptions_from_output_dict(as_dict):
+    discover_datasets_dicts = as_dict.get("discover_datasets", [])
+    if is_dict(discover_datasets_dicts):
+        discover_datasets_dicts = [discover_datasets_dicts]
+    dataset_collector_descriptions = dataset_collector_descriptions_from_list(discover_datasets_dicts)
+    return _validate_collectors(dataset_collector_descriptions)
+
+
+def _validate_collectors(collectors):
+    num_discover_dataset_blocks = len(collectors)
     if num_discover_dataset_blocks > 1:
         for collector in collectors:
             if collector.discover_via == "tool_provided_metadata":
@@ -40,7 +54,7 @@ def dataset_collector_descriptions_from_elem(elem, legacy=True):
 
 
 def dataset_collector_descriptions_from_list(discover_datasets_dicts):
-    return map(lambda kwds: dataset_collection_description(**kwds), discover_datasets_dicts)
+    return list(map(lambda kwds: dataset_collection_description(**kwds), discover_datasets_dicts))
 
 
 def dataset_collection_description(**kwargs):
@@ -63,6 +77,7 @@ class DatasetCollectionDescription(object):
         self.default_visible = asbool(kwargs.get("visible", None))
         self.assign_primary_output = asbool(kwargs.get('assign_primary_output', False))
         self.directory = kwargs.get("directory", None)
+        self.recurse = False
 
 
 class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
@@ -77,6 +92,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
     def __init__(self, **kwargs):
         super(FilePatternDatasetCollectionDescription, self).__init__(**kwargs)
         pattern = kwargs.get("pattern", "__default__")
+        self.recurse = asbool(kwargs.get("recurse", False))
         if pattern in NAMED_PATTERNS:
             pattern = NAMED_PATTERNS.get(pattern)
         self.pattern = pattern
