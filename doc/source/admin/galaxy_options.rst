@@ -1249,6 +1249,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``user_preferences_extra_conf_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Location of the configuration file containing extra user
+    preferences.
+:Default: ``config/user_preferences_extra_conf.yml``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~
 ``default_locale``
 ~~~~~~~~~~~~~~~~~~
@@ -2795,33 +2806,6 @@
     Enable the new container interface for Interactive Environments
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_submission_burst_threads``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set the following to a number of threads greater than 1 to spawn a
-    Python task queue for dealing with large tool submissions (either
-    through the tool form or as part of an individual workflow step
-    across large collection). This affects workflow scheduling and web
-    processes, not job handlers. This is a beta option and should not
-    be used in production.
-:Default: ``1``
-:Type: int
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``tool_submission_burst_at``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If tool_submission_burst_threads is set to a number greater than
-    1, this is the number of jobs to schedule at which the task queue
-    will be created.
-:Default: ``10``
-:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

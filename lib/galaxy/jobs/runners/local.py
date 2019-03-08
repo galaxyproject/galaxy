@@ -13,8 +13,6 @@ from time import sleep
 from galaxy import model
 from galaxy.util import (
     asbool,
-    DATABASE_MAX_STRING_SIZE,
-    shrink_stream_by_size
 )
 from ..runners import (
     BaseJobRunner,
@@ -84,7 +82,6 @@ class LocalJobRunner(BaseJobRunner):
             return
 
         stderr = stdout = ''
-        exit_code = 0
 
         # command line has been added to the wrapper by prepare_job()
         command_line, exit_code_path = self.__command_line(job_wrapper)
@@ -114,18 +111,11 @@ class LocalJobRunner(BaseJobRunner):
                 if terminated:
                     return
 
-                # Reap the process and get the exit code.
-                exit_code = proc.wait()
+                proc.wait()
 
             finally:
                 with self._proc_lock:
                     self._procs.remove(proc)
-
-            try:
-                exit_code = int(open(exit_code_path, 'r').read())
-            except Exception:
-                log.warning("Failed to read exit code from path %s" % exit_code_path)
-                pass
 
             if proc.terminated_by_shutdown:
                 self._fail_job_local(job_wrapper, "job terminated by Galaxy shutdown")
@@ -133,8 +123,8 @@ class LocalJobRunner(BaseJobRunner):
 
             stdout_file.seek(0)
             stderr_file.seek(0)
-            stdout = shrink_stream_by_size(stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
-            stderr = shrink_stream_by_size(stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True)
+            stdout = self._job_io_for_db(stdout_file)
+            stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
             stderr_file.close()
             log.debug('execution finished: %s' % command_line)
@@ -147,13 +137,9 @@ class LocalJobRunner(BaseJobRunner):
 
         job_destination = job_wrapper.job_destination
         job_state = JobState(job_wrapper, job_destination)
+        job_state.exit_code_file = JobState.default_exit_code_file(job_wrapper.working_directory, job_id)
         job_state.stop_job = False
-        # Finish the job!
-        try:
-            self._finish_or_resubmit_job(job_state, stdout, stderr, exit_code)
-        except Exception:
-            log.exception("Job wrapper finish method failed")
-            self._fail_job_local(job_wrapper, "Unable to finish job")
+        self._finish_or_resubmit_job(job_state, stdout, stderr, job_id=job_id)
 
     def stop_job(self, job_wrapper):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished

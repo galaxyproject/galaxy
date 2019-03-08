@@ -223,12 +223,12 @@ RELEASE_ISSUE_TEMPLATE = string.Template("""
 
     - [ ] Verify release included in https://docs.galaxyproject.org/en/master/releases/index.html
     - [ ] Review announcement in https://github.com/galaxyproject/galaxy/blob/dev/doc/source/releases/${version}_announce.rst
-    - [ ] Stage announcement content (Hub, Biostars, etc.) on announce date to capture date tags. Note: all final content does not need to be completed to do this.
-    - [ ] Create hub *highlights* and post as a new "news" content item. [An Example](https://galaxyproject.org/news/2018-9-galaxy-release/).
-    - [ ] Tweet docs news *highlights* link as @galaxyproject on twitter. [An Example](https://twitter.com/galaxyproject/status/973646125633695744).
-    - [ ] Post *highlights* as type 'News' to Galaxy Biostars https://biostar.usegalaxy.org. [An Example](https://biostar.usegalaxy.org/p/27118/).
-    - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An Example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
-    - [ ] Adjust http://getgalaxy.org text and links to match current master branch by opening a PR for https://github.com/galaxyproject/galaxy-hub/
+    - [ ] Stage announcement content (Hub, Galaxy Help, etc.) on announce date to capture date tags. Note: all final content does not need to be completed to do this.
+    - [ ] Create hub *highlights* and post as a new "news" content item. [An example](https://galaxyproject.org/news/2018-9-galaxy-release/).
+    - [ ] Tweet docs news *highlights* link as @galaxyproject on twitter. [An example](https://twitter.com/galaxyproject/status/973646125633695744).
+    - [ ] Post *highlights* with tags `news` and `release` to [Galaxy Help](https://help.galaxyproject.org/). [An example](https://help.galaxyproject.org/t/galaxy-release-19-01/712).
+    - [ ] Email *highlights* to [galaxy-dev](http://dev.list.galaxyproject.org/) and [galaxy-announce](http://announce.list.galaxyproject.org/) @lists.galaxyproject.org. [An example](http://dev.list.galaxyproject.org/The-Galaxy-release-16-04-is-out-tp4669419.html)
+    - [ ] Adjust http://getgalaxy.org text and links to match current master branch by opening a PR at https://github.com/galaxyproject/galaxy-hub/
 
 - [ ] **Prepare for next release**
 

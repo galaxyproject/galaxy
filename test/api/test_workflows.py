@@ -491,6 +491,50 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase):
                 'label',
             )
 
+    @skip_without_tool('output_filter_with_input')
+    def test_export_editor_filtered_outputs(self):
+        template = """
+class: GalaxyWorkflow
+steps:
+  - tool_id: output_filter_with_input
+    state:
+      produce_out_1: {produce_out_1}
+      filter_text_1: {filter_text_1}
+      produce_collection: false
+      produce_paired_collection: false
+"""
+        workflow_id = self._upload_yaml_workflow(template.format(produce_out_1='false', filter_text_1='false'))
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 1
+        assert outputs[0]['name'] == 'out_3'
+        workflow_id = self._upload_yaml_workflow(template.format(produce_out_1='true', filter_text_1='false'))
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 2
+        assert outputs[0]['name'] == 'out_1'
+        assert outputs[1]['name'] == 'out_3'
+        workflow_id = self._upload_yaml_workflow(template.format(produce_out_1='true', filter_text_1='foo'))
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 3
+        assert outputs[0]['name'] == 'out_1'
+        assert outputs[1]['name'] == 'out_2'
+        assert outputs[2]['name'] == 'out_3'
+
+    @skip_without_tool('output_filter_exception_1')
+    def test_export_editor_filtered_outputs_exception_handling(self):
+        workflow_id = self._upload_yaml_workflow("""
+class: GalaxyWorkflow
+steps:
+  - tool_id: output_filter_exception_1
+""")
+        downloaded_workflow = self._download_workflow(workflow_id, style="editor")
+        outputs = downloaded_workflow['steps']['0']['outputs']
+        assert len(outputs) == 2
+        assert outputs[0]['name'] == 'out_1'
+        assert outputs[1]['name'] == 'out_2'
+
     @skip_without_tool('collection_type_source')
     def test_export_editor_collection_type_source(self):
         workflow_id = self._upload_yaml_workflow("""

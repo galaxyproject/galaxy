@@ -879,7 +879,7 @@ var FolderToolbarView = Backbone.View.extend({
      */
     chainCallImportingUserdirFiles: function(options) {
         let Galaxy = getGalaxyInstance();
-        var popped_item = options.paths.pop();
+        let popped_item = options.paths.pop();
         if (typeof popped_item === "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
                 mod_toastr.success("Selected files imported into the current folder");
@@ -889,17 +889,19 @@ var FolderToolbarView = Backbone.View.extend({
             }
             return true;
         }
-        var promise = $.when(
-            $.post(
-                `${getAppRoot()}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
-                    options.source
-                }&path=${popped_item}&file_type=${options.file_type}&link_data=${options.link_data}&space_to_tab=${
-                    options.space_to_tab
-                }&to_posix_lines=${options.to_posix_lines}&dbkey=${options.dbkey}&tag_using_filenames=${
-                    options.tag_using_filenames
-                }`
-            )
-        );
+        let post_url = `${getAppRoot()}api/libraries/datasets`;
+        let post_data = {
+            encoded_folder_id: this.id,
+            source: options.source,
+            path: popped_item,
+            file_type: options.file_type,
+            link_data: options.link_data,
+            space_to_tab: options.space_to_tab,
+            to_posix_lines: options.to_posix_lines,
+            dbkey: options.dbkey,
+            tag_using_filenames: options.tag_using_filenames
+        };
+        let promise = $.when($.post(post_url, post_data));
         promise
             .done(response => {
                 this.updateProgress();
@@ -927,7 +929,7 @@ var FolderToolbarView = Backbone.View.extend({
     chainCallImportingFolders: function(options) {
         let Galaxy = getGalaxyInstance();
         // TODO need to check which paths to call
-        var popped_item = options.paths.pop();
+        let popped_item = options.paths.pop();
         if (typeof popped_item == "undefined") {
             if (this.options.chain_call_control.failed_number === 0) {
                 mod_toastr.success("Selected folders and their contents imported into the current folder.");
@@ -938,17 +940,20 @@ var FolderToolbarView = Backbone.View.extend({
             }
             return true;
         }
-        var promise = $.when(
-            $.post(
-                `${getAppRoot()}api/libraries/datasets?encoded_folder_id=${this.id}&source=${
-                    options.source
-                }&path=${popped_item}&preserve_dirs=${options.preserve_dirs}&link_data=${
-                    options.link_data
-                }&to_posix_lines=${options.to_posix_lines}&space_to_tab=${options.space_to_tab}&file_type=${
-                    options.file_type
-                }&dbkey=${options.dbkey}&tag_using_filenames=${options.tag_using_filenames}`
-            )
-        );
+        let post_url = `${getAppRoot()}api/libraries/datasets`;
+        let post_data = {
+            encoded_folder_id: this.id,
+            source: options.source,
+            path: popped_item,
+            preserve_dirs: options.preserve_dirs,
+            link_data: options.link_data,
+            to_posix_lines: options.to_posix_lines,
+            space_to_tab: options.space_to_tab,
+            file_type: options.file_type,
+            dbkey: options.dbkey,
+            tag_using_filenames: options.tag_using_filenames
+        };
+        let promise = $.when($.post(post_url, post_data));
         promise
             .done(response => {
                 this.updateProgress();

@@ -674,6 +674,10 @@ galaxy:
   # format string as specified by ISO 8601 international   standard).
   #pretty_datetime_format: $locale (UTC)
 
+  # Location of the configuration file containing extra user
+  # preferences.
+  #user_preferences_extra_conf_path: config/user_preferences_extra_conf.yml
+
   # Default localization for Galaxy UI. Allowed values are listed at the
   # end of client/galaxy/scripts/nls/locale.js. With the default value
   # (auto), the locale will be automatically adjusted to the user's
@@ -1356,19 +1360,6 @@ galaxy:
 
   # Enable the new container interface for Interactive Environments
   #enable_beta_containers_interface: false
-
-  # Set the following to a number of threads greater than 1 to spawn a
-  # Python task queue for dealing with large tool submissions (either
-  # through the tool form or as part of an individual workflow step
-  # across large collection). This affects workflow scheduling and web
-  # processes, not job handlers. This is a beta option and should not be
-  # used in production.
-  #tool_submission_burst_threads: 1
-
-  # If tool_submission_burst_threads is set to a number greater than 1,
-  # this is the number of jobs to schedule at which the task queue will
-  # be created.
-  #tool_submission_burst_at: 10
 
   # Enable beta workflow modules that should not yet be considered part
   # of Galaxy's stable API.
