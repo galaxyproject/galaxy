@@ -1985,7 +1985,7 @@ class Tool(Dictifiable):
             else:
                 group_inputs[input_index] = tool_dict
 
-    def get_view_result(self, job=None, dataset=None,  **kwd):
+    def get_view_result(self, job=None, dataset=None, **kwd):
         """Returns a special view for a tool and a set of provided objects."""
         return None
 

@@ -269,7 +269,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         )
         self.container_info['commands'] = {}
         for cmd in ['inspect', 'port', 'kill', 'stop']:
-            self.container_info['commands'][cmd]=docker_util.build_docker_simple_command(cmd, container_name=self.container_name, **docker_host_props)
+            self.container_info['commands'][cmd] = docker_util.build_docker_simple_command(cmd, container_name=self.container_name, **docker_host_props)
         return "%s\n%s" % (cache_command, run_command)
 
     def __cache_from_file_command(self, cached_image_file, docker_host_props):

@@ -81,6 +81,7 @@ def build_docker_images_command(truncate=True, **kwds):
 def build_docker_load_command(**kwds):
     return command_shell("load", [])
 
+
 def build_docker_simple_command(
     command,
     docker_cmd=DEFAULT_DOCKER_COMMAND,

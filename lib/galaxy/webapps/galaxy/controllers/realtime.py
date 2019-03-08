@@ -1,14 +1,10 @@
 """
 Provides web interaction with RealTimeTools
 """
-import uwsgi
 import logging
-from collections import OrderedDict
-from datetime import datetime, timedelta
 
 from galaxy import (
     model,
-    util,
     web
 )
 from galaxy.web import url_for
@@ -46,7 +42,7 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
     columns.append(
         grids.MulticolFilterColumn(
             "Search",
-            cols_to_filter=[columns[0] ],
+            cols_to_filter=[columns[0]],
             key="free-text-search", visible=False, filterable="standard"
         )
     )
@@ -60,15 +56,8 @@ class RealTimeToolEntryPointListGrid(grids.Grid):
         return trans.app.realtime_manager.get_nonterminal_for_user_by_trans(trans)
 
 
-
 class RealTime(BaseUIController):
     _rtt_ep_grid = RealTimeToolEntryPointListGrid()
-
-    def __get_realtime_view_host(trans, realtime_entry):
-        if not isinstance(realtime_entry, trans.app.model.RealTimeToolEntryPoint):
-            realtime_entry = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(trans.security.decode_id(realtime_entry_id))
-        return "%s:%s" % (realtime_entry.host, realtime_entry.port)
-
 
     @web.expose
     def index(self, trans, realtime_id=None, **kwd):
@@ -79,7 +68,7 @@ class RealTime(BaseUIController):
         if realtime:
             if trans.app.realtime_manager.can_access_realtime(trans, realtime):
                 if realtime.entry_points:
-                    if len(realtime.entry_points)==1:
+                    if len(realtime.entry_points) == 1:
                         return self.access_entry_point(trans, entry_point_id=trans.security.encode_id(realtime.entry_points[0].id))
                     else:
                         return trans.response.send_redirect(url_for(controller="realtime", action="list"))
@@ -98,7 +87,7 @@ class RealTime(BaseUIController):
             entry_point = trans.sa_session.query(trans.app.model.RealTimeToolEntryPoint).get(entry_point_id)
             if trans.app.realtime_manager.can_access_entry_point(trans, entry_point):
                 if entry_point.realtime.active and entry_point.configured:
-                    rval = (url_for( '%s/%s/%s/%s/' % (trans.app.config.realtime_prefix, entry_point.__class__.__name__, trans.security.encode_id(entry_point.id), entry_point.token)))
+                    rval = (url_for('%s/%s/%s/%s/' % (trans.app.config.realtime_prefix, entry_point.__class__.__name__, trans.security.encode_id(entry_point.id), entry_point.token)))
                     if entry_point.entry_url:
                         rval = '%s%s' % (rval, entry_point.entry_url)
                     return trans.response.send_redirect(rval)
@@ -137,12 +126,12 @@ class RealTime(BaseUIController):
     def stop(self, trans, realtime_id=None, realtime_entry_id=None):
         """List all available realtimetools"""
         if realtime_id:
-            rtt = trans.app.model.RealTimeTool.get(trans.security.decode_id(realtime_id))
+            realtime = trans.app.model.RealTimeTool.get(trans.security.decode_id(realtime_id))
         elif realtime_entry_id:
-            rtt = trans.app.model.RealTimeToolEntryPoint.get(trans.security.decode_id(realtime_entry_id)).realtime
+            realtime = trans.app.model.RealTimeToolEntryPoint.get(trans.security.decode_id(realtime_entry_id)).realtime
         else:
-            return dict(message="Can't stop: RealTimeTool not provided.",state='error')
+            return dict(message="Can't stop: RealTimeTool not provided.", state='error')
         stopped = trans.app.realtime_manager.stop(realtime)
         if stopped:
-            return dict(message="RealTimeTool has been stopped",state='ok')
-        return dict(message="Unable to stop RealTimeTool",state='error')
+            return dict(message="RealTimeTool has been stopped", state='ok')
+        return dict(message="Unable to stop RealTimeTool", state='error')

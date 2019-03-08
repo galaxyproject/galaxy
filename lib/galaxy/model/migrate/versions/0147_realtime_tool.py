@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import logging
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, TEXT
+from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, MetaData, Table, TEXT
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.orm.now import now
@@ -49,6 +49,7 @@ job_container_association = Table(
     Column("created_time", DateTime, default=now),
     Column("modified_time", DateTime, default=now, onupdate=now))
 
+
 def upgrade(migrate_engine):
     print(__doc__)
     metadata.bind = migrate_engine
@@ -68,6 +69,7 @@ def upgrade(migrate_engine):
         realtime_tool_entry_point.create()
     except Exception:
         log.exception("Failed to create realtime_tool_entry_point table")
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

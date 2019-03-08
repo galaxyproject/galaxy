@@ -197,7 +197,7 @@ class XmlToolSource(ToolSource):
             port = tool_port_el.text.strip()
             entry_path = tool_port_el.find("url")
             if entry_path is not None:
-                entry_path=entry_path.text.strip()
+                entry_path = entry_path.text.strip()
             tool_ports.append(dict(port=port, url=entry_path, name=tool_port_el.get('name', None)))
         return tool_ports
 

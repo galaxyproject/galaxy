@@ -1893,7 +1893,7 @@ class JobWrapper(HasResourceParameters):
 
     def set_container(self, container):
         if container:
-            cont = model.JobContainerAssociation( job=self.get_job(), container_type=container.container_type, container_name=container.container_name, container_info=container.container_info)
+            cont = model.JobContainerAssociation(job=self.get_job(), container_type=container.container_type, container_name=container.container_name, container_info=container.container_info)
             self.sa_session.add(cont)
             self.sa_session.flush()
 

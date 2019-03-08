@@ -1313,12 +1313,14 @@ class RealTimeTool(RepresentById):
         self.user = user
         self.galaxy_session = session
         self.dataset = dataset
+
     @property
     def active(self):
         # FIXME: don't included queued?
         return not self.job.finished
+
     def to_dict(self, *args, **kwds):
-        return dict(job_id=self.job.id, user_id=self.user.id,galaxy_session_id=self.galaxy_session.id,dataset_id=self.dataset.id,active=self.active)#=self.realtime.to_dict(*args, **kwds))
+        return dict(job_id=self.job.id, user_id=self.user.id, galaxy_session_id=self.galaxy_session.id, dataset_id=self.dataset.id, active=self.active)
 
 
 class RealTimeToolEntryPoint(RepresentById):
@@ -1338,8 +1340,8 @@ class RealTimeToolEntryPoint(RepresentById):
 
     def to_dict(self, *args, **kwds):
         rval = dict(realtime_id=self.realtime.id)
-        for val in ['id', 'name','token','tool_port','entry_url','host','port','protocol','configured', 'created_time', 'modified_time', 'active']:
-            rval[val]=getattr(self, val)
+        for val in ['id', 'name', 'token', 'tool_port', 'entry_url', 'host', 'port', 'protocol', 'configured', 'created_time', 'modified_time', 'active']:
+            rval[val] = getattr(self, val)
         return rval
 
     @property

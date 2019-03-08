@@ -2,6 +2,8 @@
 from __future__ import print_function
 
 import logging
+import os
+import sys
 
 from text import Html
 from galaxy.web import url_for
@@ -18,7 +20,6 @@ class Realtime(Html):
     def set_peek(self, dataset, is_multi_byte=False):
         dataset.blurb = "RealtimeTool"
         dataset.peek = 'Finished RealTimeTool'
-
 
     def display_peek(self, dataset):
         try:
