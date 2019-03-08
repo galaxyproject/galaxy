@@ -47,6 +47,18 @@ class GitLabPlugin(ErrorPlugin):
         except ImportError:
             log.error("Please install python-gitlab to submit bug reports to gitlab")
             self.gitlab = None
+        except gitlab.GitlabAuthenticationError:
+            log.error("Could not authenticate with GitLab.")
+            self.gitlab = None
+        except gitlab.GitlabParsingError:
+            log.error("Could not parse GitLab message.")
+            self.gitlab = None
+        except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError):
+            log.error("Could not connect to GitLab.")
+            self.gitlab = None
+        except gitlab.GitlabError:
+            log.error("General error communicating with GitLab.")
+            self.gitlab = None
 
     def submit_report(self, dataset, job, tool, **kwargs):
         """Submit the error report to GitLab
