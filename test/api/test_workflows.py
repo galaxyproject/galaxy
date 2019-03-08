@@ -2230,7 +2230,7 @@ input1:
   name: fasta1
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=4, wait=True, assert_ok=True)
-
+            assert details1['elements'][0]['object']['visible'] is False
             assert details1["name"] == "my new name", details1
             assert details1["history_content_type"] == "dataset_collection"
 
@@ -2255,9 +2255,72 @@ input1:
   name: fasta1
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True, assert_ok=True)
-
+            assert details1['elements'][0]['object']['visible'] is False
             assert details1["name"] == "data 1 (as list)", details1
             assert details1["visible"] is False
+
+    @skip_without_tool("__BUILD_LIST__")
+    def test_run_build_list_delete_intermediate_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+    outputs:
+      output:
+        delete_intermediate_datasets: true
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True,
+                                                                             assert_ok=True)
+            assert details1['elements'][0]['object']['visible'] is False
+            assert details1["name"] == "data 1 (as list)", details1
+            # FIXME: this doesn't work because the workflow is still being scheduled
+            # TODO: Implement a way to run PJAs that couldn't be run during/after the job
+            # after the workflow has run to completion
+            assert details1["deleted"] is False
+
+    @skip_without_tool("__BUILD_LIST__")
+    def test_run_build_list_change_datatype_collection_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+    outputs:
+      output:
+        change_datatype: txt
+  - tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+""", test_data="""
+input1:
+  value: 1.fasta
+  type: File
+  file_type: fasta
+  name: fasta1
+""", history_id=history_id)
+            details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True,
+                                                                             assert_ok=True)
+            assert details1["name"] == "data 1 (as list)", details1
+            assert details1['elements'][0]['object']['visible'] is False
+            assert details1['elements'][0]['object']['file_ext'] == 'txt'
+            details2 = self.dataset_populator.get_history_collection_details(history_id, hid=5, wait=True,
+                                                                             assert_ok=True)
+            # Also check that we don't overwrite the original HDA's datatype
+            assert details2['elements'][0]['object']['file_ext'] == 'fasta'
 
     @skip_without_tool("__BUILD_LIST__")
     def test_run_build_list_rename_collection_output(self):
@@ -2281,7 +2344,7 @@ input1:
 """, history_id=history_id)
             details1 = self.dataset_populator.get_history_collection_details(history_id, hid=3, wait=True,
                                                                              assert_ok=True)
-
+            assert details1['elements'][0]['object']['visible'] is False
             assert details1["name"] == "my new name", details1
             assert details1["history_content_type"] == "dataset_collection"
 
