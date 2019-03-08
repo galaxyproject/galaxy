@@ -6,7 +6,7 @@
 import Tags from "./Tags";
 import { mountVueComponent } from "utils/mountVueComponent";
 import { redirectToUrl } from "utils/redirect";
-import { TagService } from "./TagService";
+import { TagService } from "./tagService";
 
 
 /**

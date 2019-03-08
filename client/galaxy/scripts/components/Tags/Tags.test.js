@@ -5,7 +5,7 @@ import { mount, createLocalVue } from "@vue/test-utils";
 import Tags from "./Tags";
 import _l from "utils/localization";
 import store from "../../store";
-import { TagService } from "./TagService";
+import { TagService } from "./tagService";
 import { createTag } from "./model";
 
 const localVue = createLocalVue();

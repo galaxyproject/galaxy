@@ -20,7 +20,7 @@ import { mapActions } from "vuex";
 import { map } from "rxjs/operators";
 import StatelessTags from "./StatelessTags";
 import { diffTags } from "./model";
-import { TagService } from "./TagService";
+import { TagService } from "./tagService";
 
 Vue.use(VueRx);
 

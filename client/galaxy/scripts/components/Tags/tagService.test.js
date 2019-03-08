@@ -1,6 +1,6 @@
 /* global expect */
 import sinon from "sinon";
-import { TagService, __RewireAPI__ as rewire } from "./TagService";
+import { TagService, __RewireAPI__ as rewire } from "./tagService";
 import { createTag } from "./model";
 import { interval } from "rxjs";
 import { take, takeUntil } from "rxjs/operators";
@@ -8,7 +8,7 @@ import { take, takeUntil } from "rxjs/operators";
 // test response
 import autocompleteResponse from "./testData/autocompleteResponse.txt";
 
-describe("Tags/TagService.js", () => {
+describe("Tags/tagService.js", () => {
     let svcParams = {
         id: 123,
         itemClass: "fooClass",
