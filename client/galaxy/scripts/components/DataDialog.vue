@@ -16,7 +16,7 @@
                 <b-table
                     small
                     hover
-                    :items="items"
+                    :items="formatedItems"
                     :fields="fields"
                     :filter="filter"
                     @row-clicked="clicked"
@@ -127,9 +127,19 @@ export default {
             optionsShow: false,
             undoShow: false,
             url: null,
-            values: [],
+            values: {},
             valuesType: null
         };
+    },
+    computed: {
+        formatedItems() {
+            for (let item of this.items) {
+                let key = this.identifier(item);
+                let variant = this.values[key] ? "success" : "default";
+                item._rowVariant = variant;
+            }
+            return this.items;
+        }
     },
     created: function() {
         this.load();
@@ -141,28 +151,28 @@ export default {
         filtered: function(items) {
             this.nItems = items.length;
         },
+        identifier: function(record) {
+            return `${record.id}_${record.history_content_type}`;
+        },
         clicked: function(record) {
             if (!this.multiple || this.valuesType !== record.history_content_type) {
-                this.values = [];
+                this.values = {};
                 this.valuesType = record.history_content_type;
             }
-            let found = this.values.findIndex(value =>
-                ["id", "history_content_type"]
-                .every(key => value[key] == record[key]));
-            if (found == -1) {
-                this.values.push(record);
+            let key = this.identifier(record);
+            if (!this.values[key]) {
+                this.values[key] = record;
             } else {
-                this.values.splice(found, 1);
+                delete this.values[key];
             }
-            this.items.every(item => item._rowVariant = "default");
-            this.values.every(value => value._rowVariant = "success");
+            this.values = Object.assign({}, this.values);
             if (!this.multiple) {
                 this.done();
             }
         },
         done: function() {
             let results = [];
-            this.values.forEach(v => {
+            Object.values(this.values).forEach(v => {
                 let value = v.id;
                 if (this.format == "url") {
                     let host = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`;
