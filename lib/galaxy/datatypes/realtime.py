@@ -5,7 +5,7 @@ import logging
 import os
 import sys
 
-from text import Html
+from .text import Html
 from galaxy.web import url_for
 
 
