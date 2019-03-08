@@ -152,7 +152,7 @@ class GitLabPlugin(ErrorPlugin):
                         "notes"
                     ])
                     self.gitlab.http_post(gl_url, post_data={'body': error_message})
-                return ('Submitted error report to GitLab. Your issue number is %s. You can view the issue on <a href="%s/%s/issues/%s" target="_blank">GitLab</a>.' % (issue_cache[error_title], self.gitlab_base_url, gitlab_projecturl, issue_cache[error_title]), 'success')
+                return ('Submitted error report to GitLab. Your issue number is <a href="%s/%s/issues/%s" target="_blank">#%s</a>.' % (self.gitlab_base_url, gitlab_projecturl, issue_cache[error_title], issue_cache[error_title]), 'success')
             except ImportError:
                 log.error("Please ensure that requests, urllib and urlparse are available.")
                 return ('Error occured while submitting error report to GitLab. Report could not be submitted due to python import issues.', 'danger')
