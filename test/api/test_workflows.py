@@ -1566,6 +1566,32 @@ input1:
 """, history_id=history_id, wait=True)
             self.assertEqual("0\n", self.dataset_populator.get_history_dataset_content(history_id))
 
+    @skip_without_tool("random_lines1")
+    def test_change_datatype_collection_map_over(self):
+        with self.dataset_populator.test_history() as history_id:
+            jobs_summary = self._run_jobs("""
+class: GalaxyWorkflow
+inputs:
+  text_input1: collection
+steps:
+  map_over:
+    tool_id: random_lines1
+    in:
+      input: text_input1
+    outputs:
+        out_file1:
+          change_datatype: csv
+""", test_data="""
+text_input1:
+  type: "list:paired"
+""", history_id=history_id)
+            hdca = self.dataset_populator.get_history_collection_details(history_id=jobs_summary.history_id, hid=4)
+            assert hdca['collection_type'] == 'list:paired'
+            assert len(hdca['elements'][0]['object']["elements"]) == 2
+            forward, reverse = hdca['elements'][0]['object']["elements"]
+            assert forward['object']['file_ext'] == 'csv'
+            assert reverse['object']['file_ext'] == 'csv'
+
     @skip_without_tool("collection_type_source_map_over")
     def test_mapping_and_subcollection_mapping(self):
         with self.dataset_populator.test_history() as history_id:
