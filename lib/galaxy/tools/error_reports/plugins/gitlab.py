@@ -12,6 +12,7 @@ if sys.version_info[0] < 3:
 else:
     import urllib.parse as urllib
     urlparse = urllib
+
 from galaxy.tools.errors import EmailErrorReporter
 from galaxy.util import string_as_bool, unicodify
 from . import ErrorPlugin
