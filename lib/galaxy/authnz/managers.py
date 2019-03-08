@@ -88,8 +88,8 @@ class AuthnzManager(object):
                     log.error("Could not find a node attribute 'name'; skipping the node '{}'.".format(child.tag))
                     continue
                 idp = child.get('name').lower()
-                if idp == 'google':
-                    self.oidc_backends_config[idp] = self._parse_google_config(child)
+                if idp in BACKENDS_NAME:
+                    self.oidc_backends_config[idp] = self._parse_idp_config(child)
             if len(self.oidc_backends_config) == 0:
                 raise ParseError("No valid provider configuration parsed.")
         except ImportError:
@@ -97,7 +97,7 @@ class AuthnzManager(object):
         except ParseError as e:
             raise ParseError("Invalid configuration at `{}`: {} -- unable to continue.".format(config_file, e))
 
-    def _parse_google_config(self, config_xml):
+    def _parse_idp_config(self, config_xml):
         rtv = {
             'client_id': config_xml.find('client_id').text,
             'client_secret': config_xml.find('client_secret').text,
@@ -212,6 +212,7 @@ class AuthnzManager(object):
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, (None, None)
+
             return True, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
         except Exception:
             msg = 'An error occurred when handling callback from `{}` identity provider'.format(provider)

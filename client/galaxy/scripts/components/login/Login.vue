@@ -27,6 +27,10 @@
                 <b-button v-if="enable_oidc" class="mt-3" @click="submitOIDCLogin()">
                     <icon class="fa fa-google" /> Sign in with Google
                 </b-button>
+		        <b-button v-if="enable_oidc" class="mt-3" @click="submitElixirLogin()">
+                    <icon class="fa fa-sign-in" /> Sign in with Elixir-AAI
+                </b-button>
+
             </div>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
@@ -105,6 +109,22 @@ export default {
             let rootUrl = getAppRoot();
             axios
                 .post(`${rootUrl}authnz/google/login`)
+                .then(response => {
+                    if (response.data.redirect_uri) {
+                        window.location = encodeURI(response.data.redirect_uri);
+                    }
+                    // Else do something intelligent or maybe throw an error -- what else does this endpoint possibly return?
+                })
+                .catch(error => {
+                    this.messageVariant = "danger";
+                    let message = error.response.data && error.response.data.err_msg;
+                    this.messageText = message || "Login failed for an unknown reason.";
+                });
+        },
+	    submitElixirLogin: function(method) {
+            let rootUrl = getAppRoot();
+            axios
+                .post(`${rootUrl}authnz/elixir/login`)
                 .then(response => {
                     if (response.data.redirect_uri) {
                         window.location = encodeURI(response.data.redirect_uri);
