@@ -3,6 +3,7 @@ Job runner plugin for executing jobs on the local system via the command line.
 """
 import datetime
 import errno
+import json
 import logging
 import os
 import subprocess
@@ -159,6 +160,15 @@ class LocalJobRunner(BaseJobRunner):
         # if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job = job_wrapper.get_job()
         job_ext_output_metadata = job.get_external_output_metadata()
+        if job.container:
+            try:
+                self._stop_container(job_wrapper)
+            except Exception as e:
+                log.warning("stop_job(): %s: trying to stop container failed. (%s)" % (job.id, e))
+                try:
+                    self._kill_container(job_wrapper)
+                except Exception as e:
+                    log.warning("stop_job(): %s: trying to kill container failed. (%s)" % (job.id, e))
         try:
             pid = job_ext_output_metadata[0].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             assert pid not in [None, '']
@@ -184,6 +194,7 @@ class LocalJobRunner(BaseJobRunner):
                 return
         else:
             log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
+        self.__kill_container(job_wrapper)
 
     def recover(self, job, job_wrapper):
         # local jobs can't be recovered
@@ -233,8 +244,83 @@ class LocalJobRunner(BaseJobRunner):
             os.killpg(proc.pid, 9)
         return proc.wait()  # reap
 
+    def _stop_container(self, job_wrapper):
+        return self._run_container_command(job_wrapper, 'stop')
+
+    def _kill_container(self, job_wrapper):
+        return self._run_container_command(job_wrapper, 'kill')
+
+    def _run_container_command(self, job_wrapper, command):
+        job = job_wrapper.get_job()
+        if job:
+            cont = job.container
+            if cont:
+                if cont.container_type == 'docker':
+                    exit_code = subprocess.call(cont.container_info['commands'][command],
+                                            shell=True,
+                                            env=self._environ,
+                                            preexec_fn=os.setpgrp)
+                    log.debug('docker container command exit code %s', exit_code)
+
+    def __handle_container(self, job_wrapper):
+        job = job_wrapper.get_job()
+        if job:
+            cont = job.container
+            if cont:
+                if cont.container_type == 'docker':
+                    # Do we need to do inspect, or is only ports ok?
+                    inspect=None
+                    for i in range(1, 11):
+                        with tempfile.TemporaryFile() as stdout_file:
+                            exit_code = subprocess.call(cont.container_info['commands']['inspect'],
+                                                    shell=True,
+                                                    stdout=stdout_file,
+                                                    env=self._environ,
+                                                    preexec_fn=os.setpgrp)
+                            if exit_code == 0:
+                                stdout_file.seek(0)
+                                inspect = stdout_file.read()
+                                break
+                        t=2*i
+                        log.debug("Container not found, sleeping for %s seconds.", t)
+                        sleep(t)
+                    cont.container_info['inspect'] = json.loads(inspect)
+                    rtt = job.realtime_tool
+                    if rtt:
+                        ports_raw=None
+                        for i in range(1, 11):
+                            with tempfile.TemporaryFile() as stdout_file:
+                                exit_code = subprocess.call(cont.container_info['commands']['port'],
+                                                        shell=True,
+                                                        stdout=stdout_file,
+                                                        #stderr=stderr_file,
+                                                        env=self._environ,
+                                                        preexec_fn=os.setpgrp)
+                                if exit_code == 0:
+                                    stdout_file.seek(0)
+                                    ports_raw = stdout_file.read()
+                                    break
+                            t=2*i
+                            log.debug("Container not found, sleeping for %s seconds.", t)
+                            sleep(t)
+
+                        for line in ports_raw.strip().split('\n'):
+                            #TODO: configure all ports at once, instead of individually
+                            #A port could e.g. be mapped multiple times, with diff entry URL
+                            tool, host =  line.split(" -> ", 1)
+                            hostname, port = host.split(':')
+                            tool_p, tool_prot = tool.split("/")
+                            ep = self.app.realtime_manager.configure_entry_point(rtt, tool_port=tool_p, host=hostname, port=port, protocol=tool_prot)
+                            if ep:
+                                # must add and flush the ep, here or elsewhere
+                                # otherwise, Galaxy's db doesn't get written to, but the sqlite db does
+                                job_wrapper.sa_session.add(ep)
+                                job_wrapper.sa_session.flush()
+
+
     def __poll_if_needed(self, proc, job_wrapper, job_id):
         # Only poll if needed (i.e. job limits are set)
+        self.__handle_container(job_wrapper)
         if not job_wrapper.has_limits():
             return
 
@@ -247,6 +333,7 @@ class LocalJobRunner(BaseJobRunner):
                 limit_state = job_wrapper.check_limits(runtime=datetime.datetime.now() - job_start)
                 if limit_state is not None:
                     job_wrapper.fail(limit_state[1])
+                    self.__kill_container(job_wrapper)
                     log.debug('(%s) Terminating process group' % job_id)
                     self._terminate(proc)
                     return True

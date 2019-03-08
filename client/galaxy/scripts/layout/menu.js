@@ -310,6 +310,12 @@ var Collection = Backbone.Collection.extend({
                     {
                         title: _l("Saved Visualizations"),
                         url: "visualizations/list",
+                        target: "__use_router__",
+                        divider: true,
+                    },
+                    {
+                        title: _l("Active RealTimeTools"),
+                        url: "realtime/list",
                         target: "__use_router__"
                     }
                 ]

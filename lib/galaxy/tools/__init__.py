@@ -32,6 +32,7 @@ from galaxy.queue_worker import send_control_task
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.actions.data_source import DataSourceToolAction
+from galaxy.tools.actions.realtime import RealTimeToolAction
 from galaxy.tools.actions.model_operations import ModelOperationToolAction
 from galaxy.tools.deps import (
     CachedDependencyManager,
@@ -512,7 +513,9 @@ class Tool(Dictifiable):
         """Indicates this tool's runtime requires Galaxy's Python environment."""
         # All special tool types (data source, history import/export, etc...)
         # seem to require Galaxy's Python.
-        if self.tool_type not in ["default", "manage_data"]:
+        # FIXME: the (instantiated) tool class should emit this behavior, and not
+        #        use inspection by string check
+        if self.tool_type not in ["default", "manage_data", "realtime"]:
             return True
 
         if self.tool_type == "manage_data" and self.profile < 18.09:
@@ -763,6 +766,7 @@ class Tool(Dictifiable):
         self.__parse_trackster_conf(tool_source)
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths()
+        self.tool_ports = tool_source.parse_tool_ports()
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace = dict()
@@ -1410,7 +1414,8 @@ class Tool(Dictifiable):
                         job_errors=execution_tracker.execution_errors,
                         jobs=execution_tracker.successful_jobs,
                         output_collections=execution_tracker.output_collections,
-                        implicit_collections=execution_tracker.implicit_collections)
+                        implicit_collections=execution_tracker.implicit_collections,
+                        view_result=execution_tracker.view_result)
 
     def handle_single_execution(self, trans, rerun_remap_job_id, execution_slice, history, execution_cache=None, completed_job=None, collection_info=None):
         """
@@ -1839,7 +1844,8 @@ class Tool(Dictifiable):
         tool_dict['panel_section_id'], tool_dict['panel_section_name'] = self.get_panel_section()
 
         tool_class = self.__class__
-        regular_form = tool_class == Tool or isinstance(self, DatabaseOperationTool)
+        # FIXME: the Tool class should declare directly, instead of ad hoc inspection
+        regular_form = tool_class == Tool or isinstance(self, (DatabaseOperationTool, RealTimeTool))
         tool_dict["form_style"] = "regular" if regular_form else "special"
 
         return tool_dict
@@ -1978,6 +1984,10 @@ class Tool(Dictifiable):
                 group_inputs.append(tool_dict)
             else:
                 group_inputs[input_index] = tool_dict
+
+    def get_view_result(self, job=None, dataset=None,  **kwd):
+        """Returns a special view for a tool and a set of provided objects."""
+        return None
 
     def _get_job_remap(self, job):
         if job:
@@ -2294,6 +2304,18 @@ class ExportHistoryTool(Tool):
 
 class ImportHistoryTool(Tool):
     tool_type = 'import_history'
+
+
+class RealTimeTool(Tool):
+    tool_type = 'realtime'
+    default_tool_action = RealTimeToolAction
+
+    def get_view_result(self, job=None):
+        if job:
+            realtimetool = job.realtime_tool
+            if realtimetool:
+                return url_for(controller='realtime', action='index', realtime_id=self.app.security.encode_id(realtimetool.id))
+        return None
 
 
 class DataManagerTool(OutputParameterJSONTool):
@@ -2913,7 +2935,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool,
+for tool_class in [Tool, SetMetadataTool, OutputParameterJSONTool, RealTimeTool,
                    DataManagerTool, DataSourceTool, AsyncDataSourceTool,
                    UnzipCollectionTool, ZipCollectionTool, MergeCollectionTool, RelabelFromFileTool, FilterFromFileTool,
                    BuildListCollectionTool, ExtractDatasetCollectionTool,

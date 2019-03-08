@@ -553,6 +553,7 @@ class ToolsController(BaseAPIController, UsesVisualizationMixin):
             output_dict['output_name'] = output_name
             rval['implicit_collections'].append(output_dict)
 
+        rval['view_result'] = vars.get('view_result', None)
         return rval
 
     #

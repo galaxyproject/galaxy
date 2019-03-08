@@ -711,6 +711,41 @@ model.GenomeIndexToolData.table = Table(
     Column("indexer", String(64)),
     Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True))
 
+model.RealTimeTool.table = Table(
+    "realtime_tool", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column("user_id", Integer, ForeignKey("galaxy_user.id"), index=True),
+    Column("session_id", Integer, ForeignKey("galaxy_session.id"), index=True),
+    Column("dataset_id", Integer, ForeignKey("history_dataset_association.id"), index=True),
+    Column("created_time", DateTime, default=now),
+    Column("modified_time", DateTime, default=now, onupdate=now))
+
+model.RealTimeToolEntryPoint.table = Table(
+    "realtime_tool_entry_point", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("realtime_id", Integer, ForeignKey("realtime_tool.id"), index=True),
+    Column("name", TEXT),
+    Column("token", TEXT),
+    Column("tool_port", Integer),
+    Column("entry_url", TEXT),
+    Column("host", TEXT),
+    Column("port", Integer),
+    Column("protocol", TEXT),
+    Column("configured", Boolean, default=False),
+    Column("created_time", DateTime, default=now),
+    Column("modified_time", DateTime, default=now, onupdate=now))
+
+model.JobContainerAssociation.table = Table(
+    "job_container_association", metadata,
+    Column("id", Integer, primary_key=True),
+    Column("job_id", Integer, ForeignKey("job.id"), index=True),
+    Column("container_type", TEXT),
+    Column("container_name", TEXT),
+    Column("container_info", JSONType, nullable=True),
+    Column("created_time", DateTime, default=now),
+    Column("modified_time", DateTime, default=now, onupdate=now))
+
 model.Task.table = Table(
     "task", metadata,
     Column("id", Integer, primary_key=True),
@@ -2044,6 +2079,21 @@ mapper(model.GenomeIndexToolData, model.GenomeIndexToolData.table, properties=di
     user=relation(model.User),
     deferred=relation(model.DeferredJob, backref='deferred_job'),
     transfer=relation(model.TransferJob, backref='transfer_job')
+))
+
+mapper(model.RealTimeTool, model.RealTimeTool.table, properties=dict(
+    job=relation(model.Job, backref=backref('realtime_tool', uselist=False), uselist=False),
+    dataset=relation(model.HistoryDatasetAssociation, backref=backref('realtime_tool', uselist=False), uselist=False),
+    user=relation(model.User),
+    galaxy_session=relation(model.GalaxySession)
+))
+
+mapper(model.RealTimeToolEntryPoint, model.RealTimeToolEntryPoint.table, properties=dict(
+    realtime=relation(model.RealTimeTool, backref='entry_points', uselist=False)
+))
+
+mapper(model.JobContainerAssociation, model.JobContainerAssociation.table, properties=dict(
+    job=relation(model.Job, backref=backref('container', uselist=False), uselist=False)
 ))
 
 mapper(model.PostJobAction, model.PostJobAction.table, properties=dict(

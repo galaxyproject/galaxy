@@ -356,6 +356,15 @@ class ExecutionTracker(object):
             job_assoc.job_id = job.id
             self.trans.sa_session.add(job_assoc)
 
+    @property
+    def view_result(self):
+        rval = []
+        for job in self.successful_jobs:
+            result = self.tool.get_view_result(job=job)
+            if result:
+                rval.append(result)
+        return rval
+
 
 # Seperate these because workflows need to track their jobs belong to the invocation
 # in the database immediately and they can be recovered.

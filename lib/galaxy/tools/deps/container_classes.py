@@ -5,7 +5,11 @@ from abc import (
     abstractmethod
 )
 
+from uuid import uuid4
+
 import six
+
+from logging import getLogger
 
 from galaxy.containers.docker_model import DockerVolume
 from galaxy.util import (
@@ -20,6 +24,8 @@ from .requirements import (
     DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
     DEFAULT_CONTAINER_SHELL,
 )
+
+log = getLogger(__name__)
 
 DOCKER_CONTAINER_TYPE = "docker"
 SINGULARITY_CONTAINER_TYPE = "singularity"
@@ -57,13 +63,15 @@ EOF
 @six.add_metaclass(ABCMeta)
 class Container(object):
 
-    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description):
+    def __init__(self, container_id, app_info, tool_info, destination_info, job_info, container_description, container_name=None):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
         self.destination_info = destination_info
         self.job_info = job_info
         self.container_description = container_description
+        self.container_name = container_name
+        self.container_info = {}
 
     def prop(self, name, default):
         destination_name = "docker_%s" % name
@@ -84,6 +92,10 @@ class Container(object):
         container_id, and command to build a new command that runs
         input command in container.
         """
+
+    def set_name(self, job_wrapper=None):
+        self.container_name = uuid4().get_hex()
+        job_wrapper.set_container(self)
 
 
 def preprocess_volumes(volumes_raw_str, container_type):
@@ -251,8 +263,13 @@ class DockerContainer(Container, HasDockerLikeVolumes):
             auto_rm=asbool(self.prop("auto_rm", docker_util.DEFAULT_AUTO_REMOVE)),
             set_user=self.prop("set_user", docker_util.DEFAULT_SET_USER),
             run_extra_arguments=self.prop("run_extra_arguments", docker_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            guest_ports=self.tool_info.guest_ports,
+            container_name=self.container_name,
             **docker_host_props
         )
+        self.container_info['commands'] = {}
+        for cmd in ['inspect', 'port', 'kill', 'stop']:
+            self.container_info['commands'][cmd]=docker_util.build_docker_simple_command(cmd, container_name=self.container_name, **docker_host_props)
         return "%s\n%s" % (cache_command, run_command)
 
     def __cache_from_file_command(self, cached_image_file, docker_host_props):
@@ -333,6 +350,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             env=env,
             working_directory=working_directory,
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
+            guest_ports=self.tool_info.guest_ports,
+            container_name=self.container_name,
             **self.get_singularity_target_kwds()
         )
         return run_command

@@ -187,6 +187,20 @@ class XmlToolSource(ToolSource):
             hidden = string_as_bool(hidden)
         return hidden
 
+    def parse_tool_ports(self):
+        # TODO: allow ports to be templated, for now, we will just use static value
+        tool_ports_el = self.root.find("tool_ports")
+        tool_ports = []
+        if tool_ports_el is None:
+            return tool_ports
+        for tool_port_el in tool_ports_el.findall("port"):
+            port = tool_port_el.text.strip()
+            entry_path = tool_port_el.find("url")
+            if entry_path is not None:
+                entry_path=entry_path.text.strip()
+            tool_ports.append(dict(port=port, url=entry_path, name=tool_port_el.get('name', None)))
+        return tool_ports
+
     def parse_redirect_url_params_elem(self):
         return self.root.find("redirect_url_params")
 
@@ -201,7 +215,6 @@ class XmlToolSource(ToolSource):
         for option_elem in root.findall("options"):
             if key in option_elem.attrib:
                 return string_as_bool(option_elem.get(key))
-
         return default
 
     @property

@@ -1891,6 +1891,12 @@ class JobWrapper(HasResourceParameters):
         for dataset in job.output_datasets:
             self.app.error_reports.default_error_plugin.submit_report(dataset, job, tool, user_submission=False)
 
+    def set_container(self, container):
+        if container:
+            cont = model.JobContainerAssociation( job=self.get_job(), container_type=container.container_type, container_name=container.container_name, container_info=container.container_info)
+            self.sa_session.add(cont)
+            self.sa_session.flush()
+
 
 class TaskWrapper(JobWrapper):
     """

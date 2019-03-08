@@ -170,6 +170,7 @@
       <display file="rviewer/bed.xml" inherit="true"/>
       <display file="igv/interval_as_bed.xml" inherit="true"/>
     </datatype>
+    <datatype extension="realtimetool" type="galaxy.datatypes.realtime:Realtime" description="Realtime Tool Output" mimetype="text/html" display_in_upload="false"/>
 
     <!-- ISA data types -->
     <datatype extension="isa-tab" type="galaxy.datatypes.isa:IsaTab" mimetype="application/isa-tools" display_in_upload="true" description="ISA-Tab data type." description_url="https://isa-tools.org"/>

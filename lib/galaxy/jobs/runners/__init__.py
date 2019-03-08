@@ -260,7 +260,7 @@ class BaseJobRunner(object):
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
-        return build_command(
+        built=build_command(
             self,
             job_wrapper,
             include_metadata=include_metadata,
@@ -270,6 +270,11 @@ class BaseJobRunner(object):
             stdout_file=stdout_file,
             stderr_file=stderr_file,
         )
+        stored_container = job_wrapper.get_job().container
+        if container and stored_container:
+            if container.container_info:
+                stored_container.container_info=container.container_info
+        return built
 
     def get_work_dir_outputs(self, job_wrapper, job_working_directory=None, tool_working_directory=None):
         """
@@ -412,7 +417,9 @@ class BaseJobRunner(object):
             compute_tmp_directory = job_wrapper.tmp_directory()
 
         tool = job_wrapper.tool
-        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through)
+        # TODO: template tool ports?
+        guest_ports = [port.get('port') for port in tool.tool_ports]
+        tool_info = ToolInfo(tool.containers, tool.requirements, tool.requires_galaxy_python_environment, tool.docker_env_pass_through, guest_ports=guest_ports)
         job_info = JobInfo(
             compute_working_directory,
             compute_tool_directory,
@@ -422,11 +429,14 @@ class BaseJobRunner(object):
         )
 
         destination_info = job_wrapper.job_destination.params
-        return self.app.container_finder.find_container(
+        container=self.app.container_finder.find_container(
             tool_info,
             destination_info,
             job_info
         )
+        if container:
+            container.set_name(job_wrapper=job_wrapper)
+        return container
 
     def _handle_runner_state(self, runner_state, job_state):
         try:

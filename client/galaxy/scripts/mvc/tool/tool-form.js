@@ -346,6 +346,22 @@ var View = Backbone.View.extend({
         return inputs;
     },
 
+    _getViewResult: function(response) {
+        if (response.view_result) {
+            return `<div class="infomessagelarge">
+                        <p>
+                            <a href="${response.view_result}">
+                            There is a RealTimeTool result view available, click here to display. You can also click on the display eye icon (<span class="fa fa-eye"></span>)
+                            associated with the RealTimeTool Dataset to view.</a>
+                        </p>
+                        <p>
+                            You may also access all active RealTimeTools from the User menu.
+                        </p>
+                    </div>`;
+        }
+        return "";
+    },
+
     _templateRow: function(list, title, max = 3) {
         var blurb = "";
         list.sort(function(a, b) {
@@ -376,7 +392,9 @@ var View = Backbone.View.extend({
             var ninputsText = ninputs > 1 ? `${ninputs} inputs` : `this input`;
             var noutputsText = noutputs > 1 ? `${noutputs} outputs` : `this output`;
             var tool_name = this.form.model.get("name");
-            return `<div class="donemessagelarge">
+            var view_result = this._getViewResult(response);
+            return `${view_result}
+                    <div class="donemessagelarge">
                         <p>
                             Executed <b>${tool_name}</b> and successfully added ${njobsText} to the queue.
                         </p>

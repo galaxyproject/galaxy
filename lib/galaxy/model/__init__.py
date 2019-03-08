@@ -1299,6 +1299,56 @@ class JobImportHistoryArchive(RepresentById):
         self.archive_dir = archive_dir
 
 
+class JobContainerAssociation(RepresentById):
+    def __init__(self, job=None, container_type=None, container_name=None, container_info=None):
+        self.job = job
+        self.container_type = container_type
+        self.container_name = container_name
+        self.container_info = container_info or {}
+
+
+class RealTimeTool(RepresentById):
+    def __init__(self, job=None, user=None, session=None, dataset=None):
+        self.job = job
+        self.user = user
+        self.galaxy_session = session
+        self.dataset = dataset
+    @property
+    def active(self):
+        # FIXME: don't included queued?
+        return not self.job.finished
+    def to_dict(self, *args, **kwds):
+        return dict(job_id=self.job.id, user_id=self.user.id,galaxy_session_id=self.galaxy_session.id,dataset_id=self.dataset.id,active=self.active)#=self.realtime.to_dict(*args, **kwds))
+
+
+class RealTimeToolEntryPoint(RepresentById):
+    def __init__(self, realtime=None, name=None, token=None, tool_port=None, entry_url=None,
+                 host=None, port=None, protocol=None, configured=False):
+        self.realtime = realtime
+        self.name = name
+        if not token:
+            token = uuid4().get_hex()
+        self.token = token
+        self.tool_port = tool_port
+        self.entry_url = entry_url
+        self.host = host
+        self.port = port
+        self.protocol = protocol
+        self.configured = configured
+
+    def to_dict(self, *args, **kwds):
+        rval = dict(realtime_id=self.realtime.id)
+        for val in ['id', 'name','token','tool_port','entry_url','host','port','protocol','configured', 'created_time', 'modified_time', 'active']:
+            rval[val]=getattr(self, val)
+        return rval
+
+    @property
+    def active(self):
+        if self.configured:
+            return self.realtime.active
+        return False
+
+
 class GenomeIndexToolData(RepresentById):
     def __init__(self, job=None, params=None, dataset=None, deferred_job=None,
                  transfer_job=None, fasta_path=None, created_time=None, modified_time=None,
