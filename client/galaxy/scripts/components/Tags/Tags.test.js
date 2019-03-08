@@ -53,7 +53,6 @@ describe("Tags/Tags.vue", () => {
             return acResults.map(createTag);
         }
 
-
         // Mount the tags with sample props
 
         wrapper = mount(Tags, {
@@ -69,6 +68,7 @@ describe("Tags/Tags.vue", () => {
         emitted = wrapper.emitted();
 
         // Waits for lifecycle handlers to execute
+
         await wrapper.vm.$nextTick();
     })
 
@@ -104,10 +104,6 @@ describe("Tags/Tags.vue", () => {
         // TODO: figure out how to make the computed observableTags
         // prop update when the store does
 
-        // Doesn't work
-        // wrapper.vm.$forceUpdate();
-        // await wrapper.vm.$nextTick();
-
         // works, but is lame
         wrapper.setProps({ storeKey: "thisisgarbage" });
         wrapper.setProps({ storeKey });
@@ -117,9 +113,6 @@ describe("Tags/Tags.vue", () => {
         observed.forEach((tagLabel, i) => {
             expect(newTags[i]).to.equal(tagLabel);
         })
-
-        let renderedTags = wrapper.findAll(".tag-name");
-        console.log(renderedTags, renderedTags.length);
     })
 
     xit("updating tag search should generate autocomplete items", async () => {

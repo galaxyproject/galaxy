@@ -1,7 +1,7 @@
 // Bootstrap variables and core framework
-@import "../../../node_modules/bootstrap/scss/_functions.scss";
+@import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
-@import "../../../node_modules/bootstrap/scss/bootstrap.scss";
+@import "~bootstrap/scss/bootstrap.scss";
 
 // Bootstrap-related style overrides
 @import "overrides.scss";

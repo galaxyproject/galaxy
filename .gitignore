@@ -114,6 +114,7 @@ htmlcov
 run_unit_tests.html
 test/unit/**.log
 .tox
+test/functional/tool-data/testbeta.loc
 
 # Project files
 *.kpf

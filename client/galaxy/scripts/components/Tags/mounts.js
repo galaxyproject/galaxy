@@ -33,7 +33,7 @@ export const mountMakoTags = (options = {}, el) => {
     let fn = mountVueComponent(Tags);
     let vm = fn(propData, el);
     vm.$on("tag-click", makoClickHandler(options, vm));
-
+    vm.$nextTick();
     return vm;
 }
 
@@ -103,5 +103,7 @@ export const mountModelTags = (options = {}, el) => {
     };
 
     let fn = mountVueComponent(Tags);
-    return fn(propData, el);
+    let vm = fn(propData, el);
+    vm.$nextTick();
+    return vm;
 }
