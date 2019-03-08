@@ -26,6 +26,12 @@ class GitLabPlugin(ErrorPlugin):
         self.gitlab_default_repo_owner = kwargs.get('gitlab_default_repo_owner', False)
         self.gitlab_default_repo_name = kwargs.get('gitlab_default_repo_name', False)
 
+        # Cache for lookups
+        self.issue_cache = {}
+        self.ts_urls = {}
+        self.ts_repo_cache = {}
+        self.gitlab_project_cache = {}
+
         try:
             import gitlab
             import requests
@@ -45,19 +51,19 @@ class GitLabPlugin(ErrorPlugin):
             self.gitlab.auth()
 
         except ImportError:
-            log.error("Please install python-gitlab to submit bug reports to gitlab")
+            log.error("GitLab error reporting - Please install python-gitlab to submit bug reports to gitlab")
             self.gitlab = None
         except gitlab.GitlabAuthenticationError:
-            log.error("Could not authenticate with GitLab.")
+            log.error("GitLab error reporting - Could not authenticate with GitLab.")
             self.gitlab = None
         except gitlab.GitlabParsingError:
-            log.error("Could not parse GitLab message.")
+            log.error("GitLab error reporting - Could not parse GitLab message.")
             self.gitlab = None
         except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError):
-            log.error("Could not connect to GitLab.")
+            log.error("GitLab error reporting - Could not connect to GitLab.")
             self.gitlab = None
         except gitlab.GitlabError:
-            log.error("General error communicating with GitLab.")
+            log.error("GitLab error reporting - General error communicating with GitLab.")
             self.gitlab = None
 
     def submit_report(self, dataset, job, tool, **kwargs):
@@ -66,6 +72,8 @@ class GitLabPlugin(ErrorPlugin):
         log.info(self.gitlab)
 
         if self.gitlab:
+            # Import GitLab here for the error handling
+            import gitlab
             try:
                 # Import the necessary libraries
                 import sys
@@ -77,48 +85,66 @@ class GitLabPlugin(ErrorPlugin):
                     import urllib.parse as urllib
                     urlparse = urllib
 
-                log.info(job.tool_id)
-                log.info(job.tool_version)
-                log.info(tool.tool_shed)
+                log.info("GitLab error reporting - submit report - job tool id: " + job.tool_id)
+                log.info("GitLab error reporting - submit report - job tool version: " + job.tool_version)
+                log.info("GitLab error reporting - submit report - tool tool_shed: " + tool.tool_shed)
 
                 # Determine the ToolShed url, initially we connect with HTTP and if redirect to HTTPS is set up,
-                # this will be detected by requests and used further down the line.
-                ts_url_request = requests.get('http://' + str(tool.tool_shed))
-                ts_url = ts_url_request.url
-                log.info("Determined ToolShed is " + ts_url)
+                # this will be detected by requests and used further down the line. Also cache this so everything is
+                # as fast as possible
+                if tool.tool_shed in self.ts_urls:
+                    ts_url = self.ts_urls[tool.tool_shed]
+                else:
+                    ts_url_request = requests.get('http://' + str(tool.tool_shed))
+                    ts_url = ts_url_request.url
+                    self.ts_urls[tool.tool_shed] = ts_url
+                log.info("GitLab error reporting - Determined ToolShed is " + ts_url)
 
                 # Find the repo inside the ToolShed
-                ts_repo_request = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id))
-                ts_repo_request_data = ts_repo_request.json()
-                ts_repourl = None
+                if job.tool_id in self.ts_repo_cache:
+                    ts_repourl = self.ts_repo_cache[job.tool_id]
+                else:
+                    ts_repo_request = requests.get(ts_url + "/api/repositories?tool_ids=" + str(job.tool_id))
+                    ts_repo_request_data = ts_repo_request.json()
+                    ts_repourl = None
 
-                for changeset, repoinfo in ts_repo_request_data.items():
-                    if isinstance(repoinfo, dict):
-                        if 'repository' in repoinfo.keys():
-                            if 'remote_repository_url' in repoinfo['repository'].keys():
-                                ts_repourl = repoinfo['repository']['remote_repository_url']
+                    for changeset, repoinfo in ts_repo_request_data.items():
+                        if isinstance(repoinfo, dict):
+                            if 'repository' in repoinfo.keys():
+                                if 'remote_repository_url' in repoinfo['repository'].keys():
+                                    ts_repourl = repoinfo['repository']['remote_repository_url']
 
-                log.info("Determine ToolShed Repository URL: " + ts_repourl)
+                    self.ts_repo_cache[job.tool_id] = ts_repourl
+
+                log.info("GitLab error reporting - Determine ToolShed Repository URL: " + ts_repourl)
 
                 if ts_repourl:
                     gitlab_projecturl = urlparse.urlparse(ts_repourl).path[1:]
+                    issue_cache_key = job.tool_id
                 else:
                     gitlab_projecturl = "/".join([self.gitlab_default_repo_owner,
                                                   self.gitlab_default_repo_name])
+                    issue_cache_key = "default"
 
                 gitlab_urlencodedpath = urllib.quote_plus(gitlab_projecturl)
 
-                # Make sure we are always logged in, then retrieve the GitLab project
+                # Make sure we are always logged in, then retrieve the GitLab project if it isn't cached.
                 self.gitlab.auth()
-                gl_project = self.gitlab.projects.get(gitlab_urlencodedpath)
+                if gitlab_projecturl in self.gitlab_project_cache:
+                    gl_project = self.gitlab_project_cache[gitlab_projecturl]
+                else:
+                    gl_project = self.gitlab.projects.get(gitlab_urlencodedpath)
+                    self.gitlab_project_cache[gitlab_projecturl] = gl_project
 
-                # Get a list of all the issues, parse them for de-duplication later
-                log.info(gl_project.issues.list())
+                # Make sure we keep a cache of the issues, per tool in this case
+                if issue_cache_key not in self.issue_cache:
+                    self.issue_cache[issue_cache_key] = {}
 
-                issue_cache = {}
-                for issue in gl_project.issues.list():
-                    if issue.state != 'closed':
-                        issue_cache[issue.title] = issue.iid
+                    # Loop over all open issues and add the issue iid to the cache
+                    for issue in gl_project.issues.list():
+                        if issue.state != 'closed':
+                            log.info("GitLab error reporting - Repo issue: " + str(issue.iid))
+                            self.issue_cache[issue_cache_key][issue.title] = issue.iid
 
                 # Generate information for the tool
                 tool_kw = {'tool_id': unicodify(job.tool_id), 'tool_version': unicodify(job.tool_version)}
@@ -126,19 +152,21 @@ class GitLabPlugin(ErrorPlugin):
 
                 # We'll re-use the email error reporter's template since GitLab supports HTML
                 error_reporter = EmailErrorReporter(dataset.id, self.app)
-                error_reporter.create_report(job.get_user(), email=kwargs.get('email', None), message=kwargs.get('message', None), redact_user_details_in_bugreport=self.redact_user_details_in_bugreport)
+                error_reporter.create_report(job.get_user(), email=kwargs.get('email', None),
+                                             message=kwargs.get('message', None),
+                                             redact_user_details_in_bugreport=self.redact_user_details_in_bugreport)
 
                 # The HTML report
                 error_message = error_reporter.html_report
 
-                log.info(error_title in issue_cache)
-                if error_title not in issue_cache:
+                log.info(error_title in self.issue_cache[issue_cache_key])
+                if error_title not in self.issue_cache[issue_cache_key]:
                     # Create a new issue.
                     issue = gl_project.issues.create({
                         'title': error_title,
                         'description': error_message
                     })
-                    issue_cache[error_title] = issue.iid
+                    self.issue_cache[issue_cache_key][error_title] = issue.iid
                 else:
                     # Add a comment to an issue...
                     gl_url = "/".join([
@@ -148,23 +176,55 @@ class GitLabPlugin(ErrorPlugin):
                         "projects",
                         gitlab_urlencodedpath,
                         "issues",
-                        str(issue_cache[error_title]),
+                        str(self.issue_cache[issue_cache_key][error_title]),
                         "notes"
                     ])
                     self.gitlab.http_post(gl_url, post_data={'body': error_message})
-                return ('Submitted error report to GitLab. Your issue number is <a href="%s/%s/issues/%s" target="_blank">#%s</a>.' % (self.gitlab_base_url, gitlab_projecturl, issue_cache[error_title], issue_cache[error_title]), 'success')
-            except ImportError:
-                log.error("Please ensure that requests, urllib and urlparse are available.")
-                return ('Error occured while submitting error report to GitLab. Report could not be submitted due to python import issues.', 'danger')
+
+                return ('Submitted error report to GitLab. Your issue number is <a href="%s/%s/issues/%s" '
+                        'target="_blank">#%s</a>.' % (self.gitlab_base_url, gitlab_projecturl,
+                                                      self.issue_cache[issue_cache_key][error_title],
+                                                      self.issue_cache[issue_cache_key][error_title]), 'success')
+
+            except ImportError as e:
+                log.error("GitLab error reporting - Please ensure that requests, urllib and urlparse are available. "
+                          "Exception information: " + e.message)
+                return ('Error occured while submitting error report to GitLab. Report could not be submitted due to '
+                        'python import issues.', 'danger')
+            except gitlab.GitlabCreateError as e:
+                log.error("GitLab error reporting - Could not create the issue on GitLab. "
+                          "Exception information: " + e.message)
+                return ('Could not create the issue on GitLab.', 'danger')
+            except gitlab.GitlabOwnershipError as e:
+                log.error("GitLab error reporting - Could not create the issue on GitLab due to ownership issues. "
+                          "Exception information: " + e.message)
+                return ('Could not create the issue on GitLab.', 'danger')
+            except gitlab.GitlabSearchError as e:
+                log.error("GitLab error reporting - Could not find repository on GitLab. "
+                          "Exception information: " + e.message)
+                return ('Could not create the issue on GitLab.', 'danger')
+            except gitlab.GitlabAuthenticationError as e:
+                log.error("GitLab error reporting - Could not authenticate with GitLab. "
+                          "Exception information: " + e.message)
+                return ('Could not authenticate with GitLab.', 'danger')
+            except gitlab.GitlabParsingError as e:
+                log.error("GitLab error reporting - Could not parse GitLab message. "
+                          "Exception information: " + e.message)
+                return ('Error with GitLab communication. Please report this to your Galaxy Administrators.', 'danger')
+            except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError) as e:
+                log.error("GitLab error reporting - Could not connect to GitLab. Exception information: " + e.message)
+                return ('Error with GitLab communication. Please report this to your Galaxy Administrators.', 'danger')
+            except gitlab.GitlabError as e:
+                log.error("GitLab error reporting - General error communicating with GitLab. "
+                          "Exception information: " + e.message)
+                return ('Error with GitLab communication. Please report this to your Galaxy Administrators.', 'danger')
             except Exception as e:
-                log.error("Error reporting to GitLab had an exception that could not be determined. Exception information: " + e)
+                log.error("GitLab error reporting - Error reporting to GitLab had an exception that could not be "
+                          "determined. Exception information: " + e.message)
                 return ('Error occured while submitting error report to GitLab. Could not determine the cause.', 'danger')
-
-
-class GitLabPluginException(Exception):
-    pass
-
-
+        else:
+            log.error("GitLab error reporting - No connection to GitLab. Cannot report error to GitLab.")
+            return ('No connection to GitLab. Cannot report error to GitLab.', 'danger')
 
 
 __all__ = ('GitLabPlugin', )
