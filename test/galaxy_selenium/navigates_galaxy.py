@@ -1000,12 +1000,11 @@ class NavigatesGalaxy(HasDriver):
     def workflow_sharing_click_publish(self):
         self.wait_for_and_click_selector("input[name='make_accessible_and_publish']")
 
-    # current-history-panel > div.list-panel.dataset-collection-panel > div.controls > div.galaxy-tags.tags-display.active > div > div > ul > li.ti-new-tag-input-wrapper > input
     def tagging_add(self, tags, auto_closes=True, parent_selector=""):
 
         for i, tag in enumerate(tags):
             if auto_closes or i == 0:
-                tag_area = parent_selector + ".ti-new-tag-input-wrapper input"
+                tag_area = parent_selector + ".tags-input input[type='text']"
                 tag_area = self.wait_for_selector_clickable(tag_area)
                 tag_area.click()
 

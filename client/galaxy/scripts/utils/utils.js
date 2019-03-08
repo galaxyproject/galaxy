@@ -356,7 +356,7 @@ export function setWindowTitle(title) {
  * @param {string} str the input value
  * @returns {integer}
  */
-function hashFnv32a(str) {
+export function hashFnv32a(str) {
     var i,
         l,
         hval = 0x811c9dc5;
@@ -379,7 +379,7 @@ function hashFnv32a(str) {
  *
  * Assumes r, g, b are in the set [0, 1]
  */
-function contrastingColor(r, g, b) {
+export function contrastingColor(r, g, b) {
     var o = (r * 255 * 299 + g * 255 * 587 + b * 255 * 114) / 1000;
     return o > 125 ? "black" : "white";
 }

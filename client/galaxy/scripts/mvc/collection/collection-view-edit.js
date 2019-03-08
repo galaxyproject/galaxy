@@ -2,7 +2,6 @@ import $ from "jquery";
 import { getGalaxyInstance } from "app";
 import DC_VIEW from "mvc/collection/collection-view";
 import DC_EDIT from "mvc/collection/collection-li-edit";
-// import TAGS from "mvc/tag";
 import { mountModelTags } from "components/Tags";
 import _l from "utils/localization";
 import "ui/editable-text";

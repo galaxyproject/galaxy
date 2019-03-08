@@ -10,7 +10,7 @@ upstream component or environment that is accessed through props and events -->
             {{ linkText | localize }}
         </a>
         <vue-tags-input
-            class="tag-area"
+            class="tags-input tag-area"
             v-if="tagsVisible"
             v-model="tagText"
             :tags="tagModels"

@@ -4,9 +4,10 @@
  */
 
 import Tags from "./Tags";
+import Nametags from "./Nametags";
 import { mountVueComponent } from "utils/mountVueComponent";
 import { redirectToUrl } from "utils/redirect";
-import { TagService } from "./tagService";
+import { TagService, BackboneModelTagService } from "./tagService";
 
 
 /**
@@ -33,7 +34,6 @@ export const mountMakoTags = (options = {}, el) => {
     let fn = mountVueComponent(Tags);
     let vm = fn(propData, el);
     vm.$on("tag-click", makoClickHandler(options, vm));
-    vm.$nextTick();
     return vm;
 }
 
@@ -97,13 +97,15 @@ export const mountModelTags = (options = {}, el) => {
 
     let propData = {
         storeKey: `${itemClass}-${id}`,
-        tagService: new TagService({ id, itemClass, context }),
+        tagService: new BackboneModelTagService({ id, itemClass, context, model }),
         tags,
         disabled
     };
 
     let fn = mountVueComponent(Tags);
-    let vm = fn(propData, el);
-    vm.$nextTick();
-    return vm;
+    return fn(propData, el);
 }
+
+
+// nametag badge list (stateless)
+export const mountNametags = mountVueComponent(Nametags);

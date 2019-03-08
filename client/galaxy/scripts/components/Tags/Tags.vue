@@ -73,15 +73,13 @@ export default {
         },
 
         beforeAddingTag({ tag, addTag }) {
-            this.tagService
-                .save(tag)
+            this.tagService.save(tag)
                 .then(() => addTag(tag))
                 .catch(err => console.warn("unable to save tag", err));
         },
 
         beforeDeletingTag({ tag, deleteTag }) {
-            this.tagService
-                .delete(tag)
+            this.tagService.delete(tag)
                 .then(() => deleteTag(tag))
                 .catch(err => console.warn("Unable to delete tag", err));
         },

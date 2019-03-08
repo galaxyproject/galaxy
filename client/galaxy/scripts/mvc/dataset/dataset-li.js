@@ -327,6 +327,7 @@ export var DatasetListItemView = _super.extend(
                 </div>`);
         },
 
+        // TODO: Mason come back here
         _renderNametags: function() {
             var tpl = _.template(
                 [
