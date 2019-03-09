@@ -24,4 +24,4 @@ uwsgi:
 
 galaxy:
 
-  realtime_prefix: realtime.localhost
+  realtime_prefix: realtime
