@@ -52,9 +52,7 @@ def set_meta_with_tool_provided(dataset_instance, file_dict, set_meta_kwds, data
             # Set special metadata property that will reload this on server side.
             setattr(dataset_instance.metadata, "__extension__", extension)
         except Exception:
-            # TODO: log this when metadata can log stuff...
-            # https://trello.com/c/Nrwodu9d
-            pass
+            log.exception("Problem sniffing datatype.")
 
     for metadata_name, metadata_value in file_dict.get('metadata', {}).items():
         setattr(dataset_instance.metadata, metadata_name, metadata_value)
